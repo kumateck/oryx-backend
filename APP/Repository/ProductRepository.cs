@@ -1466,6 +1466,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var division = departmentDivision ?? user.Department.Division;
 
+        var warehouseName =
+            division == Division.BetaLactam ? "Beta Warehouse" : "Non-Beta Warehouse";
+
         var products = await context
             .Products.AsSplitQuery()
             .IgnoreQueryFilters()
@@ -1506,6 +1509,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             {
                 foreach (var packing in product.Packings)
                 {
+                    worksheet.Cells[row, 1].Value = warehouseName;
                     worksheet.Cells[row, 2].Value = product.Code;
                     worksheet.Cells[row, 3].Value = product.Name;
                     worksheet.Cells[row, 4].Value = packing.Name;
@@ -1514,6 +1518,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             }
             else
             {
+                worksheet.Cells[row, 1].Value = warehouseName;
                 worksheet.Cells[row, 2].Value = product.Code;
                 worksheet.Cells[row, 3].Value = product.Name;
                 row++;
