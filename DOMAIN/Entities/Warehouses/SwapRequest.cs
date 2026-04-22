@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.Warehouses;
-
 
 public class CreateSwapRequest
 {
@@ -13,8 +13,10 @@ public class CreateSwapRequest
     public Guid SecondWarehouseId { get; set; }
     public List<CreateSwapShelfMaterialBatch> FirstSwapShelfMaterialBatches { get; set; } = [];
     public List<CreateSwapShelfMaterialBatch> SecondSwapShelfMaterialBatches { get; set; } = [];
-    public bool QuantityIsValid => FirstSwapShelfMaterialBatches.Sum(m => m.Quantity)
-                                   == SecondSwapShelfMaterialBatches.Sum(m => m.Quantity);
+    public bool QuantityIsValid =>
+        FirstSwapShelfMaterialBatches.Sum(m => m.Quantity)
+        == SecondSwapShelfMaterialBatches.Sum(m => m.Quantity);
+    public Guid? StockRequisitionId { get; set; }
 }
 
 public class CreateSwapShelfMaterialBatch
@@ -37,15 +39,19 @@ public class SwapRequest : BaseEntity
     public Guid? ActionedById { get; set; }
     public User ActionedBy { get; set; }
     public DateTime? ActionedAt { get; set; }
-    [StringLength(10000)] public string ActionNote { get; set; }
+
+    [StringLength(10000)]
+    public string ActionNote { get; set; }
+    public Guid? StockRequisitionId { get; set; }
+    public Requisition StockRequisition { get; set; }
 }
+
 public enum SwapRequestStatus
 {
     Pending = 0,
     Approved = 1,
-    Rejected = 2
+    Rejected = 2,
 }
-
 
 [Owned]
 public class SwapShelfMaterialBatch

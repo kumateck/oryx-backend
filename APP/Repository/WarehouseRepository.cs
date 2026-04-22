@@ -8,6 +8,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
@@ -1701,6 +1702,24 @@ public class WarehouseRepository(
                 "A pending swap request with the same batches already exists between these warehouses."
             );
 
+        if (request.StockRequisitionId.HasValue)
+        {
+            var stockRequisition = await context.Requisitions.FirstOrDefaultAsync(r =>
+                r.Id == request.StockRequisitionId.Value
+            );
+            if (stockRequisition == null)
+                return Error.NotFound(
+                    "StockRequisition.NotFound",
+                    "The source requisition does not exist."
+                );
+
+            if (stockRequisition.Status == RequestStatus.Completed)
+                return Error.Validation(
+                    "StockRequisition.Issued",
+                    "The source requisition has already been issued."
+                );
+        }
+
         // Validate that both warehouses are of the same type
         var firstWarehouse = warehouses.First(w => w.Id == request.FirstWarehouseId);
         var secondWarehouse = warehouses.First(w => w.Id == request.SecondWarehouseId);
@@ -1759,9 +1778,7 @@ public class WarehouseRepository(
     }
 
     public async Task<Result<Paginateable<IEnumerable<SwapRequestDto>>>> GetSwapRequests(
-        int page,
-        int pageSize,
-        string searchQuery
+        GetSwapRequestsFilter request
     )
     {
         var query = context
@@ -1779,10 +1796,34 @@ public class WarehouseRepository(
                 .ThenInclude(b => b.UoM)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(searchQuery))
+        if (request.DepartmentId.HasValue)
+        {
+            if (request.Direction.HasValue)
+            {
+                if (request.Direction == SwapRequestDirection.Incoming)
+                {
+                    query = query.Where(s =>
+                        s.SecondWarehouse.DepartmentId == request.DepartmentId
+                    );
+                }
+                else
+                {
+                    query = query.Where(s => s.FirstWarehouse.DepartmentId == request.DepartmentId);
+                }
+            }
+            else
+            {
+                query = query.Where(s =>
+                    s.FirstWarehouse.DepartmentId == request.DepartmentId
+                    || s.SecondWarehouse.DepartmentId == request.DepartmentId
+                );
+            }
+        }
+
+        if (!string.IsNullOrEmpty(request.SearchQuery))
         {
             query = query.WhereSearch(
-                searchQuery,
+                request.SearchQuery,
                 s => s.FirstWarehouse.Name,
                 s => s.SecondWarehouse.Name
             );
@@ -1790,8 +1831,8 @@ public class WarehouseRepository(
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query.OrderByDescending(s => s.CreatedAt),
-            page,
-            pageSize,
+            request.Page,
+            request.PageSize,
             mapper.Map<SwapRequestDto>
         );
     }
