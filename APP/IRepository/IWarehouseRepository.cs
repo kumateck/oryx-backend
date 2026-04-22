@@ -15,42 +15,79 @@ public interface IWarehouseRepository
     Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request);
     Task<Result<WarehouseDto>> GetWarehouse(Guid warehouseId);
 
-    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(Guid roleId,
+    Task<Result<Paginateable<IEnumerable<WarehouseDto>>>> GetWarehouses(
+        Guid roleId,
         Guid departmentId,
         int page,
         int pageSize,
         string searchQuery,
-        WarehouseType? type);
-   Task<Result<List<WarehouseDto>>> GetWarehousesByDepartment(Guid departmentId);
+        WarehouseType? type
+    );
+    Task<Result<List<WarehouseDto>>> GetWarehousesByDepartment(Guid departmentId);
     Task<Result> UpdateWarehouse(CreateWarehouseRequest request, Guid warehouseId, Guid userId);
     Task<Result> DeleteWarehouse(Guid warehouseId, Guid userId);
-    Task<Result<Guid>> CreateWarehouseLocation(CreateWarehouseLocationRequest request, Guid warehouseId,
-        Guid userId);
+    Task<Result<Guid>> CreateWarehouseLocation(
+        CreateWarehouseLocationRequest request,
+        Guid warehouseId,
+        Guid userId
+    );
     Task<Result<WarehouseLocationRackDto>> GetWarehouseLocation(Guid locationId);
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(int page,
-        int pageSize, string searchQuery, MaterialKind? kind);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationDto>>>> GetWarehouseLocations(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind
+    );
     Task<Result<List<WarehouseLocationDto>>> GetWarehouseLocations();
-    Task<Result> UpdateWarehouseLocation(CreateWarehouseLocationRequest request, Guid locationId,
-        Guid userId);
+    Task<Result> UpdateWarehouseLocation(
+        CreateWarehouseLocationRequest request,
+        Guid locationId,
+        Guid userId
+    );
     Task<Result> DeleteWarehouseLocation(Guid locationId, Guid userId);
-    Task<Result<Guid>> CreateWarehouseLocationRack(CreateWarehouseLocationRackRequest request,
-        Guid warehouseLocationId, Guid userId);
+    Task<Result<Guid>> CreateWarehouseLocationRack(
+        CreateWarehouseLocationRackRequest request,
+        Guid warehouseLocationId,
+        Guid userId
+    );
     Task<Result<WarehouseLocationRackDto>> GetWarehouseLocationRack(Guid rackId);
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(int page,
-        int pageSize, string searchQuery, MaterialKind? kind);
-    Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(MaterialKind kind, Guid userId);
-    Task<Result> UpdateWarehouseLocationRack(CreateWarehouseLocationRackRequest request, Guid rackId,
-        Guid userId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationRackDto>>>> GetWarehouseLocationRacks(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind
+    );
+    Task<Result<List<WarehouseLocationRackDto>>> GetWarehouseLocationRacks(
+        MaterialKind kind,
+        Guid userId
+    );
+    Task<Result> UpdateWarehouseLocationRack(
+        CreateWarehouseLocationRackRequest request,
+        Guid rackId,
+        Guid userId
+    );
     Task<Result> DeleteWarehouseLocationRack(Guid rackId, Guid userId);
-    Task<Result<Guid>> CreateWarehouseLocationShelf(CreateWarehouseLocationShelfRequest request,
-        Guid warehouseLocationRackId, Guid userId);
+    Task<Result<Guid>> CreateWarehouseLocationShelf(
+        CreateWarehouseLocationShelfRequest request,
+        Guid warehouseLocationRackId,
+        Guid userId
+    );
     Task<Result<WarehouseLocationShelfDto>> GetWarehouseLocationShelf(Guid shelfId);
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetWarehouseLocationShelves(
-        int page, int pageSize, string searchQuery, MaterialKind? kind);
-    Task<Result<List<WarehouseLocationShelfDto>>> GetWarehouseLocationShelves(MaterialKind kind,
-        Guid userId);
-    Task<Result> UpdateWarehouseLocationShelf(CreateWarehouseLocationShelfRequest request, Guid shelfId,
-        Guid userId);
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind
+    );
+    Task<Result<List<WarehouseLocationShelfDto>>> GetWarehouseLocationShelves(
+        MaterialKind kind,
+        Guid userId
+    );
+    Task<Result> UpdateWarehouseLocationShelf(
+        CreateWarehouseLocationShelfRequest request,
+        Guid shelfId,
+        Guid userId
+    );
     Task<Result> DeleteWarehouseLocationShelf(Guid shelfId, Guid userId);
     Task<Result<WarehouseArrivalLocationDto>> GetArrivalLocationDetails(Guid warehouseId);
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialById(Guid id);
@@ -59,37 +96,97 @@ public interface IWarehouseRepository
     Task<Result> ConfirmArrival(Guid distributedMaterialId);
     Task<Result<ChecklistDto>> GetChecklist(Guid id);
     Task<Result<Guid>> CreateChecklist(CreateChecklistRequest request, Guid userId);
-    Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(Guid distributedMaterialId);
-    Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(List<Guid> distributedMaterialIds);
+    Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterial(
+        Guid distributedMaterialId
+    );
+    Task<Result<List<MaterialBatchDto>>> GetMaterialBatchByDistributedMaterials(
+        List<Guid> distributedMaterialIds
+    );
     Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId);
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds);
     Task<Result<GrnDto>> GetGrn(Guid id);
-    Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(int page, int pageSize, string searchQuery, MaterialKind? kind, Status? status);
-    Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrnsForQc(int page, int pageSize, string searchQuery,
-        MaterialKind? kind, Status? status, bool? onlyApproved);
+    Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind,
+        Status? status
+    );
+    Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrnsForQc(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? kind,
+        Status? status,
+        bool? onlyApproved
+    );
 
-    Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(int page, int pageSize,
-        string searchQuery,           
+    Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(
+        int page,
+        int pageSize,
+        string searchQuery,
         DateTime? date,
-        Guid materialId);
+        Guid materialId
+    );
 
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialId);
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(int page, int pageSize, string searchQuery, Guid warehouseId, Guid materialBatchId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid warehouseId,
+        Guid materialId
+    );
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialBatchId(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid warehouseId,
+        Guid materialBatchId
+    );
 
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(int page, int pageSize,
-        string searchQuery, Guid warehouseId);
-    Task<Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>> 
-        GetDistributedRequisitionMaterials(int page, int pageSize, string searchQuery, MaterialKind kind,
-            DistributedRequisitionMaterialStatus? status, Guid userId);
-    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetStockTransferDetails(int page, int pageSize, string searchQuery, MaterialKind kind, Guid userId);
-    Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(int page, int pageSize, string searchQuery, Guid userId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetAllShelves(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid warehouseId
+    );
+    Task<
+        Result<Paginateable<IEnumerable<DistributedRequisitionMaterialDto>>>
+    > GetDistributedRequisitionMaterials(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind,
+        DistributedRequisitionMaterialStatus? status,
+        Guid userId
+    );
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetStockTransferDetails(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind kind,
+        Guid userId
+    );
+    Task<Result<Paginateable<IEnumerable<DistributedFinishedProductDto>>>> GetFinishedGoodsDetails(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid userId
+    );
     Task<Result<DistributedRequisitionMaterialDto>> GetDistributedRequisitionMaterialsById(
-        Guid distributedMaterialId);
+        Guid distributedMaterialId
+    );
 
-    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByRackId(int page, int pageSize, string searchQuery, Guid rackId);
+    Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByRackId(
+        int page,
+        int pageSize,
+        string searchQuery,
+        Guid rackId
+    );
 
-    Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(int page, int pageSize,
-        string searchQuery, Guid productId);
+    Task<
+        Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>
+    > GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId);
 
     /// <summary>
     /// Creates a new swap request between two warehouses.
@@ -100,13 +197,13 @@ public interface IWarehouseRepository
     Task<Result> CreateSwapRequest(CreateSwapRequest request, Guid userId);
 
     /// <summary>
-    /// Retrieves paginated swap requests with optional search.
+    /// Retrieves paginated swap requests with optional search and filters.
     /// </summary>
-    /// <param name="page">The page number to retrieve.</param>
-    /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="searchQuery">An optional search string to filter results.</param>
+    /// <param name="request">The request parameters containing pagination, search and filters.</param>
     /// <returns>A paginated collection of swap requests.</returns>
-    Task<Result<Paginateable<IEnumerable<SwapRequestDto>>>> GetSwapRequests(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<SwapRequestDto>>>> GetSwapRequests(
+        GetSwapRequestsFilter request
+    );
 
     /// <summary>
     /// Retrieves detailed information about a specific swap request.
