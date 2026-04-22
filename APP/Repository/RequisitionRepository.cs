@@ -414,7 +414,7 @@ public class RequisitionRepository(
                         requisition.ProductionScheduleProductId.Value
                     );
 
-                if (reservedBatches.Any())
+                if (reservedBatches.Count != 0)
                 {
                     materialAlternative.CurrentReservedBatches = reservedBatches
                         .Select(rb => new BatchToSupply
@@ -429,7 +429,7 @@ public class RequisitionRepository(
 
             // 2. Find minimum expiry date of current batches
             DateTime? minExpiryDate = null;
-            if (materialAlternative.CurrentReservedBatches.Any())
+            if (materialAlternative.CurrentReservedBatches.Count != 0)
             {
                 minExpiryDate = materialAlternative
                     .CurrentReservedBatches.Where(b => b.Batch.ExpiryDate.HasValue)
@@ -450,7 +450,7 @@ public class RequisitionRepository(
                     smb.MaterialBatch.MaterialId == item.MaterialId
                     && smb.Quantity > 0
                     && !smb.DeletedAt.HasValue
-                    && smb.MaterialBatch.Status == BatchStatus.Approved
+                    && smb.MaterialBatch.Status == BatchStatus.Available
                     && !departmentWarehouseIds.Contains(
                         smb.WarehouseLocationShelf
                             .WarehouseLocationRack
