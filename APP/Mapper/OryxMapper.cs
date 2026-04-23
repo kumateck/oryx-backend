@@ -1258,7 +1258,68 @@ public class OryxMapper : Profile
         #region Memo
 
         CreateMap<Memo, MemoDto>();
-        CreateMap<MemoItem, MemoItemDto>();
+        CreateMap<MemoItem, MemoItemDto>()
+            .ConvertUsing((src, dest, ctx) =>
+            {
+                var dto = new MemoItemDto
+                {
+                    Id = src.Id,
+                    Memo = src.Memo != null
+                        ? new CollectionItemDto
+                        {
+                            Id = src.Memo.Id,
+                            Code = src.Memo.Code
+                        }
+                        : null,
+                    Vendor = src.VendorQuotationItem?.VendorQuotation?.Vendor != null
+                        ? new CollectionItemDto
+                        {
+                            Id = src.VendorQuotationItem.VendorQuotation.Vendor.Id,
+                            Name = src.VendorQuotationItem.VendorQuotation.Vendor.Name
+                        }
+                        : (src.MarketRequisitionVendorId.HasValue
+                            ? new CollectionItemDto
+                            {
+                                Name = src.MarketRequisitionVendor?.VendorName
+                            }
+                            : null),
+                    Item = src.Item != null
+                        ? new CollectionItemDto
+                        {
+                            Id = src.Item.Id,
+                            Code = src.Item.Code,
+                            Name = src.Item.Name
+                        }
+                        : null,
+                    UoM = src.UoM != null
+                        ? new UnitOfMeasureDto
+                        {
+                            Id = src.UoM.Id,
+                            Name = src.UoM.Name,
+                            Symbol = src.UoM.Symbol,
+                            Description = src.UoM.Description,
+                            IsScalable = src.UoM.IsScalable,
+                            IsRawMaterial = src.UoM.IsRawMaterial,
+                            Type = src.UoM.Type,
+                            Category = src.UoM.Category,
+                            CreatedAt = src.UoM.CreatedAt
+                        }
+                        : null,
+                    Quantity = src.Quantity,
+                    PricePerUnit = src.PricePerUnit,
+                    TermsOfPayment = src.MarketRequisitionVendor?.TermsOfPayment != null
+                        ? new CollectionItemDto
+                        {
+                            Id = src.MarketRequisitionVendor.TermsOfPayment.Id,
+                            Name = src.MarketRequisitionVendor.TermsOfPayment.Name
+                        }
+                        : null,
+                    DeliveryMode = src.MarketRequisitionVendor?.DeliveryMode,
+                    EstimatedDeliveryDate = src.MarketRequisitionVendor?.EstimatedDeliveryDate ?? default,
+                    CreatedAt = src.CreatedAt
+                };
+                return dto;
+            });
 
 
         #endregion
