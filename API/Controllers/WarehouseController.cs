@@ -1048,7 +1048,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <summary>
     /// Retrieves a paginated list of all swap requests with optional filtering.
     /// </summary>
-    /// <param name="request">
+    /// <remarks>
     /// The filter parameters:
     /// - SearchQuery: Optional string to search by warehouse names.
     /// - DepartmentId: Optional ID to filter requests by department.
@@ -1056,7 +1056,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     ///     - Incoming (0): Requests where the department's warehouse is the receiver (SecondWarehouse).
     ///     - Outgoing (1): Requests where the department's warehouse is the initiator (FirstWarehouse).
     ///     - If null: Requests where the department's warehouse is either the initiator or receiver.
-    /// </param>
+    /// </remarks>
+    /// <param name="request">Filter parameters for the swap requests.</param>
     /// <returns>A paginated list of swap requests.</returns>
     [HttpGet("swap")]
     [Authorize]
