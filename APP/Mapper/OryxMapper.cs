@@ -543,13 +543,13 @@ public class OryxMapper : Profile
 
         CreateMap<BinCardInformation, BinCardInformationDto>()
             .ForMember(dest => dest.Supplier, opt => opt.MapFrom(src => 
-                !string.IsNullOrEmpty(src.Supplier) 
+                !string.IsNullOrWhiteSpace(src.Supplier) 
                 ? src.Supplier 
                 : (src.MaterialBatch != null && src.MaterialBatch.Checklist != null 
                     ? (src.MaterialBatch.Checklist.Supplier != null ? src.MaterialBatch.Checklist.Supplier.Name : null) 
                     : null)))
             .ForMember(dest => dest.Manufacturer, opt => opt.MapFrom(src => 
-                !string.IsNullOrEmpty(src.Manufacturer) 
+                !string.IsNullOrWhiteSpace(src.Manufacturer) 
                 ? src.Manufacturer 
                 : (src.MaterialBatch != null && src.MaterialBatch.Checklist != null 
                     ? (src.MaterialBatch.Checklist.Manufacturer != null ? src.MaterialBatch.Checklist.Manufacturer.Name : null) 

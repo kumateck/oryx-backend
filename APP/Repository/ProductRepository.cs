@@ -1455,7 +1455,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Users.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(u => u.Department)
-            .FirstOrDefaultAsync(u => u.Id == userId);
+            .FirstOrDefaultAsync(u => u.Id == userId && u.DeletedAt == null);
         if (user == null)
             return UserErrors.NotFound(userId);
 
