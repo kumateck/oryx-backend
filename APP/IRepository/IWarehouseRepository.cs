@@ -126,7 +126,8 @@ public interface IWarehouseRepository
         int pageSize,
         string searchQuery,
         DateTime? date,
-        Guid materialId
+        Guid materialId,
+        Guid departmentId
     );
 
     Task<Result<Paginateable<IEnumerable<WarehouseLocationShelfDto>>>> GetShelvesByMaterialId(

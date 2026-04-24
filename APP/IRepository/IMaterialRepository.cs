@@ -136,6 +136,7 @@ public interface IMaterialRepository
         int page,
         int pageSize,
         Guid materialId,
+        Guid departmentId,
         Guid userId
     );
     Task<List<MaterialStockByWarehouseDto>> GetStockByWarehouse(Guid materialId);

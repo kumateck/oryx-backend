@@ -974,7 +974,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
 
     #region BinCardInformation
 
-    [HttpGet("bincardinformation/{materialId}")]
+    [HttpGet("bincardinformation/{materialId:guid}/{departmentId:guid}")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -983,6 +983,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetBinCardInformation(
         [FromRoute] Guid materialId,
+        [FromRoute] Guid departmentId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
@@ -994,7 +995,8 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
             pageSize,
             searchQuery,
             date,
-            materialId
+            materialId,
+            departmentId
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -1081,7 +1083,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// </summary>
     /// <param name="id">The unique identifier of the swap request.</param>
     /// <returns>The swap request details.</returns>
-    [HttpGet("swap/{id}")]
+    [HttpGet("swap/{id:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SwapRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
