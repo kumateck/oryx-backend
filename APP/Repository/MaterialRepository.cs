@@ -725,9 +725,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
     }
 
-    public async Task<
-        Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>
-    > GetMaterialBatchesByMaterialIdV2(int page, int pageSize, Guid materialId, Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(
+        int page, int pageSize, Guid materialId, Guid departmentId, Guid userId)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
@@ -752,7 +751,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(cl => cl.Manufacturer)
             .Where(m =>
-                m.MaterialBatch.MaterialId == materialId
+                m.MaterialBatch.MaterialId == materialId && m.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
                 && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id
                     == warehouse.Id
                 && m.MaterialBatch.Status == BatchStatus.Available
