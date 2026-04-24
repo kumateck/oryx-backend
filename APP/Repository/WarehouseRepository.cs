@@ -1750,6 +1750,25 @@ public class WarehouseRepository(
                 "Some provided shelf material batches could not be found."
             );
 
+        // Ensure all batches are for the same material
+        var allMaterialBatchIds = request
+            .FirstSwapShelfMaterialBatches.Select(m => m.MaterialBatchId)
+            .Concat(request.SecondSwapShelfMaterialBatches.Select(m => m.MaterialBatchId))
+            .Distinct()
+            .ToList();
+
+        var materialIds = await context
+            .MaterialBatches.Where(b => allMaterialBatchIds.Contains(b.Id))
+            .Select(b => b.MaterialId)
+            .Distinct()
+            .ToListAsync();
+
+        if (materialIds.Count > 1)
+            return Error.Validation(
+                "Swap.MaterialMismatch",
+                "All batches in a swap request must belong to the same material."
+            );
+
         // Create entity
         var swapRequest = new SwapRequest
         {
@@ -1792,10 +1811,12 @@ public class WarehouseRepository(
             .Include(s => s.SecondWarehouse)
             .Include(s => s.FirstSwapShelfMaterialBatches)
                 .ThenInclude(b => b.MaterialBatch)
+                    .ThenInclude(b => b.Material)
             .Include(s => s.FirstSwapShelfMaterialBatches)
                 .ThenInclude(b => b.UoM)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(b => b.MaterialBatch)
+                    .ThenInclude(b => b.Material)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(b => b.UoM)
             .AsQueryable();
