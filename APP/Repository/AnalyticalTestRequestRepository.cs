@@ -5,6 +5,7 @@ using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -27,9 +28,14 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return test.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, AnalyticalTestStatus? status)
+    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(
+        int page,
+        int pageSize,
+        string? searchQuery,
+        AnalyticalTestStatus? status)
     {
         var query = context.AnalyticalTestRequests
+            .AsNoTracking()
             .AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
@@ -38,12 +44,15 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .ThenInclude(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
+            .Include(s => s.Assignees)
+            .ThenInclude(a => a.User)
             .Include(s => s.CreatedBy)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
+                q => q.ArNumber,
                 q => q.Filled,
                 q => q.SampledQuantity);
         }
@@ -53,7 +62,24 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             query = query.Where(s => s.Status == status.Value);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AnalyticalTestRequestDto>);
+        var result = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            entity => 
+            {
+                var dto = mapper.Map<AnalyticalTestRequestDto>(entity);
+                dto.Assignees = entity.Assignees
+                    .Select(a => new UserDto
+                    {
+                        Id = a.UserId,
+                        FirstName = a.User.FirstName,
+                        LastName = a.User.LastName
+                    }).ToList();
+                return dto;
+            });
+
+        return Result.Success(result);
     }
 
     public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id)

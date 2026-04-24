@@ -33,4 +33,6 @@ public class AnalyticalTestRequestDto : BaseDto
     public DateTime? AcknowledgedAt { get; set; }
     public DateTime? AssignedAt { get; set; }
     public string ArNumber { get; set; }
+    
+    public List<UserDto> Assignees { get; set; }
 }

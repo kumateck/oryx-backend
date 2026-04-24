@@ -1004,7 +1004,8 @@ public class OryxMapper : Profile
         #region AnalyticalTestRequests
 
         CreateMap<CreateAnalyticalTestRequest, AnalyticalTestRequest>();
-        CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>();
+        CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>()
+            .ForMember(dest => dest.Assignees, opt => opt.Ignore());
 
         #endregion
 
