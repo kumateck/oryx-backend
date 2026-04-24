@@ -779,7 +779,7 @@ public class FormRepository(
                 .AnalyticalTestRequests.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-                    && r.Stage == request.Stage
+                    && r.Stage == request.Stage && !r.DeletedAt.HasValue
                 );
 
             if (atr == null)
@@ -787,6 +787,15 @@ public class FormRepository(
 
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
+            
+            atr.Assignees = request.FormFieldAssignees
+                .Select(f => new AnalyticalTestRequestAssignee
+                {
+                    AnalyticalTestRequestId = atr.Id,
+                    UserId = f.AssigneeId.GetValueOrDefault()
+                })
+                .DistinctBy(a => a.UserId)
+                .ToList();
         }
 
         await context.FormAssignees.AddAsync(formAssignee);
