@@ -74,7 +74,6 @@ public class MaterialBatchReducedDto
 {
     public Guid Id { get; set; }
     public MaterialDto Material { get; set; }
-    public string Code { get; set; }
     public string BatchNumber { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
@@ -173,6 +172,7 @@ public class BatchLocation
     public MaterialBatchDto Batch { get; set; }
     public decimal QuantityToUse { get; set; }
 }
+
 public class CurrentLocation
 {
     public Warehouse Location { get; set; }
@@ -219,4 +219,3 @@ public class MaterialBatchCountDto
     public WarehouseDto Warehouse { get; set; }
     public int BatchCount { get; set; }
 }
-
