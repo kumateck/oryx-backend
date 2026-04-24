@@ -67,6 +67,7 @@ public class SwapShelfMaterialBatch
 
 public class SwapRequestDto
 {
+    public Guid Id { get; set; }
     public WarehouseWithoutLocationDto FirstWarehouse { get; set; }
     public WarehouseWithoutLocationDto SecondWarehouse { get; set; }
     public List<SwapShelfMaterialBatchDto> FirstSwapShelfMaterialBatches { get; set; } = [];
