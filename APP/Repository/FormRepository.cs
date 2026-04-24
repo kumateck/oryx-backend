@@ -126,19 +126,20 @@ public class FormRepository(
 
     public async Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId)
     {
-        var form = await context
-            .Forms.AsSplitQuery()
-            .Include(form => form.Sections)
-            .Include(form => form.Reviewers)
-            .Include(form => form.Assignees)
+        var form = await context.Forms
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
             return FormErrors.NotFound(formId);
 
-        context.FormSections.RemoveRange(form.Sections);
-        context.FormReviewers.RemoveRange(form.Reviewers);
-        context.FormAssignees.RemoveRange(form.Assignees);
+        // Hard delete existing relations to avoid soft-deleted "ghost" records showing up with IgnoreQueryFilters elsewhere.
+        // We delete in order of dependency to avoid FK violations.
+        await context.FormFields.Where(f => f.FormSection.FormId == formId).ExecuteDeleteAsync();
+        await context.FormSections.Where(s => s.FormId == formId).ExecuteDeleteAsync();
+        await context.FormReviewers.Where(r => r.FormId == formId).ExecuteDeleteAsync();
+        await context.FormFieldAssignees.Where(fa => fa.FormAssignee.FormId == formId).ExecuteDeleteAsync();
+        await context.FormAssignees.Where(a => a.FormId == formId).ExecuteDeleteAsync();
+
         mapper.Map(request, form);
 
         var validate = FormValidator.Validate(form);
