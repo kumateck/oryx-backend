@@ -729,6 +729,7 @@ public class InventoryProcurementRepository(
             .Include(m => m.Items)
             .ThenInclude(mi => mi.VendorQuotationItem)
             .ThenInclude(vqi => vqi.VendorQuotation)
+            .ThenInclude(vq => vq.Vendor)
             .Include(m => m.Items)
             .ThenInclude(mi => mi.MarketRequisitionVendor)
             .ThenInclude(mrv => mrv.MarketRequisition)
