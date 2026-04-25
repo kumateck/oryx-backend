@@ -25,6 +25,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.InventoryLedgers;
 using DOMAIN.Entities.ItemGrns;
 using DOMAIN.Entities.ItemInventoryTransactions;
 using DOMAIN.Entities.Items;
@@ -73,6 +74,7 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.StockAdjustments;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
@@ -653,6 +655,9 @@ public class ApplicationDbContext(
     #region Stock Entries
 
     public DbSet<StockEntry> StockEntries { get; set; }
+    public DbSet<StockAdjustment> StockAdjustments { get; set; }
+    public DbSet<StockAdjustmentLine> StockAdjustmentLines { get; set; }
+    public DbSet<InventoryLedger> InventoryLedgers { get; set; }
     #endregion
 
     #region Job Requests

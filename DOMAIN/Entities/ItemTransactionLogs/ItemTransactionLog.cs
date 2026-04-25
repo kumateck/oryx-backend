@@ -19,8 +19,8 @@ public enum TransactionType
     Missing,
     Returned,
     Issued,
-    Purchased
-    
+    Purchased,
+    Adjustment
 }
 
 public class ItemTransactionLogDto : BaseDto

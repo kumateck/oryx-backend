@@ -21,6 +21,7 @@ public class Item : BaseEntity
     public bool IsActive { get; set; }
     public string Description { get; set; }
     public int AvailableQuantity { get; set; }
+    [Timestamp] public byte[] RowVersion { get; set; }
 }
 
 public enum Store

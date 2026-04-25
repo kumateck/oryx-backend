@@ -152,6 +152,7 @@ public class ShelfMaterialBatch : BaseEntity
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
+    [Timestamp] public byte[] RowVersion { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     [StringLength(1000)] public string Note { get; set; }
