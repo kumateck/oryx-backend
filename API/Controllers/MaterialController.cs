@@ -1101,4 +1101,26 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Gets a report of inconsistencies between batch aggregates and ledger records.
+    /// </summary>
+    [HttpGet("diagnostics/inconsistencies")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<BatchInconsistencyReport>))]
+    public async Task<IResult> GetInconsistencyReport()
+    {
+        var result = await repository.GetInconsistencyReport();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Resolves inconsistencies by syncing batch aggregates with ledger records.
+    /// </summary>
+    [HttpPost("maintenance/fix-inconsistencies")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IResult> ResolveInconsistencies()
+    {
+        var result = await repository.ResolveInconsistencies();
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
 }

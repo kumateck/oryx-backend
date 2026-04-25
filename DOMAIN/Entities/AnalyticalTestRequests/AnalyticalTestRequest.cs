@@ -36,7 +36,17 @@ public class AnalyticalTestRequest : BaseEntity
     public User TestedBy { get; set; }
     public DateTime? TestedAt { get; set; }
     public DateTime? AssignedAt { get; set; }
+    
+    public List<AnalyticalTestRequestAssignee> Assignees { get; set; } = [];
     [StringLength(1000)] public string ArNumber { get; set; }
+}
+
+public class AnalyticalTestRequestAssignee : BaseEntity
+{
+    public Guid AnalyticalTestRequestId { get; set; }
+    public AnalyticalTestRequest AnalyticalTestRequest { get; set; }
+    public Guid UserId { get; set; }
+    public User User { get; set; }
 }
 
 public class ProductState : BaseEntity
