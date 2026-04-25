@@ -252,4 +252,7 @@ public interface IMaterialRepository
         MaterialKind? materialKind,
         Guid? departmentId
     );
+
+    Task<Result<IEnumerable<BatchInconsistencyReport>>> GetInconsistencyReport();
+    Task<Result> ResolveInconsistencies();
 }

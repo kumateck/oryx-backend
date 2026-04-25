@@ -725,8 +725,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>> GetMaterialBatchesByMaterialIdV2(
-        int page, int pageSize, Guid materialId, Guid departmentId, Guid userId)
+    public async Task<
+        Result<Paginateable<IEnumerable<ShelfMaterialBatchDto>>>
+    > GetMaterialBatchesByMaterialIdV2(
+        int page,
+        int pageSize,
+        Guid materialId,
+        Guid departmentId,
+        Guid userId
+    )
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null)
@@ -751,7 +758,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(cl => cl.Manufacturer)
             .Where(m =>
-                m.MaterialBatch.MaterialId == materialId && m.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
+                m.MaterialBatch.MaterialId == materialId
+                && m.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
                 && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id
                     == warehouse.Id
                 && m.MaterialBatch.Status == BatchStatus.Available
@@ -3722,7 +3730,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToDictionaryAsync(m => m.Code.Trim(), m => m, StringComparer.OrdinalIgnoreCase);
 
         var batches = await context
-            .MaterialBatches.Include(b => b.Material)
+            .MaterialBatches.AsSplitQuery()
+            .Include(b => b.Material)
             .Where(b =>
                 (
                     excelBatchNumbers.Contains(b.BatchNumber)
@@ -3893,6 +3902,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     }
                 );
             }
+
+            // Fix: Update the MaterialBatch aggregate count
+            var batch =
+                batches.FirstOrDefault(b => b.Id == batchId)
+                ?? newBatches.FirstOrDefault(b => b.Id == batchId);
+            if (batch != null)
+            {
+                batch.QuantityAssigned += qty;
+            }
         }
 
         if (newBatches.Count > 0)
@@ -4055,5 +4073,168 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         };
 
         return Result.Success(result);
+    }
+
+    public async Task<Result<IEnumerable<BatchInconsistencyReport>>> GetInconsistencyReport()
+    {
+        var sql =
+            @"
+            WITH ShelfByWarehouse AS (
+                SELECT 
+                    smb.""MaterialBatchId"",
+                    w.""Id"" as WarehouseId,
+                    w.""Name"" as WarehouseName,
+                    SUM(smb.""Quantity"") as TotalOnShelves
+                FROM ""ShelfMaterialBatches"" smb
+                JOIN ""WarehouseLocationShelves"" wls ON smb.""WarehouseLocationShelfId"" = wls.""Id""
+                JOIN ""WarehouseLocationRacks"" wlr ON wls.""WarehouseLocationRackId"" = wlr.""Id""
+                JOIN ""WarehouseLocations"" wl ON wlr.""WarehouseLocationId"" = wl.""Id""
+                JOIN ""Warehouses"" w ON wl.""WarehouseId"" = w.""Id""
+                GROUP BY smb.""MaterialBatchId"", w.""Id"", w.""Name""
+            ),
+            EventsByWarehouse AS (
+                SELECT 
+                    ""BatchId"",
+                    ""ConsumptionWarehouseId"" as WarehouseId,
+                    SUM(""Quantity"") as TotalConsumed
+                FROM ""MaterialBatchEvents""
+                WHERE ""Type"" = 3 -- Consumed
+                GROUP BY ""BatchId"", ""ConsumptionWarehouseId""
+            ),
+            GlobalAggregates AS (
+                SELECT 
+                    ""Id"" as BatchId,
+                    ""BatchNumber"",
+                    ""Status"",
+                    ""TotalQuantity"",
+                    ""ConsumedQuantity"",
+                    ""QuantityAssigned""
+                FROM ""MaterialBatches""
+            ),
+            WarehouseLevels AS (
+                SELECT 
+                    COALESCE(s.""MaterialBatchId"", e.""BatchId"") as BatchId,
+                    COALESCE(s.WarehouseId, e.WarehouseId) as WarehouseId,
+                    s.WarehouseName,
+                    COALESCE(s.TotalOnShelves, 0) as ShelfQuantity,
+                    COALESCE(e.TotalConsumed, 0) as EventConsumedQuantity
+                FROM ShelfByWarehouse s
+                FULL OUTER JOIN EventsByWarehouse e ON s.""MaterialBatchId"" = e.""BatchId"" AND s.WarehouseId = e.WarehouseId
+            )
+            SELECT 
+                wl.BatchId,
+                ga.""BatchNumber"",
+                ga.""Status""::text,
+                wl.WarehouseId,
+                wl.WarehouseName,
+                ga.""TotalQuantity"",
+                ga.""ConsumedQuantity"",
+                ga.""QuantityAssigned"",
+                wl.ShelfQuantity,
+                wl.EventConsumedQuantity,
+                -- Unassigned = Total - Consumed - Assigned (Global)
+                (ga.""TotalQuantity"" - ga.""ConsumedQuantity"" - ga.""QuantityAssigned"") as UnassignedQuantity
+            FROM WarehouseLevels wl
+            JOIN GlobalAggregates ga ON wl.BatchId = ga.BatchId
+            WHERE 
+                -- 1. Ledger vs Global Mismatch
+                ABS(ga.""QuantityAssigned"" - (SELECT COALESCE(SUM(""Quantity""), 0) FROM ""ShelfMaterialBatches"" WHERE ""MaterialBatchId"" = wl.BatchId)) > 0.000001
+                OR ABS(ga.""ConsumedQuantity"" - (SELECT COALESCE(SUM(""Quantity""), 0) FROM ""MaterialBatchEvents"" WHERE ""BatchId"" = wl.BatchId AND ""Type"" = 3)) > 0.000001
+                OR
+                -- 2. Over-assigned (Negative Unassigned)
+                (ga.""TotalQuantity"" - ga.""ConsumedQuantity"" - ga.""QuantityAssigned"") < -0.000001
+                OR
+                -- 3. Status Inconsistency (e.g. Status is Available (3) but 0 remaining)
+                (ga.""Status"" = 3 AND (ga.""TotalQuantity"" - ga.""ConsumedQuantity"") <= 0)";
+
+        using var command = context.Database.GetDbConnection().CreateCommand();
+        command.CommandText = sql;
+        await context.Database.OpenConnectionAsync();
+        using var reader = await command.ExecuteReaderAsync();
+        var report = new List<BatchInconsistencyReport>();
+        while (await reader.ReadAsync())
+        {
+            report.Add(
+                new BatchInconsistencyReport
+                {
+                    BatchId = reader.GetGuid(0),
+                    BatchNumber = reader.IsDBNull(1) ? "N/A" : reader.GetString(1),
+                    Status = reader.IsDBNull(2) ? "Unknown" : reader.GetString(2),
+                    WarehouseId = reader.IsDBNull(3) ? null : reader.GetGuid(3),
+                    WarehouseName = reader.IsDBNull(4) ? "Unknown" : reader.GetString(4),
+                    GlobalTotalQuantity = reader.GetDecimal(5),
+                    GlobalConsumedQuantity = reader.GetDecimal(6),
+                    GlobalQuantityAssigned = reader.GetDecimal(7),
+                    ActualShelfQuantity = reader.GetDecimal(8),
+                    ActualConsumedQuantity = reader.GetDecimal(9),
+                    UnassignedQuantity = reader.GetDecimal(10),
+                    HasStatusMismatch =
+                        (reader.GetDecimal(5) - reader.GetDecimal(6)) <= 0
+                        && reader.GetString(2) == "3", // 3 is Available
+                }
+            );
+        }
+        return Result.Success<IEnumerable<BatchInconsistencyReport>>(report);
+    }
+
+    public async Task<Result> ResolveInconsistencies()
+    {
+        using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            // 1. Sync ConsumedQuantity
+            await context.Database.ExecuteSqlRawAsync(
+                @"
+                UPDATE ""MaterialBatches"" mb
+                SET ""ConsumedQuantity"" = sub.TotalConsumed
+                FROM (
+                    SELECT ""BatchId"", SUM(""Quantity"") as TotalConsumed
+                    FROM ""MaterialBatchEvents""
+                    WHERE ""Type"" = 3
+                    GROUP BY ""BatchId""
+                ) AS sub
+                WHERE mb.""Id"" = sub.""BatchId""
+                AND ABS(mb.""ConsumedQuantity"" - sub.TotalConsumed) > 0.000001"
+            );
+
+            // 2. Sync QuantityAssigned
+            await context.Database.ExecuteSqlRawAsync(
+                @"
+                UPDATE ""MaterialBatches"" mb
+                SET ""QuantityAssigned"" = sub.TotalOnShelves
+                FROM (
+                    SELECT ""MaterialBatchId"", SUM(""Quantity"") as TotalOnShelves
+                    FROM ""ShelfMaterialBatches""
+                    GROUP BY ""MaterialBatchId""
+                ) AS sub
+                WHERE mb.""Id"" = sub.""MaterialBatchId""
+                AND ABS(mb.""QuantityAssigned"" - sub.TotalOnShelves) > 0.000001"
+            );
+
+            // 3. Reset orphans
+            await context.Database.ExecuteSqlRawAsync(
+                @"
+                UPDATE ""MaterialBatches"" mb
+                SET ""ConsumedQuantity"" = 0
+                WHERE NOT EXISTS (SELECT 1 FROM ""MaterialBatchEvents"" mbe WHERE mbe.""BatchId"" = mb.""Id"" AND mbe.""Type"" = 3)
+                AND mb.""ConsumedQuantity"" != 0"
+            );
+
+            await context.Database.ExecuteSqlRawAsync(
+                @"
+                UPDATE ""MaterialBatches"" mb
+                SET ""QuantityAssigned"" = 0
+                WHERE NOT EXISTS (SELECT 1 FROM ""ShelfMaterialBatches"" smb WHERE smb.""MaterialBatchId"" = mb.""Id"")
+                AND mb.""QuantityAssigned"" != 0"
+            );
+
+            await transaction.CommitAsync();
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return Error.Failure("DatabaseUpdateError", ex.Message);
+        }
     }
 }
