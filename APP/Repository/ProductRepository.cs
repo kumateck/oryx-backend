@@ -1182,6 +1182,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // 1. SCAN EXCEL FOR FILTER CRITERIA
         var excelProductCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelPackingStyles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var uomSymbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
@@ -1189,11 +1190,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
             var pCode = GetRaw("Product Code");
             var pStyle = GetRaw("Packing Style");
+            var uom = GetRaw("UOM");
 
             if (!string.IsNullOrEmpty(pCode))
                 excelProductCodes.Add(pCode);
             if (!string.IsNullOrEmpty(pStyle))
                 excelPackingStyles.Add(pStyle);
+            if (!string.IsNullOrEmpty(uom))
+                uomSymbols.Add(uom);
         }
 
         // 2. FETCH DEFAULTS AND LOOKUPS
@@ -1224,6 +1228,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             StringComparer.OrdinalIgnoreCase
         );
 
+        var uoms = await context
+            .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))
+            .ToListAsync();
+
+        var uomLookUp = uoms.ToDictionary(u => u.Symbol, u => u, StringComparer.OrdinalIgnoreCase);
+
         var warehouses = await context
             .Warehouses.Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
             .ToDictionaryAsync(w => w.Name.ToLower(), w => w);
@@ -1241,6 +1251,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var productCode = GetCell("Product Code").Trim();
             var packingStyle = GetCell("Packing Style").Trim();
             var batchNo = GetCell("Batch No.").Trim();
+            var uomSymbol = GetCell("UOM").Trim();
 
             if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo))
                 continue;
@@ -1304,10 +1315,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                         ? warehouse.Id
                         : null,
                     TotalQuantity = quantity,
+                    QuantityReceived = quantity,
                     ProductPackingId = packing.Id,
                     BatchManufacturingRecordId = bmr.Id,
                     Approved = true,
-                    IsApproved = true,
+                    UoMId = uomLookUp.TryGetValue(uomSymbol, out var uom) ? uom.Id : null,
                 }
             );
         }
@@ -1452,6 +1464,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Name",
             "Packing Style",
             "Total Quantity",
+            "UOM",
             "Batch No.",
             "FGTN ID",
             "AR No.",
