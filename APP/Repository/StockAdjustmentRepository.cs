@@ -1,4 +1,5 @@
 using APP.IRepository;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.InventoryLedgers;
 using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.StockAdjustments;
@@ -49,15 +50,15 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
 
             foreach (var lineRequest in request.Lines)
             {
-                decimal systemQuantity = 0;
-                decimal variance = 0;
-                decimal postBalance = 0;
+                decimal systemQuantity;
+                decimal variance;
+                decimal postBalance;
 
                 var adjustmentLine = new StockAdjustmentLine
                 {
                     StockAdjustment = adjustment,
                     PhysicalCount = lineRequest.PhysicalCount,
-                    ReasonCode = lineRequest.ReasonCode,
+                    ReasonCode = lineRequest.ReasonCode.ToString(),
                     Notes = lineRequest.Notes,
                     CreatedById = userId,
                     CreatedAt = DateTime.UtcNow,
@@ -77,7 +78,10 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     systemQuantity = item.AvailableQuantity;
                     variance = lineRequest.PhysicalCount - systemQuantity;
 
-                    if (variance != 0 && string.IsNullOrWhiteSpace(lineRequest.ReasonCode))
+                    if (
+                        variance != 0
+                        && string.IsNullOrWhiteSpace(lineRequest.ReasonCode.ToString())
+                    )
                         return Error.Validation(
                             "ReasonCode.Required",
                             $"Reason code is required for non-zero variance on item: {item.Name}"
@@ -122,7 +126,10 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     systemQuantity = shelfBatch.Quantity;
                     variance = lineRequest.PhysicalCount - systemQuantity;
 
-                    if (variance != 0 && string.IsNullOrWhiteSpace(lineRequest.ReasonCode))
+                    if (
+                        variance != 0
+                        && string.IsNullOrWhiteSpace(lineRequest.ReasonCode.ToString())
+                    )
                         return Error.Validation(
                             "ReasonCode.Required",
                             $"Reason code is required for non-zero variance on batch: {shelfBatch.MaterialBatch.BatchNumber}"
@@ -131,14 +138,33 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     if (variance == 0)
                         continue;
 
+                    // Update Shelf Quantity
                     shelfBatch.Quantity += variance;
                     postBalance = shelfBatch.Quantity;
+
+                    // Update Global Batch Total to maintain consistency
+                    shelfBatch.MaterialBatch.TotalQuantity += variance;
 
                     adjustmentLine.ShelfMaterialBatchId = shelfBatch.Id;
                     adjustmentLine.SystemQuantitySnapshot = systemQuantity;
                     adjustmentLine.Variance = variance;
 
                     context.ShelfMaterialBatches.Update(shelfBatch);
+                    context.MaterialBatches.Update(shelfBatch.MaterialBatch);
+
+                    // Backward compatibility/Consistency: Log to BinCardInformation
+                    var binCard = new BinCardInformation
+                    {
+                        MaterialBatchId = shelfBatch.MaterialBatchId,
+                        WarehouseId = request.WarehouseId,
+                        QuantityReceived = variance > 0 ? variance : 0,
+                        QuantityIssued = variance < 0 ? Math.Abs(variance) : 0,
+                        BalanceQuantity = postBalance,
+                        Description = $"Stock Adjustment: {request.AdjustmentNumber}",
+                        CreatedAt = DateTime.UtcNow,
+                        UoMId = shelfBatch.UoMId,
+                    };
+                    await context.BinCardInformation.AddAsync(binCard);
                 }
 
                 await context.StockAdjustmentLines.AddAsync(adjustmentLine);

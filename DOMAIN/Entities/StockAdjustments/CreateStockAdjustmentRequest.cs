@@ -30,7 +30,18 @@ public class CreateStockAdjustmentLineRequest
     public decimal PhysicalCount { get; set; }
 
     [Required]
-    public string ReasonCode { get; set; }
+    public StockAdjustmentReasonCode ReasonCode { get; set; }
 
     public string Notes { get; set; }
+}
+
+public enum StockAdjustmentReasonCode
+{
+    PhysicalCount = 0,
+    Damage = 1,
+    Theft = 2,
+    Expiry = 3,
+    DataEntryError = 4,
+    ReturnedGoods = 5,
+    Other = 6,
 }
