@@ -1304,6 +1304,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                         ? warehouse.Id
                         : null,
                     TotalQuantity = quantity,
+                    QuantityReceived = quantity,
                     ProductPackingId = packing.Id,
                     BatchManufacturingRecordId = bmr.Id,
                     Approved = true,
