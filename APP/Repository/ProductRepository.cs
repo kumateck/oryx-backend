@@ -1411,8 +1411,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Total Quantity",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
         for (int i = 0; i < headers.Length; i++)
@@ -1493,8 +1493,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Total Quantity",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
         for (int i = 0; i < headers.Length; i++)
