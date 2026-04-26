@@ -593,65 +593,31 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
-        var product = await context
-            .Products.AsSplitQuery()
-            .Include(product => product.Packings)
-                .ThenInclude(p => p.PackingLists)
-            .FirstOrDefaultAsync(p => p.Id == productId);
+        // 1. Hard delete all existing packings for this product first
+        // This bypasses your global soft-delete interceptor
+        await context.ProductPackings.Where(p => p.ProductId == productId).ExecuteDeleteAsync();
 
-        if (product is null)
-        {
-            return ProductErrors.NotFound(productId);
-        }
-
-        // Existing packings for the product
-        var existingPackings = product.Packings.ToList();
-
-        // Packings from request grouped by name
-        foreach (var incomingPacking in request)
-        {
-            var existing = existingPackings.FirstOrDefault(p =>
-                p.Name.Equals(incomingPacking.Name, StringComparison.OrdinalIgnoreCase)
-            );
-
-            if (existing != null)
+        var productPackings = request
+            .Select(incomingPacking =>
             {
-                // Update properties
-                mapper.Map(incomingPacking, existing);
-                existing.ProductId = productId;
+                var packing = mapper.Map<ProductPacking>(incomingPacking);
+                packing.ProductId = productId;
 
-                // Remove old packing lists and replace with new
-                existing.PackingLists.Clear();
-
-                existing.PackingLists = incomingPacking
+                packing.PackingLists = incomingPacking
                     .PackingLists.Select(mapper.Map<ProductPackingList>)
                     .ToList();
 
-                // Mark as updated
-                context.ProductPackings.Update(existing);
-            }
-            else
-            {
-                // Add new packing
-                var productPacking = mapper.Map<ProductPacking>(incomingPacking);
-                productPacking.ProductId = productId;
-                await context.ProductPackings.AddAsync(productPacking);
-            }
-        }
-
-        // Delete packings not present in the new request
-        var incomingNames = request.Select(r => r.Name.ToLower()).ToHashSet();
-        var toRemove = existingPackings
-            .Where(p => !incomingNames.Contains(p.Name.ToLower()))
+                return packing;
+            })
             .ToList();
 
-        if (toRemove.Count > 0)
+        if (productPackings.Count != 0)
         {
-            context.ProductPackings.RemoveRange(toRemove);
+            await context.ProductPackings.AddRangeAsync(productPackings);
         }
 
         await context.SaveChangesAsync();
-        return product.Id;
+        return productId;
     }
 
     public async Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId)
