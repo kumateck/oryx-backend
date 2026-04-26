@@ -24,7 +24,7 @@ public class CreateStockAdjustmentRequest
 public class CreateStockAdjustmentLineRequest
 {
     [Required]
-    public Guid ProductId { get; set; } // ID of Item or ShelfMaterialBatch
+    public Guid ModelId { get; set; } // ID of Item or ShelfMaterialBatch
 
     [Required]
     public decimal PhysicalCount { get; set; }

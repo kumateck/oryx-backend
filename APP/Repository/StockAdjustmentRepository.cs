@@ -25,7 +25,7 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
             if (line.PhysicalCount < 0)
                 return Error.Validation(
                     "PhysicalCount.Invalid",
-                    $"Physical count cannot be negative for ProductId: {line.ProductId}"
+                    $"Physical count cannot be negative for ModelId: {line.ModelId}"
                 );
         }
 
@@ -67,12 +67,12 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                 if (request.TargetType == StockAdjustmentTarget.Item)
                 {
                     var item = await context.Items.FirstOrDefaultAsync(i =>
-                        i.Id == lineRequest.ProductId
+                        i.Id == lineRequest.ModelId
                     );
                     if (item == null)
                         return Error.NotFound(
                             "Item.NotFound",
-                            $"Item not found: {lineRequest.ProductId}"
+                            $"Item not found: {lineRequest.ModelId}"
                         );
 
                     systemQuantity = item.AvailableQuantity;
@@ -116,11 +116,11 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     var shelfBatch = await context
                         .ShelfMaterialBatches.AsSplitQuery()
                         .Include(s => s.MaterialBatch)
-                        .FirstOrDefaultAsync(s => s.Id == lineRequest.ProductId);
+                        .FirstOrDefaultAsync(s => s.Id == lineRequest.ModelId);
                     if (shelfBatch == null)
                         return Error.NotFound(
                             "ShelfMaterialBatch.NotFound",
-                            $"Shelf material batch not found: {lineRequest.ProductId}"
+                            $"Shelf material batch not found: {lineRequest.ModelId}"
                         );
 
                     systemQuantity = shelfBatch.Quantity;
@@ -176,11 +176,11 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     ReferenceId = request.AdjustmentNumber,
                     ItemId =
                         request.TargetType == StockAdjustmentTarget.Item
-                            ? lineRequest.ProductId
+                            ? lineRequest.ModelId
                             : null,
                     ShelfMaterialBatchId =
                         request.TargetType == StockAdjustmentTarget.Material
-                            ? lineRequest.ProductId
+                            ? lineRequest.ModelId
                             : null,
                     ChangeAmount = variance,
                     PostTransactionBalance = postBalance,

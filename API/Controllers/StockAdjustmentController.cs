@@ -16,16 +16,16 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// </summary>
     /// <remarks>
     /// This endpoint allows for bulk adjustment of stock levels based on physical counts.
-    /// 
+    ///
     /// **Request Parameters:**
     /// - **AdjustmentNumber**: A unique reference string for this adjustment transaction.
     /// - **WarehouseId**: The GUID of the warehouse where the stock is physically located.
     /// - **AdjustmentDate**: The UTC timestamp when the physical count was performed.
-    /// - **TargetType**: 
+    /// - **TargetType**:
     ///     - `0` (Item): Adjusts general store items (e.g., spare parts, office supplies).
     ///     - `1` (Material): Adjusts specific material batches on shelves (e.g., raw materials, reagents).
     /// - **Lines**: A collection of adjustment details:
-    ///     - **ProductId**: 
+    ///     - **ModelId**:
     ///         - If TargetType is `Item`, use the **ItemId**.
     ///         - If TargetType is `Material`, use the **ShelfMaterialBatchId**.
     ///     - **PhysicalCount**: The total quantity actually found on hand. The system will calculate the variance automatically.
