@@ -1201,16 +1201,6 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         }
 
         // 2. FETCH DEFAULTS AND LOOKUPS
-        // Fetch a default Production Schedule Product and Step (As requested)
-        var defaultScheduleProduct = await context.ProductionScheduleProducts.FirstOrDefaultAsync();
-        var defaultStep = await context.ProductionActivitySteps.FirstOrDefaultAsync();
-
-        if (defaultScheduleProduct == null || defaultStep == null)
-            return Error.Validation(
-                "Production.Config",
-                "Missing default Production Schedule or Step in the system."
-            );
-
         // Fetch Product Packing with Product Hierarchy
         var packingData = await context
             .ProductPackings.IgnoreQueryFilters()
@@ -1227,6 +1217,37 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             pp => pp,
             StringComparer.OrdinalIgnoreCase
         );
+
+        // Fetch Production Schedule Products for matching
+        var pspData = await context.ProductionScheduleProducts
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(psp => psp.Product)
+            .Include(psp => psp.ProductPacking)
+            .Where(psp => excelProductCodes.Contains(psp.Product.Code))
+            .ToListAsync();
+
+        var pspIds = pspData.Select(p => p.Id).ToList();
+
+        // Fetch Production Activities and their steps for these PSPs
+        var activityData = await context.ProductionActivities
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(pa => pa.Steps)
+            .Where(pa => pspIds.Contains(pa.ProductionScheduleProductId))
+            .ToListAsync();
+
+        var activityLookup = activityData
+            .GroupBy(pa => pa.ProductionScheduleProductId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var pspLookup = pspData
+            .GroupBy(psp => $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}")
+            .ToDictionary(
+                g => g.Key,
+                g => g.First(),
+                StringComparer.OrdinalIgnoreCase
+            );
 
         var uoms = await context
             .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))
@@ -1266,6 +1287,33 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 );
             }
 
+            // Resolve Production Schedule Product
+            if (!pspLookup.TryGetValue(packingKey, out var psp))
+            {
+                return Error.NotFound(
+                    "ProductionScheduleProduct",
+                    $"Row {row}: Production schedule for Product '{productCode}' and Packing '{packingStyle}' not found."
+                );
+            }
+
+            // Resolve Activity Step from PSP
+            if (!activityLookup.TryGetValue(psp.Id, out var activity))
+            {
+                return Error.Validation(
+                    "ProductionActivity",
+                    $"Row {row}: No production activity found for Product '{productCode}' and Packing '{packingStyle}'."
+                );
+            }
+
+            var activityStep = activity.Steps.OrderBy(s => s.Order).LastOrDefault();
+            if (activityStep == null)
+            {
+                return Error.Validation(
+                    "ProductionActivityStep",
+                    $"Row {row}: No production activity steps found for Product '{productCode}' and Packing '{packingStyle}'."
+                );
+            }
+
             // Parse shared data
             decimal.TryParse(GetCell("Total Quantity"), out var quantity);
             var mfgDate = GetCell("Manufacturing Date");
@@ -1275,8 +1323,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var bmr = new BatchManufacturingRecord
             {
                 Id = Guid.NewGuid(),
-                ProductionScheduleProductId = defaultScheduleProduct.Id,
-                ProductionActivityStepId = defaultStep.Id,
+                ProductionScheduleProductId = psp.Id,
+                ProductionActivityStepId = activityStep.Id,
                 BatchNumber = batchNo,
                 ManufacturingDate = ParseDate(mfgDate),
                 ExpiryDate = ParseDate(expiryDate),
@@ -1291,8 +1339,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 new BatchPackagingRecord
                 {
                     Id = Guid.NewGuid(),
-                    ProductionScheduleProductId = defaultScheduleProduct.Id,
-                    ProductionActivityStepId = defaultStep.Id,
+                    ProductionScheduleProductId = psp.Id,
+                    ProductionActivityStepId = activityStep.Id,
                     ProductPackingId = packing.Id,
                     BatchNumber = batchNo,
                     ManufacturingDate = ParseDate(mfgDate),
