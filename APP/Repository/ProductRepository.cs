@@ -1232,7 +1232,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))
             .ToListAsync();
 
-        var uomLookUp = uoms.ToDictionary(u => u.Symbol, u => u, StringComparer.OrdinalIgnoreCase);
+        var uomLookUp = uoms.ToDictionary(u => u.Symbol, u => u, StringComparer.Ordinal);
 
         var warehouses = await context
             .Warehouses.Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
