@@ -752,7 +752,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return UserErrors.WarehouseNotFound(material.Kind);
 
         var query = context
-            .ShelfMaterialBatches.AsSplitQuery()
+            .ShelfMaterialBatches.AsSplitQuery().IgnoreQueryFilters()
             .Include(m => m.WarehouseLocationShelf)
             .Include(m => m.MaterialBatch)
                 .ThenInclude(mb => mb.Checklist)

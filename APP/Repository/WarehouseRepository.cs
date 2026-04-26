@@ -1216,6 +1216,7 @@ public class WarehouseRepository(
     {
         var query = context
             .BinCardInformation.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(bci => bci.MaterialBatch)
                 .ThenInclude(mb => mb.Material)
             .Include(bci => bci.MaterialBatch)
