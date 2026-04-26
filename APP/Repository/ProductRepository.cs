@@ -1261,20 +1261,19 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             var expiryDate = GetCell("Expiry Date");
 
             // 4. Create Manufacturing Record
-            manufacturingRecords.Add(
-                new BatchManufacturingRecord
-                {
-                    Id = Guid.NewGuid(),
-                    ProductionScheduleProductId = defaultScheduleProduct.Id,
-                    ProductionActivityStepId = defaultStep.Id,
-                    BatchNumber = batchNo,
-                    ManufacturingDate = ParseDate(mfgDate),
-                    ExpiryDate = ParseDate(expiryDate),
-                    BatchQuantity = quantity,
-                    Status = BatchManufacturingStatus.Approved, // Set appropriate default status
-                    IssuedDate = DateTime.UtcNow,
-                }
-            );
+            var bmr = new BatchManufacturingRecord
+            {
+                Id = Guid.NewGuid(),
+                ProductionScheduleProductId = defaultScheduleProduct.Id,
+                ProductionActivityStepId = defaultStep.Id,
+                BatchNumber = batchNo,
+                ManufacturingDate = ParseDate(mfgDate),
+                ExpiryDate = ParseDate(expiryDate),
+                BatchQuantity = quantity,
+                Status = BatchManufacturingStatus.Approved, // Set appropriate default status
+                IssuedDate = DateTime.UtcNow,
+            };
+            manufacturingRecords.Add(bmr);
 
             // 5. Create Packaging Record
             packagingRecords.Add(
@@ -1306,11 +1305,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                         : null,
                     TotalQuantity = quantity,
                     ProductPackingId = packing.Id,
-                    BatchManufacturingRecordId = (
-                        await context.BatchManufacturingRecords.FirstAsync(b =>
-                            b.ProductionScheduleProductId == defaultScheduleProduct.Id
-                        )
-                    ).Id,
+                    BatchManufacturingRecordId = bmr.Id,
                     Approved = true,
                     IsApproved = true,
                 }
