@@ -1213,7 +1213,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .AsSplitQuery()
             .Include(p => p.Product)
             .Where(pp =>
-                excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code)
+                excelPackingStyles.Contains(pp.Name) || excelProductCodes.Contains(pp.Product.Code)
             )
             .ToListAsync();
 
@@ -1238,9 +1238,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             string GetCell(string h) =>
                 headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
 
-            var productCode = GetCell("Product Code");
-            var packingStyle = GetCell("Packing Style");
-            var batchNo = GetCell("Batch No.");
+            var productCode = GetCell("Product Code").Trim();
+            var packingStyle = GetCell("Packing Style").Trim();
+            var batchNo = GetCell("Batch No.").Trim();
 
             if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo))
                 continue;
