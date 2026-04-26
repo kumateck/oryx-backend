@@ -1202,8 +1202,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Total Quantity",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
 
@@ -1411,8 +1411,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Total Quantity",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
         for (int i = 0; i < headers.Length; i++)
@@ -1476,6 +1476,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Where(p => !p.DeletedAt.HasValue)
             .Where(p => p.Division == division)
             .Where(p => !departmentId.HasValue || p.DepartmentId == departmentId)
+            .Where(p => !p.DeletedAt.HasValue)
             .ToListAsync();
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
@@ -1492,8 +1493,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Total Quantity",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
         for (int i = 0; i < headers.Length; i++)
