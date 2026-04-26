@@ -1229,7 +1229,7 @@ public class WarehouseRepository(
             .Include(bci => bci.UoM)
             .Where(bci =>
                 bci.MaterialBatch.MaterialId == materialId
-                && bci.MaterialBatch.Material.Departments.Any(d => d.Id == departmentId)
+                && bci.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
             )
             .OrderBy(b => b.CreatedAt)
             .AsQueryable();
