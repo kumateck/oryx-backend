@@ -4,8 +4,10 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Products.Production;
@@ -1184,7 +1186,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
-    public async Task<Result> ImportProductStockFromExcel(IFormFile file)
+    public async Task<Result> ImportProductStockFromExcel(IFormFile file, Guid userId)
     {
         if (file == null || file.Length == 0)
             return UploadErrors.EmptyFile;
@@ -1267,6 +1269,25 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             StringComparer.OrdinalIgnoreCase
         );
 
+        // Fetch Products with Routes for creating missing activities
+        var products = await context
+            .Products.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(p => p.Routes)
+                .ThenInclude(r => r.Resources)
+            .Include(p => p.Routes)
+                .ThenInclude(r => r.WorkCenters)
+            .Include(p => p.Routes)
+                .ThenInclude(r => r.ResponsibleUsers)
+            .Where(p => excelProductCodes.Contains(p.Code))
+            .ToListAsync();
+
+        var productLookup = products.ToDictionary(
+            p => p.Code,
+            p => p,
+            StringComparer.OrdinalIgnoreCase
+        );
+
         // Fetch Production Schedule Products for matching
         var pspData = await context
             .ProductionScheduleProducts.IgnoreQueryFilters()
@@ -1286,13 +1307,18 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Where(pa => pspIds.Contains(pa.ProductionScheduleProductId))
             .ToListAsync();
 
-        var activityLookup = activityData
-            .GroupBy(pa => pa.ProductionScheduleProductId)
-            .ToDictionary(g => g.Key, g => g.First());
+        var activityLookup = activityData.ToDictionary(
+            pa => pa.ProductionScheduleProductId,
+            pa => pa
+        );
 
-        var pspLookup = pspData
-            .GroupBy(psp => $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}")
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        // Create a composite lookup: "ProductCode|PackingName|BatchNumber"
+        var pspLookup = pspData.ToDictionary(
+            psp =>
+                $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}|{(psp.BatchNumber ?? "").Trim()}",
+            psp => psp,
+            StringComparer.OrdinalIgnoreCase
+        );
 
         var uoms = await context
             .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))
@@ -1308,16 +1334,21 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var packagingRecords = new List<BatchPackagingRecord>();
         var finishedGoodsTransferNotes = new List<FinishedGoodsTransferNote>();
 
+        // Track newly created entities to avoid duplicates within the same import
+        var newSchedules = new Dictionary<Guid, ProductionSchedule>();
+        var newProductionScheduleProduct = new Dictionary<string, ProductionScheduleProduct>();
+        var newActivities = new Dictionary<Guid, ProductionActivity>();
+
         // 3. PROCESS ROWS
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
             string GetCell(string h) =>
                 headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
 
-            var productCode = GetCell("Product Code").Trim();
-            var packingStyle = GetCell("Packing Style").Trim();
-            var batchNo = GetCell("Batch No.").Trim();
-            var uomSymbol = GetCell("UOM").Trim();
+            var productCode = GetCell("Product Code")?.Trim();
+            var packingStyle = GetCell("Packing Style")?.Trim();
+            var batchNo = GetCell("Batch No.")?.Trim();
+            var uomSymbol = GetCell("UOM")?.Trim();
 
             if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo))
                 continue;
@@ -1333,21 +1364,110 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             }
 
             // Resolve Production Schedule Product
-            if (!pspLookup.TryGetValue(packingKey, out var psp))
+            var pspKey = $"{productCode}|{packingStyle}|{batchNo}";
+            if (!pspLookup.TryGetValue(pspKey, out var psp))
             {
-                return Error.NotFound(
-                    "ProductionScheduleProduct",
-                    $"Row {row}: Production schedule for Product '{productCode}' and Packing '{packingStyle}' not found."
-                );
+                if (!newProductionScheduleProduct.TryGetValue(pspKey, out psp))
+                {
+                    if (!productLookup.TryGetValue(productCode, out var product))
+                        continue;
+
+                    if (!product.DepartmentId.HasValue)
+                    {
+                        return Error.Validation(
+                            "Product.Department",
+                            $"Row {row}: Product '{productCode}' has no department assigned."
+                        );
+                    }
+
+                    if (!newSchedules.TryGetValue(product.DepartmentId.Value, out var schedule))
+                    {
+                        schedule = new ProductionSchedule
+                        {
+                            Id = Guid.NewGuid(),
+                            Code = $"IMPORT-{product.Code}-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                            ScheduledStartTime = DateTime.UtcNow,
+                            ScheduledEndTime = DateTime.UtcNow,
+                            Status = ProductionStatus.Completed,
+                            Remarks = "System generated for stock import",
+                            DepartmentId = product.DepartmentId,
+                            CreatedById = userId,
+                        };
+                        newSchedules[product.DepartmentId.Value] = schedule;
+                        await context.ProductionSchedules.AddAsync(schedule);
+                    }
+
+                    psp = new ProductionScheduleProduct
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductionScheduleId = schedule.Id,
+                        ProductId = product.Id,
+                        BatchNumber = batchNo,
+                        BatchSize = BatchSize.Full,
+                        Quantity = decimal.TryParse(GetCell("Total Quantity"), out var q) ? q : 0,
+                        ProductPackingId = packing.Id,
+                    };
+                    newProductionScheduleProduct[pspKey] = psp;
+                    await context.ProductionScheduleProducts.AddAsync(psp);
+                }
             }
 
             // Resolve Activity Step from PSP
             if (!activityLookup.TryGetValue(psp.Id, out var activity))
             {
-                return Error.Validation(
-                    "ProductionActivity",
-                    $"Row {row}: No production activity found for Product '{productCode}' and Packing '{packingStyle}'."
-                );
+                if (!newActivities.TryGetValue(psp.Id, out activity))
+                {
+                    if (!productLookup.TryGetValue(productCode, out var product))
+                        continue;
+
+                    activity = new ProductionActivity
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductionScheduleProductId = psp.Id,
+                        Code = Guid.NewGuid().ToString(),
+                        StartedAt = DateTime.UtcNow,
+                        CompletedAt = DateTime.UtcNow,
+                        Status = ProductionStatus.Completed,
+                        CreatedById = userId,
+                        Steps = product
+                            .Routes.Select(r => new ProductionActivityStep
+                            {
+                                Id = Guid.NewGuid(),
+                                OperationId = r.OperationId,
+                                WorkflowId = r.WorkflowId,
+                                Order = r.Order,
+                                Status = ProductionStatus.Completed,
+                                StartedAt = DateTime.UtcNow,
+                                CompletedAt = DateTime.UtcNow,
+                                CreatedById = userId,
+                                Resources = r
+                                    .Resources.Select(re => new ProductionActivityStepResource
+                                    {
+                                        ResourceId = re.ResourceId,
+                                    })
+                                    .ToList(),
+                                WorkCenters = r
+                                    .WorkCenters.Select(re => new ProductionActivityStepWorkCenter
+                                    {
+                                        WorkCenterId = re.WorkCenterId,
+                                    })
+                                    .ToList(),
+                                ResponsibleUsers = r
+                                    .ResponsibleUsers.Select(ru => new ProductionActivityStepUser
+                                    {
+                                        UserId = ru.UserId,
+                                        ProductAnalyticalRawDataId = ru.ProductAnalyticalRawDataId,
+                                        Action = ru.Action,
+                                        CreatedById = userId,
+                                    })
+                                    .ToList(),
+                                IsCritical = r.IsCritical,
+                            })
+                            .ToList(),
+                    };
+                    newActivities[psp.Id] = activity;
+                    await context.ProductionActivities.AddAsync(activity);
+                }
             }
 
             var activityStep = activity.Steps.OrderBy(s => s.Order).LastOrDefault();
@@ -1376,6 +1496,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 BatchQuantity = quantity,
                 Status = BatchManufacturingStatus.Approved, // Set appropriate default status
                 IssuedDate = DateTime.UtcNow,
+                CreatedById = userId,
             };
             manufacturingRecords.Add(bmr);
 
@@ -1392,6 +1513,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     ExpiryDate = ParseDate(expiryDate),
                     BatchQuantity = quantity,
                     IssuedDate = DateTime.UtcNow,
+                    CreatedById = userId,
                 }
             );
 
@@ -1413,6 +1535,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     BatchManufacturingRecordId = bmr.Id,
                     Approved = true,
                     UoMId = uomLookUp.TryGetValue(uomSymbol, out var uom) ? uom.Id : null,
+                    CreatedById = userId,
                 }
             );
         }
