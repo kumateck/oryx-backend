@@ -177,10 +177,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <param name="materialId">The ID of the material to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpDelete("{materialId}")]
+    [HttpDelete("{materialId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteMaterial(Guid materialId)
+    public async Task<IResult> DeleteMaterial([FromRoute] Guid materialId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)

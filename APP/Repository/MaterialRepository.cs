@@ -29,6 +29,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     // Create Material
     public async Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId)
     {
+        var existingMaterial = await context.Materials
+            .AnyAsync(m => m.Code == request.Code && m.Name == request.Name);
+        if (existingMaterial) return Error.Validation("Material.Exists","Material name and code already exists");
+        
         var material = mapper.Map<Material>(request);
         material.CreatedById = userId;
         await context.Materials.AddAsync(material);
@@ -177,6 +181,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return MaterialErrors.NotFound(materialId);
         }
+        
+        if (material.TotalStock > 0) return Error.Validation("Material.CannotDelete",
+            "Materials with stock greater than zero cannot be deleted");
 
         material.DeletedAt = DateTime.UtcNow;
         material.LastDeletedById = userId;
