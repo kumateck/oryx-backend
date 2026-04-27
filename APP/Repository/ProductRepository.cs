@@ -1214,6 +1214,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Name",
             "Packing Style",
             "Total Quantity",
+            "UOM",
             "Batch No.",
             "FGTN ID",
             "AR No.",
