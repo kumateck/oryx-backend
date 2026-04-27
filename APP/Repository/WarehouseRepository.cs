@@ -14,6 +14,7 @@ using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Warehouses.Request;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
@@ -21,7 +22,8 @@ namespace APP.Repository;
 public class WarehouseRepository(
     ApplicationDbContext context,
     IMapper mapper,
-    IMaterialRepository materialRepository
+    IMaterialRepository materialRepository,
+    ILogger<WarehouseRepository> logger
 ) : IWarehouseRepository
 {
     public async Task<Result<Guid>> CreateWarehouse(CreateWarehouseRequest request)
@@ -1216,6 +1218,7 @@ public class WarehouseRepository(
     {
         var query = context
             .BinCardInformation.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(bci => bci.MaterialBatch)
                 .ThenInclude(mb => mb.Material)
             .Include(bci => bci.MaterialBatch)
@@ -1228,7 +1231,7 @@ public class WarehouseRepository(
             .Include(bci => bci.UoM)
             .Where(bci =>
                 bci.MaterialBatch.MaterialId == materialId
-                && bci.MaterialBatch.Material.Departments.Any(d => d.Id == departmentId)
+                && bci.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
             )
             .OrderBy(b => b.CreatedAt)
             .AsQueryable();
@@ -1892,9 +1895,13 @@ public class WarehouseRepository(
     {
         var swapRequest = await context
             .SwapRequests.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(s => s.FirstWarehouse)
             .Include(s => s.SecondWarehouse)
             .Include(s => s.FirstSwapShelfMaterialBatches)
+                .ThenInclude(x => x.ShelfMaterialBatch)
+            .Include(s => s.SecondSwapShelfMaterialBatches)
+                .ThenInclude(x => x.ShelfMaterialBatch)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(swapShelfMaterialBatch => swapShelfMaterialBatch.MaterialBatch)
                     .ThenInclude(materialBatch => materialBatch.Material)
@@ -1931,13 +1938,19 @@ public class WarehouseRepository(
                 .ToList();
 
             var firstShelfBatches = await context
-                .ShelfMaterialBatches.Where(x => firstShelfBatchIds.Contains(x.Id))
+                .ShelfMaterialBatches.IgnoreQueryFilters()
+                .Where(x => firstShelfBatchIds.Contains(x.Id))
                 .Include(x => x.WarehouseLocationShelf)
                 .ToDictionaryAsync(x => x.Id);
 
             foreach (var batch in swapRequest.FirstSwapShelfMaterialBatches)
             {
-                var shelfBatch = firstShelfBatches[batch.ShelfMaterialBatchId];
+                if (!firstShelfBatches.TryGetValue(batch.ShelfMaterialBatchId, out var shelfBatch))
+                    return Error.NotFound(
+                        "Swap.InvalidBatch",
+                        $"Shelf material batch {batch.ShelfMaterialBatchId} not found."
+                    );
+
                 if (shelfBatch.Quantity < batch.Quantity)
                     return Error.Validation(
                         "Swap.InsufficientQuantity",
@@ -1951,7 +1964,7 @@ public class WarehouseRepository(
                     .SecondSwapShelfMaterialBatches.FirstOrDefault(x =>
                         x.MaterialBatchId == batch.MaterialBatchId
                     )
-                    ?.ShelfMaterialBatch.WarehouseLocationShelfId;
+                    ?.ShelfMaterialBatch?.WarehouseLocationShelfId;
 
                 if (targetShelfId == null)
                     return Error.Validation(
@@ -1977,13 +1990,19 @@ public class WarehouseRepository(
                 .ToList();
 
             var secondShelfBatches = await context
-                .ShelfMaterialBatches.Where(x => secondShelfBatchIds.Contains(x.Id))
+                .ShelfMaterialBatches.IgnoreQueryFilters()
+                .Where(x => secondShelfBatchIds.Contains(x.Id))
                 .Include(x => x.WarehouseLocationShelf)
                 .ToDictionaryAsync(x => x.Id);
 
             foreach (var batch in swapRequest.SecondSwapShelfMaterialBatches)
             {
-                var shelfBatch = secondShelfBatches[batch.ShelfMaterialBatchId];
+                if (!secondShelfBatches.TryGetValue(batch.ShelfMaterialBatchId, out var shelfBatch))
+                    return Error.NotFound(
+                        "Swap.InvalidBatch",
+                        $"Shelf material batch {batch.ShelfMaterialBatchId} not found."
+                    );
+
                 if (shelfBatch.Quantity < batch.Quantity)
                     return Error.Validation(
                         "Swap.InsufficientQuantity",
@@ -1997,7 +2016,7 @@ public class WarehouseRepository(
                     .FirstSwapShelfMaterialBatches.FirstOrDefault(x =>
                         x.MaterialBatchId == batch.MaterialBatchId
                     )
-                    ?.ShelfMaterialBatch.WarehouseLocationShelfId;
+                    ?.ShelfMaterialBatch?.WarehouseLocationShelfId;
 
                 if (targetShelfId == null)
                     return Error.Validation(
@@ -2030,6 +2049,7 @@ public class WarehouseRepository(
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            logger.LogError(ex, "Failed to approve swap request {SwapRequestId}", swapRequestId);
             return Error.Failure("Swap.ApproveFailed", ex.Message);
         }
     }

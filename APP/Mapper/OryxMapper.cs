@@ -286,7 +286,8 @@ public class OryxMapper : Profile
         CreateMap<FinishedProduct, FinishedProductDto>();
         CreateMap<CreateProductPackageRequest, ProductPackage>();
         CreateMap<ProductPackage, ProductPackageDto>();
-        CreateMap<CreateProductPacking, ProductPacking>();
+        CreateMap<CreateProductPacking, ProductPacking>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
         CreateMap<CreateProductPackingList, ProductPackingList>();
         CreateMap<ProductPacking, ProductPackingDto>();
         CreateMap<ProductPackingList, ProductPackingListDto>();

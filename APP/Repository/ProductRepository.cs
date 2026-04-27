@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
@@ -593,65 +594,78 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
-        var product = await context
-            .Products.AsSplitQuery()
-            .Include(product => product.Packings)
-                .ThenInclude(p => p.PackingLists)
-            .FirstOrDefaultAsync(p => p.Id == productId);
+        var existingPackings = await context
+            .ProductPackings.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(p => p.PackingLists)
+            .Where(p => p.ProductId == productId)
+            .ToListAsync();
 
-        if (product is null)
+        var updatedExistingIds = new HashSet<Guid>();
+
+        foreach (var incoming in request)
         {
-            return ProductErrors.NotFound(productId);
-        }
-
-        // Existing packings for the product
-        var existingPackings = product.Packings.ToList();
-
-        // Packings from request grouped by name
-        foreach (var incomingPacking in request)
-        {
-            var existing = existingPackings.FirstOrDefault(p =>
-                p.Name.Equals(incomingPacking.Name, StringComparison.OrdinalIgnoreCase)
+            var existing = existingPackings.FirstOrDefault(e =>
+                (incoming.Id.HasValue && e.Id == incoming.Id.Value)
+                || (!incoming.Id.HasValue && e.Name == incoming.Name)
             );
 
             if (existing != null)
             {
-                // Update properties
-                mapper.Map(incomingPacking, existing);
-                existing.ProductId = productId;
-
-                // Remove old packing lists and replace with new
-                existing.PackingLists.Clear();
-
-                existing.PackingLists = incomingPacking
+                // Update
+                mapper.Map(incoming, existing);
+                existing.PackingLists = incoming
                     .PackingLists.Select(mapper.Map<ProductPackingList>)
                     .ToList();
-
-                // Mark as updated
-                context.ProductPackings.Update(existing);
+                updatedExistingIds.Add(existing.Id);
             }
             else
             {
-                // Add new packing
-                var productPacking = mapper.Map<ProductPacking>(incomingPacking);
-                productPacking.ProductId = productId;
-                await context.ProductPackings.AddAsync(productPacking);
+                // Add
+                var newPacking = mapper.Map<ProductPacking>(incoming);
+                newPacking.ProductId = productId;
+                newPacking.PackingLists = incoming
+                    .PackingLists.Select(mapper.Map<ProductPackingList>)
+                    .ToList();
+                await context.ProductPackings.AddAsync(newPacking);
             }
         }
 
-        // Delete packings not present in the new request
-        var incomingNames = request.Select(r => r.Name.ToLower()).ToHashSet();
-        var toRemove = existingPackings
-            .Where(p => !incomingNames.Contains(p.Name.ToLower()))
-            .ToList();
+        var toDelete = existingPackings.Where(e => !updatedExistingIds.Contains(e.Id)).ToList();
 
-        if (toRemove.Count > 0)
+        if (toDelete.Count != 0)
         {
-            context.ProductPackings.RemoveRange(toRemove);
+            var toDeleteIds = toDelete.Select(d => d.Id).ToList();
+
+            var actualUsedIds = await context
+                .BatchPackagingRecords.Where(bpr =>
+                    bpr.ProductPackingId.HasValue
+                    && toDeleteIds.Contains(bpr.ProductPackingId.Value)
+                )
+                .Select(bpr => bpr.ProductPackingId.Value)
+                .Distinct()
+                .ToListAsync();
+
+            if (actualUsedIds.Count != 0)
+            {
+                var usedNames = toDelete
+                    .Where(d => actualUsedIds.Contains(d.Id))
+                    .Select(d => d.Name)
+                    .ToList();
+                return Error.Failure(
+                    "ProductPacking.Delete",
+                    $"Cannot delete the following packing styles as they are already used in"
+                        + $" batch packaging records: {string.Join(", ", usedNames)}"
+                );
+            }
+
+            await context
+                .ProductPackings.Where(p => toDeleteIds.Contains(p.Id))
+                .ExecuteDeleteAsync();
         }
 
         await context.SaveChangesAsync();
-        return product.Id;
+        return productId;
     }
 
     public async Task<Result<IEnumerable<ProductPackingDto>>> GetProductPackings(Guid productId)
@@ -1200,10 +1214,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Name",
             "Packing Style",
             "Total Quantity",
+            "UOM",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
 
@@ -1216,6 +1231,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // 1. SCAN EXCEL FOR FILTER CRITERIA
         var excelProductCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var excelPackingStyles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var uomSymbols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
         {
@@ -1223,31 +1239,24 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
             var pCode = GetRaw("Product Code");
             var pStyle = GetRaw("Packing Style");
+            var uom = GetRaw("UOM");
 
             if (!string.IsNullOrEmpty(pCode))
                 excelProductCodes.Add(pCode);
             if (!string.IsNullOrEmpty(pStyle))
                 excelPackingStyles.Add(pStyle);
+            if (!string.IsNullOrEmpty(uom))
+                uomSymbols.Add(uom);
         }
 
         // 2. FETCH DEFAULTS AND LOOKUPS
-        // Fetch a default Production Schedule Product and Step (As requested)
-        var defaultScheduleProduct = await context.ProductionScheduleProducts.FirstOrDefaultAsync();
-        var defaultStep = await context.ProductionActivitySteps.FirstOrDefaultAsync();
-
-        if (defaultScheduleProduct == null || defaultStep == null)
-            return Error.Validation(
-                "Production.Config",
-                "Missing default Production Schedule or Step in the system."
-            );
-
         // Fetch Product Packing with Product Hierarchy
         var packingData = await context
             .ProductPackings.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(p => p.Product)
             .Where(pp =>
-                excelPackingStyles.Contains(pp.Name) && excelProductCodes.Contains(pp.Product.Code)
+                excelPackingStyles.Contains(pp.Name) || excelProductCodes.Contains(pp.Product.Code)
             )
             .ToListAsync();
 
@@ -1257,6 +1266,39 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             pp => pp,
             StringComparer.OrdinalIgnoreCase
         );
+
+        // Fetch Production Schedule Products for matching
+        var pspData = await context
+            .ProductionScheduleProducts.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(psp => psp.Product)
+            .Include(psp => psp.ProductPacking)
+            .Where(psp => excelProductCodes.Contains(psp.Product.Code))
+            .ToListAsync();
+
+        var pspIds = pspData.Select(p => p.Id).ToList();
+
+        // Fetch Production Activities and their steps for these PSPs
+        var activityData = await context
+            .ProductionActivities.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(pa => pa.Steps)
+            .Where(pa => pspIds.Contains(pa.ProductionScheduleProductId))
+            .ToListAsync();
+
+        var activityLookup = activityData
+            .GroupBy(pa => pa.ProductionScheduleProductId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var pspLookup = pspData
+            .GroupBy(psp => $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}")
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        var uoms = await context
+            .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))
+            .ToListAsync();
+
+        var uomLookUp = uoms.ToDictionary(u => u.Symbol, u => u, StringComparer.Ordinal);
 
         var warehouses = await context
             .Warehouses.Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
@@ -1272,9 +1314,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             string GetCell(string h) =>
                 headers.TryGetValue(h, out var col) ? worksheet.Cells[row, col].Text.Trim() : null;
 
-            var productCode = GetCell("Product Code");
-            var packingStyle = GetCell("Packing Style");
-            var batchNo = GetCell("Batch No.");
+            var productCode = GetCell("Product Code").Trim();
+            var packingStyle = GetCell("Packing Style").Trim();
+            var batchNo = GetCell("Batch No.").Trim();
+            var uomSymbol = GetCell("UOM").Trim();
 
             if (string.IsNullOrEmpty(productCode) || string.IsNullOrEmpty(batchNo))
                 continue;
@@ -1289,34 +1332,60 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 );
             }
 
+            // Resolve Production Schedule Product
+            if (!pspLookup.TryGetValue(packingKey, out var psp))
+            {
+                return Error.NotFound(
+                    "ProductionScheduleProduct",
+                    $"Row {row}: Production schedule for Product '{productCode}' and Packing '{packingStyle}' not found."
+                );
+            }
+
+            // Resolve Activity Step from PSP
+            if (!activityLookup.TryGetValue(psp.Id, out var activity))
+            {
+                return Error.Validation(
+                    "ProductionActivity",
+                    $"Row {row}: No production activity found for Product '{productCode}' and Packing '{packingStyle}'."
+                );
+            }
+
+            var activityStep = activity.Steps.OrderBy(s => s.Order).LastOrDefault();
+            if (activityStep == null)
+            {
+                return Error.Validation(
+                    "ProductionActivityStep",
+                    $"Row {row}: No production activity steps found for Product '{productCode}' and Packing '{packingStyle}'."
+                );
+            }
+
             // Parse shared data
             decimal.TryParse(GetCell("Total Quantity"), out var quantity);
             var mfgDate = GetCell("Manufacturing Date");
             var expiryDate = GetCell("Expiry Date");
 
             // 4. Create Manufacturing Record
-            manufacturingRecords.Add(
-                new BatchManufacturingRecord
-                {
-                    Id = Guid.NewGuid(),
-                    ProductionScheduleProductId = defaultScheduleProduct.Id,
-                    ProductionActivityStepId = defaultStep.Id,
-                    BatchNumber = batchNo,
-                    ManufacturingDate = ParseDate(mfgDate),
-                    ExpiryDate = ParseDate(expiryDate),
-                    BatchQuantity = quantity,
-                    Status = BatchManufacturingStatus.Approved, // Set appropriate default status
-                    IssuedDate = DateTime.UtcNow,
-                }
-            );
+            var bmr = new BatchManufacturingRecord
+            {
+                Id = Guid.NewGuid(),
+                ProductionScheduleProductId = psp.Id,
+                ProductionActivityStepId = activityStep.Id,
+                BatchNumber = batchNo,
+                ManufacturingDate = ParseDate(mfgDate),
+                ExpiryDate = ParseDate(expiryDate),
+                BatchQuantity = quantity,
+                Status = BatchManufacturingStatus.Approved, // Set appropriate default status
+                IssuedDate = DateTime.UtcNow,
+            };
+            manufacturingRecords.Add(bmr);
 
             // 5. Create Packaging Record
             packagingRecords.Add(
                 new BatchPackagingRecord
                 {
                     Id = Guid.NewGuid(),
-                    ProductionScheduleProductId = defaultScheduleProduct.Id,
-                    ProductionActivityStepId = defaultStep.Id,
+                    ProductionScheduleProductId = psp.Id,
+                    ProductionActivityStepId = activityStep.Id,
                     ProductPackingId = packing.Id,
                     BatchNumber = batchNo,
                     ManufacturingDate = ParseDate(mfgDate),
@@ -1339,14 +1408,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                         ? warehouse.Id
                         : null,
                     TotalQuantity = quantity,
+                    QuantityReceived = quantity,
                     ProductPackingId = packing.Id,
-                    BatchManufacturingRecordId = (
-                        await context.BatchManufacturingRecords.FirstAsync(b =>
-                            b.ProductionScheduleProductId == defaultScheduleProduct.Id
-                        )
-                    ).Id,
+                    BatchManufacturingRecordId = bmr.Id,
                     Approved = true,
-                    IsApproved = true,
+                    UoMId = uomLookUp.TryGetValue(uomSymbol, out var uom) ? uom.Id : null,
                 }
             );
         }
@@ -1411,8 +1477,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Total Quantity",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
         for (int i = 0; i < headers.Length; i++)
@@ -1476,6 +1542,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Where(p => !p.DeletedAt.HasValue)
             .Where(p => p.Division == division)
             .Where(p => !departmentId.HasValue || p.DepartmentId == departmentId)
+            .Where(p => !p.DeletedAt.HasValue)
             .ToListAsync();
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
@@ -1490,10 +1557,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Name",
             "Packing Style",
             "Total Quantity",
+            "UOM",
             "Batch No.",
             "FGTN ID",
-            " AR No.",
-            " Manufacturing Date",
+            "AR No.",
+            "Manufacturing Date",
             "Expiry Date",
         };
         for (int i = 0; i < headers.Length; i++)

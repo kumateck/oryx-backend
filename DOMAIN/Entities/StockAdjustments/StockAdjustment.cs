@@ -22,6 +22,6 @@ public class StockAdjustment : BaseEntity
 
 public enum StockAdjustmentTarget
 {
-    Item,
-    Material
+    Item = 0,
+    Material = 1,
 }

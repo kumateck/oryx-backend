@@ -7,16 +7,19 @@ public class Result
         switch (isSuccess)
         {
             case true when error != Error.None:
-                throw new InvalidOperationException();
             case false when error == Error.None:
                 throw new InvalidOperationException();
             default:
                 IsSuccess = isSuccess;
                 Error = error;
+                
+                if (error != Error.None)
+                {
+                    Errors = [error];
+                }
                 break;
         }
     }
-
     protected Result(bool isSuccess, IEnumerable<Error> errors)
     {
         var errorList = errors.ToList();
@@ -48,8 +51,11 @@ public class Result
     public static Result Failure(Error error) => new(false, error);
 
     public static Result Failure(List<Error> errors) => new(false, errors);
-
-    public static Result<TValue> Failure<TValue>(Error error) => new(default, false, error);
+    
+    public static Result<TValue> Failure<TValue>(Error error)
+    {
+        return new Result<TValue>(default, false, [error]);
+    }
 
     public static Result<TValue> Failure<TValue>(List<Error> errors) => new(default, false, errors);
 
@@ -79,6 +85,7 @@ public class Result<TValue> : Result
 
     public static implicit operator Result<TValue>(TValue value) => Create(value);
     public static implicit operator Result<TValue>(Error error) => Failure<TValue>(error);
+    
 
     public static implicit operator Result<TValue>(List<Error> error) => Failure<TValue>(error);
 }

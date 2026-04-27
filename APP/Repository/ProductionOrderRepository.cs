@@ -535,7 +535,8 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request)
     {
         var validation = await ValidateProductAllocation(request);
-        if (!validation.IsSuccess) return validation.Errors;
+        
+        if (!validation.IsSuccess) return Result.Failure<Guid>(validation.Errors);
 
         var allocationEntity = mapper.Map<AllocateProductionOrder>(request);
         await context.AllocateProductionOrders.AddAsync(allocationEntity);
@@ -593,12 +594,12 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             }
         }
 
-        foreach (var product in productionOrder.Products)
+        foreach (var product in 
+                 productionOrder.Products
+                     .Where(product => product.RemainingQuantity == 0 
+                                       && !product.Fulfilled))
         {
-            if (product.RemainingQuantity == 0 && !product.Fulfilled)
-            {
-                product.Fulfilled = true;
-            }
+            product.Fulfilled = true;
         }
 
         if (productionOrder.Products.All(p => p.Fulfilled))
@@ -685,7 +686,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         // 1) Load the production order + products (as no-tracking; we're not persisting here)
         var productionOrder = await context.ProductionOrders
-            .AsNoTracking()
+            .IgnoreQueryFilters()
             .Include(po => po.Products)
                 .ThenInclude(p => p.FulfilledQuantities) // ensure RemainingQuantity is accurate if it's computed from these
             .FirstOrDefaultAsync(po => po.Id == request.ProductionOrderId);

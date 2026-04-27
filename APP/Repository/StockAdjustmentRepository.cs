@@ -1,4 +1,5 @@
 using APP.IRepository;
+using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.InventoryLedgers;
 using DOMAIN.Entities.ItemTransactionLogs;
 using DOMAIN.Entities.StockAdjustments;
@@ -24,7 +25,7 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
             if (line.PhysicalCount < 0)
                 return Error.Validation(
                     "PhysicalCount.Invalid",
-                    $"Physical count cannot be negative for ProductId: {line.ProductId}"
+                    $"Physical count cannot be negative for ModelId: {line.ModelId}"
                 );
         }
 
@@ -49,15 +50,15 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
 
             foreach (var lineRequest in request.Lines)
             {
-                decimal systemQuantity = 0;
-                decimal variance = 0;
-                decimal postBalance = 0;
+                decimal systemQuantity;
+                decimal variance;
+                decimal postBalance;
 
                 var adjustmentLine = new StockAdjustmentLine
                 {
                     StockAdjustment = adjustment,
                     PhysicalCount = lineRequest.PhysicalCount,
-                    ReasonCode = lineRequest.ReasonCode,
+                    ReasonCode = lineRequest.ReasonCode.ToString(),
                     Notes = lineRequest.Notes,
                     CreatedById = userId,
                     CreatedAt = DateTime.UtcNow,
@@ -66,18 +67,21 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                 if (request.TargetType == StockAdjustmentTarget.Item)
                 {
                     var item = await context.Items.FirstOrDefaultAsync(i =>
-                        i.Id == lineRequest.ProductId
+                        i.Id == lineRequest.ModelId
                     );
                     if (item == null)
                         return Error.NotFound(
                             "Item.NotFound",
-                            $"Item not found: {lineRequest.ProductId}"
+                            $"Item not found: {lineRequest.ModelId}"
                         );
 
                     systemQuantity = item.AvailableQuantity;
                     variance = lineRequest.PhysicalCount - systemQuantity;
 
-                    if (variance != 0 && string.IsNullOrWhiteSpace(lineRequest.ReasonCode))
+                    if (
+                        variance != 0
+                        && string.IsNullOrWhiteSpace(lineRequest.ReasonCode.ToString())
+                    )
                         return Error.Validation(
                             "ReasonCode.Required",
                             $"Reason code is required for non-zero variance on item: {item.Name}"
@@ -112,17 +116,20 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     var shelfBatch = await context
                         .ShelfMaterialBatches.AsSplitQuery()
                         .Include(s => s.MaterialBatch)
-                        .FirstOrDefaultAsync(s => s.Id == lineRequest.ProductId);
+                        .FirstOrDefaultAsync(s => s.Id == lineRequest.ModelId);
                     if (shelfBatch == null)
                         return Error.NotFound(
                             "ShelfMaterialBatch.NotFound",
-                            $"Shelf material batch not found: {lineRequest.ProductId}"
+                            $"Shelf material batch not found: {lineRequest.ModelId}"
                         );
 
                     systemQuantity = shelfBatch.Quantity;
                     variance = lineRequest.PhysicalCount - systemQuantity;
 
-                    if (variance != 0 && string.IsNullOrWhiteSpace(lineRequest.ReasonCode))
+                    if (
+                        variance != 0
+                        && string.IsNullOrWhiteSpace(lineRequest.ReasonCode.ToString())
+                    )
                         return Error.Validation(
                             "ReasonCode.Required",
                             $"Reason code is required for non-zero variance on batch: {shelfBatch.MaterialBatch.BatchNumber}"
@@ -131,14 +138,33 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     if (variance == 0)
                         continue;
 
+                    // Update Shelf Quantity
                     shelfBatch.Quantity += variance;
                     postBalance = shelfBatch.Quantity;
+
+                    // Update Global Batch Total to maintain consistency
+                    shelfBatch.MaterialBatch.TotalQuantity += variance;
 
                     adjustmentLine.ShelfMaterialBatchId = shelfBatch.Id;
                     adjustmentLine.SystemQuantitySnapshot = systemQuantity;
                     adjustmentLine.Variance = variance;
 
                     context.ShelfMaterialBatches.Update(shelfBatch);
+                    context.MaterialBatches.Update(shelfBatch.MaterialBatch);
+
+                    // Backward compatibility/Consistency: Log to BinCardInformation
+                    var binCard = new BinCardInformation
+                    {
+                        MaterialBatchId = shelfBatch.MaterialBatchId,
+                        WarehouseId = request.WarehouseId,
+                        QuantityReceived = variance > 0 ? variance : 0,
+                        QuantityIssued = variance < 0 ? Math.Abs(variance) : 0,
+                        BalanceQuantity = postBalance,
+                        Description = $"Stock Adjustment: {request.AdjustmentNumber}",
+                        CreatedAt = DateTime.UtcNow,
+                        UoMId = shelfBatch.UoMId,
+                    };
+                    await context.BinCardInformation.AddAsync(binCard);
                 }
 
                 await context.StockAdjustmentLines.AddAsync(adjustmentLine);
@@ -150,11 +176,11 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     ReferenceId = request.AdjustmentNumber,
                     ItemId =
                         request.TargetType == StockAdjustmentTarget.Item
-                            ? lineRequest.ProductId
+                            ? lineRequest.ModelId
                             : null,
                     ShelfMaterialBatchId =
                         request.TargetType == StockAdjustmentTarget.Material
-                            ? lineRequest.ProductId
+                            ? lineRequest.ModelId
                             : null,
                     ChangeAmount = variance,
                     PostTransactionBalance = postBalance,

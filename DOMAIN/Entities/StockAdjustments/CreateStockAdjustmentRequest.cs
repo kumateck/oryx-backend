@@ -24,13 +24,24 @@ public class CreateStockAdjustmentRequest
 public class CreateStockAdjustmentLineRequest
 {
     [Required]
-    public Guid ProductId { get; set; } // ID of Item or ShelfMaterialBatch
+    public Guid ModelId { get; set; } // ID of Item or ShelfMaterialBatch
 
     [Required]
     public decimal PhysicalCount { get; set; }
 
     [Required]
-    public string ReasonCode { get; set; }
+    public StockAdjustmentReasonCode ReasonCode { get; set; }
 
     public string Notes { get; set; }
+}
+
+public enum StockAdjustmentReasonCode
+{
+    PhysicalCount = 0,
+    Damage = 1,
+    Theft = 2,
+    Expiry = 3,
+    DataEntryError = 4,
+    ReturnedGoods = 5,
+    Other = 6,
 }

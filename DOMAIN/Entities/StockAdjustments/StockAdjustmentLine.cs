@@ -23,7 +23,9 @@ public class StockAdjustmentLine : BaseEntity
     public decimal Variance { get; set; }
 
     [Required]
+    [StringLength(1000)]
     public string ReasonCode { get; set; }
 
+    [StringLength(10000)]
     public string Notes { get; set; }
 }
