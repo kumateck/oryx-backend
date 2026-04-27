@@ -27,6 +27,7 @@ public class ProductBillOfMaterialDto
 
 public class CreateProductPacking
 {
+    public Guid? Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
     public int PackPerShipper { get; set; }

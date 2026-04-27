@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
@@ -593,27 +594,74 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
-        // 1. Hard delete all existing packings for this product first
-        // This bypasses your global soft-delete interceptor
-        await context.ProductPackings.Where(p => p.ProductId == productId).ExecuteDeleteAsync();
+        var existingPackings = await context
+            .ProductPackings.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(p => p.PackingLists)
+            .Where(p => p.ProductId == productId)
+            .ToListAsync();
 
-        var productPackings = request
-            .Select(incomingPacking =>
+        var updatedExistingIds = new HashSet<Guid>();
+
+        foreach (var incoming in request)
+        {
+            var existing = existingPackings.FirstOrDefault(e =>
+                (incoming.Id.HasValue && e.Id == incoming.Id.Value)
+                || (!incoming.Id.HasValue && e.Name == incoming.Name)
+            );
+
+            if (existing != null)
             {
-                var packing = mapper.Map<ProductPacking>(incomingPacking);
-                packing.ProductId = productId;
-
-                packing.PackingLists = incomingPacking
+                // Update
+                mapper.Map(incoming, existing);
+                existing.PackingLists = incoming
                     .PackingLists.Select(mapper.Map<ProductPackingList>)
                     .ToList();
+                updatedExistingIds.Add(existing.Id);
+            }
+            else
+            {
+                // Add
+                var newPacking = mapper.Map<ProductPacking>(incoming);
+                newPacking.ProductId = productId;
+                newPacking.PackingLists = incoming
+                    .PackingLists.Select(mapper.Map<ProductPackingList>)
+                    .ToList();
+                await context.ProductPackings.AddAsync(newPacking);
+            }
+        }
 
-                return packing;
-            })
-            .ToList();
+        var toDelete = existingPackings.Where(e => !updatedExistingIds.Contains(e.Id)).ToList();
 
-        if (productPackings.Count != 0)
+        if (toDelete.Count != 0)
         {
-            await context.ProductPackings.AddRangeAsync(productPackings);
+            var toDeleteIds = toDelete.Select(d => d.Id).ToList();
+
+            var actualUsedIds = await context
+                .BatchPackagingRecords.Where(bpr =>
+                    bpr.ProductPackingId.HasValue
+                    && toDeleteIds.Contains(bpr.ProductPackingId.Value)
+                )
+                .Select(bpr => bpr.ProductPackingId.Value)
+                .Distinct()
+                .ToListAsync();
+
+            if (actualUsedIds.Count != 0)
+            {
+                var usedNames = toDelete
+                    .Where(d => actualUsedIds.Contains(d.Id))
+                    .Select(d => d.Name)
+                    .ToList();
+                return Error.Failure(
+                    "ProductPacking.Delete",
+                    $"Cannot delete the following packing styles as they are already used in"
+                        + $" batch packaging records: {string.Join(", ", usedNames)}"
+                );
+            }
+
+            await context
+                .ProductPackings.Where(p => toDeleteIds.Contains(p.Id))
+                .ExecuteDeleteAsync();
         }
 
         await context.SaveChangesAsync();
@@ -1219,8 +1267,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         );
 
         // Fetch Production Schedule Products for matching
-        var pspData = await context.ProductionScheduleProducts
-            .IgnoreQueryFilters()
+        var pspData = await context
+            .ProductionScheduleProducts.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(psp => psp.Product)
             .Include(psp => psp.ProductPacking)
@@ -1230,8 +1278,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var pspIds = pspData.Select(p => p.Id).ToList();
 
         // Fetch Production Activities and their steps for these PSPs
-        var activityData = await context.ProductionActivities
-            .IgnoreQueryFilters()
+        var activityData = await context
+            .ProductionActivities.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(pa => pa.Steps)
             .Where(pa => pspIds.Contains(pa.ProductionScheduleProductId))
@@ -1243,11 +1291,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var pspLookup = pspData
             .GroupBy(psp => $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}")
-            .ToDictionary(
-                g => g.Key,
-                g => g.First(),
-                StringComparer.OrdinalIgnoreCase
-            );
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         var uoms = await context
             .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))

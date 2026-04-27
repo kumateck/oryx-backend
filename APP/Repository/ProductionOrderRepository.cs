@@ -686,7 +686,7 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         // 1) Load the production order + products (as no-tracking; we're not persisting here)
         var productionOrder = await context.ProductionOrders
-            .AsNoTracking()
+            .IgnoreQueryFilters()
             .Include(po => po.Products)
                 .ThenInclude(p => p.FulfilledQuantities) // ensure RemainingQuantity is accurate if it's computed from these
             .FirstOrDefaultAsync(po => po.Id == request.ProductionOrderId);
