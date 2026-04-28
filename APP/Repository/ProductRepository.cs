@@ -1263,11 +1263,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .ToListAsync();
 
         // Create a composite lookup: "ProductCode|PackingName"
-        var packingLookup = packingData.ToDictionary(
-            pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
-            pp => pp,
-            StringComparer.OrdinalIgnoreCase
-        );
+        var packingLookup = packingData
+            .GroupBy(
+                pp => $"{pp.Product.Code.Trim()}|{pp.Name.Trim()}",
+                StringComparer.OrdinalIgnoreCase
+            )
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         // Fetch Products with Routes for creating missing activities
         var products = await context
@@ -1282,11 +1283,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Where(p => excelProductCodes.Contains(p.Code))
             .ToListAsync();
 
-        var productLookup = products.ToDictionary(
-            p => p.Code,
-            p => p,
-            StringComparer.OrdinalIgnoreCase
-        );
+        var productLookup = products
+            .GroupBy(p => p.Code, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         // Fetch Production Schedule Products for matching
         var pspData = await context
@@ -1307,28 +1306,33 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Where(pa => pspIds.Contains(pa.ProductionScheduleProductId))
             .ToListAsync();
 
-        var activityLookup = activityData.ToDictionary(
-            pa => pa.ProductionScheduleProductId,
-            pa => pa
-        );
+        var activityLookup = activityData
+            .GroupBy(pa => pa.ProductionScheduleProductId)
+            .ToDictionary(g => g.Key, g => g.First());
 
         // Create a composite lookup: "ProductCode|PackingName|BatchNumber"
-        var pspLookup = pspData.ToDictionary(
-            psp =>
-                $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}|{(psp.BatchNumber ?? "").Trim()}",
-            psp => psp,
-            StringComparer.OrdinalIgnoreCase
-        );
+        var pspLookup = pspData
+            .GroupBy(
+                psp =>
+                    $"{psp.Product.Code.Trim()}|{(psp.ProductPacking?.Name ?? "").Trim()}|{(psp.BatchNumber ?? "").Trim()}",
+                StringComparer.OrdinalIgnoreCase
+            )
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         var uoms = await context
             .UnitOfMeasures.Where(u => uomSymbols.Contains(u.Symbol))
             .ToListAsync();
 
-        var uomLookUp = uoms.ToDictionary(u => u.Symbol, u => u, StringComparer.Ordinal);
+        var uomLookUp = uoms.GroupBy(u => u.Symbol, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
 
-        var warehouses = await context
+        var warehousesData = await context
             .Warehouses.Where(w => w.Type == WarehouseType.FinishedGoodsStorage)
-            .ToDictionaryAsync(w => w.Name.ToLower(), w => w);
+            .ToListAsync();
+
+        var warehouses = warehousesData
+            .GroupBy(w => w.Name.ToLower())
+            .ToDictionary(g => g.Key, g => g.First());
 
         var manufacturingRecords = new List<BatchManufacturingRecord>();
         var packagingRecords = new List<BatchPackagingRecord>();
@@ -1475,7 +1479,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             {
                 return Error.Validation(
                     "ProductionActivityStep",
-                    $"Row {row}: No production activity steps found for Product '{productCode}' and Packing '{packingStyle}'."
+                    $"Row {row}: No production procedures found for Product '{productCode}'."
+                        + $" Kindly create procedures for this product and try again"
                 );
             }
 
