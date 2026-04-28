@@ -10,9 +10,6 @@ public class StockAdjustment : BaseEntity
     [StringLength(50)]
     public string AdjustmentNumber { get; set; }
 
-    public Guid WarehouseId { get; set; }
-    public Warehouse Warehouse { get; set; }
-
     public DateTime AdjustmentDate { get; set; }
 
     public StockAdjustmentTarget TargetType { get; set; }
