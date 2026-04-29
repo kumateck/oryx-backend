@@ -1918,6 +1918,7 @@ public class WarehouseRepository(
                     .ThenInclude(b => b.Material)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(b => b.UoM)
+            .Include(b => b.ActionedBy)
             .AsQueryable();
 
         if (request.DepartmentId.HasValue)
