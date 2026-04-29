@@ -3975,9 +3975,21 @@ public class ProductionScheduleRepository(
 
         var department = extraPacking.ProductionScheduleProduct.Product.Department;
 
-        var fromWarehouse = department.Warehouses.FirstOrDefault(q =>
-            q.Type == WarehouseType.PackagedStorage
-        );
+        Warehouse fromWarehouse;
+
+        if (extraPacking.Material.Kind == MaterialKind.Raw)
+        {
+            fromWarehouse = department.Warehouses.FirstOrDefault(q =>
+                q.Type == WarehouseType.RawMaterialStorage
+            );
+        }
+        else
+        {
+            fromWarehouse = department.Warehouses.FirstOrDefault(q =>
+                q.Type == WarehouseType.PackagedStorage
+            );
+        }
+
         if (fromWarehouse is null)
             return UserErrors.WarehouseNotFound(MaterialKind.Package);
 
@@ -4007,6 +4019,7 @@ public class ProductionScheduleRepository(
                     .ThenInclude(pp => pp.Department)
                         .ThenInclude(p => p.Warehouses)
                             .ThenInclude(warehouse => warehouse.ArrivalLocation)
+            .Include(productionExtraPacking => productionExtraPacking.Material)
             .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId);
 
         if (productionExtraPacking is null)
@@ -4014,9 +4027,20 @@ public class ProductionScheduleRepository(
 
         var department = productionExtraPacking.ProductionScheduleProduct.Product.Department;
 
-        var fromWarehouse = department.Warehouses.FirstOrDefault(q =>
-            q.Type == WarehouseType.PackagedStorage
-        );
+        Warehouse fromWarehouse;
+
+        if (productionExtraPacking.Material.Kind == MaterialKind.Raw)
+        {
+            fromWarehouse = department.Warehouses.FirstOrDefault(q =>
+                q.Type == WarehouseType.RawMaterialStorage
+            );
+        }
+        else
+        {
+            fromWarehouse = department.Warehouses.FirstOrDefault(q =>
+                q.Type == WarehouseType.PackagedStorage
+            );
+        }
         if (fromWarehouse is null)
             return UserErrors.WarehouseNotFound(MaterialKind.Package);
 

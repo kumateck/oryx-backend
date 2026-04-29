@@ -8,9 +8,6 @@ public class CreateStockAdjustmentRequest
     public string AdjustmentNumber { get; set; }
 
     [Required]
-    public Guid WarehouseId { get; set; }
-
-    [Required]
     public DateTime AdjustmentDate { get; set; }
 
     [Required]

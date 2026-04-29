@@ -16,10 +16,6 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
         Guid userId
     )
     {
-        var warehouse = await context.Warehouses.AnyAsync(w => w.Id == request.WarehouseId);
-        if (!warehouse)
-            return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
-
         foreach (var line in request.Lines)
         {
             if (line.PhysicalCount < 0)
@@ -36,7 +32,6 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
             var adjustment = new StockAdjustment
             {
                 AdjustmentNumber = request.AdjustmentNumber,
-                WarehouseId = request.WarehouseId,
                 AdjustmentDate = request.AdjustmentDate,
                 TargetType = request.TargetType,
                 CreatedById = userId,
@@ -116,6 +111,13 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     var shelfBatch = await context
                         .ShelfMaterialBatches.AsSplitQuery()
                         .Include(s => s.MaterialBatch)
+                        .Include(shelfMaterialBatch => shelfMaterialBatch.WarehouseLocationShelf)
+                            .ThenInclude(warehouseLocationShelf =>
+                                warehouseLocationShelf.WarehouseLocationRack
+                            )
+                                .ThenInclude(warehouseLocationRack =>
+                                    warehouseLocationRack.WarehouseLocation
+                                )
                         .FirstOrDefaultAsync(s => s.Id == lineRequest.ModelId);
                     if (shelfBatch == null)
                         return Error.NotFound(
@@ -156,7 +158,11 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     var binCard = new BinCardInformation
                     {
                         MaterialBatchId = shelfBatch.MaterialBatchId,
-                        WarehouseId = request.WarehouseId,
+                        WarehouseId = shelfBatch
+                            .WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId,
                         QuantityReceived = variance > 0 ? variance : 0,
                         QuantityIssued = variance < 0 ? Math.Abs(variance) : 0,
                         BalanceQuantity = postBalance,

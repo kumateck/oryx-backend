@@ -3717,24 +3717,32 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .UnitOfMeasures.Where(u => excelUomSymbols.Contains(u.Symbol))
             .ToListAsync();
 
-        var uomLookup = uoms.ToDictionary(
-            u => u.Symbol.Trim(),
-            u => u.Id,
-            StringComparer.OrdinalIgnoreCase
-        );
+        var uomLookup = uoms
+            .GroupBy(u => u.Symbol.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => g.First().Id,
+                StringComparer.OrdinalIgnoreCase
+            );
 
-        var shelfLookup = await context
+        var shelfLookup = (await context
             .WarehouseLocationShelves.Where(s => excelShelfCodes.Contains(s.Code))
             .Select(s => new
             {
                 ShelfId = s.Id,
                 Key = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name + "|" + s.Code,
             })
-            .ToDictionaryAsync(x => x.Key, x => x.ShelfId, StringComparer.OrdinalIgnoreCase);
+            .ToListAsync())
+            .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ShelfId, StringComparer.OrdinalIgnoreCase);
 
-        var materials = await context
+        var materialsData = await context
             .Materials.Where(m => excelMaterialCodes.Contains(m.Code))
-            .ToDictionaryAsync(m => m.Code.Trim(), m => m, StringComparer.OrdinalIgnoreCase);
+            .ToListAsync();
+
+        var materials = materialsData
+            .GroupBy(m => m.Code.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         var batches = await context
             .MaterialBatches.AsSplitQuery()
@@ -3746,10 +3754,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 ) && excelMaterialCodes.Contains(b.Material.Code)
             )
             .ToListAsync();
-        var batchLookup = batches.ToDictionary(
-            b => (b.MaterialId, (b.BatchNumber ?? "").Trim().ToUpperInvariant()),
-            b => b
-        );
+        var batchLookup = batches
+            .GroupBy(b => (b.MaterialId, (b.BatchNumber ?? "").Trim().ToUpperInvariant()))
+            .ToDictionary(
+                g => g.Key,
+                g => g.First()
+            );
 
         var warehouses = await context
             .Warehouses.IgnoreQueryFilters()

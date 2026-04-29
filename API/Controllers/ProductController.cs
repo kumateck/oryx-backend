@@ -531,7 +531,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.ImportProductStockFromExcel(file);
+        var result = await repository.ImportProductStockFromExcel(file, Guid.Parse(userId));
 
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
