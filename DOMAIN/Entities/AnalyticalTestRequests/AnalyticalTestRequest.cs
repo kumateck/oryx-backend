@@ -36,9 +36,14 @@ public class AnalyticalTestRequest : BaseEntity
     public User TestedBy { get; set; }
     public DateTime? TestedAt { get; set; }
     public DateTime? AssignedAt { get; set; }
-    
+
     public List<AnalyticalTestRequestAssignee> Assignees { get; set; } = [];
-    [StringLength(1000)] public string ArNumber { get; set; }
+
+    [StringLength(1000)]
+    public string ArNumber { get; set; }
+
+    [StringLength(100)]
+    public string IssueNumber { get; set; }
 }
 
 public class AnalyticalTestRequestAssignee : BaseEntity
@@ -51,13 +56,15 @@ public class AnalyticalTestRequestAssignee : BaseEntity
 
 public class ProductState : BaseEntity
 {
-    [StringLength(1000)] public string Name { get; set; }
+    [StringLength(1000)]
+    public string Name { get; set; }
 }
+
 public enum TestStage
 {
     Intermediate,
     Bulk,
-    Finished
+    Finished,
 }
 
 public enum AnalyticalTestStatus
@@ -78,5 +85,5 @@ public enum State
     CompressedTablet,
     FilledCapsules,
     Ointment,
-    Coated
+    Coated,
 }

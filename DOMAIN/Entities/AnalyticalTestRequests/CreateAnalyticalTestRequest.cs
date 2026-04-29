@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class CreateAnalyticalTestRequest
@@ -16,6 +18,9 @@ public class CreateAnalyticalTestRequest
     public Guid? ProductionActivityStepId { get; set; }
     public int NumberOfContainers { get; set; }
     public DateTime? SampledAt { get; set; }
+
+    [StringLength(100, ErrorMessage = "Issue Number cannot be more than 100")]
+    public string IssueNumber { get; set; }
 }
 
 public class UpdateAnalyticalTestRequest
