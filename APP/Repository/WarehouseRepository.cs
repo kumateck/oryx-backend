@@ -2111,7 +2111,7 @@ public class WarehouseRepository(
                 //  Match by MaterialBatchId to find target shelf in the first warehouse side
                 var targetShelfId = swapRequest
                     .FirstSwapShelfMaterialBatches.FirstOrDefault(x =>
-                        x.MaterialBatchId == batch.MaterialBatchId
+                        x.MaterialBatch.MaterialId == batch.MaterialBatch.MaterialId
                     )
                     ?.ShelfMaterialBatch?.WarehouseLocationShelfId;
 
