@@ -1,3 +1,4 @@
+using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -1120,6 +1121,11 @@ public class WarehouseRepository(
         var query = context
             .Grns.AsSplitQuery()
             .Include(c => c.MaterialBatches)
+                .ThenInclude(mb => mb.Checklist)
+                    .ThenInclude(cl => cl.Supplier)
+            .Include(c => c.MaterialBatches)
+                .ThenInclude(mb => mb.Checklist)
+                    .ThenInclude(cl => cl.Manufacturer)
             .Include(c => c.CreatedBy)
             .AsQueryable();
 
@@ -1138,11 +1144,21 @@ public class WarehouseRepository(
             query = query.WhereSearch(searchQuery, w => w.GrnNumber, w => w.CarrierName);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<GrnListDto>
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var grns = await paginatedResult.Data.ToListAsync();
+        var dtos = await MapGrnListDtos(grns);
+
+        return Result.Success(
+            new Paginateable<IEnumerable<GrnListDto>>
+            {
+                Data = dtos,
+                PageIndex = paginatedResult.PageIndex,
+                PageCount = paginatedResult.PageCount,
+                TotalRecordCount = paginatedResult.TotalRecordCount,
+                NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
+                StartPageIndex = paginatedResult.StartPageIndex,
+                StopPageIndex = paginatedResult.StopPageIndex,
+            }
         );
     }
 
@@ -1159,6 +1175,11 @@ public class WarehouseRepository(
             .Grns.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(c => c.MaterialBatches)
+                .ThenInclude(mb => mb.Checklist)
+                    .ThenInclude(cl => cl.Supplier)
+            .Include(c => c.MaterialBatches)
+                .ThenInclude(mb => mb.Checklist)
+                    .ThenInclude(cl => cl.Manufacturer)
             .Include(c => c.CreatedBy)
             .AsQueryable();
 
@@ -1197,12 +1218,87 @@ public class WarehouseRepository(
             );
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<GrnListDto>
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
+        var grns = await paginatedResult.Data.ToListAsync();
+        var dtos = await MapGrnListDtos(grns);
+
+        return Result.Success(
+            new Paginateable<IEnumerable<GrnListDto>>
+            {
+                Data = dtos,
+                PageIndex = paginatedResult.PageIndex,
+                PageCount = paginatedResult.PageCount,
+                TotalRecordCount = paginatedResult.TotalRecordCount,
+                NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
+                StartPageIndex = paginatedResult.StartPageIndex,
+                StopPageIndex = paginatedResult.StopPageIndex,
+            }
         );
+    }
+
+    private async Task<IEnumerable<GrnListDto>> MapGrnListDtos(List<Grn> grns)
+    {
+        var batchIds = grns.SelectMany(g => g.MaterialBatches.Select(mb => mb.Id)).ToList();
+
+        var samplings = await context
+            .MaterialSamplings.AsNoTracking()
+            .AsSplitQuery()
+            .Where(s => batchIds.Contains(s.MaterialBatchId))
+            .Include(s => s.CreatedBy)
+            .ToListAsync();
+
+        var arNumbers = samplings
+            .Select(s => s.ArNumber)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct()
+            .ToList();
+
+        var atrs = await context
+            .AnalyticalTestRequests.AsNoTracking()
+            .AsSplitQuery()
+            .Where(a => arNumbers.Contains(a.ArNumber))
+            .Include(a => a.Assignees)
+                .ThenInclude(aa => aa.User)
+            .ToListAsync();
+
+        return grns.Select(grn =>
+        {
+            var dto = mapper.Map<GrnListDto>(grn);
+            var firstBatch = grn.MaterialBatches.FirstOrDefault();
+            if (firstBatch != null)
+            {
+                dto.SupplierName = firstBatch.Checklist?.Supplier?.Name;
+                dto.ManufacturerName = firstBatch.Checklist?.Manufacturer?.Name;
+
+                var sampling = samplings.FirstOrDefault(s => s.MaterialBatchId == firstBatch.Id);
+                if (sampling != null)
+                {
+                    dto.ArNumber = sampling.ArNumber;
+                    dto.SampledBy =
+                        sampling.CreatedBy != null
+                            ? $"{sampling.CreatedBy.FirstName} {sampling.CreatedBy.LastName}"
+                            : null;
+                    dto.SampledOn = sampling.SampleDate;
+                    dto.SampleQuantity = sampling.SampleQuantity;
+                    dto.IssueNo = sampling.IssueNumber;
+
+                    if (!string.IsNullOrEmpty(sampling.ArNumber))
+                    {
+                        var atr = atrs.FirstOrDefault(a => a.ArNumber == sampling.ArNumber);
+                        if (atr != null)
+                        {
+                            dto.AnalysedBy = string.Join(
+                                ", ",
+                                atr.Assignees.Select(a =>
+                                    $"{a.User.FirstName} " + $"{a.User.LastName}"
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+            return dto;
+        });
     }
 
     public async Task<
