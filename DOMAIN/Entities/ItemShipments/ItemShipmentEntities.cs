@@ -7,6 +7,7 @@ using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Vendors;
 
 namespace DOMAIN.Entities.ItemShipments;
 
@@ -15,11 +16,12 @@ namespace DOMAIN.Entities.ItemShipments;
 public class ItemShipmentInvoice : BaseEntity
 {
     [StringLength(255)] public string Code { get; set; }
-    public Guid? SupplierId { get; set; }
-    public Supplier Supplier { get; set; }
+    public Guid? VendorId { get; set; }
+    public Vendor Vendor { get; set; }
     public List<ItemShipmentInvoiceItem> Items { get; set; } = [];
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
+    public DateTime ShipmentArrivedAt { get; set; }
     public Currency Currency { get; set; }
     public DateTime? PaidAt { get; set; }
 }
@@ -62,8 +64,8 @@ public class ItemBillingSheet : BaseEntity
 {
     [StringLength(1000)] public string Code { get; set; }
     [StringLength(1000)] public string BillOfLading { get; set; }
-    public Guid? SupplierId { get; set; }
-    public Supplier Supplier { get; set; }
+    public Guid? VendorId { get; set; }
+    public Vendor Vendor { get; set; }
     public Guid InvoiceId { get; set; }
     public ItemShipmentInvoice Invoice { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
@@ -173,7 +175,9 @@ public class ItemBillingSheetChargeDto
 public class CreateItemShipmentInvoice
 {
     public string Code { get; set; }
-    public Guid? SupplierId { get; set; }
+    public Guid? VendorId { get; set; }
+    
+    public DateTime ShipmentArrivedAt { get; set; }
     public List<CreateItemShipmentInvoiceItem> Items { get; set; } = [];
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
@@ -183,6 +187,7 @@ public class CreateItemShipmentInvoiceItem
 {
     public Guid ItemId { get; set; }
     public Guid UoMId { get; set; }
+    public Guid PurchaseOrderId { get; set; }
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
@@ -205,7 +210,7 @@ public class UpdateItemBillingSheetRequest
 {
     public string Code { get; set; }
     public string BillOfLading { get; set; }
-    public Guid? SupplierId { get; set; }
+    public Guid? VendorId { get; set; }
     public Guid InvoiceId { get; set; }
     public DateTime ExpectedArrivalDate { get; set; }
     public DateTime FreeTimeExpiryDate { get; set; }

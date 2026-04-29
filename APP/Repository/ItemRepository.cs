@@ -331,10 +331,10 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             if (!exists) return Error.Validation("Currency.NotFound", "Currency not found.");
         }
 
-        if (request.SupplierId.HasValue)
+        if (request.VendorId.HasValue)
         {
-            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.SupplierId.Value);
-            if (!exists) return Error.Validation("SupplierId.NotFound", "Supplier not found.");
+            var exists = await context.Vendors.AnyAsync(i => i.Id == request.VendorId.Value);
+            if (!exists) return Error.Validation("Vendor.NotFound", "Supplier not found.");
         }
 
         var invoice = mapper.Map<ItemShipmentInvoice>(request);
@@ -354,7 +354,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 .ThenInclude(item => item.UoM)
             .Include(si => si.Items)
                 .ThenInclude(item => item.Currency)
-            .Include(si => si.Supplier)
+            .Include(si => si.Vendor)
             .Include(si => si.Currency)
             .FirstOrDefaultAsync(si => si.Id == invoiceId);
 
@@ -371,7 +371,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 .ThenInclude(item => item.Item)
             .Include(si => si.Items)
                 .ThenInclude(item => item.UoM)
-            .Include(si => si.Supplier)
+            .Include(si => si.Vendor)
             .Include(si => si.Currency)
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
@@ -426,9 +426,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             if (!exists) return Error.Validation("Currency.NotFound", "Currency not found.");
         }
 
-        if (request.SupplierId.HasValue)
+        if (request.VendorId.HasValue)
         {
-            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.SupplierId.Value);
+            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.VendorId.Value);
             if (!exists) return Error.Validation("SupplierId.NotFound", "Supplier not found.");
         }
 
@@ -733,9 +733,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     {
         var billingSheet = await context.ItemBillingSheets
             .AsSplitQuery()
-            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Vendor)
                 .ThenInclude(s => s.Currency)
-            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Vendor)
                 .ThenInclude(s => s.Country)
             .Include(bs => bs.Invoice)
                 .ThenInclude(i => i.Items)
@@ -756,9 +756,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     {
         var billingSheet = await context.ItemBillingSheets
             .AsSplitQuery()
-            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Vendor)
                 .ThenInclude(s => s.Currency)
-            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Vendor)
                 .ThenInclude(s => s.Country)
             .Include(bs => bs.Invoice)
                 .ThenInclude(i => i.Items)
@@ -777,7 +777,7 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
     public async Task<Result<Paginateable<IEnumerable<ItemBillingSheetDto>>>> GetItemBillingSheets(int page, int pageSize, string searchQuery, BillingSheetStatus? status)
     {
         var query = context.ItemBillingSheets
-            .Include(bs => bs.Supplier)
+            .Include(bs => bs.Vendor)
             .Include(bs => bs.Invoice)
             .AsQueryable();
 
@@ -807,9 +807,9 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             return Error.NotFound("ItemBillingSheet.NotFound", "Item billing sheet not found");
         }
         
-        if (request.SupplierId.HasValue)
+        if (request.VendorId.HasValue)
         {
-            var exists = await context.Suppliers.AnyAsync(i => i.Id == request.SupplierId.Value);
+            var exists = await context.Vendors.AnyAsync(i => i.Id == request.VendorId.Value);
             if (!exists) return Error.Validation("Supplier.NotFound", "Supplier not found");
         }
 
