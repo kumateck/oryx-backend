@@ -1849,23 +1849,59 @@ public class WarehouseRepository(
                 "Some provided shelf material batches could not be found."
             );
 
-        // Ensure all batches are for the same material
+        // Validate counts
+        if (
+            request.FirstSwapShelfMaterialBatches.Count
+            != request.SecondSwapShelfMaterialBatches.Count
+        )
+            return Error.Validation(
+                "Swap.CountMismatch",
+                "The number of batches to swap must be equal on both sides."
+            );
+
+        // Fetch material batch details to get MaterialIds
         var allMaterialBatchIds = request
             .FirstSwapShelfMaterialBatches.Select(m => m.MaterialBatchId)
             .Concat(request.SecondSwapShelfMaterialBatches.Select(m => m.MaterialBatchId))
             .Distinct()
             .ToList();
 
-        var materialIds = await context
+        var materialBatchDetails = await context
             .MaterialBatches.Where(b => allMaterialBatchIds.Contains(b.Id))
-            .Select(b => b.MaterialId)
-            .Distinct()
+            .Select(b => new { b.Id, b.MaterialId })
             .ToListAsync();
 
-        if (materialIds.Count > 1)
+        var batchToMaterialMap = materialBatchDetails.ToDictionary(x => x.Id, x => x.MaterialId);
+
+        // Map materials for both sides
+        var firstSideMaterials = request
+            .FirstSwapShelfMaterialBatches.Select(m => batchToMaterialMap[m.MaterialBatchId])
+            .ToList();
+        var secondSideMaterials = request
+            .SecondSwapShelfMaterialBatches.Select(m => batchToMaterialMap[m.MaterialBatchId])
+            .ToList();
+
+        // Check for uniqueness on each side
+        if (firstSideMaterials.Distinct().Count() != firstSideMaterials.Count)
+            return Error.Validation(
+                "Swap.DuplicateMaterial",
+                "Each material can only appear once in the first warehouse's swap list."
+            );
+
+        if (secondSideMaterials.Distinct().Count() != secondSideMaterials.Count)
+            return Error.Validation(
+                "Swap.DuplicateMaterial",
+                "Each material can only appear once in the second warehouse's swap list."
+            );
+
+        // Check if sets of materials match
+        var firstSet = firstSideMaterials.ToHashSet();
+        var secondSet = secondSideMaterials.ToHashSet();
+
+        if (!firstSet.SetEquals(secondSet))
             return Error.Validation(
                 "Swap.MaterialMismatch",
-                "All batches in a swap request must belong to the same material."
+                "The set of materials to swap must be identical on both sides."
             );
 
         // Create entity
@@ -1873,6 +1909,7 @@ public class WarehouseRepository(
         {
             FirstWarehouseId = request.FirstWarehouseId,
             SecondWarehouseId = request.SecondWarehouseId,
+            StockRequisitionId = request.StockRequisitionId,
             FirstSwapShelfMaterialBatches = request
                 .FirstSwapShelfMaterialBatches.Select(m => new SwapShelfMaterialBatch
                 {
@@ -2001,12 +2038,12 @@ public class WarehouseRepository(
             .Include(s => s.FirstWarehouse)
             .Include(s => s.SecondWarehouse)
             .Include(s => s.FirstSwapShelfMaterialBatches)
-                .ThenInclude(x => x.ShelfMaterialBatch)
-            .Include(s => s.SecondSwapShelfMaterialBatches)
-                .ThenInclude(x => x.ShelfMaterialBatch)
+                .ThenInclude(swapShelfMaterialBatch => swapShelfMaterialBatch.MaterialBatch)
+                    .ThenInclude(materialBatch => materialBatch.Material)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(swapShelfMaterialBatch => swapShelfMaterialBatch.MaterialBatch)
                     .ThenInclude(materialBatch => materialBatch.Material)
+            .Include(s => s.StockRequisition)
             .FirstOrDefaultAsync(s => s.Id == swapRequestId);
 
         if (swapRequest is null)
@@ -2137,6 +2174,68 @@ public class WarehouseRepository(
                         Note = $"Swapped from {secondWarehouseName} → {firstWarehouseName}",
                     }
                 );
+            }
+
+            if (swapRequest.StockRequisitionId.HasValue && swapRequest.StockRequisition != null)
+            {
+                var productionScheduleProductId = swapRequest
+                    .StockRequisition
+                    .ProductionScheduleProductId;
+
+                if (productionScheduleProductId.HasValue)
+                {
+                    // --- Update reservations on First Warehouse side
+                    foreach (var firstBatch in swapRequest.FirstSwapShelfMaterialBatches)
+                    {
+                        var reservation =
+                            await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
+                                r.ProductionScheduleProductId == productionScheduleProductId.Value
+                                && r.MaterialBatchId == firstBatch.MaterialBatchId
+                                && r.WarehouseLocationShelfId == firstBatch.ShelfMaterialBatchId
+                            );
+
+                        if (reservation != null)
+                        {
+                            var matchingSecondBatch =
+                                swapRequest.SecondSwapShelfMaterialBatches.FirstOrDefault(x =>
+                                    x.MaterialBatch.MaterialId
+                                    == firstBatch.MaterialBatch.MaterialId
+                                );
+
+                            if (matchingSecondBatch != null)
+                            {
+                                reservation.MaterialBatchId = matchingSecondBatch.MaterialBatchId;
+                                context.MaterialBatchReservedQuantities.Update(reservation);
+                            }
+                        }
+                    }
+
+                    // --- Update reservations on Second Warehouse side
+                    foreach (var secondBatch in swapRequest.SecondSwapShelfMaterialBatches)
+                    {
+                        var reservation =
+                            await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
+                                r.ProductionScheduleProductId == productionScheduleProductId.Value
+                                && r.MaterialBatchId == secondBatch.MaterialBatchId
+                                && r.WarehouseLocationShelfId == secondBatch.ShelfMaterialBatchId
+                            );
+
+                        if (reservation != null)
+                        {
+                            var matchingFirstBatch =
+                                swapRequest.FirstSwapShelfMaterialBatches.FirstOrDefault(x =>
+                                    x.MaterialBatch.MaterialId
+                                    == secondBatch.MaterialBatch.MaterialId
+                                );
+
+                            if (matchingFirstBatch != null)
+                            {
+                                reservation.MaterialBatchId = matchingFirstBatch.MaterialBatchId;
+                                context.MaterialBatchReservedQuantities.Update(reservation);
+                            }
+                        }
+                    }
+                }
             }
 
             // --- Mark as approved
