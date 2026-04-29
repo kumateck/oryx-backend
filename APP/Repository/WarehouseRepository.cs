@@ -2065,7 +2065,8 @@ public class WarehouseRepository(
                 if (targetShelfId == null)
                     return Error.Validation(
                         "Swap.MissingTargetShelf",
-                        $"No matching shelf found in second warehouse for material batch {batch.MaterialBatchId}"
+                        $"No matching shelf found in second warehouse "
+                            + $"for material batch {batch.MaterialBatchId}"
                     );
 
                 await context.ShelfMaterialBatches.AddAsync(
