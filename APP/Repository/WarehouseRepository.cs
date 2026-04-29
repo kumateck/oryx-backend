@@ -1918,6 +1918,7 @@ public class WarehouseRepository(
                     .ThenInclude(b => b.Material)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(b => b.UoM)
+            .Include(b => b.ActionedBy)
             .AsQueryable();
 
         if (request.DepartmentId.HasValue)
@@ -1942,6 +1943,11 @@ public class WarehouseRepository(
                     || s.SecondWarehouse.DepartmentId == request.DepartmentId
                 );
             }
+        }
+
+        if (request.Status.HasValue)
+        {
+            query = query.Where(s => s.Status == request.Status.Value);
         }
 
         if (!string.IsNullOrEmpty(request.SearchQuery))
