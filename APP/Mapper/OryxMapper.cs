@@ -323,7 +323,9 @@ public class OryxMapper : Profile
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
         CreateMap<CreateProductionScheduleProduct, ProductionScheduleProduct>();
-        CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>();
+        CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>()
+            .ForMember(dest => dest.HasStarted, opt => opt.MapFrom(src => src.ProductionActivity != null))
+            .ForMember(dest => dest.ProductionActivityId, opt => opt.MapFrom(src => src.ProductionActivity.Id));
 
         CreateMap<CreateFinalPacking, FinalPacking>();
         CreateMap<CreateFinalPackingMaterial, FinalPackingMaterial>();
