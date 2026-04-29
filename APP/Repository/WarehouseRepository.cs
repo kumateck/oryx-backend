@@ -1944,6 +1944,11 @@ public class WarehouseRepository(
             }
         }
 
+        if (request.Status.HasValue)
+        {
+            query = query.Where(s => s.Status == request.Status.Value);
+        }
+
         if (!string.IsNullOrEmpty(request.SearchQuery))
         {
             query = query.WhereSearch(

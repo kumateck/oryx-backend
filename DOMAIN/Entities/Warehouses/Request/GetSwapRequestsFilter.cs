@@ -7,6 +7,7 @@ public class GetSwapRequestsFilter : PagedQuery
     public string SearchQuery { get; set; }
     public Guid? DepartmentId { get; set; }
     public SwapRequestDirection? Direction { get; set; }
+    public SwapRequestStatus? Status { get; set; }
 }
 
 public enum SwapRequestDirection
