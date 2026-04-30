@@ -1260,20 +1260,12 @@ public class WarehouseRepository(
             .Distinct()
             .ToList();
 
-        var atrs = await context
-            .AnalyticalTestRequests.AsNoTracking()
-            .AsSplitQuery()
-            .Where(a => arNumbers.Contains(a.ArNumber))
-            .Include(a => a.Assignees)
-                .ThenInclude(aa => aa.User)
-            .ToListAsync();
-
         return grns.Select(grn =>
         {
             var dto = mapper.Map<T>(grn);
             if (dto is IGrnEnrichedDto enrichedDto)
             {
-                PopulateGrnEnrichedData(enrichedDto, grn, samplings, atrs);
+                PopulateGrnEnrichedData(enrichedDto, grn, samplings);
             }
 
             if (dto is GrnDto grnDto)
@@ -1282,7 +1274,7 @@ public class WarehouseRepository(
                 {
                     var batch = grn.MaterialBatches[i];
                     var batchDto = grnDto.MaterialBatches[i];
-                    PopulateBatchEnrichedData(batchDto, batch, samplings, atrs);
+                    PopulateBatchEnrichedData(batchDto, batch, samplings);
                 }
             }
             return dto;
@@ -1292,8 +1284,7 @@ public class WarehouseRepository(
     private void PopulateBatchEnrichedData(
         IGrnEnrichedDto dto,
         MaterialBatch batch,
-        List<MaterialSampling> samplings,
-        List<AnalyticalTestRequest> atrs
+        List<MaterialSampling> samplings
     )
     {
         dto.SupplierName = batch.Checklist?.Supplier?.Name;
@@ -1309,32 +1300,20 @@ public class WarehouseRepository(
                     : null;
             dto.SampledOn = sampling.SampleDate;
             dto.SampleQuantity = sampling.SampleQuantity;
-
-            if (!string.IsNullOrEmpty(sampling.ArNumber))
-            {
-                var atr = atrs.FirstOrDefault(a => a.ArNumber == sampling.ArNumber);
-                if (atr != null)
-                {
-                    dto.AnalysedBy = string.Join(
-                        ", ",
-                        atr.Assignees.Select(a => $"{a.User.FirstName} {a.User.LastName}")
-                    );
-                }
-            }
+            dto.AnalysedBy = $"{sampling.CreatedBy?.FirstName} {sampling.CreatedBy?.LastName}";
         }
     }
 
     private void PopulateGrnEnrichedData(
         IGrnEnrichedDto dto,
         Grn grn,
-        List<MaterialSampling> samplings,
-        List<AnalyticalTestRequest> atrs
+        List<MaterialSampling> samplings
     )
     {
         var firstBatch = grn.MaterialBatches.FirstOrDefault();
         if (firstBatch != null)
         {
-            PopulateBatchEnrichedData(dto, firstBatch, samplings, atrs);
+            PopulateBatchEnrichedData(dto, firstBatch, samplings);
         }
     }
 
