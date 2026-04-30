@@ -90,7 +90,7 @@ public class GrnListDto
     public string DeclarationNumber { get; set; }
 }
 
-public class GrnDto : IGrnEnrichedDto
+public class GrnDto
 {
     public Guid Id { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -111,11 +111,4 @@ public class GrnDto : IGrnEnrichedDto
 
     [StringLength(10000)]
     public string DeclarationNumber { get; set; }
-    public string SupplierName { get; set; }
-    public string ManufacturerName { get; set; }
-    public string ArNumber { get; set; }
-    public string SampledBy { get; set; }
-    public DateTime? SampledOn { get; set; }
-    public decimal SampleQuantity { get; set; }
-    public string AnalysedBy { get; set; }
 }
