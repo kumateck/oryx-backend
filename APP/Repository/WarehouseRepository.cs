@@ -3,11 +3,13 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Users;
@@ -1105,9 +1107,13 @@ public class WarehouseRepository(
             .Include(mb => mb.CreatedBy)
             .FirstOrDefaultAsync(g => g.Id == id);
 
-        return grn is null
-            ? Error.NotFound("Grn.NotFound", "GRN not found")
-            : mapper.Map<GrnDto>(grn);
+        if (grn is null)
+        {
+            return Error.NotFound("Grn.NotFound", "GRN not found");
+        }
+
+        var dtos = await MapGrnDtos<GrnDto>([grn]);
+        return dtos.First();
     }
 
     public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(
@@ -1146,7 +1152,7 @@ public class WarehouseRepository(
 
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
         var grns = await paginatedResult.Data.ToListAsync();
-        var dtos = await MapGrnListDtos(grns);
+        var dtos = await MapGrnDtos<GrnListDto>(grns);
 
         return Result.Success(
             new Paginateable<IEnumerable<GrnListDto>>
@@ -1220,7 +1226,7 @@ public class WarehouseRepository(
 
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
         var grns = await paginatedResult.Data.ToListAsync();
-        var dtos = await MapGrnListDtos(grns);
+        var dtos = await MapGrnDtos<GrnListDto>(grns);
 
         return Result.Success(
             new Paginateable<IEnumerable<GrnListDto>>
@@ -1236,7 +1242,8 @@ public class WarehouseRepository(
         );
     }
 
-    private async Task<IEnumerable<GrnListDto>> MapGrnListDtos(List<Grn> grns)
+    private async Task<IEnumerable<T>> MapGrnDtos<T>(List<Grn> grns)
+        where T : class, IGrnEnrichedDto
     {
         var batchIds = grns.SelectMany(g => g.MaterialBatches.Select(mb => mb.Id)).ToList();
 
@@ -1263,41 +1270,49 @@ public class WarehouseRepository(
 
         return grns.Select(grn =>
         {
-            var dto = mapper.Map<GrnListDto>(grn);
-            var firstBatch = grn.MaterialBatches.FirstOrDefault();
-            if (firstBatch != null)
+            var dto = mapper.Map<T>(grn);
+            PopulateGrnEnrichedData(dto, grn, samplings, atrs);
+            return dto;
+        });
+    }
+
+    private void PopulateGrnEnrichedData(
+        IGrnEnrichedDto dto,
+        Grn grn,
+        List<MaterialSampling> samplings,
+        List<AnalyticalTestRequest> atrs
+    )
+    {
+        var firstBatch = grn.MaterialBatches.FirstOrDefault();
+        if (firstBatch != null)
+        {
+            dto.SupplierName = firstBatch.Checklist?.Supplier?.Name;
+            dto.ManufacturerName = firstBatch.Checklist?.Manufacturer?.Name;
+
+            var sampling = samplings.FirstOrDefault(s => s.MaterialBatchId == firstBatch.Id);
+            if (sampling != null)
             {
-                dto.SupplierName = firstBatch.Checklist?.Supplier?.Name;
-                dto.ManufacturerName = firstBatch.Checklist?.Manufacturer?.Name;
+                dto.ArNumber = sampling.ArNumber;
+                dto.SampledBy =
+                    sampling.CreatedBy != null
+                        ? $"{sampling.CreatedBy.FirstName} {sampling.CreatedBy.LastName}"
+                        : null;
+                dto.SampledOn = sampling.SampleDate;
+                dto.SampleQuantity = sampling.SampleQuantity;
 
-                var sampling = samplings.FirstOrDefault(s => s.MaterialBatchId == firstBatch.Id);
-                if (sampling != null)
+                if (!string.IsNullOrEmpty(sampling.ArNumber))
                 {
-                    dto.ArNumber = sampling.ArNumber;
-                    dto.SampledBy =
-                        sampling.CreatedBy != null
-                            ? $"{sampling.CreatedBy.FirstName} {sampling.CreatedBy.LastName}"
-                            : null;
-                    dto.SampledOn = sampling.SampleDate;
-                    dto.SampleQuantity = sampling.SampleQuantity;
-
-                    if (!string.IsNullOrEmpty(sampling.ArNumber))
+                    var atr = atrs.FirstOrDefault(a => a.ArNumber == sampling.ArNumber);
+                    if (atr != null)
                     {
-                        var atr = atrs.FirstOrDefault(a => a.ArNumber == sampling.ArNumber);
-                        if (atr != null)
-                        {
-                            dto.AnalysedBy = string.Join(
-                                ", ",
-                                atr.Assignees.Select(a =>
-                                    $"{a.User.FirstName} " + $"{a.User.LastName}"
-                                )
-                            );
-                        }
+                        dto.AnalysedBy = string.Join(
+                            ", ",
+                            atr.Assignees.Select(a => $"{a.User.FirstName} {a.User.LastName}")
+                        );
                     }
                 }
             }
-            return dto;
-        });
+        }
     }
 
     public async Task<
