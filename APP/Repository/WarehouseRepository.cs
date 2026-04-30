@@ -1280,7 +1280,6 @@ public class WarehouseRepository(
                             : null;
                     dto.SampledOn = sampling.SampleDate;
                     dto.SampleQuantity = sampling.SampleQuantity;
-                    dto.IssueNo = sampling.IssueNumber;
 
                     if (!string.IsNullOrEmpty(sampling.ArNumber))
                     {

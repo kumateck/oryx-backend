@@ -126,8 +126,7 @@ public class FormRepository(
 
     public async Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId)
     {
-        var form = await context.Forms
-            .FirstOrDefaultAsync(f => f.Id == formId);
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
             return FormErrors.NotFound(formId);
@@ -137,7 +136,9 @@ public class FormRepository(
         await context.FormFields.Where(f => f.FormSection.FormId == formId).ExecuteDeleteAsync();
         await context.FormSections.Where(s => s.FormId == formId).ExecuteDeleteAsync();
         await context.FormReviewers.Where(r => r.FormId == formId).ExecuteDeleteAsync();
-        await context.FormFieldAssignees.Where(fa => fa.FormAssignee.FormId == formId).ExecuteDeleteAsync();
+        await context
+            .FormFieldAssignees.Where(fa => fa.FormAssignee.FormId == formId)
+            .ExecuteDeleteAsync();
         await context.FormAssignees.Where(a => a.FormId == formId).ExecuteDeleteAsync();
 
         mapper.Map(request, form);
@@ -772,6 +773,7 @@ public class FormRepository(
                 return MaterialErrors.NotFound(request.MaterialBatchId.Value);
 
             materialBatch.Status = BatchStatus.TestAssigned;
+            materialBatch.IssueNumber = request.IssueNumber;
         }
 
         if (request.BatchManufacturingRecordId.HasValue)
@@ -780,7 +782,8 @@ public class FormRepository(
                 .AnalyticalTestRequests.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-                    && r.Stage == request.Stage && !r.DeletedAt.HasValue
+                    && r.Stage == request.Stage
+                    && !r.DeletedAt.HasValue
                 );
 
             if (atr == null)
@@ -788,12 +791,13 @@ public class FormRepository(
 
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
-            
-            atr.Assignees = request.FormFieldAssignees
-                .Select(f => new AnalyticalTestRequestAssignee
+            atr.IssueNumber = request.IssueNumber;
+
+            atr.Assignees = request
+                .FormFieldAssignees.Select(f => new AnalyticalTestRequestAssignee
                 {
                     AnalyticalTestRequestId = atr.Id,
-                    UserId = f.AssigneeId.GetValueOrDefault()
+                    UserId = f.AssigneeId.GetValueOrDefault(),
                 })
                 .DistinctBy(a => a.UserId)
                 .ToList();
