@@ -26,6 +26,8 @@ public interface IProductionScheduleRepository
         Guid departmentId);
     Task<Result> UpdateProductionSchedule(UpdateProductionScheduleRequest request, Guid scheduleId,
         Guid userId);
+    Task<Result> AddProductToSchedule(Guid scheduleId, AddProductsToScheduleRequest request, Guid userId);
+    Task<Result> RemoveProductFromSchedule(Guid productionScheduleProductId);
     Task<Result> DeleteProductionSchedule(Guid scheduleId, Guid userId);
     Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
         Guid scheduleId, Guid userId);
