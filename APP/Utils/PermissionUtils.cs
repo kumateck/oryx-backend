@@ -18,6 +18,7 @@ public static class PermissionModules
     public const string Settings = "Settings";
     public const string InventoryManagement = "Inventory Management";
     public const string OrganizationalStructure = "Organizational Structure";
+    public const string Reports = "Reports";
 }
 
 public static class PermissionSubmodules
@@ -54,7 +55,9 @@ public static class PermissionSubmodules
     public const string IssueStockRequisitions = "Issue Stock Requisitions";
     public const string ExtraPackagingRequisitions = "Extra Packaging Requisitions";
     public const string MaterialReturnNote = "Material Return Note";
+    public const string ExpiredMaterials = "Expired Materials";
     public const string MaterialLocation = "Material Location";
+    public const string StockAdjustment = "Stock Adjustment";
     public const string StockTransferIssues = "Stock Transfer Issues";
     public const string StockTransferredAllocated = "Stock Transferred Allocated";
 
@@ -79,6 +82,7 @@ public static class PermissionSubmodules
     public const string IssueBmr = "Issue BMR";
     public const string AnalyticalTestRequests = "Analytical Test Requests";
     public const string PendingApprovals = "Pending Approvals";
+    public const string Verification = "Verification";
 
     // Finished Goods Warehouse
     public const string CustomerManagement = "Customer Management";
@@ -165,6 +169,9 @@ public static class PermissionSubmodules
     public const string Holidays = "Holidays";
     public const string ShiftsType = "Shifts Type";
     public const string ShiftsSchedule = "Shifts Schedule";
+
+    // Reports
+    public const string Reports = "Reports";
 }
 
 public static class PermissionKeys
@@ -278,19 +285,26 @@ public static class PermissionKeys
     public const string CanViewRejectedPackagingMaterials = "CanViewRejectedPackagingMaterials";
     public const string CanViewRawMaterialRequisitions = "CanViewRawMaterialRequisitions";
     public const string CanIssueRawMaterialRequisitions = "CanIssueRawMaterialRequisitions";
+    public const string CanSwapRawMaterialRequisitions = "CanSwapRawMaterialRequisitions";
     public const string CanViewPackagingMaterialRequisitions = "CanViewPackagingMaterialRequisitions";
     public const string CanIssuePackagingMaterialRequisitions = "CanIssuePackagingMaterialRequisitions";
+    public const string CanSwapPackagingMaterialRequisitions = "CanSwapPackagingMaterialRequisitions";
     public const string CanViewMaterialsReturnNote = "CanViewMaterialsReturnNote";
+    public const string CanViewExpiredMaterials = "CanViewExpiredMaterials";
     public const string CanViewRawMaterialLocationChartList = "CanViewRawMaterialLocationChartList";
     public const string CanReassignRawMaterialStock = "CanReassignRawMaterialStock";
+    public const string CanViewRawMaterialLocationList = "CanViewRawMaterialLocationList";
     public const string CanViewPackagingMaterialLocationChartList = "CanViewPackagingMaterialLocationChartList";
     public const string CanReassignPackagingMaterialStock = "CanReassignPackagingMaterialStock";
+    public const string CanViewPackagingMaterialLocationList = "CanViewPackagingMaterialLocationList";
     public const string CanViewRawMaterialTransferList = "CanViewRawMaterialTransferList";
     public const string CanIssueRawMaterialStockTransfers = "CanIssueRawMaterialStockTransfers";
     public const string CanViewPackagingMaterialTransferList = "CanViewPackagingMaterialTransferList";
     public const string CanIssuePackagingMaterialStockTransfers = "CanIssuePackagingMaterialStockTransfers";
     public const string CanAssignRawMaterialStockTransfers = "CanAssignRawMaterialStockTransfers";
     public const string CanAssignPackagingMaterialStockTransfers = "CanAssignPackagingMaterialStockTransfers";
+    public const string CanViewMaterialStockAdjustment = "CanViewMaterialStockAdjustment";
+    public const string CanCreateMaterialStockAdjustment = "CanCreateMaterialStockAdjustment";
 
     // Production
     public const string CanViewRawMaterialRequisitionsForProduction = "CanViewRawMaterialRequisitions";
@@ -304,6 +318,7 @@ public static class PermissionKeys
     public const string CanEditProductionPlan = "CanEditProductionPlan";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
     public const string CanCreateProductSchedule = "CanCreateProductSchedule";
+    public const string CanEditProductSchedule = "CanEditProductSchedule";
     public const string CanViewIncomingStockTransferRequests = "CanViewIncomingStockTransferRequests";
     public const string CanApproveIncomingStockTransferRequest = "CanApproveIncomingStockTransferRequest";
     public const string CanRejectIncomingStockTransferRequest = "CanRejectIncomingStockTransferRequest";
@@ -758,6 +773,15 @@ public static class PermissionKeys
     public const string CanCreateShiftSchedule = "CanCreateShiftSchedule";
     public const string CanEditShiftSchedule = "CanEditShiftSchedule";
     public const string CanDeleteShiftSchedule = "CanDeleteShiftSchedule";
+
+    // Reports
+    public const string CanViewHumanResourcesReport = "CanViewHumanResourcesReport";
+    public const string CanViewInventoryReport = "CanViewInventoryReport";
+    public const string CanViewQcAndQaReport = "CanViewQcAndQaReport";
+    public const string CanViewWarehouseReport = "CanViewWarehouseReport";
+    public const string CanViewStoreAndInventoryReport = "CanViewStoreAndInventoryReport";
+    public const string CanViewProcurementReport = "CanViewProcurementReport";
+    public const string CanViewFgtnReport = "CanViewFgtnReport";
 }
 
 public static class PermissionUtils
@@ -900,16 +924,23 @@ public static class PermissionUtils
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.RejectedMaterials, PermissionKeys.CanViewRejectedPackagingMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanViewRawMaterialRequisitions);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanSwapRawMaterialRequisitions);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanSwapPackagingMaterialRequisitions);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExtraPackagingRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExtraPackagingRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanViewMaterialsReturnNote);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanAssignPackagingMaterialsStockToShelves);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewExpiredMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationChartList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanReassignRawMaterialStock);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewPackagingMaterialLocationChartList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanReassignPackagingMaterialStock);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewPackagingMaterialLocationList);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment, PermissionKeys.CanViewMaterialStockAdjustment);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment, PermissionKeys.CanCreateMaterialStockAdjustment);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanViewRawMaterialTransferList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanIssueRawMaterialStockTransfers);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanViewPackagingMaterialTransferList);
@@ -931,6 +962,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanEditProductionPlan);
         addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanViewProductSchedules);
         addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanCreateProductSchedule);
+        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanEditProductSchedule);
         addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanViewIncomingStockTransferRequests);
         addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanApproveIncomingStockTransferRequest);
         addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanRejectIncomingStockTransferRequest);
@@ -994,13 +1026,13 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanIssueBmr);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequests);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanTakeSamples);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyProduct);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyRawMaterialSpecification);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyPackagingMaterialSpecification);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyProductSpecification);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyRawMaterialArd);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyPackagingMaterialArd);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanVerifyProductArd);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProduct);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyRawMaterialSpecification);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyPackagingMaterialSpecification);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProductSpecification);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyRawMaterialArd);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyPackagingMaterialArd);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProductArd);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanViewPendingApprovals);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanApprovePendingApproval);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectPendingApproval);
@@ -1387,6 +1419,15 @@ public static class PermissionUtils
         addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanCreateShiftSchedule);
         addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanEditShiftSchedule);
         addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanDeleteShiftSchedule);
+
+        // Reports
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewHumanResourcesReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewInventoryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewQcAndQaReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewWarehouseReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewStoreAndInventoryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewProcurementReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewFgtnReport);
 
         return permissions;
     }

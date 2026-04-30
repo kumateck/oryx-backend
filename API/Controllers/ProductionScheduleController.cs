@@ -116,6 +116,42 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     /// <summary>
+    /// Adds more products to a specific Production Schedule.
+    /// </summary>
+    /// <param name="request">The AddProductsToScheduleRequest object.</param>
+    /// <param name="scheduleId">The ID of the Production Schedule.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("{scheduleId}/add-products")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddProductToSchedule([FromBody] AddProductsToScheduleRequest request, Guid scheduleId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.AddProductToSchedule(scheduleId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Removes a product from a Production Schedule if it has not started.
+    /// </summary>
+    /// <param name="productionScheduleProductId">The ID of the Production Schedule Product to be removed.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpDelete("product/{productionScheduleProductId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RemoveProductFromSchedule(Guid productionScheduleProductId)
+    {
+        var result = await repository.RemoveProductFromSchedule(productionScheduleProductId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes a specific Production Schedule.
     /// </summary>
     /// <param name="scheduleId">The ID of the Production Schedule to be deleted.</param>

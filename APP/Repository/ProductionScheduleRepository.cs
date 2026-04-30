@@ -224,6 +224,72 @@ public class ProductionScheduleRepository(
         return Result.Success();
     }
 
+    public async Task<Result> AddProductToSchedule(
+        Guid scheduleId,
+        AddProductsToScheduleRequest request,
+        Guid userId
+    )
+    {
+        var existingSchedule = await context
+            .ProductionSchedules.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Include(s => s.Products)
+            .FirstOrDefaultAsync(s => s.Id == scheduleId);
+
+        if (existingSchedule is null)
+        {
+            return Error.NotFound(
+                "ProductionSchedule.NotFound",
+                "Production schedule is not found"
+            );
+        }
+
+        var newProducts = mapper.Map<List<ProductionScheduleProduct>>(request.Products);
+        foreach (var product in newProducts)
+        {
+            product.ProductionScheduleId = scheduleId;
+            existingSchedule.Products.Add(product);
+        }
+
+        existingSchedule.LastUpdatedById = userId;
+        context.ProductionSchedules.Update(existingSchedule);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> RemoveProductFromSchedule(Guid productionScheduleProductId)
+    {
+        var product = await context.ProductionScheduleProducts.FirstOrDefaultAsync(p =>
+            p.Id == productionScheduleProductId
+        );
+
+        if (product is null)
+        {
+            return Error.NotFound(
+                "ProductionScheduleProduct.NotFound",
+                "Production schedule product is not found"
+            );
+        }
+
+        if (
+            await context.ProductionActivities.AnyAsync(a =>
+                a.ProductionScheduleProductId == productionScheduleProductId
+            )
+        )
+        {
+            return Error.Validation(
+                "ProductionScheduleProduct.Validation",
+                "Cannot remove a product that has already started production"
+            );
+        }
+
+        await context
+            .ProductionScheduleProducts.Where(p => p.Id == productionScheduleProductId)
+            .ExecuteDeleteAsync();
+
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteProductionSchedule(Guid scheduleId, Guid userId)
     {
         var schedule = await context.ProductionSchedules.FirstOrDefaultAsync(s =>
