@@ -41,6 +41,7 @@ public class MaterialBatchDto
     public DateTime? ReturnDate { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public string IssueNumber { get; set; }
 }
 
 public class MaterialBatchListDto
@@ -68,6 +69,7 @@ public class MaterialBatchListDto
     public MaterialBatchChecklistDto Checklist { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public string IssueNumber { get; set; }
 }
 
 public class MaterialBatchReducedDto
@@ -94,6 +96,7 @@ public class MaterialBatchReducedDto
     public DateTime? RetestDate { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public string IssueNumber { get; set; }
 }
 
 public class DistributedMaterialBatchDto

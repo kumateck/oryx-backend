@@ -24,9 +24,6 @@ public class Grn : BaseEntity
     public string DeclarationNumber { get; set; }
     public Status Status { get; set; }
     public List<MaterialBatch> MaterialBatches { get; set; }
-
-    [StringLength(100)]
-    public string IssueNumber { get; set; }
 }
 
 public enum Status
@@ -87,7 +84,6 @@ public class GrnListDto
     public DateTime? SampledOn { get; set; }
     public decimal SampleQuantity { get; set; }
     public string AnalysedBy { get; set; }
-    public string IssueNo { get; set; }
 }
 
 public class GrnDto
@@ -111,5 +107,4 @@ public class GrnDto
 
     [StringLength(10000)]
     public string DeclarationNumber { get; set; }
-    public string IssueNumber { get; set; }
 }

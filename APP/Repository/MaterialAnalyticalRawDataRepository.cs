@@ -13,15 +13,22 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper) : IMaterialAnalyticalRawDataRepository
+public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, IMapper mapper)
+    : IMaterialAnalyticalRawDataRepository
 {
-    public async Task<Result<Guid>> CreateAnalyticalRawData(CreateMaterialAnalyticalRawDataRequest request)
+    public async Task<Result<Guid>> CreateAnalyticalRawData(
+        CreateMaterialAnalyticalRawDataRequest request
+    )
     {
-        var existingAnalyticalRawData = await context.MaterialAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.SpecNumber == request.SpecNumber);
+        var existingAnalyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(
+            ad => ad.SpecNumber == request.SpecNumber
+        );
         if (existingAnalyticalRawData is not null)
         {
-            return Error.Validation("MaterialAnalyticalRawData.Exists", $"Analytical raw data with this spec number {request.SpecNumber} already exists.");
+            return Error.Validation(
+                "MaterialAnalyticalRawData.Exists",
+                $"Analytical raw data with this spec number {request.SpecNumber} already exists."
+            );
         }
 
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);
@@ -30,13 +37,17 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         {
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
-        
-        var stpNumber = await context.MaterialStandardTestProcedures
-            .AnyAsync(mstp => mstp.Id == request.StpId && mstp.MaterialId == request.MaterialId);
+
+        var stpNumber = await context.MaterialStandardTestProcedures.AnyAsync(mstp =>
+            mstp.Id == request.StpId && mstp.MaterialId == request.MaterialId
+        );
 
         if (!stpNumber)
         {
-            return Error.Validation("MaterialAnalyticalRawData.StpNumberNotFound", "Stp number not found.");
+            return Error.Validation(
+                "MaterialAnalyticalRawData.StpNumberNotFound",
+                "Stp number not found."
+            );
         }
 
         var analyticalRawData = mapper.Map<MaterialAnalyticalRawData>(request);
@@ -47,10 +58,18 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         return analyticalRawData.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, MaterialKind materialKind, bool? isVerified = null)
+    public async Task<
+        Result<Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>>
+    > GetAnalyticalRawData(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind materialKind,
+        bool? isVerified = null
+    )
     {
-        var query = context.MaterialAnalyticalRawData
-            .AsSplitQuery()
+        var query = context
+            .MaterialAnalyticalRawData.AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
@@ -64,104 +83,134 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery,
+            query = query.WhereSearch(
+                searchQuery,
                 ad => ad.SpecNumber,
                 ad => ad.MaterialStandardTestProcedure.StpNumber,
-                ad => ad.MaterialStandardTestProcedure.Material.Name);
+                ad => ad.MaterialStandardTestProcedure.Material.Name
+            );
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
-            entity => mapper.Map<MaterialAnalyticalRawDataDto>(entity, opts =>
-                opts.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData)));
+            entity =>
+                mapper.Map<MaterialAnalyticalRawDataDto>(
+                    entity,
+                    opts => opts.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData)
+                )
+        );
     }
 
     public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id)
     {
-        var analyticalRawData = await context.MaterialAnalyticalRawData
-            .AsSplitQuery()
+        var analyticalRawData = await context
+            .MaterialAnalyticalRawData.AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
-            .ThenInclude(ad => ad.Material)
+                .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
             .FirstOrDefaultAsync(ad => ad.Id == id);
 
         return analyticalRawData is null
             ? Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found")
-            : mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData,
+            : mapper.Map<MaterialAnalyticalRawDataDto>(
+                analyticalRawData,
                 opts =>
                 {
                     opts.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
-                });
+                }
+            );
     }
 
     public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterial(Guid id)
     {
-        var analyticalRawData = await context.MaterialAnalyticalRawData
-            .AsSplitQuery()
+        var analyticalRawData = await context
+            .MaterialAnalyticalRawData.AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
-            .ThenInclude(ad => ad.Material)
+                .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
             .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == id);
 
-        if (analyticalRawData is null) return Error.NotFound("MaterialAnalyticalRawData.NotFound", "No material standard test procedure for this material found.");
+        if (analyticalRawData is null)
+            return Error.NotFound(
+                "MaterialAnalyticalRawData.NotFound",
+                "No material standard test procedure for this material found."
+            );
 
-        return mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData, opt =>
-        {
-            opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
-        });
+        return mapper.Map<MaterialAnalyticalRawDataDto>(
+            analyticalRawData,
+            opt =>
+            {
+                opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
+            }
+        );
     }
 
-    public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterialBatch(Guid id)
+    public async Task<Result<MaterialAnalyticalRawDataDto>> GetAnalyticalRawDataByMaterialBatch(
+        Guid id
+    )
     {
         var batch = await context.MaterialBatches.FirstOrDefaultAsync(m => m.Id == id);
-        if (batch is null) return Error.NotFound("MaterialBatch.NotFound", "Batch not found.");
+        if (batch is null)
+            return Error.NotFound("MaterialBatch.NotFound", "Batch not found.");
 
-        var analyticalRawData = await context.MaterialAnalyticalRawData
-            .AsSplitQuery()
+        var analyticalRawData = await context
+            .MaterialAnalyticalRawData.AsSplitQuery()
             .Include(ad => ad.MaterialStandardTestProcedure)
-            .ThenInclude(ad => ad.Material)
+                .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == batch.MaterialId);
+            .FirstOrDefaultAsync(ad =>
+                ad.MaterialStandardTestProcedure.MaterialId == batch.MaterialId
+            );
 
-        if (analyticalRawData is null) return Error.NotFound("MaterialAnalyticalRawData.NotFound", "No material ard for this material found.");
+        if (analyticalRawData is null)
+            return Error.NotFound(
+                "MaterialAnalyticalRawData.NotFound",
+                "No material ard for this material found."
+            );
 
-        return mapper.Map<MaterialAnalyticalRawDataDto>(analyticalRawData, opt =>
-        {
-            opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
-        });
+        return mapper.Map<MaterialAnalyticalRawDataDto>(
+            analyticalRawData,
+            opt =>
+            {
+                opt.Items[AppConstants.ModelType] = nameof(MaterialAnalyticalRawData);
+            }
+        );
     }
 
     public async Task<Result<MaterialBatchArd>> GetRelevantMaterialInfoForArd(Guid materialBatchId)
     {
-        var materialBatch = await context.MaterialBatches
-            .AsSplitQuery()
+        var materialBatch = await context
+            .MaterialBatches.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(materialBatch => materialBatch.Grn)
             .Include(m => m.Material)
             .FirstOrDefaultAsync(m => m.Id == materialBatchId);
 
-        if (materialBatch is null) return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found.");
+        if (materialBatch is null)
+            return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found.");
 
-        var materialSampling = await context.MaterialSamplings
-            .AsSplitQuery()
+        var materialSampling = await context
+            .MaterialSamplings.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.CreatedBy)
             .FirstOrDefaultAsync(m => m.MaterialBatchId == materialBatchId);
 
-        var checkList = await context.Checklists
-            .AsSplitQuery()
+        var checkList = await context
+            .Checklists.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(checklist => checklist.Supplier)
             .Include(checklist => checklist.Manufacturer)
             .FirstOrDefaultAsync(c => c.Id == materialBatch.ChecklistId);
 
-        var materialArd = await context.MaterialAnalyticalRawData
-            .AsSplitQuery()
+        var materialArd = await context
+            .MaterialAnalyticalRawData.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ad => ad.MaterialStandardTestProcedure)
-            .FirstOrDefaultAsync(m => m.MaterialStandardTestProcedure.MaterialId == materialBatch.MaterialId);
+            .FirstOrDefaultAsync(m =>
+                m.MaterialStandardTestProcedure.MaterialId == materialBatch.MaterialId
+            );
 
         return new MaterialBatchArd
         {
@@ -175,18 +224,25 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             Manufacturer = mapper.Map<CollectionItemDto>(checkList.Manufacturer),
             SampledBy = mapper.Map<UserDto>(materialSampling?.CreatedBy),
             QuantitySampled = materialSampling?.SampleQuantity ?? 0,
-            QuantityReceived = materialBatch.TotalQuantity
+            QuantityReceived = materialBatch.TotalQuantity,
         };
     }
 
-    public async Task<Result> UpdateAnalyticalRawData(Guid id, CreateMaterialAnalyticalRawDataRequest request)
+    public async Task<Result> UpdateAnalyticalRawData(
+        Guid id,
+        CreateMaterialAnalyticalRawDataRequest request
+    )
     {
-        var analyticalRawData = await context.MaterialAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id);
+        var analyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(ad =>
+            ad.Id == id
+        );
 
         if (analyticalRawData is null)
         {
-            return Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found");
+            return Error.NotFound(
+                "MaterialAnalyticalRawData.NotFound",
+                "Analytical raw data not found"
+            );
         }
 
         mapper.Map(request, analyticalRawData);
@@ -198,11 +254,15 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
     public async Task<Result> DeleteAnalyticalRawData(Guid id, Guid userId)
     {
-        var analyticalRawData = await context.MaterialAnalyticalRawData
-            .FirstOrDefaultAsync(ad => ad.Id == id);
+        var analyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(ad =>
+            ad.Id == id
+        );
         if (analyticalRawData is null)
         {
-            return Error.NotFound("MaterialAnalyticalRawData.NotFound", "Analytical raw data not found");
+            return Error.NotFound(
+                "MaterialAnalyticalRawData.NotFound",
+                "Analytical raw data not found"
+            );
         }
 
         analyticalRawData.DeletedAt = DateTime.UtcNow;
@@ -216,7 +276,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     public async Task<Result> StartTestForMaterialBatch(Guid id)
     {
         var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == id);
-        if (materialBatch is null) return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found");
+        if (materialBatch is null)
+            return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found");
 
         materialBatch.Status = BatchStatus.Testing;
         context.MaterialBatches.Update(materialBatch);
@@ -232,10 +293,12 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         return entity.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<UniformityOfWeightDto>>>> GetUniformityOfWeights(int page, int pageSize, string searchQuery)
+    public async Task<
+        Result<Paginateable<IEnumerable<UniformityOfWeightDto>>>
+    > GetUniformityOfWeights(int page, int pageSize, string searchQuery)
     {
-        var query = context.UniformityOfWeights
-            .AsSplitQuery()
+        var query = context
+            .UniformityOfWeights.AsSplitQuery()
             .Include(u => u.DisintegrationInstrument)
             .Include(u => u.HardnessInstrument)
             .AsQueryable();
@@ -249,21 +312,27 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             query,
             page,
             pageSize,
-            entity => mapper.Map<UniformityOfWeightDto>(entity, opts =>
-                opts.Items[AppConstants.ModelType] = nameof(UniformityOfWeight)));
+            entity =>
+                mapper.Map<UniformityOfWeightDto>(
+                    entity,
+                    opts => opts.Items[AppConstants.ModelType] = nameof(UniformityOfWeight)
+                )
+        );
     }
 
     public async Task<Result<UniformityOfWeightDto>> GetUniformityOfWeight(Guid id)
     {
-        var entity = await context.UniformityOfWeights
-            .Include(u => u.DisintegrationInstrument)
+        var entity = await context
+            .UniformityOfWeights.Include(u => u.DisintegrationInstrument)
             .Include(u => u.HardnessInstrument)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         return entity is null
             ? Error.NotFound("UniformityOfWeight.NotFound", "Entry not found")
-            : mapper.Map<UniformityOfWeightDto>(entity, opts =>
-                opts.Items[AppConstants.ModelType] = nameof(UniformityOfWeight));
+            : mapper.Map<UniformityOfWeightDto>(
+                entity,
+                opts => opts.Items[AppConstants.ModelType] = nameof(UniformityOfWeight)
+            );
     }
 
     public async Task<Result> UpdateUniformityOfWeight(Guid id, CreateUniformityOfWeight request)
@@ -295,7 +364,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         return Result.Success();
     }
 
-    public async Task<Result<Guid>> SubmitUniformityOfWeightResponse(CreateUniformityOfWeightResponse request)
+    public async Task<Result<Guid>> SubmitUniformityOfWeightResponse(
+        CreateUniformityOfWeightResponse request
+    )
     {
         var entity = mapper.Map<UniformityOfWeightResponse>(request);
         await context.UniformityOfWeightResponses.AddAsync(entity);
@@ -303,14 +374,18 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         return entity.Id;
     }
 
-    public async Task<Result<IEnumerable<UniformityOfWeightResponseDto>>> GetResponsesByMaterialBatchId(Guid uniformityOfWeightId, Guid materialBatchId)
+    public async Task<
+        Result<IEnumerable<UniformityOfWeightResponseDto>>
+    > GetResponsesByMaterialBatchId(Guid uniformityOfWeightId, Guid materialBatchId)
     {
-        var responses = await context.UniformityOfWeightResponses
-            .AsSplitQuery()
+        var responses = await context
+            .UniformityOfWeightResponses.AsSplitQuery()
             .Include(r => r.UniformityOfWeight)
             .Include(r => r.MaterialBatch)
-            .Where(r => r.UniformityOfWeightId == uniformityOfWeightId
-                        && r.MaterialBatchId == materialBatchId)
+            .Where(r =>
+                r.UniformityOfWeightId == uniformityOfWeightId
+                && r.MaterialBatchId == materialBatchId
+            )
             .ToListAsync();
 
         return mapper.Map<List<UniformityOfWeightResponseDto>>(responses);
