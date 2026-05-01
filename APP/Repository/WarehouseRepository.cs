@@ -6,6 +6,7 @@ using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -1254,18 +1255,20 @@ public class WarehouseRepository(
             .Include(s => s.CreatedBy)
             .ToListAsync();
 
-        var arNumbers = samplings
-            .Select(s => s.ArNumber)
-            .Where(n => !string.IsNullOrEmpty(n))
-            .Distinct()
-            .ToList();
+        var formAssignees = await context
+            .FormAssignees.AsNoTracking()
+            .AsSplitQuery()
+            .Where(b => b.MaterialBatchId.HasValue && batchIds.Contains(b.MaterialBatchId.Value))
+            .Include(f => f.FieldAssignees)
+                .ThenInclude(fa => fa.Assignee)
+            .ToListAsync();
 
         return grns.Select(grn =>
         {
             var dto = mapper.Map<T>(grn);
             if (dto is IGrnEnrichedDto enrichedDto)
             {
-                PopulateGrnEnrichedData(enrichedDto, grn, samplings);
+                PopulateGrnEnrichedData(enrichedDto, grn, samplings, formAssignees);
             }
 
             if (dto is GrnDto grnDto)
@@ -1274,7 +1277,7 @@ public class WarehouseRepository(
                 {
                     var batch = grn.MaterialBatches[i];
                     var batchDto = grnDto.MaterialBatches[i];
-                    PopulateBatchEnrichedData(batchDto, batch, samplings);
+                    PopulateBatchEnrichedData(batchDto, batch, samplings, formAssignees);
                 }
             }
             return dto;
@@ -1284,7 +1287,8 @@ public class WarehouseRepository(
     private void PopulateBatchEnrichedData(
         IGrnEnrichedDto dto,
         MaterialBatch batch,
-        List<MaterialSampling> samplings
+        List<MaterialSampling> samplings,
+        List<FormAssignee> formAssignees
     )
     {
         dto.SupplierName = batch.Checklist?.Supplier?.Name;
@@ -1300,20 +1304,32 @@ public class WarehouseRepository(
                     : null;
             dto.SampledOn = sampling.SampleDate;
             dto.SampleQuantity = sampling.SampleQuantity;
-            dto.AnalysedBy = $"{sampling.CreatedBy?.FirstName} {sampling.CreatedBy?.LastName}";
+        }
+
+        var formAssignee = formAssignees.FirstOrDefault(f => f.MaterialBatchId == batch.Id);
+        if (formAssignee != null)
+        {
+            dto.AnalysedBy = string.Join(
+                ",",
+                formAssignee
+                    .FieldAssignees.Select(f => $"{f.Assignee.FirstName} {f.Assignee.LastName}")
+                    .ToList()
+            );
+            dto.AnalysedDate = formAssignee.CreatedAt;
         }
     }
 
     private void PopulateGrnEnrichedData(
         IGrnEnrichedDto dto,
         Grn grn,
-        List<MaterialSampling> samplings
+        List<MaterialSampling> samplings,
+        List<FormAssignee> formAssignees
     )
     {
         var firstBatch = grn.MaterialBatches.FirstOrDefault();
         if (firstBatch != null)
         {
-            PopulateBatchEnrichedData(dto, firstBatch, samplings);
+            PopulateBatchEnrichedData(dto, firstBatch, samplings, formAssignees);
         }
     }
 

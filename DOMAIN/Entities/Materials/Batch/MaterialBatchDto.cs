@@ -50,6 +50,7 @@ public class MaterialBatchDto : IGrnEnrichedDto
     public DateTime? SampledOn { get; set; }
     public decimal SampleQuantity { get; set; }
     public string AnalysedBy { get; set; }
+    public DateTime AnalysedDate { get; set; }
 }
 
 public class MaterialBatchListDto : IGrnEnrichedDto
@@ -85,6 +86,7 @@ public class MaterialBatchListDto : IGrnEnrichedDto
     public DateTime? SampledOn { get; set; }
     public decimal SampleQuantity { get; set; }
     public string AnalysedBy { get; set; }
+    public DateTime AnalysedDate { get; set; }
 }
 
 public class MaterialBatchReducedDto
