@@ -65,6 +65,7 @@ public interface IGrnEnrichedDto
     DateTime? SampledOn { get; set; }
     decimal SampleQuantity { get; set; }
     string AnalysedBy { get; set; }
+    DateTime AnalysedDate { get; set; }
 }
 
 public class GrnListDto
