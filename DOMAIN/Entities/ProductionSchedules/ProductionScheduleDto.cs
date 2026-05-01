@@ -92,6 +92,8 @@ public class ProductionScheduleProductDto
     public bool Cancelled { get; set; }
     public string ReasonForCancellation { get; set; }
     public ProductPackingDto ProductPacking { get; set; }
+    public bool HasStarted { get; set; }
+    public Guid? ProductionActivityId { get; set; }
 }
 
 public enum MaterialRequisitionStatus

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429152604_ChangeSupplierToVendor")]
+    partial class ChangeSupplierToVendor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2653,6 +2656,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("GrnNumber")
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
+
+                    b.Property<string>("IssueNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -5911,10 +5918,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("GrnId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("IssueNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
@@ -9300,8 +9303,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("ProductionScheduleProductId")
-                        .IsUnique();
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("ProductionActivities");
                 });
@@ -19844,8 +19846,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("LastUpdatedById");
 
                     b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
-                        .WithOne("ProductionActivity")
-                        .HasForeignKey("DOMAIN.Entities.Products.Production.ProductionActivity", "ProductionScheduleProductId")
+                        .WithMany()
+                        .HasForeignKey("ProductionScheduleProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -23069,11 +23071,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionSchedule", b =>
                 {
                     b.Navigation("Products");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", b =>
-                {
-                    b.Navigation("ProductionActivity");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransfer", b =>

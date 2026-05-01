@@ -24,9 +24,6 @@ public class Grn : BaseEntity
     public string DeclarationNumber { get; set; }
     public Status Status { get; set; }
     public List<MaterialBatch> MaterialBatches { get; set; }
-
-    [StringLength(100)]
-    public string IssueNumber { get; set; }
 }
 
 public enum Status
@@ -59,6 +56,18 @@ public class CreateGrnRequest
     public string IssueNumber { get; set; }
 }
 
+public interface IGrnEnrichedDto
+{
+    string SupplierName { get; set; }
+    string ManufacturerName { get; set; }
+    string ArNumber { get; set; }
+    string SampledBy { get; set; }
+    DateTime? SampledOn { get; set; }
+    decimal SampleQuantity { get; set; }
+    string AnalysedBy { get; set; }
+    DateTime AnalysedDate { get; set; }
+}
+
 public class GrnListDto
 {
     public Guid Id { get; set; }
@@ -80,14 +89,6 @@ public class GrnListDto
 
     [StringLength(10000)]
     public string DeclarationNumber { get; set; }
-    public string SupplierName { get; set; }
-    public string ManufacturerName { get; set; }
-    public string ArNumber { get; set; }
-    public string SampledBy { get; set; }
-    public DateTime? SampledOn { get; set; }
-    public decimal SampleQuantity { get; set; }
-    public string AnalysedBy { get; set; }
-    public string IssueNo { get; set; }
 }
 
 public class GrnDto
@@ -111,5 +112,4 @@ public class GrnDto
 
     [StringLength(10000)]
     public string DeclarationNumber { get; set; }
-    public string IssueNumber { get; set; }
 }

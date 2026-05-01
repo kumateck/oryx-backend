@@ -6,11 +6,13 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.ProductionSchedules;
 
 public class ProductionSchedule : BaseEntity
+// ... (omitted for brevity in instruction, but I must provide full file or exact match)
 {
     [StringLength(100)] public string Code { get; set; }
     public DateTime ScheduledStartTime { get; set; }
@@ -55,6 +57,7 @@ public class ProductionScheduleProduct
     [StringLength(20000)] public string ReasonForCancellation { get; set; }
     public Guid? ProductPackingId { get; set; }
     public ProductPacking ProductPacking { get; set; }
+    public ProductionActivity ProductionActivity { get; set; }
 }
 
 public class MarketType : BaseEntity

@@ -3,11 +3,14 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Users;
@@ -1105,9 +1108,13 @@ public class WarehouseRepository(
             .Include(mb => mb.CreatedBy)
             .FirstOrDefaultAsync(g => g.Id == id);
 
-        return grn is null
-            ? Error.NotFound("Grn.NotFound", "GRN not found")
-            : mapper.Map<GrnDto>(grn);
+        if (grn is null)
+        {
+            return Error.NotFound("Grn.NotFound", "GRN not found");
+        }
+
+        var dtos = await MapGrnDtos<GrnDto>([grn]);
+        return dtos.First();
     }
 
     public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(
@@ -1146,7 +1153,7 @@ public class WarehouseRepository(
 
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
         var grns = await paginatedResult.Data.ToListAsync();
-        var dtos = await MapGrnListDtos(grns);
+        var dtos = await MapGrnDtos<GrnListDto>(grns);
 
         return Result.Success(
             new Paginateable<IEnumerable<GrnListDto>>
@@ -1220,7 +1227,7 @@ public class WarehouseRepository(
 
         var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
         var grns = await paginatedResult.Data.ToListAsync();
-        var dtos = await MapGrnListDtos(grns);
+        var dtos = await MapGrnDtos<GrnListDto>(grns);
 
         return Result.Success(
             new Paginateable<IEnumerable<GrnListDto>>
@@ -1236,7 +1243,8 @@ public class WarehouseRepository(
         );
     }
 
-    private async Task<IEnumerable<GrnListDto>> MapGrnListDtos(List<Grn> grns)
+    private async Task<IEnumerable<T>> MapGrnDtos<T>(List<Grn> grns)
+        where T : class
     {
         var batchIds = grns.SelectMany(g => g.MaterialBatches.Select(mb => mb.Id)).ToList();
 
@@ -1247,58 +1255,82 @@ public class WarehouseRepository(
             .Include(s => s.CreatedBy)
             .ToListAsync();
 
-        var arNumbers = samplings
-            .Select(s => s.ArNumber)
-            .Where(n => !string.IsNullOrEmpty(n))
-            .Distinct()
-            .ToList();
-
-        var atrs = await context
-            .AnalyticalTestRequests.AsNoTracking()
+        var formAssignees = await context
+            .FormAssignees.AsNoTracking()
             .AsSplitQuery()
-            .Where(a => arNumbers.Contains(a.ArNumber))
-            .Include(a => a.Assignees)
-                .ThenInclude(aa => aa.User)
+            .Where(b => b.MaterialBatchId.HasValue && batchIds.Contains(b.MaterialBatchId.Value))
+            .Include(f => f.FieldAssignees)
+                .ThenInclude(fa => fa.Assignee)
             .ToListAsync();
 
         return grns.Select(grn =>
         {
-            var dto = mapper.Map<GrnListDto>(grn);
-            var firstBatch = grn.MaterialBatches.FirstOrDefault();
-            if (firstBatch != null)
+            var dto = mapper.Map<T>(grn);
+            if (dto is IGrnEnrichedDto enrichedDto)
             {
-                dto.SupplierName = firstBatch.Checklist?.Supplier?.Name;
-                dto.ManufacturerName = firstBatch.Checklist?.Manufacturer?.Name;
+                PopulateGrnEnrichedData(enrichedDto, grn, samplings, formAssignees);
+            }
 
-                var sampling = samplings.FirstOrDefault(s => s.MaterialBatchId == firstBatch.Id);
-                if (sampling != null)
+            if (dto is GrnDto grnDto)
+            {
+                for (int i = 0; i < grn.MaterialBatches.Count; i++)
                 {
-                    dto.ArNumber = sampling.ArNumber;
-                    dto.SampledBy =
-                        sampling.CreatedBy != null
-                            ? $"{sampling.CreatedBy.FirstName} {sampling.CreatedBy.LastName}"
-                            : null;
-                    dto.SampledOn = sampling.SampleDate;
-                    dto.SampleQuantity = sampling.SampleQuantity;
-                    dto.IssueNo = sampling.IssueNumber;
-
-                    if (!string.IsNullOrEmpty(sampling.ArNumber))
-                    {
-                        var atr = atrs.FirstOrDefault(a => a.ArNumber == sampling.ArNumber);
-                        if (atr != null)
-                        {
-                            dto.AnalysedBy = string.Join(
-                                ", ",
-                                atr.Assignees.Select(a =>
-                                    $"{a.User.FirstName} " + $"{a.User.LastName}"
-                                )
-                            );
-                        }
-                    }
+                    var batch = grn.MaterialBatches[i];
+                    var batchDto = grnDto.MaterialBatches[i];
+                    PopulateBatchEnrichedData(batchDto, batch, samplings, formAssignees);
                 }
             }
             return dto;
         });
+    }
+
+    private void PopulateBatchEnrichedData(
+        IGrnEnrichedDto dto,
+        MaterialBatch batch,
+        List<MaterialSampling> samplings,
+        List<FormAssignee> formAssignees
+    )
+    {
+        dto.SupplierName = batch.Checklist?.Supplier?.Name;
+        dto.ManufacturerName = batch.Checklist?.Manufacturer?.Name;
+
+        var sampling = samplings.FirstOrDefault(s => s.MaterialBatchId == batch.Id);
+        if (sampling != null)
+        {
+            dto.ArNumber = sampling.ArNumber;
+            dto.SampledBy =
+                sampling.CreatedBy != null
+                    ? $"{sampling.CreatedBy.FirstName} {sampling.CreatedBy.LastName}"
+                    : null;
+            dto.SampledOn = sampling.SampleDate;
+            dto.SampleQuantity = sampling.SampleQuantity;
+        }
+
+        var formAssignee = formAssignees.FirstOrDefault(f => f.MaterialBatchId == batch.Id);
+        if (formAssignee != null)
+        {
+            dto.AnalysedBy = string.Join(
+                ",",
+                formAssignee
+                    .FieldAssignees.Select(f => $"{f.Assignee.FirstName} {f.Assignee.LastName}")
+                    .ToList()
+            );
+            dto.AnalysedDate = formAssignee.CreatedAt;
+        }
+    }
+
+    private void PopulateGrnEnrichedData(
+        IGrnEnrichedDto dto,
+        Grn grn,
+        List<MaterialSampling> samplings,
+        List<FormAssignee> formAssignees
+    )
+    {
+        var firstBatch = grn.MaterialBatches.FirstOrDefault();
+        if (firstBatch != null)
+        {
+            PopulateBatchEnrichedData(dto, firstBatch, samplings, formAssignees);
+        }
     }
 
     public async Task<
@@ -1849,23 +1881,59 @@ public class WarehouseRepository(
                 "Some provided shelf material batches could not be found."
             );
 
-        // Ensure all batches are for the same material
+        // Validate counts
+        if (
+            request.FirstSwapShelfMaterialBatches.Count
+            != request.SecondSwapShelfMaterialBatches.Count
+        )
+            return Error.Validation(
+                "Swap.CountMismatch",
+                "The number of batches to swap must be equal on both sides."
+            );
+
+        // Fetch material batch details to get MaterialIds
         var allMaterialBatchIds = request
             .FirstSwapShelfMaterialBatches.Select(m => m.MaterialBatchId)
             .Concat(request.SecondSwapShelfMaterialBatches.Select(m => m.MaterialBatchId))
             .Distinct()
             .ToList();
 
-        var materialIds = await context
+        var materialBatchDetails = await context
             .MaterialBatches.Where(b => allMaterialBatchIds.Contains(b.Id))
-            .Select(b => b.MaterialId)
-            .Distinct()
+            .Select(b => new { b.Id, b.MaterialId })
             .ToListAsync();
 
-        if (materialIds.Count > 1)
+        var batchToMaterialMap = materialBatchDetails.ToDictionary(x => x.Id, x => x.MaterialId);
+
+        // Map materials for both sides
+        var firstSideMaterials = request
+            .FirstSwapShelfMaterialBatches.Select(m => batchToMaterialMap[m.MaterialBatchId])
+            .ToList();
+        var secondSideMaterials = request
+            .SecondSwapShelfMaterialBatches.Select(m => batchToMaterialMap[m.MaterialBatchId])
+            .ToList();
+
+        // Check for uniqueness on each side
+        if (firstSideMaterials.Distinct().Count() != firstSideMaterials.Count)
+            return Error.Validation(
+                "Swap.DuplicateMaterial",
+                "Each material can only appear once in the first warehouse's swap list."
+            );
+
+        if (secondSideMaterials.Distinct().Count() != secondSideMaterials.Count)
+            return Error.Validation(
+                "Swap.DuplicateMaterial",
+                "Each material can only appear once in the second warehouse's swap list."
+            );
+
+        // Check if sets of materials match
+        var firstSet = firstSideMaterials.ToHashSet();
+        var secondSet = secondSideMaterials.ToHashSet();
+
+        if (!firstSet.SetEquals(secondSet))
             return Error.Validation(
                 "Swap.MaterialMismatch",
-                "All batches in a swap request must belong to the same material."
+                "The set of materials to swap must be identical on both sides."
             );
 
         // Create entity
@@ -1873,6 +1941,7 @@ public class WarehouseRepository(
         {
             FirstWarehouseId = request.FirstWarehouseId,
             SecondWarehouseId = request.SecondWarehouseId,
+            StockRequisitionId = request.StockRequisitionId,
             FirstSwapShelfMaterialBatches = request
                 .FirstSwapShelfMaterialBatches.Select(m => new SwapShelfMaterialBatch
                 {
@@ -1918,6 +1987,7 @@ public class WarehouseRepository(
                     .ThenInclude(b => b.Material)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(b => b.UoM)
+            .Include(b => b.ActionedBy)
             .AsQueryable();
 
         if (request.DepartmentId.HasValue)
@@ -1942,6 +2012,11 @@ public class WarehouseRepository(
                     || s.SecondWarehouse.DepartmentId == request.DepartmentId
                 );
             }
+        }
+
+        if (request.Status.HasValue)
+        {
+            query = query.Where(s => s.Status == request.Status.Value);
         }
 
         if (!string.IsNullOrEmpty(request.SearchQuery))
@@ -1995,12 +2070,12 @@ public class WarehouseRepository(
             .Include(s => s.FirstWarehouse)
             .Include(s => s.SecondWarehouse)
             .Include(s => s.FirstSwapShelfMaterialBatches)
-                .ThenInclude(x => x.ShelfMaterialBatch)
-            .Include(s => s.SecondSwapShelfMaterialBatches)
-                .ThenInclude(x => x.ShelfMaterialBatch)
+                .ThenInclude(swapShelfMaterialBatch => swapShelfMaterialBatch.MaterialBatch)
+                    .ThenInclude(materialBatch => materialBatch.Material)
             .Include(s => s.SecondSwapShelfMaterialBatches)
                 .ThenInclude(swapShelfMaterialBatch => swapShelfMaterialBatch.MaterialBatch)
                     .ThenInclude(materialBatch => materialBatch.Material)
+            .Include(s => s.StockRequisition)
             .FirstOrDefaultAsync(s => s.Id == swapRequestId);
 
         if (swapRequest is null)
@@ -2065,7 +2140,8 @@ public class WarehouseRepository(
                 if (targetShelfId == null)
                     return Error.Validation(
                         "Swap.MissingTargetShelf",
-                        $"No matching shelf found in second warehouse for material batch {batch.MaterialBatchId}"
+                        $"No matching shelf found in second warehouse "
+                            + $"for material batch {batch.MaterialBatchId}"
                     );
 
                 await context.ShelfMaterialBatches.AddAsync(
@@ -2110,7 +2186,7 @@ public class WarehouseRepository(
                 //  Match by MaterialBatchId to find target shelf in the first warehouse side
                 var targetShelfId = swapRequest
                     .FirstSwapShelfMaterialBatches.FirstOrDefault(x =>
-                        x.MaterialBatchId == batch.MaterialBatchId
+                        x.MaterialBatch.MaterialId == batch.MaterialBatch.MaterialId
                     )
                     ?.ShelfMaterialBatch?.WarehouseLocationShelfId;
 
@@ -2130,6 +2206,68 @@ public class WarehouseRepository(
                         Note = $"Swapped from {secondWarehouseName} → {firstWarehouseName}",
                     }
                 );
+            }
+
+            if (swapRequest.StockRequisitionId.HasValue && swapRequest.StockRequisition != null)
+            {
+                var productionScheduleProductId = swapRequest
+                    .StockRequisition
+                    .ProductionScheduleProductId;
+
+                if (productionScheduleProductId.HasValue)
+                {
+                    // --- Update reservations on First Warehouse side
+                    foreach (var firstBatch in swapRequest.FirstSwapShelfMaterialBatches)
+                    {
+                        var reservation =
+                            await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
+                                r.ProductionScheduleProductId == productionScheduleProductId.Value
+                                && r.MaterialBatchId == firstBatch.MaterialBatchId
+                                && r.WarehouseLocationShelfId == firstBatch.ShelfMaterialBatchId
+                            );
+
+                        if (reservation != null)
+                        {
+                            var matchingSecondBatch =
+                                swapRequest.SecondSwapShelfMaterialBatches.FirstOrDefault(x =>
+                                    x.MaterialBatch.MaterialId
+                                    == firstBatch.MaterialBatch.MaterialId
+                                );
+
+                            if (matchingSecondBatch != null)
+                            {
+                                reservation.MaterialBatchId = matchingSecondBatch.MaterialBatchId;
+                                context.MaterialBatchReservedQuantities.Update(reservation);
+                            }
+                        }
+                    }
+
+                    // --- Update reservations on Second Warehouse side
+                    foreach (var secondBatch in swapRequest.SecondSwapShelfMaterialBatches)
+                    {
+                        var reservation =
+                            await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
+                                r.ProductionScheduleProductId == productionScheduleProductId.Value
+                                && r.MaterialBatchId == secondBatch.MaterialBatchId
+                                && r.WarehouseLocationShelfId == secondBatch.ShelfMaterialBatchId
+                            );
+
+                        if (reservation != null)
+                        {
+                            var matchingFirstBatch =
+                                swapRequest.FirstSwapShelfMaterialBatches.FirstOrDefault(x =>
+                                    x.MaterialBatch.MaterialId
+                                    == secondBatch.MaterialBatch.MaterialId
+                                );
+
+                            if (matchingFirstBatch != null)
+                            {
+                                reservation.MaterialBatchId = matchingFirstBatch.MaterialBatchId;
+                                context.MaterialBatchReservedQuantities.Update(reservation);
+                            }
+                        }
+                    }
+                }
             }
 
             // --- Mark as approved

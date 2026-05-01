@@ -26,3 +26,8 @@ public class CreateProductionScheduleProduct
     public BatchSize BatchSize { get; set; }
     public Guid? ProductPackingId { get; set; }
 }
+
+public class AddProductsToScheduleRequest
+{
+    public List<CreateProductionScheduleProduct> Products { get; set; } = [];
+}

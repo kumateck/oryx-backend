@@ -55,6 +55,9 @@ public class MaterialBatch : BaseEntity
     public decimal ReservedQuantity => ReservedQuantities.Sum(r => r.Quantity);
     public List<ShelfMaterialBatch> ShelfMaterialBatches { get; set; } = [];
     public DateTime? ReturnDate { get; set; }
+
+    [StringLength(100)]
+    public string IssueNumber { get; set; }
 }
 
 public class Sr : BaseEntity
