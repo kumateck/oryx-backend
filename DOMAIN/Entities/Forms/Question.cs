@@ -6,20 +6,27 @@ namespace DOMAIN.Entities.Forms;
 
 public class Question : BaseEntity
 {
-    [StringLength(1000)] public string Label { get; set; }
+    [StringLength(1000)]
+    public string Label { get; set; }
     public QuestionType Type { get; set; }
     public QuestionValidationType Validation { get; set; }
     public List<QuestionOption> Options { get; set; } = [];
     public bool IsMultiSelect { get; set; }
-    [StringLength(100)] public string Reference { get; set; }
-    [StringLength(10000)] public string Description { get; set; }
+
+    [StringLength(100)]
+    public string Reference { get; set; }
+
+    [StringLength(10000)]
+    public string Description { get; set; }
 }
 
 public class QuestionOption : BaseEntity
 {
     public Guid QuestionId { get; set; }
     public Question Question { get; set; }
-    [StringLength(100000000)] public string Name { get; set; }
+
+    [StringLength(100000000)]
+    public string Name { get; set; }
 }
 
 public class QuestionDto : BaseDto
@@ -55,6 +62,7 @@ public enum QuestionType
     Specification = 11,
     Equipment = 12,
     Table = 13,
+    Instrument = 14,
 }
 
 public enum QuestionValidationType
@@ -62,22 +70,30 @@ public enum QuestionValidationType
     Number = 0,
     Letter = 1,
     Alphanumeric = 2,
-    None = 3
+    None = 3,
 }
 
 public class Formula
 {
-    [Required][StringLength(100)] public string Marker { get; set; } = "present";
-    [StringLength(1000)] public string Expression { get; set; }
-    [StringLength(100000000)] public string Variables { get; set; }
+    [Required]
+    [StringLength(100)]
+    public string Marker { get; set; } = "present";
+
+    [StringLength(1000)]
+    public string Expression { get; set; }
+
+    [StringLength(100000000)]
+    public string Variables { get; set; }
 }
 
 public class FormulaDto
 {
-    [StringLength(1000)] public string Expression { get; set; }
-    [StringLength(100000000)] public string Variables { get; set; }
-}
+    [StringLength(1000)]
+    public string Expression { get; set; }
 
+    [StringLength(100000000)]
+    public string Variables { get; set; }
+}
 
 public class Variable
 {

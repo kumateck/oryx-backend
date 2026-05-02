@@ -1,9 +1,7 @@
-using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Forms;
@@ -713,7 +711,8 @@ public class WarehouseRepository(
             return UserErrors.WarehouseNotFound(kind);
 
         var query = await context
-            .WarehouseLocationShelves.Include(s => s.WarehouseLocationRack)
+            .WarehouseLocationShelves.AsSplitQuery()
+            .Include(s => s.WarehouseLocationRack)
                 .ThenInclude(s => s.WarehouseLocation)
                     .ThenInclude(s => s.Warehouse)
             .Include(w => w.MaterialBatches)

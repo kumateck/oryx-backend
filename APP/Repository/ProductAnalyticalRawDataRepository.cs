@@ -180,13 +180,12 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         if (bmr is null)
             return Error.NotFound("Bmr.NotFound", "Bmr not found.");
 
-        var productSampling = await context
-            .ProductSamplings.AsSplitQuery()
-            .Include(m => m.CreatedBy)
-            .Include(m => m.AnalyticalTestRequest)
-            .FirstOrDefaultAsync(m =>
-                m.AnalyticalTestRequest.BatchManufacturingRecordId == batchManufacturingRecordId
-            );
+        var atr = await context
+            .AnalyticalTestRequests.AsSplitQuery()
+            .Include(a => a.SampledBy)
+            .Include(a => a.TestedBy)
+            .Include(a => a.IssuedBy)
+            .FirstOrDefaultAsync(a => a.BatchManufacturingRecordId == batchManufacturingRecordId);
 
         var productArd = await context
             .ProductAnalyticalRawData.AsSplitQuery()
@@ -200,13 +199,16 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         return new ProductBatchArd
         {
             BatchManufacturingRecord = mapper.Map<BatchManufacturingRecordDto>(bmr),
-            ArNumber = productSampling?.ArNumber,
+            ArNumber = atr?.ArNumber,
             SpecNumber = productArd?.SpecNumber,
-            SampledDate = productSampling?.SampleDate,
-            IssueDate = bmr?.IssuedDate,
-            IssuedBy = mapper.Map<UserDto>(bmr.IssuedBy),
-            // AnalysedDate = ,
-            // AnalysedBy = mapper.Map<UserDto>()
+            SampledDate = atr?.SampledAt,
+            SampledBy = mapper.Map<UserDto>(atr?.SampledBy),
+            SampledQuantity = decimal.TryParse(atr?.SampledQuantity, out var sq) ? sq : null,
+            IssueDate = atr?.IssuedAt,
+            IssueNumber = atr?.IssueNumber,
+            IssuedBy = mapper.Map<UserDto>(atr?.IssuedBy),
+            AnalysedDate = atr?.TestedAt,
+            AnalysedBy = mapper.Map<UserDto>(atr?.TestedBy)
         };
     }
 
