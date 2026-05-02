@@ -58,6 +58,9 @@ public class MaterialBatch : BaseEntity
 
     [StringLength(100)]
     public string IssueNumber { get; set; }
+    public Guid? IssuedById { get; set; }
+    public User IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
 }
 
 public class Sr : BaseEntity

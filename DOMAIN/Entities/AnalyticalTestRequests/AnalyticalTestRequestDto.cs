@@ -35,4 +35,6 @@ public class AnalyticalTestRequestDto : BaseDto
     public string ArNumber { get; set; }
     public List<UserDto> Assignees { get; set; }
     public string IssueNumber { get; set; }
+    public DateTime? IssuedAt { get; set; }
+    public UserDto IssuedBy { get; set; }
 }

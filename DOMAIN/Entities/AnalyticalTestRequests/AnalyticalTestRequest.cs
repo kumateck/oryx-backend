@@ -44,6 +44,9 @@ public class AnalyticalTestRequest : BaseEntity
 
     [StringLength(100)]
     public string IssueNumber { get; set; }
+    public DateTime? IssuedAt { get; set; }
+    public Guid? IssuedById { get; set; }
+    public User IssuedBy { get; set; }
 }
 
 public class AnalyticalTestRequestAssignee : BaseEntity

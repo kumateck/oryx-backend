@@ -5,6 +5,7 @@ using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -51,6 +52,8 @@ public class MaterialBatchDto : IGrnEnrichedDto
     public decimal SampleQuantity { get; set; }
     public string AnalysedBy { get; set; }
     public DateTime AnalysedDate { get; set; }
+    public UserDto IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
 }
 
 public class MaterialBatchListDto : IGrnEnrichedDto
@@ -87,9 +90,11 @@ public class MaterialBatchListDto : IGrnEnrichedDto
     public decimal SampleQuantity { get; set; }
     public string AnalysedBy { get; set; }
     public DateTime AnalysedDate { get; set; }
+    public CollectionItemDto IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
 }
 
-public class MaterialBatchReducedDto
+public class MaterialBatchReducedDto : IGrnEnrichedDto
 {
     public Guid Id { get; set; }
     public MaterialDto Material { get; set; }
@@ -114,6 +119,16 @@ public class MaterialBatchReducedDto
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
     public string IssueNumber { get; set; }
+    public CollectionItemDto IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
+    public string SupplierName { get; set; }
+    public string ManufacturerName { get; set; }
+    public string ArNumber { get; set; }
+    public string SampledBy { get; set; }
+    public DateTime? SampledOn { get; set; }
+    public decimal SampleQuantity { get; set; }
+    public string AnalysedBy { get; set; }
+    public DateTime AnalysedDate { get; set; }
 }
 
 public class DistributedMaterialBatchDto
