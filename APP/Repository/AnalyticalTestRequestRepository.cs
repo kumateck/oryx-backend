@@ -55,6 +55,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.Assignees)
                 .ThenInclude(a => a.User)
             .Include(s => s.CreatedBy)
+            .Include(s => s.IssuedBy)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -110,6 +111,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.ReleasedBy)
             .Include(s => s.AcknowledgedBy)
             .Include(s => s.TestedBy)
+            .Include(s => s.IssuedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null
             ? Error.NotFound("ATR.NotFound", "Analytical test request not found")

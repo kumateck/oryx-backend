@@ -774,6 +774,8 @@ public class FormRepository(
 
             materialBatch.Status = BatchStatus.TestAssigned;
             materialBatch.IssueNumber = request.IssueNumber;
+            materialBatch.IssuedById = userId;
+            materialBatch.IssuedAt = DateTime.UtcNow;
         }
 
         if (request.BatchManufacturingRecordId.HasValue)
@@ -792,6 +794,8 @@ public class FormRepository(
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
             atr.IssueNumber = request.IssueNumber;
+            atr.IssuedAt = DateTime.UtcNow;
+            atr.IssuedById = userId;
 
             atr.Assignees = request
                 .FormFieldAssignees.Select(f => new AnalyticalTestRequestAssignee

@@ -1134,6 +1134,7 @@ public class WarehouseRepository(
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(cl => cl.Manufacturer)
             .Include(c => c.CreatedBy)
+            .OrderByDescending(g => g.CreatedAt)
             .AsQueryable();
 
         if (kind.HasValue)
@@ -1187,7 +1188,10 @@ public class WarehouseRepository(
             .Include(c => c.MaterialBatches)
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(cl => cl.Manufacturer)
+            .Include(c => c.MaterialBatches)
+                .ThenInclude(b => b.IssuedBy)
             .Include(c => c.CreatedBy)
+            .OrderByDescending(g => g.CreatedAt)
             .AsQueryable();
 
         if (kind.HasValue)
