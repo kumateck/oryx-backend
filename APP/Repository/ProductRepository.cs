@@ -1539,6 +1539,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     ProductPackingId = packing.Id,
                     BatchManufacturingRecordId = bmr.Id,
                     Approved = true,
+                    IsApproved = true,
                     UoMId = uomLookUp.TryGetValue(uomSymbol, out var uom) ? uom.Id : null,
                     CreatedById = userId,
                 }

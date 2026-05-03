@@ -437,6 +437,7 @@ public class FormRepository(
                 var values = response.Value.Split("|");
                 var formResponse = new FormResponse
                 {
+                    Id = Guid.NewGuid(),
                     FormFieldId = formField.Id,
                     Value = "form response attachment.",
                 };
@@ -445,7 +446,7 @@ public class FormRepository(
                 {
                     var reference = Guid.NewGuid().ToString();
                     await fileRepository.SaveBlobItem(
-                        nameof(FormResponse).ToLower(),
+                        nameof(FormResponse),
                         formResponse.Id,
                         reference,
                         value.ConvertFromBase64(),

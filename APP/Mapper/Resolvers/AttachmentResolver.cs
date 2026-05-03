@@ -10,22 +10,32 @@ namespace APP.Mapper.Resolvers;
 public class AttachmentsResolver(ApplicationDbContext context, IHttpContextAccessor request)
     : IValueResolver<BaseEntity, WithAttachment, IEnumerable<AttachmentDto>>
 {
-    public IEnumerable<AttachmentDto> Resolve(BaseEntity source, WithAttachment destination, IEnumerable<AttachmentDto> destMember, ResolutionContext context1)
+    public IEnumerable<AttachmentDto> Resolve(
+        BaseEntity source,
+        WithAttachment destination,
+        IEnumerable<AttachmentDto> destMember,
+        ResolutionContext context1
+    )
     {
         try
         {
             context1.Items.TryGetValue(AppConstants.ModelType, out var modelTypeValue);
             var modelType = (string)modelTypeValue;
 
-            return context.Attachments
-                .Where(attachment => attachment.ModelType.ToLower() == modelType.ToLower() && attachment.ModelId == source.Id)
+            return context
+                .Attachments.Where(attachment =>
+                    attachment.ModelType.ToLower() == modelType.ToLower()
+                    && attachment.ModelId == source.Id
+                )
                 .Select(attachment => new AttachmentDto
                 {
                     Name = attachment.Name,
-                    Link = $"http://{request.HttpContext.Request.Host}/api/v1/file/{modelType.ToLower()}/{attachment.ModelId}/{attachment.Reference}",
+                    Link =
+                        $"http://{request.HttpContext.Request.Host}/api/v1/file/{modelType.ToLower()}/{attachment.ModelId}/{attachment.Reference}",
                     Id = attachment.ModelId,
-                    Reference = attachment.Reference
-                }).ToList();
+                    Reference = attachment.Reference,
+                })
+                .ToList();
         }
         catch (Exception)
         {
