@@ -437,6 +437,7 @@ public class FormRepository(
                 var values = response.Value.Split("|");
                 var formResponse = new FormResponse
                 {
+                    Id = Guid.NewGuid(),
                     FormFieldId = formField.Id,
                     Value = "form response attachment.",
                 };
@@ -445,7 +446,7 @@ public class FormRepository(
                 {
                     var reference = Guid.NewGuid().ToString();
                     await fileRepository.SaveBlobItem(
-                        nameof(FormResponse).ToLower(),
+                        nameof(FormResponse),
                         formResponse.Id,
                         reference,
                         value.ConvertFromBase64(),
@@ -774,6 +775,8 @@ public class FormRepository(
 
             materialBatch.Status = BatchStatus.TestAssigned;
             materialBatch.IssueNumber = request.IssueNumber;
+            materialBatch.IssuedById = userId;
+            materialBatch.IssuedAt = DateTime.UtcNow;
         }
 
         if (request.BatchManufacturingRecordId.HasValue)
@@ -792,6 +795,8 @@ public class FormRepository(
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
             atr.IssueNumber = request.IssueNumber;
+            atr.IssuedAt = DateTime.UtcNow;
+            atr.IssuedById = userId;
 
             atr.Assignees = request
                 .FormFieldAssignees.Select(f => new AnalyticalTestRequestAssignee

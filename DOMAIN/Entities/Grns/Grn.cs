@@ -65,7 +65,7 @@ public interface IGrnEnrichedDto
     DateTime? SampledOn { get; set; }
     decimal SampleQuantity { get; set; }
     string AnalysedBy { get; set; }
-    DateTime AnalysedDate { get; set; }
+    DateTime? AnalysedDate { get; set; }
 }
 
 public class GrnListDto
@@ -84,7 +84,7 @@ public class GrnListDto
 
     [StringLength(10000)]
     public string GrnNumber { get; set; }
-    public List<CollectionItemDto> MaterialBatches { get; set; } = [];
+    public List<MaterialBatchReducedDto> MaterialBatches { get; set; } = [];
     public Status Status { get; set; }
 
     [StringLength(10000)]

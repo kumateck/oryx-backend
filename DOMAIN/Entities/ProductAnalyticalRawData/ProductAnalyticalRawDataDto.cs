@@ -23,7 +23,10 @@ public class ProductBatchArd
     public string ArNumber { get; set; }
     public string SpecNumber { get; set; }
     public DateTime? SampledDate { get; set; }
+    public UserDto SampledBy { get; set; }
+    public decimal? SampledQuantity { get; set; }
     public DateTime? IssueDate { get; set; }
+    public string IssueNumber { get; set; }
     public UserDto IssuedBy { get; set; }
     public DateTime? AnalysedDate { get; set; }
     public UserDto AnalysedBy { get; set; }
