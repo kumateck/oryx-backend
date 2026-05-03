@@ -3179,7 +3179,8 @@ public class ProductionScheduleRepository(
     )
     {
         var stockTransferSource = await context
-            .StockTransferSources.Include(st => st.StockTransfer)
+            .StockTransferSources.AsSplitQuery()
+            .Include(st => st.StockTransfer)
                 .ThenInclude(s => s.Material)
             .FirstOrDefaultAsync(st => st.Id == stockTransferId);
 
@@ -4128,7 +4129,8 @@ public class ProductionScheduleRepository(
         foreach (var batchRequest in batches)
         {
             var batch = await context
-                .MaterialBatches.Include(m => m.Checklist)
+                .MaterialBatches.AsSplitQuery()
+                .Include(m => m.Checklist)
                     .ThenInclude(c => c.Supplier)
                 .Include(m => m.Checklist)
                     .ThenInclude(c => c.Manufacturer)
