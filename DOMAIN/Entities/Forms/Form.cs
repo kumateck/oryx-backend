@@ -53,6 +53,7 @@ public class FormSection : BaseEntity
 
     [StringLength(1000000)]
     public string GroupName { get; set; }
+    public bool Complies { get; set; }
 }
 
 public class FormField : BaseEntity
@@ -158,4 +159,10 @@ public class FormReviewer
     public Form Form { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; }
+}
+
+public class CertificateOfAnalysisComplies
+{
+    public Guid FormSectionId { get; set; }
+    public bool Complies { get; set; }
 }
