@@ -25,6 +25,7 @@ public class FormSectionDto : BaseDto
     public List<FormFieldDto> Fields { get; set; } = [];
     public string Value { get; set; }
     public string GroupName { get; set; }
+    public bool Complies { get; set; }
 }
 
 public class FormFieldDto : BaseDto

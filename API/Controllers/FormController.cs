@@ -39,7 +39,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> GetForm(Guid formId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.GetForm(formId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -52,7 +53,10 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of forms.</returns>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FormDto>>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<FormDto>>)
+    )]
     public async Task<IResult> GetForms([FromQuery] FormFilter filter)
     {
         var result = await repository.GetForms(filter);
@@ -66,7 +70,10 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of forms.</returns>
     [HttpGet("section")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FormSectionDto>>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<FormSectionDto>>)
+    )]
     public async Task<IResult> GetFormSection([FromQuery] FormFilter filter)
     {
         var result = await repository.GetFormSections(filter);
@@ -87,7 +94,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> UpdateForm([FromBody] CreateFormRequest request, Guid formId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.UpdateForm(request, formId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -105,7 +113,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> DeleteForm(Guid formId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteForm(formId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -124,7 +133,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.SaveFormResponseDraft(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -147,7 +157,6 @@ public class FormController(IFormRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
-
     /// <summary>
     /// Submits a response to a form.
     /// </summary>
@@ -160,7 +169,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> SubmitFormResponse([FromBody] CreateResponseRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.SubmitFormResponse(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -177,16 +187,24 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> SubmitFormSectionResponse([FromBody] List<SubmitFormSectionValue> request,
-        [FromQuery] Guid? materialSpecificationId, [FromQuery] Guid? productSpecificationId)
+    public async Task<IResult> SubmitFormSectionResponse(
+        [FromBody] List<SubmitFormSectionValue> request,
+        [FromQuery] Guid? materialSpecificationId,
+        [FromQuery] Guid? productSpecificationId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.SubmitFormSectionValue(request, materialSpecificationId, productSpecificationId);
+        var result = await repository.SubmitFormSectionValue(
+            request,
+            materialSpecificationId,
+            productSpecificationId
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Submits a response to a form section.
     /// </summary>
@@ -198,13 +216,21 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UpdateFormSectionResponse([FromBody] List<SubmitFormSectionValue> request,
-        [FromQuery] Guid? materialSpecificationId, [FromQuery] Guid? productSpecificationId)
+    public async Task<IResult> UpdateFormSectionResponse(
+        [FromBody] List<SubmitFormSectionValue> request,
+        [FromQuery] Guid? materialSpecificationId,
+        [FromQuery] Guid? productSpecificationId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateFormSectionValue(request, materialSpecificationId, productSpecificationId);
+        var result = await repository.UpdateFormSectionValue(
+            request,
+            materialSpecificationId,
+            productSpecificationId
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -235,7 +261,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> CreateQuestion([FromBody] CreateQuestionRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateQuestion(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -263,7 +290,10 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of questions.</returns>
     [HttpGet("question")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QuestionDto>>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<QuestionDto>>)
+    )]
     public async Task<IResult> GetQuestions([FromQuery] QuestionFilter filter)
     {
         var result = await repository.GetQuestions(filter);
@@ -281,10 +311,14 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateQuestion([FromBody] CreateQuestionRequest request, Guid questionId)
+    public async Task<IResult> UpdateQuestion(
+        [FromBody] CreateQuestionRequest request,
+        Guid questionId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.UpdateQuestion(request, questionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -302,7 +336,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> DeleteQuestion(Guid questionId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteQuestion(questionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -312,17 +347,26 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Generates the Certificate of Analysis for a given material batch.
     /// </summary>
     /// <param name="materialBatchId">The ID of the material batch.</param>
+    /// <param name="complies">The list of section ids that comply</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("generate-certificate/{materialBatchId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GenerateCertificateOfAnalysis(Guid materialBatchId)
+    public async Task<IResult> GenerateCertificateOfAnalysis(
+        Guid materialBatchId,
+        List<CertificateOfAnalysisComplies> complies
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysis(materialBatchId, Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysis(
+            materialBatchId,
+            Guid.Parse(userId),
+            complies
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -331,18 +375,30 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// </summary>
     /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing.</param>
     /// <param name="productionActivityStepId">The id of production activity step</param>
+    /// <param name="complies">The list of section ids that comply</param>
     /// <returns>Returns a success or failure result.</returns>
-    [HttpPost("generate-certificate/product/{batchManufacturingRecordId}/{productionActivityStepId}")]
+    [HttpPost(
+        "generate-certificate/product/{batchManufacturingRecordId}/{productionActivityStepId}"
+    )]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GenerateCertificateOfAnalysisForProduct([FromRoute] Guid batchManufacturingRecordId,
-        [FromRoute] Guid productionActivityStepId)
+    public async Task<IResult> GenerateCertificateOfAnalysisForProduct(
+        [FromRoute] Guid batchManufacturingRecordId,
+        [FromRoute] Guid productionActivityStepId,
+        [FromBody] List<CertificateOfAnalysisComplies> complies
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.GenerateCertificateOfAnalysisForProduct(batchManufacturingRecordId, productionActivityStepId, Guid.Parse(userId));
+        var result = await repository.GenerateCertificateOfAnalysisForProduct(
+            batchManufacturingRecordId,
+            productionActivityStepId,
+            Guid.Parse(userId),
+            complies
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -387,7 +443,9 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFormResponseByMaterialSpec(Guid materialSpecificationId)
     {
-        var result = await repository.GetFormResponseByMaterialSpecification(materialSpecificationId);
+        var result = await repository.GetFormResponseByMaterialSpecification(
+            materialSpecificationId
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -405,7 +463,6 @@ public class FormController(IFormRepository repository) : ControllerBase
         var result = await repository.GetFormResponseByProductSpecification(productSpecificationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
 
     /// <summary>
     /// Gets form with response by material batch ID.
@@ -447,10 +504,13 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> SaveFormAssigneeDraft([FromBody] SaveFormAssigneeDraftRequest request)
+    public async Task<IResult> SaveFormAssigneeDraft(
+        [FromBody] SaveFormAssigneeDraftRequest request
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.SaveFormAssigneeDraft(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -485,7 +545,8 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> SubmitFormAssignee([FromBody] CreateFormAssigneeRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.SubmitFormAssignee(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -550,7 +611,6 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetResponseId(GetResponseIdRequest request)
     {
-
         var result = await repository.GetResponseId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -566,7 +626,6 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFormAssigneeId(GetResponseIdRequest request)
     {
-
         var result = await repository.GetFormAssigneeId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
