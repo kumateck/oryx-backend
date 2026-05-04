@@ -198,8 +198,37 @@ public class FormRepository(
             .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
 
+        if (response is null && request.ResponseId.HasValue)
+            return Error.Validation("Response", $"ResponseId {request.ResponseId} is invalid");
+
         if (response is null)
         {
+            if (
+                request.BatchManufacturingRecordId.HasValue
+                && await context.Responses.AnyAsync(r =>
+                    r.BatchManufacturingRecordId == request.BatchManufacturingRecordId.Value
+                    && r.FormId == request.FormId
+                )
+            )
+            {
+                return Error.Validation(
+                    "Response",
+                    "Response for this bmr and form has already been saved"
+                );
+            }
+
+            if (
+                request.MaterialBatchId.HasValue
+                && await context.Responses.AnyAsync(r =>
+                    r.MaterialBatchId == request.MaterialBatchId.Value && r.FormId == request.FormId
+                )
+            )
+            {
+                return Error.Validation(
+                    "Response",
+                    "Response for this material batch and form has already been saved"
+                );
+            }
             // Create a new draft if not yet started
             response = new Response
             {

@@ -19,7 +19,8 @@ public class MaterialBatchAnalysedByResolver(ApplicationDbContext dbContext)
         FormAssignee formAssignee;
 
         if (
-            context.Items.TryGetValue("FormAssignees", out var formAssigneesObj)
+            context.TryGetItems(out var items)
+            && items.TryGetValue("FormAssignees", out var formAssigneesObj)
             && formAssigneesObj is List<FormAssignee> formAssignees
         )
         {
