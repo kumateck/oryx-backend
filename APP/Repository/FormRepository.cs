@@ -813,7 +813,11 @@ public class FormRepository(
         return Result.Success();
     }
 
-    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)
+    public async Task<Result> GenerateCertificateOfAnalysis(
+        Guid materialBatchId,
+        Guid userId,
+        List<CertificateOfAnalysisComplies> complies
+    )
     {
         var response = await context.Responses.FirstOrDefaultAsync(r =>
             r.MaterialBatchId == materialBatchId
@@ -843,6 +847,34 @@ public class FormRepository(
         batch.Status = BatchStatus.Checked;
         context.MaterialBatches.Update(batch);
 
+        if (complies is { Count: > 0 })
+        {
+            var formResponses = await context
+                .FormResponses.AsSplitQuery()
+                .Where(f => f.ResponseId == response.Id)
+                .Include(formResponse => formResponse.FormField)
+                    .ThenInclude(formField => formField.FormSection)
+                .ToListAsync();
+
+            foreach (var comply in complies)
+            {
+                var formSection = formResponses
+                    .Where(f => f.FormField.FormSectionId == comply.FormSectionId)
+                    .Select(f => f.FormField.FormSection)
+                    .FirstOrDefault();
+
+                if (formSection == null)
+                {
+                    return Error.Validation(
+                        "Response.FormSection",
+                        $"{comply.FormSectionId} is not a valid forms section id"
+                    );
+                }
+
+                formSection.Complies = comply.Complies;
+            }
+        }
+
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -851,7 +883,8 @@ public class FormRepository(
     public async Task<Result> GenerateCertificateOfAnalysisForProduct(
         Guid batchManufacturingRecordId,
         Guid productionActivityStepId,
-        Guid userId
+        Guid userId,
+        List<CertificateOfAnalysisComplies> complies
     )
     {
         var response = await context.Responses.FirstOrDefaultAsync(r =>
@@ -882,6 +915,34 @@ public class FormRepository(
 
         bmr.Status = BatchManufacturingStatus.Checked;
         context.BatchManufacturingRecords.Update(bmr);
+
+        if (complies is { Count: > 0 })
+        {
+            var formResponses = await context
+                .FormResponses.AsSplitQuery()
+                .Where(f => f.ResponseId == response.Id)
+                .Include(formResponse => formResponse.FormField)
+                    .ThenInclude(formField => formField.FormSection)
+                .ToListAsync();
+
+            foreach (var comply in complies)
+            {
+                var formSection = formResponses
+                    .Where(f => f.FormField.FormSectionId == comply.FormSectionId)
+                    .Select(f => f.FormField.FormSection)
+                    .FirstOrDefault();
+
+                if (formSection == null)
+                {
+                    return Error.Validation(
+                        "Response.FormSection",
+                        $"{comply.FormSectionId} is not a valid forms section id"
+                    );
+                }
+
+                formSection.Complies = comply.Complies;
+            }
+        }
 
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         await context.SaveChangesAsync();
