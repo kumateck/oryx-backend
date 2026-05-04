@@ -17,7 +17,8 @@ public class MaterialBatchSampledByResolver(ApplicationDbContext dbContext)
     )
     {
         if (
-            context.Items.TryGetValue("Samplings", out var samplingsObj)
+            context.TryGetItems(out var items)
+            && items.TryGetValue("Samplings", out var samplingsObj)
             && samplingsObj is List<MaterialSampling> samplings
         )
         {
