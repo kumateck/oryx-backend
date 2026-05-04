@@ -1,4 +1,5 @@
 using APP.Mapper.Resolvers;
+using APP.Mapper.Resolvers.MaterialBatch;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Alerts;
@@ -390,9 +391,89 @@ public class OryxMapper : Profile
             );
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
-        CreateMap<MaterialBatch, MaterialBatchDto>();
-        CreateMap<MaterialBatch, MaterialBatchListDto>();
-        CreateMap<MaterialBatch, MaterialBatchReducedDto>();
+        CreateMap<MaterialBatch, MaterialBatchDto>()
+            .ForMember(
+                dest => dest.SupplierName,
+                opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
+            )
+            .ForMember(
+                dest => dest.ManufacturerName,
+                opt => opt.MapFrom<MaterialBatchManufacturerNameResolver>()
+            )
+            .ForMember(dest => dest.ArNumber, opt => opt.MapFrom<MaterialBatchArNumberResolver>())
+            .ForMember(dest => dest.SampledBy, opt => opt.MapFrom<MaterialBatchSampledByResolver>())
+            .ForMember(dest => dest.SampledOn, opt => opt.MapFrom<MaterialBatchSampledOnResolver>())
+            .ForMember(
+                dest => dest.SampleQuantity,
+                opt => opt.MapFrom<MaterialBatchSampleQuantityResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedBy,
+                opt => opt.MapFrom<MaterialBatchAnalysedByResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedDate,
+                opt => opt.MapFrom<MaterialBatchAnalysedDateResolver>()
+            )
+            .ForMember(
+                dest => dest.IssuedBy,
+                opt => opt.MapFrom<MaterialBatchUserIssuedByResolver>()
+            )
+            .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
+
+        CreateMap<MaterialBatch, MaterialBatchListDto>()
+            .ForMember(
+                dest => dest.SupplierName,
+                opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
+            )
+            .ForMember(
+                dest => dest.ManufacturerName,
+                opt => opt.MapFrom<MaterialBatchManufacturerNameResolver>()
+            )
+            .ForMember(dest => dest.ArNumber, opt => opt.MapFrom<MaterialBatchArNumberResolver>())
+            .ForMember(dest => dest.SampledBy, opt => opt.MapFrom<MaterialBatchSampledByResolver>())
+            .ForMember(dest => dest.SampledOn, opt => opt.MapFrom<MaterialBatchSampledOnResolver>())
+            .ForMember(
+                dest => dest.SampleQuantity,
+                opt => opt.MapFrom<MaterialBatchSampleQuantityResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedBy,
+                opt => opt.MapFrom<MaterialBatchAnalysedByResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedDate,
+                opt => opt.MapFrom<MaterialBatchAnalysedDateResolver>()
+            )
+            .ForMember(dest => dest.IssuedBy, opt => opt.MapFrom<MaterialBatchIssuedByResolver>())
+            .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
+
+        CreateMap<MaterialBatch, MaterialBatchReducedDto>()
+            .ForMember(
+                dest => dest.SupplierName,
+                opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
+            )
+            .ForMember(
+                dest => dest.ManufacturerName,
+                opt => opt.MapFrom<MaterialBatchManufacturerNameResolver>()
+            )
+            .ForMember(dest => dest.ArNumber, opt => opt.MapFrom<MaterialBatchArNumberResolver>())
+            .ForMember(dest => dest.SampledBy, opt => opt.MapFrom<MaterialBatchSampledByResolver>())
+            .ForMember(dest => dest.SampledOn, opt => opt.MapFrom<MaterialBatchSampledOnResolver>())
+            .ForMember(
+                dest => dest.SampleQuantity,
+                opt => opt.MapFrom<MaterialBatchSampleQuantityResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedBy,
+                opt => opt.MapFrom<MaterialBatchAnalysedByResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedDate,
+                opt => opt.MapFrom<MaterialBatchAnalysedDateResolver>()
+            )
+            .ForMember(dest => dest.IssuedBy, opt => opt.MapFrom<MaterialBatchIssuedByResolver>())
+            .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
         CreateMap<MaterialReject, MaterialRejectDto>();
         CreateMap<MaterialBatch, DistributedMaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
