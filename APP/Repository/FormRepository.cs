@@ -198,6 +198,9 @@ public class FormRepository(
             .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
 
+        if (response is null && request.ResponseId.HasValue)
+            return Error.Validation("Response", $"ResponseId {request.ResponseId} is invalid");
+
         if (response is null)
         {
             // Create a new draft if not yet started
