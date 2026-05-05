@@ -203,29 +203,37 @@ public class FormRepository(
 
         if (response is null)
         {
-            var existingBmrResponse = await context.Responses.FirstOrDefaultAsync(r =>
-                r.BatchManufacturingRecordId == request.BatchManufacturingRecordId.Value
-                && r.FormId == request.FormId
-            );
-            if (request.BatchManufacturingRecordId.HasValue && existingBmrResponse != null)
+            if (request.BatchManufacturingRecordId.HasValue)
             {
-                return Error.Validation(
-                    "Response",
-                    $"Response for this bmr and form has already been saved."
-                        + $" Pass the responseId {existingBmrResponse.Id} to update the draft"
+                var existingBmrResponse = await context.Responses.FirstOrDefaultAsync(r =>
+                    r.BatchManufacturingRecordId == request.BatchManufacturingRecordId.Value
+                    && r.FormId == request.FormId
                 );
+
+                if (existingBmrResponse != null)
+                {
+                    return Error.Validation(
+                        "Response",
+                        $"Response for this bmr and form has already been saved."
+                            + $" Pass the responseId {existingBmrResponse.Id} to update the draft"
+                    );
+                }
             }
 
-            var existingMaterialBatchResponse = await context.Responses.FirstOrDefaultAsync(r =>
-                r.MaterialBatchId == request.MaterialBatchId.Value && r.FormId == request.FormId
-            );
-            if (request.MaterialBatchId.HasValue && existingMaterialBatchResponse != null)
+            if (request.MaterialBatchId.HasValue)
             {
-                return Error.Validation(
-                    "Response",
-                    "Response for this material batch and form has already been saved."
-                        + $" Pass the responseId {existingMaterialBatchResponse.Id} to update the draft"
+                var existingMaterialBatchResponse = await context.Responses.FirstOrDefaultAsync(r =>
+                    r.MaterialBatchId == request.MaterialBatchId.Value && r.FormId == request.FormId
                 );
+
+                if (existingMaterialBatchResponse != null)
+                {
+                    return Error.Validation(
+                        "Response",
+                        "Response for this material batch and form has already been saved."
+                            + $" Pass the responseId {existingMaterialBatchResponse.Id} to update the draft"
+                    );
+                }
             }
             // Create a new draft if not yet started
             response = new Response
