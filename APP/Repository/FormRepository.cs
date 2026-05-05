@@ -295,7 +295,7 @@ public class FormRepository(
             {
                 var reference = Guid.NewGuid().ToString();
                 await fileRepository.SaveBlobItem(
-                    nameof(FormResponse).ToLower(),
+                    nameof(FormResponse),
                     formResponse.Id,
                     reference,
                     value.ConvertFromBase64(),
@@ -1028,7 +1028,7 @@ public class FormRepository(
 
         return mapper.Map<List<FormDto>>(
             form,
-            opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse)
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
     }
 
@@ -1055,7 +1055,7 @@ public class FormRepository(
 
         return mapper.Map<List<FormDto>>(
             form,
-            opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse)
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
     }
 
@@ -1142,7 +1142,7 @@ public class FormRepository(
             .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialSpecificationId == materialSpecificationId));
 
-        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = nameof(FormResponse));
     }
     
     public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(Guid productSpecificationId)
@@ -1162,7 +1162,7 @@ public class FormRepository(
             .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.ProductSpecificationId == productSpecificationId));
 
-        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = nameof(FormResponse));
     }*/
 
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(
@@ -1186,7 +1186,7 @@ public class FormRepository(
 
         return mapper.Map<List<FormResponseDto>>(
             formResponse,
-            opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse)
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
     }
 
@@ -1208,7 +1208,7 @@ public class FormRepository(
 
         return mapper.Map<List<FormResponseDto>>(
             formResponse,
-            opt => opt.Items[AppConstants.ModelType] = typeof(FormResponse)
+            opt => opt.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
     }
 
@@ -1239,7 +1239,7 @@ public class FormRepository(
 
         return mapper.Map<List<FormResponseDto>>(
             formResponse,
-            opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse)
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
     }
 
@@ -1269,7 +1269,7 @@ public class FormRepository(
 
         return mapper.Map<List<FormResponseDto>>(
             formResponse,
-            opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse)
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
     }
 
