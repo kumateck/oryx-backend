@@ -58,7 +58,6 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         return analyticalRawData.Id;
     }
 
-
     public async Task<
         Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>
     > GetAnalyticalRawData(int page, int pageSize, string searchQuery, bool? isVerified = null)
@@ -166,7 +165,8 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     }
 
     public async Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(
-        Guid batchManufacturingRecordId
+        Guid batchManufacturingRecordId,
+        TestStage? testStage
     )
     {
         var bmr = await context
@@ -194,6 +194,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .Where(p => !p.DeletedAt.HasValue)
             .FirstOrDefaultAsync(p =>
                 p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId
+                && (!testStage.HasValue || p.Stage == testStage.Value)
             );
 
         return new ProductBatchArd
@@ -208,7 +209,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             IssueNumber = atr?.IssueNumber,
             IssuedBy = mapper.Map<UserDto>(atr?.IssuedBy),
             AnalysedDate = atr?.TestedAt,
-            AnalysedBy = mapper.Map<UserDto>(atr?.TestedBy)
+            AnalysedBy = mapper.Map<UserDto>(atr?.TestedBy),
         };
     }
 

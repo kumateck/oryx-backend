@@ -1,15 +1,18 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.ProductAnalyticalRawData;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
+
 [ApiController]
 [Route("api/v{version:apiVersion}/product-ard")]
 [Authorize]
-public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataRepository repository) : ControllerBase
+public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataRepository repository)
+    : ControllerBase
 {
     /// <summary>
     /// Creates product analytical raw data.
@@ -17,7 +20,9 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateAnalyticalRawData([FromBody] CreateProductAnalyticalRawDataRequest request)
+    public async Task<IResult> CreateAnalyticalRawData(
+        [FromBody] CreateProductAnalyticalRawDataRequest request
+    )
     {
         var result = await repository.CreateAnalyticalRawData(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -27,9 +32,16 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Retrieves a paginated list of product analytical raw data based on search criteria.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>))]
-    public async Task<IResult> GetAnalyticalRawData([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] bool? isVerified = null)
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>)
+    )]
+    public async Task<IResult> GetAnalyticalRawData(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] bool? isVerified = null
+    )
     {
         var result = await repository.GetAnalyticalRawData(page, pageSize, searchQuery, isVerified);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -51,7 +63,10 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Retrieves specific product analytical raw data by product Id.
     /// </summary>
     [HttpGet("product/{productId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductAnalyticalRawDataDto>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(List<ProductAnalyticalRawDataDto>)
+    )]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawDataByProduct([FromRoute] Guid productId)
     {
@@ -60,14 +75,20 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     }
 
     /// <summary>
-    /// Retrieves specific product batch analytical raw data details 
+    /// Retrieves specific product batch analytical raw data details
     /// </summary>
     [HttpGet("product/batch-details/{batchManufacturingRecordId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductBatchArd))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRelevantProductInfoForArd([FromRoute] Guid batchManufacturingRecordId)
+    public async Task<IResult> GetRelevantProductInfoForArd(
+        [FromRoute] Guid batchManufacturingRecordId,
+        [FromRoute] TestStage? testStage
+    )
     {
-        var result = await repository.GetRelevantProductInfoForArd(batchManufacturingRecordId);
+        var result = await repository.GetRelevantProductInfoForArd(
+            batchManufacturingRecordId,
+            testStage
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -75,10 +96,16 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Updates product analytical raw data by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ProductAnalyticalRawDataDto))]
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent,
+        Type = typeof(ProductAnalyticalRawDataDto)
+    )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateAnalyticalRawData([FromRoute] Guid id, [FromBody] CreateProductAnalyticalRawDataRequest request)
+    public async Task<IResult> UpdateAnalyticalRawData(
+        [FromRoute] Guid id,
+        [FromBody] CreateProductAnalyticalRawDataRequest request
+    )
     {
         var result = await repository.UpdateAnalyticalRawData(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -93,7 +120,8 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     public async Task<IResult> DeleteAnalyticRawData([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteAnalyticalRawData(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -105,9 +133,13 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     [HttpPut("start-test/{batchManufacturingRecordId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid batchManufacturingRecordId)
+    public async Task<IResult> StartTestForMaterialBatch(
+        [FromRoute] Guid batchManufacturingRecordId
+    )
     {
-        var result = await repository.StartTestForBatchManufacturingRecord(batchManufacturingRecordId);
+        var result = await repository.StartTestForBatchManufacturingRecord(
+            batchManufacturingRecordId
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
