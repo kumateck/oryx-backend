@@ -2156,13 +2156,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         };
 
         // Optionally update the batch's consumed quantity
-        var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == batchId);
+        var materialBatch = await context
+            .MaterialBatches.Include(b => b.Material)
+            .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (materialBatch == null)
             return Error.Failure("Material.Batch", "Material batch not found.");
 
-        materialBatch.ConsumedQuantity += quantity;
-        context.MaterialBatches.Update(materialBatch);
+        if (!(materialBatch.Material?.IsUnlimited ?? false))
+        {
+            materialBatch.ConsumedQuantity += quantity;
+            context.MaterialBatches.Update(materialBatch);
+        }
 
         // Add the event to the context
         await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
@@ -2299,45 +2304,71 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var materialBatchEvents = new List<MaterialBatchEvent>();
         var remainingQuantityToConsume = quantity;
 
-        foreach (var batch in material.Batches.OrderBy(b => b.ExpiryDate))
+        if (material.IsUnlimited)
         {
-            if (remainingQuantityToConsume <= 0)
-                break; // Stop if we've consumed all the required quantity
+            var batch = material.Batches.FirstOrDefault();
+            if (batch == null)
+            {
+                return Error.Failure(
+                    "Batch.Consume",
+                    $"No batch found for unlimited material {material.Name}."
+                );
+            }
 
-            if (batch.RemainingQuantity <= 0)
-                continue; // Skip batches with no remaining stock
-
-            // Consume the minimum of what's available in the batch or the remaining needed quantity
-            var quantityToConsumeFromThisBatch = Math.Min(
-                batch.RemainingQuantity,
-                remainingQuantityToConsume
-            );
-
-            // Create a batch event for this consumption
             var materialBatchEvent = new MaterialBatchEvent
             {
                 BatchId = batch.Id,
-                Quantity = quantityToConsumeFromThisBatch,
+                Quantity = quantity,
                 UserId = userId,
                 Type = EventType.Consumed,
                 ConsumptionWarehouseId = locationId,
                 ConsumedAt = DateTime.UtcNow,
             };
-
-            // Update batch quantities
-            batch.ConsumedQuantity += quantityToConsumeFromThisBatch;
-            remainingQuantityToConsume -= quantityToConsumeFromThisBatch;
-
             materialBatchEvents.Add(materialBatchEvent);
-            context.MaterialBatches.Update(batch);
+            // We don't deduct from ConsumedQuantity for unlimited materials
         }
-
-        if (remainingQuantityToConsume > 0)
+        else
         {
-            return Error.Failure(
-                "Batch.Consume",
-                $"Not enough stock available to consume the requested quantity. Remaining: {remainingQuantityToConsume}"
-            );
+            foreach (var batch in material.Batches.OrderBy(b => b.ExpiryDate))
+            {
+                if (remainingQuantityToConsume <= 0)
+                    break; // Stop if we've consumed all the required quantity
+
+                if (batch.RemainingQuantity <= 0)
+                    continue; // Skip batches with no remaining stock
+
+                // Consume the minimum of what's available in the batch or the remaining needed quantity
+                var quantityToConsumeFromThisBatch = Math.Min(
+                    batch.RemainingQuantity,
+                    remainingQuantityToConsume
+                );
+
+                // Create a batch event for this consumption
+                var materialBatchEvent = new MaterialBatchEvent
+                {
+                    BatchId = batch.Id,
+                    Quantity = quantityToConsumeFromThisBatch,
+                    UserId = userId,
+                    Type = EventType.Consumed,
+                    ConsumptionWarehouseId = locationId,
+                    ConsumedAt = DateTime.UtcNow,
+                };
+
+                // Update batch quantities
+                batch.ConsumedQuantity += quantityToConsumeFromThisBatch;
+                remainingQuantityToConsume -= quantityToConsumeFromThisBatch;
+
+                materialBatchEvents.Add(materialBatchEvent);
+                context.MaterialBatches.Update(batch);
+            }
+
+            if (remainingQuantityToConsume > 0)
+            {
+                return Error.Failure(
+                    "Batch.Consume",
+                    $"Not enough stock available to consume the requested quantity. Remaining: {remainingQuantityToConsume}"
+                );
+            }
         }
 
         // Add all batch events to the context
@@ -3835,7 +3866,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     Id = Guid.NewGuid(),
                     MaterialId = material.Id,
                     BatchNumber = batchNo,
-                    TotalQuantity = 0,
+                    TotalQuantity = qty,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
                     ExpiryDate = ParseDate(expiryDateStr),
@@ -3849,10 +3880,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             else
             {
                 if (batch.ExpiryDate != ParseDate(expiryDateStr))
-                    return Error.Validation("Batch.Consistency", $"Row {row}: Expiry mismatch.");
+                    return Error.Validation(
+                        "Batch.Consistency",
+                        $"Row {row}: Expiry mismatch. Expected {batch.ExpiryDate:d}. "
+                            + $"Got: {ParseDate(expiryDateStr):d}"
+                    );
 
                 if (batch.ManufacturingDate != ParseDate(mfgDateStr))
-                    return Error.Validation("Batch.Consistency", $"Row {row}: MFG mismatch.");
+                    return Error.Validation(
+                        "Batch.Consistency",
+                        $"Row {row}: MFG date mismatch. Expected {batch.ManufacturingDate:d}. "
+                            + $"Got: {ParseDate(expiryDateStr):d}"
+                    );
             }
 
             var shelfKey = $"{warehouse}|{shelfCode}";
@@ -4161,7 +4200,9 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 (ga.""TotalQuantity"" - ga.""ConsumedQuantity"" - ga.""QuantityAssigned"") as UnassignedQuantity
             FROM WarehouseLevels wl
             JOIN GlobalAggregates ga ON wl.BatchId = ga.BatchId
-            WHERE 
+            JOIN ""MaterialBatches"" mb ON ga.BatchId = mb.""Id""
+            JOIN ""Materials"" m ON mb.""MaterialId"" = m.""Id""
+            WHERE m.""IsUnlimited"" = false AND (
                 -- 1. Ledger vs Global Mismatch
                 ABS(ga.""QuantityAssigned"" - (SELECT COALESCE(SUM(""Quantity""), 0) FROM ""ShelfMaterialBatches"" WHERE ""MaterialBatchId"" = wl.BatchId)) > 0.000001
                 OR ABS(ga.""ConsumedQuantity"" - (SELECT COALESCE(SUM(""Quantity""), 0) FROM ""MaterialBatchEvents"" WHERE ""BatchId"" = wl.BatchId AND ""Type"" = 3)) > 0.000001
@@ -4170,7 +4211,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 (ga.""TotalQuantity"" - ga.""ConsumedQuantity"" - ga.""QuantityAssigned"") < -0.000001
                 OR
                 -- 3. Status Inconsistency (e.g. Status is Available (3) but 0 remaining)
-                (ga.""Status"" = 3 AND (ga.""TotalQuantity"" - ga.""ConsumedQuantity"") <= 0)";
+                (ga.""Status"" = 3 AND (ga.""TotalQuantity"" - ga.""ConsumedQuantity"") <= 0))";
 
         using var command = context.Database.GetDbConnection().CreateCommand();
         command.CommandText = sql;
@@ -4219,6 +4260,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     GROUP BY ""BatchId""
                 ) AS sub
                 WHERE mb.""Id"" = sub.""BatchId""
+                AND (SELECT ""IsUnlimited"" FROM ""Materials"" WHERE ""Id"" = mb.""MaterialId"") = false
                 AND ABS(mb.""ConsumedQuantity"" - sub.TotalConsumed) > 0.000001"
             );
 
@@ -4233,6 +4275,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     GROUP BY ""MaterialBatchId""
                 ) AS sub
                 WHERE mb.""Id"" = sub.""MaterialBatchId""
+                AND (SELECT ""IsUnlimited"" FROM ""Materials"" WHERE ""Id"" = mb.""MaterialId"") = false
                 AND ABS(mb.""QuantityAssigned"" - sub.TotalOnShelves) > 0.000001"
             );
 
@@ -4242,6 +4285,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 UPDATE ""MaterialBatches"" mb
                 SET ""ConsumedQuantity"" = 0
                 WHERE NOT EXISTS (SELECT 1 FROM ""MaterialBatchEvents"" mbe WHERE mbe.""BatchId"" = mb.""Id"" AND mbe.""Type"" = 3)
+                AND (SELECT ""IsUnlimited"" FROM ""Materials"" WHERE ""Id"" = mb.""MaterialId"") = false
                 AND mb.""ConsumedQuantity"" != 0"
             );
 
@@ -4250,6 +4294,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 UPDATE ""MaterialBatches"" mb
                 SET ""QuantityAssigned"" = 0
                 WHERE NOT EXISTS (SELECT 1 FROM ""ShelfMaterialBatches"" smb WHERE smb.""MaterialBatchId"" = mb.""Id"")
+                AND (SELECT ""IsUnlimited"" FROM ""Materials"" WHERE ""Id"" = mb.""MaterialId"") = false
                 AND mb.""QuantityAssigned"" != 0"
             );
 
