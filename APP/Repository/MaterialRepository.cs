@@ -29,10 +29,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     // Create Material
     public async Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId)
     {
-        var existingMaterial = await context.Materials
-            .AnyAsync(m => m.Code == request.Code && m.Name == request.Name);
-        if (existingMaterial) return Error.Validation("Material.Exists","Material name and code already exists");
-        
+        var existingMaterial = await context.Materials.AnyAsync(m =>
+            m.Code == request.Code && m.Name == request.Name
+        );
+        if (existingMaterial)
+            return Error.Validation("Material.Exists", "Material name and code already exists");
+
         var material = mapper.Map<Material>(request);
         material.CreatedById = userId;
         await context.Materials.AddAsync(material);
@@ -181,9 +183,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return MaterialErrors.NotFound(materialId);
         }
-        
-        if (material.TotalStock > 0) return Error.Validation("Material.CannotDelete",
-            "Materials with stock greater than zero cannot be deleted");
+
+        if (material.TotalStock > 0)
+            return Error.Validation(
+                "Material.CannotDelete",
+                "Materials with stock greater than zero cannot be deleted"
+            );
 
         material.DeletedAt = DateTime.UtcNow;
         material.LastDeletedById = userId;
@@ -759,7 +764,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return UserErrors.WarehouseNotFound(material.Kind);
 
         var query = context
-            .ShelfMaterialBatches.AsSplitQuery().IgnoreQueryFilters()
+            .ShelfMaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(m => m.WarehouseLocationShelf)
             .Include(m => m.MaterialBatch)
                 .ThenInclude(mb => mb.Checklist)
@@ -3717,22 +3723,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .UnitOfMeasures.Where(u => excelUomSymbols.Contains(u.Symbol))
             .ToListAsync();
 
-        var uomLookup = uoms
-            .GroupBy(u => u.Symbol.Trim(), StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                g => g.Key,
-                g => g.First().Id,
-                StringComparer.OrdinalIgnoreCase
-            );
+        var uomLookup = uoms.GroupBy(u => u.Symbol.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
 
-        var shelfLookup = (await context
-            .WarehouseLocationShelves.Where(s => excelShelfCodes.Contains(s.Code))
-            .Select(s => new
-            {
-                ShelfId = s.Id,
-                Key = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name + "|" + s.Code,
-            })
-            .ToListAsync())
+        var shelfLookup = (
+            await context
+                .WarehouseLocationShelves.Where(s => excelShelfCodes.Contains(s.Code))
+                .Select(s => new
+                {
+                    ShelfId = s.Id,
+                    Key = s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name + "|" + s.Code,
+                })
+                .ToListAsync()
+        )
             .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().ShelfId, StringComparer.OrdinalIgnoreCase);
 
@@ -3756,10 +3759,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToListAsync();
         var batchLookup = batches
             .GroupBy(b => (b.MaterialId, (b.BatchNumber ?? "").Trim().ToUpperInvariant()))
-            .ToDictionary(
-                g => g.Key,
-                g => g.First()
-            );
+            .ToDictionary(g => g.Key, g => g.First());
 
         var warehouses = await context
             .Warehouses.IgnoreQueryFilters()
@@ -3800,20 +3800,30 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 );
 
             // --- UOM CONSISTENCY ---
-            if (!string.IsNullOrEmpty(uomSymbol))
+            if (string.IsNullOrEmpty(uomSymbol))
+                return Error.Validation(
+                    "Uom.Symbol",
+                    $"Row {row} has an empty uom symbol which is not valid"
+                );
+
+            var uomId = uomLookup.TryGetValue(uomSymbol, out var u) ? u : (Guid?)null;
+            if (!uomId.HasValue)
+                return Error.Validation(
+                    "Uom.symbol",
+                    $"Row {row} has uom of {uomSymbol} which cannot be found in the database"
+                );
+
+            if (materialUomConsistency.TryGetValue(materialCode, out var existingUom))
             {
-                if (materialUomConsistency.TryGetValue(materialCode, out var existingUom))
-                {
-                    if (!existingUom.Equals(uomSymbol, StringComparison.OrdinalIgnoreCase))
-                        return Error.Validation(
-                            "Material.Consistency",
-                            $"Row {row}: Material '{materialCode}' has inconsistent UOM."
-                        );
-                }
-                else
-                {
-                    materialUomConsistency[materialCode] = uomSymbol;
-                }
+                if (!existingUom.Equals(uomSymbol, StringComparison.OrdinalIgnoreCase))
+                    return Error.Validation(
+                        "Material.Consistency",
+                        $"Row {row}: Material '{materialCode}' has inconsistent UOM."
+                    );
+            }
+            else
+            {
+                materialUomConsistency[materialCode] = uomSymbol;
             }
 
             var batchKey = (material.Id, batchNo);
@@ -3829,6 +3839,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
                     ExpiryDate = ParseDate(expiryDateStr),
+                    UoMId = uomLookup[uomSymbol],
                     ManufacturingDate = ParseDate(mfgDateStr),
                 };
 
@@ -3847,9 +3858,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             var shelfKey = $"{warehouse}|{shelfCode}";
             if (!shelfLookup.TryGetValue(shelfKey, out var shelfId))
                 return Error.NotFound("Shelf", $"Row {row}: Shelf '{shelfKey}' not found.");
-
-            var uomId =
-                uomSymbol != null && uomLookup.TryGetValue(uomSymbol, out var u) ? u : (Guid?)null;
 
             batch.TotalQuantity += qty;
 
