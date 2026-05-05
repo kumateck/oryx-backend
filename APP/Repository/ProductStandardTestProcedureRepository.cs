@@ -10,16 +10,23 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper) : IProductStandardTestProcedureRepository
+public class ProductStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper)
+    : IProductStandardTestProcedureRepository
 {
-    public async Task<Result<Guid>> CreateProductStandardTestProcedure(CreateProductStandardTestProcedureRequest request)
+    public async Task<Result<Guid>> CreateProductStandardTestProcedure(
+        CreateProductStandardTestProcedureRequest request
+    )
     {
-        var existingProcedure = await context.ProductStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.StpNumber == request.StpNumber);
+        var existingProcedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(
+            stp => stp.StpNumber == request.StpNumber
+        );
 
         if (existingProcedure != null)
         {
-            return Error.Validation("ProductStandardTestProcedure.Exists", "Product Standard test procedure already exists.");
+            return Error.Validation(
+                "ProductStandardTestProcedure.Exists",
+                "Product Standard test procedure already exists."
+            );
         }
 
         var product = await context.Products.FirstOrDefaultAsync(m => m.Id == request.ProductId);
@@ -36,10 +43,13 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         return productStandardTestProcedure.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>> GetProductStandardTestProcedures(int page, int pageSize, string searchQuery)
+    public async Task<
+        Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
+    > GetProductStandardTestProcedures(int page, int pageSize, string searchQuery)
     {
-        var query = context.ProductStandardTestProcedures
-            .AsQueryable()
+        var query = context
+            .ProductStandardTestProcedures.AsQueryable()
+            .IgnoreQueryFilters()
             .Include(stp => stp.Product)
             .AsSplitQuery();
 
@@ -48,45 +58,71 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
         }
 
-        return await PaginationHelper
-            .GetPaginatedResultAsync(query,
-                page,
-                pageSize,
-                entity => mapper.Map<ProductStandardTestProcedureDto>(entity,
-                    opts => opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure)));
-
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            entity =>
+                mapper.Map<ProductStandardTestProcedureDto>(
+                    entity,
+                    opts =>
+                        opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure)
+                )
+        );
     }
 
-    public async Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedure(Guid id)
+    public async Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedure(
+        Guid id
+    )
     {
-        var procedure = await context.ProductStandardTestProcedures
-            .AsSplitQuery()
+        var procedure = await context
+            .ProductStandardTestProcedures.AsSplitQuery()
             .Include(stp => stp.Product)
             .FirstOrDefaultAsync(stp => stp.Id == id);
 
-        return procedure is null ?
-            Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found") :
-            mapper.Map<ProductStandardTestProcedureDto>(procedure
-            , opts => { opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure); });
+        return procedure is null
+            ? Error.NotFound(
+                "ProductStandardTestProcedure.NotFound",
+                "Product Standard test procedure not found"
+            )
+            : mapper.Map<ProductStandardTestProcedureDto>(
+                procedure,
+                opts =>
+                {
+                    opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure);
+                }
+            );
     }
 
-    public async Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedureByProduct(Guid id)
+    public async Task<
+        Result<ProductStandardTestProcedureDto>
+    > GetProductStandardTestProcedureByProduct(Guid id)
     {
-        var procedure = await context.ProductStandardTestProcedures
-            .AsSplitQuery()
+        var procedure = await context
+            .ProductStandardTestProcedures.AsSplitQuery()
             .Include(stp => stp.Product)
             .FirstOrDefaultAsync(stp => stp.ProductId == id);
 
-        return procedure is null ?
-            Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found") :
-            mapper.Map<ProductStandardTestProcedureDto>(procedure
-                , opts => { opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure); });
+        return procedure is null
+            ? Error.NotFound(
+                "ProductStandardTestProcedure.NotFound",
+                "Product Standard test procedure not found"
+            )
+            : mapper.Map<ProductStandardTestProcedureDto>(
+                procedure,
+                opts =>
+                {
+                    opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure);
+                }
+            );
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductListDto>>>> GetProductsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery)
+    public async Task<
+        Result<Paginateable<IEnumerable<ProductListDto>>>
+    > GetProductsNotUsedInStandardTestProcedure(int page, int pageSize, string searchQuery)
     {
-        var query = context.Products
-            .AsSplitQuery()
+        var query = context
+            .Products.AsSplitQuery()
             .Where(p => !context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id))
             .AsQueryable();
 
@@ -103,14 +139,21 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         );
     }
 
-    public async Task<Result> UpdateProductStandardTestProcedure(Guid id, CreateProductStandardTestProcedureRequest request)
+    public async Task<Result> UpdateProductStandardTestProcedure(
+        Guid id,
+        CreateProductStandardTestProcedureRequest request
+    )
     {
-        var procedure = await context.ProductStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.Id == id);
+        var procedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(stp =>
+            stp.Id == id
+        );
 
         if (procedure is null)
         {
-            return Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found");
+            return Error.NotFound(
+                "ProductStandardTestProcedure.NotFound",
+                "Product Standard test procedure not found"
+            );
         }
 
         mapper.Map(request, procedure);
@@ -123,11 +166,15 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
     public async Task<Result> DeleteProductStandardTestProcedure(Guid id, Guid userId)
     {
-        var procedure = await context.ProductStandardTestProcedures
-            .FirstOrDefaultAsync(stp => stp.Id == id);
+        var procedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(stp =>
+            stp.Id == id
+        );
         if (procedure is null)
         {
-            return Error.NotFound("ProductStandardTestProcedure.NotFound", "Product Standard test procedure not found");
+            return Error.NotFound(
+                "ProductStandardTestProcedure.NotFound",
+                "Product Standard test procedure not found"
+            );
         }
 
         procedure.DeletedAt = DateTime.UtcNow;
