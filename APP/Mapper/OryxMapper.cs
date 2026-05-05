@@ -857,7 +857,15 @@ public class OryxMapper : Profile
         CreateMap<FormResponse, FormResponseDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>())
             .ForMember(dest => dest.CheckedBy, opt => opt.MapFrom(src => src.Response.CheckedBy))
-            .ForMember(dest => dest.CheckedAt, opt => opt.MapFrom(src => src.Response.CheckedAt));
+            .ForMember(dest => dest.CheckedAt, opt => opt.MapFrom(src => src.Response.CheckedAt))
+            .ForMember(
+                dest => dest.SectionName,
+                opt => opt.MapFrom(src => src.FormField.FormSection.Name)
+            )
+            .ForMember(
+                dest => dest.Complies,
+                opt => opt.MapFrom(src => src.FormField.FormSection.Complies)
+            );
         CreateMap<CreateFormResponseRequest, FormResponse>();
         CreateMap<FormAssignee, FormAssigneeDto>();
         CreateMap<FormFieldAssignee, FormFieldAssigneeDto>();
