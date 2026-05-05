@@ -55,6 +55,8 @@ public class FormResponseDto : WithAttachment
 {
     public Guid ResponseId { get; set; }
     public FormFieldDto FormField { get; set; }
+    public string SectionName { get; set; }
+    public bool Complies { get; set; }
     public string Value { get; set; }
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }

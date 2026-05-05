@@ -1019,6 +1019,7 @@ public class FormRepository(
                 .ThenInclude(r => r.CreatedBy)
             .Include(f => f.Responses)
                 .ThenInclude(r => r.FormField)
+                    .ThenInclude(ff => ff.FormSection)
             .Include(f => f.Responses)
                 .ThenInclude(r => r.Response)
                     .ThenInclude(res => res.CheckedBy)
@@ -1046,11 +1047,12 @@ public class FormRepository(
                 .ThenInclude(r => r.CreatedBy)
             .Include(f => f.Responses)
                 .ThenInclude(r => r.FormField)
+                    .ThenInclude(ff => ff.FormSection)
             .Include(f => f.Responses)
                 .ThenInclude(r => r.Response)
                     .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f =>
-                f.Responses.Any(r => r.Response.MaterialBatchId == batchManufacturingRecordId)
+                f.Responses.Any(r => r.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
             );
 
         return mapper.Map<List<FormDto>>(
@@ -1203,6 +1205,8 @@ public class FormRepository(
             .Include(r => r.FormField)
                 .ThenInclude(r => r.Question)
                     .ThenInclude(r => r.Options)
+            .Include(r => r.FormField)
+                .ThenInclude(f => f.FormSection)
             .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
             .ToListAsync();
 
