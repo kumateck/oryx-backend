@@ -5,6 +5,7 @@ using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.ProductAnalyticalRawData;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.ProductStandardTestProcedures;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -57,7 +58,6 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
         return analyticalRawData.Id;
     }
-
 
     public async Task<
         Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>
@@ -166,7 +166,8 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     }
 
     public async Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(
-        Guid batchManufacturingRecordId
+        Guid batchManufacturingRecordId,
+        TestStage? testStage
     )
     {
         var bmr = await context
@@ -194,13 +195,21 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .Where(p => !p.DeletedAt.HasValue)
             .FirstOrDefaultAsync(p =>
                 p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId
+                && (!testStage.HasValue || p.Stage == testStage.Value)
             );
+
+        var stps = await context
+            .ProductStandardTestProcedures.AsSplitQuery()
+            .Include(s => s.Product)
+            .Where(s => s.ProductId == bmr.ProductionScheduleProduct.ProductId)
+            .ToListAsync();
 
         return new ProductBatchArd
         {
             BatchManufacturingRecord = mapper.Map<BatchManufacturingRecordDto>(bmr),
             ArNumber = atr?.ArNumber,
             SpecNumber = productArd?.SpecNumber,
+            ProductStandardTestProcedures = mapper.Map<List<ProductStandardTestProcedureDto>>(stps),
             SampledDate = atr?.SampledAt,
             SampledBy = mapper.Map<UserDto>(atr?.SampledBy),
             SampledQuantity = decimal.TryParse(atr?.SampledQuantity, out var sq) ? sq : null,
@@ -208,7 +217,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             IssueNumber = atr?.IssueNumber,
             IssuedBy = mapper.Map<UserDto>(atr?.IssuedBy),
             AnalysedDate = atr?.TestedAt,
-            AnalysedBy = mapper.Map<UserDto>(atr?.TestedBy)
+            AnalysedBy = mapper.Map<UserDto>(atr?.TestedBy),
         };
     }
 

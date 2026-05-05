@@ -22,6 +22,7 @@ public class ProductBatchArd
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public string ArNumber { get; set; }
     public string SpecNumber { get; set; }
+    public List<ProductStandardTestProcedureDto> ProductStandardTestProcedures { get; set; } = [];
     public DateTime? SampledDate { get; set; }
     public UserDto SampledBy { get; set; }
     public decimal? SampledQuantity { get; set; }

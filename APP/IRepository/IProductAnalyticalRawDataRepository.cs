@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.ProductAnalyticalRawData;
 using SHARED;
 
@@ -8,11 +9,19 @@ public interface IProductAnalyticalRawDataRepository
 {
     Task<Result<Guid>> CreateAnalyticalRawData(CreateProductAnalyticalRawDataRequest request);
 
-    Task<Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>> GetAnalyticalRawData(int page, int pageSize, string searchQuery, bool? isVerified = null);
+    Task<Result<Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>>> GetAnalyticalRawData(
+        int page,
+        int pageSize,
+        string searchQuery,
+        bool? isVerified = null
+    );
 
     Task<Result<ProductAnalyticalRawDataDto>> GetAnalyticalRawData(Guid id);
     Task<Result<List<ProductAnalyticalRawDataDto>>> GetAnalyticalRawDataByProduct(Guid id);
-    Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(Guid batchManufacturingRecordId);
+    Task<Result<ProductBatchArd>> GetRelevantProductInfoForArd(
+        Guid batchManufacturingRecordId,
+        TestStage? testStage
+    );
 
     Task<Result> UpdateAnalyticalRawData(Guid id, CreateProductAnalyticalRawDataRequest request);
 
