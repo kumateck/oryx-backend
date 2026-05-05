@@ -53,6 +53,7 @@ public class ResponseDetailDto : ResponseDto
 
 public class FormResponseDto : WithAttachment
 {
+    public Guid ResponseId { get; set; }
     public FormFieldDto FormField { get; set; }
     public string Value { get; set; }
     public UserDto CheckedBy { get; set; }
