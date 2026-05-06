@@ -13,6 +13,7 @@ public class MaterialDto
     public string Description { get; set; }
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
+    public bool IsUnlimited { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
     public MaterialSpecificationReducedDto Specification { get; set; }
     public decimal TotalStock { get; set; }
