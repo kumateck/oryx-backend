@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Globalization;
 using System.Linq.Expressions;
 using APP.Extensions;
@@ -1193,17 +1194,33 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    await context.ShelfMaterialBatches.AddAsync(
-                        new ShelfMaterialBatch
-                        {
-                            WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                            MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
-                            Quantity = movedBatch.Quantity,
-                            UoMId = movedBatch.UomId,
-                            Note = movedBatch.Note,
-                            CreatedAt = DateTime.UtcNow,
-                        }
-                    );
+                    var existingTarget = await context.ShelfMaterialBatches
+                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == shelfMaterialBatch.MaterialBatchId)
+                        ?? context.ShelfMaterialBatches.Local
+                            .FirstOrDefault(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                                && x.MaterialBatchId == shelfMaterialBatch.MaterialBatchId);
+
+                    if (existingTarget != null)
+                    {
+                        existingTarget.Quantity += movedBatch.Quantity;
+                        existingTarget.Note = $"{movedBatch.Note}. {existingTarget.Note}";
+                        context.ShelfMaterialBatches.Update(existingTarget);
+                    }
+                    else
+                    {
+                        await context.ShelfMaterialBatches.AddAsync(
+                            new ShelfMaterialBatch
+                            {
+                                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
+                                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
+                                Quantity = movedBatch.Quantity,
+                                UoMId = movedBatch.UomId,
+                                Note = movedBatch.Note,
+                                CreatedAt = DateTime.UtcNow,
+                            }
+                        );
+                    }
                     break;
             }
 
@@ -1309,9 +1326,25 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(shelfBatch);
-                    shelfMaterialBatch.MaterialBatchId = request.MaterialBatchId;
-                    await context.ShelfMaterialBatches.AddAsync(shelfMaterialBatch);
+                    var existingTarget = await context.ShelfMaterialBatches
+                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == shelfBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == request.MaterialBatchId)
+                        ?? context.ShelfMaterialBatches.Local
+                            .FirstOrDefault(x => x.WarehouseLocationShelfId == shelfBatch.WarehouseLocationShelfId
+                                && x.MaterialBatchId == request.MaterialBatchId);
+
+                    if (existingTarget != null)
+                    {
+                        existingTarget.Quantity += shelfBatch.Quantity;
+                        existingTarget.Note = $"Supplied via request. {existingTarget.Note}";
+                        context.ShelfMaterialBatches.Update(existingTarget);
+                    }
+                    else
+                    {
+                        var shelfMaterialBatch = mapper.Map<ShelfMaterialBatch>(shelfBatch);
+                        shelfMaterialBatch.MaterialBatchId = request.MaterialBatchId;
+                        await context.ShelfMaterialBatches.AddAsync(shelfMaterialBatch);
+                    }
                     break;
             }
 
@@ -3151,17 +3184,33 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    await context.ShelfMaterialBatches.AddAsync(
-                        new ShelfMaterialBatch
-                        {
-                            WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                            MaterialBatchId = materialBatch.Id,
-                            Quantity = movedBatch.Quantity,
-                            UoMId = movedBatch.UomId,
-                            Note = movedBatch.Note,
-                            CreatedAt = DateTime.UtcNow,
-                        }
-                    );
+                    var existingTarget = await context.ShelfMaterialBatches
+                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == materialBatch.Id)
+                        ?? context.ShelfMaterialBatches.Local
+                            .FirstOrDefault(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                                && x.MaterialBatchId == materialBatch.Id);
+
+                    if (existingTarget != null)
+                    {
+                        existingTarget.Quantity += movedBatch.Quantity;
+                        existingTarget.Note = $"{movedBatch.Note}. {existingTarget.Note}";
+                        context.ShelfMaterialBatches.Update(existingTarget);
+                    }
+                    else
+                    {
+                        await context.ShelfMaterialBatches.AddAsync(
+                            new ShelfMaterialBatch
+                            {
+                                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
+                                MaterialBatchId = materialBatch.Id,
+                                Quantity = movedBatch.Quantity,
+                                UoMId = movedBatch.UomId,
+                                Note = movedBatch.Note,
+                                CreatedAt = DateTime.UtcNow,
+                            }
+                        );
+                    }
                     break;
             }
 
@@ -3340,17 +3389,33 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    await context.ShelfMaterialBatches.AddAsync(
-                        new ShelfMaterialBatch
-                        {
-                            WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                            MaterialBatchId = materialBatch.Id,
-                            Quantity = movedBatch.Quantity,
-                            UoMId = movedBatch.UomId,
-                            Note = movedBatch.Note,
-                            CreatedAt = DateTime.UtcNow,
-                        }
-                    );
+                    var existingTarget = await context.ShelfMaterialBatches
+                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == materialBatch.Id)
+                        ?? context.ShelfMaterialBatches.Local
+                            .FirstOrDefault(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                                && x.MaterialBatchId == materialBatch.Id);
+
+                    if (existingTarget != null)
+                    {
+                        existingTarget.Quantity += movedBatch.Quantity;
+                        existingTarget.Note = $"{movedBatch.Note}. {existingTarget.Note}";
+                        context.ShelfMaterialBatches.Update(existingTarget);
+                    }
+                    else
+                    {
+                        await context.ShelfMaterialBatches.AddAsync(
+                            new ShelfMaterialBatch
+                            {
+                                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
+                                MaterialBatchId = materialBatch.Id,
+                                Quantity = movedBatch.Quantity,
+                                UoMId = movedBatch.UomId,
+                                Note = movedBatch.Note,
+                                CreatedAt = DateTime.UtcNow,
+                            }
+                        );
+                    }
                     break;
             }
 
