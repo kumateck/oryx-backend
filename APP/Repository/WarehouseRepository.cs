@@ -2259,7 +2259,6 @@ public class WarehouseRepository(
                             .FirstOrDefaultAsync(r =>
                                 r.ProductionScheduleProductId == productionScheduleProductId.Value
                                 && r.MaterialBatchId == firstBatch.MaterialBatchId
-                                && r.WarehouseId == swapRequest.FirstWarehouseId
                             );
 
                         if (reservation != null)
@@ -2273,32 +2272,6 @@ public class WarehouseRepository(
                             if (matchingSecondBatch != null)
                             {
                                 reservation.MaterialBatchId = matchingSecondBatch.MaterialBatchId;
-                                context.MaterialBatchReservedQuantities.Update(reservation);
-                            }
-                        }
-                    }
-
-                    // --- Update reservations on Second Warehouse side
-                    foreach (var secondBatch in swapRequest.SecondSwapShelfMaterialBatches)
-                    {
-                        var reservation =
-                            await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
-                                r.ProductionScheduleProductId == productionScheduleProductId.Value
-                                && r.MaterialBatchId == secondBatch.MaterialBatchId
-                                && r.WarehouseId == swapRequest.SecondWarehouseId
-                            );
-
-                        if (reservation != null)
-                        {
-                            var matchingFirstBatch =
-                                swapRequest.FirstSwapShelfMaterialBatches.FirstOrDefault(x =>
-                                    x.MaterialBatch.MaterialId
-                                    == secondBatch.MaterialBatch.MaterialId
-                                );
-
-                            if (matchingFirstBatch != null)
-                            {
-                                reservation.MaterialBatchId = matchingFirstBatch.MaterialBatchId;
                                 context.MaterialBatchReservedQuantities.Update(reservation);
                             }
                         }
