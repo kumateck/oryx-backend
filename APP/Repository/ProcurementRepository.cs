@@ -1962,8 +1962,7 @@ public class ProcurementRepository(
         var suppliers = notLinkedPurchaseOrders
             .Concat(partiallyUsedPurchaseOrders)
             .Where(p =>
-                p.Status == PurchaseOrderStatus.Completed
-                || p.Status == PurchaseOrderStatus.PartiallyLinked
+                p.Status is PurchaseOrderStatus.Completed or PurchaseOrderStatus.PartiallyLinked
             )
             .Select(po => po.Supplier)
             .DistinctBy(s => s.Id)
