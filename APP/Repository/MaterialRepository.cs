@@ -1193,17 +1193,29 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    await context.ShelfMaterialBatches.AddAsync(
-                        new ShelfMaterialBatch
-                        {
-                            WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                            MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
-                            Quantity = movedBatch.Quantity,
-                            UoMId = movedBatch.UomId,
-                            Note = movedBatch.Note,
-                            CreatedAt = DateTime.UtcNow,
-                        }
-                    );
+                    var existingShelfMaterialBatch =
+                        await context.ShelfMaterialBatches.FirstOrDefaultAsync(s =>
+                            s.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && s.MaterialBatchId == shelfMaterialBatch.MaterialBatchId
+                        );
+                    if (existingShelfMaterialBatch != null)
+                    {
+                        existingShelfMaterialBatch.Quantity += shelfMaterialBatch.Quantity;
+                    }
+                    else
+                    {
+                        await context.ShelfMaterialBatches.AddAsync(
+                            new ShelfMaterialBatch
+                            {
+                                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
+                                MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
+                                Quantity = movedBatch.Quantity,
+                                UoMId = movedBatch.UomId,
+                                Note = movedBatch.Note,
+                                CreatedAt = DateTime.UtcNow,
+                            }
+                        );
+                    }
                     break;
             }
 
