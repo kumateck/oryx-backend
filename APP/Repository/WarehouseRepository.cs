@@ -2147,16 +2147,32 @@ public class WarehouseRepository(
                             + $"for material batch {batch.MaterialBatchId}"
                     );
 
-                await context.ShelfMaterialBatches.AddAsync(
-                    new ShelfMaterialBatch
-                    {
-                        WarehouseLocationShelfId = targetShelfId.Value,
-                        MaterialBatchId = batch.MaterialBatchId,
-                        Quantity = batch.Quantity,
-                        UoMId = batch.UoMId,
-                        Note = $"Swapped from {firstWarehouseName} → {secondWarehouseName}",
-                    }
-                );
+                var existingShelfMaterialBatch =
+                    await context.ShelfMaterialBatches.FirstOrDefaultAsync(m =>
+                        m.WarehouseLocationShelfId == targetShelfId
+                        && m.MaterialBatchId == batch.MaterialBatchId
+                    );
+
+                if (existingShelfMaterialBatch != null)
+                {
+                    existingShelfMaterialBatch.Quantity += batch.Quantity;
+                    existingShelfMaterialBatch.Note =
+                        $"{existingShelfMaterialBatch.Note}. "
+                        + $"Swapped {batch.Quantity} from {firstWarehouseName} → {secondWarehouseName}";
+                }
+                else
+                {
+                    await context.ShelfMaterialBatches.AddAsync(
+                        new ShelfMaterialBatch
+                        {
+                            WarehouseLocationShelfId = targetShelfId.Value,
+                            MaterialBatchId = batch.MaterialBatchId,
+                            Quantity = batch.Quantity,
+                            UoMId = batch.UoMId,
+                            Note = $"Swapped from {firstWarehouseName} → {secondWarehouseName}",
+                        }
+                    );
+                }
             }
 
             // --- Process Second Warehouse → First Warehouse
@@ -2199,16 +2215,32 @@ public class WarehouseRepository(
                         $"No matching shelf found in first warehouse for material batch {batch.MaterialBatchId}"
                     );
 
-                await context.ShelfMaterialBatches.AddAsync(
-                    new ShelfMaterialBatch
-                    {
-                        WarehouseLocationShelfId = targetShelfId.Value,
-                        MaterialBatchId = batch.MaterialBatchId,
-                        Quantity = batch.Quantity,
-                        UoMId = batch.UoMId,
-                        Note = $"Swapped from {secondWarehouseName} → {firstWarehouseName}",
-                    }
-                );
+                var existingShelfMaterialBatch =
+                    await context.ShelfMaterialBatches.FirstOrDefaultAsync(m =>
+                        m.WarehouseLocationShelfId == targetShelfId
+                        && m.MaterialBatchId == batch.MaterialBatchId
+                    );
+
+                if (existingShelfMaterialBatch != null)
+                {
+                    existingShelfMaterialBatch.Quantity += batch.Quantity;
+                    existingShelfMaterialBatch.Note =
+                        $"{existingShelfMaterialBatch.Note}. "
+                        + $"Swapped {batch.Quantity} from {firstWarehouseName} → {secondWarehouseName}";
+                }
+                else
+                {
+                    await context.ShelfMaterialBatches.AddAsync(
+                        new ShelfMaterialBatch
+                        {
+                            WarehouseLocationShelfId = targetShelfId.Value,
+                            MaterialBatchId = batch.MaterialBatchId,
+                            Quantity = batch.Quantity,
+                            UoMId = batch.UoMId,
+                            Note = $"Swapped from {secondWarehouseName} → {firstWarehouseName}",
+                        }
+                    );
+                }
             }
 
             if (swapRequest.StockRequisitionId.HasValue && swapRequest.StockRequisition != null)
@@ -2222,11 +2254,12 @@ public class WarehouseRepository(
                     // --- Update reservations on First Warehouse side
                     foreach (var firstBatch in swapRequest.FirstSwapShelfMaterialBatches)
                     {
-                        var reservation =
-                            await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
+                        var reservation = await context
+                            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+                            .FirstOrDefaultAsync(r =>
                                 r.ProductionScheduleProductId == productionScheduleProductId.Value
                                 && r.MaterialBatchId == firstBatch.MaterialBatchId
-                                && r.WarehouseLocationShelfId == firstBatch.ShelfMaterialBatchId
+                                && r.WarehouseId == swapRequest.FirstWarehouseId
                             );
 
                         if (reservation != null)
@@ -2252,7 +2285,7 @@ public class WarehouseRepository(
                             await context.MaterialBatchReservedQuantities.FirstOrDefaultAsync(r =>
                                 r.ProductionScheduleProductId == productionScheduleProductId.Value
                                 && r.MaterialBatchId == secondBatch.MaterialBatchId
-                                && r.WarehouseLocationShelfId == secondBatch.ShelfMaterialBatchId
+                                && r.WarehouseId == swapRequest.SecondWarehouseId
                             );
 
                         if (reservation != null)
