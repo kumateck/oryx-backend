@@ -34,6 +34,8 @@ public class ItemShipmentInvoiceItem : BaseEntity
     public Item Item { get; set; }
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
+    public Guid PurchaseOrderId { get; set; }
+    public PurchaseOrder PurchaseOrder { get; set; } 
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
