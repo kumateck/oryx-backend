@@ -88,6 +88,7 @@ public class WaterStockSeeder : ISeeder
                 Status = BatchStatus.Available,
                 DateReceived = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
+                ExpiryDate = DateTime.MaxValue.ToUniversalTime(),
             };
             dbContext.MaterialBatches.Add(batch);
             dbContext.SaveChanges();
