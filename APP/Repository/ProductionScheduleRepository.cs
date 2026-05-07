@@ -168,6 +168,18 @@ public class ProductionScheduleRepository(
                 .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
                 .AsQueryable();
 
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                var lowerSearchQuery = searchQuery.ToLower();
+                query = query.Where(q =>
+                    q.Code.ToLower().Contains(lowerSearchQuery)
+                    || q.Products.Any(p =>
+                        p.Product.DepartmentId == departmentId
+                        && p.Product.Name.ToLower().Contains(lowerSearchQuery)
+                    )
+                );
+            }
+
             return await PaginationHelper.GetPaginatedResultAsync(
                 query,
                 page,
@@ -188,6 +200,15 @@ public class ProductionScheduleRepository(
                     .ThenInclude(s => s.ProductPacking)
                         .ThenInclude(p => p.PackingLists)
                 .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                var lowerSearchQuery = searchQuery.ToLower();
+                query = query.Where(q =>
+                    q.Code.ToLower().Contains(lowerSearchQuery)
+                    || q.Products.Any(p => p.Product.Name.ToLower().Contains(lowerSearchQuery))
+                );
+            }
 
             return await PaginationHelper.GetPaginatedResultAsync(
                 query,
