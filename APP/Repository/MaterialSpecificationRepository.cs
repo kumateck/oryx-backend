@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -11,19 +12,30 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class MaterialSpecificationRepository(ApplicationDbContext context, IMapper mapper) : IMaterialSpecificationRepository
+public class MaterialSpecificationRepository(ApplicationDbContext context, IMapper mapper)
+    : IMaterialSpecificationRepository
 {
-    public async Task<Result<Guid>> CreateMaterialSpecification(CreateMaterialSpecificationRequest request)
+    public async Task<Result<Guid>> CreateMaterialSpecification(
+        CreateMaterialSpecificationRequest request
+    )
     {
-        var isLinked = await context.MaterialSpecifications.AnyAsync(m => m.Id == request.MaterialId);
+        var isLinked = await context.MaterialSpecifications.AnyAsync(m =>
+            m.Id == request.MaterialId
+        );
         if (isLinked)
         {
-            return Error.Conflict("MaterialSpecification.AlreadyLinked", "Material specification already linked");
+            return Error.Conflict(
+                "MaterialSpecification.AlreadyLinked",
+                "Material specification already linked"
+            );
         }
 
         if (request.DueDate < DateTime.UtcNow)
         {
-            return Error.Validation("MaterialSpecification.DueDate", "Due date must be greater than current date");
+            return Error.Validation(
+                "MaterialSpecification.DueDate",
+                "Due date must be greater than current date"
+            );
         }
 
         var materialSpec = mapper.Map<MaterialSpecification>(request);
@@ -33,10 +45,18 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         return materialSpec.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<MaterialSpecificationDto>>>> GetMaterialSpecifications(int page, int pageSize, string searchQuery, MaterialKind materialKind)
+    public async Task<
+        Result<Paginateable<IEnumerable<MaterialSpecificationDto>>>
+    > GetMaterialSpecifications(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind materialKind,
+        bool? isVerified = null
+    )
     {
-        var query = context.MaterialSpecifications
-            .AsSplitQuery()
+        var query = context
+            .MaterialSpecifications.AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
             .Include(ms => ms.CreatedBy)
@@ -44,70 +64,97 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Where(ms => ms.Material.Kind == materialKind)
             .AsQueryable();
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            mapper.Map<MaterialSpecificationDto>);
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.WhereSearch(
+                searchQuery,
+                q => q.SpecificationNumber,
+                q => q.Description,
+                q => q.Material.Name
+            );
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<MaterialSpecificationDto>
+        );
     }
 
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecification(Guid id)
     {
-        var materialSpec = await context.MaterialSpecifications
-            .IgnoreAutoIncludes()
-            .AsNoTracking()
+        var materialSpec = await context
+            .MaterialSpecifications.IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
-            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-            .ThenInclude(ps => ps.Fields)
-            .ThenInclude(ps => ps.Question).ThenInclude(q => q.Options)
+                .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(ps => ps.Fields)
+                        .ThenInclude(ps => ps.Question)
+                            .ThenInclude(q => q.Options)
             .Include(ps => ps.Form)
-            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-            .ThenInclude(ps => ps.Instrument)
+                .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(ps => ps.Instrument)
+                        .ThenInclude(ps => ps.QcEquipmentCategory)
             .Include(ms => ms.CreatedBy)
             .Include(m => m.Response)
-            .ThenInclude(r => r.FormResponses)
-            .ThenInclude(r => r.FormField)
+                .ThenInclude(r => r.FormResponses)
+                    .ThenInclude(r => r.FormField)
             .Include(ms => ms.FormSections)
             .FirstOrDefaultAsync(ps => ps.Id == id);
 
-        return materialSpec is null ?
-            Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
-            : mapper.Map<MaterialSpecificationDto>(materialSpec);
+        return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
-
-    public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId)
+    public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(
+        Guid materialId
+    )
     {
-        var materialSpec = await context.MaterialSpecifications
-            .IgnoreAutoIncludes()
-            .AsNoTracking()
+        var materialSpec = await context
+            .MaterialSpecifications.IgnoreAutoIncludes()
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
-            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-            .ThenInclude(ps => ps.Fields)
-            .ThenInclude(ps => ps.Question).ThenInclude(q => q.Options)
+                .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(ps => ps.Fields)
+                        .ThenInclude(ps => ps.Question)
+                            .ThenInclude(q => q.Options)
             .Include(ps => ps.Form)
-            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-            .ThenInclude(ps => ps.Instrument)
+                .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(ps => ps.Instrument)
+                        .ThenInclude(ps => ps.QcEquipmentCategory)
             .Include(ms => ms.CreatedBy)
             .Include(m => m.Response)
-            .ThenInclude(r => r.FormResponses)
-            .ThenInclude(r => r.FormField)
+                .ThenInclude(r => r.FormResponses)
+                    .ThenInclude(r => r.FormField)
             .Include(ms => ms.FormSections)
             .FirstOrDefaultAsync(ps => ps.MaterialId == materialId);
-        return materialSpec is null ?
-            Error.NotFound("MaterialSpecification.NotFound", "Material specification not found")
-            : mapper.Map<MaterialSpecificationDto>(materialSpec);
+
+        return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
-
-    public async Task<Result> UpdateMaterialSpecification(Guid id, CreateMaterialSpecificationRequest request)
+    public async Task<Result> UpdateMaterialSpecification(
+        Guid id,
+        CreateMaterialSpecificationRequest request
+    )
     {
-        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
+        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps =>
+            ps.Id == id
+        );
 
         if (materialSpec is null)
         {
-            return Error.NotFound("MaterialSpecification.NotFound", "Material specification not found");
+            return Error.NotFound(
+                "MaterialSpecification.NotFound",
+                "Material specification not found"
+            );
         }
 
         mapper.Map(request, materialSpec);
@@ -119,11 +166,16 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
 
     public async Task<Result> DeleteMaterialSpecification(Guid id, Guid userId)
     {
-        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
+        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps =>
+            ps.Id == id
+        );
 
         if (materialSpec is null)
         {
-            return Error.NotFound("MaterialSpecification.NotFound", "Material specification not found");
+            return Error.NotFound(
+                "MaterialSpecification.NotFound",
+                "Material specification not found"
+            );
         }
 
         materialSpec.LastDeletedById = userId;
@@ -134,7 +186,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         return Result.Success();
     }
 
-    public async Task<Result> ImportMaterialSpecificationsFromCsv(IFormFile file, MaterialKind kind, Guid userId)
+    public async Task<Result> ImportMaterialSpecificationsFromCsv(
+        IFormFile file,
+        MaterialKind kind,
+        Guid userId
+    )
     {
         if (file == null || file.Length == 0)
             return UploadErrors.EmptyFile;
@@ -161,8 +217,13 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         // Required headers
         var requiredHeaders = new[]
         {
-            "Name", "Code", "Specification", "Revision Date",
-            "Effective Date", "Revision", "Supersedes"
+            "Name",
+            "Code",
+            "Specification",
+            "Revision Date",
+            "Effective Date",
+            "Revision",
+            "Supersedes",
         };
 
         foreach (var header in requiredHeaders)
@@ -172,13 +233,13 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         }
 
         // Lookups
-        var materials = await context.Materials
-            .AsNoTracking()
+        var materials = await context
+            .Materials.AsNoTracking()
             .Where(m => m.Kind == kind)
             .ToDictionaryAsync(m => m.Code.ToLower(), m => m.Id);
 
-        var existingNumbers = await context.MaterialSpecifications
-            .IgnoreQueryFilters()
+        var existingNumbers = await context
+            .MaterialSpecifications.IgnoreQueryFilters()
             .Select(m => m.SpecificationNumber)
             .ToHashSetAsync();
 
@@ -192,7 +253,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             string Get(string header)
             {
                 var index = headers[header];
-                return (index < parts.Length) ? parts[index].Trim() : "";
+                return index < parts.Length ? parts[index].Trim() : "";
             }
 
             var code = Get("Code").ToLower();
@@ -211,10 +272,12 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                 Description = Get("Name"),
 
                 EffectiveDate = DateTime.TryParse(Get("Effective Date"), out var eff)
-                    ? DateTime.SpecifyKind(eff, DateTimeKind.Utc) : DateTime.UtcNow,
+                    ? DateTime.SpecifyKind(eff, DateTimeKind.Utc)
+                    : DateTime.UtcNow,
 
                 ReviewDate = DateTime.TryParse(Get("Revision Date"), out var rev)
-                    ? DateTime.SpecifyKind(rev, DateTimeKind.Utc) : DateTime.UtcNow,
+                    ? DateTime.SpecifyKind(rev, DateTimeKind.Utc)
+                    : DateTime.UtcNow,
 
                 DueDate = DateTime.UtcNow, // adjust if required
 
@@ -224,7 +287,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                 UserId = userId,
                 FormId = Guid.Parse("019a7e06-a806-741f-b47a-2c228a675ca1"),
                 ResponseId = null,
-                FormSections = []
+                FormSections = [],
             };
 
             specs.Add(spec);

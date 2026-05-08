@@ -36,6 +36,19 @@ public class ProductionScheduleProcurementDto
     public Guid ProductionWarehouseId { get; set; }
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
     public decimal FrozenQuantity { get; set; }
+    public decimal TotalFrozenQuantity { get; set; }
+    public decimal ConsumedQuantity { get; set; }
+    public decimal ExtraQuantity { get; set; }
+}
+
+public class ForecastMaterialDto
+{
+    public MaterialDto Material { get; set; }
+    public decimal QuantityNeeded { get; set; }
+    public decimal QuantityOnHand { get; set; }
+    public decimal ReservedQuantity { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
+    public bool IsAvailable => QuantityOnHand > QuantityNeeded;
 }
 
 public class ProductionScheduleProcurementPackageDto
@@ -53,6 +66,9 @@ public class ProductionScheduleProcurementPackageDto
     public Guid ProductionWarehouseId { get; set; }
     public MaterialDepartmentDetails MaterialDepartment { get; set; }
     public decimal FrozenQuantity { get; set; }
+    public decimal TotalFrozenQuantity { get; set; }
+    public decimal ConsumedQuantity { get; set; }
+    public decimal ExtraQuantity { get; set; }
 }
 
 public class MaterialDepartmentDetails
@@ -76,6 +92,8 @@ public class ProductionScheduleProductDto
     public bool Cancelled { get; set; }
     public string ReasonForCancellation { get; set; }
     public ProductPackingDto ProductPacking { get; set; }
+    public bool HasStarted { get; set; }
+    public Guid? ProductionActivityId { get; set; }
 }
 
 public enum MaterialRequisitionStatus
@@ -87,5 +105,6 @@ public enum MaterialRequisitionStatus
     Foreign = 4,
     StockRequisition = 5,
     Issued = 6,
-    InHouse = 7
+    InHouse = 7,
+    Supplied = 8,
 }

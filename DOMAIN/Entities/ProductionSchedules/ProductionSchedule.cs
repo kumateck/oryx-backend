@@ -1,16 +1,18 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules;
 
 public class ProductionSchedule : BaseEntity
+// ... (omitted for brevity in instruction, but I must provide full file or exact match)
 {
     [StringLength(100)] public string Code { get; set; }
     public DateTime ScheduledStartTime { get; set; }
@@ -55,6 +57,7 @@ public class ProductionScheduleProduct
     [StringLength(20000)] public string ReasonForCancellation { get; set; }
     public Guid? ProductPackingId { get; set; }
     public ProductPacking ProductPacking { get; set; }
+    public ProductionActivity ProductionActivity { get; set; }
 }
 
 public class MarketType : BaseEntity
@@ -69,7 +72,7 @@ public class CreateProductionExtraPacking
     public decimal Quantity { get; set; }
 }
 
-public class ProductionExtraPacking : BaseEntity
+public class ProductionExtraPacking : BaseEntity, IRequireApproval
 {
     public Guid ProductionScheduleProductId { get; set; }
     public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
@@ -82,12 +85,24 @@ public class ProductionExtraPacking : BaseEntity
     public DateTime? IssuedAt { get; set; }
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
+    public bool Approved { get; set; }
+    public List<ProductionExtraPackingApproval> Approvals { get; set; } = [];
+}
+
+public class ProductionExtraPackingApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid ProductionExtraPackingId { get; set; }
+    public ProductionExtraPacking ProductionExtraPacking { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 public enum ProductionExtraPackingStatus
 {
-    InProgress,
-    Approved
+    Pending = 0,
+    InProgress = 1,
+    Approved = 2
 }
 
 
@@ -98,6 +113,7 @@ public class ProductionExtraPackingDto : BaseDto
     public UnitOfMeasureDto UoM { get; set; }
     public ProductionExtraPackingStatus Status { get; set; }
     public decimal Quantity { get; set; }
+    public bool Approved { get; set; }
 }
 
 public class ProductionExtraPackingWithBatchesDto : ProductionExtraPackingDto

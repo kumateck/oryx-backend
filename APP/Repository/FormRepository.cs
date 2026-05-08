@@ -14,7 +14,12 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileRepository fileRepository, IApprovalRepository approvalRepository) : IFormRepository
+public class FormRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IFileRepository fileRepository,
+    IApprovalRepository approvalRepository
+) : IFormRepository
 {
     public async Task<Result<Guid>> CreateForm(CreateFormRequest request)
     {
@@ -33,12 +38,15 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result<FormDto>> GetForm(Guid formId)
     {
-        var form = await context.Forms
-            .AsSplitQuery()
+        var form = await context
+            .Forms.AsSplitQuery()
             .Include(f => f.Sections.OrderBy(s => s.Order))
-            .ThenInclude(s => s.Fields.OrderBy(f => f.Rank))
-            .ThenInclude(f => f.Question)
-            .ThenInclude(q => q.Options)
+                .ThenInclude(s => s.Fields.OrderBy(f => f.Rank))
+                    .ThenInclude(f => f.Question)
+                        .ThenInclude(q => q.Options)
+            .Include(f => f.Sections.OrderBy(s => s.Order))
+                .ThenInclude(f => f.Instrument)
+                    .ThenInclude(f => f.QcEquipmentCategory)
             .FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
@@ -49,17 +57,24 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter)
     {
-        var query = context.Forms
-            .AsSplitQuery()
+        var query = context
+            .Forms.AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
-            .Include(f =>
-                f.Sections.OrderByDescending(s => s.Order))
-                .ThenInclude(f => f.Fields.OrderBy(f => f.Rank))
+            .Include(f => f.Sections.OrderBy(s => s.Order))
+                .ThenInclude(f => f.Fields.OrderBy(fi => fi.Rank))
+            .Include(f => f.Sections)
+                .ThenInclude(f => f.Instrument)
+                    .ThenInclude(f => f.QcEquipmentCategory)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
-            query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
+            query = query.WhereSearch(
+                filter.SearchQuery,
+                f => f.Name,
+                f => f.CreatedBy.FirstName,
+                f => f.CreatedBy.LastName
+            );
         }
 
         if (filter.Type.HasValue)
@@ -67,23 +82,29 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             query = query.Where(q => q.Type == filter.Type);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            filter,
-            mapper.Map<FormDto>
-        );
+        return await PaginationHelper.GetPaginatedResultAsync(query, filter, mapper.Map<FormDto>);
     }
 
-    public async Task<Result<Paginateable<IEnumerable<FormSectionDto>>>> GetFormSections(FormFilter filter)
+    public async Task<Result<Paginateable<IEnumerable<FormSectionDto>>>> GetFormSections(
+        FormFilter filter
+    )
     {
-        var query = context.FormSections
+        var query = context
+            .FormSections.AsSplitQuery()
+            .Include(f => f.Instrument)
+                .ThenInclude(f => f.QcEquipmentCategory)
             .GroupBy(f => new { f.Name, f.InstrumentId })
             .Select(g => g.OrderByDescending(f => f.CreatedAt).First())
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
-            query = query.WhereSearch(filter.SearchQuery, f => f.Name, f => f.CreatedBy.FirstName, f => f.CreatedBy.LastName);
+            query = query.WhereSearch(
+                filter.SearchQuery,
+                f => f.Name,
+                f => f.CreatedBy.FirstName,
+                f => f.CreatedBy.LastName
+            );
         }
 
         if (filter.MaterialSpecificationId.HasValue)
@@ -105,19 +126,21 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId)
     {
-        var form = await context.Forms
-            .AsSplitQuery()
-            .Include(form => form.Sections)
-            .Include(form => form.Reviewers)
-            .Include(form => form.Assignees)
-            .FirstOrDefaultAsync(f => f.Id == formId);
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == formId);
 
         if (form == null)
             return FormErrors.NotFound(formId);
 
-        context.FormSections.RemoveRange(form.Sections);
-        context.FormReviewers.RemoveRange(form.Reviewers);
-        context.FormAssignees.RemoveRange(form.Assignees);
+        // Hard delete existing relations to avoid soft-deleted "ghost" records showing up with IgnoreQueryFilters elsewhere.
+        // We delete in order of dependency to avoid FK violations.
+        await context.FormFields.Where(f => f.FormSection.FormId == formId).ExecuteDeleteAsync();
+        await context.FormSections.Where(s => s.FormId == formId).ExecuteDeleteAsync();
+        await context.FormReviewers.Where(r => r.FormId == formId).ExecuteDeleteAsync();
+        await context
+            .FormFieldAssignees.Where(fa => fa.FormAssignee.FormId == formId)
+            .ExecuteDeleteAsync();
+        await context.FormAssignees.Where(a => a.FormId == formId).ExecuteDeleteAsync();
+
         mapper.Map(request, form);
 
         var validate = FormValidator.Validate(form);
@@ -149,32 +172,69 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result<Guid?>> GetResponseId(GetResponseIdRequest request)
     {
-        var response = await context.Responses
-            .FirstOrDefaultAsync(r => r.MaterialBatchId == request.MaterialBatchId
-                                      && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-                                      && r.ProductionActivityStepId == request.ProductionActivityStepId);
+        var response = await context.Responses.FirstOrDefaultAsync(r =>
+            r.MaterialBatchId == request.MaterialBatchId
+            && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+            && r.ProductionActivityStepId == request.ProductionActivityStepId
+        );
 
         return response?.Id;
     }
 
     public async Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request)
     {
-        var formAssignee = await context.FormAssignees
-            .FirstOrDefaultAsync(r => r.MaterialBatchId == request.MaterialBatchId
-                                      && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-                                      && r.ProductionActivityStepId == request.ProductionActivityStepId);
+        var formAssignee = await context.FormAssignees.FirstOrDefaultAsync(r =>
+            r.MaterialBatchId == request.MaterialBatchId
+            && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+            && r.ProductionActivityStepId == request.ProductionActivityStepId
+        );
 
         return formAssignee?.Id;
     }
 
     public async Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId)
     {
-        var response = await context.Responses
-            .Include(r => r.FormResponses)
+        var response = await context
+            .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
+
+        if (response is null && request.ResponseId.HasValue)
+            return Error.Validation("Response", $"ResponseId {request.ResponseId} is invalid");
 
         if (response is null)
         {
+            if (request.BatchManufacturingRecordId.HasValue)
+            {
+                var existingBmrResponse = await context.Responses.FirstOrDefaultAsync(r =>
+                    r.BatchManufacturingRecordId == request.BatchManufacturingRecordId.Value
+                    && r.FormId == request.FormId
+                );
+
+                if (existingBmrResponse != null)
+                {
+                    return Error.Validation(
+                        "Response",
+                        $"Response for this bmr and form has already been saved."
+                            + $" Pass the responseId {existingBmrResponse.Id} to update the draft"
+                    );
+                }
+            }
+
+            if (request.MaterialBatchId.HasValue)
+            {
+                var existingMaterialBatchResponse = await context.Responses.FirstOrDefaultAsync(r =>
+                    r.MaterialBatchId == request.MaterialBatchId.Value && r.FormId == request.FormId
+                );
+
+                if (existingMaterialBatchResponse != null)
+                {
+                    return Error.Validation(
+                        "Response",
+                        "Response for this material batch and form has already been saved."
+                            + $" Pass the responseId {existingMaterialBatchResponse.Id} to update the draft"
+                    );
+                }
+            }
             // Create a new draft if not yet started
             response = new Response
             {
@@ -183,41 +243,50 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 BatchManufacturingRecordId = request.BatchManufacturingRecordId,
                 ProductionActivityStepId = request.ProductionActivityStepId,
                 CreatedById = userId,
-                FormResponses = []
+                FormResponses = [],
             };
             await context.Responses.AddAsync(response);
         }
 
-        var formField = await context.FormFields
-            .AsSplitQuery()
+        var formField = await context
+            .FormFields.AsSplitQuery()
             .Include(f => f.Question)
             .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
 
         if (formField is null)
-            return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
+            return Error.Validation(
+                "Response.FormField",
+                $"FormField not found {request.FormFieldId}"
+            );
 
         // 🧩 VALIDATION: Check if user is allowed in this specific context
         var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
-            a.FormFieldId == formField.Id &&
-            a.FormAssignee.MaterialBatchId == request.MaterialBatchId &&
-            a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
-            a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId);
+            a.FormFieldId == formField.Id
+            && a.FormAssignee.MaterialBatchId == request.MaterialBatchId
+            && a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+            && a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId
+        );
 
         if (fieldAssignee != null && fieldAssignee.AssigneeId != userId)
-            return Error.Validation("Response.Unauthorized", "You are not assigned to this field in this context.");
+            return Error.Validation(
+                "Response.Unauthorized",
+                "You are not assigned to this field in this context."
+            );
 
         // Handle file-based questions
         if (formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload)
         {
             var values = request.Value.Split("|");
-            var formResponse = response.FormResponses.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
+            var formResponse = response.FormResponses.FirstOrDefault(fr =>
+                fr.FormFieldId == formField.Id
+            );
 
             if (formResponse == null)
             {
                 formResponse = new FormResponse
                 {
                     FormFieldId = formField.Id,
-                    Value = "form response attachment."
+                    Value = "form response attachment.",
                 };
                 response.FormResponses.Add(formResponse);
             }
@@ -226,7 +295,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             {
                 var reference = Guid.NewGuid().ToString();
                 await fileRepository.SaveBlobItem(
-                    nameof(FormResponse).ToLower(),
+                    nameof(FormResponse),
                     formResponse.Id,
                     reference,
                     value.ConvertFromBase64(),
@@ -237,7 +306,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         else
         {
             // Update or insert text-based responses
-            var existingResponse = response.FormResponses.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
+            var existingResponse = response.FormResponses.FirstOrDefault(fr =>
+                fr.FormFieldId == formField.Id
+            );
             if (existingResponse != null)
             {
                 existingResponse.Value = request.Value;
@@ -245,11 +316,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             }
             else
             {
-                response.FormResponses.Add(new FormResponse
-                {
-                    FormFieldId = formField.Id,
-                    Value = request.Value
-                });
+                response.FormResponses.Add(
+                    new FormResponse { FormFieldId = formField.Id, Value = request.Value }
+                );
             }
         }
 
@@ -259,26 +328,29 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result> SubmitFormResponseFinal(Guid responseId)
     {
-        var response = await context.Responses
-            .Include(r => r.FormResponses)
+        var response = await context
+            .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == responseId);
 
         if (response == null)
             return Error.NotFound("Response.NotFound", "Response not found");
 
         // Validate that all required fields are filled
-        var formFields = await context.FormFields
-            .Where(f => f.FormSection.FormId == response.FormId)
+        var formFields = await context
+            .FormFields.Where(f => f.FormSection.FormId == response.FormId)
             .ToListAsync();
 
         var missingFields = formFields
             .Where(f => f.Required && response.FormResponses.All(r => r.FormFieldId != f.Id))
             .ToList();
 
-        if (missingFields.Any())
+        if (missingFields.Count != 0)
         {
             var missingList = string.Join(", ", missingFields.Select(f => f.Id));
-            return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
+            return Error.Validation(
+                "Response.MissingFields",
+                $"Missing required fields: {missingList}"
+            );
         }
 
         // Perform final entity updates
@@ -286,7 +358,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             if (response.MaterialBatchId.HasValue)
             {
-                var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == response.MaterialBatchId);
+                var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
+                    b.Id == response.MaterialBatchId
+                );
                 if (batch != null)
                 {
                     batch.Status = BatchStatus.TestTaken;
@@ -295,7 +369,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             }
             else if (response.BatchManufacturingRecordId.HasValue)
             {
-                var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == response.BatchManufacturingRecordId);
+                var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
+                    b.Id == response.BatchManufacturingRecordId
+                );
                 if (bmr != null)
                 {
                     bmr.Status = BatchManufacturingStatus.TestTaken;
@@ -306,13 +382,18 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (response.ProductionActivityStepId.HasValue)
         {
-            var step = await context.ProductionActivitySteps
-                .FirstOrDefaultAsync(s => s.Id == response.ProductionActivityStepId);
+            var step = await context.ProductionActivitySteps.FirstOrDefaultAsync(s =>
+                s.Id == response.ProductionActivityStepId
+            );
             if (step == null)
-                return Error.NotFound("ProductionActivityStep", $"Not found {response.ProductionActivityStepId}");
+                return Error.NotFound(
+                    "ProductionActivityStep",
+                    $"Not found {response.ProductionActivityStepId}"
+                );
 
-            var atr = await context.AnalyticalTestRequests
-                .FirstOrDefaultAsync(a => a.ProductionActivityStepId == response.ProductionActivityStepId);
+            var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a =>
+                a.ProductionActivityStepId == response.ProductionActivityStepId
+            );
             if (atr == null)
                 return Error.NotFound("ATR", $"ATR not found {response.ProductionActivityStepId}");
 
@@ -321,14 +402,18 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         }
 
         // Optional: Handle linking with Material/Product Specifications
-        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(s => s.ResponseId == response.Id);
+        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(s =>
+            s.ResponseId == response.Id
+        );
         if (materialSpec != null)
         {
             materialSpec.ResponseId = response.Id;
             context.MaterialSpecifications.Update(materialSpec);
         }
 
-        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(s => s.ResponseId == response.Id);
+        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(s =>
+            s.ResponseId == response.Id
+        );
         if (productSpec != null)
         {
             productSpec.ResponseId = response.Id;
@@ -348,30 +433,37 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             ProductionActivityStepId = request.ProductionActivityStepId,
             FormResponses = [],
-            CreatedById = userId
+            CreatedById = userId,
         };
 
         foreach (var response in request.FormResponses)
         {
-            var formField = await context.FormFields
-                .AsSplitQuery()
+            var formField = await context
+                .FormFields.AsSplitQuery()
                 .Include(f => f.Question)
                 .FirstOrDefaultAsync(field => field.Id == response.FormFieldId);
 
             if (formField == null)
             {
-                return Error.Validation("Response.FormField", $"FormField not found {response.FormFieldId}");
+                return Error.Validation(
+                    "Response.FormField",
+                    $"FormField not found {response.FormFieldId}"
+                );
             }
 
             // 🧩 VALIDATION: Check if user is allowed in this specific context
             var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
-                a.FormFieldId == formField.Id &&
-                a.FormAssignee.MaterialBatchId == request.MaterialBatchId &&
-                a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
-                a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId);
+                a.FormFieldId == formField.Id
+                && a.FormAssignee.MaterialBatchId == request.MaterialBatchId
+                && a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+                && a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId
+            );
 
             if (fieldAssignee != null && fieldAssignee.AssigneeId != userId)
-                return Error.Validation("Response.Unauthorized", "You are not assigned to this field in this context.");
+                return Error.Validation(
+                    "Response.Unauthorized",
+                    "You are not assigned to this field in this context."
+                );
 
             var type = formField.Question.Type;
 
@@ -380,6 +472,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 var values = response.Value.Split("|");
                 var formResponse = new FormResponse
                 {
+                    Id = Guid.NewGuid(),
                     FormFieldId = formField.Id,
                     Value = "form response attachment.",
                 };
@@ -387,7 +480,13 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 foreach (var value in values)
                 {
                     var reference = Guid.NewGuid().ToString();
-                    await fileRepository.SaveBlobItem(nameof(FormResponse).ToLower(), formResponse.Id, reference, value.ConvertFromBase64(), userId);
+                    await fileRepository.SaveBlobItem(
+                        nameof(FormResponse),
+                        formResponse.Id,
+                        reference,
+                        value.ConvertFromBase64(),
+                        userId
+                    );
                 }
             }
             else
@@ -402,14 +501,17 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         {
             if (request.MaterialBatchId.HasValue)
             {
-                var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == request.MaterialBatchId);
+                var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
+                    b.Id == request.MaterialBatchId
+                );
                 batch.Status = BatchStatus.TestTaken;
                 context.MaterialBatches.Update(batch);
             }
             else if (request.BatchManufacturingRecordId.HasValue)
             {
-                var bmr = await context.BatchManufacturingRecords
-                    .FirstOrDefaultAsync(b => b.Id == request.BatchManufacturingRecordId);
+                var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
+                    b.Id == request.BatchManufacturingRecordId
+                );
                 bmr.Status = BatchManufacturingStatus.TestTaken;
                 context.BatchManufacturingRecords.Update(bmr);
             }
@@ -417,11 +519,20 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (request.ProductionActivityStepId.HasValue)
         {
-            var step = await context.ProductionActivitySteps.FirstOrDefaultAsync(s => s.Id == request.ProductionActivityStepId);
-            if (step is null) return Error.NotFound("ProductionActivityStep", $"ProductionActivityStep not found {request.ProductionActivityStepId}");
+            var step = await context.ProductionActivitySteps.FirstOrDefaultAsync(s =>
+                s.Id == request.ProductionActivityStepId
+            );
+            if (step is null)
+                return Error.NotFound(
+                    "ProductionActivityStep",
+                    $"ProductionActivityStep not found {request.ProductionActivityStepId}"
+                );
 
-            var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a => a.ProductionActivityStepId == request.ProductionActivityStepId);
-            if (atr is null) return Error.NotFound("ATR", $"ATR not found {request.ProductionActivityStepId}");
+            var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a =>
+                a.ProductionActivityStepId == request.ProductionActivityStepId
+            );
+            if (atr is null)
+                return Error.NotFound("ATR", $"ATR not found {request.ProductionActivityStepId}");
 
             atr.Status = AnalyticalTestStatus.TestTaken;
             context.AnalyticalTestRequests.Update(atr);
@@ -429,8 +540,14 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (request.MaterialSpecificationId.HasValue)
         {
-            var materialSpecification = await context.MaterialSpecifications.FirstOrDefaultAsync(s => s.Id == request.MaterialSpecificationId);
-            if (materialSpecification is null) return Error.NotFound("MaterialSpecification.NotFound", "Material specification not found");
+            var materialSpecification = await context.MaterialSpecifications.FirstOrDefaultAsync(
+                s => s.Id == request.MaterialSpecificationId
+            );
+            if (materialSpecification is null)
+                return Error.NotFound(
+                    "MaterialSpecification.NotFound",
+                    "Material specification not found"
+                );
 
             materialSpecification.ResponseId = newResponse.Id;
             context.MaterialSpecifications.Update(materialSpecification);
@@ -438,8 +555,14 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         if (request.ProductSpecificationId.HasValue)
         {
-            var productSpecification = await context.ProductSpecifications.FirstOrDefaultAsync(s => s.Id == request.ProductSpecificationId);
-            if (productSpecification is null) return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
+            var productSpecification = await context.ProductSpecifications.FirstOrDefaultAsync(s =>
+                s.Id == request.ProductSpecificationId
+            );
+            if (productSpecification is null)
+                return Error.NotFound(
+                    "ProductSpecification.NotFound",
+                    "Product specification not found"
+                );
 
             productSpecification.ResponseId = newResponse.Id;
             context.ProductSpecifications.Update(productSpecification);
@@ -449,15 +572,20 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> SubmitFormSectionValue(List<SubmitFormSectionValue> requests, Guid? materialSpecificationId, Guid? productSpecificationId)
+    public async Task<Result> SubmitFormSectionValue(
+        List<SubmitFormSectionValue> requests,
+        Guid? materialSpecificationId,
+        Guid? productSpecificationId
+    )
     {
-        var formSections = await context.FormSections
-            .Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id))
+        var formSections = await context
+            .FormSections.Where(s => requests.Select(r => r.FormSectionId).Contains(s.Id))
             .ToDictionaryAsync(k => k.Id, v => v);
 
         foreach (var request in requests)
         {
-            if (!formSections.TryGetValue(request.FormSectionId, out var formSection)) continue;
+            if (!formSections.TryGetValue(request.FormSectionId, out var formSection))
+                continue;
             formSection.Value = request.Value;
             formSection.MaterialSpecificationId = materialSpecificationId;
             formSection.ProductSpecificationId = productSpecificationId;
@@ -467,10 +595,46 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> SaveFormAssigneeDraft(SaveFormAssigneeDraftRequest request, Guid userId)
+    public async Task<Result> UpdateFormSectionValue(
+        List<SubmitFormSectionValue> requests,
+        Guid? materialSpecificationId = null,
+        Guid? productSpecificationId = null
+    )
     {
-        var formAssignee = await context.FormAssignees
-            .Include(r => r.FieldAssignees)
+        var sectionIds = requests.Select(r => r.FormSectionId).ToList();
+
+        var query = context.FormSections.Where(s => sectionIds.Contains(s.Id));
+
+        if (materialSpecificationId.HasValue)
+        {
+            query = query.Where(s => s.MaterialSpecificationId == materialSpecificationId);
+        }
+        else if (productSpecificationId.HasValue)
+        {
+            query = query.Where(s => s.ProductSpecificationId == productSpecificationId);
+        }
+
+        var formSections = await query.ToDictionaryAsync(k => k.Id, v => v);
+
+        foreach (var request in requests)
+        {
+            if (formSections.TryGetValue(request.FormSectionId, out var formSection))
+            {
+                formSection.Value = request.Value;
+            }
+        }
+
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> SaveFormAssigneeDraft(
+        SaveFormAssigneeDraftRequest request,
+        Guid userId
+    )
+    {
+        var formAssignee = await context
+            .FormAssignees.Include(r => r.FieldAssignees)
             .FirstOrDefaultAsync(r => r.Id == request.FormAssigneeId);
 
         if (formAssignee is null)
@@ -484,23 +648,26 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
                 ProductionActivityStepId = request.ProductionActivityStepId,
                 CreatedById = userId,
                 Stage = request.Stage,
-                FieldAssignees = []
+                FieldAssignees = [],
             };
             await context.FormAssignees.AddAsync(formAssignee);
         }
 
-        var formField = await context.FormFields
-            .AsSplitQuery()
+        var formField = await context
+            .FormFields.AsSplitQuery()
             .Include(f => f.Question)
             .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
 
         if (formField is null)
-            return Error.Validation("Response.FormField", $"FormField not found {request.FormFieldId}");
-
+            return Error.Validation(
+                "Response.FormField",
+                $"FormField not found {request.FormFieldId}"
+            );
 
         // Update or insert text-based responses
-        var existingFieldAssignees = formAssignee
-            .FieldAssignees.FirstOrDefault(fr => fr.FormFieldId == formField.Id);
+        var existingFieldAssignees = formAssignee.FieldAssignees.FirstOrDefault(fr =>
+            fr.FormFieldId == formField.Id
+        );
 
         if (existingFieldAssignees != null)
         {
@@ -509,13 +676,14 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         }
         else
         {
-            formAssignee.FieldAssignees.Add(new FormFieldAssignee
-            {
-                FormFieldId = formField.Id,
-                AssigneeId = request.AssigneeId
-            });
+            formAssignee.FieldAssignees.Add(
+                new FormFieldAssignee
+                {
+                    FormFieldId = formField.Id,
+                    AssigneeId = request.AssigneeId,
+                }
+            );
         }
-
 
         await context.SaveChangesAsync();
         return Result.Success(formAssignee.Id);
@@ -523,47 +691,54 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result> SubmitFormAssigneeFinal(Guid formAssigneeId)
     {
-        var formAssignee = await context.FormAssignees
-            .Include(r => r.FieldAssignees)
+        var formAssignee = await context
+            .FormAssignees.Include(r => r.FieldAssignees)
             .FirstOrDefaultAsync(r => r.Id == formAssigneeId);
 
         if (formAssignee == null)
             return Error.NotFound("FormAssignee.NotFound", "Form assignee not found");
 
         // Validate that all required fields are filled
-        var formFields = await context.FormFields
-            .Where(f => f.FormSection.FormId == formAssignee.FormId)
+        var formFields = await context
+            .FormFields.Where(f => f.FormSection.FormId == formAssignee.FormId)
             .ToListAsync();
 
         var missingFields = formFields
             .Where(f => f.Required && formAssignee.FieldAssignees.All(r => r.FormFieldId != f.Id))
             .ToList();
 
-        if (missingFields.Any())
+        if (missingFields.Count != 0)
         {
             var missingList = string.Join(", ", missingFields.Select(f => f.Id));
-            return Error.Validation("Response.MissingFields", $"Missing required fields: {missingList}");
+            return Error.Validation(
+                "Response.MissingFields",
+                $"Missing required fields: {missingList}"
+            );
         }
 
         if (formAssignee.MaterialBatchId.HasValue)
         {
-            var materialBatch = await context.MaterialBatches
-                .FirstOrDefaultAsync(m => m.Id == formAssignee.MaterialBatchId);
+            var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m =>
+                m.Id == formAssignee.MaterialBatchId
+            );
 
-            if (materialBatch == null) return MaterialErrors.NotFound(formAssignee.MaterialBatchId.Value);
+            if (materialBatch == null)
+                return MaterialErrors.NotFound(formAssignee.MaterialBatchId.Value);
 
             materialBatch.Status = BatchStatus.TestAssigned;
         }
 
         if (formAssignee.BatchManufacturingRecordId.HasValue)
         {
-            var atr = await context.AnalyticalTestRequests
-                .IgnoreQueryFilters()
+            var atr = await context
+                .AnalyticalTestRequests.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == formAssignee.BatchManufacturingRecordId
-                    && r.Stage == formAssignee.Stage);
+                    && r.Stage == formAssignee.Stage
+                );
 
-            if (atr == null) return Error.NotFound("Atr", "Atr not found for bmr");
+            if (atr == null)
+                return Error.NotFound("Atr", "Atr not found for bmr");
 
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
@@ -575,6 +750,20 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result> SubmitFormAssignee(CreateFormAssigneeRequest request, Guid userId)
     {
+        if (
+            await context.FormAssignees.AnyAsync(f =>
+                f.FormId == request.FormId
+                && f.MaterialBatchId == request.MaterialBatchId
+                && f.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+                && f.Stage == request.Stage
+                && f.ProductionActivityStepId == request.ProductionActivityStepId
+            )
+        )
+            return Error.Validation(
+                "FormAssignee.NotFound",
+                $"FormAssignee {request.FormId} for {request.MaterialBatchId} batch already assigned"
+            );
+
         var formAssignee = new FormAssignee
         {
             FormId = request.FormId,
@@ -583,50 +772,75 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             ProductionActivityStepId = request.ProductionActivityStepId,
             Stage = request.Stage,
             FieldAssignees = [],
-            CreatedById = userId
+            CreatedById = userId,
         };
 
         foreach (var fieldAssignee in request.FormFieldAssignees)
         {
-            var formField = await context.FormFields
-                .AsSplitQuery()
+            var formField = await context
+                .FormFields.AsSplitQuery()
                 .Include(f => f.Question)
                 .FirstOrDefaultAsync(field => field.Id == fieldAssignee.FormFieldId);
 
             if (formField == null)
             {
-                return Error.Validation("Response.FormField", $"FormField not found {fieldAssignee.FormFieldId}");
+                return Error.Validation(
+                    "Response.FormField",
+                    $"FormField not found {fieldAssignee.FormFieldId}"
+                );
             }
 
-            formAssignee.FieldAssignees.Add(new FormFieldAssignee
-            {
-                FormFieldId = formField.Id,
-                AssigneeId = fieldAssignee.AssigneeId
-            });
+            formAssignee.FieldAssignees.Add(
+                new FormFieldAssignee
+                {
+                    FormFieldId = formField.Id,
+                    AssigneeId = fieldAssignee.AssigneeId,
+                }
+            );
         }
 
         if (request.MaterialBatchId.HasValue)
         {
-            var materialBatch = await context.MaterialBatches
-                .FirstOrDefaultAsync(m => m.Id == request.MaterialBatchId);
+            var materialBatch = await context.MaterialBatches.FirstOrDefaultAsync(m =>
+                m.Id == request.MaterialBatchId
+            );
 
-            if (materialBatch == null) return MaterialErrors.NotFound(request.MaterialBatchId.Value);
+            if (materialBatch == null)
+                return MaterialErrors.NotFound(request.MaterialBatchId.Value);
 
             materialBatch.Status = BatchStatus.TestAssigned;
+            materialBatch.IssueNumber = request.IssueNumber;
+            materialBatch.IssuedById = userId;
+            materialBatch.IssuedAt = DateTime.UtcNow;
         }
 
         if (request.BatchManufacturingRecordId.HasValue)
         {
-            var atr = await context.AnalyticalTestRequests
-                .IgnoreQueryFilters()
+            var atr = await context
+                .AnalyticalTestRequests.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-                    && r.Stage == request.Stage);
+                    && r.Stage == request.Stage
+                    && !r.DeletedAt.HasValue
+                );
 
-            if (atr == null) return Error.NotFound("Atr", "Atr not found for bmr");
+            if (atr == null)
+                return Error.NotFound("Atr", "Atr not found for bmr");
 
             atr.Status = AnalyticalTestStatus.Assigned;
             atr.AssignedAt = DateTime.UtcNow;
+            atr.IssueNumber = request.IssueNumber;
+            atr.IssuedAt = DateTime.UtcNow;
+            atr.IssuedById = userId;
+
+            atr.Assignees = request
+                .FormFieldAssignees.Select(f => new AnalyticalTestRequestAssignee
+                {
+                    AnalyticalTestRequestId = atr.Id,
+                    UserId = f.AssigneeId.GetValueOrDefault(),
+                })
+                .DistinctBy(a => a.UserId)
+                .ToList();
         }
 
         await context.FormAssignees.AddAsync(formAssignee);
@@ -634,19 +848,32 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return Result.Success();
     }
 
-    public async Task<Result> GenerateCertificateOfAnalysis(Guid materialBatchId, Guid userId)
+    public async Task<Result> GenerateCertificateOfAnalysis(
+        Guid materialBatchId,
+        Guid userId,
+        List<CertificateOfAnalysisComplies> complies
+    )
     {
         var response = await context.Responses.FirstOrDefaultAsync(r =>
-            r.MaterialBatchId == materialBatchId);
-        if (response == null) return FormErrors.NotFound(materialBatchId);
+            r.MaterialBatchId == materialBatchId
+        );
+        if (response == null)
+            return FormErrors.NotFound(materialBatchId);
 
-        var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == response.MaterialBatchId);
-        if (batch == null) return MaterialErrors.NotFound(materialBatchId);
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
+            b.Id == response.MaterialBatchId
+        );
+        if (batch == null)
+            return MaterialErrors.NotFound(materialBatchId);
 
-        var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == nameof(Response));
+        var approval = await context.Approvals.FirstOrDefaultAsync(a =>
+            a.ItemType == nameof(Response)
+        );
         if (approval == null)
-            return Error.Validation("Response.Approval",
-                "Approval configuration for response does not exist. Kindly create an approval in the settings.");
+            return Error.Validation(
+                "Response.Approval",
+                "Approval configuration for response does not exist. Kindly create an approval in the settings."
+            );
 
         response.CheckedAt = DateTime.UtcNow;
         response.CheckedById = userId;
@@ -655,24 +882,67 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         batch.Status = BatchStatus.Checked;
         context.MaterialBatches.Update(batch);
 
+        if (complies is { Count: > 0 })
+        {
+            var formResponses = await context
+                .FormResponses.AsSplitQuery()
+                .Where(f => f.ResponseId == response.Id)
+                .Include(formResponse => formResponse.FormField)
+                    .ThenInclude(formField => formField.FormSection)
+                .ToListAsync();
+
+            foreach (var comply in complies)
+            {
+                var formSection = formResponses
+                    .Where(f => f.FormField.FormSectionId == comply.FormSectionId)
+                    .Select(f => f.FormField.FormSection)
+                    .FirstOrDefault();
+
+                if (formSection == null)
+                {
+                    return Error.Validation(
+                        "Response.FormSection",
+                        $"{comply.FormSectionId} is not a valid forms section id"
+                    );
+                }
+
+                formSection.Complies = comply.Complies;
+            }
+        }
+
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result> GenerateCertificateOfAnalysisForProduct(Guid batchManufacturingRecordId, Guid productionActivityStepId, Guid userId)
+    public async Task<Result> GenerateCertificateOfAnalysisForProduct(
+        Guid batchManufacturingRecordId,
+        Guid productionActivityStepId,
+        Guid userId,
+        List<CertificateOfAnalysisComplies> complies
+    )
     {
         var response = await context.Responses.FirstOrDefaultAsync(r =>
-            r.BatchManufacturingRecordId == batchManufacturingRecordId && r.ProductionActivityStepId == productionActivityStepId);
-        if (response == null) return FormErrors.NotFound(batchManufacturingRecordId);
+            r.BatchManufacturingRecordId == batchManufacturingRecordId
+            && r.ProductionActivityStepId == productionActivityStepId
+        );
+        if (response == null)
+            return FormErrors.NotFound(batchManufacturingRecordId);
 
-        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b => b.Id == response.BatchManufacturingRecordId);
-        if (bmr == null) return MaterialErrors.NotFound(batchManufacturingRecordId);
+        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
+            b.Id == response.BatchManufacturingRecordId
+        );
+        if (bmr == null)
+            return MaterialErrors.NotFound(batchManufacturingRecordId);
 
-        var approval = await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == nameof(Response));
+        var approval = await context.Approvals.FirstOrDefaultAsync(a =>
+            a.ItemType == nameof(Response)
+        );
         if (approval == null)
-            return Error.Validation("Response.Approval",
-                "Approval configuration for response does not exist. Kindly create an approval in the settings.");
+            return Error.Validation(
+                "Response.Approval",
+                "Approval configuration for response does not exist. Kindly create an approval in the settings."
+            );
 
         response.CheckedAt = DateTime.UtcNow;
         response.CheckedById = userId;
@@ -681,6 +951,34 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         bmr.Status = BatchManufacturingStatus.Checked;
         context.BatchManufacturingRecords.Update(bmr);
 
+        if (complies is { Count: > 0 })
+        {
+            var formResponses = await context
+                .FormResponses.AsSplitQuery()
+                .Where(f => f.ResponseId == response.Id)
+                .Include(formResponse => formResponse.FormField)
+                    .ThenInclude(formField => formField.FormSection)
+                .ToListAsync();
+
+            foreach (var comply in complies)
+            {
+                var formSection = formResponses
+                    .Where(f => f.FormField.FormSectionId == comply.FormSectionId)
+                    .Select(f => f.FormField.FormSection)
+                    .FirstOrDefault();
+
+                if (formSection == null)
+                {
+                    return Error.Validation(
+                        "Response.FormSection",
+                        $"{comply.FormSectionId} is not a valid forms section id"
+                    );
+                }
+
+                formSection.Complies = comply.Complies;
+            }
+        }
+
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -688,17 +986,17 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId)
     {
-        var formResponse = await context.Responses
-            .AsSplitQuery()
+        var formResponse = await context
+            .Responses.AsSplitQuery()
             .Include(fr => fr.BatchManufacturingRecord)
             .Include(fr => fr.MaterialBatch)
             .Include(fr => fr.CheckedBy)
             .Include(fr => fr.Form)
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.FormResponses)
-            .ThenInclude(r => r.FormField)
-            .ThenInclude(r => r.Question)
-            .ThenInclude(r => r.Options)
+                .ThenInclude(r => r.FormField)
+                    .ThenInclude(r => r.Question)
+                        .ThenInclude(r => r.Options)
             .FirstOrDefaultAsync(fr => fr.Id == formResponseId);
 
         if (formResponse == null)
@@ -707,59 +1005,75 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<ResponseDetailDto>(formResponse);
     }
 
-    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(Guid materialBatchId)
+    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(
+        Guid materialBatchId
+    )
     {
-        var form = await context.Forms
-            .AsSplitQuery()
+        var form = await context
+            .Forms.AsSplitQuery()
             .Include(f => f.Sections)
-            .ThenInclude(s => s.Fields)
-            .ThenInclude(fld => fld.Question)
-            .ThenInclude(q => q.Options)
+                .ThenInclude(s => s.Fields)
+                    .ThenInclude(fld => fld.Question)
+                        .ThenInclude(q => q.Options)
             .Include(f => f.Responses)
-            .ThenInclude(r => r.CreatedBy)
+                .ThenInclude(r => r.CreatedBy)
             .Include(f => f.Responses)
-            .ThenInclude(r => r.FormField)
+                .ThenInclude(r => r.FormField)
+                    .ThenInclude(ff => ff.FormSection)
             .Include(f => f.Responses)
-            .ThenInclude(r => r.Response)
-            .ThenInclude(res => res.CheckedBy)
-            .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialBatchId == materialBatchId));
+                .ThenInclude(r => r.Response)
+                    .ThenInclude(res => res.CheckedBy)
+            .FirstOrDefaultAsync(f =>
+                f.Responses.Any(r => r.Response.MaterialBatchId == materialBatchId)
+            );
 
-        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
+        return mapper.Map<List<FormDto>>(
+            form,
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
+        );
     }
 
-    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(Guid batchManufacturingRecordId)
+    public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByBmr(
+        Guid batchManufacturingRecordId
+    )
     {
-        var form = await context.Forms
-            .AsSplitQuery()
+        var form = await context
+            .Forms.AsSplitQuery()
             .Include(f => f.Sections)
-            .ThenInclude(s => s.Fields)
-            .ThenInclude(fld => fld.Question)
-            .ThenInclude(q => q.Options)
+                .ThenInclude(s => s.Fields)
+                    .ThenInclude(fld => fld.Question)
+                        .ThenInclude(q => q.Options)
             .Include(f => f.Responses)
-            .ThenInclude(r => r.CreatedBy)
+                .ThenInclude(r => r.CreatedBy)
             .Include(f => f.Responses)
-            .ThenInclude(r => r.FormField)
+                .ThenInclude(r => r.FormField)
+                    .ThenInclude(ff => ff.FormSection)
             .Include(f => f.Responses)
-            .ThenInclude(r => r.Response)
-            .ThenInclude(res => res.CheckedBy)
-            .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialBatchId == batchManufacturingRecordId));
+                .ThenInclude(r => r.Response)
+                    .ThenInclude(res => res.CheckedBy)
+            .FirstOrDefaultAsync(f =>
+                f.Responses.Any(r => r.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
+            );
 
-        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
+        return mapper.Map<List<FormDto>>(
+            form,
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
+        );
     }
 
     public async Task<Result<FormAssigneeDto>> GetFormAssignee(Guid formAssigneeId)
     {
-        var formAssignee = await context.FormAssignees
-            .AsSplitQuery()
+        var formAssignee = await context
+            .FormAssignees.AsSplitQuery()
             .Include(fa => fa.Form)
-            .ThenInclude(f => f.Sections)
-            .ThenInclude(s => s.Fields)
-            .ThenInclude(fld => fld.Question)
-            .ThenInclude(q => q.Options)
+                .ThenInclude(f => f.Sections)
+                    .ThenInclude(s => s.Fields)
+                        .ThenInclude(fld => fld.Question)
+                            .ThenInclude(q => q.Options)
             .Include(fa => fa.FieldAssignees)
-            .ThenInclude(af => af.FormField)
+                .ThenInclude(af => af.FormField)
             .Include(fa => fa.FieldAssignees)
-            .ThenInclude(af => af.Assignee)
+                .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
             .FirstOrDefaultAsync(fa => fa.Id == formAssigneeId);
 
@@ -769,20 +1083,19 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
         return mapper.Map<FormAssigneeDto>(formAssignee);
     }
 
-
     public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId)
     {
-        var formAssignee = await context.FormAssignees
-            .AsSplitQuery()
+        var formAssignee = await context
+            .FormAssignees.AsSplitQuery()
             .Include(fa => fa.Form)
-            .ThenInclude(f => f.Sections)
-            .ThenInclude(s => s.Fields)
-            .ThenInclude(fld => fld.Question)
-            .ThenInclude(q => q.Options)
+                .ThenInclude(f => f.Sections)
+                    .ThenInclude(s => s.Fields)
+                        .ThenInclude(fld => fld.Question)
+                            .ThenInclude(q => q.Options)
             .Include(fa => fa.FieldAssignees)
-            .ThenInclude(af => af.FormField)
+                .ThenInclude(af => af.FormField)
             .Include(fa => fa.FieldAssignees)
-            .ThenInclude(af => af.Assignee)
+                .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
             .FirstOrDefaultAsync(fa => fa.MaterialBatchId == materialBatchId);
 
@@ -794,17 +1107,17 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId)
     {
-        var formAssignee = await context.FormAssignees
-            .AsSplitQuery()
+        var formAssignee = await context
+            .FormAssignees.AsSplitQuery()
             .Include(fa => fa.Form)
-            .ThenInclude(f => f.Sections)
-            .ThenInclude(s => s.Fields)
-            .ThenInclude(fld => fld.Question)
-            .ThenInclude(q => q.Options)
+                .ThenInclude(f => f.Sections)
+                    .ThenInclude(s => s.Fields)
+                        .ThenInclude(fld => fld.Question)
+                            .ThenInclude(q => q.Options)
             .Include(fa => fa.FieldAssignees)
-            .ThenInclude(af => af.FormField)
+                .ThenInclude(af => af.FormField)
             .Include(fa => fa.FieldAssignees)
-            .ThenInclude(af => af.Assignee)
+                .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
             .FirstOrDefaultAsync(fa => fa.BatchManufacturingRecordId == bmrId);
 
@@ -813,7 +1126,6 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
         return mapper.Map<FormAssigneeDto>(formAssignee);
     }
-
 
     /*public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(Guid materialSpecificationId)
     {
@@ -832,7 +1144,7 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.MaterialSpecificationId == materialSpecificationId));
 
-        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = nameof(FormResponse));
     }
     
     public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByProductSpecification(Guid productSpecificationId)
@@ -852,91 +1164,118 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f => f.Responses.Any(r => r.Response.ProductSpecificationId == productSpecificationId));
 
-        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = typeof(FormResponse));
+        return mapper.Map<List<FormDto>>(form, opts => opts.Items[AppConstants.ModelType]  = nameof(FormResponse));
     }*/
 
-    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId)
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(
+        Guid materialBatchId
+    )
     {
-        var formResponse = await context.FormResponses
-            .IgnoreQueryFilters()
+        var formResponse = await context
+            .FormResponses.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
-            .ThenInclude(fr => fr.CheckedBy)
+                .ThenInclude(fr => fr.CheckedBy)
             .Include(r => r.FormField)
-            .ThenInclude(r => r.Question)
-            .ThenInclude(r => r.Options)
+                .ThenInclude(r => r.Question)
+                    .ThenInclude(r => r.Options)
             .Include(r => r.FormField)
-            .ThenInclude(f => f.FormSection)
+                .ThenInclude(f => f.FormSection)
             .Include(f => f.CreatedBy)
             .Where(fr => fr.Response.MaterialBatchId == materialBatchId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
+        return mapper.Map<List<FormResponseDto>>(
+            formResponse,
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
+        );
     }
 
-    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(Guid batchManufacturingRecordId)
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(
+        Guid batchManufacturingRecordId
+    )
     {
-        var formResponse = await context.FormResponses
-            .IgnoreQueryFilters()
+        var formResponse = await context
+            .FormResponses.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
-            .ThenInclude(fr => fr.CheckedBy)
+                .ThenInclude(fr => fr.CheckedBy)
             .Include(r => r.FormField)
-            .ThenInclude(r => r.Question)
-            .ThenInclude(r => r.Options)
+                .ThenInclude(r => r.Question)
+                    .ThenInclude(r => r.Options)
+            .Include(r => r.FormField)
+                .ThenInclude(f => f.FormSection)
             .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(formResponse, opt => opt.Items[AppConstants.ModelType] = typeof(FormResponse));
+        return mapper.Map<List<FormResponseDto>>(
+            formResponse,
+            opt => opt.Items[AppConstants.ModelType] = nameof(FormResponse)
+        );
     }
 
-    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(Guid materialSpecificationId)
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
+        Guid materialSpecificationId
+    )
     {
-        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(m => m.Id == materialSpecificationId);
-        if (materialSpec is null) return Error.NotFound("Material.Spec", "Material Specification not found");
+        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(m =>
+            m.Id == materialSpecificationId
+        );
+        if (materialSpec is null)
+            return Error.NotFound("Material.Spec", "Material Specification not found");
 
-        var formResponse = await context.FormResponses
-            .IgnoreQueryFilters()
+        var formResponse = await context
+            .FormResponses.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
-            .ThenInclude(fr => fr.CheckedBy)
+                .ThenInclude(fr => fr.CheckedBy)
             .Include(r => r.FormField)
-            .ThenInclude(r => r.Question)
-            .ThenInclude(r => r.Options)
+                .ThenInclude(r => r.Question)
+                    .ThenInclude(r => r.Options)
             .Include(r => r.FormField)
-            .ThenInclude(f => f.FormSection)
+                .ThenInclude(f => f.FormSection)
             .Include(f => f.CreatedBy)
             .Where(fr => fr.ResponseId == materialSpec.ResponseId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
+        return mapper.Map<List<FormResponseDto>>(
+            formResponse,
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
+        );
     }
 
-    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(Guid productSpecificationId)
+    public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
+        Guid productSpecificationId
+    )
     {
-        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(p => p.Id == productSpecificationId);
-        if (productSpec is null) return Error.NotFound("Product.Spec", "Product specification not found");
-        var formResponse = await context.FormResponses
-            .IgnoreQueryFilters()
+        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(p =>
+            p.Id == productSpecificationId
+        );
+        if (productSpec is null)
+            return Error.NotFound("Product.Spec", "Product specification not found");
+        var formResponse = await context
+            .FormResponses.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Response)
-            .ThenInclude(fr => fr.CheckedBy)
+                .ThenInclude(fr => fr.CheckedBy)
             .Include(r => r.FormField)
-            .ThenInclude(r => r.Question)
-            .ThenInclude(r => r.Options)
+                .ThenInclude(r => r.Question)
+                    .ThenInclude(r => r.Options)
             .Include(r => r.FormField)
-            .ThenInclude(f => f.FormSection)
+                .ThenInclude(f => f.FormSection)
             .Include(f => f.CreatedBy)
             .Where(fr => fr.ResponseId == productSpec.ResponseId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(formResponse, opts => opts.Items[AppConstants.ModelType] = typeof(FormResponse));
+        return mapper.Map<List<FormResponseDto>>(
+            formResponse,
+            opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
+        );
     }
-
 
     public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)
     {
@@ -950,18 +1289,28 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result<QuestionDto>> GetQuestion(Guid questionId)
     {
-        return mapper.Map<QuestionDto>(await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId));
+        return mapper.Map<QuestionDto>(
+            await context.Questions.FirstOrDefaultAsync(q => q.Id == questionId)
+        );
     }
-    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(QuestionFilter filter)
+
+    public async Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(
+        QuestionFilter filter
+    )
     {
-        var query = context.Questions
-            .AsSplitQuery()
+        var query = context
+            .Questions.AsSplitQuery()
             .OrderByDescending(f => f.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
-            query = query.WhereSearch(filter.SearchQuery, q => q.Label, q => q.CreatedBy.FirstName, q => q.CreatedBy.LastName);
+            query = query.WhereSearch(
+                filter.SearchQuery,
+                q => q.Label,
+                q => q.CreatedBy.FirstName,
+                q => q.CreatedBy.LastName
+            );
         }
 
         if (filter.FormType.HasValue)
@@ -970,10 +1319,9 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
             {
                 FormType.Default => query.Where(q => q.Type != QuestionType.Specification),
                 FormType.Specification => query.Where(q => q.Type == QuestionType.Specification),
-                _ => query
+                _ => query,
             };
         }
-
 
         if (filter.Type.Count != 0)
         {
@@ -990,7 +1338,8 @@ public class FormRepository(ApplicationDbContext context, IMapper mapper, IFileR
 
     public async Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId)
     {
-        var question = await context.Questions.Include(question => question.Options)
+        var question = await context
+            .Questions.Include(question => question.Options)
             .FirstOrDefaultAsync(f => f.Id == id);
 
         if (question == null)

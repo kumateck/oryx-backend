@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products;
@@ -21,6 +22,8 @@ public class Warehouse : BaseEntity
     public WarehouseArrivalLocation ArrivalLocation { get; set; }
     public WarehouseType Type { get; set; }
     public Division? Division { get; set; }
+    
+    public List<Employee> Employees { get; set; }
 }
 
 public class WarehouseArrivalLocation : BaseEntity
@@ -149,6 +152,7 @@ public class ShelfMaterialBatch : BaseEntity
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
+    [Timestamp] public byte[] RowVersion { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     [StringLength(1000)] public string Note { get; set; }

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.ServiceProviders;
+using Microsoft.EntityFrameworkCore;
 
 namespace DOMAIN.Entities.JobRequests;
 
@@ -12,17 +13,15 @@ public class ServiceQuotation : BaseEntity
 {
     [StringLength(100)]
     public string QuotationNumber { get; set; }
-
     public Guid JobOrderId { get; set; }
     public JobOrder JobOrder { get; set; }
-
     public Guid ServiceProviderId { get; set; }
     public ServiceProvider ServiceProvider { get; set; }
 
     public DateTime SubmittedDate { get; set; }
 
     // Service charge
-    public decimal ServiceCharge { get; set; }
+    public List<ServiceCharge> ServiceCharges { get; set; } = [];
 
     public Guid CurrencyId { get; set; }
     public Currency Currency { get; set; }
@@ -30,8 +29,11 @@ public class ServiceQuotation : BaseEntity
     // Items/materials required
     public List<QuotationItem> Items { get; set; } = [];
 
+    public decimal TotalServiceCharge => ServiceCharges.Sum(i => i.Cost);
+    public decimal TotalItemCost => Items.Sum(i => i.TotalPrice);
+
     // Total cost (service charge + sum of items)
-    public decimal TotalCost => ServiceCharge + Items.Sum(i => i.TotalPrice);
+    public decimal GrandTotal => ServiceCharges.Sum(i => i.Cost) + Items.Sum(i => i.TotalPrice);
 
     // Estimated completion time
     public int EstimatedDays { get; set; }
@@ -51,6 +53,12 @@ public class ServiceQuotation : BaseEntity
     public QuotationStatus Status { get; set; } = QuotationStatus.Submitted;
 }
 
+[Owned]
+public class ServiceCharge
+{
+    [StringLength(1000)] public string Name { get; set; }
+    public decimal Cost { get; set; }
+}
 public enum QuotationStatus
 {
     Submitted,

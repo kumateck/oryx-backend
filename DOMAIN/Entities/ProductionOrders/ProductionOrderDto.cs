@@ -58,12 +58,12 @@ public class AllocateProductionOrderRequest
 {
     public Guid ProductionOrderId { get; set; }
     public List<AllocateProductionOrderProductRequest> Products { get; set; } = [];
-
 }
 
 public class AllocateProductionOrderProductRequest
 {
     public Guid ProductId { get; set; }
+
     [Required]
     public Guid? ProductPackingId { get; set; }
     public List<AllocateProductQuantityRequest> FulfilledQuantities { get; set; } = [];
@@ -75,11 +75,11 @@ public class AllocateProductQuantityRequest
     public decimal Quantity { get; set; }
 }
 
-
 public class AllocateProductionOrderDto
 {
     public Guid Id { get; set; }
     public ProductionOrderListDto ProductionOrder { get; set; }
+    public string InvoiceCode { get; set; }
     public bool Approved { get; set; }
     public List<AllocateProductionOrderProductDto> Products { get; set; } = [];
     public AllocateProductionOrderStatus Status { get; set; }

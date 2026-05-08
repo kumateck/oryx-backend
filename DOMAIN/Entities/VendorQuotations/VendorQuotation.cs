@@ -52,6 +52,7 @@ public enum VendorQuotationItemStatus
 
 public class VendorQuotationItemDto
 {
+    public Guid Id { get; set; }
     public ItemDto Item { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }

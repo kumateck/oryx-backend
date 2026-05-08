@@ -1,5 +1,3 @@
-
-
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveTypes;
@@ -8,8 +6,7 @@ namespace DOMAIN.Entities.LeaveRequests;
 
 public class LeaveRequestDto : WithAttachment
 {
-
-    public Guid LeaveTypeId { get; set; }
+    public Guid? LeaveTypeId { get; set; }
 
     public LeaveTypeDto LeaveType { get; set; }
 
@@ -33,8 +30,14 @@ public class LeaveRequestDto : WithAttachment
 
     public int PaidDays { get; set; }
 
+    public int NumberOfDays => UnpaidDays + PaidDays;
+
+    public int NumberOfDaysUsed => Employee.Designation.MaximumLeaveDays - Employee.AnnualLeaveDays;
+
     public Guid EmployeeId { get; set; }
 
     public EmployeeDto Employee { get; set; }
 
+    public int LeaveBalance => Employee.AnnualLeaveDays - NumberOfDays;
+    public string Destination { get; set; }
 }

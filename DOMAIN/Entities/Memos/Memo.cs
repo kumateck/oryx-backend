@@ -19,13 +19,21 @@ public class Memo : BaseEntity
 {
     public string Code { get; set; }
     public bool Paid { get; set; }
+    public MemoStatus Status { get; set; }
     public List<MemoItem> Items { get; set; } = [];
+}
+
+public enum MemoStatus
+{
+    Memo = 0,
+    PurchaseOrder = 1
 }
 
 public class MemoDto : BaseDto
 {
     public string Code { get; set; }
     public bool Paid { get; set; }
+    public MemoStatus Status { get; set; }
     public List<MemoItemDto> Items { get; set; } = [];
     public decimal TotalValue => Items.Sum(i => i.ItemValue);
 }

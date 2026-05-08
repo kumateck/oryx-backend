@@ -12,6 +12,6 @@ public interface IServiceQuotationRepository
     Task<Result<ServiceQuotationDto>> GetServiceQuotation(Guid id);
     Task<Result> UpdateServiceQuotation(Guid id, UpdateServiceQuotationRequest request);
     Task<Result> NegotiateQuotation(NegotiateQuotationRequest request);
-    Task<Result<List<ServiceQuotationDto>>> CompareQuotations(CompareQuotationsRequest request);
+    Task<Result<List<ServiceQuotationDto>>> CompareQuotations(Guid jobOrderId);
 }
 

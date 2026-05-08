@@ -2,28 +2,31 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
-using Asp.Versioning;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using API.Config.Swagger;
 using API.Database.Seeds;
 using APP;
 using APP.Mapper;
 using APP.Middlewares;
+using Asp.Versioning;
+using AutoMapper.Internal;
+
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseSentry(o =>
 {
-    o.Dsn = "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
+    o.Dsn =
+        "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
     // When configuring for the first time, to see what the SDK is doing:
     o.Debug = false;
     // Set TracesSampleRate to 1.0 to capture 100%
@@ -40,34 +43,38 @@ builder.Services.AddSwaggerGen(options =>
     options.EnableAnnotations();
     options.DescribeAllParametersInCamelCase();
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description =
-            "JWT Authorization Header using Bearer Security Scheme. \r\r\r\r Enter Bearer [space] and then the security token to authenticate",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                },
-                Scheme = "oauth2",
-                Name = "Bearer",
-                In = ParameterLocation.Header
-            },
-
-            []
+            Description =
+                "JWT Authorization Header using Bearer Security Scheme. \r\r\r\r Enter Bearer [space] and then the security token to authenticate",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer",
         }
-    });
+    );
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer",
+                    },
+                    Scheme = "oauth2",
+                    Name = "Bearer",
+                    In = ParameterLocation.Header,
+                },
+                []
+            },
+        }
+    );
     options.OperationFilter<ReApplyOptionalParameterFilter>();
     options.OperationFilter<SwaggerHeaderFilter>();
 
@@ -82,28 +89,28 @@ builder.Services.AddMemoryCache();
 //Add Cors
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("default",
+    options.AddPolicy(
+        "default",
         policyBuilder =>
         {
-            policyBuilder
-                .AllowAnyOrigin()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+            policyBuilder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
+    );
 });
 
 //validate model state
-builder.Services.AddControllers()
+builder
+    .Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
         {
-            var errors = context.ModelState
-                .Where(x => x.Value.Errors.Count > 0)
+            var errors = context
+                .ModelState.Where(x => x.Value.Errors.Count > 0)
                 .Select(x => new
                 {
                     Code = x.Key,
-                    Description = x.Value.Errors.Select(e => e.ErrorMessage).FirstOrDefault()
+                    Description = x.Value.Errors.Select(e => e.ErrorMessage).FirstOrDefault(),
                 })
                 .ToArray();
 
@@ -112,12 +119,12 @@ builder.Services.AddControllers()
                 Type = "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
                 Title = "One or more validation errors occurred.",
                 Status = StatusCodes.Status422UnprocessableEntity,
-                Extensions = { ["errors"] = errors }
+                Extensions = { ["errors"] = errors },
             };
 
             return new ObjectResult(problemDetails)
             {
-                StatusCode = StatusCodes.Status422UnprocessableEntity
+                StatusCode = StatusCodes.Status422UnprocessableEntity,
             };
         };
     });
@@ -128,26 +135,36 @@ builder.Services.AddHttpContextAccessor();
 // Configure rate limiting
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("fixed", opt =>
-    {
-        opt.PermitLimit = 10;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 2;
-    });
+    options.AddFixedWindowLimiter(
+        "fixed",
+        opt =>
+        {
+            opt.PermitLimit = 10;
+            opt.Window = TimeSpan.FromMinutes(1);
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            opt.QueueLimit = 2;
+        }
+    );
 });
 
 //add automapper
-builder.Services.AddAutoMapper(typeof(OryxMapper));
-
-//configure database
-var defaultDbConnectionString = Environment.GetEnvironmentVariable("connectionString") ?? builder.Configuration.GetConnectionString("DefaultConnection");
-
-builder.Services.AddDbContext<ApplicationDbContext>(o =>
-    o.UseNpgsql(defaultDbConnectionString)
+builder.Services.AddAutoMapper(
+    cfg =>
+    {
+        cfg.Internal().MaxExecutionPlanDepth = 32;
+    },
+    typeof(OryxMapper)
 );
 
-builder.Services.AddIdentityCore<User>(options =>
+//configure database
+var defaultDbConnectionString =
+    Environment.GetEnvironmentVariable("connectionString")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(defaultDbConnectionString));
+
+builder
+    .Services.AddIdentityCore<User>(options =>
     {
         options.Password.RequireDigit = true;
         options.Password.RequiredLength = 8;
@@ -172,12 +189,13 @@ TokenValidationParameters tokenValidation = new()
     ValidateIssuer = false,
     ClockSkew = TimeSpan.Zero,
     NameClaimType = ClaimTypes.NameIdentifier,
-    RoleClaimType = ClaimTypes.Role
+    RoleClaimType = ClaimTypes.Role,
 };
 
 builder.Services.AddSingleton(tokenValidation);
 
-builder.Services.AddAuthentication(authOptions =>
+builder
+    .Services.AddAuthentication(authOptions =>
     {
         authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -195,7 +213,8 @@ builder.Services.AddSingletonServices();
 builder.Services.AddInfrastructure();
 
 //add api versioning
-builder.Services.AddApiVersioning(options =>
+builder
+    .Services.AddApiVersioning(options =>
     {
         options.DefaultApiVersion = new ApiVersion(1);
         options.ApiVersionReader = new UrlSegmentApiVersionReader();
@@ -213,9 +232,7 @@ var app = builder.Build();
 app.SeedData();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-}
+if (app.Environment.IsDevelopment()) { }
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
@@ -258,7 +275,6 @@ app.UseStaticFiles();
 app.UseCors("default");
 
 app.UseMiddleware<JwtMiddleware>();
-
 
 app.MapControllers();
 

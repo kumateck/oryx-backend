@@ -6,7 +6,7 @@ using DOMAIN.Entities.ProductStandardTestProcedures;
 
 namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
-public class ProductAnalyticalRawData : BaseEntity
+public class ProductAnalyticalRawData : BaseEntity, IVerifiable
 {
     public string SpecNumber { get; set; }
     public string Description { get; set; }
@@ -16,4 +16,7 @@ public class ProductAnalyticalRawData : BaseEntity
     public ProductStandardTestProcedure ProductStandardTestProcedure { get; set; }
     public Guid FormId { get; set; }
     public Form Form { get; set; }
+    public bool IsVerified { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
 }

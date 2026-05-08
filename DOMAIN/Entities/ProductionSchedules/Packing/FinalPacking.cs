@@ -1,8 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
-using SHARED;
 
 namespace DOMAIN.Entities.ProductionSchedules.Packing;
 
@@ -65,6 +65,8 @@ public class FinalPacking : BaseEntity
     public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
     public decimal TotalWeightReceived { get; set; }
+    [StringLength(100000)]
+    public string Comment { get; set; }
 }
 
 
@@ -105,6 +107,7 @@ public class FinalPackingDto : BaseDto
     public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
     public decimal TotalWeightReceived { get; set; }
+    public string Comment { get; set; }
 }
 
 

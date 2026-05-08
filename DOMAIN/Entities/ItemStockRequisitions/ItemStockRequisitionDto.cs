@@ -1,6 +1,6 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
-using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.ItemStockRequisitions;
@@ -12,5 +12,6 @@ public class ItemStockRequisitionDto : BaseDto
     public UserDto RequestedBy { get; set; }
     public DepartmentDto Department { get; set; }
     public string Justification { get; set; }
-    public LeaveStatus Status { get; set; }
+    public IssueItemStockRequisitionStatus Status { get; set; }
+    public ICollection<ItemStockRequisitionItemDto> RequisitionItems { get; set; }
 }

@@ -1,8 +1,6 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
-using DOMAIN.Entities.Procurement.Manufacturers;
-using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using SHARED;
@@ -16,6 +14,7 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
     public MaterialStandardTestProcedureDto MaterialStandardTestProcedure { get; set; }
     public CollectionItemDto Form { get; set; }
     public UniformityOfWeightDto UniformityOfWeight { get; set; }
+    public bool IsVerified { get; set; }
 }
 
 public class MaterialBatchArd

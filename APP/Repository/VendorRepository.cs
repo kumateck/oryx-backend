@@ -70,35 +70,43 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
     public async Task<Result> UpdateVendor(Guid id, CreateVendorRequest request)
     {
         var vendor = await context.Vendors
-            .AsSplitQuery()
-            .Include(vendor => vendor.Items)
-            .FirstOrDefaultAsync(nps => nps.Id == id);
+            .Include(v => v.Items)
+            .FirstOrDefaultAsync(v => v.Id == id);
+
         if (vendor == null)
             return Error.NotFound("Vendor.NotFound", "Vendor not found");
 
-        var validInventoryIds = await context.Items
-            .Where(s => request.ItemIds.Contains(s.Id))
-            .Select(s => s.Id)
+        var validItemIds = await context.Items
+            .Where(i => request.ItemIds.Contains(i.Id))
+            .Select(i => i.Id)
             .ToListAsync();
 
-        var missingIds = request.ItemIds.Except(validInventoryIds).ToList();
+        var missingIds = request.ItemIds.Except(validItemIds).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Items.NotFound", $"Some items not found: {string.Join(", ", missingIds)}");
-
-        context.VendorItems.RemoveRange(vendor.Items);
-
+        
         mapper.Map(request, vendor);
 
-        vendor.Items = request.ItemIds.Select(item => new VendorItem
-        {
-            VendorId = vendor.Id,
-            ItemId = item,
-        }).ToList();
+        var existingItemIds = vendor.Items.Select(i => i.ItemId).ToList();
 
-        context.Vendors.Update(vendor);
+        var itemsToRemove = vendor.Items
+            .Where(i => !request.ItemIds.Contains(i.ItemId))
+            .ToList();
+
+        var itemsToAdd = request.ItemIds
+            .Where(itemId => !existingItemIds.Contains(itemId))
+            .Select(itemId => new VendorItem
+            {
+                VendorId = vendor.Id,
+                ItemId = itemId
+            });
+
+        context.VendorItems.RemoveRange(itemsToRemove);
+        await context.VendorItems.AddRangeAsync(itemsToAdd);
+
         await context.SaveChangesAsync();
-        return Result.Success();
 
+        return Result.Success();
     }
 
     public async Task<Result> DeleteVendor(Guid id, Guid userId)
@@ -114,5 +122,18 @@ public class VendorRepository(ApplicationDbContext context, IMapper mapper) : IV
         context.Vendors.Update(supplier);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<List<VendorDto>>> GetVendorsByItem(Guid itemId)
+    {
+        var vendors = await context.VendorItems
+            .Where(vi => vi.ItemId == itemId)
+            .Select(vi => vi.Vendor)
+            .Distinct()
+            .ToListAsync();
+
+        var vendorDtos = mapper.Map<List<VendorDto>>(vendors);
+
+        return Result.Success(vendorDtos);
     }
 }

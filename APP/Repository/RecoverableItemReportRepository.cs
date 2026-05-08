@@ -33,10 +33,10 @@ public class RecoverableItemReportRepository(ApplicationDbContext context, IMapp
         {
             Id = Guid.NewGuid(),
             ItemCode = item.Code,
-            Credit = 0,
-            TransactionType = "Missing/Damaged Stock",
-            Debit = request.Quantity,
-            TotalBalance = itemTransaction.TotalBalance - request.Quantity
+            Credit = request.Quantity,
+            TransactionType = TransactionType.Returned,
+            Debit = 0,
+            TotalBalance = itemTransaction.TotalBalance + request.Quantity
         };
 
         await context.ItemTransactionLogs.AddAsync(itemTransactionLog);

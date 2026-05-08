@@ -6,7 +6,6 @@ namespace DOMAIN.Entities.ItemStockRequisitions;
 public class CreateItemStockRequisitionRequest
 {
     public string Number { get; set; }
-    [Required] public DateTime RequisitionDate { get; set; }
 
     [Required] public Guid RequestedById { get; set; }
 
@@ -18,7 +17,13 @@ public class CreateItemStockRequisitionRequest
     public List<StockItems> StockItems { get; set; }
 }
 
+public class IssueQuantityDto
+{
+    public Guid ItemId { get; set; }
+    public int Quantity { get; set; }
+}
+
 public class IssueStockAgainstRequisitionRequest
 {
-    public Dictionary<Guid, int> QuantitiesToIssue { get; set; }
+    public List<IssueQuantityDto> QuantitiesToIssue { get; set; }
 }

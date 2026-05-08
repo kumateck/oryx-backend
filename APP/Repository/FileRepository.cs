@@ -10,10 +10,19 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class FileRepository(ApplicationDbContext context, IBlobStorageService blobStorageService, IApprovalRepository approvalRepository) : IFileRepository
+public class FileRepository(
+    ApplicationDbContext context,
+    IBlobStorageService blobStorageService,
+    IApprovalRepository approvalRepository
+) : IFileRepository
 {
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, string reference, IFormFile file,
-        Guid? userId)
+    public async Task<Result> SaveBlobItem(
+        string modelType,
+        Guid modelId,
+        string reference,
+        IFormFile file,
+        Guid? userId
+    )
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -23,14 +32,18 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             ModelType = modelType,
             Reference = reference,
             Name = Path.GetFileName(file.FileName),
-            CreatedById = userId
+            CreatedById = userId,
         };
         context.Attachments.Add(attachment);
         await context.SaveChangesAsync();
 
         try
         {
-            var result = await blobStorageService.UploadBlobAsync(modelType.ToLower(), file, $"{modelId}/{reference}");
+            var result = await blobStorageService.UploadBlobAsync(
+                modelType.ToLower(),
+                file,
+                $"{modelId}/{reference}"
+            );
             if (result.IsFailure)
             {
                 await transaction.RollbackAsync();
@@ -41,8 +54,14 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             switch (modelType)
             {
                 case nameof(PurchaseOrder):
-                    var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId &&
-                        (item.Status == PurchaseOrderStatus.Delivered || item.Status == PurchaseOrderStatus.Pending || item.Status == PurchaseOrderStatus.New));
+                    var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item =>
+                        item.Id == modelId
+                        && (
+                            item.Status == PurchaseOrderStatus.Delivered
+                            || item.Status == PurchaseOrderStatus.Pending
+                            || item.Status == PurchaseOrderStatus.New
+                        )
+                    );
                     if (purchaseOrder is not null)
                     {
                         purchaseOrder.Status = PurchaseOrderStatus.Attached;
@@ -52,13 +71,18 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     break;
 
                 case nameof(ProformaInvoice):
-                    var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
+                    var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item =>
+                        item.Id == modelId
+                    );
                     if (proformaInvoice is not null)
                     {
                         proformaInvoice.Status = ProformaInvoiceStatus.Invoice;
                         context.ProformaInvoices.Update(proformaInvoice);
                         await context.SaveChangesAsync();
-                        await approvalRepository.CreateInitialApprovalsAsync(nameof(ProformaInvoice), proformaInvoice.Id);
+                        await approvalRepository.CreateInitialApprovalsAsync(
+                            nameof(ProformaInvoice),
+                            proformaInvoice.Id
+                        );
                     }
                     break;
             }
@@ -71,7 +95,12 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         return Result.Success();
     }
 
-    public async Task<Result> SaveBlobItem(string modelType, Guid modelId, List<IFormFile> files, Guid? userId)
+    public async Task<Result> SaveBlobItem(
+        string modelType,
+        Guid modelId,
+        List<IFormFile> files,
+        Guid? userId
+    )
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
@@ -87,7 +116,7 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
                     ModelType = modelType,
                     Reference = reference.ToString(),
                     Name = Path.GetFileName(file.FileName),
-                    CreatedById = userId
+                    CreatedById = userId,
                 };
 
                 context.Attachments.Add(attachment);
@@ -99,7 +128,11 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             foreach (var file in files)
             {
                 var reference = references[files.IndexOf(file)];
-                var result = await blobStorageService.UploadBlobAsync(modelType.ToLower(), file, $"{modelId}/{reference}");
+                var result = await blobStorageService.UploadBlobAsync(
+                    modelType.ToLower(),
+                    file,
+                    $"{modelId}/{reference}"
+                );
 
                 if (result.IsFailure)
                 {
@@ -111,8 +144,14 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
             // Update status after all files are uploaded
             if (modelType == nameof(PurchaseOrder))
             {
-                var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item => item.Id == modelId &&
-                    (item.Status == PurchaseOrderStatus.Delivered || item.Status == PurchaseOrderStatus.Pending || item.Status == PurchaseOrderStatus.New));
+                var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(item =>
+                    item.Id == modelId
+                    && (
+                        item.Status == PurchaseOrderStatus.Delivered
+                        || item.Status == PurchaseOrderStatus.Pending
+                        || item.Status == PurchaseOrderStatus.New
+                    )
+                );
                 if (purchaseOrder is not null)
                 {
                     purchaseOrder.Status = PurchaseOrderStatus.Attached;
@@ -122,13 +161,18 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
             if (modelType == nameof(ProformaInvoice))
             {
-                var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item => item.Id == modelId);
+                var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item =>
+                    item.Id == modelId
+                );
                 if (proformaInvoice is not null)
                 {
                     proformaInvoice.Status = ProformaInvoiceStatus.Invoice;
                     context.ProformaInvoices.Update(proformaInvoice);
                     await context.SaveChangesAsync();
-                    await approvalRepository.CreateInitialApprovalsAsync(nameof(ProformaInvoice), proformaInvoice.Id);
+                    await approvalRepository.CreateInitialApprovalsAsync(
+                        nameof(ProformaInvoice),
+                        proformaInvoice.Id
+                    );
                 }
             }
 
@@ -142,11 +186,10 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
         return Result.Success();
     }
 
-
     public async Task<Result> DeleteAttachment(Guid modelId, Guid userId)
     {
-        var attachments = await context.Attachments
-            .Where(item => item.ModelId == modelId)
+        var attachments = await context
+            .Attachments.Where(item => item.ModelId == modelId)
             .ToListAsync();
 
         attachments.ForEach(item =>
@@ -161,8 +204,9 @@ public class FileRepository(ApplicationDbContext context, IBlobStorageService bl
 
     public async Task<Result> DeleteAttachment(Guid id, string reference, Guid userId)
     {
-        var attachment = await context.Attachments
-            .FirstOrDefaultAsync(item => item.ModelId == id && item.Reference == reference);
+        var attachment = await context.Attachments.FirstOrDefaultAsync(item =>
+            item.ModelId == id && item.Reference == reference
+        );
 
         if (attachment != null)
         {

@@ -1,7 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
-using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +30,8 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves a paginated list of item stock requisitions
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemStockRequisitionDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ItemStockRequisitionDto>>))]
     public async Task<IResult> GetItems([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
@@ -43,6 +43,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves an item stock requisition by its ID
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItem([FromRoute] Guid id)
@@ -84,6 +85,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// </summary>
     /// <returns></returns>
     [HttpPost("{stockRequisitionId:guid}/issue-stock-against-requisition")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(IssueItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> IssueStockAgainstRequisition([FromRoute] Guid stockRequisitionId, [FromBody] IssueStockAgainstRequisitionRequest request)

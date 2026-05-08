@@ -1,6 +1,6 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSpecifications;
-using SHARED;
 
 namespace DOMAIN.Entities.Materials;
 
@@ -13,9 +13,11 @@ public class MaterialDto
     public string Description { get; set; }
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
+    public bool IsUnlimited { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
     public MaterialSpecificationReducedDto Specification { get; set; }
     public decimal TotalStock { get; set; }
+    public decimal ReservedStock { get; set; }
 }
 
 public class MaterialWithWarehouseStockDto : MaterialDto
@@ -55,4 +57,11 @@ public class MaterialWithStockDto
     public MaterialDto Material { get; set; }
     public decimal StockQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+}
+
+public class MaterialBatchDepartmentDto
+{
+    public MaterialDto Material { get; set; }
+    public List<MaterialBatchDto> Batches { get; set; }
+    public List<MaterialDepartmentDto> ProductionDepartments { get; set; }
 }

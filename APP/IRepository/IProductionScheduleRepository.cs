@@ -3,7 +3,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -19,10 +18,16 @@ public interface IProductionScheduleRepository
 {
     Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId);
     Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId);
-    Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(int page,
-        int pageSize, string searchQuery, Guid departmentId);
+    Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(
+        Guid roleId,
+        int page,
+        int pageSize, 
+        string searchQuery, 
+        Guid departmentId);
     Task<Result> UpdateProductionSchedule(UpdateProductionScheduleRequest request, Guid scheduleId,
         Guid userId);
+    Task<Result> AddProductToSchedule(Guid scheduleId, AddProductsToScheduleRequest request, Guid userId);
+    Task<Result> RemoveProductFromSchedule(Guid productionScheduleProductId);
     Task<Result> DeleteProductionSchedule(Guid scheduleId, Guid userId);
     Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
         Guid scheduleId, Guid userId);
@@ -91,10 +96,13 @@ public interface IProductionScheduleRepository
     Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId);
 
     Task<Result<FinishedGoodsTransferNoteDto>> GetFinishedGoodsTransferNote(Guid id);
+    Task<Result<List<FinishedGoodsTransferNoteDto>>> GetFinishedGoodsTransferNotesByBmr(
+        Guid batchManufacturingRecordId);
     Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request);
 
     Task<Result> UpdateTransferNote(Guid id, CreateFinishedGoodsTransferNoteRequest request);
-    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts();
+    Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts(Guid roleId,
+        Guid departmentId);
     Task<Result<ApprovedProductDetailDto>> GetApprovedProduct(Guid productId);
     Task<Result<IEnumerable<FinishedGoodsTransferNoteDto>>> GetApprovedProductDetails(Guid productId);
     Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request);
@@ -120,7 +128,7 @@ public interface IProductionScheduleRepository
     Task<Result> CreateExtraPacking(Guid productionScheduleProductId,
         List<CreateProductionExtraPacking> extraPackings);
     Task<Result<Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>>> GetProductionExtraPackings(int page,
-         int pageSize, string searchQuery);
+         int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(
         Guid productionExtraPackingId);
     Task<Result<List<ProductionExtraPackingWithBatchesDto>>> GetProductionExtraPackingByProduct(
@@ -128,12 +136,17 @@ public interface IProductionScheduleRepository
     Task<Result<List<BatchToSupply>>> BatchesToSupplyForExtraPackingMaterial(Guid extraPackingMaterialId);
     Task<Result> ApproveProductionExtraPacking(Guid productionExtraPackingId,
         List<BatchTransferRequest> batches, Guid userId);
+
     Task<Result<Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>>> GetFinishedGoodsTransferNote(
-        bool? onlyApproved,
+        Guid roleId,
+        Guid departmentId,
         int page,
         int pageSize,
         string searchQuery = null,
-        Division? division = null);
+        Division? division = null,
+        bool? onlyApproved = null,
+        bool? partial = null,
+        bool? fulfilled = null);
     Task<Result<Paginateable<IEnumerable<ProductBinCardInformationDto>>>> GetProductBinCardInformation(
         int page, int pageSize,
         string searchQuery, Guid productId);
@@ -142,6 +155,11 @@ public interface IProductionScheduleRepository
         string searchQuery, Guid productId);
     Task<Result<IEnumerable<ProductionScheduleReportDto>>> GetProductionScheduleSummaryReport(
         ProductionScheduleReportFilter filter);
-    Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport(
-        ProductionScheduleReportFilter filter);
+    Task<Result<IEnumerable<ProductionScheduleDetailedReportDto>>> GetProductionScheduleDetailedReport
+        (ProductionScheduleReportFilter filter);
+    Task<Result<List<ForecastMaterialDto>>> ForecastProductionScheduleProduct(Guid productId,
+        int numberOfBatches,
+        Guid productPackingId,
+        BatchSize batchSize,
+        Guid userId);
 }

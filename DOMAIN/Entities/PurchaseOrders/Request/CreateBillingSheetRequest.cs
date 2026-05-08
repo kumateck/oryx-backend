@@ -1,5 +1,3 @@
-using DOMAIN.Entities.Charges;
-
 namespace DOMAIN.Entities.PurchaseOrders.Request;
 
 public class CreateBillingSheetRequest : UpdateBillingSheetRequest

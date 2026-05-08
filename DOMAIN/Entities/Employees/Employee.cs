@@ -58,8 +58,7 @@ public class Employee : BaseEntity
     public DateTime? SuspensionStartDate { get; set; }
     public DateTime? SuspensionEndDate { get; set; }
     public DateTime? ExitDate { get; set; }
-    public Guid? WarehouseId { get; set; }
-    public Warehouse Warehouse { get; set; }
+    public List<Warehouse> Warehouses { get; set; }
 }
 
 public enum EmployeeLevel

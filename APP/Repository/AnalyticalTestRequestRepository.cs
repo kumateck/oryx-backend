@@ -5,20 +5,27 @@ using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
 namespace APP.Repository;
 
-public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapper mapper) : IAnalyticalTestRequestRepository
+public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapper mapper)
+    : IAnalyticalTestRequestRepository
 {
     public async Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request)
     {
-
-        if (await context.AnalyticalTestRequests.IgnoreQueryFilters().AnyAsync(a =>
-               a.BatchManufacturingRecordId == request.BatchManufacturingRecordId &&
-               a.ProductionScheduleProductId == request.ProductionScheduleProductId && a.Stage == request.Stage))
+        if (
+            await context
+                .AnalyticalTestRequests.IgnoreQueryFilters()
+                .AnyAsync(a =>
+                    a.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+                    && a.ProductionScheduleProductId == request.ProductionScheduleProductId
+                    && a.Stage == request.Stage
+                )
+        )
             return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists");
 
         var test = mapper.Map<AnalyticalTestRequest>(request);
@@ -27,25 +34,38 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return test.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>> GetAnalyticalTestRequests(int page, int pageSize, string searchQuery, AnalyticalTestStatus? status)
+    public async Task<
+        Result<Paginateable<IEnumerable<AnalyticalTestRequestDto>>>
+    > GetAnalyticalTestRequests(
+        int page,
+        int pageSize,
+        string searchQuery,
+        AnalyticalTestStatus? status
+    )
     {
-        var query = context.AnalyticalTestRequests
-            .AsSplitQuery()
+        var query = context
+            .AnalyticalTestRequests.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
-            .ThenInclude(s => s.Product)
+                .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
-            .ThenInclude(s => s.ProductionSchedule)
+                .ThenInclude(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
+            .Include(s => s.Assignees)
+                .ThenInclude(a => a.User)
             .Include(s => s.CreatedBy)
+            .Include(s => s.IssuedBy)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery,
+            query = query.WhereSearch(
+                searchQuery,
+                q => q.ArNumber,
                 q => q.Filled,
-                q => q.SampledQuantity);
+                q => q.SampledQuantity
+            );
         }
 
         if (status.HasValue)
@@ -53,18 +73,37 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             query = query.Where(s => s.Status == status.Value);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<AnalyticalTestRequestDto>);
+        var result = await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            entity =>
+            {
+                var dto = mapper.Map<AnalyticalTestRequestDto>(entity);
+                dto.Assignees = entity
+                    .Assignees.Select(a => new UserDto
+                    {
+                        Id = a.UserId,
+                        FirstName = a.User.FirstName,
+                        LastName = a.User.LastName,
+                    })
+                    .ToList();
+                return dto;
+            }
+        );
+
+        return Result.Success(result);
     }
 
     public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id)
     {
-        var test = await context.AnalyticalTestRequests
-            .AsSplitQuery()
+        var test = await context
+            .AnalyticalTestRequests.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(p => p.ProductionScheduleProduct)
-            .ThenInclude(s => s.Product)
+                .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
-            .ThenInclude(s => s.ProductionSchedule)
+                .ThenInclude(s => s.ProductionSchedule)
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
             .Include(s => s.CreatedBy)
@@ -72,11 +111,17 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             .Include(s => s.ReleasedBy)
             .Include(s => s.AcknowledgedBy)
             .Include(s => s.TestedBy)
+            .Include(s => s.IssuedBy)
             .FirstOrDefaultAsync(atr => atr.Id == id);
-        return test is null ? Error.NotFound("ATR.NotFound", "Analytical test request not found") : mapper.Map<AnalyticalTestRequestDto>(test);
+        return test is null
+            ? Error.NotFound("ATR.NotFound", "Analytical test request not found")
+            : mapper.Map<AnalyticalTestRequestDto>(test);
     }
 
-    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request)
+    public async Task<Result> UpdateAnalyticalTestRequest(
+        Guid id,
+        CreateAnalyticalTestRequest request
+    )
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
 
@@ -92,7 +137,11 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return Result.Success();
     }
 
-    public async Task<Result> UpdateAnalyticalTestRequest(Guid id, UpdateAnalyticalTestRequest request, Guid userId)
+    public async Task<Result> UpdateAnalyticalTestRequest(
+        Guid id,
+        UpdateAnalyticalTestRequest request,
+        Guid userId
+    )
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
 
@@ -108,7 +157,6 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.AcknowledgedById = userId;
             test.ArNumber = request.ArNumber;
         }
-
         else if (request.Status == AnalyticalTestStatus.Sampled)
         {
             test.SampledAt = DateTime.UtcNow;
@@ -117,20 +165,19 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
             test.SampledById = userId;
             test.SampledQuantity = request.SampledQuantity;
         }
-
         else if (request.Status == AnalyticalTestStatus.Testing)
         {
             test.Status = request.Status;
             test.TestedById = userId;
             test.TestedAt = DateTime.UtcNow;
         }
-
         else if (request.Status == AnalyticalTestStatus.Released)
         {
             test.ReleasedAt = DateTime.UtcNow;
             test.ReleasedById = userId;
-            var activityStep = await context.ProductionActivitySteps
-                .FirstOrDefaultAsync(p => p.Id == test.ProductionActivityStepId);
+            var activityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                p.Id == test.ProductionActivityStepId
+            );
             if (activityStep is not null)
             {
                 activityStep.Status = ProductionStatus.Completed;
@@ -161,11 +208,15 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return Result.Success();
     }
 
-    public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId)
+    public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(
+        Guid activityStepId
+    )
     {
-        var analyticalTest = await context.AnalyticalTestRequests
-            .FirstOrDefaultAsync(atr => atr.ProductionActivityStepId == activityStepId);
-        if (analyticalTest is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        var analyticalTest = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr =>
+            atr.ProductionActivityStepId == activityStepId
+        );
+        if (analyticalTest is null)
+            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
     }
 
@@ -184,8 +235,8 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     // Get QC Equipment by ID
     public async Task<Result<QcEquipmentDto>> GetQcEquipment(Guid equipmentId)
     {
-        var equipment = await context.QcEquipments
-            .AsSplitQuery()
+        var equipment = await context
+            .QcEquipments.AsSplitQuery()
             .Include(e => e.QcEquipmentCategory)
             .FirstOrDefaultAsync(e => e.Id == equipmentId);
 
@@ -198,16 +249,18 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     public async Task<Result<Paginateable<IEnumerable<QcEquipmentDto>>>> GetQcEquipments(
         int page,
         int pageSize,
-        string searchQuery)
+        string searchQuery
+    )
     {
-        var query = context.QcEquipments
-            .AsSplitQuery()
+        var query = context
+            .QcEquipments.AsSplitQuery()
             .Include(e => e.QcEquipmentCategory)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery,
+            query = query.WhereSearch(
+                searchQuery,
                 e => e.Name,
                 e => e.SerialNumber,
                 e => e.Make,
@@ -226,16 +279,24 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
     // Get all QC Equipments
     public async Task<Result<List<QcEquipmentDto>>> GetQcEquipments()
     {
-        return mapper.Map<List<QcEquipmentDto>>(await context.QcEquipments
-            .AsSplitQuery()
-            .Include(e => e.QcEquipmentCategory)
-            .ToListAsync());
+        return mapper.Map<List<QcEquipmentDto>>(
+            await context
+                .QcEquipments.AsSplitQuery()
+                .Include(e => e.QcEquipmentCategory)
+                .ToListAsync()
+        );
     }
 
     // Update QC Equipment
-    public async Task<Result> UpdateQcEquipment(CreateQcEquipment request, Guid equipmentId, Guid userId)
+    public async Task<Result> UpdateQcEquipment(
+        CreateQcEquipment request,
+        Guid equipmentId,
+        Guid userId
+    )
     {
-        var existingEquipment = await context.QcEquipments.FirstOrDefaultAsync(e => e.Id == equipmentId);
+        var existingEquipment = await context.QcEquipments.FirstOrDefaultAsync(e =>
+            e.Id == equipmentId
+        );
         if (existingEquipment is null)
         {
             return Error.NotFound("QcEquipment.NotFound", "QC Equipment with this Id not found");
@@ -265,5 +326,4 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         await context.SaveChangesAsync();
         return Result.Success();
     }
-
 }

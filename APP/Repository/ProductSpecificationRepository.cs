@@ -24,7 +24,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         return productSpec.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery, bool? isVerified = null)
     {
         var query = context.ProductSpecifications
             .AsSplitQuery()
@@ -34,6 +34,11 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(ps => ps.CreatedBy)
             .Where(ps => !ps.DeletedAt.HasValue)
             .AsQueryable();
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(p => p.IsVerified == isVerified.Value);
+        }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductSpecificationDto>);
     }
@@ -57,6 +62,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                 .ThenInclude(r => r.FormResponses)
                 .ThenInclude(r => r.FormField)
                 .Include(ps => ps.FormSections)
+                .Where(ps => !ps.DeletedAt.HasValue)
                 .FirstOrDefaultAsync(ps => ps.Id == id);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
@@ -72,6 +78,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Include(ps => ps.Form)
             .Include(ps => ps.CreatedBy)
             .Include(ps => ps.FormSections)
+            .Where(ps => !ps.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ps => ps.ProductId == productId);
 
         return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
@@ -97,7 +104,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .ThenInclude(r => r.FormResponses)
             .ThenInclude(r => r.FormField)
             .Include(ps => ps.FormSections)
-            .Where(ps => ps.ProductId == productId)
+            .Where(ps => ps.ProductId == productId && !ps.DeletedAt.HasValue)
             .ToListAsync();
 
         return mapper.Map<List<ProductSpecificationDto>>(productSpec);

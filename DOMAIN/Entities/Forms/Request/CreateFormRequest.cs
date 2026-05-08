@@ -5,7 +5,8 @@ namespace DOMAIN.Entities.Forms.Request;
 
 public class CreateFormRequest
 {
-    [StringLength(100000000)] public string Name { get; set; }
+    [StringLength(100000000)]
+    public string Name { get; set; }
     public List<CreateFormSectionRequest> Sections { get; set; } = [];
     public List<CreateFormAssigneeRequest> Assignees { get; set; } = [];
     public List<CreateFormReviewerRequest> Reviewers { get; set; } = [];
@@ -14,8 +15,11 @@ public class CreateFormRequest
 
 public class CreateFormSectionRequest
 {
-    [StringLength(100000000)] public string Name { get; set; }
-    [StringLength(100000000)] public string Description { get; set; }
+    [StringLength(100000000)]
+    public string Name { get; set; }
+
+    [StringLength(100000000)]
+    public string Description { get; set; }
     public int Order { get; set; }
     public Guid? InstrumentId { get; set; }
     public List<CreateFormFieldRequest> Fields { get; set; } = [];
@@ -57,6 +61,9 @@ public class CreateFormAssigneeRequest
     public Guid? ProductSpecificationId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public List<CreateFormFieldAssigneeRequest> FormFieldAssignees { get; set; } = [];
+
+    [StringLength(100, ErrorMessage = "Issue number cannot be longer than 100 characters.")]
+    public string IssueNumber { get; set; }
 }
 
 public class CreateFormFieldAssigneeRequest

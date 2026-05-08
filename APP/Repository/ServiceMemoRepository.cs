@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -16,9 +15,20 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 {
     public async Task<Result<Guid>> CreateServiceMemo(CreateServiceMemoRequest request)
     {
-        var jobOrder = await context.JobOrders.FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
+        var jobOrder = await context.JobOrders
+            .Include(j => j.ServiceProformaInvoice)
+            .FirstOrDefaultAsync(j => j.Id == request.JobOrderId);
         if (jobOrder is null)
             return Error.NotFound("JobOrder.NotFound", "Job order not found");
+
+        // Check if proforma invoice has been received and approved
+        if (jobOrder.ServiceProformaInvoice == null)
+            return Error.Validation("ProformaInvoice.NotRequested", 
+                "Proforma invoice must be requested before creating service memo");
+
+        if (jobOrder.ServiceProformaInvoice.Status != ServiceProformaInvoiceStatus.Approved)
+            return Error.Validation("ProformaInvoice.NotApproved", 
+                "Proforma invoice must be approved before creating service memo");
 
         var quotation = await context.ServiceQuotations
             .AsSplitQuery()
@@ -82,15 +92,24 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
-            entity => mapper.Map<ServiceMemoDto>(entity));
+            mapper.Map<ServiceMemoDto>);
     }
 
     public async Task<Result<ServiceMemoDto>> GetServiceMemo(Guid id)
     {
         var memo = await context.ServiceMemos
             .AsSplitQuery()
-            .Include(m => m.JobOrder).ThenInclude(j => j.JobRequest)
-            .Include(m => m.ServiceQuotation).ThenInclude(q => q.Items)
+            .Include(m => m.JobOrder)
+                .ThenInclude(j => j.JobRequest)
+                    .ThenInclude(j => j.Equipment)
+            .Include(m => m.JobOrder)
+                .ThenInclude(j => j.JobRequest)
+                    .ThenInclude(j => j.Site)
+            .Include(m => m.ServiceQuotation)
+                .ThenInclude(q => q.Items)
+                    .ThenInclude(q => q.UnitOfMeasure)
+            .Include(m => m.ServiceQuotation)
+                .ThenInclude(m => m.ServiceCharges)
             .Include(m => m.ServiceProvider)
             .Include(m => m.IssuedBy)
             .FirstOrDefaultAsync(m => m.Id == id);
@@ -116,6 +135,18 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 
         return Result.Success();
     }
+    
+    public async Task<Result> MarkServiceMemoAsPaid(Guid id)
+    {
+        var memo = await context.ServiceMemos.FirstOrDefaultAsync(m => m.Id == id);
+        if (memo is null)
+            return Error.NotFound("ServiceMemo.NotFound", "Service memo not found");
+        
+        memo.Paid = true;
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 
     public async Task<Result> IssueServiceMemo(IssueServiceMemoRequest request)
     {
@@ -134,7 +165,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         context.ServiceMemos.Update(memo);
 
         // Update job request status
-        await jobRequestRepository.UpdateJobRequestStatus(memo.JobOrder.JobRequestId, JobRequestStatus.InProgressExternal);
+        await jobRequestRepository.UpdateJobRequestStatus(memo.JobOrder.JobRequestId, JobRequestStatus.JobStarted);
 
         await context.SaveChangesAsync();
 
@@ -144,7 +175,7 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
     private async Task<string> GenerateServiceMemoNumber()
     {
         var count = await context.ServiceMemos.CountAsync();
-        return $"SM-{DateTime.UtcNow:yyyyMM}-{(count + 1):D4}";
+        return $"SM-{DateTime.UtcNow:yyyyMM}-{count + 1:D4}";
     }
 }
 

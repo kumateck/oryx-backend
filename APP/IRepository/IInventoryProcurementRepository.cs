@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.StockEntries;
@@ -15,11 +16,12 @@ public interface IInventoryProcurementRepository
     Task<Result> UpdateInventoryPurchaseRequisition(Guid id, CreateInventoryPurchaseRequisition request);
     Task<Result> DeleteInventoryPurchaseRequisition(Guid id);
     Task<Result<InventoryPurchaseRequisitionDto>> GetInventoryPurchaseRequisition(Guid id);
-    Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page, int pageSize, string searchQuery);
+    Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page,
+        int pageSize, string searchQuery, InventoryPurchaseRequisitionStatus status);
 
     // Sourcing Logic
     Task<Result> CreateSourceRequisition(CreateSourceInventoryRequisition request, Guid userId);
-    Task<Result> CreateMarketRequisition(CreateMarketRequisition request, Guid userId);
+    Task<Result> CreateMarketRequisition(List<CreateMarketRequisition> request);
     Task<Result<Paginateable<IEnumerable<MarketRequisitionDto>>>> GetMarketRequisitions(int page, int pageSize);
     Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfItem(InventoryRequisitionSource source);
 
@@ -38,15 +40,19 @@ public interface IInventoryProcurementRepository
     Task<Result> CreateMarketRequisitionVendor(CreateMarketRequisitionVendor request);
     Task<Result> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId);
     Task<Result<Paginateable<IEnumerable<MemoDto>>>> GetMemos(int page, int pageSize,
-         string searchQuery = null);
+         string searchQuery = null,
+         MemoStatus? status = null);
     Task<Result> MarkMemoItemAsPaid(Guid memoItemId, DateTime? purchasedAt = null);
 
     Task<Result> ApproveItem(Guid stockEntryId);
     Task<Result> RejectItem(Guid stockEntryId);
 
-    Task<Result<List<StockEntryDto>>> GetStockEntries(ApprovalStatus status);
+    Task<Result<Paginateable<IEnumerable<StockEntryDto>>>> GetStockEntries(ApprovalStatus status, int page,
+        int pageSize, Store store);
+    Task<Result> UploadStockItems(ImportItemsRequest itemsRequest);
     Task<Result<MemoDto>> GetMemo(Guid id);
 
     // Helper methods
     Task<string> GenerateMemoCode();
+    Task<Result<MarketRequisitionDto>> GetMarketRequisition(Guid id);
 }

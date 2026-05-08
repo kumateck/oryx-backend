@@ -17,12 +17,12 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Creates a material standard test procedure
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
         var result = await repository.CreateMaterialStandardTestProcedure(request);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -58,6 +58,18 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     public async Task<IResult> GetStandardTestProcedureByMaterial([FromRoute] Guid materialId)
     {
         var result = await repository.GetMaterialStandardTestProcedureByMaterial(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves the details of materials linked to a stp.
+    /// </summary>
+    [HttpGet("{stpNumber}/materials")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStandardTestProcedureDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStandardTestProcedureByMaterial(string stpNumber)
+    {
+        var result = await repository.GetMaterialStandardTestProcedureByStpNumber(stpNumber);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

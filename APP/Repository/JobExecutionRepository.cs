@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -85,14 +84,17 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         return Result.Success();
     }
 
-    public async Task<Result> StartJobExecution(StartJobExecutionRequest request)
+    public async Task<Result> StartJobExecution(StartJobExecutionRequest request, Guid userId)
     {
         var jobExecution = await context.JobExecutions.FirstOrDefaultAsync(j => j.Id == request.JobExecutionId);
         if (jobExecution is null)
             return Error.NotFound("JobExecution.NotFound", "Job execution not found");
 
-        if (jobExecution.Status != JobExecutionStatus.Acknowledged)
-            return Error.Validation("JobExecution.InvalidStatus", "Job execution must be acknowledged before starting");
+        if (jobExecution.Status != JobExecutionStatus.Acknowledged && jobExecution.Status != JobExecutionStatus.Assigned)
+            return Error.Validation("JobExecution.InvalidStatus", "Job execution must be assigned or acknowledged before starting");
+
+        var performedBy = await userManager.FindByIdAsync(userId.ToString());
+        if (performedBy is null) return Error.Validation("User.Invalid", "User Invalid");
 
         jobExecution.Status = JobExecutionStatus.InProgress;
         jobExecution.StartedAt = DateTime.UtcNow;
@@ -101,10 +103,21 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
             jobExecution.Notes = request.Notes;
         }
 
+        // Automatically log the start activity
+        var startActivity = new JobActivity
+        {
+            JobExecutionId = request.JobExecutionId,
+            ActivityDescription = request.ActivityDescription,
+            PerformedAt = DateTime.UtcNow,
+            PerformedById = userId,
+            Notes = request.Notes
+        };
+        await context.JobActivities.AddAsync(startActivity);
+
         context.JobExecutions.Update(jobExecution);
 
         // Update job request status
-        await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.InProgressInternal);
+        await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.JobStarted);
 
         await context.SaveChangesAsync();
 
@@ -163,7 +176,7 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         return consumedItem.Id;
     }
 
-    public async Task<Result> CompleteJobExecution(CompleteJobExecutionRequest request)
+    public async Task<Result> CompleteJobExecution(CompleteJobExecutionRequest request, Guid userId)
     {
         var jobExecution = await context.JobExecutions.FirstOrDefaultAsync(j => j.Id == request.JobExecutionId);
         if (jobExecution is null)
@@ -172,6 +185,9 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         if (jobExecution.Status != JobExecutionStatus.InProgress)
             return Error.Validation("JobExecution.InvalidStatus", "Job execution must be in progress to complete");
 
+        var performedBy = await userManager.FindByIdAsync(userId.ToString());
+        if (performedBy is null) return Error.Validation("User.Invalid", "User Invalid");
+
         jobExecution.Status = JobExecutionStatus.Completed;
         jobExecution.CompletedAt = DateTime.UtcNow;
         if (!string.IsNullOrEmpty(request.Notes))
@@ -179,8 +195,19 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
             jobExecution.Notes = request.Notes;
         }
 
-        // Record activities
-        foreach (var activity in request.Activities)
+        // Automatically log the completion activity
+        var completionActivity = new JobActivity
+        {
+            JobExecutionId = request.JobExecutionId,
+            ActivityDescription = request.ActivityDescription,
+            PerformedAt = DateTime.UtcNow,
+            PerformedById = userId,
+            Notes = request.Notes
+        };
+        await context.JobActivities.AddAsync(completionActivity);
+
+        // Record additional activities if provided
+        foreach (var activity in request.AdditionalActivities)
         {
             var jobActivity = new JobActivity
             {
@@ -211,8 +238,73 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
         context.JobExecutions.Update(jobExecution);
 
         // Update job request status
-        await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.CompletedInternal);
+        await jobRequestRepository.UpdateJobRequestStatus(jobExecution.JobRequestId, JobRequestStatus.Completed);
 
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ReassignJobExecution(ReassignJobExecutionRequest request, Guid reassignedById)
+    {
+        var jobExecution = await context.JobExecutions
+            .Include(j => j.JobRequest)
+            .FirstOrDefaultAsync(j => j.Id == request.JobExecutionId);
+        if (jobExecution is null)
+            return Error.NotFound("JobExecution.NotFound", "Job execution not found");
+
+        // Cannot reassign if already completed, verified, approved, or cancelled
+        if (jobExecution.Status == JobExecutionStatus.Completed ||
+            jobExecution.Status == JobExecutionStatus.VerifiedBySupervisor ||
+            jobExecution.Status == JobExecutionStatus.Approved ||
+            jobExecution.Status == JobExecutionStatus.Cancelled)
+        {
+            return Error.Validation("JobExecution.InvalidStatus", "Cannot reassign a job that is completed, verified, approved, or cancelled");
+        }
+
+        // Validate new employee exists
+        var newEmployee = await context.Employees.AnyAsync(e => e.Id == request.NewEmployeeId);
+        if (!newEmployee) return Error.Validation("Employee.Invalid", "Invalid employee");
+
+        // Validate reassigned by user exists
+        var reassignedBy = await userManager.FindByIdAsync(reassignedById.ToString());
+        if (reassignedBy is null) return Error.Validation("User.Invalid", "User Invalid");
+
+        // Store old employee for activity log
+        var oldEmployeeId = jobExecution.AssignedToEmployeeId;
+
+        // Update job execution
+        jobExecution.AssignedToEmployeeId = request.NewEmployeeId;
+        jobExecution.AssignedAt = DateTime.UtcNow;
+        jobExecution.AssignedById = reassignedById;
+        jobExecution.Status = JobExecutionStatus.Assigned; // Reset to assigned
+        jobExecution.AcknowledgedAt = null; // Reset acknowledgment
+        jobExecution.StartedAt = null; // Reset start time
+        if (!string.IsNullOrEmpty(request.Notes))
+        {
+            jobExecution.Notes = request.Notes;
+        }
+
+        // Update job request
+        var jobRequest = jobExecution.JobRequest;
+        jobRequest.AssignedToEmployeeId = request.NewEmployeeId;
+        jobRequest.AssignedAt = DateTime.UtcNow;
+        jobRequest.AssignedById = reassignedById;
+        jobRequest.Status = JobRequestStatus.Assigned; // Reset to assigned
+
+        // Log reassignment activity
+        var reassignmentActivity = new JobActivity
+        {
+            JobExecutionId = request.JobExecutionId,
+            ActivityDescription = $"Job reassigned from employee {oldEmployeeId} to employee {request.NewEmployeeId}. Reason: {request.Reason}",
+            PerformedAt = DateTime.UtcNow,
+            PerformedById = reassignedById,
+            Notes = request.Notes
+        };
+        await context.JobActivities.AddAsync(reassignmentActivity);
+
+        context.JobExecutions.Update(jobExecution);
+        context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
 
         return Result.Success();

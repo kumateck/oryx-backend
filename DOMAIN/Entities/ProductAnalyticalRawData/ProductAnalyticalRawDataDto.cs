@@ -14,6 +14,7 @@ public class ProductAnalyticalRawDataDto : WithAttachment
     public string Description { get; set; }
     public FormDto Form { get; set; }
     public ProductStandardTestProcedureDto ProductStandardTestProcedure { get; set; }
+    public bool IsVerified { get; set; }
 }
 
 public class ProductBatchArd
@@ -21,8 +22,12 @@ public class ProductBatchArd
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public string ArNumber { get; set; }
     public string SpecNumber { get; set; }
+    public List<ProductStandardTestProcedureDto> ProductStandardTestProcedures { get; set; } = [];
     public DateTime? SampledDate { get; set; }
+    public UserDto SampledBy { get; set; }
+    public decimal? SampledQuantity { get; set; }
     public DateTime? IssueDate { get; set; }
+    public string IssueNumber { get; set; }
     public UserDto IssuedBy { get; set; }
     public DateTime? AnalysedDate { get; set; }
     public UserDto AnalysedBy { get; set; }

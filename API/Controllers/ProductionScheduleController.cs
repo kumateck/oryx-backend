@@ -13,7 +13,6 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
-using SHARED;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -66,13 +65,19 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a paginated list of Production Schedules.</returns>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
-    public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
+    public async Task<IResult> GetProductionSchedules([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
-        var result = await repository.GetProductionSchedules(page, pageSize, searchQuery, Guid.Parse(departmentId));
+        var result = await repository.GetProductionSchedules(roleIds[0],
+            page, pageSize, searchQuery, Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -107,6 +112,42 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdateProductionSchedule(request, scheduleId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Adds more products to a specific Production Schedule.
+    /// </summary>
+    /// <param name="request">The AddProductsToScheduleRequest object.</param>
+    /// <param name="scheduleId">The ID of the Production Schedule.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("{scheduleId}/add-products")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddProductToSchedule([FromBody] AddProductsToScheduleRequest request, Guid scheduleId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.AddProductToSchedule(scheduleId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Removes a product from a Production Schedule if it has not started.
+    /// </summary>
+    /// <param name="productionScheduleProductId">The ID of the Production Schedule Product to be removed.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpDelete("product/{productionScheduleProductId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RemoveProductFromSchedule(Guid productionScheduleProductId)
+    {
+        var result = await repository.RemoveProductFromSchedule(productionScheduleProductId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -174,7 +215,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, [FromQuery] MaterialRequisitionStatus? status = null)
+    public async Task<IResult> GetRequiredMaterialStock([FromRoute] Guid productionScheduleProductId, 
+        [FromQuery] MaterialRequisitionStatus? status = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -192,7 +234,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, status);
+        var result = await repository.CheckPackageMaterialStockLevelsForProductionSchedule(productionScheduleProductId, 
+            status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -259,7 +302,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>Returns a paginated list of Production Activities.</returns>
     [HttpGet("activity")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
     public async Task<IResult> GetProductionActivities([FromQuery] ProductionFilter filter)
     {
         var result = await repository.GetProductionActivities(filter);
@@ -472,14 +516,23 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [HttpGet("finished-goods-transfer-note")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     public async Task<IResult> GetFinishedGoodsTransferNotes(
-        bool? onlyApproved = null,
-        int page = 1,
-        int pageSize = 10,
-        string searchQuery = null,
-        Division? division = null)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery]string searchQuery = null,
+        [FromQuery] Division? division = null,
+        [FromQuery] bool? onlyApproved = null,
+        [FromQuery] bool? partial = null,
+        [FromQuery] bool? fulfilled = null
+        )
     {
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+        
         var result = await repository
-            .GetFinishedGoodsTransferNote(onlyApproved, page, pageSize, searchQuery, division);
+            .GetFinishedGoodsTransferNote(roleIds[0], Guid.Parse(departmentId), 
+                page, pageSize, searchQuery, division, onlyApproved, partial, fulfilled);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -492,6 +545,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     public async Task<IResult> GetFinishedGoodsTransferNote([FromRoute] Guid id)
     {
         var result = await repository.GetFinishedGoodsTransferNote(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
+    /// <summary>
+    /// Retrieves a list of finished goods transfer note by bmr id
+    /// </summary>
+    [HttpGet("finished-goods-transfer-note/bmr/{batchManufacturingRecordId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferNoteDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFinishedGoodsTransferNoteByBmr([FromRoute] Guid batchManufacturingRecordId)
+    {
+        var result = await repository.GetFinishedGoodsTransferNotesByBmr(batchManufacturingRecordId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -514,7 +579,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
-    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, [FromBody] ApproveTransferNoteRequest quantityReceived)
+    public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, 
+        [FromBody] ApproveTransferNoteRequest quantityReceived)
     {
         var result = await repository.ApproveTransferNote(id, quantityReceived);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -527,7 +593,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, [FromBody] CreateFinishedGoodsTransferNoteRequest request)
+    public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, 
+        [FromBody] CreateFinishedGoodsTransferNoteRequest request)
     {
         var result = await repository.UpdateTransferNote(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -538,8 +605,11 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     [HttpGet("manufacturing")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BatchManufacturingRecordDto>>))]
-    public async Task<IResult> GetBatchManufacturingRecords([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<BatchManufacturingRecordDto>>))]
+    public async Task<IResult> GetBatchManufacturingRecords([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null)
     {
         var result = await repository.GetBatchManufacturingRecords(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -1060,13 +1130,18 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="kind">The kind of material</param>
     /// <returns>Returns a paginated list of Extra Packing entries.</returns>
     [HttpGet("extra-packing")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>))]
-    public async Task<IResult> GetProductionExtraPackings([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = "")
+    [ProducesResponseType(StatusCodes.Status200OK, 
+        Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>))]
+    public async Task<IResult> GetProductionExtraPackings([FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string searchQuery = null,
+        [FromQuery] MaterialKind? kind = null)
     {
-        var result = await repository.GetProductionExtraPackings(page, pageSize, searchQuery);
+        var result = await repository.GetProductionExtraPackings(page, pageSize, searchQuery, kind);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -1144,7 +1219,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProducts()
     {
-        var result = await repository.GetApprovedProducts();
+        var departmentId = (string)HttpContext.Items["Department"];
+        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
+        
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+        
+        var result = await repository.GetApprovedProducts(roleIds[0], Guid.Parse(departmentId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -1212,5 +1292,29 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
 
     #endregion
 
+    #region Forecast
+
+    /// <summary>
+    /// Get forecast for production schedule
+    /// </summary>
+    /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
+    [HttpGet("forecast")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ForecastMaterialDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> ForecastProductionScheduleProduct([FromQuery] Guid productId,
+        [FromQuery] int numberOfBatches,
+        [FromQuery] Guid productPackingId,
+        [FromQuery] BatchSize batchSize)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        
+        var result = await repository.ForecastProductionScheduleProduct(productId, numberOfBatches, 
+            productPackingId, batchSize, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    #endregion
 
 }

@@ -18,6 +18,7 @@ using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -63,6 +64,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WarehouseLocationName) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync()),
             nameof(QcEquipmentCategory) => mapper.Map<List<CollectionItemDto>>(await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync()),
             nameof(Reagent) => mapper.Map<List<CollectionItemDto>>(await context.Reagents.OrderBy(c => c.Name).ToListAsync()),
+            nameof(Site) => mapper.Map<List<CollectionItemDto>>(await context.Sites.OrderBy(c => c.Name).ToListAsync()),
             _ => Error.Validation("Item", "Invalid item type")
         };
     }
@@ -236,6 +238,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                     var reagents = await context.Reagents.OrderBy(c => c.Name).ToListAsync();
                     result[itemType] = mapper.Map<List<CollectionItemDto>>(reagents);
                     break;
+                
+                case nameof(Site):
+                    var sites = await context.Sites.OrderBy(c => c.Name).ToListAsync();
+                    result[itemType] = mapper.Map<List<CollectionItemDto>>(sites);
+                    break;
 
                 default:
                     invalidItemTypes.Add(itemType);
@@ -293,6 +300,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WarehouseLocationName),
             nameof(QcEquipmentCategory),
             nameof(Reagent),
+            nameof(Site),
         };
     }
 
@@ -437,6 +445,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Reagents.AddAsync(reagent);
                 await context.SaveChangesAsync();
                 return reagent.Id;
+            
+            case nameof(Site):
+                var site = mapper.Map<Site>(request);
+                await context.Sites.AddAsync(site);
+                await context.SaveChangesAsync();
+                return site.Id;
 
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -620,6 +634,13 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Reagents.Update(reagent);
                 await context.SaveChangesAsync();
                 return reagent.Id;
+            
+            case nameof(Site):
+                var site = await context.Sites.FirstOrDefaultAsync(p => p.Id == itemId);
+                mapper.Map(request, site);
+                context.Sites.Update(site);
+                await context.SaveChangesAsync();
+                return site.Id;
 
             default:
                 return Error.Validation("Item", "Invalid item type");
@@ -653,6 +674,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
             nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             nameof(Reagent) => await context.Reagents.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
+            nameof(Site) => await context.Sites.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
             _ => false
         };
     }
@@ -878,6 +900,16 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 reagent.DeletedAt = currentTime;
                 reagent.LastDeletedById = userId;
                 context.Reagents.Update(reagent);
+                await context.SaveChangesAsync();
+                return Result.Success();
+            
+            case nameof(Site):
+                var site = await context.Sites.FirstOrDefaultAsync(p => p.Id == itemId);
+                if (site == null)
+                    return Error.Validation("Site", "Not found");
+                site.DeletedAt = currentTime;
+                site.LastDeletedById = userId;
+                context.Sites.Update(site);
                 await context.SaveChangesAsync();
                 return Result.Success();
 

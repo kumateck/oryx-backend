@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.ProductionSchedules;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Users;
 
@@ -37,18 +36,38 @@ public class AnalyticalTestRequest : BaseEntity
     public User TestedBy { get; set; }
     public DateTime? TestedAt { get; set; }
     public DateTime? AssignedAt { get; set; }
-    [StringLength(1000)] public string ArNumber { get; set; }
+
+    public List<AnalyticalTestRequestAssignee> Assignees { get; set; } = [];
+
+    [StringLength(1000)]
+    public string ArNumber { get; set; }
+
+    [StringLength(100)]
+    public string IssueNumber { get; set; }
+    public DateTime? IssuedAt { get; set; }
+    public Guid? IssuedById { get; set; }
+    public User IssuedBy { get; set; }
+}
+
+public class AnalyticalTestRequestAssignee : BaseEntity
+{
+    public Guid AnalyticalTestRequestId { get; set; }
+    public AnalyticalTestRequest AnalyticalTestRequest { get; set; }
+    public Guid UserId { get; set; }
+    public User User { get; set; }
 }
 
 public class ProductState : BaseEntity
 {
-    [StringLength(1000)] public string Name { get; set; }
+    [StringLength(1000)]
+    public string Name { get; set; }
 }
+
 public enum TestStage
 {
     Intermediate,
     Bulk,
-    Finished
+    Finished,
 }
 
 public enum AnalyticalTestStatus
@@ -69,5 +88,5 @@ public enum State
     CompressedTablet,
     FilledCapsules,
     Ointment,
-    Coated
+    Coated,
 }

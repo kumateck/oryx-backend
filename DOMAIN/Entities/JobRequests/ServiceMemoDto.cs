@@ -7,9 +7,9 @@ namespace DOMAIN.Entities.JobRequests;
 public class ServiceMemoDto : BaseDto
 {
     public string MemoNumber { get; set; }
-    public Guid JobOrderId { get; set; }
-    public Guid ServiceQuotationId { get; set; }
-    public ServiceProviderDto ServiceProvider { get; set; }
+    public JobOrderReducedDto JobOrder { get; set; }
+    public ServiceQuotationDto ServiceQuotation { get; set; }
+    public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime IssuedDate { get; set; }
     public UserDto IssuedBy { get; set; }
     public decimal AgreedServiceCharge { get; set; }
@@ -22,5 +22,6 @@ public class ServiceMemoDto : BaseDto
     public ServiceMemoStatus Status { get; set; }
     public bool Approved { get; set; }
     public DateTime? ApprovedDate { get; set; }
+    public bool Paid { get; set; }
 }
 

@@ -99,7 +99,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, $"Error onboarding {employee.Email}");
+                logger.LogError(ex, "Error onboarding {EmployeeEmail}", employee.Email);
             }
         }
 
@@ -285,7 +285,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         var employees = await context.Employees
             .Include(e => e.Department)
             .Include(e => e.Designation)
-            .Where(e => e.DepartmentId == departmentId)
+            .Where(e => e.DepartmentId == departmentId || e.Department.ParentDepartmentId == departmentId)
             .ToListAsync();
 
         var employeeDtos = employees.Select(e => mapper.Map<EmployeeDto>(e,
@@ -489,26 +489,46 @@ public class EmployeeRepository(ApplicationDbContext context,
             return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
         }
 
-        if (employeeDto.WarehouseId.HasValue)
+        if (employeeDto.WarehouseIds.Count != 0)
         {
-            var warehouse = await context.Warehouses.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(w => w.Id == employeeDto.WarehouseId);
-            if (warehouse == null)
-            {
-                return Error.NotFound("Warehouse.NotFound", "Warehouse not found");
-            }
+            var distinctWarehouseIds = employeeDto.WarehouseIds
+                .Distinct()
+                .ToList();
 
-            if (warehouse.DepartmentId != employeeDto.DepartmentId)
+            if (distinctWarehouseIds.Count != employeeDto.WarehouseIds.Count)
             {
-                return Error.Validation("Warehouse.DepartmentId", 
-                    "The warehouse selected does not match the department selected");
+                return Error.Validation(
+                    "Warehouse.Duplicate",
+                    "Duplicate warehouses selected");
             }
+            
+            var warehouses = await context.Warehouses
+                .IgnoreQueryFilters()
+                .Where(w => distinctWarehouseIds.Contains(w.Id) && !w.DeletedAt.HasValue)
+                .ToListAsync();
+            
+            if (warehouses.Count != distinctWarehouseIds.Count)
+            {
+                return Error.NotFound(
+                    "Warehouse.NotFound",
+                    "One or more warehouses were not found");
+            }
+            
+            if (warehouses.Any(w => w.DepartmentId != employeeDto.DepartmentId))
+            {
+                return Error.Validation(
+                    "Warehouse.DepartmentMismatch",
+                    "One or more warehouses do not belong to the selected department");
+            }
+            
+            employee.Warehouses = warehouses;
         }
 
         mapper.Map(employeeDto, employee);
         employee.DepartmentId = employeeDto.DepartmentId;
         employee.DesignationId = employeeDto.DesignationId;
         employee.AnnualLeaveDays = designation.MaximumLeaveDays;
+      
         employee.Status = EmployeeStatus.Active;
 
         context.Employees.Update(employee);
@@ -545,16 +565,18 @@ public class EmployeeRepository(ApplicationDbContext context,
             try
             {
                 emailService.SendMail(employee.FirstName, employee.Email, "Welcome to the Company", body, []);
-                logger.LogInformation($"Email sent to {employee.Email}");
+                logger.LogInformation("Email sent to {EmployeeEmail}", employee.Email);
                 sent = true;
             }
             catch (Exception ex)
             {
                 attempts++;
-                logger.LogWarning($"Failed attempt {attempts} for {employee.Email}: {ex.Message}");
+                logger.LogWarning("Failed attempt {Attempts} for {EmployeeEmail}: {ExMessage}",
+                    attempts, employee.Email, ex.Message);
 
                 if (attempts == maxRetries)
-                    logger.LogError($"Giving up on {employee.Email} after {maxRetries} attempts.");
+                    logger.LogError("Giving up on {EmployeeEmail} after {MaxRetries} attempts.",
+                        employee.Email, maxRetries);
             }
         }
 

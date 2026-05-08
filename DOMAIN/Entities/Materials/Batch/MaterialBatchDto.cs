@@ -1,15 +1,17 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Shipments;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
 namespace DOMAIN.Entities.Materials.Batch;
 
-public class MaterialBatchDto
+public class MaterialBatchDto : IGrnEnrichedDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
@@ -41,9 +43,20 @@ public class MaterialBatchDto
     public DateTime? ReturnDate { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public string IssueNumber { get; set; }
+    public string SupplierName { get; set; }
+    public string ManufacturerName { get; set; }
+    public string ArNumber { get; set; }
+    public string SampledBy { get; set; }
+    public DateTime? SampledOn { get; set; }
+    public decimal SampleQuantity { get; set; }
+    public string AnalysedBy { get; set; }
+    public DateTime? AnalysedDate { get; set; }
+    public UserDto IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
 }
 
-public class MaterialBatchListDto
+public class MaterialBatchListDto : IGrnEnrichedDto
 {
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
@@ -68,13 +81,23 @@ public class MaterialBatchListDto
     public MaterialBatchChecklistDto Checklist { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public string IssueNumber { get; set; }
+    public string SupplierName { get; set; }
+    public string ManufacturerName { get; set; }
+    public string ArNumber { get; set; }
+    public string SampledBy { get; set; }
+    public DateTime? SampledOn { get; set; }
+    public decimal SampleQuantity { get; set; }
+    public string AnalysedBy { get; set; }
+    public DateTime? AnalysedDate { get; set; }
+    public CollectionItemDto IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
 }
 
-public class MaterialBatchReducedDto
+public class MaterialBatchReducedDto : IGrnEnrichedDto
 {
     public Guid Id { get; set; }
     public MaterialDto Material { get; set; }
-    public string Code { get; set; }
     public string BatchNumber { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public int NumberOfContainers { get; set; }
@@ -95,6 +118,17 @@ public class MaterialBatchReducedDto
     public DateTime? RetestDate { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public string IssueNumber { get; set; }
+    public CollectionItemDto IssuedBy { get; set; }
+    public DateTime? IssuedAt { get; set; }
+    public string SupplierName { get; set; }
+    public string ManufacturerName { get; set; }
+    public string ArNumber { get; set; }
+    public string SampledBy { get; set; }
+    public DateTime? SampledOn { get; set; }
+    public decimal SampleQuantity { get; set; }
+    public string AnalysedBy { get; set; }
+    public DateTime? AnalysedDate { get; set; }
 }
 
 public class DistributedMaterialBatchDto
@@ -173,6 +207,7 @@ public class BatchLocation
     public MaterialBatchDto Batch { get; set; }
     public decimal QuantityToUse { get; set; }
 }
+
 public class CurrentLocation
 {
     public Warehouse Location { get; set; }
@@ -213,3 +248,9 @@ public class MaterialBatchReservedQuantityDto : BaseDto
     public decimal Quantity { get; set; }
 }
 
+public class MaterialBatchCountDto
+{
+    public Guid WarehouseId { get; set; }
+    public WarehouseDto Warehouse { get; set; }
+    public int BatchCount { get; set; }
+}

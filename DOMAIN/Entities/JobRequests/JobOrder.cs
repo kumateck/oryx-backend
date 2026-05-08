@@ -17,7 +17,7 @@ public class JobOrder : BaseEntity
     public Guid JobRequestId { get; set; }
     public JobRequest JobRequest { get; set; }
 
-    public Guid ServiceId { get; set; }
+    public Guid? ServiceId { get; set; }
     public Service Service { get; set; }
 
     public DateTime IssuedDate { get; set; }
@@ -27,6 +27,9 @@ public class JobOrder : BaseEntity
 
     [StringLength(2000)]
     public string Description { get; set; }
+
+    [StringLength(100)]
+    public string IssuedBySignature { get; set; }
 
     public JobOrderStatus Status { get; set; } = JobOrderStatus.Pending;
 
@@ -40,6 +43,10 @@ public class JobOrder : BaseEntity
     public Guid? SelectedQuotationId { get; set; }
     public ServiceQuotation SelectedQuotation { get; set; }
 
+    // Proforma Invoice
+    public Guid? ServiceProformaInvoiceId { get; set; }
+    public ServiceProformaInvoice ServiceProformaInvoice { get; set; }
+
     // Service Memo
     public Guid? ServiceMemoId { get; set; }
     public ServiceMemo ServiceMemo { get; set; }
@@ -51,10 +58,8 @@ public class JobOrder : BaseEntity
 /// <summary>
 /// Junction table for many-to-many relationship between JobOrders and ServiceProviders
 /// </summary>
-public class JobOrderServiceProvider
+public class JobOrderServiceProvider : BaseEntity
 {
-    public Guid Id { get; set; }
-
     public Guid JobOrderId { get; set; }
     public JobOrder JobOrder { get; set; }
 
@@ -74,6 +79,8 @@ public enum JobOrderStatus
     SentToProviders,
     QuotationsReceived,
     QuotationSelected,
+    ProformaInvoiceRequested,
+    ProformaInvoiceReceived,
     MemoCreated,
     InProgress,
     Completed,

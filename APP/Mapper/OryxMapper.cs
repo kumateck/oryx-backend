@@ -1,4 +1,5 @@
 using APP.Mapper.Resolvers;
+using APP.Mapper.Resolvers.MaterialBatch;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Alerts;
@@ -29,8 +30,9 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
-using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.ItemGrns;
+using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.ItemTransactionLogs;
@@ -44,6 +46,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
@@ -77,8 +80,10 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
+using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
@@ -95,6 +100,10 @@ public class OryxMapper : Profile
 {
     public OryxMapper()
     {
+        #region ItemGrns
+        CreateMap<CreateItemGrnRequest, ItemGrn>();
+        CreateMap<ItemGrn, ItemGrnDto>();
+        #endregion
 
         #region CreateItemRequest
 
@@ -121,7 +130,7 @@ public class OryxMapper : Profile
         CreateMap<CreateItemRequest, WarehouseLocationName>();
         CreateMap<CreateItemRequest, QcEquipmentCategory>();
         CreateMap<CreateItemRequest, Reagent>();
-
+        CreateMap<CreateItemRequest, Site>();
 
         #endregion
 
@@ -135,16 +144,18 @@ public class OryxMapper : Profile
         CreateMap<Resource, CollectionItemDto>();
         CreateMap<RouteResource, CollectionItemDto>()
             .IncludeMembers(src => src.Resource)
-            .ForMember(dest => dest.Id,
-                opt => opt.MapFrom(src => src.ResourceId));
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.ResourceId));
         CreateMap<MaterialType, CollectionItemDto>();
         CreateMap<MaterialCategory, CollectionItemDto>();
         CreateMap<PackageType, CollectionItemDto>();
         CreateMap<Material, CollectionItemDto>();
         CreateMap<User, CollectionItemDto>()
-            .ForMember(dest => dest.Name,
-                opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
-        CreateMap<Role, CollectionItemDto>().ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DisplayName));
+            .ForMember(
+                dest => dest.Name,
+                opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}")
+            );
+        CreateMap<Role, CollectionItemDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DisplayName));
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Supplier, CollectionItemDto>();
         CreateMap<Manufacturer, CollectionItemDto>();
@@ -154,8 +165,7 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationRack, CollectionItemDto>();
         CreateMap<WarehouseLocationShelf, CollectionItemDto>();
         CreateMap<MaterialBatch, CollectionItemDto>()
-            .ForMember(dest => dest.Code,
-                opt => opt.MapFrom(src => src.BatchNumber));
+            .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.BatchNumber));
         CreateMap<SourceRequisition, CollectionItemDto>();
         CreateMap<Requisition, CollectionItemDto>();
         CreateMap<Currency, CollectionItemDto>();
@@ -189,11 +199,14 @@ public class OryxMapper : Profile
         CreateMap<ItemCategory, CollectionItemDto>();
         CreateMap<ProductionOrder, CollectionItemDto>();
         CreateMap<BatchManufacturingRecord, CollectionItemDto>()
-            .ForMember(dest => dest.Code,
-                opt => opt.MapFrom(src => src.BatchNumber));
+            .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.BatchNumber));
         CreateMap<WarehouseLocationName, CollectionItemDto>();
         CreateMap<QcEquipmentCategory, CollectionItemDto>();
         CreateMap<Reagent, CollectionItemDto>();
+        CreateMap<Site, CollectionItemDto>();
+        CreateMap<Memo, CollectionItemDto>();
+        CreateMap<JobOrder, CollectionItemDto>();
+        CreateMap<ServiceProvider, CollectionItemDto>();
         #endregion
 
         #region Operation
@@ -225,21 +238,16 @@ public class OryxMapper : Profile
         #region UserMapper
         CreateMap<CreateUserRequest, User>();
         CreateMap<User, UserDto>()
-            .ForMember(user => user.Avatar,
-                opt => opt.MapFrom<AvatarResolver>())
-            .ForMember(user => user.Signature,
-                opt => opt.MapFrom<SignatureResolver>());
+            .ForMember(user => user.Avatar, opt => opt.MapFrom<AvatarResolver>())
+            .ForMember(user => user.Signature, opt => opt.MapFrom<SignatureResolver>());
 
         CreateMap<User, BsonUserDto>();
         CreateMap<BsonUserDto, BsonUserDto>();
 
         CreateMap<User, UserWithRoleDto>()
-             .ForMember(user => user.Roles,
-                 opt => opt.MapFrom<UserRoleResolver>())
-            .ForMember(user => user.Avatar,
-                opt => opt.MapFrom<AvatarResolver>())
-            .ForMember(user => user.Signature,
-                opt => opt.MapFrom<SignatureResolver>());
+            .ForMember(user => user.Roles, opt => opt.MapFrom<UserRoleResolver>())
+            .ForMember(user => user.Avatar, opt => opt.MapFrom<AvatarResolver>())
+            .ForMember(user => user.Signature, opt => opt.MapFrom<SignatureResolver>());
 
         #endregion
 
@@ -263,10 +271,11 @@ public class OryxMapper : Profile
 
         CreateMap<CreateProductRequest, Product>();
         CreateMap<Product, ProductDto>()
-            .ForMember(dest => dest.CurrentBillOfMaterial,
-                opt => opt.MapFrom<ProductBoMResolver>())
-            .ForMember(dest => dest.OutdatedBillOfMaterials,
-                opt => opt.MapFrom<OutdatedProductBoMResolver>());
+            .ForMember(dest => dest.CurrentBillOfMaterial, opt => opt.MapFrom<ProductBoMResolver>())
+            .ForMember(
+                dest => dest.OutdatedBillOfMaterials,
+                opt => opt.MapFrom<OutdatedProductBoMResolver>()
+            );
         CreateMap<Product, ProductListDto>();
         CreateMap<CreateProductBillOfMaterialRequest, ProductBillOfMaterial>();
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();
@@ -274,17 +283,20 @@ public class OryxMapper : Profile
         CreateMap<FinishedProduct, FinishedProductDto>();
         CreateMap<CreateProductPackageRequest, ProductPackage>();
         CreateMap<ProductPackage, ProductPackageDto>();
-        CreateMap<CreateProductPacking, ProductPacking>();
+        CreateMap<CreateProductPacking, ProductPacking>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
         CreateMap<CreateProductPackingList, ProductPackingList>();
         CreateMap<ProductPacking, ProductPackingDto>();
         CreateMap<ProductPackingList, ProductPackingListDto>();
 
         CreateMap<CreateProductSpecificationRequest, ProductSpecification>();
         CreateMap<ProductSpecification, ProductSpecificationDto>()
-            .ForMember(dest => dest.PackingStyle, opt => opt.MapFrom(src => src.Product.PackageStyle))
+            .ForMember(
+                dest => dest.PackingStyle,
+                opt => opt.MapFrom(src => src.Product.PackageStyle)
+            )
             .ForMember(dest => dest.LabelClaim, opt => opt.MapFrom(src => src.Product.LabelClaim))
             .ForMember(dest => dest.ShelfLife, opt => opt.MapFrom(src => src.Product.ShelfLife));
-
 
         #endregion
 
@@ -310,7 +322,15 @@ public class OryxMapper : Profile
         CreateMap<CreateMasterProductionScheduleRequest, MasterProductionSchedule>();
         CreateMap<MasterProductionSchedule, MasterProductionScheduleDto>();
         CreateMap<CreateProductionScheduleProduct, ProductionScheduleProduct>();
-        CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>();
+        CreateMap<ProductionScheduleProduct, ProductionScheduleProductDto>()
+            .ForMember(
+                dest => dest.HasStarted,
+                opt => opt.MapFrom(src => src.ProductionActivity != null)
+            )
+            .ForMember(
+                dest => dest.ProductionActivityId,
+                opt => opt.MapFrom(src => src.ProductionActivity.Id)
+            );
 
         CreateMap<CreateFinalPacking, FinalPacking>();
         CreateMap<CreateFinalPackingMaterial, FinalPackingMaterial>();
@@ -345,24 +365,115 @@ public class OryxMapper : Profile
 
         CreateMap<CreateMaterialRequest, Material>();
         CreateMap<Material, MaterialDto>()
-            .ForMember(dest => dest.TotalStock,
-                opt => opt.MapFrom(src => src.Batches
-                    .SelectMany(b => b.ShelfMaterialBatches)
-                    .Sum(smb => smb.Quantity)))
-            .ForMember(dest => dest.Specification,
-                opt => opt.MapFrom<MaterialSpecificationResolver>());
+            .ForMember(
+                dest => dest.TotalStock,
+                opt =>
+                    opt.MapFrom(src =>
+                        src.Batches.SelectMany(b => b.ShelfMaterialBatches).Sum(smb => smb.Quantity)
+                    )
+            )
+            .ForMember(
+                dest => dest.Specification,
+                opt => opt.MapFrom<MaterialSpecificationResolver>()
+            )
+            .ForMember(
+                dest => dest.ReservedStock,
+                opt => opt.MapFrom<ReservedMaterialStockResolver>()
+            );
 
         CreateMap<Material, MaterialWithWarehouseStockDto>()
-            .ForMember(dest => dest.TotalStock,
-                opt => opt.MapFrom(src => src.Batches
-                    .SelectMany(b => b.ShelfMaterialBatches)
-                    .Sum(smb => smb.Quantity)));
-
+            .ForMember(
+                dest => dest.TotalStock,
+                opt =>
+                    opt.MapFrom(src =>
+                        src.Batches.SelectMany(b => b.ShelfMaterialBatches).Sum(smb => smb.Quantity)
+                    )
+            );
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
-        CreateMap<MaterialBatch, MaterialBatchDto>();
-        CreateMap<MaterialBatch, MaterialBatchListDto>();
-        CreateMap<MaterialBatch, MaterialBatchReducedDto>();
+        CreateMap<MaterialBatch, MaterialBatchDto>()
+            .ForMember(
+                dest => dest.SupplierName,
+                opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
+            )
+            .ForMember(
+                dest => dest.ManufacturerName,
+                opt => opt.MapFrom<MaterialBatchManufacturerNameResolver>()
+            )
+            .ForMember(dest => dest.ArNumber, opt => opt.MapFrom<MaterialBatchArNumberResolver>())
+            .ForMember(dest => dest.SampledBy, opt => opt.MapFrom<MaterialBatchSampledByResolver>())
+            .ForMember(dest => dest.SampledOn, opt => opt.MapFrom<MaterialBatchSampledOnResolver>())
+            .ForMember(
+                dest => dest.SampleQuantity,
+                opt => opt.MapFrom<MaterialBatchSampleQuantityResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedBy,
+                opt => opt.MapFrom<MaterialBatchAnalysedByResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedDate,
+                opt => opt.MapFrom<MaterialBatchAnalysedDateResolver>()
+            )
+            .ForMember(
+                dest => dest.IssuedBy,
+                opt => opt.MapFrom<MaterialBatchUserIssuedByResolver>()
+            )
+            .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
+
+        CreateMap<MaterialBatch, MaterialBatchListDto>()
+            .ForMember(
+                dest => dest.SupplierName,
+                opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
+            )
+            .ForMember(
+                dest => dest.ManufacturerName,
+                opt => opt.MapFrom<MaterialBatchManufacturerNameResolver>()
+            )
+            .ForMember(dest => dest.ArNumber, opt => opt.MapFrom<MaterialBatchArNumberResolver>())
+            .ForMember(dest => dest.SampledBy, opt => opt.MapFrom<MaterialBatchSampledByResolver>())
+            .ForMember(dest => dest.SampledOn, opt => opt.MapFrom<MaterialBatchSampledOnResolver>())
+            .ForMember(
+                dest => dest.SampleQuantity,
+                opt => opt.MapFrom<MaterialBatchSampleQuantityResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedBy,
+                opt => opt.MapFrom<MaterialBatchAnalysedByResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedDate,
+                opt => opt.MapFrom<MaterialBatchAnalysedDateResolver>()
+            )
+            .ForMember(dest => dest.IssuedBy, opt => opt.MapFrom<MaterialBatchIssuedByResolver>())
+            .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
+
+        CreateMap<MaterialBatch, MaterialBatchReducedDto>()
+            .ForMember(
+                dest => dest.SupplierName,
+                opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
+            )
+            .ForMember(
+                dest => dest.ManufacturerName,
+                opt => opt.MapFrom<MaterialBatchManufacturerNameResolver>()
+            )
+            .ForMember(dest => dest.ArNumber, opt => opt.MapFrom<MaterialBatchArNumberResolver>())
+            .ForMember(dest => dest.SampledBy, opt => opt.MapFrom<MaterialBatchSampledByResolver>())
+            .ForMember(dest => dest.SampledOn, opt => opt.MapFrom<MaterialBatchSampledOnResolver>())
+            .ForMember(
+                dest => dest.SampleQuantity,
+                opt => opt.MapFrom<MaterialBatchSampleQuantityResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedBy,
+                opt => opt.MapFrom<MaterialBatchAnalysedByResolver>()
+            )
+            .ForMember(
+                dest => dest.AnalysedDate,
+                opt => opt.MapFrom<MaterialBatchAnalysedDateResolver>()
+            )
+            .ForMember(dest => dest.IssuedBy, opt => opt.MapFrom<MaterialBatchIssuedByResolver>())
+            .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
         CreateMap<MaterialReject, MaterialRejectDto>();
         CreateMap<MaterialBatch, DistributedMaterialBatchDto>();
         CreateMap<MaterialBatchEvent, MaterialBatchEventDto>();
@@ -372,7 +483,6 @@ public class OryxMapper : Profile
         CreateMap<MaterialDepartment, MaterialDepartmentWithWarehouseStockDto>();
         // .ForMember(dest => dest.WarehouseStock,
         //     opt => opt.MapFrom<>());
-
 
         CreateMap<CreateSrRequest, Sr>();
         CreateMap<Sr, SrDto>();
@@ -407,57 +517,70 @@ public class OryxMapper : Profile
         CreateMap<CreateSourceRequisitionItemRequest, SourceRequisitionItem>();
         CreateMap<SourceRequisitionItem, SourceRequisitionItemDto>();
         CreateMap<SourceRequisition, SourceRequisitionDto>()
-            .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>())
-            .AfterMap((src, dest, context) =>
-            {
-                // Manually handle grouping inside AfterMap
-                var groupedItems = src.Items
-                    .GroupBy(i => i.Material.Id)
-                    .Select(g => new SourceRequisitionItemDto
-                    {
-                        Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
-                        SourceRequisition = context.Mapper.Map<CollectionItemDto>(g.First().SourceRequisition),
-                        Material = context.Mapper.Map<MaterialDto>(g.First().Material),
-                        DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(g.First()
-                            .SourceRequisition.Supplier.AssociatedManufacturers
-                            .FirstOrDefault(m => m.MaterialId == g.First().MaterialId && m.Default)?
-                            .Manufacturer),
-                        UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
-                        Quantity = g.Sum(i => i.Quantity), // Sum quantities
-                        Source = g.First().Source,
-                        CreatedAt = g.First().CreatedAt
-                    })
-                    .ToList();
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>())
+            .AfterMap(
+                (src, dest, context) =>
+                {
+                    // Manually handle grouping inside AfterMap
+                    var groupedItems = src
+                        .Items.GroupBy(i => i.Material.Id)
+                        .Select(g => new SourceRequisitionItemDto
+                        {
+                            Id = g.First().Id, // Keep the first ID (arbitrary, can be changed)
+                            SourceRequisition = context.Mapper.Map<CollectionItemDto>(
+                                g.First().SourceRequisition
+                            ),
+                            Material = context.Mapper.Map<MaterialDto>(g.First().Material),
+                            DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(
+                                g.First()
+                                    .SourceRequisition.Supplier.AssociatedManufacturers.FirstOrDefault(
+                                        m => m.MaterialId == g.First().MaterialId && m.Default
+                                    )
+                                    ?.Manufacturer
+                            ),
+                            UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
+                            Quantity = g.Sum(i => i.Quantity), // Sum quantities
+                            Source = g.First().Source,
+                            CreatedAt = g.First().CreatedAt,
+                        })
+                        .ToList();
 
-                // Assign the grouped list to the DTO
-                dest.Items = groupedItems;
-            });
+                    // Assign the grouped list to the DTO
+                    dest.Items = groupedItems;
+                }
+            );
         CreateMap<SourceRequisition, SupplierQuotationRequest>()
-            .AfterMap((src, dest, context) =>
-            {
-                // Manually handle grouping inside AfterMap
-                var groupedItems = src.Items
-                    .GroupBy(i => i.Material.Id)
-                    .Select(g => new SourceRequisitionItemDto
-                    {
-                        Id = g.First().Id,  // Keep the first ID (arbitrary, can be changed)
-                        SourceRequisition = context.Mapper.Map<CollectionItemDto>(g.First().SourceRequisition),
-                        Material = context.Mapper.Map<MaterialDto>(g.First().Material),
-                        DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(g.First()
-                            .SourceRequisition.Supplier.AssociatedManufacturers
-                            .FirstOrDefault(m => m.MaterialId == g.First().MaterialId && m.Default)?
-                            .Manufacturer),
-                        UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
-                        Quantity = g.Sum(i => i.Quantity), // Sum quantities
-                        Source = g.First().Source,
-                        CreatedAt = g.First().CreatedAt
-                    })
-                    .ToList();
+            .AfterMap(
+                (src, dest, context) =>
+                {
+                    // Manually handle grouping inside AfterMap
+                    var groupedItems = src
+                        .Items.GroupBy(i => i.Material.Id)
+                        .Select(g => new SourceRequisitionItemDto
+                        {
+                            Id = g.First().Id, // Keep the first ID (arbitrary, can be changed)
+                            SourceRequisition = context.Mapper.Map<CollectionItemDto>(
+                                g.First().SourceRequisition
+                            ),
+                            Material = context.Mapper.Map<MaterialDto>(g.First().Material),
+                            DefaultManufacturer = context.Mapper.Map<ManufacturerListDto>(
+                                g.First()
+                                    .SourceRequisition.Supplier.AssociatedManufacturers.FirstOrDefault(
+                                        m => m.MaterialId == g.First().MaterialId && m.Default
+                                    )
+                                    ?.Manufacturer
+                            ),
+                            UoM = context.Mapper.Map<UnitOfMeasureDto>(g.First().UoM),
+                            Quantity = g.Sum(i => i.Quantity), // Sum quantities
+                            Source = g.First().Source,
+                            CreatedAt = g.First().CreatedAt,
+                        })
+                        .ToList();
 
-                // Assign the grouped list to the DTO
-                dest.Items = groupedItems;
-            });
+                    // Assign the grouped list to the DTO
+                    dest.Items = groupedItems;
+                }
+            );
         #endregion
 
         #region Approvals
@@ -506,14 +629,20 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationShelf, MaterialWarehouseLocationShelfDto>();
         CreateMap<WarehouseArrivalLocation, WarehouseArrivalLocationDto>();
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>()
-            .ForMember(dest => dest.Department,
-                opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
+            .ForMember(
+                dest => dest.Department,
+                opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department)
+            );
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialListDto>()
-            .ForMember(dest => dest.Department,
-                opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department));
+            .ForMember(
+                dest => dest.Department,
+                opt => opt.MapFrom(src => src.WarehouseArrivalLocation.Warehouse.Department)
+            );
         CreateMap<DistributedRequisitionItem, DistributedRequisitionItemDto>()
-            .ForMember(dest => dest.QuantityDistributed,
-                opt => opt.MapFrom<DistributedRequisitionItemResolverDistributedQuantity>());
+            .ForMember(
+                dest => dest.QuantityDistributed,
+                opt => opt.MapFrom<DistributedRequisitionItemResolverDistributedQuantity>()
+            );
         CreateMap<DistributedFinishedProduct, DistributedFinishedProductDto>();
         CreateMap<CreateArrivalLocationRequest, WarehouseArrivalLocation>();
         CreateMap<UpdateArrivalLocationRequest, WarehouseArrivalLocation>();
@@ -525,7 +654,42 @@ public class OryxMapper : Profile
 
         #region BinCardInformation
 
-        CreateMap<BinCardInformation, BinCardInformationDto>();
+        CreateMap<BinCardInformation, BinCardInformationDto>()
+            .ForMember(
+                dest => dest.Supplier,
+                opt =>
+                    opt.MapFrom(src =>
+                        !string.IsNullOrWhiteSpace(src.Supplier)
+                            ? src.Supplier
+                            : (
+                                src.MaterialBatch != null && src.MaterialBatch.Checklist != null
+                                    ? (
+                                        src.MaterialBatch.Checklist.Supplier != null
+                                            ? src.MaterialBatch.Checklist.Supplier.Name
+                                            : null
+                                    )
+                                    : null
+                            )
+                    )
+            )
+            .ForMember(
+                dest => dest.Manufacturer,
+                opt =>
+                    opt.MapFrom(src =>
+                        !string.IsNullOrWhiteSpace(src.Manufacturer)
+                            ? src.Manufacturer
+                            : (
+                                src.MaterialBatch != null && src.MaterialBatch.Checklist != null
+                                    ? (
+                                        src.MaterialBatch.Checklist.Manufacturer != null
+                                            ? src.MaterialBatch.Checklist.Manufacturer.Name
+                                            : null
+                                    )
+                                    : null
+                            )
+                    )
+            );
+
         CreateMap<ProductBinCardInformation, ProductBinCardInformationDto>();
 
         #endregion
@@ -549,9 +713,15 @@ public class OryxMapper : Profile
 
         CreateMap<SupplierQuotation, SupplierQuotationDto>();
         CreateMap<SupplierQuotationItem, SupplierQuotationItemDto>()
-            .ForMember(dest => dest.DefaultManufacturer,
-                opt => opt.MapFrom(src =>
-                    src.SupplierQuotation.Supplier.AssociatedManufacturers.FirstOrDefault(m => m.MaterialId == src.MaterialId && m.Default).Manufacturer));
+            .ForMember(
+                dest => dest.DefaultManufacturer,
+                opt =>
+                    opt.MapFrom(src =>
+                        src.SupplierQuotation.Supplier.AssociatedManufacturers.FirstOrDefault(m =>
+                            m.MaterialId == src.MaterialId && m.Default
+                        ).Manufacturer
+                    )
+            );
 
         #endregion
 
@@ -561,19 +731,22 @@ public class OryxMapper : Profile
         CreateMap<UpdatePurchaseOrderRequest, PurchaseOrder>();
         CreateMap<CreatePurchaseOrderItemRequest, PurchaseOrderItem>();
         CreateMap<PurchaseOrder, PurchaseOrderDto>()
-            .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>())
-            .ForMember(dest => dest.AttachmentStatus,
-                opt => opt.MapFrom<PurchaseOrderStatusResolver>())
-            .ForMember(dest => dest.Revisions,
-                opt => opt.MapFrom<PurchaseOrderRevisionResolver>())
-            .ForMember(dest => dest.Items,
-                opt => opt.MapFrom(src =>
-                    src.Items.Where(item => item.DeletedAt == null)));
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>())
+            .ForMember(
+                dest => dest.AttachmentStatus,
+                opt => opt.MapFrom<PurchaseOrderStatusResolver>()
+            )
+            .ForMember(dest => dest.Revisions, opt => opt.MapFrom<PurchaseOrderRevisionResolver>())
+            .ForMember(
+                dest => dest.Items,
+                opt => opt.MapFrom(src => src.Items.Where(item => item.DeletedAt == null))
+            );
 
         CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>()
-            .ForMember(dest => dest.CanReassignSupplier,
-                opt => opt.MapFrom<CanReassignPurchaseOrderItemResolver>());
+            .ForMember(
+                dest => dest.CanReassignSupplier,
+                opt => opt.MapFrom<CanReassignPurchaseOrderItemResolver>()
+            );
         CreateMap<PurchaseOrderItemSnapshot, PurchaseOrderItemDto>();
 
         CreateMap<CreatePurchaseOrderInvoiceRequest, PurchaseOrderInvoice>();
@@ -589,8 +762,7 @@ public class OryxMapper : Profile
         CreateMap<UpdateBillingSheetRequest, BillingSheet>();
         CreateMap<CreateBillingSheetCharge, BillingSheetCharge>();
         CreateMap<BillingSheet, BillingSheetDto>()
-            .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>());
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<BillingSheetCharge, BillingSheetChargeDto>();
 
@@ -606,22 +778,26 @@ public class OryxMapper : Profile
 
         CreateMap<CreateShipmentDocumentRequest, ShipmentDocument>();
         CreateMap<ShipmentDocument, ShipmentDocumentDto>()
-            .ForMember(dest => dest.HasBillingSheet,
-                opt => opt.MapFrom<HasBillingSheetResolver>())
-            .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>());
+            .ForMember(dest => dest.HasBillingSheet, opt => opt.MapFrom<HasBillingSheetResolver>())
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
         CreateMap<CreateShipmentInvoiceItem, ShipmentInvoiceItem>();
         CreateMap<ShipmentInvoice, ShipmentInvoiceDto>()
-            .ForMember(dest => dest.IsUsed,
-                opt => opt.MapFrom<ShipmentInvoiceStatusResolver>());
+            .ForMember(dest => dest.IsUsed, opt => opt.MapFrom<ShipmentInvoiceStatusResolver>());
         CreateMap<ShipmentInvoice, ShipmentInvoiceListDto>()
-            .ForMember(dest => dest.IsUsed,
-                opt => opt.MapFrom<ShipmentInvoiceListStatusResolver>());
+            .ForMember(
+                dest => dest.IsUsed,
+                opt => opt.MapFrom<ShipmentInvoiceListStatusResolver>()
+            );
         CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
-            .ForMember(dest => dest.Price,
-                opt => opt.MapFrom(src => src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price));
+            .ForMember(
+                dest => dest.Price,
+                opt =>
+                    opt.MapFrom(src =>
+                        src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price
+                    )
+            );
 
         CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();
         CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();
@@ -638,16 +814,17 @@ public class OryxMapper : Profile
         CreateMap<Checklist, DistributedChecklistDto>();
         CreateMap<Checklist, BatchChecklistDto>();
         CreateMap<CreateChecklistRequest, Checklist>()
-            .ForMember(dest => dest.MaterialBatches,
-                opt => opt.Ignore());
+            .ForMember(dest => dest.MaterialBatches, opt => opt.Ignore());
 
         #endregion
 
         #region Grn
         CreateMap<CreateGrnRequest, Grn>();
         CreateMap<Grn, GrnDto>()
-            .ForMember(dest => dest.CheckLists,
-                opt => opt.MapFrom(src => src.MaterialBatches.Select(c => c.Checklist)));
+            .ForMember(
+                dest => dest.CheckLists,
+                opt => opt.MapFrom(src => src.MaterialBatches.Select(c => c.Checklist))
+            );
         CreateMap<Grn, GrnListDto>();
         #endregion
 
@@ -661,23 +838,34 @@ public class OryxMapper : Profile
         CreateMap<CreateFormReviewerRequest, FormReviewer>();
 
         CreateMap<Form, FormDto>()
-            .ForMember(dest => dest.Responses,
-                opt => opt.MapFrom<FormWithResponseAttachmentResolver>());
+            .ForMember(
+                dest => dest.Responses,
+                opt => opt.MapFrom<FormWithResponseAttachmentResolver>()
+            );
         CreateMap<FormSection, FormSectionDto>();
         CreateMap<FormField, FormFieldDto>();
         CreateMap<Response, ResponseDto>()
-            .ForMember(dest => dest.FormResponses,
-                opt => opt.MapFrom<FormResponseAttachmentResolver>());
+            .ForMember(
+                dest => dest.FormResponses,
+                opt => opt.MapFrom<FormResponseAttachmentResolver>()
+            );
         CreateMap<Response, ResponseDetailDto>()
-            .ForMember(dest => dest.FormResponses,
-                opt => opt.MapFrom<FormResponseAttachmentResolver>());
+            .ForMember(
+                dest => dest.FormResponses,
+                opt => opt.MapFrom<FormResponseAttachmentResolver>()
+            );
         CreateMap<FormResponse, FormResponseDto>()
-            .ForMember(dest => dest.Attachments,
-                opt => opt.MapFrom<AttachmentsResolver>())
-            .ForMember(dest => dest.CheckedBy,
-                opt => opt.MapFrom(src => src.Response.CheckedBy))
-            .ForMember(dest => dest.CheckedAt,
-                opt => opt.MapFrom(src => src.Response.CheckedAt));
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>())
+            .ForMember(dest => dest.CheckedBy, opt => opt.MapFrom(src => src.Response.CheckedBy))
+            .ForMember(dest => dest.CheckedAt, opt => opt.MapFrom(src => src.Response.CheckedAt))
+            .ForMember(
+                dest => dest.SectionName,
+                opt => opt.MapFrom(src => src.FormField.FormSection.Name)
+            )
+            .ForMember(
+                dest => dest.Complies,
+                opt => opt.MapFrom(src => src.FormField.FormSection.Complies)
+            );
         CreateMap<CreateFormResponseRequest, FormResponse>();
         CreateMap<FormAssignee, FormAssigneeDto>();
         CreateMap<FormFieldAssignee, FormFieldAssigneeDto>();
@@ -713,7 +901,10 @@ public class OryxMapper : Profile
         CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
         CreateMap<PackageStyle, PackageStyleDto>();
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>()
-            .ForMember(dest => dest.PendingAllocatedQuantity, opt => opt.MapFrom<PendingAllocatedQuantityResolver>());
+            .ForMember(
+                dest => dest.PendingAllocatedQuantity,
+                opt => opt.MapFrom<PendingAllocatedQuantityResolver>()
+            );
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsListTransferNoteDto>();
 
         CreateMap<ProductionActivity, ProductionActivityDto>();
@@ -724,7 +915,6 @@ public class OryxMapper : Profile
         CreateMap<ProductionActivityStepWorkCenter, ProductionActivityStepWorkCenterDto>();
         CreateMap<ProductionActivityStepUser, ProductionActivityStepUserDto>();
 
-
         CreateMap<CreateStockTransferRequest, StockTransfer>();
         CreateMap<StockTransferSourceRequest, StockTransferSource>();
         CreateMap<StockTransfer, StockTransferDto>();
@@ -732,12 +922,9 @@ public class OryxMapper : Profile
         CreateMap<StockTransferSource, StockTransferSourceDto>();
         CreateMap<StockTransferSource, MaterialBatchStockTransferSourceDto>();
         CreateMap<StockTransferSource, DepartmentStockTransferDto>()
-            .ForMember(dest => dest.Material,
-                opt => opt.MapFrom(src => src.StockTransfer.Material))
-            .ForMember(dest => dest.UoM,
-                opt => opt.MapFrom(src => src.StockTransfer.UoM))
-            .ForMember(dest => dest.Reason,
-                opt => opt.MapFrom(src => src.StockTransfer.Reason));
+            .ForMember(dest => dest.Material, opt => opt.MapFrom(src => src.StockTransfer.Material))
+            .ForMember(dest => dest.UoM, opt => opt.MapFrom(src => src.StockTransfer.UoM))
+            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.StockTransfer.Reason));
 
         #endregion
 
@@ -760,24 +947,42 @@ public class OryxMapper : Profile
             .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
             .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
             .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))
-            .ForMember(dest => dest.EmergencyContact, opt => opt.MapFrom(src => src.EmergencyContact))
+            .ForMember(
+                dest => dest.EmergencyContact,
+                opt => opt.MapFrom(src => src.EmergencyContact)
+            )
             .ForMember(dest => dest.NextOfKin, opt => opt.MapFrom(src => src.NextOfKin))
             .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children))
             .ForMember(dest => dest.Siblings, opt => opt.MapFrom(src => src.Siblings))
-            .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
-            .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
+            .ForMember(
+                dest => dest.EducationBackground,
+                opt => opt.MapFrom(src => src.EducationBackground)
+            )
+            .ForMember(
+                dest => dest.EmploymentHistory,
+                opt => opt.MapFrom(src => src.EmploymentHistory)
+            );
 
         CreateMap<UpdateEmployeeRequest, Employee>()
             .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.StaffNumber))
             .ForMember(dest => dest.Mother, opt => opt.MapFrom(src => src.Mother))
             .ForMember(dest => dest.Father, opt => opt.MapFrom(src => src.Father))
             .ForMember(dest => dest.Spouse, opt => opt.MapFrom(src => src.Spouse))
-            .ForMember(dest => dest.EmergencyContact, opt => opt.MapFrom(src => src.EmergencyContact))
+            .ForMember(
+                dest => dest.EmergencyContact,
+                opt => opt.MapFrom(src => src.EmergencyContact)
+            )
             .ForMember(dest => dest.NextOfKin, opt => opt.MapFrom(src => src.NextOfKin))
             .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children))
             .ForMember(dest => dest.Siblings, opt => opt.MapFrom(src => src.Siblings))
-            .ForMember(dest => dest.EducationBackground, opt => opt.MapFrom(src => src.EducationBackground))
-            .ForMember(dest => dest.EmploymentHistory, opt => opt.MapFrom(src => src.EmploymentHistory));
+            .ForMember(
+                dest => dest.EducationBackground,
+                opt => opt.MapFrom(src => src.EducationBackground)
+            )
+            .ForMember(
+                dest => dest.EmploymentHistory,
+                opt => opt.MapFrom(src => src.EmploymentHistory)
+            );
 
         CreateMap<AssignEmployeeDto, Employee>()
             .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.StaffNumber))
@@ -902,8 +1107,11 @@ public class OryxMapper : Profile
 
         #region Overtime Requests
 
-        CreateMap<CreateOvertimeRequest, OvertimeRequest>();
-        CreateMap<OvertimeRequestDto, OvertimeRequest>().ReverseMap();
+        CreateMap<CreateOvertimeRequest, OvertimeRequest>()
+            .ForMember(dest => dest.Employees, opt => opt.Ignore());
+        CreateMap<OvertimeRequest, OvertimeRequestDto>();
+        CreateMap<OvertimeRequestDto, OvertimeRequest>()
+            .ForMember(dest => dest.Employees, opt => opt.MapFrom(src => src.Employees));
 
         #endregion
 
@@ -918,14 +1126,6 @@ public class OryxMapper : Profile
         CreateMap<LeaveEntitlementDto, LeaveEntitlement>();
         CreateMap<CreateLeaveEntitlementRequest, LeaveEntitlement>();
 
-        #endregion
-
-        #region Overtime Requests
-
-        CreateMap<CreateOvertimeRequest, OvertimeRequest>()
-            .ForMember(dest => dest.Employees, opt => opt.Ignore());
-        CreateMap<OvertimeRequestDto, OvertimeRequest>()
-            .ForMember(dest => dest.Employees, opt => opt.MapFrom(src => src.Employees));
         #endregion
 
         #region Material Standard Test Procedures
@@ -958,7 +1158,6 @@ public class OryxMapper : Profile
         CreateMap<ProductAnalyticalRawData, ProductAnalyticalRawDataDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
-
         #endregion
 
         #region Product Standard Test Procedures
@@ -980,7 +1179,8 @@ public class OryxMapper : Profile
         #region AnalyticalTestRequests
 
         CreateMap<CreateAnalyticalTestRequest, AnalyticalTestRequest>();
-        CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>();
+        CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>()
+            .ForMember(dest => dest.Assignees, opt => opt.Ignore());
 
         #endregion
 
@@ -988,26 +1188,36 @@ public class OryxMapper : Profile
 
         CreateMap<CreateAlertRequest, Alert>();
         CreateMap<Alert, AlertDto>()
-            .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles.Select(r => r.Role).ToList()))
-            .ForMember(dest => dest.Users, opt => opt.MapFrom(src => src.Users.Select(r => r.User).ToList()));
+            .ForMember(
+                dest => dest.Roles,
+                opt => opt.MapFrom(src => src.Roles.Select(r => r.Role).ToList())
+            )
+            .ForMember(
+                dest => dest.Users,
+                opt => opt.MapFrom(src => src.Users.Select(r => r.User).ToList())
+            );
         #endregion
 
         #region Product Sampling
 
         CreateMap<CreateProductSamplingRequest, ProductSampling>();
-        CreateMap<ProductSampling, ProductSamplingDto>().ForMember(dest => dest.AnalyticalTestRequest, opt => opt.MapFrom(src => src.AnalyticalTestRequest));
+        CreateMap<ProductSampling, ProductSamplingDto>()
+            .ForMember(
+                dest => dest.AnalyticalTestRequest,
+                opt => opt.MapFrom(src => src.AnalyticalTestRequest)
+            );
 
         #endregion
 
         #region Material Sampling
 
         CreateMap<CreateMaterialSamplingRequest, MaterialSampling>();
-        CreateMap<MaterialSampling, MaterialSamplingDto>().ForMember(dest => dest.GrnDto, opt => opt.MapFrom(src => src.Grn));
+        CreateMap<MaterialSampling, MaterialSamplingDto>()
+            .ForMember(dest => dest.GrnDto, opt => opt.MapFrom(src => src.Grn));
 
         CreateMap<CreatePreSampleChecklistRequest, PreSampleChecklist>();
         CreateMap<PreSampleChecklist, PreSampleChecklistDto>()
-            .ForMember(dest => dest.GrnGraNumber,
-                opt => opt.MapFrom(src => src.Grn.GrnNumber));
+            .ForMember(dest => dest.GrnGraNumber, opt => opt.MapFrom(src => src.Grn.GrnNumber));
 
         #endregion
 
@@ -1032,16 +1242,24 @@ public class OryxMapper : Profile
         CreateMap<AllocateProductQuantityRequest, AllocateProductQuantity>();
 
         CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>()
-            .ForMember(dest => dest.HasInvoice,
-                opt
-                    => opt.MapFrom<AllocateProductionOrderHasInvoice>())
-            .ForMember(dest => dest.HasWayBill,
-                opt
-                    => opt.MapFrom<AllocateProductionOrderHasWayBill>());
+            .ForMember(
+                dest => dest.HasInvoice,
+                opt => opt.MapFrom<AllocateProductionOrderHasInvoice>()
+            )
+            .ForMember(
+                dest => dest.HasWayBill,
+                opt => opt.MapFrom<AllocateProductionOrderHasWayBill>()
+            )
+            .ForMember(
+                dest => dest.InvoiceCode,
+                opt => opt.MapFrom<AllocateProductionOrderInvoiceCode>()
+            );
         CreateMap<AllocateProductionOrderProduct, AllocateProductionOrderProductDto>();
         CreateMap<AllocateProductQuantity, AllocateProductQuantityDto>()
-            .ForMember(dest => dest.BatchPackagingRecord,
-                opt => opt.MapFrom<AllocateProductQuantityBpr>());
+            .ForMember(
+                dest => dest.BatchPackagingRecord,
+                opt => opt.MapFrom<AllocateProductQuantityBpr>()
+            );
 
         CreateMap<ProductionOrderWaybill, ProductionOrderWaybillDto>();
 
@@ -1069,6 +1287,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateServiceProviderRequest, ServiceProvider>();
         CreateMap<ServiceProvider, ServiceProviderDto>();
+        CreateMap<ServiceProvider, ServiceProviderReducedDto>();
 
         #endregion
 
@@ -1079,12 +1298,10 @@ public class OryxMapper : Profile
 
         CreateMap<VendorItem, VendorItemDto>();
 
-
-
         #endregion
 
         #region Items
-
+        CreateMap<ItemCategory, ItemCategoryDto>();
         CreateMap<CreateItemsRequest, Item>();
         CreateMap<Item, ItemDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
@@ -1109,16 +1326,25 @@ public class OryxMapper : Profile
 
         #region Item Stock Requisitions
 
-        CreateMap<ItemStockRequisition, ItemStockRequisitionDto>();
+        CreateMap<ItemStockRequisition, ItemStockRequisitionDto>()
+            .ForMember(
+                dest => dest.RequisitionItems,
+                opt => opt.MapFrom(src => src.RequisitionItems.Select(ri => ri.Item))
+            );
         CreateMap<CreateItemStockRequisitionRequest, ItemStockRequisition>()
             .ForMember(dest => dest.RequisitionItems, opt => opt.Ignore());
 
         CreateMap<StockItems, ItemStockRequisitionItem>()
             .ForMember(dest => dest.ItemStockRequisitionId, opt => opt.Ignore())
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
-            .ForMember(dest => dest.QuantityRequested, opt => opt.MapFrom(src => src.QuantityRequested));
+            .ForMember(
+                dest => dest.QuantityRequested,
+                opt => opt.MapFrom(src => src.QuantityRequested)
+            );
 
         CreateMap<IssueItemStockRequisition, IssueItemStockRequisitionDto>();
+        CreateMap<ItemStockRequisitionItem, ItemStockRequisitionItemDto>();
+
         #endregion
 
         #region Inventory Procurement
@@ -1129,15 +1355,17 @@ public class OryxMapper : Profile
         CreateMap<InventoryPurchaseRequisition, InventoryPurchaseRequisitionDto>();
         CreateMap<InventoryPurchaseRequisitionItem, InventoryPurchaseRequisitionItemDto>();
 
-
         CreateMap<CreateMarketRequisition, MarketRequisition>();
         CreateMap<MarketRequisition, MarketRequisitionDto>();
 
         CreateMap<SourceInventoryRequisition, SourceInventoryRequisitionDto>();
         CreateMap<CreateSourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
-        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>();
+        CreateMap<SourceInventoryRequisitionItem, SourceInventoryRequisitionItemDto>();
+        CreateMap<SourceInventoryRequisition, VendorQuotationRequest>()
+            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
 
         CreateMap<CreateMarketRequisitionVendor, MarketRequisitionVendor>();
+        CreateMap<CreateMarketRequisitionVendorDetails, MarketRequisitionVendor>();
         CreateMap<VendorQuotation, VendorQuotationDto>();
         CreateMap<VendorQuotationItem, VendorQuotationItemDto>();
 
@@ -1150,7 +1378,6 @@ public class OryxMapper : Profile
         CreateMap<CreateDamagedStockRequest, DamagedStock>();
         CreateMap<DamagedStock, DamagedStockDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
-
 
         #endregion
 
@@ -1170,8 +1397,9 @@ public class OryxMapper : Profile
 
         CreateMap<CreateJobRequest, JobRequest>();
         CreateMap<UpdateJobRequestRequest, JobRequest>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            .ForAllMembers(opts => opts.Condition((_, dest, srcMember) => srcMember != null));
         CreateMap<JobRequest, JobRequestDto>();
+        CreateMap<JobRequest, JobRequestReducedDto>();
 
         // Job Execution
         CreateMap<JobExecution, JobExecutionDto>();
@@ -1185,6 +1413,7 @@ public class OryxMapper : Profile
         // Job Order
         CreateMap<CreateJobOrderRequest, JobOrder>();
         CreateMap<JobOrder, JobOrderDto>();
+        CreateMap<JobOrder, JobOrderReducedDto>();
         CreateMap<JobOrderServiceProvider, JobOrderServiceProviderDto>();
 
         // Job Order Execution
@@ -1194,16 +1423,100 @@ public class OryxMapper : Profile
         CreateMap<CreateServiceQuotationRequest, ServiceQuotation>();
         CreateMap<UpdateServiceQuotationRequest, ServiceQuotation>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<ServiceQuotation, ServiceQuotationDto>();
+        CreateMap<ServiceQuotation, ServiceQuotationDto>()
+            .ForMember(dest => dest.Service, opt => opt.MapFrom(src => src.JobOrder.Service));
+        CreateMap<ServiceQuotation, ServiceQuotationReducedDto>()
+            .ForMember(dest => dest.Service, opt => opt.MapFrom(src => src.JobOrder.Service));
+        CreateMap<CreateServiceCharge, ServiceCharge>();
+        CreateMap<ServiceCharge, ServiceChargeDto>();
 
         // Quotation Item
+        CreateMap<CreateQuotationItemRequest, QuotationItem>();
         CreateMap<QuotationItem, QuotationItemDto>();
+
+        // Service Proforma Invoice
+        CreateMap<ServiceProformaInvoice, ServiceProformaInvoiceDto>();
+        CreateMap<ServiceProformaInvoiceItem, ServiceProformaInvoiceItemDto>();
 
         // Service Memo
         CreateMap<CreateServiceMemoRequest, ServiceMemo>();
         CreateMap<UpdateServiceMemoRequest, ServiceMemo>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         CreateMap<ServiceMemo, ServiceMemoDto>();
+
+        #endregion
+
+        #region Memo
+
+        CreateMap<Memo, MemoDto>();
+        CreateMap<MemoItem, MemoItemDto>()
+            .ConvertUsing(
+                (src, dest, ctx) =>
+                {
+                    var dto = new MemoItemDto
+                    {
+                        Id = src.Id,
+                        Memo =
+                            src.Memo != null
+                                ? new CollectionItemDto { Id = src.Memo.Id, Code = src.Memo.Code }
+                                : null,
+                        Vendor =
+                            src.VendorQuotationItem?.VendorQuotation?.Vendor != null
+                                ? new CollectionItemDto
+                                {
+                                    Id = src.VendorQuotationItem.VendorQuotation.Vendor.Id,
+                                    Name = src.VendorQuotationItem.VendorQuotation.Vendor.Name,
+                                }
+                                : (
+                                    src.MarketRequisitionVendorId.HasValue
+                                        ? new CollectionItemDto
+                                        {
+                                            Name = src.MarketRequisitionVendor?.VendorName,
+                                        }
+                                        : null
+                                ),
+                        Item =
+                            src.Item != null
+                                ? new CollectionItemDto
+                                {
+                                    Id = src.Item.Id,
+                                    Code = src.Item.Code,
+                                    Name = src.Item.Name,
+                                }
+                                : null,
+                        UoM =
+                            src.UoM != null
+                                ? new UnitOfMeasureDto
+                                {
+                                    Id = src.UoM.Id,
+                                    Name = src.UoM.Name,
+                                    Symbol = src.UoM.Symbol,
+                                    Description = src.UoM.Description,
+                                    IsScalable = src.UoM.IsScalable,
+                                    IsRawMaterial = src.UoM.IsRawMaterial,
+                                    Type = src.UoM.Type,
+                                    Category = src.UoM.Category,
+                                    CreatedAt = src.UoM.CreatedAt,
+                                }
+                                : null,
+                        Quantity = src.Quantity,
+                        PricePerUnit = src.PricePerUnit,
+                        TermsOfPayment =
+                            src.MarketRequisitionVendor?.TermsOfPayment != null
+                                ? new CollectionItemDto
+                                {
+                                    Id = src.MarketRequisitionVendor.TermsOfPayment.Id,
+                                    Name = src.MarketRequisitionVendor.TermsOfPayment.Name,
+                                }
+                                : null,
+                        DeliveryMode = src.MarketRequisitionVendor?.DeliveryMode,
+                        EstimatedDeliveryDate =
+                            src.MarketRequisitionVendor?.EstimatedDeliveryDate ?? default,
+                        CreatedAt = src.CreatedAt,
+                    };
+                    return dto;
+                }
+            );
 
         #endregion
 
@@ -1219,6 +1532,18 @@ public class OryxMapper : Profile
         CreateMap<CreateSwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
         CreateMap<SwapRequest, SwapRequestDto>();
         CreateMap<SwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
+
+        #endregion
+
+        #region Threshold
+
+        CreateMap<Threshold, ThresholdDto>();
+
+        #endregion
+
+        #region Site
+
+        CreateMap<Site, SiteDto>();
 
         #endregion
     }

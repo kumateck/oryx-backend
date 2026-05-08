@@ -12,4 +12,6 @@ public interface IVendorRepository
     Task<Result<VendorDto>> GetVendor(Guid id);
     Task<Result> UpdateVendor(Guid id, CreateVendorRequest request);
     Task<Result> DeleteVendor(Guid id, Guid userId);
+    Task<Result<List<VendorDto>>> GetVendorsByItem(Guid itemId);
+    
 }

@@ -14,6 +14,7 @@ public class VendorDto : BaseDto
     public Guid CountryId { get; set; }
     public CountryDto Country { get; set; }
     public Guid CurrencyId { get; set; }
+    public string ContactPerson { get; set; }
     public CurrencyDto Currency { get; set; }
 
     public List<VendorItemDto> Items { get; set; } = [];

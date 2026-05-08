@@ -21,12 +21,13 @@ public class Item : BaseEntity
     public bool IsActive { get; set; }
     public string Description { get; set; }
     public int AvailableQuantity { get; set; }
+    [Timestamp] public byte[] RowVersion { get; set; }
 }
 
 public enum Store
 {
-    IT,
-    General,
+    ItStore,
+    GeneralStore,
     EquipmentStore,
     ReagentStore
 }
@@ -59,11 +60,10 @@ public class StockItems
 public class ItemStockRequisitionItemDto : BaseDto
 {
     public Guid ItemStockRequisitionId { get; set; }
-    public ItemStockRequisitionDto ItemStockRequisition { get; set; }
+    public ItemStockRequisition ItemStockRequisition { get; set; }
 
     public Guid ItemId { get; set; }
-    public ItemDto Item { get; set; }
-
+    public Item Item { get; set; }
     public int QuantityRequested { get; set; }
 }
 

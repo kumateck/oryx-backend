@@ -64,3 +64,48 @@ public class LogisticsReportDto
     public int NumberOfArrivedWaybills { get; set; }
     public int NumberOfClearedWaybills { get; set; }
 }
+
+
+
+public class ProductionDashboardDto
+{
+    public RequisitionReportDto RequisitionReport { get; set; }
+    public List<MaterialReorderReportDto> MaterialsBelowReorderLevel { get; set; }
+    public ProductionScheduleStatusReportDto ProductionScheduleReport { get; set; }
+    public StockTransferStatusReportDto StockTransferReport { get; set; }
+}
+
+public class RequisitionReportDto
+{
+    public int NewRequisitionsCount { get; set; }
+    public int PendingRequisitionsCount { get; set; }
+    public int RejectedRequisitionsCount { get; set; }
+    public int CompletedRequisitionsCount { get; set; }
+    public int SourcedRequisitionsCount { get; set; }
+   
+}
+public class MaterialReorderReportDto
+{
+    public string MaterialName { get; set; } 
+    public string MaterialCode { get; set; } 
+    public decimal CurrentQuantity { get; set; }
+    public decimal ReOrderLevel { get; set; }
+    public string UomSymbol { get; set; }
+}
+
+public class StockTransferStatusReportDto
+{
+    public int InProgressCount { get; set; }
+    public int ApprovedCount { get; set; }
+    public int IssuedCount { get; set; }
+    public int RejectedCount { get; set; }
+}
+
+public class ProductionScheduleStatusReportDto
+{
+    public int NewScheduleCount { get; set; }
+    public int InProgressScheduleCount { get; set; }
+    public int CompletedScheduleCount { get; set; }
+    public int DelayedScheduleCount { get; set; }
+    public int CancelledScheduleCount { get; set; }
+}

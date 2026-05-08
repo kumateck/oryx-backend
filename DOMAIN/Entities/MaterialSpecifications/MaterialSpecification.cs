@@ -5,7 +5,7 @@ using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.MaterialSpecifications;
 
-public class MaterialSpecification : BaseEntity
+public class MaterialSpecification : BaseEntity, IVerifiable
 {
     public string SpecificationNumber { get; set; }
     public string RevisionNumber { get; set; }
@@ -23,6 +23,9 @@ public class MaterialSpecification : BaseEntity
     public Guid? ResponseId { get; set; }
     public Response Response { get; set; }
     public List<FormSection> FormSections { get; set; } = [];
+    public bool IsVerified { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
 }
 
 
