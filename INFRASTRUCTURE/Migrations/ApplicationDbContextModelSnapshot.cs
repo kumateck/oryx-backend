@@ -2029,6 +2029,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("WarehouseId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
@@ -2046,6 +2049,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ReportingManagerId");
 
                     b.HasIndex("ShiftScheduleId");
+
+                    b.HasIndex("WarehouseId");
 
                     b.ToTable("Employees");
                 });
@@ -14855,6 +14860,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany("Employees")
                         .HasForeignKey("ShiftScheduleId");
 
+                    b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId");
+
                     b.OwnsMany("DOMAIN.Entities.Children.Child", "Children", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -15151,6 +15160,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Siblings");
 
                     b.Navigation("Spouse");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Form", b =>
