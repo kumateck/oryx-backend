@@ -1,5 +1,4 @@
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
