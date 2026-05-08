@@ -1427,7 +1427,7 @@ public class ProductionScheduleRepository(
                     QuantityOnHand = quantityOnHand,
                     Status =
                         currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity > 0
+                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
                             ? MaterialRequisitionStatus.InHouse
                         : GetStatusOfProductionMaterial(
                             stockTransfers,
@@ -1705,7 +1705,7 @@ public class ProductionScheduleRepository(
                     UnitCapacity = item.UnitCapacity,
                     Status =
                         currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity > 0
+                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
                             ? MaterialRequisitionStatus.InHouse
                         : GetStatusOfProductionMaterial(
                             stockTransfers,
