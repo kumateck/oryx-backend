@@ -1333,6 +1333,7 @@ public class ProductionScheduleRepository(
                 && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouse.Id
                 && !s.DeletedAt.HasValue
+                && s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
             )
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
