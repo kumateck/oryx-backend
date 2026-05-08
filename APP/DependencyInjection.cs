@@ -145,6 +145,7 @@ public static class DependencyInjection
         services.AddHostedService<MaterialStockService>();
         services.AddHostedService<MaterialBatchExpiryService>();
         services.AddHostedService<EmployeeSuspensionService>();
+        services.AddHostedService<WaterStockMaintenanceService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)
