@@ -2090,7 +2090,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouseId
                 )
-                && DateTime.UtcNow <= b.ExpiryDate
+                && (b.ExpiryDate == null || DateTime.UtcNow <= b.ExpiryDate)
                 && b.Status == BatchStatus.Available
             )
             .OrderBy(b => b.ReturnDate == null) // false (not null) first, true (null) last
@@ -2108,7 +2108,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ShelfMaterialBatches.Where(smb =>
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                         == warehouseId
-                    && DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
+                    && (
+                        smb.MaterialBatch.ExpiryDate == null
+                        || DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
+                    )
                 )
                 .OrderBy(_ => batch.ReturnDate == null) // returned batches first
                 .ThenBy(_ => batch.ReturnDate) // earliest return date first

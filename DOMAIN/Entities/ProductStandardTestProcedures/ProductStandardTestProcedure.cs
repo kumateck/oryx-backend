@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Products;
 
@@ -10,4 +11,7 @@ public class ProductStandardTestProcedure : BaseEntity
     public Guid ProductId { get; set; }
 
     public Product Product { get; set; }
+
+    [StringLength(10000000)]
+    public string Description { get; set; }
 }

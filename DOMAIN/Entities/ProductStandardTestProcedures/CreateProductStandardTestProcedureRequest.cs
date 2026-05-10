@@ -4,7 +4,10 @@ namespace DOMAIN.Entities.ProductStandardTestProcedures;
 
 public class CreateProductStandardTestProcedureRequest
 {
-    [Required] public string StpNumber { get; set; }
+    [Required]
+    public string StpNumber { get; set; }
 
-    [Required] public Guid ProductId { get; set; }
+    [Required]
+    public Guid ProductId { get; set; }
+    public string Description { get; set; }
 }
