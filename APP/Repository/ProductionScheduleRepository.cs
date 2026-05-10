@@ -1333,6 +1333,7 @@ public class ProductionScheduleRepository(
                 && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouse.Id
                 && !s.DeletedAt.HasValue
+                && s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
             )
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
@@ -1427,7 +1428,7 @@ public class ProductionScheduleRepository(
                     QuantityOnHand = quantityOnHand,
                     Status =
                         currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity > 0
+                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
                             ? MaterialRequisitionStatus.InHouse
                         : GetStatusOfProductionMaterial(
                             stockTransfers,
@@ -1705,7 +1706,7 @@ public class ProductionScheduleRepository(
                     UnitCapacity = item.UnitCapacity,
                     Status =
                         currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity > 0
+                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
                             ? MaterialRequisitionStatus.InHouse
                         : GetStatusOfProductionMaterial(
                             stockTransfers,
