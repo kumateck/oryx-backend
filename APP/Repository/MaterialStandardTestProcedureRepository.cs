@@ -13,7 +13,7 @@ namespace APP.Repository;
 public class MaterialStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper)
     : IMaterialStandardTestProcedureRepository
 {
-    public async Task<Result> CreateMaterialStandardTestProcedure(
+    public async Task<Result<List<MaterialStpMappingDto>>> CreateMaterialStandardTestProcedure(
         CreateMaterialStandardTestProcedureRequest request
     )
     {
@@ -51,6 +51,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             );
         }
 
+        var mappings = new List<MaterialStpMappingDto>();
+
         foreach (var material in materials)
         {
             // packaging materials → only once per material
@@ -72,9 +74,14 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             };
 
             await context.MaterialStandardTestProcedures.AddAsync(procedure);
+            mappings.Add(new MaterialStpMappingDto
+            {
+                MaterialId = material.Id,
+                StpId = procedure.Id
+            });
         }
         await context.SaveChangesAsync();
-        return Result.Success();
+        return mappings;
     }
 
     public async Task<
