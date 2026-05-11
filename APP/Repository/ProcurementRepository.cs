@@ -1087,6 +1087,7 @@ public class ProcurementRepository(
                 .ThenInclude(c => c.Charge)
             .Include(bs => bs.Charges)
                 .ThenInclude(c => c.Currency)
+            .Include(i => i.ContainerPackageStyle)
             .FirstOrDefaultAsync(bs => bs.InvoiceId == invoiceId);
 
         return billingSheet is null
