@@ -28,7 +28,8 @@ public class Material : BaseEntity
     public MaterialKind Kind { get; set; }
     public BatchKind Status { get; set; }
     public bool IsUnlimited { get; set; }
-    public decimal TotalStock => IsUnlimited ? 999_999_999_999_999_999_999_999.99m : Batches.Sum(b => b.RemainingQuantity);
+    public decimal TotalStock =>
+        IsUnlimited ? 999_999_999_999_999_999_999_999.99m : Batches.Sum(b => b.RemainingQuantity);
     public List<MaterialDepartment> Departments { get; set; } = [];
 }
 

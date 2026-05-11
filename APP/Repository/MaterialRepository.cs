@@ -1194,18 +1194,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    var existingTarget = await context.ShelfMaterialBatches
-                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                            && x.MaterialBatchId == shelfMaterialBatch.MaterialBatchId)
-                        ?? context.ShelfMaterialBatches.Local
-                            .FirstOrDefault(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                                && x.MaterialBatchId == shelfMaterialBatch.MaterialBatchId);
-
-                    if (existingTarget != null)
+                    var existingShelfMaterialBatch =
+                        await context.ShelfMaterialBatches.FirstOrDefaultAsync(s =>
+                            s.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && s.MaterialBatchId == shelfMaterialBatch.MaterialBatchId
+                        );
+                    if (existingShelfMaterialBatch != null)
                     {
-                        existingTarget.Quantity += movedBatch.Quantity;
-                        existingTarget.Note = $"{movedBatch.Note}. {existingTarget.Note}";
-                        context.ShelfMaterialBatches.Update(existingTarget);
+                        existingShelfMaterialBatch.Quantity += shelfMaterialBatch.Quantity;
                     }
                     else
                     {
@@ -2111,7 +2107,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouseId
                 )
-                && DateTime.UtcNow <= b.ExpiryDate
+                && (b.ExpiryDate == null || DateTime.UtcNow <= b.ExpiryDate)
                 && b.Status == BatchStatus.Available
             )
             .OrderBy(b => b.ReturnDate == null) // false (not null) first, true (null) last
@@ -2129,7 +2125,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ShelfMaterialBatches.Where(smb =>
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                         == warehouseId
-                    && DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
+                    && (
+                        smb.MaterialBatch.ExpiryDate == null
+                        || DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
+                    )
                 )
                 .OrderBy(_ => batch.ReturnDate == null) // returned batches first
                 .ThenBy(_ => batch.ReturnDate) // earliest return date first

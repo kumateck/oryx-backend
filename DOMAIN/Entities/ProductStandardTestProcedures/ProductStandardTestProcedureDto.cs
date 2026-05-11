@@ -7,4 +7,5 @@ public class ProductStandardTestProcedureDto : WithAttachment
 {
     public string StpNumber { get; set; }
     public CollectionItemDto Product { get; set; }
+    public string Description { get; set; }
 }

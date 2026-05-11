@@ -168,6 +168,18 @@ public class ProductionScheduleRepository(
                 .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
                 .AsQueryable();
 
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                var lowerSearchQuery = searchQuery.ToLower();
+                query = query.Where(q =>
+                    q.Code.ToLower().Contains(lowerSearchQuery)
+                    || q.Products.Any(p =>
+                        p.Product.DepartmentId == departmentId
+                        && p.Product.Name.ToLower().Contains(lowerSearchQuery)
+                    )
+                );
+            }
+
             return await PaginationHelper.GetPaginatedResultAsync(
                 query,
                 page,
@@ -188,6 +200,15 @@ public class ProductionScheduleRepository(
                     .ThenInclude(s => s.ProductPacking)
                         .ThenInclude(p => p.PackingLists)
                 .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                var lowerSearchQuery = searchQuery.ToLower();
+                query = query.Where(q =>
+                    q.Code.ToLower().Contains(lowerSearchQuery)
+                    || q.Products.Any(p => p.Product.Name.ToLower().Contains(lowerSearchQuery))
+                );
+            }
 
             return await PaginationHelper.GetPaginatedResultAsync(
                 query,
@@ -1312,6 +1333,7 @@ public class ProductionScheduleRepository(
                 && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouse.Id
                 && !s.DeletedAt.HasValue
+                && s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
             )
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
@@ -1406,7 +1428,7 @@ public class ProductionScheduleRepository(
                     QuantityOnHand = quantityOnHand,
                     Status =
                         currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity > 0
+                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
                             ? MaterialRequisitionStatus.InHouse
                         : GetStatusOfProductionMaterial(
                             stockTransfers,
@@ -1684,7 +1706,7 @@ public class ProductionScheduleRepository(
                     UnitCapacity = item.UnitCapacity,
                     Status =
                         currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity > 0
+                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
                             ? MaterialRequisitionStatus.InHouse
                         : GetStatusOfProductionMaterial(
                             stockTransfers,

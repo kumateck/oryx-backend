@@ -1,11 +1,9 @@
-using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
-using SHARED;
 
 namespace API.Database.Seeds.TableSeeders;
 
@@ -88,6 +86,7 @@ public class WaterStockSeeder : ISeeder
                 Status = BatchStatus.Available,
                 DateReceived = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
+                ExpiryDate = DateTime.MaxValue.ToUniversalTime(),
             };
             dbContext.MaterialBatches.Add(batch);
             dbContext.SaveChanges();
