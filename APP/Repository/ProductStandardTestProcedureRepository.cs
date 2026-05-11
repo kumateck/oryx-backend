@@ -164,6 +164,34 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         return Result.Success();
     }
 
+    public async Task<
+        Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
+    > GetProductStandardTestProceduresNotLinkedToArd(int page, int pageSize, string searchQuery)
+    {
+        var query = context
+            .ProductStandardTestProcedures.AsSplitQuery()
+            .Include(stp => stp.Product)
+            .Where(stp => !context.ProductAnalyticalRawData.Any(ard => ard.StpId == stp.Id))
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            entity =>
+                mapper.Map<ProductStandardTestProcedureDto>(
+                    entity,
+                    opts =>
+                        opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure)
+                )
+        );
+    }
+
     public async Task<Result> DeleteProductStandardTestProcedure(Guid id, Guid userId)
     {
         var procedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(stp =>
@@ -174,6 +202,15 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             return Error.NotFound(
                 "ProductStandardTestProcedure.NotFound",
                 "Product Standard test procedure not found"
+            );
+        }
+
+        var isLinkedToArd = await context.ProductAnalyticalRawData.AnyAsync(ard => ard.StpId == id);
+        if (isLinkedToArd)
+        {
+            return Error.Validation(
+                "ProductStandardTestProcedure.LinkedToArd",
+                "Product Standard test procedure is linked to an ARD and cannot be deleted."
             );
         }
 
