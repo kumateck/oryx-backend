@@ -127,4 +127,26 @@ public class ProductStandardTestProcedureController(
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Retrieves a paginated list of standard test procedures that are not linked to any ARD.
+    /// </summary>
+    [HttpGet("unlinked-to-ard")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<ProductStandardTestProcedureDto>>)
+    )]
+    public async Task<IResult> GetProductStandardTestProceduresNotLinkedToArd(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null
+    )
+    {
+        var result = await repository.GetProductStandardTestProceduresNotLinkedToArd(
+            page,
+            pageSize,
+            searchQuery
+        );
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
