@@ -119,7 +119,22 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
         }
 
+        var oldSpecNumber = productSpec.SpecificationNumber;
+
         mapper.Map(request, productSpec);
+
+        if (oldSpecNumber != productSpec.SpecificationNumber)
+        {
+            var ards = await context.ProductAnalyticalRawData
+                .Where(ad => ad.ProductStandardTestProcedure.ProductId == productSpec.ProductId)
+                .ToListAsync();
+
+            foreach (var ard in ards)
+            {
+                ard.SpecNumber = productSpec.SpecificationNumber;
+            }
+            context.ProductAnalyticalRawData.UpdateRange(ards);
+        }
 
         context.ProductSpecifications.Update(productSpec);
         await context.SaveChangesAsync();
