@@ -1,3 +1,4 @@
+using System.Linq;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -2132,6 +2133,14 @@ public class WarehouseRepository(
                     );
 
                 shelfBatch.Quantity -= batch.Quantity;
+                if (shelfBatch.Quantity == 0)
+                {
+                    context.ShelfMaterialBatches.Remove(shelfBatch);
+                }
+                else
+                {
+                    context.ShelfMaterialBatches.Update(shelfBatch);
+                }
 
                 //  Match by MaterialId to find target shelf in the second warehouse side
                 var targetShelfId = swapRequest
@@ -2201,6 +2210,14 @@ public class WarehouseRepository(
                     );
 
                 shelfBatch.Quantity -= batch.Quantity;
+                if (shelfBatch.Quantity == 0)
+                {
+                    context.ShelfMaterialBatches.Remove(shelfBatch);
+                }
+                else
+                {
+                    context.ShelfMaterialBatches.Update(shelfBatch);
+                }
 
                 //  Match by MaterialBatchId to find target shelf in the first warehouse side
                 var targetShelfId = swapRequest

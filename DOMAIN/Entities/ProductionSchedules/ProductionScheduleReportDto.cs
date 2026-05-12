@@ -7,6 +7,7 @@ public class ProductionScheduleReportDto
 {
     public ProductListDto Product { get; set; }
     public decimal UnitPrice { get; set; }
+    public string PriceUoM { get; set; }
     public decimal BatchSize { get; set; }
     public decimal Batches { get; set; }
     public decimal ExpectedQuantity => BatchSize * Batches;
@@ -19,6 +20,7 @@ public class ProductionScheduleReportDto
 public class ProductionScheduleDetailedReportDto
 {
     public decimal UnitPrice { get; set; }
+    public string PriceUoM { get; set; }
     public string BatchNumber { get; set; }
     public string PackageStyle { get; set; }
     public decimal ExpectedQuantity { get; set; }

@@ -72,6 +72,7 @@ public class MarketRequisitionVendorDto : BaseDto
     public string VendorAddress { get; set; }
     public string VendorPhoneNumber { get; set; }
     public decimal PricePerUnit { get; set; }
+    public string PriceUoM { get; set; }
     public string ModeOfPayment { get; set; }
     public CollectionItemDto TermsOfPayment { get; set; }
     public string DeliveryMode { get; set; }

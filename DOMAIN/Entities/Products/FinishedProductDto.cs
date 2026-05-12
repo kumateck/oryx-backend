@@ -10,6 +10,7 @@ public class FinishedProductDto
     public UnitOfMeasureDto UoM { get; set; }
     public decimal StandardCost { get; set; }
     public decimal SellingPrice { get; set; }
+    public string PriceUoM { get; set; }
     public string DosageForm { get; set; }
     public string Strength { get; set; }
 }
