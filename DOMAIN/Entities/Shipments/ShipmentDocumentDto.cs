@@ -55,6 +55,7 @@ public class ShipmentInvoiceItemDto : BaseDto
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
     public string Reason { get; set; }
