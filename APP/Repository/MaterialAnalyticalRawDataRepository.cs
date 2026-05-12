@@ -212,13 +212,22 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
                 m.MaterialStandardTestProcedure.MaterialId == materialBatch.MaterialId
             );
 
+        var materialSpec = await context.MaterialSpecifications
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ms => ms.MaterialId == materialBatch.MaterialId);
+
+        var materialStp = await context.MaterialStandardTestProcedures
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(stp => stp.MaterialId == materialBatch.MaterialId);
+
         return new MaterialBatchArd
         {
             MaterialBatch = mapper.Map<MaterialBatchReducedDto>(materialBatch),
             ArNumber = materialSampling?.ArNumber,
             GrnNumber = materialBatch.Grn.GrnNumber,
-            SpecNumber = materialArd.SpecNumber,
-            StpNumber = materialArd.MaterialStandardTestProcedure?.StpNumber,
+            SpecNumber = materialArd?.SpecNumber ?? materialSpec?.SpecificationNumber,
+            StpNumber =
+                materialArd?.MaterialStandardTestProcedure?.StpNumber ?? materialStp?.StpNumber,
             SampledDate = materialSampling?.SampleDate,
             Supplier = mapper.Map<CollectionItemDto>(checkList.Supplier),
             Manufacturer = mapper.Map<CollectionItemDto>(checkList.Manufacturer),

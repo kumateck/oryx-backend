@@ -198,6 +198,10 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
                 && (!testStage.HasValue || p.Stage == testStage.Value)
             );
 
+        var productSpec = await context.ProductSpecifications
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(ps => ps.ProductId == bmr.ProductionScheduleProduct.ProductId);
+
         var stps = await context
             .ProductStandardTestProcedures.AsSplitQuery()
             .Include(s => s.Product)
@@ -208,7 +212,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         {
             BatchManufacturingRecord = mapper.Map<BatchManufacturingRecordDto>(bmr),
             ArNumber = atr?.ArNumber,
-            SpecNumber = productArd?.SpecNumber,
+            SpecNumber = productArd?.SpecNumber ?? productSpec?.SpecificationNumber,
             ProductStandardTestProcedures = mapper.Map<List<ProductStandardTestProcedureDto>>(stps),
             SampledDate = atr?.SampledAt,
             SampledBy = mapper.Map<UserDto>(atr?.SampledBy),
