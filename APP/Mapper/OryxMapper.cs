@@ -1130,10 +1130,7 @@ public class OryxMapper : Profile
 
         #region Material Standard Test Procedures
 
-        CreateMap<CreateMaterialStandardTestProcedureRequest, MaterialStandardTestProcedure>();
-
         CreateMap<MaterialStandardTestProcedureDto, MaterialStandardTestProcedure>();
-
         CreateMap<MaterialStandardTestProcedure, MaterialStandardTestProcedureDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
