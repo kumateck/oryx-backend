@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
@@ -38,7 +37,14 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         var product = mapper.Map<Product>(request);
         product.CreatedById = userId;
-        product.Prices.Add(new ProductPrices { Price = request.Price, Date = DateTime.UtcNow });
+        product.Prices.Add(
+            new ProductPrices
+            {
+                Price = request.Price,
+                PriceUoM = request.PriceUoM,
+                Date = DateTime.UtcNow,
+            }
+        );
         await context.Products.AddAsync(product);
         await context.SaveChangesAsync();
 
@@ -143,7 +149,12 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         if (existingProduct.Price != request.Price)
         {
             existingProduct.Prices.Add(
-                new ProductPrices { Price = request.Price, Date = DateTime.UtcNow }
+                new ProductPrices
+                {
+                    Price = request.Price,
+                    PriceUoM = request.PriceUoM,
+                    Date = DateTime.UtcNow,
+                }
             );
         }
 

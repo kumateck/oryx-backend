@@ -47,6 +47,7 @@ public class CreatePurchaseOrderItemRequest
     public decimal Quantity { get; set; }
     [Range(0.0001, double.MaxValue, ErrorMessage = "Price must be greater than 0.0001")]
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
 }
 
 
@@ -58,6 +59,7 @@ public record CreatePurchaseOrderRevision
     public Guid? UoMId { get; set; }
     public decimal? Quantity { get; set; }
     public decimal? Price { get; set; }
+    public string PriceUoM { get; set; }
     public Guid? CurrencyId { get; set; }
 }
 
@@ -66,6 +68,7 @@ public record EnrichedRevision : CreatePurchaseOrderRevision
     public Guid? UoMBeforeId { get; set; }
     public decimal? QuantityBefore { get; set; }
     public decimal? PriceBefore { get; set; }
+    public string PriceUoMBefore { get; set; }
     public Guid? CurrencyBeforeId { get; set; }
     public Guid? MaterialBeforeId { get; set; }
     public int RevisionNumber { get; set; }

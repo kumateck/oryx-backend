@@ -69,6 +69,7 @@ public class Product : BaseEntity, IVerifiable
     public List<ProductPackage> Packages { get; set; } = [];
     public List<Route> Routes { get; set; } = [];
     public decimal Price => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.Price ?? 0;
+    public string PriceUoM => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.PriceUoM;
     public Division Division { get; set; }
     public List<ProductPrices> Prices { get; set; } = [];
     public List<ProductPacking> Packings { get; set; } = [];
@@ -85,6 +86,7 @@ public class Product : BaseEntity, IVerifiable
 public class ProductPrices
 {
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
     public DateTime Date { get; set; }
 }
 

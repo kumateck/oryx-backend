@@ -65,6 +65,7 @@ public class PurchaseOrderItem : BaseEntity
     public decimal Quantity { get; set; }
     public decimal QuantityInvoiced { get; set; }
     public decimal Price { get; set; }
+    [StringLength(100)] public string PriceUoM { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
 }

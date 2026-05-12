@@ -157,7 +157,24 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             );
         }
 
+        var oldSpecNumber = materialSpec.SpecificationNumber;
+
         mapper.Map(request, materialSpec);
+
+        if (oldSpecNumber != materialSpec.SpecificationNumber)
+        {
+            var ards = await context
+                .MaterialAnalyticalRawData.Where(ad =>
+                    ad.MaterialStandardTestProcedure.MaterialId == materialSpec.MaterialId
+                )
+                .ToListAsync();
+
+            foreach (var ard in ards)
+            {
+                ard.SpecNumber = materialSpec.SpecificationNumber;
+            }
+            context.MaterialAnalyticalRawData.UpdateRange(ards);
+        }
 
         context.MaterialSpecifications.Update(materialSpec);
         await context.SaveChangesAsync();
