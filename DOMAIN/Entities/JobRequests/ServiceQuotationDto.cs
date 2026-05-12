@@ -58,5 +58,6 @@ public class ServiceChargeDto
 { 
     public string Name { get; set; }
     public decimal Cost { get; set; }
+    public string PriceUoM { get; set; }
 }
 

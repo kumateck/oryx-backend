@@ -50,6 +50,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         var query = context
             .ProductStandardTestProcedures.AsQueryable()
             .IgnoreQueryFilters()
+            .Where(stp => !stp.DeletedAt.HasValue)
             .Include(stp => stp.Product)
             .AsSplitQuery();
 
@@ -77,8 +78,9 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var procedure = await context
             .ProductStandardTestProcedures.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(stp => stp.Product)
-            .FirstOrDefaultAsync(stp => stp.Id == id);
+            .FirstOrDefaultAsync(stp => stp.Id == id && !stp.DeletedAt.HasValue);
 
         return procedure is null
             ? Error.NotFound(
@@ -100,8 +102,9 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var procedure = await context
             .ProductStandardTestProcedures.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(stp => stp.Product)
-            .FirstOrDefaultAsync(stp => stp.ProductId == id);
+            .FirstOrDefaultAsync(stp => stp.ProductId == id && !stp.DeletedAt.HasValue);
 
         return procedure is null
             ? Error.NotFound(
@@ -123,7 +126,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var query = context
             .Products.AsSplitQuery()
-            .Where(p => !context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id))
+            .Where(p => !context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id && !s.DeletedAt.HasValue))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -194,9 +197,11 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
     public async Task<Result> DeleteProductStandardTestProcedure(Guid id, Guid userId)
     {
-        var procedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(stp =>
-            stp.Id == id
-        );
+        var procedure = await context
+            .ProductStandardTestProcedures.IgnoreQueryFilters()
+            .Where(stp => !stp.DeletedAt.HasValue)
+            .Include(stp => stp.Product)
+            .FirstOrDefaultAsync(stp => stp.Id == id);
         if (procedure is null)
         {
             return Error.NotFound(
@@ -205,12 +210,14 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             );
         }
 
-        var isLinkedToArd = await context.ProductAnalyticalRawData.AnyAsync(ard => ard.StpId == id);
+        var isLinkedToArd = await context.ProductAnalyticalRawData.AnyAsync(ard =>
+            ard.StpId == id
+        );
         if (isLinkedToArd)
         {
-            return Error.Validation(
+            return Error.Conflict(
                 "ProductStandardTestProcedure.LinkedToArd",
-                "Product Standard test procedure is linked to an ARD and cannot be deleted."
+                $"Cannot delete standard test procedure because it is linked to analytical raw data for product {procedure.Product.Name}"
             );
         }
 

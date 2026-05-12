@@ -129,6 +129,7 @@ public class PurchaseOrderItemDto
     public UnitOfMeasureDto Uom { get; set; }
     public decimal Quantity { get; set; }
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
     public CollectionItemDto Currency { get; set; }
     public List<SupplierManufacturerDto> Manufacturers { get; set; } = [];
     public decimal Cost => Price * (Quantity - QuantityInvoiced);

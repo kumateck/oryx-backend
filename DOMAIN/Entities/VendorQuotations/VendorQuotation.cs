@@ -35,6 +35,7 @@ public class VendorQuotationItem : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
+    public string PriceUoM { get; set; }
     [StringLength(1000)] public string DeliveryMode { get; set; }
     public DateTime EstimatedDeliveryDate { get; set; }
     public VendorQuotationItemStatus Status { get; set; }
@@ -57,6 +58,7 @@ public class VendorQuotationItemDto
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal? QuotedPrice { get; set; }
+    public string PriceUoM { get; set; }
     public CollectionItemDto TermsOfPayment { get; set; }
     public string DeliveryMode { get; set; }
     public DateTime EstimatedDeliveryDate { get; set; }
@@ -66,6 +68,7 @@ public class VendorQuotationResponseDto
 {
     public Guid Id { get; set; }
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
 }
 
 public class VendorPriceComparison
@@ -85,6 +88,7 @@ public class VendorPrice
     public string VendorAddress { get; set; }
     public string VendorPhoneNumber { get; set; }
     public decimal PricePerUnit { get; set; }
+    public string PriceUoM { get; set; }
     public string ModeOfPayment { get; set; }
     public CollectionItemDto OpenMarketTermsOfPayment { get; set; }
     public string DeliveryMode { get; set; }

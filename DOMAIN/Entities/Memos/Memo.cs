@@ -63,6 +63,7 @@ public class MemoItemDto : BaseDto
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
     public decimal PricePerUnit { get; set; }
+    public string PriceUoM { get; set; }
     public decimal ItemValue => Quantity * PricePerUnit;
     public CollectionItemDto TermsOfPayment { get; set; }
     public string DeliveryMode { get; set; }
