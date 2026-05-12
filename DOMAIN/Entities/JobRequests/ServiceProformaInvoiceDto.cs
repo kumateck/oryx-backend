@@ -31,6 +31,7 @@ public class ServiceProformaInvoiceItemDto : BaseDto
     public Guid UnitOfMeasureId { get; set; }
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public decimal UnitPrice { get; set; }
+    public string PriceUoM { get; set; }
     public decimal TotalPrice { get; set; }
 }
 

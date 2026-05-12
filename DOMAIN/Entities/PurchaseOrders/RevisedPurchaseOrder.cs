@@ -38,6 +38,7 @@ public class RevisedPurchaseOrderDto
     public UnitOfMeasureDto UoM { get; set; }
     public decimal? Quantity { get; set; }
     public decimal? Price { get; set; }
+    public string PriceUoM { get; set; }
     public CurrencyDto Currency { get; set; }
     public UnitOfMeasureDto UomBefore { get; set; }
     public decimal? QuantityBefore { get; set; }

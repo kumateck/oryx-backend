@@ -29,6 +29,7 @@ public class ProductListDto
     public CollectionItemDto Department { get; set; }
     public DateTime CreatedAt { get; set; }
     public decimal Price { get; set; }
+    public string PriceUoM { get; set; }
     public Division Division { get; set; }
     public string LabelClaim { get; set; }
     public bool IsVerified { get; set; }
