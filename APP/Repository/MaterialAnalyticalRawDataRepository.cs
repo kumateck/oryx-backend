@@ -208,16 +208,19 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             .MaterialAnalyticalRawData.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ad => ad.MaterialStandardTestProcedure)
+            .Where(ad=>ad.DeletedAt==null)
             .FirstOrDefaultAsync(m =>
                 m.MaterialStandardTestProcedure.MaterialId == materialBatch.MaterialId
             );
 
         var materialSpec = await context.MaterialSpecifications
             .IgnoreQueryFilters()
+            .Where(ms=>ms.DeletedAt==null)
             .FirstOrDefaultAsync(ms => ms.MaterialId == materialBatch.MaterialId);
 
         var materialStp = await context.MaterialStandardTestProcedures
             .IgnoreQueryFilters()
+            .Where(ms=>ms.DeletedAt==null)
             .FirstOrDefaultAsync(stp => stp.MaterialId == materialBatch.MaterialId);
 
         return new MaterialBatchArd
