@@ -75,10 +75,7 @@ public class ProductStandardTestProcedureController(
     /// Updates the details of an existing standard test procedure.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(
-        StatusCodes.Status204NoContent,
-        Type = typeof(ProductStandardTestProcedureDto)
-    )]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateStandardTestProcedure(
@@ -87,7 +84,7 @@ public class ProductStandardTestProcedureController(
     )
     {
         var result = await repository.UpdateProductStandardTestProcedure(id, request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>

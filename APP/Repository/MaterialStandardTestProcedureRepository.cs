@@ -239,7 +239,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         );
     }
 
-    public async Task<Result> UpdateMaterialStandardTestProcedure(
+    public async Task<Result<List<MaterialStpMappingDto>>> UpdateMaterialStandardTestProcedure(
         Guid id,
         CreateMaterialStandardTestProcedureRequest request
     )
@@ -256,12 +256,23 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             );
         }
 
-        mapper.Map(request, procedure);
+        var stpNumber = procedure.StpNumber;
+        var proceduresToUpdate = await context
+            .MaterialStandardTestProcedures.Where(stp => stp.StpNumber == stpNumber)
+            .ToListAsync();
 
-        context.MaterialStandardTestProcedures.Update(procedure);
+        foreach (var p in proceduresToUpdate)
+        {
+            p.Description = request.Description;
+            p.StpNumber = request.StpNumber;
+        }
+
+        context.MaterialStandardTestProcedures.UpdateRange(proceduresToUpdate);
         await context.SaveChangesAsync();
 
-        return Result.Success();
+        return proceduresToUpdate
+            .Select(p => new MaterialStpMappingDto { MaterialId = p.MaterialId, StpId = p.Id })
+            .ToList();
     }
 
     public async Task<Result> DeleteMaterialStandardTestProcedure(Guid id, Guid userId)

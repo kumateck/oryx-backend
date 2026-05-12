@@ -77,13 +77,13 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Updates the details of an existing material standard test procedure.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(MaterialStandardTestProcedureDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateStandardTestProcedure([FromRoute] Guid id, [FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
         var result = await repository.UpdateMaterialStandardTestProcedure(id, request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
