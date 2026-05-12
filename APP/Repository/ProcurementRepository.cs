@@ -510,6 +510,7 @@ public class ProcurementRepository(
                 UoMId = revision.UoMId,
                 Quantity = revision.Quantity,
                 Price = revision.Price,
+                PriceUoM = revision.PriceUoM,
                 CurrencyId = revision.CurrencyId,
                 RevisionNumber = latestRevisionNumber,
             };
@@ -524,6 +525,7 @@ public class ProcurementRepository(
                         enrichedRevision.UoMBeforeId = poItem.UoMId;
                         enrichedRevision.QuantityBefore = poItem.Quantity;
                         enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.PriceUoMBefore = poItem.PriceUoM;
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
 
                         await context
@@ -552,6 +554,7 @@ public class ProcurementRepository(
                         enrichedRevision.UoMBeforeId = poItem.UoMId;
                         enrichedRevision.QuantityBefore = poItem.Quantity;
                         enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.PriceUoMBefore = poItem.PriceUoM;
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
 
                         var requisitionId = existingOrder
@@ -609,6 +612,7 @@ public class ProcurementRepository(
                             UoMId = revision.UoMId.Value,
                             Quantity = revision.Quantity.Value,
                             Price = revision.Price.Value,
+                            PriceUoM = revision.PriceUoM,
                             CurrencyId = revision.CurrencyId.Value,
                         }
                     );
@@ -632,11 +636,13 @@ public class ProcurementRepository(
                         enrichedRevision.UoMBeforeId = poItem.UoMId;
                         enrichedRevision.QuantityBefore = poItem.Quantity;
                         enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.PriceUoMBefore = poItem.PriceUoM;
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
 
                         poItem.UoMId = revision.UoMId.Value;
                         poItem.Quantity = revision.Quantity.Value;
                         poItem.Price = revision.Price.Value;
+                        poItem.PriceUoM = revision.PriceUoM;
                         context.PurchaseOrderItems.Update(poItem);
                         existingOrder.Status = PurchaseOrderStatus.Revised;
                     }
@@ -649,6 +655,7 @@ public class ProcurementRepository(
                         enrichedRevision.UoMBeforeId = poItem.UoMId;
                         enrichedRevision.QuantityBefore = poItem.Quantity;
                         enrichedRevision.PriceBefore = poItem.Price;
+                        enrichedRevision.PriceUoMBefore = poItem.PriceUoM;
                         enrichedRevision.CurrencyBeforeId = poItem.CurrencyId;
 
                         var poItemToDelete = await context.PurchaseOrderItems.FirstOrDefaultAsync(
