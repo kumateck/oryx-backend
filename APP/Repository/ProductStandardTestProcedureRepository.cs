@@ -13,34 +13,57 @@ namespace APP.Repository;
 public class ProductStandardTestProcedureRepository(ApplicationDbContext context, IMapper mapper)
     : IProductStandardTestProcedureRepository
 {
-    public async Task<Result<Guid>> CreateProductStandardTestProcedure(
+    public async Task<Result<List<ProductStpMappingDto>>> CreateProductStandardTestProcedure(
         CreateProductStandardTestProcedureRequest request
     )
     {
-        var existingProcedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(
-            stp => stp.StpNumber == request.StpNumber
-        );
+        if (request.ProductIds == null || request.ProductIds.Count == 0)
+            return Error.Validation("Invalid.Products", "At least one product is required.");
 
-        if (existingProcedure != null)
+        var products = await context
+            .Products.Where(m => request.ProductIds.Contains(m.Id))
+            .ToListAsync();
+
+        if (products.Count != request.ProductIds.Count)
+            return Error.Validation("Invalid.Product", "One or more products are invalid.");
+
+        // Fetch existing STPs for this STP number
+        var existingStps = await context
+            .ProductStandardTestProcedures.Where(stp => stp.StpNumber == request.StpNumber)
+            .ToListAsync();
+
+        var mappings = new List<ProductStpMappingDto>();
+
+        foreach (var product in products)
         {
-            return Error.Validation(
-                "ProductStandardTestProcedure.Exists",
-                "Product Standard test procedure already exists."
-            );
+            // check if product already has this STP number
+            var alreadyExistsForProduct = existingStps.Any(stp => stp.ProductId == product.Id);
+
+            if (alreadyExistsForProduct)
+            {
+                return Error.Validation(
+                    "ProductStandardTestProcedure.Exists",
+                    $"Product '{product.Name}' already has this STP number."
+                );
+            }
+
+            var procedure = new ProductStandardTestProcedure
+            {
+                StpNumber = request.StpNumber,
+                ProductId = product.Id,
+                Description = request.Description,
+            };
+
+            await context.ProductStandardTestProcedures.AddAsync(procedure);
+            mappings.Add(new ProductStpMappingDto
+            {
+                ProductId = product.Id,
+                StpId = procedure.Id
+            });
         }
-
-        var product = await context.Products.FirstOrDefaultAsync(m => m.Id == request.ProductId);
-
-        if (product == null)
-        {
-            return Error.Validation("Invalid.Product", "Invalid Product");
-        }
-
-        var productStandardTestProcedure = mapper.Map<ProductStandardTestProcedure>(request);
-        await context.ProductStandardTestProcedures.AddAsync(productStandardTestProcedure);
 
         await context.SaveChangesAsync();
-        return productStandardTestProcedure.Id;
+        return mappings;
     }
 
     public async Task<
@@ -142,7 +165,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         );
     }
 
-    public async Task<Result> UpdateProductStandardTestProcedure(
+    public async Task<Result<List<ProductStpMappingDto>>> UpdateProductStandardTestProcedure(
         Guid id,
         CreateProductStandardTestProcedureRequest request
     )
@@ -159,12 +182,23 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             );
         }
 
-        mapper.Map(request, procedure);
+        var stpNumber = procedure.StpNumber;
+        var proceduresToUpdate = await context
+            .ProductStandardTestProcedures.Where(stp => stp.StpNumber == stpNumber)
+            .ToListAsync();
 
-        context.ProductStandardTestProcedures.Update(procedure);
+        foreach (var p in proceduresToUpdate)
+        {
+            p.Description = request.Description;
+            p.StpNumber = request.StpNumber;
+        }
+
+        context.ProductStandardTestProcedures.UpdateRange(proceduresToUpdate);
         await context.SaveChangesAsync();
 
-        return Result.Success();
+        return proceduresToUpdate
+            .Select(p => new ProductStpMappingDto { ProductId = p.ProductId, StpId = p.Id })
+            .ToList();
     }
 
     public async Task<
