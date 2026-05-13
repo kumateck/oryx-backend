@@ -275,6 +275,108 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .ToList();
     }
 
+    public async Task<Result<List<MaterialStpMappingDto>>> AddRemoveMaterialsToStp(
+        AddRemoveMaterialToStpRequest request
+    )
+    {
+        var existingStps = await context
+            .MaterialStandardTestProcedures.Include(stp => stp.Material)
+            .Where(stp => stp.StpNumber == request.StpNumber)
+            .ToListAsync();
+
+        if (existingStps.Count == 0)
+        {
+            return Error.NotFound(
+                "MaterialStandardTestProcedure.NotFound",
+                $"No standard test procedure found with STP number '{request.StpNumber}'."
+            );
+        }
+
+        var isPackageStp = existingStps.All(stp => stp.Material.Kind == MaterialKind.Package);
+        var description = existingStps[0].Description;
+
+        // Handle removals
+        if (request.MaterialIdsToRemove != null && request.MaterialIdsToRemove.Count > 0)
+        {
+            var stpsToRemove = existingStps
+                .Where(stp => request.MaterialIdsToRemove.Contains(stp.MaterialId))
+                .ToList();
+
+            foreach (var stp in stpsToRemove)
+            {
+                var isLinkedToArd = await context.MaterialAnalyticalRawData.AnyAsync(ard =>
+                    ard.StpId == stp.Id
+                );
+                if (isLinkedToArd)
+                {
+                    return Error.Conflict(
+                        "MaterialStandardTestProcedure.LinkedToArd",
+                        $"Cannot remove material '{stp.Material?.Name}' because it is linked to analytical raw data."
+                    );
+                }
+            }
+
+            context.MaterialStandardTestProcedures.RemoveRange(stpsToRemove);
+            existingStps.RemoveAll(stp => request.MaterialIdsToRemove.Contains(stp.MaterialId));
+        }
+
+        // Handle additions
+        if (request.MaterialIdsToAdd != null && request.MaterialIdsToAdd.Count > 0)
+        {
+            var materialsToAdd = await context
+                .Materials.Where(m => request.MaterialIdsToAdd.Contains(m.Id))
+                .ToListAsync();
+
+            if (materialsToAdd.Count != request.MaterialIdsToAdd.Count)
+                return Error.Validation("Invalid.Material", "One or more materials are invalid.");
+
+            // Check if we are trying to add a non-package material to a package STP or vice-versa
+            if (isPackageStp && materialsToAdd.Any(m => m.Kind != MaterialKind.Package))
+            {
+                return Error.Validation(
+                    "MaterialStandardTestProcedure.Invalid",
+                    "Cannot add raw materials to a packaging material STP."
+                );
+            }
+            if (!isPackageStp && materialsToAdd.Any(m => m.Kind == MaterialKind.Package))
+            {
+                return Error.Validation(
+                    "MaterialStandardTestProcedure.Invalid",
+                    "Cannot add packaging materials to a raw material STP."
+                );
+            }
+
+            // Raw material constraint
+            if (!isPackageStp && (existingStps.Count + materialsToAdd.Count > 1))
+            {
+                return Error.Validation(
+                    "MaterialStandardTestProcedure.Invalid",
+                    "Raw materials can only have one material per STP number."
+                );
+            }
+
+            foreach (var material in materialsToAdd)
+            {
+                if (existingStps.Any(stp => stp.MaterialId == material.Id))
+                    continue;
+
+                var procedure = new MaterialStandardTestProcedure
+                {
+                    StpNumber = request.StpNumber,
+                    MaterialId = material.Id,
+                    Description = description
+                };
+                await context.MaterialStandardTestProcedures.AddAsync(procedure);
+                existingStps.Add(procedure);
+            }
+        }
+
+        await context.SaveChangesAsync();
+        return existingStps
+            .Select(p => new MaterialStpMappingDto { MaterialId = p.MaterialId, StpId = p.Id })
+            .ToList();
+    }
+
     public async Task<Result> DeleteMaterialStandardTestProcedure(Guid id, Guid userId)
     {
         var procedure = await context.MaterialStandardTestProcedures.FirstOrDefaultAsync(stp =>

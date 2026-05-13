@@ -19,5 +19,6 @@ public interface IMaterialStandardTestProcedureRepository
     Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotUsedInStandardTestProcedure(
         int page, int pageSize, string searchQuery, MaterialKind kind);
     Task<Result<List<MaterialStpMappingDto>>> UpdateMaterialStandardTestProcedure(Guid id, CreateMaterialStandardTestProcedureRequest request);
+    Task<Result<List<MaterialStpMappingDto>>> AddRemoveMaterialsToStp(AddRemoveMaterialToStpRequest request);
     Task<Result> DeleteMaterialStandardTestProcedure(Guid id, Guid userId);
 }

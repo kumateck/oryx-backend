@@ -201,6 +201,84 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             .ToList();
     }
 
+    public async Task<Result<List<ProductStpMappingDto>>> AddRemoveProductsToStp(
+        AddRemoveProductToStpRequest request
+    )
+    {
+        var existingStps = await context
+            .ProductStandardTestProcedures.Where(stp => stp.StpNumber == request.StpNumber)
+            .ToListAsync();
+
+        if (existingStps.Count == 0)
+        {
+            return Error.NotFound(
+                "ProductStandardTestProcedure.NotFound",
+                $"No standard test procedure found with STP number '{request.StpNumber}'."
+            );
+        }
+
+        var description = existingStps[0].Description;
+
+        // Handle removals
+        if (request.ProductIdsToRemove is { Count: > 0 })
+        {
+            var stpsToRemove = existingStps
+                .Where(stp => request.ProductIdsToRemove.Contains(stp.ProductId))
+                .ToList();
+
+            foreach (var stp in stpsToRemove)
+            {
+                var isLinkedToArd = await context.ProductAnalyticalRawData.AnyAsync(ard =>
+                    ard.StpId == stp.Id
+                );
+                if (isLinkedToArd)
+                {
+                    var product = await context.Products.FindAsync(stp.ProductId);
+                    return Error.Conflict(
+                        "ProductStandardTestProcedure.LinkedToArd",
+                        $"Cannot remove product '{product?.Name}' because it is linked to analytical raw data."
+                    );
+                }
+            }
+
+            context.ProductStandardTestProcedures.RemoveRange(stpsToRemove);
+            existingStps.RemoveAll(stp => request.ProductIdsToRemove.Contains(stp.ProductId));
+        }
+
+        // Handle additions
+        if (request.ProductIdsToAdd is { Count: > 0 })
+        {
+            var productsToAdd = await context
+                .Products.Where(p => request.ProductIdsToAdd.Contains(p.Id))
+                .ToListAsync();
+
+            if (productsToAdd.Count != request.ProductIdsToAdd.Count)
+                return Error.Validation("Invalid.Product", "One or more products are invalid.");
+
+            foreach (var product in productsToAdd)
+            {
+                if (existingStps.Any(stp => stp.ProductId == product.Id))
+                    continue; // Already exists
+
+                var procedure = new ProductStandardTestProcedure
+                {
+                    StpNumber = request.StpNumber,
+                    ProductId = product.Id,
+                    Description = description,
+                };
+
+                await context.ProductStandardTestProcedures.AddAsync(procedure);
+                existingStps.Add(procedure);
+            }
+        }
+
+        await context.SaveChangesAsync();
+
+        return existingStps
+            .Select(p => new ProductStpMappingDto { ProductId = p.ProductId, StpId = p.Id })
+            .ToList();
+    }
+
     public async Task<
         Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
     > GetProductStandardTestProceduresNotLinkedToArd(int page, int pageSize, string searchQuery)
