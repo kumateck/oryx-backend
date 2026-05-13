@@ -160,7 +160,8 @@ public static class MenuConfig
             [
                 new(PermissionSubmodules.IssueBmr, [PermissionKeys.CanViewIssuedBmrBprs, PermissionKeys.CanIssueBmr], route: "/quality-assurance/issue-bmr", order: 1),
                 new(PermissionSubmodules.AnalyticalTestRequests, [PermissionKeys.CanViewAnalyticalTestRequests, PermissionKeys.CanTakeSamples], route: "/quality-assurance/analytical-test-requests", order: 2),
-                new(PermissionSubmodules.PendingApprovals, [PermissionKeys.CanViewPendingApprovals, PermissionKeys.CanApprovePendingApproval, PermissionKeys.CanRejectPendingApproval], route: "/quality-assurance/pending-approvals", order: 3)
+                new(PermissionSubmodules.Verification, [PermissionKeys.CanVerifyProduct, PermissionKeys.CanVerifyRawMaterialSpecification, PermissionKeys.CanVerifyPackagingMaterialSpecification, PermissionKeys.CanVerifyProductSpecification, PermissionKeys.CanVerifyRawMaterialArd, PermissionKeys.CanVerifyPackagingMaterialArd, PermissionKeys.CanVerifyProductArd], route: "/quality-assurance/verification", order: 3),
+                new(PermissionSubmodules.PendingApprovals, [PermissionKeys.CanViewPendingApprovals, PermissionKeys.CanApprovePendingApproval, PermissionKeys.CanRejectPendingApproval], route: "/quality-assurance/pending-approvals", order: 4)
             ]
         ),
 
