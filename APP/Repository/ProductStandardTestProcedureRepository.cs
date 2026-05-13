@@ -55,11 +55,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             };
 
             await context.ProductStandardTestProcedures.AddAsync(procedure);
-            mappings.Add(new ProductStpMappingDto
-            {
-                ProductId = product.Id,
-                StpId = procedure.Id
-            });
+            mappings.Add(new ProductStpMappingDto { ProductId = product.Id, StpId = procedure.Id });
         }
 
         await context.SaveChangesAsync();
@@ -149,7 +145,11 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var query = context
             .Products.AsSplitQuery()
-            .Where(p => !context.ProductStandardTestProcedures.Any(s => s.ProductId == p.Id && !s.DeletedAt.HasValue))
+            .Where(p =>
+                !context.ProductStandardTestProcedures.Any(s =>
+                    s.ProductId == p.Id && !s.DeletedAt.HasValue
+                )
+            )
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -167,7 +167,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
     public async Task<Result<List<ProductStpMappingDto>>> UpdateProductStandardTestProcedure(
         Guid id,
-        CreateProductStandardTestProcedureRequest request
+        UpdateProductStandardTestProcedureRequest request
     )
     {
         var procedure = await context.ProductStandardTestProcedures.FirstOrDefaultAsync(stp =>
@@ -244,9 +244,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             );
         }
 
-        var isLinkedToArd = await context.ProductAnalyticalRawData.AnyAsync(ard =>
-            ard.StpId == id
-        );
+        var isLinkedToArd = await context.ProductAnalyticalRawData.AnyAsync(ard => ard.StpId == id);
         if (isLinkedToArd)
         {
             return Error.Conflict(
