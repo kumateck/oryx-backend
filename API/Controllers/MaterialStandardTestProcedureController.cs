@@ -87,6 +87,21 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     }
 
     /// <summary>
+    /// Adds or removes materials from a standard test procedure with the same STP code.
+    /// </summary>
+    [HttpPost("add-remove-materials")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStpMappingDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddRemoveMaterialsToStp(
+        [FromBody] AddRemoveMaterialToStpRequest request
+    )
+    {
+        var result = await repository.AddRemoveMaterialsToStp(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes a specific material standard test procedure by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
