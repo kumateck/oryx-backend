@@ -80,7 +80,7 @@ public class ProductStandardTestProcedureController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateStandardTestProcedure(
         [FromRoute] Guid id,
-        [FromBody] CreateProductStandardTestProcedureRequest request
+        [FromBody] UpdateProductStandardTestProcedureRequest request
     )
     {
         var result = await repository.UpdateProductStandardTestProcedure(id, request);
