@@ -88,6 +88,21 @@ public class ProductStandardTestProcedureController(
     }
 
     /// <summary>
+    /// Adds or removes products from a standard test procedure with the same STP code.
+    /// </summary>
+    [HttpPost("add-remove-products")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductStpMappingDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddRemoveProductsToStp(
+        [FromBody] AddRemoveProductToStpRequest request
+    )
+    {
+        var result = await repository.AddRemoveProductsToStp(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes a specific standard test procedure by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]

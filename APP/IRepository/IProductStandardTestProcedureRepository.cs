@@ -22,6 +22,7 @@ public interface IProductStandardTestProcedureRepository
         Guid id,
         UpdateProductStandardTestProcedureRequest request
     );
+    Task<Result<List<ProductStpMappingDto>>> AddRemoveProductsToStp(AddRemoveProductToStpRequest request);
     Task<
         Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
     > GetProductStandardTestProceduresNotLinkedToArd(int page, int pageSize, string searchQuery);
