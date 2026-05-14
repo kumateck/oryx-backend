@@ -10,18 +10,57 @@ namespace APP.Repository;
 
 public class ProductSpecificationRepository(ApplicationDbContext context, IMapper mapper) : IProductSpecificationRepository
 {
-    public async Task<Result<Guid>> CreateProductSpecification(CreateProductSpecificationRequest request)
+    public async Task<Result<List<ProductSpecificationMappingDto>>> CreateProductSpecification(
+        CreateProductSpecificationRequest request
+    )
     {
+        if (request.ProductIds == null || request.ProductIds.Count == 0)
+            return Error.Validation("Invalid.Products", "At least one product is required.");
+
+        var products = await context
+            .Products.Where(p => request.ProductIds.Contains(p.Id))
+            .ToListAsync();
+
+        if (products.Count != request.ProductIds.Count)
+            return Error.Validation("Invalid.Product", "One or more products are invalid.");
+
         if (request.DueDate < DateTime.UtcNow)
         {
-            return Error.Validation("MaterialSpecification.DueDate", "Due date must be greater than current date");
+            return Error.Validation(
+                "ProductSpecification.DueDate",
+                "Due date must be greater than current date"
+            );
         }
 
-        var productSpec = mapper.Map<ProductSpecification>(request);
-        await context.AddAsync(productSpec);
+        // Fetch existing specifications for this spec number
+        var existingSpecs = await context
+            .ProductSpecifications.Where(ps => ps.SpecificationNumber == request.SpecificationNumber)
+            .ToListAsync();
+
+        var mappings = new List<ProductSpecificationMappingDto>();
+
+        foreach (var product in products)
+        {
+            var alreadyExistsForProduct = existingSpecs.Any(ps => ps.ProductId == product.Id);
+
+            if (alreadyExistsForProduct)
+            {
+                return Error.Validation(
+                    "ProductSpecification.Exists",
+                    $"Product '{product.Name}' already has this specification number."
+                );
+            }
+
+            var productSpec = mapper.Map<ProductSpecification>(request);
+            productSpec.ProductId = product.Id;
+            await context.ProductSpecifications.AddAsync(productSpec);
+            mappings.Add(
+                new ProductSpecificationMappingDto { ProductId = product.Id, SpecificationId = productSpec.Id }
+            );
+        }
 
         await context.SaveChangesAsync();
-        return productSpec.Id;
+        return mappings;
     }
 
     public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery, bool? isVerified = null)
@@ -110,35 +149,167 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         return mapper.Map<List<ProductSpecificationDto>>(productSpec);
     }
 
-    public async Task<Result> UpdateProductSpecification(Guid id, CreateProductSpecificationRequest request)
+    public async Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationBySpecificationNumber(
+        string specificationNumber
+    )
+    {
+        if (string.IsNullOrWhiteSpace(specificationNumber))
+            return Error.Validation("Invalid.SpecificationNumber", "Invalid specification number.");
+
+        var decodedSpecificationNumber = Uri.UnescapeDataString(specificationNumber);
+
+        var specs = await context
+            .ProductSpecifications.AsSplitQuery()
+            .Include(ps => ps.Product)
+            .Where(ps => ps.SpecificationNumber == decodedSpecificationNumber && !ps.DeletedAt.HasValue)
+            .ToListAsync();
+
+        if (specs.Count == 0)
+        {
+            return Error.NotFound(
+                "ProductSpecification.NotFound",
+                "Product specification not found."
+            );
+        }
+
+        return mapper.Map<List<ProductSpecificationDto>>(specs);
+    }
+
+    public async Task<Result<List<ProductSpecificationMappingDto>>> UpdateProductSpecification(
+        Guid id,
+        UpdateProductSpecificationRequest request
+    )
     {
         var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
 
         if (productSpec is null)
         {
-            return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
+            return Error.NotFound(
+                "ProductSpecification.NotFound",
+                "Product specification not found"
+            );
         }
 
-        var oldSpecNumber = productSpec.SpecificationNumber;
+        var specificationNumber = productSpec.SpecificationNumber;
+        var specsToUpdate = await context
+            .ProductSpecifications.Where(ps => ps.SpecificationNumber == specificationNumber)
+            .ToListAsync();
 
-        mapper.Map(request, productSpec);
-
-        if (oldSpecNumber != productSpec.SpecificationNumber)
+        foreach (var spec in specsToUpdate)
         {
-            var ards = await context.ProductAnalyticalRawData
-                .Where(ad => ad.ProductStandardTestProcedure.ProductId == productSpec.ProductId)
+            var oldSpecNumber = spec.SpecificationNumber;
+            mapper.Map(request, spec);
+
+            if (oldSpecNumber != spec.SpecificationNumber)
+            {
+                var ards = await context
+                    .ProductAnalyticalRawData.Where(ad =>
+                        ad.ProductStandardTestProcedure.ProductId == spec.ProductId
+                    )
+                    .ToListAsync();
+
+                foreach (var ard in ards)
+                {
+                    ard.SpecNumber = spec.SpecificationNumber;
+                }
+                context.ProductAnalyticalRawData.UpdateRange(ards);
+            }
+        }
+
+        context.ProductSpecifications.UpdateRange(specsToUpdate);
+        await context.SaveChangesAsync();
+
+        return specsToUpdate
+            .Select(s => new ProductSpecificationMappingDto { ProductId = s.ProductId, SpecificationId = s.Id })
+            .ToList();
+    }
+
+    public async Task<Result<List<ProductSpecificationMappingDto>>> AddRemoveProductsToSpecification(
+        AddRemoveProductToSpecificationRequest request
+    )
+    {
+        var existingSpecs = await context
+            .ProductSpecifications.Include(ps => ps.Product)
+            .Where(ps => ps.SpecificationNumber == request.SpecificationNumber)
+            .ToListAsync();
+
+        if (existingSpecs.Count == 0)
+        {
+            return Error.NotFound(
+                "ProductSpecification.NotFound",
+                $"No specification found with specification number '{request.SpecificationNumber}'."
+            );
+        }
+
+        var templateSpec = existingSpecs[0];
+
+        // Handle removals
+        if (request.ProductIdsToRemove is { Count: > 0 })
+        {
+            var specsToRemove = existingSpecs
+                .Where(ps => request.ProductIdsToRemove.Contains(ps.ProductId))
+                .ToList();
+
+            foreach (var spec in specsToRemove)
+            {
+                var linkedArd = await context.ProductAnalyticalRawData.AnyAsync(ard =>
+                    ard.SpecNumber == spec.SpecificationNumber
+                    && ard.ProductStandardTestProcedure.ProductId == spec.ProductId
+                    && ard.DeletedAt == null
+                );
+
+                if (linkedArd)
+                {
+                    return Error.Conflict(
+                        "ProductSpecification.LinkedToArd",
+                        $"Cannot remove product '{spec.Product?.Name}' because it is linked to analytical raw data."
+                    );
+                }
+            }
+
+            context.ProductSpecifications.RemoveRange(specsToRemove);
+            existingSpecs.RemoveAll(ps => request.ProductIdsToRemove.Contains(ps.ProductId));
+        }
+
+        // Handle additions
+        if (request.ProductIdsToAdd is { Count: > 0 })
+        {
+            var productsToAdd = await context
+                .Products.Where(p => request.ProductIdsToAdd.Contains(p.Id))
                 .ToListAsync();
 
-            foreach (var ard in ards)
+            if (productsToAdd.Count != request.ProductIdsToAdd.Count)
+                return Error.Validation("Invalid.Product", "One or more products are invalid.");
+
+            foreach (
+                var spec in from product in productsToAdd
+                where existingSpecs.All(ps => ps.ProductId != product.Id)
+                select new ProductSpecification
+                {
+                    SpecificationNumber = templateSpec.SpecificationNumber,
+                    RevisionNumber = templateSpec.RevisionNumber,
+                    SupersedesNumber = templateSpec.SupersedesNumber,
+                    EffectiveDate = templateSpec.EffectiveDate,
+                    ReviewDate = templateSpec.ReviewDate,
+                    FormId = templateSpec.FormId,
+                    DueDate = templateSpec.DueDate,
+                    Description = templateSpec.Description,
+                    UserId = templateSpec.UserId,
+                    ProductId = product.Id,
+                    TestStage = templateSpec.TestStage,
+                    ResponseId = null,
+                }
+            )
             {
-                ard.SpecNumber = productSpec.SpecificationNumber;
+                await context.ProductSpecifications.AddAsync(spec);
+                existingSpecs.Add(spec);
             }
-            context.ProductAnalyticalRawData.UpdateRange(ards);
         }
 
-        context.ProductSpecifications.Update(productSpec);
         await context.SaveChangesAsync();
-        return Result.Success();
+        return existingSpecs
+            .Select(s => new ProductSpecificationMappingDto { ProductId = s.ProductId, SpecificationId = s.Id })
+            .ToList();
     }
 
     public async Task<Result> DeleteProductSpecification(Guid id, Guid userId)

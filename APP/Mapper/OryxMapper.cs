@@ -290,6 +290,7 @@ public class OryxMapper : Profile
         CreateMap<ProductPackingList, ProductPackingListDto>();
 
         CreateMap<CreateProductSpecificationRequest, ProductSpecification>();
+        CreateMap<UpdateProductSpecificationRequest, ProductSpecification>();
         CreateMap<ProductSpecification, ProductSpecificationDto>()
             .ForMember(
                 dest => dest.PackingStyle,
