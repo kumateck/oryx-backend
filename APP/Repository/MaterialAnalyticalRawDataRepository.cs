@@ -74,6 +74,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
             .Where(ad => ad.MaterialStandardTestProcedure.Material.Kind == materialKind)
+            .OrderBy(ad => ad.MaterialStandardTestProcedure.StpNumber)
+            .ThenBy(ad => ad.SpecNumber)
             .AsQueryable();
 
         if (isVerified.HasValue)
