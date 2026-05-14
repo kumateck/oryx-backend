@@ -26,7 +26,7 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         foreach (var designation in designations)
         {
             // new leave type days alone must not be more than the maximum allowed
-            if (leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays)
+            if (leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays && leaveTypeDto.Name != "Maternity Leave")
             {
                 return Error.Validation("LeaveType.InvalidNumberOfDays",
                     $"Leave days for designation '{designation.Name}' cannot exceed its maximum of {designation.MaximumLeaveDays} days.");
@@ -104,11 +104,11 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
 
         mapper.Map(request, leaveType);
 
-        var desingations = await context.Designations
+        var designations = await context.Designations
             .Where(d => request.DesignationList.Contains(d.Id))
             .ToListAsync();
 
-        if (desingations.Count != request.DesignationList.Count)
+        if (designations.Count != request.DesignationList.Count)
         {
             return Error.Validation("LeaveType.InvalidDesignations", "One or more designation IDs are invalid.");
         }
