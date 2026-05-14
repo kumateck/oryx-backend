@@ -13,6 +13,10 @@ public interface IProductStandardTestProcedureRepository
     Task<
         Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
     > GetProductStandardTestProcedures(int page, int pageSize, string searchQuery);
+
+    Task<
+        Result<List<ProductStandardTestProcedureDto>>
+    > GetProductStandardTestProcedureByStpNumber(string stpNumber);
     Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedure(Guid id);
     Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedureByProduct(Guid id);
     Task<

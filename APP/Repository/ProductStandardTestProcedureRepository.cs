@@ -71,6 +71,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             .IgnoreQueryFilters()
             .Where(stp => !stp.DeletedAt.HasValue)
             .Include(stp => stp.Product)
+            .OrderBy(stp => stp.StpNumber)
             .AsSplitQuery();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -89,6 +90,37 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
                         opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure)
                 )
         );
+    }
+    
+    public async Task<
+        Result<List<ProductStandardTestProcedureDto>>
+    > GetProductStandardTestProcedureByStpNumber(string stpNumber)
+    {
+        if (string.IsNullOrWhiteSpace(stpNumber))
+            return Error.Validation("Invalid.StpNumber", "Invalid STP number.");
+        
+        var decodedStpNumber = Uri.UnescapeDataString(stpNumber);
+
+        var procedures = await context
+            .ProductStandardTestProcedures.AsSplitQuery()
+            .Include(stp => stp.Product)
+            .Where(stp => stp.StpNumber == decodedStpNumber)
+            .ToListAsync();
+
+        if (procedures.Count == 0)
+        {
+            return Error.NotFound(
+                "MaterialStandardTestProcedure.NotFound",
+                "Material Standard Test Procedure not found."
+            );
+        }
+
+        var result = mapper.Map<List<ProductStandardTestProcedureDto>>(
+            procedures,
+            opts => opts.Items[AppConstants.ModelType] = nameof(ProductStandardTestProcedure)
+        );
+
+        return result;
     }
 
     public async Task<Result<ProductStandardTestProcedureDto>> GetProductStandardTestProcedure(
@@ -255,18 +287,13 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
             if (productsToAdd.Count != request.ProductIdsToAdd.Count)
                 return Error.Validation("Invalid.Product", "One or more products are invalid.");
 
-            foreach (var product in productsToAdd)
+            foreach (var procedure in from product in productsToAdd where !existingStps.Any(stp => stp.ProductId == product.Id) select new ProductStandardTestProcedure
+                     {
+                         StpNumber = request.StpNumber,
+                         ProductId = product.Id,
+                         Description = description,
+                     })
             {
-                if (existingStps.Any(stp => stp.ProductId == product.Id))
-                    continue; // Already exists
-
-                var procedure = new ProductStandardTestProcedure
-                {
-                    StpNumber = request.StpNumber,
-                    ProductId = product.Id,
-                    Description = description,
-                };
-
                 await context.ProductStandardTestProcedures.AddAsync(procedure);
                 existingStps.Add(procedure);
             }

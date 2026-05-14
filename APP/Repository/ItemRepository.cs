@@ -337,6 +337,12 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
             if (!exists) return Error.Validation("Vendor.NotFound", "Supplier not found.");
         }
 
+        foreach (var item in request.Items)
+        {
+            var purchaseOrderExists = await context.PurchaseOrders.AnyAsync(i => i.Id == item.PurchaseOrderId);
+            if (!purchaseOrderExists) return Error.Validation("PurchaseOrder.NotFound", "PurchaseOrder not found.");
+        }
+
         var invoice = mapper.Map<ItemShipmentInvoice>(request);
         invoice.CreatedById = userId;
         await context.ItemShipmentInvoices.AddAsync(invoice);
@@ -430,6 +436,12 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
         {
             var exists = await context.Suppliers.AnyAsync(i => i.Id == request.VendorId.Value);
             if (!exists) return Error.Validation("SupplierId.NotFound", "Supplier not found.");
+        }
+        
+        foreach (var item in request.Items)
+        {
+            var purchaseOrderExists = await context.PurchaseOrders.AnyAsync(i => i.Id == item.PurchaseOrderId);
+            if (!purchaseOrderExists) return Error.Validation("PurchaseOrder.NotFound", "PurchaseOrder not found.");
         }
 
         mapper.Map(request, existing);
