@@ -69,6 +69,8 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .Include(ad => ad.ProductStandardTestProcedure)
                 .ThenInclude(p => p.Product)
             .Where(ad => !ad.DeletedAt.HasValue)
+            .OrderBy(ad => ad.ProductStandardTestProcedure.StpNumber)
+            .ThenBy(ad => ad.SpecNumber)
             .AsQueryable();
 
         if (isVerified.HasValue)
