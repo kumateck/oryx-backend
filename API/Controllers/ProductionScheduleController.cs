@@ -106,7 +106,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateProductionSchedule([FromBody] UpdateProductionScheduleRequest request, Guid scheduleId)
+    public async Task<IResult> UpdateProductionSchedule([FromBody] UpdateProductionScheduleRequest request, [FromRoute] Guid scheduleId)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

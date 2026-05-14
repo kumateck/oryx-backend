@@ -99,6 +99,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .Include(stp => stp.Material)
                 .ThenInclude(m => m.MaterialCategory)
             .Where(m => m.Material.Kind == materialKind)
+            .OrderBy(m => m.StpNumber)
             .AsQueryable();
 
         if (unused)
@@ -181,16 +182,14 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     {
         if (string.IsNullOrWhiteSpace(stpNumber))
             return Error.Validation("Invalid.StpNumber", "Invalid STP number.");
+        
+        var decodedStpNumber = Uri.UnescapeDataString(stpNumber);
 
         var procedures = await context
             .MaterialStandardTestProcedures.AsSplitQuery()
             .Include(stp => stp.Material)
-            .Where(stp => stp.StpNumber == stpNumber)
+            .Where(stp => stp.StpNumber == decodedStpNumber)
             .ToListAsync();
-
-        var materialStp = await context.MaterialSpecifications.FirstOrDefaultAsync(m =>
-            m.MaterialId == procedures[0].MaterialId
-        );
 
         if (procedures.Count == 0)
         {
@@ -222,7 +221,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .Include(m => m.MaterialCategory)
             .Where(m =>
                 m.Kind == kind
-                && !context.MaterialStandardTestProcedures.Any(stp => stp.MaterialId == m.Id)
+                && !context.MaterialStandardTestProcedures
+                    .Any(stp => stp.MaterialId == m.Id)
             )
             .AsQueryable();
 
@@ -296,7 +296,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         var description = existingStps[0].Description;
 
         // Handle removals
-        if (request.MaterialIdsToRemove != null && request.MaterialIdsToRemove.Count > 0)
+        if (request.MaterialIdsToRemove is { Count: > 0 })
         {
             var stpsToRemove = existingStps
                 .Where(stp => request.MaterialIdsToRemove.Contains(stp.MaterialId))
@@ -321,7 +321,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         }
 
         // Handle additions
-        if (request.MaterialIdsToAdd != null && request.MaterialIdsToAdd.Count > 0)
+        if (request.MaterialIdsToAdd is { Count: > 0 })
         {
             var materialsToAdd = await context
                 .Materials.Where(m => request.MaterialIdsToAdd.Contains(m.Id))
@@ -330,42 +330,36 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             if (materialsToAdd.Count != request.MaterialIdsToAdd.Count)
                 return Error.Validation("Invalid.Material", "One or more materials are invalid.");
 
-            // Check if we are trying to add a non-package material to a package STP or vice-versa
-            if (isPackageStp && materialsToAdd.Any(m => m.Kind != MaterialKind.Package))
+            switch (isPackageStp)
             {
-                return Error.Validation(
-                    "MaterialStandardTestProcedure.Invalid",
-                    "Cannot add raw materials to a packaging material STP."
-                );
-            }
-            if (!isPackageStp && materialsToAdd.Any(m => m.Kind == MaterialKind.Package))
-            {
-                return Error.Validation(
-                    "MaterialStandardTestProcedure.Invalid",
-                    "Cannot add packaging materials to a raw material STP."
-                );
-            }
-
-            // Raw material constraint
-            if (!isPackageStp && (existingStps.Count + materialsToAdd.Count > 1))
-            {
-                return Error.Validation(
-                    "MaterialStandardTestProcedure.Invalid",
-                    "Raw materials can only have one material per STP number."
-                );
+                // Check if we are trying to add a non-package material to a package STP or vice-versa
+                case true when materialsToAdd.Any(m => m.Kind != MaterialKind.Package):
+                    return Error.Validation(
+                        "MaterialStandardTestProcedure.Invalid",
+                        "Cannot add raw materials to a packaging material STP."
+                    );
+                case false when materialsToAdd.Any(m => m.Kind == MaterialKind.Package):
+                    return Error.Validation(
+                        "MaterialStandardTestProcedure.Invalid",
+                        "Cannot add packaging materials to a raw material STP."
+                    );
+                // Raw material constraint
+                case false when (existingStps.Count + materialsToAdd.Count > 1):
+                    return Error.Validation(
+                        "MaterialStandardTestProcedure.Invalid",
+                        "Raw materials can only have one material per STP number."
+                    );
             }
 
-            foreach (var material in materialsToAdd)
+            foreach (var procedure in from material in materialsToAdd where 
+                         existingStps.All(stp => stp.MaterialId != material.Id)
+                     select new MaterialStandardTestProcedure
+                     {
+                         StpNumber = request.StpNumber,
+                         MaterialId = material.Id,
+                         Description = description
+                     })
             {
-                if (existingStps.Any(stp => stp.MaterialId == material.Id))
-                    continue;
-
-                var procedure = new MaterialStandardTestProcedure
-                {
-                    StpNumber = request.StpNumber,
-                    MaterialId = material.Id,
-                    Description = description
-                };
                 await context.MaterialStandardTestProcedures.AddAsync(procedure);
                 existingStps.Add(procedure);
             }
