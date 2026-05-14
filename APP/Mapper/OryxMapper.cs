@@ -268,7 +268,6 @@ public class OryxMapper : Profile
         #endregion
 
         #region Product
-
         CreateMap<CreateProductRequest, Product>();
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.CurrentBillOfMaterial, opt => opt.MapFrom<ProductBoMResolver>())
@@ -281,8 +280,16 @@ public class OryxMapper : Profile
         CreateMap<ProductBillOfMaterial, ProductBillOfMaterialDto>();
         CreateMap<CreateFinishedProductRequest, FinishedProduct>();
         CreateMap<FinishedProduct, FinishedProductDto>();
-        CreateMap<CreateProductPackageRequest, ProductPackage>();
+        CreateMap<CreateProductPackageRequest, ProductPackage>()
+            .AfterMap((src, dest) =>
+            {
+                dest.Substitutes = src.SubstituteMaterialIds.Select(id => new ProductPackageSubstitute
+                {
+                    SubstituteMaterialId = id
+                }).ToList();
+            });
         CreateMap<ProductPackage, ProductPackageDto>();
+        CreateMap<ProductPackageSubstitute, ProductPackageSubstituteDto>();
         CreateMap<CreateProductPacking, ProductPacking>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
         CreateMap<CreateProductPackingList, ProductPackingList>();
@@ -304,8 +311,16 @@ public class OryxMapper : Profile
         #region BoM
         CreateMap<CreateBillOfMaterialRequest, BillOfMaterial>();
         CreateMap<BillOfMaterial, BillOfMaterialDto>();
-        CreateMap<CreateBoMItemsRequest, BillOfMaterialItem>();
+        CreateMap<CreateBoMItemsRequest, BillOfMaterialItem>()
+            .AfterMap((src, dest) =>
+            {
+                dest.Substitutes = src.SubstituteMaterialIds.Select(id => new BillOfMaterialItemSubstitute
+                {
+                    SubstituteMaterialId = id
+                }).ToList();
+            });
         CreateMap<BillOfMaterialItem, BillOfMaterialItemDto>();
+        CreateMap<BillOfMaterialItemSubstitute, BillOfMaterialItemSubstituteDto>();
         #endregion
 
         #region WorkOrder

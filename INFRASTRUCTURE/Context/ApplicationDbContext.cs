@@ -178,6 +178,7 @@ public class ApplicationDbContext(
     public DbSet<FinishedProduct> FinishedProducts { get; set; }
 
     public DbSet<ProductPackage> ProductPackages { get; set; }
+    public DbSet<ProductPackageSubstitute> ProductPackageSubstitutes { get; set; }
     public DbSet<PackageType> PackageTypes { get; set; }
 
     public DbSet<ProductSpecification> ProductSpecifications { get; set; }
@@ -189,6 +190,7 @@ public class ApplicationDbContext(
 
     public DbSet<BillOfMaterial> BillOfMaterials { get; set; }
     public DbSet<BillOfMaterialItem> BillOfMaterialItems { get; set; }
+    public DbSet<BillOfMaterialItemSubstitute> BillOfMaterialItemSubstitutes { get; set; }
 
     #endregion
 
@@ -828,6 +830,8 @@ public class ApplicationDbContext(
         modelBuilder.Entity<Product>().Navigation(p => p.Prices).AutoInclude();
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
+        modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Substitutes).AutoInclude();
+        modelBuilder.Entity<ProductPackageSubstitute>().Navigation(pps => pps.SubstituteMaterial).AutoInclude();
         modelBuilder
             .Entity<ProductBillOfMaterial>()
             .Navigation(pbm => pbm.BillOfMaterial)
@@ -838,6 +842,8 @@ public class ApplicationDbContext(
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Items).AutoInclude();
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Product).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Material).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Substitutes).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItemSubstitute>().Navigation(bomis => bomis.SubstituteMaterial).AutoInclude();
         modelBuilder
             .Entity<BillOfMaterialItem>()
             .Navigation(bomi => bomi.MaterialType)
@@ -1979,6 +1985,38 @@ public class ApplicationDbContext(
             .WithOne(spii => spii.ServiceProformaInvoice)
             .HasForeignKey(spii => spii.ServiceProformaInvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        #endregion
+
+        #region Bill of Materials
+
+        modelBuilder.Entity<BillOfMaterialItemSubstitute>()
+            .HasOne(s => s.BillOfMaterialItem)
+            .WithMany(i => i.Substitutes)
+            .HasForeignKey(s => s.BillOfMaterialItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BillOfMaterialItemSubstitute>()
+            .HasOne(s => s.SubstituteMaterial)
+            .WithMany()
+            .HasForeignKey(s => s.SubstituteMaterialId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        #endregion
+
+        #region Product Packages
+
+        modelBuilder.Entity<ProductPackageSubstitute>()
+            .HasOne(s => s.ProductPackage)
+            .WithMany(p => p.Substitutes)
+            .HasForeignKey(s => s.ProductPackageId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProductPackageSubstitute>()
+            .HasOne(s => s.SubstituteMaterial)
+            .WithMany()
+            .HasForeignKey(s => s.SubstituteMaterialId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         #endregion
 
