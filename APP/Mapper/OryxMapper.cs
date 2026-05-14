@@ -797,6 +797,13 @@ public class OryxMapper : Profile
                     opt.MapFrom(src =>
                         src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price
                     )
+            )
+            .ForMember(
+                dest => dest.PriceUoM,
+                opt =>
+                    opt.MapFrom(src =>
+                        src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).PriceUoM
+                    )
             );
 
         CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();
