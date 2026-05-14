@@ -62,6 +62,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(ms => ms.CreatedBy)
             .Include(ms => ms.Response)
             .Where(ms => ms.Material.Kind == materialKind)
+            .OrderBy(ms => ms.SpecificationNumber)
             .AsQueryable();
 
         if (isVerified.HasValue)
@@ -183,7 +184,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
 
     public async Task<Result> DeleteMaterialSpecification(Guid id, Guid userId)
     {
-        var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps =>
+        var materialSpec = await context.MaterialSpecifications
+            .Include(materialSpecification => materialSpecification.Material).FirstOrDefaultAsync(ps =>
             ps.Id == id
         );
 
@@ -195,6 +197,21 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             );
         }
 
+        var linkedArd = await context.MaterialAnalyticalRawData
+            .Include(ard => ard.MaterialStandardTestProcedure.Material)
+            .FirstOrDefaultAsync(ard =>
+                ard.SpecNumber == materialSpec.SpecificationNumber &&
+                ard.MaterialStandardTestProcedure.MaterialId == materialSpec.MaterialId &&
+                ard.DeletedAt == null
+            );
+
+        if (linkedArd is not null)
+        {
+            return Error.Conflict(
+                "MaterialSpecification.LinkedToArd",
+                $"Cannot delete specification '{materialSpec.SpecificationNumber}' for '{linkedArd.MaterialStandardTestProcedure.Material.Name}' as it is linked to an ARD."
+            );
+        }
         materialSpec.LastDeletedById = userId;
         materialSpec.DeletedAt = DateTime.UtcNow;
 
