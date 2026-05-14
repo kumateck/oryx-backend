@@ -29,27 +29,10 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
 
         // Fetch existing STPs for this STP number
         var existingStps = await context
-            .MaterialStandardTestProcedures.Include(stp => stp.Material)
+            .MaterialStandardTestProcedures.AsSplitQuery()
+            .Include(stp => stp.Material)
             .Where(stp => stp.StpNumber == request.StpNumber)
             .ToListAsync();
-
-        //  if STP already used by a raw material → block everything
-        if (existingStps.Any(stp => stp.Material.Kind != MaterialKind.Package))
-        {
-            return Error.Validation(
-                "MaterialStandardTestProcedure.Exists",
-                "This STP number is already assigned to a raw material."
-            );
-        }
-
-        // cannot assign non-packaging materials if STP already exists
-        if (existingStps.Count != 0 && materials.Any(m => m.Kind != MaterialKind.Package))
-        {
-            return Error.Validation(
-                "MaterialStandardTestProcedure.Invalid",
-                "Raw materials can only have one material per STP number."
-            );
-        }
 
         var mappings = new List<MaterialStpMappingDto>();
 
@@ -74,11 +57,9 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             };
 
             await context.MaterialStandardTestProcedures.AddAsync(procedure);
-            mappings.Add(new MaterialStpMappingDto
-            {
-                MaterialId = material.Id,
-                StpId = procedure.Id
-            });
+            mappings.Add(
+                new MaterialStpMappingDto { MaterialId = material.Id, StpId = procedure.Id }
+            );
         }
         await context.SaveChangesAsync();
         return mappings;
@@ -182,7 +163,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
     {
         if (string.IsNullOrWhiteSpace(stpNumber))
             return Error.Validation("Invalid.StpNumber", "Invalid STP number.");
-        
+
         var decodedStpNumber = Uri.UnescapeDataString(stpNumber);
 
         var procedures = await context
@@ -221,8 +202,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
             .Include(m => m.MaterialCategory)
             .Where(m =>
                 m.Kind == kind
-                && !context.MaterialStandardTestProcedures
-                    .Any(stp => stp.MaterialId == m.Id)
+                && !context.MaterialStandardTestProcedures.Any(stp => stp.MaterialId == m.Id)
             )
             .AsQueryable();
 
@@ -351,14 +331,16 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
                     );
             }
 
-            foreach (var procedure in from material in materialsToAdd where 
-                         existingStps.All(stp => stp.MaterialId != material.Id)
-                     select new MaterialStandardTestProcedure
-                     {
-                         StpNumber = request.StpNumber,
-                         MaterialId = material.Id,
-                         Description = description
-                     })
+            foreach (
+                var procedure in from material in materialsToAdd
+                where existingStps.All(stp => stp.MaterialId != material.Id)
+                select new MaterialStandardTestProcedure
+                {
+                    StpNumber = request.StpNumber,
+                    MaterialId = material.Id,
+                    Description = description,
+                }
+            )
             {
                 await context.MaterialStandardTestProcedures.AddAsync(procedure);
                 existingStps.Add(procedure);
