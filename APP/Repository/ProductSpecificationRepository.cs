@@ -143,11 +143,28 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
 
     public async Task<Result> DeleteProductSpecification(Guid id, Guid userId)
     {
-        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
+        var productSpec = await context.ProductSpecifications
+            .Include(productSpecification => productSpecification.Product).FirstOrDefaultAsync(ps => ps.Id == id);
 
         if (productSpec is null)
         {
             return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
+        }
+
+        var linkedArd = await context.ProductAnalyticalRawData
+            .Include(ard => ard.ProductStandardTestProcedure.Product)
+            .FirstOrDefaultAsync(ard =>
+                ard.SpecNumber == productSpec.SpecificationNumber &&
+                ard.ProductStandardTestProcedure.ProductId == productSpec.ProductId &&
+                ard.DeletedAt == null
+            );
+
+        if (linkedArd is not null)
+        {
+            return Error.Conflict(
+                "ProductSpecification.LinkedToArd",
+                $"Cannot delete specification '{productSpec.SpecificationNumber}' for '{linkedArd.ProductStandardTestProcedure.Product.Name}' as it is linked to an ARD."
+            );
         }
 
         productSpec.LastDeletedById = userId;
