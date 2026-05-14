@@ -15,20 +15,19 @@ namespace APP.Repository;
 public class MaterialSpecificationRepository(ApplicationDbContext context, IMapper mapper)
     : IMaterialSpecificationRepository
 {
-    public async Task<Result<Guid>> CreateMaterialSpecification(
+    public async Task<Result<List<MaterialSpecificationMappingDto>>> CreateMaterialSpecification(
         CreateMaterialSpecificationRequest request
     )
     {
-        var isLinked = await context.MaterialSpecifications.AnyAsync(m =>
-            m.Id == request.MaterialId
-        );
-        if (isLinked)
-        {
-            return Error.Conflict(
-                "MaterialSpecification.AlreadyLinked",
-                "Material specification already linked"
-            );
-        }
+        if (request.MaterialIds == null || request.MaterialIds.Count == 0)
+            return Error.Validation("Invalid.Materials", "At least one material is required.");
+
+        var materials = await context
+            .Materials.Where(m => request.MaterialIds.Contains(m.Id))
+            .ToListAsync();
+
+        if (materials.Count != request.MaterialIds.Count)
+            return Error.Validation("Invalid.Material", "One or more materials are invalid.");
 
         if (request.DueDate < DateTime.UtcNow)
         {
@@ -38,11 +37,41 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             );
         }
 
-        var materialSpec = mapper.Map<MaterialSpecification>(request);
-        await context.MaterialSpecifications.AddAsync(materialSpec);
+        // Fetch existing specifications for this spec number
+        var existingSpecs = await context
+            .MaterialSpecifications.AsSplitQuery()
+            .Include(ms => ms.Material)
+            .Where(ms => ms.SpecificationNumber == request.SpecificationNumber)
+            .ToListAsync();
+
+        var mappings = new List<MaterialSpecificationMappingDto>();
+
+        foreach (var material in materials)
+        {
+            var alreadyExistsForMaterial = existingSpecs.Any(ms => ms.MaterialId == material.Id);
+
+            if (alreadyExistsForMaterial)
+            {
+                return Error.Validation(
+                    "MaterialSpecification.Exists",
+                    $"Material '{material.Name}' already has this specification number."
+                );
+            }
+
+            var materialSpec = mapper.Map<MaterialSpecification>(request);
+            materialSpec.MaterialId = material.Id;
+            await context.MaterialSpecifications.AddAsync(materialSpec);
+            mappings.Add(
+                new MaterialSpecificationMappingDto
+                {
+                    MaterialId = material.Id,
+                    SpecificationId = materialSpec.Id
+                }
+            );
+        }
 
         await context.SaveChangesAsync();
-        return materialSpec.Id;
+        return mappings;
     }
 
     public async Task<
@@ -141,9 +170,35 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
-    public async Task<Result> UpdateMaterialSpecification(
+    public async Task<Result<List<MaterialSpecificationDto>>> GetMaterialSpecificationBySpecificationNumber(
+        string specificationNumber
+    )
+    {
+        if (string.IsNullOrWhiteSpace(specificationNumber))
+            return Error.Validation("Invalid.SpecificationNumber", "Invalid specification number.");
+
+        var decodedSpecificationNumber = Uri.UnescapeDataString(specificationNumber);
+
+        var specs = await context
+            .MaterialSpecifications.AsSplitQuery()
+            .Include(ms => ms.Material)
+            .Where(ms => ms.SpecificationNumber == decodedSpecificationNumber)
+            .ToListAsync();
+
+        if (specs.Count == 0)
+        {
+            return Error.NotFound(
+                "MaterialSpecification.NotFound",
+                "Material specification not found."
+            );
+        }
+
+        return mapper.Map<List<MaterialSpecificationDto>>(specs);
+    }
+
+    public async Task<Result<List<MaterialSpecificationMappingDto>>> UpdateMaterialSpecification(
         Guid id,
-        CreateMaterialSpecificationRequest request
+        UpdateMaterialSpecificationRequest request
     )
     {
         var materialSpec = await context.MaterialSpecifications.FirstOrDefaultAsync(ps =>
@@ -158,28 +213,133 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             );
         }
 
-        var oldSpecNumber = materialSpec.SpecificationNumber;
+        var specificationNumber = materialSpec.SpecificationNumber;
+        var specsToUpdate = await context
+            .MaterialSpecifications.Where(ms => ms.SpecificationNumber == specificationNumber)
+            .ToListAsync();
 
-        mapper.Map(request, materialSpec);
-
-        if (oldSpecNumber != materialSpec.SpecificationNumber)
+        foreach (var spec in specsToUpdate)
         {
-            var ards = await context
-                .MaterialAnalyticalRawData.Where(ad =>
-                    ad.MaterialStandardTestProcedure.MaterialId == materialSpec.MaterialId
-                )
-                .ToListAsync();
+            var oldSpecNumber = spec.SpecificationNumber;
+            mapper.Map(request, spec);
 
-            foreach (var ard in ards)
+            if (oldSpecNumber != spec.SpecificationNumber)
             {
-                ard.SpecNumber = materialSpec.SpecificationNumber;
+                var ards = await context
+                    .MaterialAnalyticalRawData.Where(ad =>
+                        ad.MaterialStandardTestProcedure.MaterialId == spec.MaterialId
+                    )
+                    .ToListAsync();
+
+                foreach (var ard in ards)
+                {
+                    ard.SpecNumber = spec.SpecificationNumber;
+                }
+                context.MaterialAnalyticalRawData.UpdateRange(ards);
             }
-            context.MaterialAnalyticalRawData.UpdateRange(ards);
         }
 
-        context.MaterialSpecifications.Update(materialSpec);
+        context.MaterialSpecifications.UpdateRange(specsToUpdate);
         await context.SaveChangesAsync();
-        return Result.Success();
+
+        return specsToUpdate
+            .Select(s => new MaterialSpecificationMappingDto
+            {
+                MaterialId = s.MaterialId,
+                SpecificationId = s.Id
+            })
+            .ToList();
+    }
+
+    public async Task<Result<List<MaterialSpecificationMappingDto>>> AddRemoveMaterialsToSpecification(
+        AddRemoveMaterialToSpecificationRequest request
+    )
+    {
+        var existingSpecs = await context
+            .MaterialSpecifications.Include(ms => ms.Material)
+            .Where(ms => ms.SpecificationNumber == request.SpecificationNumber)
+            .ToListAsync();
+
+        if (existingSpecs.Count == 0)
+        {
+            return Error.NotFound(
+                "MaterialSpecification.NotFound",
+                $"No specification found with specification number '{request.SpecificationNumber}'."
+            );
+        }
+
+        var templateSpec = existingSpecs[0];
+
+        // Handle removals
+        if (request.MaterialIdsToRemove is { Count: > 0 })
+        {
+            var specsToRemove = existingSpecs
+                .Where(ms => request.MaterialIdsToRemove.Contains(ms.MaterialId))
+                .ToList();
+
+            foreach (var spec in specsToRemove)
+            {
+                var linkedArd = await context.MaterialAnalyticalRawData.AnyAsync(ard =>
+                    ard.SpecNumber == spec.SpecificationNumber
+                    && ard.MaterialStandardTestProcedure.MaterialId == spec.MaterialId
+                    && ard.DeletedAt == null
+                );
+
+                if (linkedArd)
+                {
+                    return Error.Conflict(
+                        "MaterialSpecification.LinkedToArd",
+                        $"Cannot remove material '{spec.Material?.Name}' because it is linked to analytical raw data."
+                    );
+                }
+            }
+
+            context.MaterialSpecifications.RemoveRange(specsToRemove);
+            existingSpecs.RemoveAll(ms => request.MaterialIdsToRemove.Contains(ms.MaterialId));
+        }
+
+        // Handle additions
+        if (request.MaterialIdsToAdd is { Count: > 0 })
+        {
+            var materialsToAdd = await context
+                .Materials.Where(m => request.MaterialIdsToAdd.Contains(m.Id))
+                .ToListAsync();
+
+            if (materialsToAdd.Count != request.MaterialIdsToAdd.Count)
+                return Error.Validation("Invalid.Material", "One or more materials are invalid.");
+
+            foreach (
+                var spec in from material in materialsToAdd
+                where existingSpecs.All(ms => ms.MaterialId != material.Id)
+                select new MaterialSpecification
+                {
+                    SpecificationNumber = templateSpec.SpecificationNumber,
+                    RevisionNumber = templateSpec.RevisionNumber,
+                    SupersedesNumber = templateSpec.SupersedesNumber,
+                    EffectiveDate = templateSpec.EffectiveDate,
+                    ReviewDate = templateSpec.ReviewDate,
+                    FormId = templateSpec.FormId,
+                    DueDate = templateSpec.DueDate,
+                    Description = templateSpec.Description,
+                    UserId = templateSpec.UserId,
+                    MaterialId = material.Id,
+                    ResponseId = null,
+                }
+            )
+            {
+                await context.MaterialSpecifications.AddAsync(spec);
+                existingSpecs.Add(spec);
+            }
+        }
+
+        await context.SaveChangesAsync();
+        return existingSpecs
+            .Select(s => new MaterialSpecificationMappingDto
+            {
+                MaterialId = s.MaterialId,
+                SpecificationId = s.Id
+            })
+            .ToList();
     }
 
     public async Task<Result> DeleteMaterialSpecification(Guid id, Guid userId)

@@ -61,18 +61,45 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Retrieves the details of materials linked to a specification number.
+    /// </summary>
+    [HttpGet("{specificationNumber}/materials")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialSpecificationDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialSpecificationBySpecificationNumber(string specificationNumber)
+    {
+        var result = await repository.GetMaterialSpecificationBySpecificationNumber(specificationNumber);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
 
     /// <summary>
     /// Updates a material specific by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(MaterialSpecificationDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialSpecificationMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateMaterialSpecification([FromRoute] Guid id, [FromBody] CreateMaterialSpecificationRequest request)
+    public async Task<IResult> UpdateMaterialSpecification([FromRoute] Guid id, [FromBody] UpdateMaterialSpecificationRequest request)
     {
         var result = await repository.UpdateMaterialSpecification(id, request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Adds or removes materials from a specification with the same specification code.
+    /// </summary>
+    [HttpPost("add-remove-materials")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialSpecificationMappingDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddRemoveMaterialsToSpecification(
+        [FromBody] AddRemoveMaterialToSpecificationRequest request
+    )
+    {
+        var result = await repository.AddRemoveMaterialsToSpecification(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>

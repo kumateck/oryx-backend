@@ -62,16 +62,43 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     }
 
     /// <summary>
+    /// Retrieves the details of products linked to a specification number.
+    /// </summary>
+    [HttpGet("{specificationNumber}/products")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductSpecificationBySpecificationNumber(string specificationNumber)
+    {
+        var result = await repository.GetProductSpecificationBySpecificationNumber(specificationNumber);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Updates a product specific by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ProductSpecificationDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateProductSpecification([FromRoute] Guid id, [FromBody] CreateProductSpecificationRequest request)
+    public async Task<IResult> UpdateProductSpecification([FromRoute] Guid id, [FromBody] UpdateProductSpecificationRequest request)
     {
         var result = await repository.UpdateProductSpecification(id, request);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Adds or removes products from a specification with the same specification code.
+    /// </summary>
+    [HttpPost("add-remove-products")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationMappingDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddRemoveProductsToSpecification(
+        [FromBody] AddRemoveProductToSpecificationRequest request
+    )
+    {
+        var result = await repository.AddRemoveProductsToSpecification(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
