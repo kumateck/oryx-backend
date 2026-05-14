@@ -46,6 +46,22 @@ public class ProductStandardTestProcedureController(
         var result = await repository.GetProductStandardTestProcedures(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    
+    /// <summary>
+    /// Retrieves a paginated list of standard test procedures.
+    /// </summary>
+    [HttpGet("{stpNumber}/products")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<ProductStandardTestProcedureDto>>)
+    )]
+    public async Task<IResult> GetStandardTestProceduresByStpNumber(
+        [FromRoute] string stpNumber
+    )
+    {
+        var result = await repository.GetProductStandardTestProcedureByStpNumber(stpNumber);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 
     /// <summary>
     /// Retrieves the details of a specific standard test procedure by its ID.

@@ -62,6 +62,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Include(ms => ms.CreatedBy)
             .Include(ms => ms.Response)
             .Where(ms => ms.Material.Kind == materialKind)
+            .OrderBy(ms => ms.SpecificationNumber)
             .AsQueryable();
 
         if (isVerified.HasValue)

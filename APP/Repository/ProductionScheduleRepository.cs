@@ -237,6 +237,16 @@ public class ProductionScheduleRepository(
             );
         }
 
+        if (request.ScheduledStartTime >= request.ScheduledEndTime)
+        {
+            return Error.Validation("StartTime.Error", "Scheduling start time must be before end time");
+        }
+
+        if (request.ScheduledStartTime < DateTime.UtcNow)
+        {
+            return Error.Validation("StartTime.Error", "Scheduling start time must not be less than the current date");
+        }
+
         mapper.Map(request, existingSchedule);
         existingSchedule.LastUpdatedById = userId;
 
