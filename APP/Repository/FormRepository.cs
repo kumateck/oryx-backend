@@ -633,18 +633,18 @@ public class FormRepository(
     {
         var sectionIds = requests.Select(r => r.FormSectionId).ToList();
 
-        var query = context.FormSections.Where(s => sectionIds.Contains(s.Id));
+        var query = await context.FormSections.Where(s => sectionIds.Contains(s.Id)).ToListAsync();
 
         if (materialSpecificationId.HasValue)
         {
-            query = query.Where(s => s.MaterialSpecificationId == materialSpecificationId);
+            query = query.Where(s => s.MaterialSpecificationId == materialSpecificationId).ToList();
         }
         else if (productSpecificationId.HasValue)
         {
-            query = query.Where(s => s.ProductSpecificationId == productSpecificationId);
+            query = query.Where(s => s.ProductSpecificationId == productSpecificationId).ToList();
         }
 
-        var formSections = await query.ToDictionaryAsync(k => k.Id, v => v);
+        var formSections = query.Select(k => k).ToDictionary(k => k.Id, v => v);
 
         foreach (var request in requests)
         {
