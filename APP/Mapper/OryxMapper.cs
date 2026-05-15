@@ -513,6 +513,7 @@ public class OryxMapper : Profile
         CreateMap<HoldingMaterialTransferBatch, HoldingMaterialTransferBatchDto>();
 
         CreateMap<CreateMaterialSpecificationRequest, MaterialSpecification>();
+        CreateMap<UpdateMaterialSpecificationRequest, MaterialSpecification>();
         CreateMap<MaterialSpecification, MaterialSpecificationDto>();
 
         #endregion
