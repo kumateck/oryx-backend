@@ -70,11 +70,21 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// Retrieves products not linked to spec
     /// </summary>
     [HttpGet("materials/not-linked")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<MaterialDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialsNotLinkedToSpec()
+    public async Task<IResult> GetMaterialsNotLinkedToSpec(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        [FromQuery] string searchQuery,
+        [FromQuery] MaterialKind? materialKind
+    )
     {
-        var result = await repository.GetMaterialsNotLinkedToSpecification();
+        var result = await repository.GetMaterialsNotLinkedToSpecification(
+            page,
+            pageSize,
+            searchQuery,
+            materialKind
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

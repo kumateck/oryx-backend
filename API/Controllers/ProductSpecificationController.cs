@@ -66,11 +66,22 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves products not linked to spec
     /// </summary>
     [HttpGet("products/not-linked")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductListDto))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<List<ProductListDto>>)
+    )]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductsNotLinkedToSpec()
+    public async Task<IResult> GetProductsNotLinkedToSpec(
+        [FromQuery] int page,
+        int pageSize,
+        string searchQuery
+    )
     {
-        var result = await repository.GetProductsNotLinkedToSpecification();
+        var result = await repository.GetProductsNotLinkedToSpecification(
+            page,
+            pageSize,
+            searchQuery
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

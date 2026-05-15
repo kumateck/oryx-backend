@@ -143,17 +143,39 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
-    public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpecification()
+    public async Task<
+        Result<Paginateable<IEnumerable<MaterialDto>>>
+    > GetMaterialsNotLinkedToSpecification(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? materialKind
+    )
     {
-        var materials = await context
+        var materials = context
             .Materials.IgnoreQueryFilters()
             .Where(ps =>
                 !ps.DeletedAt.HasValue
                 && !context.MaterialSpecifications.Any(m => m.MaterialId == ps.Id)
             )
-            .ToListAsync();
+            .AsQueryable();
 
-        return mapper.Map<List<MaterialDto>>(materials);
+        if (materialKind.HasValue)
+        {
+            materials = materials.Where(ps => ps.Kind == materialKind.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            materials = materials.WhereSearch(searchQuery, ps => ps.Name, ps => ps.Code);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            materials,
+            page,
+            pageSize,
+            mapper.Map<MaterialDto>
+        );
     }
 
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(

@@ -17,7 +17,11 @@ public interface IProductSpecificationRepository
         bool? isVerified = null
     );
     Task<Result<ProductSpecificationDto>> GetProductSpecification(Guid id);
-    Task<Result<List<ProductListDto>>> GetProductsNotLinkedToSpecification();
+    Task<Result<List<ProductListDto>>> GetProductsNotLinkedToSpecification(
+        int page,
+        int pageSize,
+        string searchQuery
+    );
     Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationByProductId(Guid productId);
     Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationBySpecificationNumber(
         string specificationNumber
