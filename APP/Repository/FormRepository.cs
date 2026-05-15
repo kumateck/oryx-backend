@@ -306,13 +306,13 @@ public class FormRepository(
         else
         {
             // Update or insert text-based responses
-            var existingResponse = response.FormResponses.FirstOrDefault(fr =>
+            var existingFormResponse = response.FormResponses.FirstOrDefault(fr =>
                 fr.FormFieldId == formField.Id
             );
-            if (existingResponse != null)
+            if (existingFormResponse != null)
             {
-                existingResponse.Value = request.Value;
-                context.FormResponses.Update(existingResponse);
+                existingFormResponse.Value = request.Value;
+                context.FormResponses.Update(existingFormResponse);
             }
             else
             {
@@ -320,6 +320,36 @@ public class FormRepository(
                     new FormResponse { FormFieldId = formField.Id, Value = request.Value }
                 );
             }
+        }
+
+        if (request.MaterialSpecificationId.HasValue)
+        {
+            var materialSpecification = await context.MaterialSpecifications.FirstOrDefaultAsync(
+                s => s.Id == request.MaterialSpecificationId
+            );
+            if (materialSpecification is null)
+                return Error.NotFound(
+                    "MaterialSpecification.NotFound",
+                    "Material specification not found"
+                );
+
+            materialSpecification.ResponseId = response.Id;
+            context.MaterialSpecifications.Update(materialSpecification);
+        }
+
+        if (request.ProductSpecificationId.HasValue)
+        {
+            var productSpecification = await context.ProductSpecifications.FirstOrDefaultAsync(s =>
+                s.Id == request.ProductSpecificationId
+            );
+            if (productSpecification is null)
+                return Error.NotFound(
+                    "ProductSpecification.NotFound",
+                    "Product specification not found"
+                );
+
+            productSpecification.ResponseId = response.Id;
+            context.ProductSpecifications.Update(productSpecification);
         }
 
         await context.SaveChangesAsync();
@@ -1052,7 +1082,9 @@ public class FormRepository(
                 .ThenInclude(r => r.Response)
                     .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f =>
-                f.Responses.Any(r => r.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
+                f.Responses.Any(r =>
+                    r.Response.BatchManufacturingRecordId == batchManufacturingRecordId
+                )
             );
 
         return mapper.Map<List<FormDto>>(
