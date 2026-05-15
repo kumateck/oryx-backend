@@ -30,4 +30,13 @@ public class BillOfMaterialItem : BaseEntity
     public Guid? BaseUoMId { get; set; }
     public UnitOfMeasure BaseUoM { get; set; }
     public decimal PrescribedQuantity { get; set; }
+    public List<BillOfMaterialItemSubstitute> Substitutes { get; set; } = [];
+}
+
+public class BillOfMaterialItemSubstitute : BaseEntity
+{
+    public Guid BillOfMaterialItemId { get; set; }
+    public BillOfMaterialItem BillOfMaterialItem { get; set; }
+    public Guid SubstituteMaterialId { get; set; }
+    public Material SubstituteMaterial { get; set; }
 }
