@@ -19,7 +19,12 @@ public interface IMaterialSpecificationRepository
         bool? isVerified = null
     );
     Task<Result<MaterialSpecificationDto>> GetMaterialSpecification(Guid id);
-    Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpecification();
+    Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterialsNotLinkedToSpecification(
+        int page,
+        int pageSize,
+        string searchQuery,
+        MaterialKind? materialKind
+    );
     Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(Guid materialId);
     Task<Result<List<MaterialSpecificationDto>>> GetMaterialSpecificationBySpecificationNumber(
         string specificationNumber

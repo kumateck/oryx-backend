@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -123,17 +124,39 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             : mapper.Map<ProductSpecificationDto>(productSpec);
     }
 
-    public async Task<Result<List<ProductListDto>>> GetProductsNotLinkedToSpecification()
+    public async Task<
+        Result<Paginateable<IEnumerable<ProductListDto>>>
+    > GetProductsNotLinkedToSpecification(
+        int page,
+        int pageSize,
+        string searchQuery,
+        bool? isVerified = null
+    )
     {
-        var products = await context
+        var products = context
             .Products.IgnoreQueryFilters()
             .Where(ps =>
                 !ps.DeletedAt.HasValue
                 && !context.ProductSpecifications.Any(m => m.ProductId == ps.Id)
             )
-            .ToListAsync();
+            .AsQueryable();
 
-        return mapper.Map<List<ProductListDto>>(products);
+        if (isVerified.HasValue)
+        {
+            products = products.Where(ps => ps.IsVerified == isVerified.Value);
+        }
+
+        if (searchQuery != null)
+        {
+            products = products.WhereSearch(searchQuery, ps => ps.Name);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            products,
+            page,
+            pageSize,
+            mapper.Map<ProductListDto>
+        );
     }
 
     public async Task<Result<ProductSpecificationDto>> GetProductSpecificationByProduct(
