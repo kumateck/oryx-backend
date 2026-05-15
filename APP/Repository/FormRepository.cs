@@ -91,11 +91,16 @@ public class FormRepository(
     {
         var query = context
             .FormSections.AsSplitQuery()
+            .Include(f => f.Form)
             .Include(f => f.Instrument)
-                .ThenInclude(f => f.QcEquipmentCategory)
-            .GroupBy(f => new { f.Name, f.InstrumentId })
-            .Select(g => g.OrderByDescending(f => f.CreatedAt).First())
-            .AsQueryable();
+                .ThenInclude(i => i.QcEquipmentCategory)
+            .Where(f =>
+                !context.FormSections.Any(sub =>
+                    sub.Name == f.Name
+                    && sub.InstrumentId == f.InstrumentId
+                    && sub.CreatedAt > f.CreatedAt
+                )
+            );
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
