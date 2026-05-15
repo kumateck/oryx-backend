@@ -122,6 +122,20 @@ public class FormRepository(
             query = query.Where(f => f.ProductSpecificationId == filter.ProductSpecificationId);
         }
 
+        if (!string.IsNullOrEmpty(filter.MaterialSpecificationNumber))
+        {
+            query = query.Where(q =>
+                q.MaterialSpecification.SpecificationNumber == filter.MaterialSpecificationNumber
+            );
+        }
+
+        if (!string.IsNullOrEmpty(filter.ProductSpecificationNumber))
+        {
+            query = query.Where(q =>
+                q.ProductSpecification.SpecificationNumber == filter.ProductSpecificationNumber
+            );
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             filter,

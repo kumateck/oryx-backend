@@ -1,6 +1,7 @@
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductSpecifications;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductSpecificationRepository(ApplicationDbContext context, IMapper mapper) : IProductSpecificationRepository
+public class ProductSpecificationRepository(ApplicationDbContext context, IMapper mapper)
+    : IProductSpecificationRepository
 {
     public async Task<Result<List<ProductSpecificationMappingDto>>> CreateProductSpecification(
         CreateProductSpecificationRequest request
@@ -34,7 +36,9 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
 
         // Fetch existing specifications for this spec number
         var existingSpecs = await context
-            .ProductSpecifications.Where(ps => ps.SpecificationNumber == request.SpecificationNumber)
+            .ProductSpecifications.Where(ps =>
+                ps.SpecificationNumber == request.SpecificationNumber
+            )
             .ToListAsync();
 
         var mappings = new List<ProductSpecificationMappingDto>();
@@ -55,7 +59,11 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             productSpec.ProductId = product.Id;
             await context.ProductSpecifications.AddAsync(productSpec);
             mappings.Add(
-                new ProductSpecificationMappingDto { ProductId = product.Id, SpecificationId = productSpec.Id }
+                new ProductSpecificationMappingDto
+                {
+                    ProductId = product.Id,
+                    SpecificationId = productSpec.Id,
+                }
             );
         }
 
@@ -63,10 +71,12 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         return mappings;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<ProductSpecificationDto>>>> GetProductSpecifications(int page, int pageSize, string searchQuery, bool? isVerified = null)
+    public async Task<
+        Result<Paginateable<IEnumerable<ProductSpecificationDto>>>
+    > GetProductSpecifications(int page, int pageSize, string searchQuery, bool? isVerified = null)
     {
-        var query = context.ProductSpecifications
-            .AsSplitQuery()
+        var query = context
+            .ProductSpecifications.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ps => ps.Form)
             .Include(ps => ps.Product)
@@ -79,40 +89,59 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             query = query.Where(p => p.IsVerified == isVerified.Value);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductSpecificationDto>);
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<ProductSpecificationDto>
+        );
     }
 
     public async Task<Result<ProductSpecificationDto>> GetProductSpecification(Guid id)
     {
-
-        var productSpec = await context.ProductSpecifications
-                .AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(ps => ps.Product)
-                .Include(ps => ps.Form)
+        var productSpec = await context
+            .ProductSpecifications.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(ps => ps.Product)
+            .Include(ps => ps.Form)
                 .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-                .ThenInclude(ps => ps.Fields)
-                .ThenInclude(ps => ps.Question)
-                .Include(ps => ps.Form)
+                    .ThenInclude(ps => ps.Fields)
+                        .ThenInclude(ps => ps.Question)
+            .Include(ps => ps.Form)
                 .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-                .ThenInclude(ps => ps.Instrument)
-                .Include(ps => ps.CreatedBy)
-                .Include(m => m.Response)
+                    .ThenInclude(ps => ps.Instrument)
+            .Include(ps => ps.CreatedBy)
+            .Include(m => m.Response)
                 .ThenInclude(r => r.FormResponses)
-                .ThenInclude(r => r.FormField)
-                .Include(ps => ps.FormSections)
-                .Where(ps => !ps.DeletedAt.HasValue)
-                .FirstOrDefaultAsync(ps => ps.Id == id);
+                    .ThenInclude(r => r.FormField)
+            .Include(ps => ps.FormSections)
+            .Where(ps => !ps.DeletedAt.HasValue)
+            .FirstOrDefaultAsync(ps => ps.Id == id);
 
-        return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
+        return productSpec is null
+            ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
             : mapper.Map<ProductSpecificationDto>(productSpec);
     }
 
-    public async Task<Result<ProductSpecificationDto>> GetProductSpecificationByProduct(Guid productId)
+    public async Task<Result<List<ProductListDto>>> GetProductsNotLinkedToSpecification()
     {
+        var products = await context
+            .Products.IgnoreQueryFilters()
+            .Where(ps =>
+                !ps.DeletedAt.HasValue
+                && !context.ProductSpecifications.Any(m => m.ProductId == ps.Id)
+            )
+            .ToListAsync();
 
-        var productSpec = await context.ProductSpecifications
-            .IgnoreQueryFilters()
+        return mapper.Map<List<ProductListDto>>(products);
+    }
+
+    public async Task<Result<ProductSpecificationDto>> GetProductSpecificationByProduct(
+        Guid productId
+    )
+    {
+        var productSpec = await context
+            .ProductSpecifications.IgnoreQueryFilters()
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
             .Include(ps => ps.CreatedBy)
@@ -120,28 +149,30 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .Where(ps => !ps.DeletedAt.HasValue)
             .FirstOrDefaultAsync(ps => ps.ProductId == productId);
 
-        return productSpec is null ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
+        return productSpec is null
+            ? Error.NotFound("ProductSpecification.NotFound", "Product specification not found")
             : mapper.Map<ProductSpecificationDto>(productSpec);
-
     }
 
-    public async Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationByProductId(Guid productId)
+    public async Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationByProductId(
+        Guid productId
+    )
     {
-        var productSpec = await context.ProductSpecifications
-            .IgnoreQueryFilters()
+        var productSpec = await context
+            .ProductSpecifications.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
-            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-            .ThenInclude(ps => ps.Fields)
-            .ThenInclude(ps => ps.Question)
+                .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(ps => ps.Fields)
+                        .ThenInclude(ps => ps.Question)
             .Include(ps => ps.Form)
-            .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
-            .ThenInclude(ps => ps.Instrument)
+                .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
+                    .ThenInclude(ps => ps.Instrument)
             .Include(ps => ps.CreatedBy)
             .Include(m => m.Response)
-            .ThenInclude(r => r.FormResponses)
-            .ThenInclude(r => r.FormField)
+                .ThenInclude(r => r.FormResponses)
+                    .ThenInclude(r => r.FormField)
             .Include(ps => ps.FormSections)
             .Where(ps => ps.ProductId == productId && !ps.DeletedAt.HasValue)
             .ToListAsync();
@@ -149,19 +180,17 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         return mapper.Map<List<ProductSpecificationDto>>(productSpec);
     }
 
-    public async Task<Result<List<ProductSpecificationDto>>> GetProductSpecificationBySpecificationNumber(
-        string specificationNumber
-    )
+    public async Task<
+        Result<List<ProductSpecificationDto>>
+    > GetProductSpecificationBySpecificationNumber(string specificationNumber)
     {
         if (string.IsNullOrWhiteSpace(specificationNumber))
             return Error.Validation("Invalid.SpecificationNumber", "Invalid specification number.");
 
-        var decodedSpecificationNumber = Uri.UnescapeDataString(specificationNumber);
-
         var specs = await context
             .ProductSpecifications.AsSplitQuery()
             .Include(ps => ps.Product)
-            .Where(ps => ps.SpecificationNumber == decodedSpecificationNumber && !ps.DeletedAt.HasValue)
+            .Where(ps => ps.SpecificationNumber == specificationNumber)
             .ToListAsync();
 
         if (specs.Count == 0)
@@ -180,7 +209,9 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         UpdateProductSpecificationRequest request
     )
     {
-        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(ps => ps.Id == id);
+        var productSpec = await context.ProductSpecifications.FirstOrDefaultAsync(ps =>
+            ps.Id == id
+        );
 
         if (productSpec is null)
         {
@@ -220,13 +251,17 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         await context.SaveChangesAsync();
 
         return specsToUpdate
-            .Select(s => new ProductSpecificationMappingDto { ProductId = s.ProductId, SpecificationId = s.Id })
+            .Select(s => new ProductSpecificationMappingDto
+            {
+                ProductId = s.ProductId,
+                SpecificationId = s.Id,
+            })
             .ToList();
     }
 
-    public async Task<Result<List<ProductSpecificationMappingDto>>> AddRemoveProductsToSpecification(
-        AddRemoveProductToSpecificationRequest request
-    )
+    public async Task<
+        Result<List<ProductSpecificationMappingDto>>
+    > AddRemoveProductsToSpecification(AddRemoveProductToSpecificationRequest request)
     {
         var existingSpecs = await context
             .ProductSpecifications.Include(ps => ps.Product)
@@ -308,26 +343,34 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
 
         await context.SaveChangesAsync();
         return existingSpecs
-            .Select(s => new ProductSpecificationMappingDto { ProductId = s.ProductId, SpecificationId = s.Id })
+            .Select(s => new ProductSpecificationMappingDto
+            {
+                ProductId = s.ProductId,
+                SpecificationId = s.Id,
+            })
             .ToList();
     }
 
     public async Task<Result> DeleteProductSpecification(Guid id, Guid userId)
     {
-        var productSpec = await context.ProductSpecifications
-            .Include(productSpecification => productSpecification.Product).FirstOrDefaultAsync(ps => ps.Id == id);
+        var productSpec = await context
+            .ProductSpecifications.Include(productSpecification => productSpecification.Product)
+            .FirstOrDefaultAsync(ps => ps.Id == id);
 
         if (productSpec is null)
         {
-            return Error.NotFound("ProductSpecification.NotFound", "Product specification not found");
+            return Error.NotFound(
+                "ProductSpecification.NotFound",
+                "Product specification not found"
+            );
         }
 
-        var linkedArd = await context.ProductAnalyticalRawData
-            .Include(ard => ard.ProductStandardTestProcedure.Product)
+        var linkedArd = await context
+            .ProductAnalyticalRawData.Include(ard => ard.ProductStandardTestProcedure.Product)
             .FirstOrDefaultAsync(ard =>
-                ard.SpecNumber == productSpec.SpecificationNumber &&
-                ard.ProductStandardTestProcedure.ProductId == productSpec.ProductId &&
-                ard.DeletedAt == null
+                ard.SpecNumber == productSpec.SpecificationNumber
+                && ard.ProductStandardTestProcedure.ProductId == productSpec.ProductId
+                && ard.DeletedAt == null
             );
 
         if (linkedArd is not null)
