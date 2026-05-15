@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductSpecifications;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +11,9 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/product-specifications")]
 [Authorize]
-public class ProductSpecificationController(IProductSpecificationRepository repository) : ControllerBase
+public class ProductSpecificationController(IProductSpecificationRepository repository)
+    : ControllerBase
 {
-
     /// <summary>
     /// Creates a product specification
     /// </summary>
@@ -29,11 +30,23 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves a paginated list of product specifications
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductSpecificationDto>>))]
-    public async Task<IResult> GetProductSpecifications([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] bool? isVerified = null)
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<ProductSpecificationDto>>)
+    )]
+    public async Task<IResult> GetProductSpecifications(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null,
+        [FromQuery] bool? isVerified = null
+    )
     {
-        var result = await repository.GetProductSpecifications(page, pageSize, searchQuery, isVerified);
+        var result = await repository.GetProductSpecifications(
+            page,
+            pageSize,
+            searchQuery,
+            isVerified
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -46,6 +59,18 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     public async Task<IResult> GetProductSpecification([FromRoute] Guid id)
     {
         var result = await repository.GetProductSpecification(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves products not linked to spec
+    /// </summary>
+    [HttpGet("products/not-linked")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductListDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductsNotLinkedToSpec()
+    {
+        var result = await repository.GetProductsNotLinkedToSpecification();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -64,12 +89,16 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// <summary>
     /// Retrieves the details of products linked to a specification number.
     /// </summary>
-    [HttpGet("{specificationNumber}/products")]
+    [HttpGet("products")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetProductSpecificationBySpecificationNumber(string specificationNumber)
+    public async Task<IResult> GetProductSpecificationBySpecificationNumber(
+        [FromQuery] string specificationNumber
+    )
     {
-        var result = await repository.GetProductSpecificationBySpecificationNumber(specificationNumber);
+        var result = await repository.GetProductSpecificationBySpecificationNumber(
+            specificationNumber
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -77,10 +106,16 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Updates a product specific by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationMappingDto>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(List<ProductSpecificationMappingDto>)
+    )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateProductSpecification([FromRoute] Guid id, [FromBody] UpdateProductSpecificationRequest request)
+    public async Task<IResult> UpdateProductSpecification(
+        [FromRoute] Guid id,
+        [FromBody] UpdateProductSpecificationRequest request
+    )
     {
         var result = await repository.UpdateProductSpecification(id, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -90,7 +125,10 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Adds or removes products from a specification with the same specification code.
     /// </summary>
     [HttpPost("add-remove-products")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationMappingDto>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(List<ProductSpecificationMappingDto>)
+    )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> AddRemoveProductsToSpecification(
@@ -111,7 +149,8 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     {
         var userId = (string)HttpContext.Items["Sub"];
 
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteProductSpecification(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();

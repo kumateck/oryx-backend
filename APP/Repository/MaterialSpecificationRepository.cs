@@ -65,7 +65,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                 new MaterialSpecificationMappingDto
                 {
                     MaterialId = material.Id,
-                    SpecificationId = materialSpec.Id
+                    SpecificationId = materialSpec.Id,
                 }
             );
         }
@@ -143,6 +143,19 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
+    public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpecification()
+    {
+        var materials = await context
+            .Materials.IgnoreQueryFilters()
+            .Where(ps =>
+                !ps.DeletedAt.HasValue
+                && !context.MaterialSpecifications.Any(m => m.MaterialId == ps.Id)
+            )
+            .ToListAsync();
+
+        return mapper.Map<List<MaterialDto>>(materials);
+    }
+
     public async Task<Result<MaterialSpecificationDto>> GetMaterialSpecificationByMaterial(
         Guid materialId
     )
@@ -170,19 +183,17 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         return Result.Success(mapper.Map<MaterialSpecificationDto>(materialSpec));
     }
 
-    public async Task<Result<List<MaterialSpecificationDto>>> GetMaterialSpecificationBySpecificationNumber(
-        string specificationNumber
-    )
+    public async Task<
+        Result<List<MaterialSpecificationDto>>
+    > GetMaterialSpecificationBySpecificationNumber(string specificationNumber)
     {
         if (string.IsNullOrWhiteSpace(specificationNumber))
             return Error.Validation("Invalid.SpecificationNumber", "Invalid specification number.");
 
-        var decodedSpecificationNumber = Uri.UnescapeDataString(specificationNumber);
-
         var specs = await context
             .MaterialSpecifications.AsSplitQuery()
             .Include(ms => ms.Material)
-            .Where(ms => ms.SpecificationNumber == decodedSpecificationNumber)
+            .Where(ms => ms.SpecificationNumber == specificationNumber)
             .ToListAsync();
 
         if (specs.Count == 0)
@@ -246,14 +257,14 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Select(s => new MaterialSpecificationMappingDto
             {
                 MaterialId = s.MaterialId,
-                SpecificationId = s.Id
+                SpecificationId = s.Id,
             })
             .ToList();
     }
 
-    public async Task<Result<List<MaterialSpecificationMappingDto>>> AddRemoveMaterialsToSpecification(
-        AddRemoveMaterialToSpecificationRequest request
-    )
+    public async Task<
+        Result<List<MaterialSpecificationMappingDto>>
+    > AddRemoveMaterialsToSpecification(AddRemoveMaterialToSpecificationRequest request)
     {
         var existingSpecs = await context
             .MaterialSpecifications.Include(ms => ms.Material)
@@ -337,17 +348,16 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .Select(s => new MaterialSpecificationMappingDto
             {
                 MaterialId = s.MaterialId,
-                SpecificationId = s.Id
+                SpecificationId = s.Id,
             })
             .ToList();
     }
 
     public async Task<Result> DeleteMaterialSpecification(Guid id, Guid userId)
     {
-        var materialSpec = await context.MaterialSpecifications
-            .Include(materialSpecification => materialSpecification.Material).FirstOrDefaultAsync(ps =>
-            ps.Id == id
-        );
+        var materialSpec = await context
+            .MaterialSpecifications.Include(materialSpecification => materialSpecification.Material)
+            .FirstOrDefaultAsync(ps => ps.Id == id);
 
         if (materialSpec is null)
         {
@@ -357,12 +367,12 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             );
         }
 
-        var linkedArd = await context.MaterialAnalyticalRawData
-            .Include(ard => ard.MaterialStandardTestProcedure.Material)
+        var linkedArd = await context
+            .MaterialAnalyticalRawData.Include(ard => ard.MaterialStandardTestProcedure.Material)
             .FirstOrDefaultAsync(ard =>
-                ard.SpecNumber == materialSpec.SpecificationNumber &&
-                ard.MaterialStandardTestProcedure.MaterialId == materialSpec.MaterialId &&
-                ard.DeletedAt == null
+                ard.SpecNumber == materialSpec.SpecificationNumber
+                && ard.MaterialStandardTestProcedure.MaterialId == materialSpec.MaterialId
+                && ard.DeletedAt == null
             );
 
         if (linkedArd is not null)
