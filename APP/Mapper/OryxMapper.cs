@@ -24,6 +24,7 @@ using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EducationHistories;
 using DOMAIN.Entities.EmergencyContacts;
 using DOMAIN.Entities.EmployeeHistories;
+using DOMAIN.Entities.EmployeePayrollProfiles;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
@@ -48,6 +49,25 @@ using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.PayGroups;
+using DOMAIN.Entities.PayrollCalendars;
+using DOMAIN.Entities.PayrollCompanies;
+using DOMAIN.Entities.PayrollCountryPack;
+using DOMAIN.Entities.PayrollElementAssignments;
+using DOMAIN.Entities.PayrollElements;
+using DOMAIN.Entities.PayrollLoanLedgers;
+using DOMAIN.Entities.PayrollPaymentBatches;
+using DOMAIN.Entities.PayrollPaymentFormats;
+using DOMAIN.Entities.PayrollPaymentInstructions;
+using DOMAIN.Entities.PayRollPeriods;
+using DOMAIN.Entities.PayrollPostingEvents;
+using DOMAIN.Entities.PayrollReconciliationSnapshot;
+using DOMAIN.Entities.PayrollResultLines;
+using DOMAIN.Entities.PayrollRetroAdjustments;
+using DOMAIN.Entities.PayrollRunEmployees;
+using DOMAIN.Entities.PayrollRuns;
+using DOMAIN.Entities.PayrollValidationIssues;
+using DOMAIN.Entities.PayrollVarianceFlags;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -1567,5 +1587,146 @@ public class OryxMapper : Profile
         CreateMap<Site, SiteDto>();
 
         #endregion
+
+        #region Payroll Companies
+
+        CreateMap<CreatePayrollCompanyRequest, PayrollCompany>();
+        CreateMap<PayrollCompany, PayrollCompanyDto>();
+
+        #endregion
+
+        #region Pay Groups
+
+        CreateMap<CreatePayGroupRequest, PayGroup>();
+        CreateMap<PayGroup, PayGroupDto>();
+        
+        #endregion
+
+        #region Employee Payroll Profiles
+
+        CreateMap<EmployeePayrollProfile, EmployeePayrollProfileDto>();
+        CreateMap<CreateEmployeePayrollProfileRequest, EmployeePayrollProfile>();
+
+        #endregion
+        
+        #region Payroll Element Assignments
+
+        CreateMap<CreatePayrollElementAssignment, PayrollElement>();
+        CreateMap<PayrollElement, PayrollElementAssignmentDto>();
+
+        #endregion
+        
+        #region Payroll Country Pack
+
+        CreateMap<CreatePayrollCountryPackRequest, PayrollCountryPack>();
+        CreateMap<PayrollCountryPack, PayrollCountryPackDto>();
+
+        #endregion
+        
+        #region Payroll Calendars
+
+        CreateMap<CreatePayrollCalendarRequest, PayrollCalendar>();
+        CreateMap<PayrollCalendar, PayrollCalendarDto>();
+
+        #endregion
+        
+        #region Payroll Element
+
+        CreateMap<CreatePayrollElementRequest, PayrollElement>();
+        CreateMap<PayrollElement, PayrollElementDto>();
+        CreateMap<PayrollElementVersion, PayrollElementVersionDto>();
+
+        #endregion
+        
+        #region Payroll Variance Flags
+
+        CreateMap<PayrollVarianceFlag, PayrollVarianceFlagDto>();
+        CreateMap<ReviewVarianceFlagRequest, PayrollVarianceFlag>();
+
+        #endregion
+        
+        #region Payroll Validation Issues
+
+        CreateMap<PayrollValidationIssue, PayrollValidationIssueDto>();
+        CreateMap<ResolveValidationIssueRequest, PayrollValidationIssue>();
+
+        #endregion
+        
+        #region Payroll Runs
+
+        CreateMap<CreatePayrollRunRequest, PayrollRun>();
+        CreateMap<PayrollRunTransitionRequest, PayrollRun>();
+        CreateMap<CancelPayrollRunRequest, PayrollRun>();
+        CreateMap<PayrollRun, PayrollRunDto>();
+
+        #endregion
+        
+        #region Payroll Run Employees
+
+        CreateMap<PayrollRunEmployee, PayrollRunEmployeeDto>();
+
+        #endregion
+        
+        #region Payroll Retro Adjustments
+
+        CreateMap<PayrollRetroAdjustment, PayrollRetroAdjustmentDto>();
+        CreateMap<CreatePayrollRetroAdjustmentRequest, PayrollRetroAdjustment>();
+        CreateMap<MaterializeRetroAdjustmentRequest, PayrollRetroAdjustment>();
+
+        #endregion
+        
+        #region Payroll Result Lines
+
+        CreateMap<PayrollResultLine, PayrollResultLineDto>();
+
+        #endregion
+        
+        #region Payroll Reconciliation Snapshots
+
+        CreateMap<PayrollReconciliationSnapshot, PayrollReconciliationSnapshotDto>();
+        CreateMap<CreateEmployeePayrollProfileRequest, EmployeePayrollProfile>();
+
+        #endregion
+        
+        #region Payroll Posting Events
+        CreateMap<PayrollPostingEvent, PayrollPostingEventDto>();
+        #endregion
+        
+        #region Payroll Periods
+
+        CreateMap<PayrollPeriod, PayrollPeriodDto>();
+        CreateMap<CreatePayrollPeriodRequest, PayrollPeriod>();
+        CreateMap<ClosePayrollPeriodRequest, PayrollPeriod>();
+        CreateMap<ReopenPayrollPeriodRequest, PayrollPeriod>();
+
+        #endregion
+        
+        #region Payroll Payment Instructions
+
+        CreateMap<PayrollPaymentInstruction, PayrollPaymentInstructionDto>();
+        #endregion
+        
+        #region Payroll Payment Formats
+
+        CreateMap<PayrollPaymentFormat, PayrollPaymentFormatDto>();
+        CreateMap<CreatePayrollPaymentFormatRequest, PayrollPaymentFormat>();
+
+        #endregion
+        
+        #region Payroll Payment Batches
+
+        CreateMap<PayrollPaymentBatch, PayrollPaymentBatchDto>();
+        CreateMap<ReleasePaymentBatchRequest, PayrollPaymentBatch>();
+
+        #endregion
+        
+        #region Payroll Loan Ledgers
+
+        CreateMap<PayrollLoanLedger, PayrollLoanLedgerDto>();
+        CreateMap<CreatePayrollLoanLedgerRequest, PayrollLoanLedger>();
+
+        #endregion
+        
+        
     }
 }

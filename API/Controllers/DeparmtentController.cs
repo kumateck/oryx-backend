@@ -11,6 +11,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/department")]
 [ApiController]
+[Authorize]
 public class DepartmentController(IDepartmentRepository repository) : ControllerBase
 {
     /// <summary>
@@ -19,7 +20,6 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="request">The CreateDepartmentRequest object.</param>
     /// <returns>Returns the ID of the created department.</returns>
     [HttpPost]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDepartment([FromBody] CreateDepartmentRequest request)
@@ -37,7 +37,6 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department.</param>
     /// <returns>Returns the department details.</returns>
     [HttpGet("{departmentId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DepartmentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDepartment(Guid departmentId)
@@ -55,7 +54,6 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="type">The type of the department. (Product or Non Product Department)</param>
     /// <returns>Returns a paginated list of departments.</returns>
     [HttpGet]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentDto>>))]
     public async Task<IResult> GetDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] DepartmentType? type = null)
     {
@@ -70,7 +68,6 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("{departmentId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -89,7 +86,6 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("{departmentId}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteDepartment(Guid departmentId)

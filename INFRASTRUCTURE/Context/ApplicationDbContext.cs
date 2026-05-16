@@ -19,6 +19,7 @@ using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
+using DOMAIN.Entities.EmployeePayrollProfiles;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Grns;
@@ -47,6 +48,8 @@ using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.PayGroups;
+using DOMAIN.Entities.PayrollCompanies;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -690,6 +693,15 @@ public class ApplicationDbContext(
     #region Reagent
 
     public DbSet<Reagent> Reagents => Set<Reagent>();
+
+    #endregion
+
+    #region Payroll
+
+    public DbSet<PayrollCompany> PayrollCompanies { get; set; }
+    public DbSet<PayGroup> PayGroups { get; set; }
+    
+    public DbSet<EmployeePayrollProfile> EmployeePayrollProfiles { get; set; }
 
     #endregion
 
