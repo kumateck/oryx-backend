@@ -49,7 +49,22 @@ using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.PayGroups;
+using DOMAIN.Entities.PayrollCalendars;
 using DOMAIN.Entities.PayrollCompanies;
+using DOMAIN.Entities.PayrollCountryPack;
+using DOMAIN.Entities.PayrollElementAssignments;
+using DOMAIN.Entities.PayrollElements;
+using DOMAIN.Entities.PayrollLoanLedgers;
+using DOMAIN.Entities.PayrollPaymentBatches;
+using DOMAIN.Entities.PayrollPaymentFormats;
+using DOMAIN.Entities.PayRollPeriods;
+using DOMAIN.Entities.PayrollPostingEvents;
+using DOMAIN.Entities.PayrollReconciliationSnapshot;
+using DOMAIN.Entities.PayrollRetroAdjustments;
+using DOMAIN.Entities.PayrollRunEmployees;
+using DOMAIN.Entities.PayrollRuns;
+using DOMAIN.Entities.PayrollValidationIssues;
+using DOMAIN.Entities.PayrollVarianceFlags;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -77,8 +92,10 @@ using DOMAIN.Entities.ShiftTypes;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.StatutoryProfiles;
 using DOMAIN.Entities.StockAdjustments;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.TaxProfiles;
 using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
@@ -702,6 +719,26 @@ public class ApplicationDbContext(
     public DbSet<PayGroup> PayGroups { get; set; }
     
     public DbSet<EmployeePayrollProfile> EmployeePayrollProfiles { get; set; }
+    public DbSet<PayrollCalendar> PayrollCalendars { get; set; }
+    public DbSet<PayrollCountryPack> PayrollCountryPacks { get; set; }
+    public DbSet<PayrollElement> PayrollElements { get; set; }
+    public DbSet<PayrollElementVersion> PayrollElementVersions { get; set; }
+    public DbSet<PayrollElementAssignment> PayrollElementAssignments { get; set; }
+    public DbSet<PayrollLoanLedger> PayrollLoanLedgers { get; set; }
+    public DbSet<PayrollRun> PayrollRuns { get; set; }
+    public DbSet<PayrollPaymentBatch> PayrollPaymentBatches { get; set; }
+    public DbSet<PayrollPaymentBatchApproval> PayrollPaymentBatchApprovals { get; set; }
+    public DbSet<PayrollRetroAdjustmentApproval> PayrollRetroAdjustmentApprovals { get; set; }
+    public DbSet<PayrollPaymentFormat> PayrollPaymentFormats { get; set; }
+    public DbSet<StatutoryProfile> StatutoryProfiles { get; set; }
+    public DbSet<PayrollPeriod> PayrollPeriods { get; set; }
+    public DbSet<PayrollPostingEvent> PayrollPostingEvents { get; set; }
+    public DbSet<TaxProfile> TaxProfiles { get; set; }
+    public DbSet<PayrollReconciliationSnapshot> PayrollReconciliationSnapshots { get; set; }
+    public DbSet<PayrollRetroAdjustment> PayrollRetroAdjustments { get; set; }
+    public DbSet<PayrollRunEmployee> PayrollRunEmployees { get; set; }
+    public DbSet<PayrollValidationIssue> PayrollValidationIssues { get; set; }
+    public DbSet<PayrollVarianceFlag> PayrollVarianceFlags { get; set; }
 
     #endregion
 
@@ -1735,6 +1772,31 @@ public class ApplicationDbContext(
         #region Role Filter
 
         modelBuilder.Entity<Role>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        
+
+        #endregion
+
+        #region Payroll
+
+        modelBuilder.Entity<PayrollCalendar>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollElementVersion>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollElementAssignment>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollCountryPack>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollLoanLedger>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollCompany>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollPaymentBatch>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollRun>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollPeriod>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayGroup>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollElement>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollPaymentFormat>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<TaxProfile>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<StatutoryProfile>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollValidationIssue>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollRunEmployee>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollRetroAdjustment>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollReconciliationSnapshot>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<PayrollVarianceFlag>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
 
         #endregion
     }

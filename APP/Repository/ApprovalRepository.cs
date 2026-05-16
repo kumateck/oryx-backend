@@ -11,6 +11,8 @@ using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.PayrollPaymentBatches;
+using DOMAIN.Entities.PayrollRetroAdjustments;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
@@ -709,6 +711,194 @@ public class ApprovalRepository(ApplicationDbContext context,
                 });
                 return Result.Success();
 
+            case nameof(PayrollPaymentBatch):
+                var paymentRequest = await context.PayrollPaymentBatches
+                    .Include(lr => lr.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+
+                if (paymentRequest is null)
+                    return Error.Validation("PaymentRequest.NotFound", $"Payment Request {modelId} not found.");
+
+                var paymentRequestApprovalStages = paymentRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                {
+                    RoleId = item.RoleId,
+                    UserId = item.UserId,
+                    Order = item.Order,
+                    Status = item.Status,
+                    Required = item.Required,
+                    ApprovalTime = item.ApprovalTime,
+                    Comments = item.Comments
+
+                }).ToList();
+
+                var paymentRequestCurrentApprovals = GetCurrentApprovalStage(paymentRequestApprovalStages, userId, roleIds[0]);
+
+                var paymentRequestApprovingStage = paymentRequestCurrentApprovals.FirstOrDefault();
+
+                if (paymentRequestApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+
+                // Approve the payment batch request stage in the actual tracked list
+                var stageToApprovePb = paymentRequest.Approvals.First(stage =>
+                    stage.Status != ApprovalStatus.Approved && stage.Order == paymentRequestApprovingStage.Order);
+
+                stageToApprovePb.Status = ApprovalStatus.Approved;
+                stageToApprovePb.ApprovalTime = DateTime.UtcNow;
+                stageToApprovePb.Comments = comments;
+                //context.OvertimeRequestApprovals.Update(stageToApproveOr);
+
+                // Optionally mark a payment request as fully approved
+                var allRequiredPbApproved = paymentRequest.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+                if (allRequiredPbApproved)
+                {
+                    paymentRequest.Approved = true;
+                    paymentRequest.ApprovalStatus = ApprovalStatus.Approved;
+                }
+                await context.SaveChangesAsync();
+
+                //activate next pending stages
+                var nextPaymentStage = paymentRequest.Approvals
+                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextPaymentStage.Count != 0)
+                {
+                    // Get the current approval stages after the approval
+                    var updatedApprovalStages = paymentRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                    }).ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var actualStage in newlyActiveStages.Select(stageToActivate =>
+                                 paymentRequest.Approvals.First(ra =>
+                                 ra.Status != ApprovalStatus.Approved &&
+                                 (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue 
+                                  || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)))))
+                    {
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.PayrollPaymentBatchApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Approved,
+                    ModelId =paymentRequest.Id,
+                });
+                return Result.Success();
+           
+            case nameof(PayrollRetroAdjustment):
+                var adjustmentRequest = await context.PayrollRetroAdjustments
+                    .Include(lr => lr.Approvals)
+                    .FirstOrDefaultAsync(lr => lr.Id == modelId);
+
+                if (adjustmentRequest is null)
+                    return Error.Validation("PaymentAdjustment.NotFound", $"Payment adjustment {modelId} not found.");
+
+                var adjustmentRequestApprovalStages = adjustmentRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                {
+                    RoleId = item.RoleId,
+                    UserId = item.UserId,
+                    Order = item.Order,
+                    Status = item.Status,
+                    Required = item.Required,
+                    ApprovalTime = item.ApprovalTime,
+                    Comments = item.Comments
+
+                }).ToList();
+
+                var adjustmentRequestCurrentApprovals = GetCurrentApprovalStage(adjustmentRequestApprovalStages, userId, roleIds[0]);
+
+                var adjustmentRequestApprovingStage = adjustmentRequestCurrentApprovals.FirstOrDefault();
+
+                if (adjustmentRequestApprovingStage == null)
+                {
+                    return Error.Validation("Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time.");
+                }
+
+                // Approve the payment batch request stage in the actual tracked list
+                var stageToApproveAr = adjustmentRequest.Approvals.First(stage =>
+                    stage.Status != ApprovalStatus.Approved && stage.Order == adjustmentRequestApprovingStage.Order);
+
+                stageToApproveAr.Status = ApprovalStatus.Approved;
+                stageToApproveAr.ApprovalTime = DateTime.UtcNow;
+                stageToApproveAr.Comments = comments;
+                //context.OvertimeRequestApprovals.Update(stageToApproveOr);
+
+                // Optionally mark a payment request as fully approved
+                var allRequiredArApproved = adjustmentRequest.Approvals
+                    .Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+                if (allRequiredArApproved)
+                {
+                    adjustmentRequest.Approved = true;
+                    adjustmentRequest.ApprovalStatus = ApprovalStatus.Approved;
+                }
+                await context.SaveChangesAsync();
+
+                //activate next pending stages
+                var nextAdjustmentStage = adjustmentRequest.Approvals
+                    .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt == null)
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextAdjustmentStage.Count != 0)
+                {
+                    // Get the current approval stages after the approval
+                    var updatedApprovalStages = adjustmentRequest.Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments
+                    }).ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(updatedApprovalStages, userId, roleIds[0])
+                        .Where(s => !s.ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var actualStage in newlyActiveStages.Select(stageToActivate =>
+                                 adjustmentRequest.Approvals.First(ra =>
+                                 ra.Status != ApprovalStatus.Approved &&
+                                 (ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue 
+                                  || (ra.RoleId == stageToActivate.RoleId && stageToActivate.RoleId.HasValue)))))
+                    {
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.PayrollRetroAdjustmentApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(new CreateApprovalLog
+                {
+                    UserId = userId,
+                    Comments = comments,
+                    Status = ApprovalStatus.Approved,
+                    ModelId =adjustmentRequest.Id,
+                });
+                return Result.Success();
+            
             case nameof(Response):
                 var response = await context.Responses
                     .IgnoreQueryFilters()

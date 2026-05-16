@@ -28,6 +28,8 @@ public class PayrollRetroAdjustment : BaseEntity, IRequireApproval
     [StringLength(int.MaxValue)] public string NewValueJson { get; set; }
 
     public PayrollRetroAdjustmentStatus Status { get; set; } = PayrollRetroAdjustmentStatus.Draft;
+    
+    public ApprovalStatus ApprovalStatus { get; set; }
 
     public List<PayrollRetroAdjustmentApproval> Approvals { get; set; } = [];
     public bool Approved { get; set; }

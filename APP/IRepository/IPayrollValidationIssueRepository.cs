@@ -7,7 +7,7 @@ namespace APP.IRepository;
 public interface IPayrollValidationIssueRepository
 {
     Task<Result<Paginateable<IEnumerable<PayrollValidationIssueDto>>>> GetValidationIssues(Guid payrollRunId, int page, int pageSize,
-        PayrollValidationStage? stage = null, PayrollValidationSeverity? severity = null,
+        string searchQuery, PayrollValidationStage? stage = null, PayrollValidationSeverity? severity = null,
         PayrollValidationIssueStatus? status = null);
     Task<Result<PayrollValidationIssueDto>> GetValidationIssue(Guid id);
     Task<Result> ResolveValidationIssue(Guid id, ResolveValidationIssueRequest request, Guid userId);

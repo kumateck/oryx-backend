@@ -7,6 +7,7 @@ namespace APP.IRepository;
 public interface IPayrollPostingEventRepository
 {
     Task<Result<Paginateable<IEnumerable<PayrollPostingEventDto>>>> GetPostingEvents(int page, int pageSize,
+        string searchQuery,
         Guid? payrollRunId = null, PayrollPostingEventStatus? status = null);
     Task<Result<PayrollPostingEventDto>> GetPostingEvent(Guid id);
 }

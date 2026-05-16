@@ -33,7 +33,8 @@ public class PayrollPaymentBatch : BaseEntity, IRequireApproval
 
     public List<PayrollPaymentInstruction> Instructions { get; set; } = [];
     public List<PayrollPaymentBatchApproval> Approvals { get; set; } = [];
-
+    
+    public ApprovalStatus ApprovalStatus { get; set; }
     public bool Approved { get; set; }
 }
 

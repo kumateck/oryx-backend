@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
+using DOMAIN.Entities.PayrollElements;
 
 namespace DOMAIN.Entities.PayrollElementAssignments;
 
@@ -9,6 +10,8 @@ public class PayrollElementAssignment : BaseEntity
     public Guid EmployeeId { get; set; }
     public Employee Employee { get; set; }
     
+    public Guid PayrollElementId { get; set; }
+    public PayrollElement PayrollElement { get; set; }
 
     public decimal? OverrideAmount { get; set; }
     public decimal? OverrideRate { get; set; }

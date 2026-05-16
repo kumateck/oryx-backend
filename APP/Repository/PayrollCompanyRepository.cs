@@ -71,8 +71,13 @@ public class PayrollCompanyRepository(ApplicationDbContext context, IMapper mapp
         var payrollCompany = await context.PayrollCompanies.FirstOrDefaultAsync(p => p.Id == payrollCompanyId);
 
         if (payrollCompany is null) return Error.NotFound("PayrollCompany.NotFound", "Payroll company not found");
+        
+        var hasPayGroups = await context.PayGroups.AnyAsync(p => p.PayrollCompanyId == payrollCompanyId);
+        if (hasPayGroups) return Error.Validation("PayrollCompany.InUse", "Payroll company has associated " +
+                                                                          "pay groups and cannot be deleted");
 
         payrollCompany.LastDeletedById = id;
+        payrollCompany.DeletedAt = DateTime.UtcNow;
         
         await context.SaveChangesAsync();
         return Result.Success();

@@ -13,6 +13,7 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.PayrollCalendars;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using MassTransit;
@@ -128,6 +129,25 @@ public static class DependencyInjection
         services.AddScoped<IItemGrnRepository, ItemGrnRepository>();
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IPayrollCompanyRepository, PayrollCompanyRepository>();
+        services.AddScoped<IEmployeePayrollProfileRepository, EmployeePayrollProfileRepository>();
+        services.AddScoped<IPayGroupRepository, PayGroupRepository>();
+        services.AddScoped<IPayrollCalenderRepository, PayrollCalendarRepository>();
+        services.AddScoped<IPayrollCalenderRepository, PayrollCalendarRepository>();
+        services.AddScoped<IPayrollElementAssignmentRepository, PayrollElementAssignmentRepository>();
+        services.AddScoped<IPayrollElementRepository, PayrollElementRepository>();
+        services.AddScoped<IPayrollLoanLedgerRepository, PayrollLoanLedgerRepository>();
+        services.AddScoped<IPayrollPaymentBatchRepository, PayrollPaymentBatchRepository>();
+        services.AddScoped<IPayrollPaymentFormatRepository, PayrollPaymentFormatRepository>();
+        services.AddScoped<IPayrollPeriodRepository, PayrollPeriodRepository>();
+        services.AddScoped<IStatutoryProfileRepository, StatutoryProfileRepository>();
+        services.AddScoped<IPayrollPostingEventRepository, PayrollPostingEventRepository>();
+        services.AddScoped<ITaxProfileRepository, TaxProfileRepository>();
+        services.AddScoped<IPayrollReconciliationSnapshotRepository, PayrollReconciliationSnapshotRepository>();
+        services.AddScoped<IPayrollRetroAdjustmentRepository, PayrollRetroAdjustmentRepository>();
+        services.AddScoped<IPayrollRunEmployeeRepository, PayrollRunEmployeeRepository>();
+        services.AddScoped<IPayrollRunRepository, PayrollRunRepository>();
+        services.AddScoped<IPayrollValidationIssueRepository, PayrollValidationIssueRepository>();
+        services.AddScoped<IPayrollVarianceFlagRepository, PayrollVarianceFlagRepository>();
 
 
         services.AddScoped<IBlobStorageService, BlobStorageService>();

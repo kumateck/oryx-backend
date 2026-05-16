@@ -18,7 +18,6 @@ public class CreatePayrollElementRequest
 
 public class CreatePayrollElementVersionRequest
 {
-    [Required] public Guid PayrollElementId { get; set; }
     [Required] public DateTime EffectiveFrom { get; set; }
     public DateTime? EffectiveTo { get; set; }
     [StringLength(4000)] public string FormulaExpression { get; set; }

@@ -12,6 +12,6 @@ public interface IPayrollPeriodRepository
     Task<Result<PayrollPeriodDto>> GetPayrollPeriod(Guid id);
     Task<Result> UpdatePayrollPeriod(Guid id, CreatePayrollPeriodRequest request);
     Task<Result> ClosePayrollPeriod(ClosePayrollPeriodRequest request, Guid userId);
-    Task<Result> ReopenPayrollPeriod(ReopenPayrollPeriodRequest request, Guid userId);
+    Task<Result> ReopenPayrollPeriod(ReopenPayrollPeriodRequest request);
     Task<Result> DeletePayrollPeriod(Guid id, Guid userId);
 }
