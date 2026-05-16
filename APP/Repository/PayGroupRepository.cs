@@ -13,8 +13,7 @@ public class PayGroupRepository(ApplicationDbContext context, IMapper mapper) : 
 {
     public async Task<Result<Guid>> CreatePayGroup(CreatePayGroupRequest request)
     {
-        var exists = await context.PayGroups.AnyAsync(p => p.Code == request.Code 
-        && p.PayrollCompanyId == request.PayrollCompanyId);
+        var exists = await context.PayGroups.AnyAsync(p => p.Code == request.Code);
         if (exists)
             return Error.Conflict("PayGroup.DuplicateCode", $"A pay group with code" +
                                                             $" '{request.Code}' already exists for this company.");
@@ -31,15 +30,13 @@ public class PayGroupRepository(ApplicationDbContext context, IMapper mapper) : 
         return payGroup.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<PayGroupDto>>>> GetPayGroups(int page, int pageSize, string searchQuery, Guid? payrollCompanyId = null)
+    public async Task<Result<Paginateable<IEnumerable<PayGroupDto>>>> GetPayGroups(int page, int pageSize, string searchQuery)
     {
         var query = context.PayGroups.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
             query = query.WhereSearch(searchQuery, q => q.Name, q => q.Code);
-
-        if (payrollCompanyId.HasValue)
-            query = query.Where(pg => pg.PayrollCompanyId == payrollCompanyId.Value);
+        
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<PayGroupDto>);
     }

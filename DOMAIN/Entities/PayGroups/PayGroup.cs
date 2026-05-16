@@ -13,9 +13,6 @@ public class PayGroup : BaseEntity
     [StringLength(100)] public string CostCenterDefault { get; set; }
     public bool IsActive { get; set; } = true;
 
-    public Guid PayrollCompanyId { get; set; }
-    public PayrollCompany PayrollCompany { get; set; }
-
     public Guid PayrollCalendarId { get; set; }
     public PayrollCalendar PayrollCalendar { get; set; }
 

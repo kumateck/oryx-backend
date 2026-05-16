@@ -24,6 +24,5 @@ public class PayrollCompany : BaseEntity
     public bool IsActive { get; set; }
     public Guid? SiteId { get; set; }
     public Site Site { get; set; }
-    public Guid? PayGroupId { get; set; }
-    public PayGroup PayGroup { get; set; }
+    public List<PayGroup> PayGroups { get; set; }
 }

@@ -72,7 +72,7 @@ public class PayrollCompanyRepository(ApplicationDbContext context, IMapper mapp
 
         if (payrollCompany is null) return Error.NotFound("PayrollCompany.NotFound", "Payroll company not found");
         
-        var hasPayGroups = await context.PayGroups.AnyAsync(p => p.PayrollCompanyId == payrollCompanyId);
+        var hasPayGroups = await context.PayrollCompanies.AnyAsync(p => p.PayGroups.Count > 0);
         if (hasPayGroups) return Error.Validation("PayrollCompany.InUse", "Payroll company has associated " +
                                                                           "pay groups and cannot be deleted");
 
