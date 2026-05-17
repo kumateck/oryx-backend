@@ -1475,6 +1475,7 @@ public class ProductionScheduleRepository(
                                 materialDepartment?.Department
                             ),
                             UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                            Density = materialDepartment?.Density ?? 0,
                             ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
                             MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                             MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
@@ -1484,7 +1485,9 @@ public class ProductionScheduleRepository(
                         ConsumedQuantity = consumedQuantity,
                         ExtraQuantity = extraQuantity,
                         IsSubstitute = isSubstitute,
-                        ParentMaterial = isSubstitute ? mapper.Map<MaterialDto>(item.Material) : null,
+                        ParentMaterial = isSubstitute
+                            ? mapper.Map<MaterialDto>(item.Material)
+                            : null,
                     };
                 }
 
@@ -1824,6 +1827,7 @@ public class ProductionScheduleRepository(
                                 materialDepartment?.Department
                             ),
                             UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                            Density = materialDepartment?.Density ?? 0,
                             ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
                             MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                             MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
@@ -1833,7 +1837,9 @@ public class ProductionScheduleRepository(
                         ConsumedQuantity = consumedQuantity,
                         ExtraQuantity = extraQuantity,
                         IsSubstitute = isSubstitute,
-                        ParentMaterial = isSubstitute ? mapper.Map<MaterialDto>(item.Material) : null,
+                        ParentMaterial = isSubstitute
+                            ? mapper.Map<MaterialDto>(item.Material)
+                            : null,
                     };
                 }
 

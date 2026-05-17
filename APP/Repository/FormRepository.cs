@@ -112,14 +112,14 @@ public class FormRepository(
             );
         }
 
-        if (filter.MaterialSpecificationId.HasValue)
+        if (filter.MaterialId.HasValue)
         {
-            query = query.Where(f => f.MaterialSpecificationId == filter.MaterialSpecificationId);
+            query = query.Where(f => f.MaterialSpecification.MaterialId == filter.MaterialId);
         }
 
-        if (filter.ProductSpecificationId.HasValue)
+        if (filter.ProductId.HasValue)
         {
-            query = query.Where(f => f.ProductSpecificationId == filter.ProductSpecificationId);
+            query = query.Where(f => f.ProductSpecification.ProductId == filter.ProductId);
         }
 
         if (!string.IsNullOrEmpty(filter.MaterialSpecificationNumber))
