@@ -98,6 +98,7 @@ public class FormRepository(
                 !context.FormSections.Any(sub =>
                     sub.Name == f.Name
                     && sub.InstrumentId == f.InstrumentId
+                    && sub.Description == f.Description
                     && sub.CreatedAt > f.CreatedAt
                 )
             );
