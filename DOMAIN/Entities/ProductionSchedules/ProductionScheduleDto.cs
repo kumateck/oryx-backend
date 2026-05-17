@@ -79,6 +79,7 @@ public class MaterialDepartmentDetails
 {
     public CollectionItemDto Department { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public decimal Density { get; set; }
     public decimal ReOrderLevel { get; set; }
     public decimal MinimumStockLevel { get; set; }
     public decimal MaximumStockLevel { get; set; }

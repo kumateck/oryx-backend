@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Instruments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products.Equipments;
