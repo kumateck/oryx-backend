@@ -91,6 +91,7 @@ public class FormRepository(
     {
         var query = context
             .FormSections.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(f => f.Form)
             .Include(f => f.Instrument)
                 .ThenInclude(i => i.QcEquipmentCategory)
