@@ -95,14 +95,7 @@ public class FormRepository(
             .Include(f => f.Form)
             .Include(f => f.Instrument)
                 .ThenInclude(i => i.QcEquipmentCategory)
-            .Where(f =>
-                !context.FormSections.Any(sub =>
-                    sub.Name == f.Name
-                    && sub.InstrumentId == f.InstrumentId
-                    && sub.Description == f.Description
-                    && sub.CreatedAt > f.CreatedAt
-                )
-            );
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
         {
