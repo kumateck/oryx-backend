@@ -6,8 +6,10 @@ public class FormFilter : PagedQuery
 {
     public string SearchQuery { get; set; }
     public FormType? Type { get; set; }
-    public Guid? MaterialSpecificationId { get; set; }
-    public Guid? ProductSpecificationId { get; set; }
+    public Guid? MaterialId { get; set; }
+    public Guid? ProductId { get; set; }
+    public string MaterialSpecificationNumber { get; set; }
+    public string ProductSpecificationNumber { get; set; }
 }
 
 public class QuestionFilter : PagedQuery

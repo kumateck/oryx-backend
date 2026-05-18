@@ -7,4 +7,5 @@ public class CreateProductBillOfMaterialRequest
     public decimal Quantity { get; set; }  // Quantity of the component required
     public Guid UoMId { get; set; }  // Unit of Measure, e.g., grams, liters, pieces
     public bool IsSubstitutable { get; set; }  // Allows for substitution in production
+    public List<Guid> SubstituteMaterialIds { get; set; } = [];
 }

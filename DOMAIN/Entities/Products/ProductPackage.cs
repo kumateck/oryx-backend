@@ -21,6 +21,15 @@ public class ProductPackage : BaseEntity
     public decimal Loose { get; set; }
     public Guid? ProductPackingId { get; set; }
     public ProductPacking ProductPacking { get; set; }
+    public List<ProductPackageSubstitute> Substitutes { get; set; } = [];
+}
+
+public class ProductPackageSubstitute : BaseEntity
+{
+    public Guid ProductPackageId { get; set; }
+    public ProductPackage ProductPackage { get; set; }
+    public Guid SubstituteMaterialId { get; set; }
+    public Material SubstituteMaterial { get; set; }
 }
 
 public class PackageType : BaseEntity

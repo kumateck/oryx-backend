@@ -1,5 +1,5 @@
-using System.Linq;
 using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 using APP.Extensions;
 using APP.IRepository;
@@ -1322,12 +1322,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    var existingTarget = await context.ShelfMaterialBatches
-                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == shelfBatch.WarehouseLocationShelfId
-                            && x.MaterialBatchId == request.MaterialBatchId)
-                        ?? context.ShelfMaterialBatches.Local
-                            .FirstOrDefault(x => x.WarehouseLocationShelfId == shelfBatch.WarehouseLocationShelfId
-                                && x.MaterialBatchId == request.MaterialBatchId);
+                    var existingTarget =
+                        await context.ShelfMaterialBatches.FirstOrDefaultAsync(x =>
+                            x.WarehouseLocationShelfId == shelfBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == request.MaterialBatchId
+                        )
+                        ?? context.ShelfMaterialBatches.Local.FirstOrDefault(x =>
+                            x.WarehouseLocationShelfId == shelfBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == request.MaterialBatchId
+                        );
 
                     if (existingTarget != null)
                     {
@@ -2679,6 +2682,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 existing.MinimumStockLevel = dto.MinimumStockLevel;
                 existing.MaximumStockLevel = dto.MaximumStockLevel;
                 existing.UoMId = dto.UoMId;
+                existing.Density = dto.Density;
             }
             else
             {
@@ -2691,6 +2695,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         ReOrderLevel = dto.ReOrderLevel,
                         MaximumStockLevel = dto.MaximumStockLevel,
                         MinimumStockLevel = dto.MinimumStockLevel,
+                        Density = dto.Density,
                         UoMId = dto.UoMId,
                     }
                 );
@@ -3183,12 +3188,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    var existingTarget = await context.ShelfMaterialBatches
-                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                            && x.MaterialBatchId == materialBatch.Id)
-                        ?? context.ShelfMaterialBatches.Local
-                            .FirstOrDefault(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                                && x.MaterialBatchId == materialBatch.Id);
+                    var existingTarget =
+                        await context.ShelfMaterialBatches.FirstOrDefaultAsync(x =>
+                            x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == materialBatch.Id
+                        )
+                        ?? context.ShelfMaterialBatches.Local.FirstOrDefault(x =>
+                            x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == materialBatch.Id
+                        );
 
                     if (existingTarget != null)
                     {
@@ -3388,12 +3396,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         "Warehouse type does not allow shelf to be assigned"
                     );
                 default:
-                    var existingTarget = await context.ShelfMaterialBatches
-                        .FirstOrDefaultAsync(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                            && x.MaterialBatchId == materialBatch.Id)
-                        ?? context.ShelfMaterialBatches.Local
-                            .FirstOrDefault(x => x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                                && x.MaterialBatchId == materialBatch.Id);
+                    var existingTarget =
+                        await context.ShelfMaterialBatches.FirstOrDefaultAsync(x =>
+                            x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == materialBatch.Id
+                        )
+                        ?? context.ShelfMaterialBatches.Local.FirstOrDefault(x =>
+                            x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
+                            && x.MaterialBatchId == materialBatch.Id
+                        );
 
                     if (existingTarget != null)
                     {

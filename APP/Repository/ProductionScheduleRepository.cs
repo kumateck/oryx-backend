@@ -239,12 +239,18 @@ public class ProductionScheduleRepository(
 
         if (request.ScheduledStartTime >= request.ScheduledEndTime)
         {
-            return Error.Validation("StartTime.Error", "Scheduling start time must be before end time");
+            return Error.Validation(
+                "StartTime.Error",
+                "Scheduling start time must be before end time"
+            );
         }
 
         if (request.ScheduledStartTime < DateTime.UtcNow)
         {
-            return Error.Validation("StartTime.Error", "Scheduling start time must not be less than the current date");
+            return Error.Validation(
+                "StartTime.Error",
+                "Scheduling start time must not be less than the current date"
+            );
         }
 
         mapper.Map(request, existingSchedule);
@@ -1243,6 +1249,11 @@ public class ProductionScheduleRepository(
                 .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
                     .ThenInclude(billOfMaterial => billOfMaterial.Items)
                         .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM)
+            .Include(product => product.BillOfMaterials)
+                .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
+                    .ThenInclude(billOfMaterial => billOfMaterial.Items)
+                        .ThenInclude(billOfMaterialItem => billOfMaterialItem.Substitutes)
+                            .ThenInclude(s => s.SubstituteMaterial)
             .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
 
         if (product is null)
@@ -1335,6 +1346,12 @@ public class ProductionScheduleRepository(
         }
 
         var materialIds = activeBoM.BillOfMaterial.Items.Select(item => item.MaterialId).ToList();
+        materialIds.AddRange(
+            activeBoM.BillOfMaterial.Items.SelectMany(i =>
+                i.Substitutes.Select(s => s.SubstituteMaterialId)
+            )
+        );
+        materialIds = materialIds.Distinct().ToList();
 
         var stockLevels = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
@@ -1356,10 +1373,7 @@ public class ProductionScheduleRepository(
             .Include(m => m.Material)
             .Include(m => m.Department)
             .Where(m =>
-                activeBoM
-                    .BillOfMaterial.Items.Select(i => i.MaterialId)
-                    .Distinct()
-                    .Contains(m.MaterialId)
+                materialIds.Contains(m.MaterialId)
                 && m.DepartmentId == department.Id
                 && !m.DeletedAt.HasValue
             )
@@ -1375,93 +1389,153 @@ public class ProductionScheduleRepository(
 
         var materialDetails = activeBoM
             .BillOfMaterial.Items.Where(i => materialDepartments.ContainsKey(i.MaterialId))
-            .Select(item =>
+            .SelectMany(item =>
             {
-                var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
-
                 var quantityNeeded =
                     batchSize == BatchSize.Full
                         ? item.PrescribedQuantity
                         : item.PrescribedQuantity / 2;
 
-                var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
-
-                var reservedQuantityBatches = materialRepository
-                    .GetReservedBatchesAndQuantityForProductionWarehouse(
-                        item.MaterialId,
-                        productionWarehouse.Id,
-                        productionScheduleProduct.Id
-                    )
-                    .Result;
-
-                var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
-
-                var totalReservedQuantity = context
-                    .MaterialBatchReservedQuantities.AsSplitQuery()
-                    .IgnoreQueryFilters()
-                    .Include(r => r.MaterialBatch)
-                        .ThenInclude(b => b.Material)
-                    .Include(b => b.WarehouseLocationShelf)
-                    .Where(r =>
-                        r.MaterialBatch.MaterialId == item.MaterialId
-                        && r.WarehouseId == productionWarehouse.Id
-                        && r.DeletedAt == null
-                    )
-                    .Sum(r => r.Quantity);
-
-                var consumedQuantityBatches = materialRepository
-                    .GetConsumedBatchesAndQuantityForProductionWarehouse(
-                        item.MaterialId,
-                        productionWarehouse.Id,
-                        productionScheduleProduct.Id
-                    )
-                    .Result;
-
-                var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
-
-                var extraQuantity =
-                    context
-                        .ProductionExtraPackings.FirstOrDefault(p =>
-                            p.ProductionScheduleProductId == productionScheduleProductId
-                            && p.MaterialId == item.MaterialId
-                            && p.Status == ProductionExtraPackingStatus.Approved
-                        )
-                        ?.Quantity
-                    ?? 0;
-
-                return new ProductionScheduleProcurementDto
+                ProductionScheduleProcurementDto CreateProcurementDto(
+                    Guid materialId,
+                    Material material,
+                    bool isSubstitute
+                )
                 {
-                    Material = mapper.Map<MaterialDto>(item.Material),
-                    BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
-                    BaseQuantity = item.BaseQuantity,
-                    QuantityNeeded = quantityNeeded,
-                    QuantityOnHand = quantityOnHand,
-                    Status =
-                        currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
-                            ? MaterialRequisitionStatus.InHouse
-                        : GetStatusOfProductionMaterial(
-                            stockTransfers,
-                            stockRequisition?.Items ?? [],
-                            purchaseRequisition.SelectMany(p => p.Items).ToList(),
-                            sourceRequisitionItems,
-                            item.MaterialId
-                        ),
-                    StorageWarehouseId = warehouse.Id,
-                    ProductionWarehouseId = productionWarehouse.Id,
-                    MaterialDepartment = new MaterialDepartmentDetails
+                    var quantityOnHand = stockLevels.GetValueOrDefault(materialId, 0);
+                    var materialDepartment = materialDepartments.GetValueOrDefault(materialId);
+
+                    var reservedQuantityBatches = materialRepository
+                        .GetReservedBatchesAndQuantityForProductionWarehouse(
+                            materialId,
+                            productionWarehouse.Id,
+                            productionScheduleProduct.Id
+                        )
+                        .Result;
+
+                    var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
+
+                    var totalReservedQuantity = context
+                        .MaterialBatchReservedQuantities.AsSplitQuery()
+                        .IgnoreQueryFilters()
+                        .Include(r => r.MaterialBatch)
+                            .ThenInclude(b => b.Material)
+                        .Include(b => b.WarehouseLocationShelf)
+                        .Where(r =>
+                            r.MaterialBatch.MaterialId == materialId
+                            && r.WarehouseId == productionWarehouse.Id
+                            && r.DeletedAt == null
+                        )
+                        .Sum(r => r.Quantity);
+
+                    var consumedQuantityBatches = materialRepository
+                        .GetConsumedBatchesAndQuantityForProductionWarehouse(
+                            materialId,
+                            productionWarehouse.Id,
+                            productionScheduleProduct.Id
+                        )
+                        .Result;
+
+                    var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
+
+                    var extraQuantity =
+                        context
+                            .ProductionExtraPackings.FirstOrDefault(p =>
+                                p.ProductionScheduleProductId == productionScheduleProductId
+                                && p.MaterialId == materialId
+                                && p.Status == ProductionExtraPackingStatus.Approved
+                            )
+                            ?.Quantity
+                        ?? 0;
+
+                    return new ProductionScheduleProcurementDto
                     {
-                        Department = mapper.Map<CollectionItemDto>(materialDepartment?.Department),
-                        UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
-                        ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
-                        MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
-                        MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
-                    },
-                    FrozenQuantity = reservedQuantity,
-                    TotalFrozenQuantity = totalReservedQuantity,
-                    ConsumedQuantity = consumedQuantity,
-                    ExtraQuantity = extraQuantity,
-                };
+                        Material = mapper.Map<MaterialDto>(material),
+                        BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
+                        BaseQuantity = item.BaseQuantity,
+                        QuantityNeeded = quantityNeeded,
+                        QuantityOnHand = quantityOnHand,
+                        Status =
+                            currentActivityStep is { Order: > 2 }
+                                ? MaterialRequisitionStatus.Supplied
+                            : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
+                                ? MaterialRequisitionStatus.InHouse
+                            : GetStatusOfProductionMaterial(
+                                stockTransfers,
+                                stockRequisition?.Items ?? [],
+                                purchaseRequisition.SelectMany(p => p.Items).ToList(),
+                                sourceRequisitionItems,
+                                materialId
+                            ),
+                        StorageWarehouseId = warehouse.Id,
+                        ProductionWarehouseId = productionWarehouse.Id,
+                        MaterialDepartment = new MaterialDepartmentDetails
+                        {
+                            Department = mapper.Map<CollectionItemDto>(
+                                materialDepartment?.Department
+                            ),
+                            UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                            Density = materialDepartment?.Density ?? 0,
+                            ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
+                            MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
+                            MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
+                        },
+                        FrozenQuantity = reservedQuantity,
+                        TotalFrozenQuantity = totalReservedQuantity,
+                        ConsumedQuantity = consumedQuantity,
+                        ExtraQuantity = extraQuantity,
+                        IsSubstitute = isSubstitute,
+                        ParentMaterial = isSubstitute
+                            ? mapper.Map<MaterialDto>(item.Material)
+                            : null,
+                    };
+                }
+
+                var mainProcurement = CreateProcurementDto(item.MaterialId, item.Material, false);
+                var substitutes = item
+                    .Substitutes.Where(s => materialDepartments.ContainsKey(s.SubstituteMaterialId))
+                    .Select(s =>
+                        CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true)
+                    )
+                    .ToList();
+
+                var issuedMaterials = new List<ProductionScheduleProcurementDto>();
+                if (mainProcurement.Status != MaterialRequisitionStatus.None)
+                    issuedMaterials.Add(mainProcurement);
+                issuedMaterials.AddRange(
+                    substitutes.Where(s => s.Status != MaterialRequisitionStatus.None)
+                );
+
+                if (issuedMaterials.Count != 0)
+                {
+                    return issuedMaterials;
+                }
+
+                bool mainAvailable =
+                    mainProcurement.QuantityOnHand >= quantityNeeded
+                    || mainProcurement.FrozenQuantity == quantityNeeded;
+                var availableSubstitutes = substitutes
+                    .Where(s =>
+                        s.QuantityOnHand >= quantityNeeded || s.FrozenQuantity == quantityNeeded
+                    )
+                    .ToList();
+
+                var itemResults = new List<ProductionScheduleProcurementDto>();
+                if (mainAvailable)
+                {
+                    itemResults.Add(mainProcurement);
+                    itemResults.AddRange(availableSubstitutes);
+                }
+                else if (availableSubstitutes.Any())
+                {
+                    itemResults.AddRange(availableSubstitutes);
+                }
+                else
+                {
+                    itemResults.Add(mainProcurement);
+                }
+
+                return itemResults;
             })
             .ToList();
 
@@ -1534,6 +1608,9 @@ public class ProductionScheduleRepository(
                     .ThenInclude(m => m.Batches)
             .Include(product => product.Packages)
                 .ThenInclude(productPackage => productPackage.DirectLinkMaterial)
+            .Include(product => product.Packages)
+                .ThenInclude(productPackage => productPackage.Substitutes)
+                    .ThenInclude(s => s.SubstituteMaterial)
             .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
         if (product is null)
             return ProductErrors.NotFound(productionScheduleProduct.ProductId);
@@ -1616,6 +1693,10 @@ public class ProductionScheduleRepository(
         }
 
         var materialIds = product.Packages.Select(p => p.MaterialId).ToList();
+        materialIds.AddRange(
+            product.Packages.SelectMany(p => p.Substitutes.Select(s => s.SubstituteMaterialId))
+        );
+        materialIds = materialIds.Distinct().ToList();
 
         var stockLevels = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
@@ -1636,7 +1717,7 @@ public class ProductionScheduleRepository(
             .Include(m => m.Material)
             .Include(m => m.Department)
             .Where(m =>
-                product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.MaterialId)
+                materialIds.Contains(m.MaterialId)
                 && m.DepartmentId == department.Id
                 && !m.DeletedAt.HasValue
             )
@@ -1655,95 +1736,158 @@ public class ProductionScheduleRepository(
                 p.ProductPackingId == productionScheduleProduct.ProductPackingId
                 || !p.ProductPackingId.HasValue && materialDepartments.ContainsKey(p.MaterialId)
             )
-            .Select(item =>
+            .SelectMany(item =>
             {
-                var quantityOnHand = stockLevels.GetValueOrDefault(item.MaterialId, 0);
                 var quantityNeeded =
                     batchSize == BatchSize.Full
                         ? item.PrescribedQuantity + item.Loose
                         : item.PrescribedQuantity / 2 + item.Loose;
 
-                var materialDepartment = materialDepartments.GetValueOrDefault(item.MaterialId);
-
-                var reservedQuantityBatches = materialRepository
-                    .GetReservedBatchesAndQuantityForProductionWarehouse(
-                        item.MaterialId,
-                        productionWarehouse.Id,
-                        productionScheduleProduct.Id
-                    )
-                    .Result;
-
-                var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
-
-                var totalReservedQuantity = context
-                    .MaterialBatchReservedQuantities.AsSplitQuery()
-                    .IgnoreQueryFilters()
-                    .Include(r => r.MaterialBatch)
-                        .ThenInclude(b => b.Material)
-                    .Include(b => b.WarehouseLocationShelf)
-                    .Where(r =>
-                        r.MaterialBatch.MaterialId == item.MaterialId
-                        && r.WarehouseId == productionWarehouse.Id
-                        && r.DeletedAt == null
-                    )
-                    .Sum(r => r.Quantity);
-
-                var consumedQuantityBatches = materialRepository
-                    .GetConsumedBatchesAndQuantityForProductionWarehouse(
-                        item.MaterialId,
-                        productionWarehouse.Id,
-                        productionScheduleProduct.Id
-                    )
-                    .Result;
-
-                var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
-
-                var extraQuantity =
-                    context
-                        .ProductionExtraPackings.FirstOrDefault(p =>
-                            p.ProductionScheduleProductId == productionScheduleProductId
-                            && p.MaterialId == item.MaterialId
-                            && p.Status == ProductionExtraPackingStatus.Approved
-                        )
-                        ?.Quantity
-                    ?? 0;
-
-                return new ProductionScheduleProcurementPackageDto
+                ProductionScheduleProcurementPackageDto CreateProcurementDto(
+                    Guid materialId,
+                    Material material,
+                    bool isSubstitute
+                )
                 {
-                    Material = mapper.Map<MaterialDto>(item.Material),
-                    DirectLinkMaterial = mapper.Map<MaterialDto>(item.DirectLinkMaterial),
-                    BaseQuantity = item.BaseQuantity,
-                    UnitCapacity = item.UnitCapacity,
-                    Status =
-                        currentActivityStep is { Order: > 2 } ? MaterialRequisitionStatus.Supplied
-                        : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
-                            ? MaterialRequisitionStatus.InHouse
-                        : GetStatusOfProductionMaterial(
-                            stockTransfers,
-                            stockRequisition?.Items ?? [],
-                            purchaseRequisition.SelectMany(p => p.Items).ToList(),
-                            sourceRequisitionItems,
-                            item.MaterialId
-                        ),
-                    PrescribedQuantity = item.PrescribedQuantity,
-                    QuantityNeeded = quantityNeeded,
-                    QuantityOnHand = quantityOnHand,
-                    PackingExcessMargin = item.PackingExcessMargin,
-                    StorageWarehouseId = warehouse.Id,
-                    ProductionWarehouseId = productionWarehouse.Id,
-                    MaterialDepartment = new MaterialDepartmentDetails
+                    var quantityOnHand = stockLevels.GetValueOrDefault(materialId, 0);
+                    var materialDepartment = materialDepartments.GetValueOrDefault(materialId);
+
+                    var reservedQuantityBatches = materialRepository
+                        .GetReservedBatchesAndQuantityForProductionWarehouse(
+                            materialId,
+                            productionWarehouse.Id,
+                            productionScheduleProduct.Id
+                        )
+                        .Result;
+
+                    var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
+
+                    var totalReservedQuantity = context
+                        .MaterialBatchReservedQuantities.AsSplitQuery()
+                        .IgnoreQueryFilters()
+                        .Include(r => r.MaterialBatch)
+                            .ThenInclude(b => b.Material)
+                        .Include(b => b.WarehouseLocationShelf)
+                        .Where(r =>
+                            r.MaterialBatch.MaterialId == materialId
+                            && r.WarehouseId == productionWarehouse.Id
+                            && r.DeletedAt == null
+                        )
+                        .Sum(r => r.Quantity);
+
+                    var consumedQuantityBatches = materialRepository
+                        .GetConsumedBatchesAndQuantityForProductionWarehouse(
+                            materialId,
+                            productionWarehouse.Id,
+                            productionScheduleProduct.Id
+                        )
+                        .Result;
+
+                    var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
+
+                    var extraQuantity =
+                        context
+                            .ProductionExtraPackings.FirstOrDefault(p =>
+                                p.ProductionScheduleProductId == productionScheduleProductId
+                                && p.MaterialId == materialId
+                                && p.Status == ProductionExtraPackingStatus.Approved
+                            )
+                            ?.Quantity
+                        ?? 0;
+
+                    return new ProductionScheduleProcurementPackageDto
                     {
-                        Department = mapper.Map<CollectionItemDto>(materialDepartment?.Department),
-                        UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
-                        ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
-                        MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
-                        MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
-                    },
-                    FrozenQuantity = reservedQuantity,
-                    TotalFrozenQuantity = totalReservedQuantity,
-                    ConsumedQuantity = consumedQuantity,
-                    ExtraQuantity = extraQuantity,
-                };
+                        Material = mapper.Map<MaterialDto>(material),
+                        DirectLinkMaterial = isSubstitute
+                            ? null
+                            : mapper.Map<MaterialDto>(item.DirectLinkMaterial),
+                        BaseQuantity = item.BaseQuantity,
+                        UnitCapacity = item.UnitCapacity,
+                        Status =
+                            currentActivityStep is { Order: > 2 }
+                                ? MaterialRequisitionStatus.Supplied
+                            : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
+                                ? MaterialRequisitionStatus.InHouse
+                            : GetStatusOfProductionMaterial(
+                                stockTransfers,
+                                stockRequisition?.Items ?? [],
+                                purchaseRequisition.SelectMany(p => p.Items).ToList(),
+                                sourceRequisitionItems,
+                                materialId
+                            ),
+                        PrescribedQuantity = item.PrescribedQuantity,
+                        QuantityNeeded = quantityNeeded,
+                        QuantityOnHand = quantityOnHand,
+                        PackingExcessMargin = item.PackingExcessMargin,
+                        StorageWarehouseId = warehouse.Id,
+                        ProductionWarehouseId = productionWarehouse.Id,
+                        MaterialDepartment = new MaterialDepartmentDetails
+                        {
+                            Department = mapper.Map<CollectionItemDto>(
+                                materialDepartment?.Department
+                            ),
+                            UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
+                            Density = materialDepartment?.Density ?? 0,
+                            ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
+                            MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
+                            MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
+                        },
+                        FrozenQuantity = reservedQuantity,
+                        TotalFrozenQuantity = totalReservedQuantity,
+                        ConsumedQuantity = consumedQuantity,
+                        ExtraQuantity = extraQuantity,
+                        IsSubstitute = isSubstitute,
+                        ParentMaterial = isSubstitute
+                            ? mapper.Map<MaterialDto>(item.Material)
+                            : null,
+                    };
+                }
+
+                var mainProcurement = CreateProcurementDto(item.MaterialId, item.Material, false);
+                var substitutes = item
+                    .Substitutes.Where(s => materialDepartments.ContainsKey(s.SubstituteMaterialId))
+                    .Select(s =>
+                        CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true)
+                    )
+                    .ToList();
+
+                var issuedMaterials = new List<ProductionScheduleProcurementPackageDto>();
+                if (mainProcurement.Status != MaterialRequisitionStatus.None)
+                    issuedMaterials.Add(mainProcurement);
+                issuedMaterials.AddRange(
+                    substitutes.Where(s => s.Status != MaterialRequisitionStatus.None)
+                );
+
+                if (issuedMaterials.Count != 0)
+                {
+                    return issuedMaterials;
+                }
+
+                bool mainAvailable =
+                    mainProcurement.QuantityOnHand >= quantityNeeded
+                    || mainProcurement.FrozenQuantity == quantityNeeded;
+                var availableSubstitutes = substitutes
+                    .Where(s =>
+                        s.QuantityOnHand >= quantityNeeded || s.FrozenQuantity == quantityNeeded
+                    )
+                    .ToList();
+
+                var itemResults = new List<ProductionScheduleProcurementPackageDto>();
+                if (mainAvailable)
+                {
+                    itemResults.Add(mainProcurement);
+                    itemResults.AddRange(availableSubstitutes);
+                }
+                else if (availableSubstitutes.Count != 0)
+                {
+                    itemResults.AddRange(availableSubstitutes);
+                }
+                else
+                {
+                    itemResults.Add(mainProcurement);
+                }
+
+                return itemResults;
             })
             .ToList();
 

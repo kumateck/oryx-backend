@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Materials;
 using SHARED;
 
 namespace DOMAIN.Entities.Products;
@@ -15,4 +16,11 @@ public class ProductPackageDto
     public decimal PrescribedQuantity { get; set; }
     public decimal Loose { get; set; }
     public ProductPackingDto ProductPacking { get; set; }
+    public List<ProductPackageSubstituteDto> Substitutes { get; set; } = [];
+}
+
+public class ProductPackageSubstituteDto
+{
+    public Guid Id { get; set; }
+    public MaterialDto SubstituteMaterial { get; set; }
 }

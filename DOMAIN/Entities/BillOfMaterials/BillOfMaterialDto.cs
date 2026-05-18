@@ -24,4 +24,11 @@ public class BillOfMaterialItemDto
     public UnitOfMeasureDto BaseUoM { get; set; }
     public int Order { get; set; }
     public decimal PrescribedQuantity { get; set; }
+    public List<BillOfMaterialItemSubstituteDto> Substitutes { get; set; } = [];
+}
+
+public class BillOfMaterialItemSubstituteDto
+{
+    public Guid Id { get; set; }
+    public MaterialDto SubstituteMaterial { get; set; }
 }
