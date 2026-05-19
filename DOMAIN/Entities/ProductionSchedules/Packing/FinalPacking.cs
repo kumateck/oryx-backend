@@ -25,8 +25,10 @@ public class CreateFinalPacking
     public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
     public decimal TotalWeightReceived { get; set; }
-}
 
+    [StringLength(10000000, ErrorMessage = "Description must be less than 10000000 characters.")]
+    public string PercentageVarianceDescription { get; set; }
+}
 
 public class CreateFinalPackingMaterial
 {
@@ -40,6 +42,9 @@ public class CreateFinalPackingMaterial
     public decimal SampledQuantity { get; set; }
     public decimal TotalAccountedForQuantity { get; set; }
     public decimal PercentageLoss { get; set; }
+
+    [StringLength(10000000, ErrorMessage = "Description must be less than 10000000 characters.")]
+    public string PercentageVarianceDescription { get; set; }
 }
 
 public class FinalPacking : BaseEntity
@@ -65,10 +70,13 @@ public class FinalPacking : BaseEntity
     public decimal YieldTotalQuantityPacked { get; set; }
     public decimal TotalGainOrLoss { get; set; }
     public decimal TotalWeightReceived { get; set; }
+
     [StringLength(100000)]
     public string Comment { get; set; }
-}
 
+    [StringLength(10000000)]
+    public string PercentageVarianceDescription { get; set; }
+}
 
 public class FinalPackingMaterial : BaseEntity
 {
@@ -85,8 +93,10 @@ public class FinalPackingMaterial : BaseEntity
     public decimal SampledQuantity { get; set; }
     public decimal TotalAccountedForQuantity { get; set; }
     public decimal PercentageLoss { get; set; }
-}
 
+    [StringLength(10000000)]
+    public string PercentageVarianceDescription { get; set; }
+}
 
 public class FinalPackingDto : BaseDto
 {
@@ -108,8 +118,8 @@ public class FinalPackingDto : BaseDto
     public decimal TotalGainOrLoss { get; set; }
     public decimal TotalWeightReceived { get; set; }
     public string Comment { get; set; }
+    public string PercentageVarianceDescription { get; set; }
 }
-
 
 public class FinalPackingMaterialDto : BaseDto
 {
@@ -123,4 +133,5 @@ public class FinalPackingMaterialDto : BaseDto
     public decimal SampledQuantity { get; set; }
     public decimal TotalAccountedForQuantity { get; set; }
     public decimal PercentageLoss { get; set; }
+    public string PercentageVarianceDescription { get; set; }
 }
