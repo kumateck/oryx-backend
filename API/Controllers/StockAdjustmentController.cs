@@ -1,5 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.StockAdjustments;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -57,5 +58,27 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
         }
 
         return result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Fetches the stock adjustment history.
+    /// </summary>
+    /// <param name="page">Page number starting from 1 (default: 1)</param>
+    /// <param name="pageSize">Number of items per page (default: 10, recommended max: 100)</param>
+    /// <param name="searchQuery">Optional search query to filter by adjustment number.</param>
+    /// <returns>A paginated list of stock adjustment summaries.</returns>
+    [HttpGet("history")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<StockAdjustmentSummaryDto>>)
+    )]
+    public async Task<IResult> GetStockAdjustmentHistory(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null
+    )
+    {
+        var result = await repository.GetStockAdjustmentHistory(page, pageSize, searchQuery);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

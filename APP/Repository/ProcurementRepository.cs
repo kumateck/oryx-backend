@@ -1642,14 +1642,9 @@ public class ProcurementRepository(
             context.PurchaseOrderItems.Update(purchaseOrderItem);
 
             // 🔑 after processing items, decide overall PO status
-            if (purchaseOrder.Items.All(i => i.QuantityInvoiced == i.Quantity))
-            {
-                purchaseOrder.Status = PurchaseOrderStatus.Linked; // fully linked
-            }
-            else
-            {
-                purchaseOrder.Status = PurchaseOrderStatus.PartiallyLinked; // some still open
-            }
+            purchaseOrder.Status = purchaseOrder.Items.All(i => i.QuantityInvoiced == i.Quantity)
+                ? PurchaseOrderStatus.Linked // fully linked
+                : PurchaseOrderStatus.PartiallyLinked; // some still open
 
             context.PurchaseOrders.Update(purchaseOrder);
         }

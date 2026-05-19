@@ -1,4 +1,6 @@
+using APP.Extensions;
 using APP.IRepository;
+using APP.Utils;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.InventoryLedgers;
 using DOMAIN.Entities.ItemTransactionLogs;
@@ -9,7 +11,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdjustmentRepository
+public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRepository approvalRepository)
+    : IStockAdjustmentRepository
 {
     public async Task<Result<StockAdjustmentSummaryDto>> CreateStockAdjustment(
         CreateStockAdjustmentRequest request,
@@ -25,73 +28,149 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                 );
         }
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
+        var adjustment = new StockAdjustment
         {
-            var adjustment = new StockAdjustment
+            AdjustmentNumber = request.AdjustmentNumber,
+            AdjustmentDate = request.AdjustmentDate,
+            TargetType = request.TargetType,
+            CreatedById = userId,
+            CreatedAt = DateTime.UtcNow,
+            Approved = false,
+        };
+
+        await context.StockAdjustments.AddAsync(adjustment);
+
+        foreach (var lineRequest in request.Lines)
+        {
+            var adjustmentLine = new StockAdjustmentLine
             {
-                AdjustmentNumber = request.AdjustmentNumber,
-                AdjustmentDate = request.AdjustmentDate,
-                TargetType = request.TargetType,
+                StockAdjustment = adjustment,
+                PhysicalCount = lineRequest.PhysicalCount,
+                ReasonCode = lineRequest.ReasonCode.ToString(),
+                Notes = lineRequest.Notes,
                 CreatedById = userId,
                 CreatedAt = DateTime.UtcNow,
             };
 
-            await context.StockAdjustments.AddAsync(adjustment);
-
-            decimal totalVariance = 0;
-            int linesProcessed = 0;
-
-            foreach (var lineRequest in request.Lines)
+            if (request.TargetType == StockAdjustmentTarget.Item)
             {
-                decimal systemQuantity;
-                decimal variance;
+                var item = await context.Items.FirstOrDefaultAsync(i => i.Id == lineRequest.ModelId);
+                if (item == null)
+                    return Error.NotFound("Item.NotFound", $"Item not found: {lineRequest.ModelId}");
+
+                adjustmentLine.ItemId = item.Id;
+                adjustmentLine.SystemQuantitySnapshot = item.AvailableQuantity;
+                adjustmentLine.Variance = lineRequest.PhysicalCount - item.AvailableQuantity;
+            }
+            else // Material
+            {
+                var shelfBatch = await context.ShelfMaterialBatches.FirstOrDefaultAsync(s =>
+                    s.Id == lineRequest.ModelId
+                );
+                if (shelfBatch == null)
+                    return Error.NotFound(
+                        "ShelfMaterialBatch.NotFound",
+                        $"Shelf material batch not found: {lineRequest.ModelId}"
+                    );
+
+                adjustmentLine.ShelfMaterialBatchId = shelfBatch.Id;
+                adjustmentLine.SystemQuantitySnapshot = shelfBatch.Quantity;
+                adjustmentLine.Variance = lineRequest.PhysicalCount - shelfBatch.Quantity;
+            }
+
+            await context.StockAdjustmentLines.AddAsync(adjustmentLine);
+        }
+
+        await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(StockAdjustment), adjustment.Id);
+
+        // Check if it was auto-approved (no stages)
+        var updatedAdjustment = await context
+            .StockAdjustments.Include(a => a.Lines)
+            .FirstOrDefaultAsync(a => a.Id == adjustment.Id);
+
+        if (updatedAdjustment is { Approved: true })
+        {
+            var applyResult = await ApplyStockAdjustment(updatedAdjustment.Id, userId);
+            if (!applyResult.IsSuccess)
+                return applyResult.Error;
+        }
+
+        return new StockAdjustmentSummaryDto
+        {
+            Id = adjustment.Id,
+            AdjustmentNumber = adjustment.AdjustmentNumber,
+            AdjustmentDate = adjustment.AdjustmentDate,
+            LinesProcessed = adjustment.Lines.Count,
+            TotalVariance = adjustment.Lines.Sum(l => Math.Abs(l.Variance)),
+            Approved = updatedAdjustment?.Approved ?? false,
+            TargetType = adjustment.TargetType,
+        };
+    }
+
+    public async Task<Result<Paginateable<IEnumerable<StockAdjustmentSummaryDto>>>> GetStockAdjustmentHistory(
+        int page,
+        int pageSize,
+        string searchQuery
+    )
+    {
+        var query = context
+            .StockAdjustments.Include(a => a.Lines)
+            .OrderByDescending(a => a.AdjustmentDate)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, a => a.AdjustmentNumber);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            a =>
+                new StockAdjustmentSummaryDto
+                {
+                    Id = a.Id,
+                    AdjustmentNumber = a.AdjustmentNumber,
+                    AdjustmentDate = a.AdjustmentDate,
+                    LinesProcessed = a.Lines.Count,
+                    TotalVariance = a.Lines.Sum(l => Math.Abs(l.Variance)),
+                    Approved = a.Approved,
+                    TargetType = a.TargetType,
+                }
+        );
+    }
+
+    public async Task<Result> ApplyStockAdjustment(Guid adjustmentId, Guid userId)
+    {
+        var adjustment = await context
+            .StockAdjustments.Include(a => a.Lines)
+            .FirstOrDefaultAsync(a => a.Id == adjustmentId);
+
+        if (adjustment == null)
+            return Error.NotFound("StockAdjustment.NotFound", "Stock adjustment not found.");
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
+        try
+        {
+            foreach (var line in adjustment.Lines)
+            {
+                if (line.Variance == 0)
+                    continue;
+
                 decimal postBalance;
 
-                var adjustmentLine = new StockAdjustmentLine
+                if (adjustment.TargetType == StockAdjustmentTarget.Item)
                 {
-                    StockAdjustment = adjustment,
-                    PhysicalCount = lineRequest.PhysicalCount,
-                    ReasonCode = lineRequest.ReasonCode.ToString(),
-                    Notes = lineRequest.Notes,
-                    CreatedById = userId,
-                    CreatedAt = DateTime.UtcNow,
-                };
-
-                if (request.TargetType == StockAdjustmentTarget.Item)
-                {
-                    var item = await context.Items.FirstOrDefaultAsync(i =>
-                        i.Id == lineRequest.ModelId
-                    );
+                    var item = await context.Items.FirstOrDefaultAsync(i => i.Id == line.ItemId);
                     if (item == null)
-                        return Error.NotFound(
-                            "Item.NotFound",
-                            $"Item not found: {lineRequest.ModelId}"
-                        );
+                        continue;
 
-                    systemQuantity = item.AvailableQuantity;
-                    variance = lineRequest.PhysicalCount - systemQuantity;
-
-                    if (
-                        variance != 0
-                        && string.IsNullOrWhiteSpace(lineRequest.ReasonCode.ToString())
-                    )
-                        return Error.Validation(
-                            "ReasonCode.Required",
-                            $"Reason code is required for non-zero variance on item: {item.Name}"
-                        );
-
-                    if (variance == 0)
-                        continue; // Skip if verified
-
-                    item.AvailableQuantity += (int)variance;
+                    item.AvailableQuantity += (int)line.Variance;
                     postBalance = item.AvailableQuantity;
-
-                    adjustmentLine.ItemId = item.Id;
-                    adjustmentLine.SystemQuantitySnapshot = systemQuantity;
-                    adjustmentLine.Variance = variance;
-
                     context.Items.Update(item);
 
                     // Backward compatibility: ItemTransactionLog
@@ -99,8 +178,8 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                     {
                         ItemCode = item.Code,
                         TransactionType = TransactionType.Adjustment,
-                        Credit = variance > 0 ? variance : 0,
-                        Debit = variance < 0 ? Math.Abs(variance) : 0,
+                        Credit = line.Variance > 0 ? line.Variance : 0,
+                        Debit = line.Variance < 0 ? Math.Abs(line.Variance) : 0,
                         TotalBalance = postBalance,
                         CreatedAt = DateTime.UtcNow,
                     };
@@ -109,47 +188,18 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                 else // Material
                 {
                     var shelfBatch = await context
-                        .ShelfMaterialBatches.AsSplitQuery()
-                        .Include(s => s.MaterialBatch)
-                        .Include(shelfMaterialBatch => shelfMaterialBatch.WarehouseLocationShelf)
-                            .ThenInclude(warehouseLocationShelf =>
-                                warehouseLocationShelf.WarehouseLocationRack
-                            )
-                                .ThenInclude(warehouseLocationRack =>
-                                    warehouseLocationRack.WarehouseLocation
-                                )
-                        .FirstOrDefaultAsync(s => s.Id == lineRequest.ModelId);
+                        .ShelfMaterialBatches.Include(s => s.MaterialBatch)
+                        .Include(s => s.WarehouseLocationShelf)
+                            .ThenInclude(w => w.WarehouseLocationRack)
+                                .ThenInclude(r => r.WarehouseLocation)
+                        .FirstOrDefaultAsync(s => s.Id == line.ShelfMaterialBatchId);
+
                     if (shelfBatch == null)
-                        return Error.NotFound(
-                            "ShelfMaterialBatch.NotFound",
-                            $"Shelf material batch not found: {lineRequest.ModelId}"
-                        );
-
-                    systemQuantity = shelfBatch.Quantity;
-                    variance = lineRequest.PhysicalCount - systemQuantity;
-
-                    if (
-                        variance != 0
-                        && string.IsNullOrWhiteSpace(lineRequest.ReasonCode.ToString())
-                    )
-                        return Error.Validation(
-                            "ReasonCode.Required",
-                            $"Reason code is required for non-zero variance on batch: {shelfBatch.MaterialBatch.BatchNumber}"
-                        );
-
-                    if (variance == 0)
                         continue;
 
-                    // Update Shelf Quantity
-                    shelfBatch.Quantity += variance;
+                    shelfBatch.Quantity += line.Variance;
                     postBalance = shelfBatch.Quantity;
-
-                    // Update Global Batch Total to maintain consistency
-                    shelfBatch.MaterialBatch.TotalQuantity += variance;
-
-                    adjustmentLine.ShelfMaterialBatchId = shelfBatch.Id;
-                    adjustmentLine.SystemQuantitySnapshot = systemQuantity;
-                    adjustmentLine.Variance = variance;
+                    shelfBatch.MaterialBatch.TotalQuantity += line.Variance;
 
                     context.ShelfMaterialBatches.Update(shelfBatch);
                     context.MaterialBatches.Update(shelfBatch.MaterialBatch);
@@ -163,66 +213,40 @@ public class StockAdjustmentRepository(ApplicationDbContext context) : IStockAdj
                             .WarehouseLocationRack
                             .WarehouseLocation
                             .WarehouseId,
-                        QuantityReceived = variance > 0 ? variance : 0,
-                        QuantityIssued = variance < 0 ? Math.Abs(variance) : 0,
+                        QuantityReceived = line.Variance > 0 ? line.Variance : 0,
+                        QuantityIssued = line.Variance < 0 ? Math.Abs(line.Variance) : 0,
                         BalanceQuantity = postBalance,
-                        Description = $"Stock Adjustment: {request.AdjustmentNumber}",
+                        Description = $"Stock Adjustment: {adjustment.AdjustmentNumber}",
                         CreatedAt = DateTime.UtcNow,
                         UoMId = shelfBatch.UoMId,
                     };
                     await context.BinCardInformation.AddAsync(binCard);
                 }
 
-                await context.StockAdjustmentLines.AddAsync(adjustmentLine);
-
                 // Immutable Audit Ledger
                 var ledgerEntry = new InventoryLedger
                 {
                     TransactionType = "Adjustment",
-                    ReferenceId = request.AdjustmentNumber,
-                    ItemId =
-                        request.TargetType == StockAdjustmentTarget.Item
-                            ? lineRequest.ModelId
-                            : null,
-                    ShelfMaterialBatchId =
-                        request.TargetType == StockAdjustmentTarget.Material
-                            ? lineRequest.ModelId
-                            : null,
-                    ChangeAmount = variance,
+                    ReferenceId = adjustment.AdjustmentNumber,
+                    ItemId = line.ItemId,
+                    ShelfMaterialBatchId = line.ShelfMaterialBatchId,
+                    ChangeAmount = line.Variance,
                     PostTransactionBalance = postBalance,
-                    Notes = lineRequest.Notes,
+                    Notes = line.Notes,
                     CreatedById = userId,
                     CreatedAt = DateTime.UtcNow,
                 };
                 await context.InventoryLedgers.AddAsync(ledgerEntry);
-
-                totalVariance += Math.Abs(variance);
-                linesProcessed++;
             }
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
-
-            return new StockAdjustmentSummaryDto
-            {
-                Id = adjustment.Id,
-                AdjustmentNumber = adjustment.AdjustmentNumber,
-                LinesProcessed = linesProcessed,
-                TotalVariance = totalVariance,
-            };
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            await transaction.RollbackAsync();
-            return Error.Conflict(
-                "Stock.ConcurrencyConflict",
-                "The system quantity was changed by another process. Please refresh and try again."
-            );
+            return Result.Success();
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return Error.Failure("StockAdjustment.Failed", ex.Message);
+            return Error.Failure("StockAdjustment.ApplyFailed", ex.Message);
         }
     }
 }
