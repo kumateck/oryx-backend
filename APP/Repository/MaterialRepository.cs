@@ -2098,6 +2098,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Fetch batches in the given warehouse, sorted by return date (if any) and expiry (FIFO)
         var batches = await context
             .MaterialBatches.IgnoreQueryFilters()
+            .IgnoreAutoIncludes()
             .AsSplitQuery()
             .Include(b => b.UoM)
             .Include(b => b.ShelfMaterialBatches)
@@ -2232,7 +2233,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Guid productionScheduleProductId,
         decimal quantity,
         Guid uoMId,
-        Guid? warehouseLocationShelfId
+        Guid? warehouseLocationShelfId,
+        bool saveChanges = true
     )
     {
         // 1️⃣ Load the shelf batch if shelf is provided
@@ -2274,7 +2276,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         await context.MaterialBatchReservedQuantities.AddAsync(reservation);
 
         // 3️⃣ Save changes
-        await context.SaveChangesAsync();
+        if (saveChanges)
+        {
+            await context.SaveChangesAsync();
+        }
 
         return Result.Success();
     }
