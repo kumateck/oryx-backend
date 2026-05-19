@@ -357,7 +357,7 @@ public class ProductionScheduleRepository(
         try
         {
             if (
-                context.ProductionActivities.Any(p =>
+                await context.ProductionActivities.AnyAsync(p =>
                     p.ProductionScheduleProductId == productionScheduleProductId
                 )
             )
@@ -411,18 +411,23 @@ public class ProductionScheduleRepository(
                 .Select(r => r.User)
                 .ToList();
             users = users.Where(u => u.DepartmentId == product.DepartmentId).ToList();
-            var roles = product
+            var roleNames = product
                 .Routes.SelectMany(r => r.ResponsibleRoles)
-                .Select(r => r.Role)
+                .Select(rr => rr.Role?.Name)
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct()
                 .ToList();
-            var usersInRole = new List<User>();
 
-            foreach (var role in roles)
+            var roleUsersMap = new Dictionary<string, IList<User>>();
+            foreach (var roleName in roleNames)
             {
-                var userRoles = await userManager.GetUsersInRoleAsync(role?.Name ?? "");
-                userRoles = userRoles.Where(u => u.DepartmentId == product.DepartmentId).ToList();
-                usersInRole.AddRange(userRoles);
+                roleUsersMap[roleName] = await userManager.GetUsersInRoleAsync(roleName);
             }
+
+            var usersInRole = roleUsersMap
+                .Values.SelectMany(uList => uList)
+                .Where(u => u.DepartmentId == product.DepartmentId)
+                .ToList();
 
             var quantity = productionScheduleProduct.Quantity;
 
@@ -461,15 +466,17 @@ public class ProductionScheduleRepository(
                 foreach (var rr in route.ResponsibleRoles)
                 {
                     var roleName = rr.Role?.Name ?? "";
-                    var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
-                    foreach (var user in usersInThisRole)
+                    if (roleUsersMap.TryGetValue(roleName, out var usersInThisRole))
                     {
-                        if (userActionsMap.ContainsKey((user.Id, route.Order)))
-                            continue;
-                        userActionsMap[(user.Id, route.Order)] = (
-                            rr.ProductAnalyticalRawDataId,
-                            rr.Action
-                        );
+                        foreach (var user in usersInThisRole)
+                        {
+                            if (userActionsMap.ContainsKey((user.Id, route.Order)))
+                                continue;
+                            userActionsMap[(user.Id, route.Order)] = (
+                                rr.ProductAnalyticalRawDataId,
+                                rr.Action
+                            );
+                        }
                     }
                 }
             }
@@ -1379,6 +1386,45 @@ public class ProductionScheduleRepository(
             )
             .ToDictionaryAsync(k => k.MaterialId, v => v);
 
+        var reservedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(r =>
+                r.ProductionScheduleProductId == productionScheduleProduct.Id
+                && r.WarehouseId == productionWarehouse.Id
+                && r.DeletedAt == null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
+        var totalReservedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(r =>
+                materialIds.Contains(r.MaterialBatch.MaterialId)
+                && r.WarehouseId == productionWarehouse.Id
+                && r.DeletedAt == null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
+        var consumedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(r =>
+                r.ProductionScheduleProductId == productionScheduleProduct.Id
+                && r.WarehouseId == productionWarehouse.Id
+                && r.DeletedAt != null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
+        var extraPackings = await context
+            .ProductionExtraPackings.Where(p =>
+                p.ProductionScheduleProductId == productionScheduleProductId
+                && p.Status == ProductionExtraPackingStatus.Approved
+            )
+            .GroupBy(p => p.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(p => p.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
         var currentActivityStep = await context
             .ProductionActivitySteps.IgnoreQueryFilters()
             .OrderBy(p => p.Order)
@@ -1405,48 +1451,16 @@ public class ProductionScheduleRepository(
                     var quantityOnHand = stockLevels.GetValueOrDefault(materialId, 0);
                     var materialDepartment = materialDepartments.GetValueOrDefault(materialId);
 
-                    var reservedQuantityBatches = materialRepository
-                        .GetReservedBatchesAndQuantityForProductionWarehouse(
-                            materialId,
-                            productionWarehouse.Id,
-                            productionScheduleProduct.Id
-                        )
-                        .Result;
+                    var reservedQuantity = reservedQuantities.GetValueOrDefault(materialId, 0);
 
-                    var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
+                    var totalReservedQuantity = totalReservedQuantities.GetValueOrDefault(
+                        materialId,
+                        0
+                    );
 
-                    var totalReservedQuantity = context
-                        .MaterialBatchReservedQuantities.AsSplitQuery()
-                        .IgnoreQueryFilters()
-                        .Include(r => r.MaterialBatch)
-                            .ThenInclude(b => b.Material)
-                        .Include(b => b.WarehouseLocationShelf)
-                        .Where(r =>
-                            r.MaterialBatch.MaterialId == materialId
-                            && r.WarehouseId == productionWarehouse.Id
-                            && r.DeletedAt == null
-                        )
-                        .Sum(r => r.Quantity);
+                    var consumedQuantity = consumedQuantities.GetValueOrDefault(materialId, 0);
 
-                    var consumedQuantityBatches = materialRepository
-                        .GetConsumedBatchesAndQuantityForProductionWarehouse(
-                            materialId,
-                            productionWarehouse.Id,
-                            productionScheduleProduct.Id
-                        )
-                        .Result;
-
-                    var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
-
-                    var extraQuantity =
-                        context
-                            .ProductionExtraPackings.FirstOrDefault(p =>
-                                p.ProductionScheduleProductId == productionScheduleProductId
-                                && p.MaterialId == materialId
-                                && p.Status == ProductionExtraPackingStatus.Approved
-                            )
-                            ?.Quantity
-                        ?? 0;
+                    var extraQuantity = extraPackings.GetValueOrDefault(materialId, 0);
 
                     return new ProductionScheduleProcurementDto
                     {
@@ -1594,15 +1608,15 @@ public class ProductionScheduleRepository(
         MaterialRequisitionStatus? status
     )
     {
-        var productionScheduleProduct =
-            await context.ProductionScheduleProducts.FirstOrDefaultAsync(p =>
-                p.Id == productionScheduleProductId
-            );
+        var productionScheduleProduct = await context
+            .ProductionScheduleProducts.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
         if (productionScheduleProduct is null)
             return ProductErrors.NotFound(productionScheduleProductId);
 
         var product = await context
-            .Products.AsSplitQuery()
+            .Products.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(product => product.Packages)
                 .ThenInclude(productPackage => productPackage.Material)
                     .ThenInclude(m => m.Batches)
@@ -1616,7 +1630,8 @@ public class ProductionScheduleRepository(
             return ProductErrors.NotFound(productionScheduleProduct.ProductId);
 
         var productionSchedule = await context
-            .ProductionSchedules.AsSplitQuery()
+            .ProductionSchedules.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(productionSchedule => productionSchedule.Products)
             .Include(p => p.CreatedBy)
                 .ThenInclude(u => u.Department)
@@ -1723,6 +1738,45 @@ public class ProductionScheduleRepository(
             )
             .ToDictionaryAsync(k => k.MaterialId, v => v);
 
+        var reservedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(r =>
+                r.ProductionScheduleProductId == productionScheduleProduct.Id
+                && r.WarehouseId == productionWarehouse.Id
+                && r.DeletedAt == null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
+        var totalReservedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(r =>
+                materialIds.Contains(r.MaterialBatch.MaterialId)
+                && r.WarehouseId == productionWarehouse.Id
+                && r.DeletedAt == null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
+        var consumedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(r =>
+                r.ProductionScheduleProductId == productionScheduleProduct.Id
+                && r.WarehouseId == productionWarehouse.Id
+                && r.DeletedAt != null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
+        var extraPackings = await context
+            .ProductionExtraPackings.Where(p =>
+                p.ProductionScheduleProductId == productionScheduleProductId
+                && p.Status == ProductionExtraPackingStatus.Approved
+            )
+            .GroupBy(p => p.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(p => p.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+
         var currentActivityStep = await context
             .ProductionActivitySteps.IgnoreQueryFilters()
             .OrderBy(p => p.Order)
@@ -1752,48 +1806,16 @@ public class ProductionScheduleRepository(
                     var quantityOnHand = stockLevels.GetValueOrDefault(materialId, 0);
                     var materialDepartment = materialDepartments.GetValueOrDefault(materialId);
 
-                    var reservedQuantityBatches = materialRepository
-                        .GetReservedBatchesAndQuantityForProductionWarehouse(
-                            materialId,
-                            productionWarehouse.Id,
-                            productionScheduleProduct.Id
-                        )
-                        .Result;
+                    var reservedQuantity = reservedQuantities.GetValueOrDefault(materialId, 0);
 
-                    var reservedQuantity = reservedQuantityBatches.Sum(r => r.Quantity);
+                    var totalReservedQuantity = totalReservedQuantities.GetValueOrDefault(
+                        materialId,
+                        0
+                    );
 
-                    var totalReservedQuantity = context
-                        .MaterialBatchReservedQuantities.AsSplitQuery()
-                        .IgnoreQueryFilters()
-                        .Include(r => r.MaterialBatch)
-                            .ThenInclude(b => b.Material)
-                        .Include(b => b.WarehouseLocationShelf)
-                        .Where(r =>
-                            r.MaterialBatch.MaterialId == materialId
-                            && r.WarehouseId == productionWarehouse.Id
-                            && r.DeletedAt == null
-                        )
-                        .Sum(r => r.Quantity);
+                    var consumedQuantity = consumedQuantities.GetValueOrDefault(materialId, 0);
 
-                    var consumedQuantityBatches = materialRepository
-                        .GetConsumedBatchesAndQuantityForProductionWarehouse(
-                            materialId,
-                            productionWarehouse.Id,
-                            productionScheduleProduct.Id
-                        )
-                        .Result;
-
-                    var consumedQuantity = consumedQuantityBatches.Sum(r => r.Quantity);
-
-                    var extraQuantity =
-                        context
-                            .ProductionExtraPackings.FirstOrDefault(p =>
-                                p.ProductionScheduleProductId == productionScheduleProductId
-                                && p.MaterialId == materialId
-                                && p.Status == ProductionExtraPackingStatus.Approved
-                            )
-                            ?.Quantity
-                        ?? 0;
+                    var extraQuantity = extraPackings.GetValueOrDefault(materialId, 0);
 
                     return new ProductionScheduleProcurementPackageDto
                     {
@@ -3042,7 +3064,8 @@ public class ProductionScheduleRepository(
                         productionScheduleProductId,
                         batch.QuantityToTake,
                         batch.Batch.UoM.Id,
-                        batch.WarehouseLocationShelfId
+                        batch.WarehouseLocationShelfId,
+                        false
                     );
                     if (result.IsFailure)
                         throw new Exception(
@@ -3082,11 +3105,14 @@ public class ProductionScheduleRepository(
                         productionScheduleProductId,
                         batch.QuantityToTake,
                         batch.Batch.UoM.Id,
-                        batch.WarehouseLocationShelfId
+                        batch.WarehouseLocationShelfId,
+                        false
                     );
                 }
             }
         }
+
+        await context.SaveChangesAsync();
     }
 
     public async Task<Result<Guid>> CreateStockTransfer(
