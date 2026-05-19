@@ -16,4 +16,5 @@ public class CreateProductPackageRequest
     public decimal PrescribedQuantity { get; set; }
     public decimal Loose { get; set; }
     public Guid? ProductPackingId { get; set; }
+    public List<Guid> SubstituteMaterialIds { get; set; } = [];
 }

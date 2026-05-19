@@ -39,6 +39,8 @@ public class ProductionScheduleProcurementDto
     public decimal TotalFrozenQuantity { get; set; }
     public decimal ConsumedQuantity { get; set; }
     public decimal ExtraQuantity { get; set; }
+    public bool IsSubstitute { get; set; }
+    public MaterialDto ParentMaterial { get; set; }
 }
 
 public class ForecastMaterialDto
@@ -69,12 +71,15 @@ public class ProductionScheduleProcurementPackageDto
     public decimal TotalFrozenQuantity { get; set; }
     public decimal ConsumedQuantity { get; set; }
     public decimal ExtraQuantity { get; set; }
+    public bool IsSubstitute { get; set; }
+    public MaterialDto ParentMaterial { get; set; }
 }
 
 public class MaterialDepartmentDetails
 {
     public CollectionItemDto Department { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public decimal Density { get; set; }
     public decimal ReOrderLevel { get; set; }
     public decimal MinimumStockLevel { get; set; }
     public decimal MaximumStockLevel { get; set; }

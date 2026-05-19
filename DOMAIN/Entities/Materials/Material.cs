@@ -41,6 +41,7 @@ public class MaterialDepartment : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public Guid DepartmentId { get; set; }
     public Department Department { get; set; }
+    public decimal Density { get; set; }
     public decimal ReOrderLevel { get; set; }
     public decimal MinimumStockLevel { get; set; }
     public decimal MaximumStockLevel { get; set; }
@@ -51,6 +52,7 @@ public class MaterialDepartmentDto
     public MaterialDto Material { get; set; }
     public CollectionItemDto Department { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public decimal Density { get; set; }
     public decimal ReOrderLevel { get; set; }
     public decimal MinimumStockLevel { get; set; }
     public decimal MaximumStockLevel { get; set; }

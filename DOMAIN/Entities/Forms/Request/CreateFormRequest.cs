@@ -98,6 +98,8 @@ public class SaveResponseDraftRequest
     public string Value { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? MaterialSpecificationId { get; set; }
+    public Guid? ProductSpecificationId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
 }
 

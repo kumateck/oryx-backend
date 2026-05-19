@@ -158,8 +158,9 @@ public interface IMaterialRepository
         Guid warehouseId,
         Guid productionScheduleProductId,
         decimal quantity,
-        Guid uomId,
-        Guid? warehouseLocationShelfId
+        Guid uoMId,
+        Guid? warehouseLocationShelfId,
+        bool saveChanges = true
     );
     Task<
         List<MaterialBatchReservedQuantityDto>

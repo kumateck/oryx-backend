@@ -91,10 +91,10 @@ public class FormRepository(
     {
         var query = context
             .FormSections.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(f => f.Form)
             .Include(f => f.Instrument)
-                .ThenInclude(f => f.QcEquipmentCategory)
-            .GroupBy(f => new { f.Name, f.InstrumentId })
-            .Select(g => g.OrderByDescending(f => f.CreatedAt).First())
+                .ThenInclude(i => i.QcEquipmentCategory)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(filter.SearchQuery))
@@ -107,14 +107,28 @@ public class FormRepository(
             );
         }
 
-        if (filter.MaterialSpecificationId.HasValue)
+        if (filter.MaterialId.HasValue)
         {
-            query = query.Where(f => f.MaterialSpecificationId == filter.MaterialSpecificationId);
+            query = query.Where(f => f.MaterialSpecification.MaterialId == filter.MaterialId);
         }
 
-        if (filter.ProductSpecificationId.HasValue)
+        if (filter.ProductId.HasValue)
         {
-            query = query.Where(f => f.ProductSpecificationId == filter.ProductSpecificationId);
+            query = query.Where(f => f.ProductSpecification.ProductId == filter.ProductId);
+        }
+
+        if (!string.IsNullOrEmpty(filter.MaterialSpecificationNumber))
+        {
+            query = query.Where(q =>
+                q.MaterialSpecification.SpecificationNumber == filter.MaterialSpecificationNumber
+            );
+        }
+
+        if (!string.IsNullOrEmpty(filter.ProductSpecificationNumber))
+        {
+            query = query.Where(q =>
+                q.ProductSpecification.SpecificationNumber == filter.ProductSpecificationNumber
+            );
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -306,13 +320,13 @@ public class FormRepository(
         else
         {
             // Update or insert text-based responses
-            var existingResponse = response.FormResponses.FirstOrDefault(fr =>
+            var existingFormResponse = response.FormResponses.FirstOrDefault(fr =>
                 fr.FormFieldId == formField.Id
             );
-            if (existingResponse != null)
+            if (existingFormResponse != null)
             {
-                existingResponse.Value = request.Value;
-                context.FormResponses.Update(existingResponse);
+                existingFormResponse.Value = request.Value;
+                context.FormResponses.Update(existingFormResponse);
             }
             else
             {
@@ -320,6 +334,36 @@ public class FormRepository(
                     new FormResponse { FormFieldId = formField.Id, Value = request.Value }
                 );
             }
+        }
+
+        if (request.MaterialSpecificationId.HasValue)
+        {
+            var materialSpecification = await context.MaterialSpecifications.FirstOrDefaultAsync(
+                s => s.Id == request.MaterialSpecificationId
+            );
+            if (materialSpecification is null)
+                return Error.NotFound(
+                    "MaterialSpecification.NotFound",
+                    "Material specification not found"
+                );
+
+            materialSpecification.ResponseId = response.Id;
+            context.MaterialSpecifications.Update(materialSpecification);
+        }
+
+        if (request.ProductSpecificationId.HasValue)
+        {
+            var productSpecification = await context.ProductSpecifications.FirstOrDefaultAsync(s =>
+                s.Id == request.ProductSpecificationId
+            );
+            if (productSpecification is null)
+                return Error.NotFound(
+                    "ProductSpecification.NotFound",
+                    "Product specification not found"
+                );
+
+            productSpecification.ResponseId = response.Id;
+            context.ProductSpecifications.Update(productSpecification);
         }
 
         await context.SaveChangesAsync();
@@ -603,18 +647,18 @@ public class FormRepository(
     {
         var sectionIds = requests.Select(r => r.FormSectionId).ToList();
 
-        var query = context.FormSections.Where(s => sectionIds.Contains(s.Id));
+        var query = await context.FormSections.Where(s => sectionIds.Contains(s.Id)).ToListAsync();
 
         if (materialSpecificationId.HasValue)
         {
-            query = query.Where(s => s.MaterialSpecificationId == materialSpecificationId);
+            query = query.Where(s => s.MaterialSpecificationId == materialSpecificationId).ToList();
         }
         else if (productSpecificationId.HasValue)
         {
-            query = query.Where(s => s.ProductSpecificationId == productSpecificationId);
+            query = query.Where(s => s.ProductSpecificationId == productSpecificationId).ToList();
         }
 
-        var formSections = await query.ToDictionaryAsync(k => k.Id, v => v);
+        var formSections = query.Select(k => k).ToDictionary(k => k.Id, v => v);
 
         foreach (var request in requests)
         {
@@ -1052,7 +1096,9 @@ public class FormRepository(
                 .ThenInclude(r => r.Response)
                     .ThenInclude(res => res.CheckedBy)
             .FirstOrDefaultAsync(f =>
-                f.Responses.Any(r => r.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
+                f.Responses.Any(r =>
+                    r.Response.BatchManufacturingRecordId == batchManufacturingRecordId
+                )
             );
 
         return mapper.Map<List<FormDto>>(
