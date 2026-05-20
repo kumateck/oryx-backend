@@ -14,7 +14,8 @@ public interface IStockAdjustmentRepository
         int page,
         int pageSize,
         string searchQuery,
-        bool? approved = null
+        bool? approved = null,
+        StockAdjustmentTarget? targetType = null
     );
     Task<Result> ApplyStockAdjustment(Guid adjustmentId, Guid userId);
 }

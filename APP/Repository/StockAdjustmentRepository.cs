@@ -136,7 +136,13 @@ public class StockAdjustmentRepository(
 
     public async Task<
         Result<Paginateable<IEnumerable<StockAdjustmentSummaryDto>>>
-    > GetStockAdjustments(int page, int pageSize, string searchQuery, bool? approved = null)
+    > GetStockAdjustments(
+        int page,
+        int pageSize,
+        string searchQuery,
+        bool? approved = null,
+        StockAdjustmentTarget? targetType = null
+    )
     {
         var query = context
             .StockAdjustments.AsSplitQuery()
@@ -152,6 +158,11 @@ public class StockAdjustmentRepository(
         if (approved.HasValue)
         {
             query = query.Where(a => a.Approved == approved.Value);
+        }
+
+        if (targetType.HasValue)
+        {
+            query = query.Where(a => a.TargetType == targetType.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

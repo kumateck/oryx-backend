@@ -69,6 +69,7 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// <param name="pageSize">Number of items per page (default: 10, recommended max: 100)</param>
     /// <param name="searchQuery">Optional search query to filter by adjustment number.</param>
     /// <param name="approved">Pass if you want the approved stock adjustments or unapproved</param>
+    /// <param name="targetType">The target type: 0 for item, 1 for material, 2 for product</param>
     /// <returns>A paginated list of stock adjustment summaries.</returns>
     [HttpGet]
     [ProducesResponseType(
@@ -79,7 +80,8 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null,
-        [FromQuery] bool? approved = null
+        [FromQuery] bool? approved = null,
+        [FromQuery] StockAdjustmentTarget? targetType = null
     )
     {
         var result = await repository.GetStockAdjustments(page, pageSize, searchQuery, approved);
