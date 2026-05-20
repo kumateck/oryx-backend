@@ -35,4 +35,5 @@ public enum StockAdjustmentTarget
 {
     Item = 0,
     Material = 1,
+    Product = 2,
 }
