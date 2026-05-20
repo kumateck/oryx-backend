@@ -31,4 +31,5 @@ public interface IApprovalRepository
     Task ProcessApprovalEscalations(Guid userId, Guid roleId);
 
     Result DelegateApproval(DelegateApproval approval);
+    Task<Result> TransferApprovalRights(TransferApprovalRequest request);
 }
