@@ -2089,6 +2089,15 @@ public class ProductionScheduleRepository(
         if (bmr is null)
             return RequisitionErrors.NotFound(request.BatchManufacturingRecordId);
 
+        var finalPacking = await context.FinalPackings.FirstOrDefaultAsync(f =>
+            f.ProductionScheduleProductId == bmr.ProductionScheduleProductId
+        );
+        if (finalPacking is null)
+            return Error.NotFound(
+                "FinalPacking.NotFound",
+                "Final packing for this bmr was not found"
+            );
+
         var product = bmr.ProductionScheduleProduct.Product;
         if (product is null)
             return ProductErrors.NotFound(request.BatchManufacturingRecordId);
@@ -2140,11 +2149,11 @@ public class ProductionScheduleRepository(
 
         if (request.IsPartial)
         {
-            if (request.TotalQuantity > bmr.BatchQuantity)
+            if (request.TotalQuantity > finalPacking.TotalQuantityPacked)
                 return Error.Validation(
                     "TransferNote.Partial",
                     $"Request quantity {request.TotalQuantity}"
-                        + $"exceeds bmr quantity {bmr.BatchQuantity}"
+                        + $"exceeds total quantity packed {finalPacking.TotalQuantityPacked}"
                 );
             if (transferNotes.Count > 0)
             {
@@ -2156,7 +2165,7 @@ public class ProductionScheduleRepository(
                         "TransferNote.Partial",
                         $"The already exists a transfer note and adding "
                             + $"quantity of {transferNotes.Sum(t => t.TotalQuantity)}"
-                            + $" exceeds the amount of quantity of bmr which is {bmr.BatchQuantity}"
+                            + $" exceeds the amount of quantity of bmr which is {finalPacking.TotalQuantityPacked}"
                     );
             }
         }
@@ -2169,11 +2178,11 @@ public class ProductionScheduleRepository(
                         + " transfer note for this bmr. Set `isPartial` to true"
                 );
 
-            if (request.TotalQuantity != bmr.BatchQuantity)
+            if (request.TotalQuantity != finalPacking.TotalQuantityPacked)
                 return Error.Validation(
                     "TransferNote.Partial",
                     $"This is not a partial request so the requested quantity must be equal"
-                        + $" to the bmr quantity: {bmr.BatchQuantity}"
+                        + $" to the bmr quantity: {finalPacking.TotalQuantityPacked}"
                 );
         }
 

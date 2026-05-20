@@ -37,6 +37,19 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Transfers approval rights from one user to another.
+    /// </summary>
+    [HttpPost("transfer-rights")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> TransferApprovalRights([FromBody] TransferApprovalRequest request)
+    {
+        var result = await repository.TransferApprovalRights(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a specific approval by its ID.
     /// </summary>
     [HttpGet("{approvalId}")]

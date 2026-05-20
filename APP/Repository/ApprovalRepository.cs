@@ -4827,4 +4827,184 @@ public class ApprovalRepository(
         await context.SaveChangesAsync();
         return Result.Success();
     }*/
+    public async Task<Result> TransferApprovalRights(TransferApprovalRequest request)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            // 1. Update Approval Templates
+            var templateStages = await context
+                .ApprovalStages.Where(s => s.UserId == request.FromUserId)
+                .ToListAsync();
+
+            foreach (var stage in templateStages)
+            {
+                stage.UserId = request.ToUserId;
+            }
+
+            // 2. Update Pending Approval Instances
+            // Requisitions
+            var requisitionApprovals = await context
+                .RequisitionApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in requisitionApprovals)
+                a.UserId = request.ToUserId;
+
+            // Purchase Orders
+            var poApprovals = await context
+                .PurchaseOrderApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in poApprovals)
+                a.UserId = request.ToUserId;
+
+            // Billing Sheets
+            var bsApprovals = await context
+                .BillingSheetApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in bsApprovals)
+                a.UserId = request.ToUserId;
+
+            // Shipment Documents
+            var sdApprovals = await context
+                .ShipmentDocumentApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in sdApprovals)
+                a.UserId = request.ToUserId;
+
+            // Staff Requisitions
+            var srApprovals = await context
+                .StaffRequisitionApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in srApprovals)
+                a.UserId = request.ToUserId;
+
+            // Leave Requests
+            var lrApprovals = await context
+                .LeaveRequestApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in lrApprovals)
+                a.UserId = request.ToUserId;
+
+            // Overtime Requests
+            var orApprovals = await context
+                .OvertimeRequestApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in orApprovals)
+                a.UserId = request.ToUserId;
+
+            // Job Requests
+            var jrApprovals = await context
+                .JobRequestApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in jrApprovals)
+                a.UserId = request.ToUserId;
+
+            // Stock Adjustments
+            var saApprovals = await context
+                .StockAdjustmentApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in saApprovals)
+                a.UserId = request.ToUserId;
+
+            // Service Memos
+            var smApprovals = await context
+                .ServiceMemoApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in smApprovals)
+                a.UserId = request.ToUserId;
+
+            // Proforma Invoices
+            var piApprovals = await context
+                .ProformaInvoiceApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in piApprovals)
+                a.UserId = request.ToUserId;
+
+            // Production Orders
+            var productionOrderApprovals = await context
+                .ProductionOrderApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in productionOrderApprovals)
+                a.UserId = request.ToUserId;
+
+            // Allocate Production Orders
+            var apoApprovals = await context
+                .AllocateProductionOrderApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in apoApprovals)
+                a.UserId = request.ToUserId;
+
+            // Finished Goods Transfer Notes
+            var fgtnApprovals = await context
+                .FinishedGoodsTransferNoteApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in fgtnApprovals)
+                a.UserId = request.ToUserId;
+
+            // Production Extra Packing
+            var pepApprovals = await context
+                .ProductionExtraPackingApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in pepApprovals)
+                a.UserId = request.ToUserId;
+
+            // Response Approvals
+            var responseApprovals = await context
+                .ResponseApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in responseApprovals)
+                a.UserId = request.ToUserId;
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(
+                ex,
+                "Error transferring approval rights from {FromUserId} to {ToUserId}",
+                request.FromUserId,
+                request.ToUserId
+            );
+            return Error.Failure(
+                "Approval.TransferError",
+                "An error occurred while transferring approval rights."
+            );
+        }
+    }
 }
