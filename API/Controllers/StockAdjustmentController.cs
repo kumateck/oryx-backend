@@ -70,7 +70,7 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// <param name="searchQuery">Optional search query to filter by adjustment number.</param>
     /// <param name="approved">Pass if you want the approved stock adjustments or unapproved</param>
     /// <returns>A paginated list of stock adjustment summaries.</returns>
-    [HttpGet("history")]
+    [HttpGet]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<StockAdjustmentSummaryDto>>)
