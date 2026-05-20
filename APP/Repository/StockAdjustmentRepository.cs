@@ -11,8 +11,10 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRepository approvalRepository)
-    : IStockAdjustmentRepository
+public class StockAdjustmentRepository(
+    ApplicationDbContext context,
+    IApprovalRepository approvalRepository
+) : IStockAdjustmentRepository
 {
     public async Task<Result<StockAdjustmentSummaryDto>> CreateStockAdjustment(
         CreateStockAdjustmentRequest request,
@@ -54,15 +56,20 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
 
             if (request.TargetType == StockAdjustmentTarget.Item)
             {
-                var item = await context.Items.FirstOrDefaultAsync(i => i.Id == lineRequest.ModelId);
+                var item = await context.Items.FirstOrDefaultAsync(i =>
+                    i.Id == lineRequest.ModelId
+                );
                 if (item == null)
-                    return Error.NotFound("Item.NotFound", $"Item not found: {lineRequest.ModelId}");
+                    return Error.NotFound(
+                        "Item.NotFound",
+                        $"Item not found: {lineRequest.ModelId}"
+                    );
 
                 adjustmentLine.ItemId = item.Id;
                 adjustmentLine.SystemQuantitySnapshot = item.AvailableQuantity;
                 adjustmentLine.Variance = lineRequest.PhysicalCount - item.AvailableQuantity;
             }
-            else // Material
+            else if (request.TargetType == StockAdjustmentTarget.Material)
             {
                 var shelfBatch = await context.ShelfMaterialBatches.FirstOrDefaultAsync(s =>
                     s.Id == lineRequest.ModelId
@@ -77,13 +84,31 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
                 adjustmentLine.SystemQuantitySnapshot = shelfBatch.Quantity;
                 adjustmentLine.Variance = lineRequest.PhysicalCount - shelfBatch.Quantity;
             }
+            else // Product
+            {
+                var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(t =>
+                    t.Id == lineRequest.ModelId
+                );
+                if (transferNote == null)
+                    return Error.NotFound(
+                        "FinishedGoodsTransferNote.NotFound",
+                        $"Finished goods transfer note not found: {lineRequest.ModelId}"
+                    );
+
+                adjustmentLine.FinishedGoodsTransferNoteId = transferNote.Id;
+                adjustmentLine.SystemQuantitySnapshot = transferNote.TotalQuantity;
+                adjustmentLine.Variance = lineRequest.PhysicalCount - transferNote.TotalQuantity;
+            }
 
             await context.StockAdjustmentLines.AddAsync(adjustmentLine);
         }
 
         await context.SaveChangesAsync();
 
-        await approvalRepository.CreateInitialApprovalsAsync(nameof(StockAdjustment), adjustment.Id);
+        await approvalRepository.CreateInitialApprovalsAsync(
+            nameof(StockAdjustment),
+            adjustment.Id
+        );
 
         // Check if it was auto-approved (no stages)
         var updatedAdjustment = await context
@@ -109,14 +134,13 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
         };
     }
 
-    public async Task<Result<Paginateable<IEnumerable<StockAdjustmentSummaryDto>>>> GetStockAdjustmentHistory(
-        int page,
-        int pageSize,
-        string searchQuery
-    )
+    public async Task<
+        Result<Paginateable<IEnumerable<StockAdjustmentSummaryDto>>>
+    > GetStockAdjustments(int page, int pageSize, string searchQuery, bool? approved = null)
     {
         var query = context
-            .StockAdjustments.Include(a => a.Lines)
+            .StockAdjustments.AsSplitQuery()
+            .Include(a => a.Lines)
             .OrderByDescending(a => a.AdjustmentDate)
             .AsQueryable();
 
@@ -125,21 +149,25 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
             query = query.WhereSearch(searchQuery, a => a.AdjustmentNumber);
         }
 
+        if (approved.HasValue)
+        {
+            query = query.Where(a => a.Approved == approved.Value);
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
-            a =>
-                new StockAdjustmentSummaryDto
-                {
-                    Id = a.Id,
-                    AdjustmentNumber = a.AdjustmentNumber,
-                    AdjustmentDate = a.AdjustmentDate,
-                    LinesProcessed = a.Lines.Count,
-                    TotalVariance = a.Lines.Sum(l => Math.Abs(l.Variance)),
-                    Approved = a.Approved,
-                    TargetType = a.TargetType,
-                }
+            a => new StockAdjustmentSummaryDto
+            {
+                Id = a.Id,
+                AdjustmentNumber = a.AdjustmentNumber,
+                AdjustmentDate = a.AdjustmentDate,
+                LinesProcessed = a.Lines.Count,
+                TotalVariance = a.Lines.Sum(l => Math.Abs(l.Variance)),
+                Approved = a.Approved,
+                TargetType = a.TargetType,
+            }
         );
     }
 
@@ -185,7 +213,7 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
                     };
                     await context.ItemTransactionLogs.AddAsync(itemTransactionLog);
                 }
-                else // Material
+                else if (adjustment.TargetType == StockAdjustmentTarget.Material)
                 {
                     var shelfBatch = await context
                         .ShelfMaterialBatches.Include(s => s.MaterialBatch)
@@ -222,6 +250,34 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
                     };
                     await context.BinCardInformation.AddAsync(binCard);
                 }
+                else // Product
+                {
+                    var transferNote = await context
+                        .FinishedGoodsTransferNotes.Include(t => t.BatchManufacturingRecord)
+                        .FirstOrDefaultAsync(t => t.Id == line.FinishedGoodsTransferNoteId);
+
+                    if (transferNote == null)
+                        continue;
+
+                    transferNote.TotalQuantity += line.Variance;
+                    postBalance = transferNote.TotalQuantity;
+
+                    context.FinishedGoodsTransferNotes.Update(transferNote);
+
+                    // Log to ProductBinCardInformation
+                    var binCardEvent = new ProductBinCardInformation
+                    {
+                        BatchId = transferNote.BatchManufacturingRecordId,
+                        QuantityReceived = line.Variance > 0 ? line.Variance : 0,
+                        QuantityIssued = line.Variance < 0 ? Math.Abs(line.Variance) : 0,
+                        BalanceQuantity = postBalance,
+                        Description = $"Stock Adjustment: {adjustment.AdjustmentNumber}",
+                        CreatedAt = DateTime.UtcNow,
+                        UoMId = transferNote.UoMId,
+                        CreatedById = userId,
+                    };
+                    await context.ProductBinCardInformation.AddAsync(binCardEvent);
+                }
 
                 // Immutable Audit Ledger
                 var ledgerEntry = new InventoryLedger
@@ -230,6 +286,7 @@ public class StockAdjustmentRepository(ApplicationDbContext context, IApprovalRe
                     ReferenceId = adjustment.AdjustmentNumber,
                     ItemId = line.ItemId,
                     ShelfMaterialBatchId = line.ShelfMaterialBatchId,
+                    FinishedGoodsTransferNoteId = line.FinishedGoodsTransferNoteId,
                     ChangeAmount = line.Variance,
                     PostTransactionBalance = postBalance,
                     Notes = line.Notes,

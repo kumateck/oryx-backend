@@ -10,10 +10,11 @@ public interface IStockAdjustmentRepository
         CreateStockAdjustmentRequest request,
         Guid userId
     );
-    Task<Result<Paginateable<IEnumerable<StockAdjustmentSummaryDto>>>> GetStockAdjustmentHistory(
+    Task<Result<Paginateable<IEnumerable<StockAdjustmentSummaryDto>>>> GetStockAdjustments(
         int page,
         int pageSize,
-        string searchQuery
+        string searchQuery,
+        bool? approved = null
     );
     Task<Result> ApplyStockAdjustment(Guid adjustmentId, Guid userId);
 }

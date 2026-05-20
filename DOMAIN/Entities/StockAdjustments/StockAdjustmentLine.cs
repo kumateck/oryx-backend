@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.StockAdjustments;
@@ -17,6 +18,10 @@ public class StockAdjustmentLine : BaseEntity
     // Reference to the shelf material batch being adjusted (if TargetType is Material)
     public Guid? ShelfMaterialBatchId { get; set; }
     public ShelfMaterialBatch ShelfMaterialBatch { get; set; }
+
+    // Reference to the finished goods transfer note being adjusted (if TargetType is Product)
+    public Guid? FinishedGoodsTransferNoteId { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
 
     public decimal PhysicalCount { get; set; }
     public decimal SystemQuantitySnapshot { get; set; }
