@@ -25,10 +25,12 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// - **TargetType**:
     ///     - `0` (Item): Adjusts general store items (e.g., spare parts, office supplies).
     ///     - `1` (Material): Adjusts specific material batches on shelves (e.g., raw materials, reagents).
+    ///     - `2` (Product): Adjusts finished goods transfer notes (e.g., products in warehouse).
     /// - **Lines**: A collection of adjustment details:
     ///     - **ModelId**:
     ///         - If TargetType is `Item`, use the **ItemId**.
     ///         - If TargetType is `Material`, use the **ShelfMaterialBatchId**.
+    ///         - If TargetType is `Product`, use the **FinishedGoodsTransferNoteId**.
     ///     - **PhysicalCount**: The total quantity actually found on hand. The system will calculate the variance automatically.
     ///     - **ReasonCode**: The reason for adjustment (0: PhysicalCount, 1: Damage, 2: Theft, 3: Expiry, 4: DataEntryError, 5: ReturnedGoods, 6: Other).
     ///     - **Notes**: Optional textual context for the specific adjustment line.
@@ -61,24 +63,26 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     }
 
     /// <summary>
-    /// Fetches the stock adjustment history.
+    /// Fetches the stock adjustments made
     /// </summary>
     /// <param name="page">Page number starting from 1 (default: 1)</param>
     /// <param name="pageSize">Number of items per page (default: 10, recommended max: 100)</param>
     /// <param name="searchQuery">Optional search query to filter by adjustment number.</param>
+    /// <param name="approved">Pass if you want the approved stock adjustments or unapproved</param>
     /// <returns>A paginated list of stock adjustment summaries.</returns>
     [HttpGet("history")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<StockAdjustmentSummaryDto>>)
     )]
-    public async Task<IResult> GetStockAdjustmentHistory(
+    public async Task<IResult> GetStockAdjustments(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null
+        [FromQuery] string searchQuery = null,
+        [FromQuery] bool? approved = null
     )
     {
-        var result = await repository.GetStockAdjustmentHistory(page, pageSize, searchQuery);
+        var result = await repository.GetStockAdjustments(page, pageSize, searchQuery, approved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
