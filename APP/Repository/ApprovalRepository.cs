@@ -3237,6 +3237,66 @@ public class ApprovalRepository(
         return entitiesRequiringApproval.OrderByDescending(a => a.CreatedAt).ToList();
     }
 
+    public async Task<List<UserDto>> GetUsersWithPendingApprovals()
+    {
+        var userIdsFromStages = new HashSet<Guid>();
+        var roleIdsFromStages = new HashSet<Guid>();
+
+        // Helper to collect IDs from approval tables
+        async Task Collect(IQueryable<ResponsibleApprovalStage> query)
+        {
+            var results = await query
+                .Where(a => a.Status == ApprovalStatus.Pending)
+                .Select(a => new { a.UserId, a.RoleId })
+                .ToListAsync();
+
+            foreach (var r in results)
+            {
+                if (r.UserId.HasValue)
+                    userIdsFromStages.Add(r.UserId.Value);
+                if (r.RoleId.HasValue)
+                    roleIdsFromStages.Add(r.RoleId.Value);
+            }
+        }
+
+        await Collect(context.RequisitionApprovals);
+        await Collect(context.PurchaseOrderApprovals);
+        await Collect(context.BillingSheetApprovals);
+        await Collect(context.ShipmentDocumentApprovals);
+        await Collect(context.StaffRequisitionApprovals);
+        await Collect(context.LeaveRequestApprovals);
+        await Collect(context.OvertimeRequestApprovals);
+        await Collect(context.JobRequestApprovals);
+        await Collect(context.StockAdjustmentApprovals);
+        await Collect(context.ServiceMemoApprovals);
+        await Collect(context.ProformaInvoiceApprovals);
+        await Collect(context.ProductionOrderApprovals);
+        await Collect(context.AllocateProductionOrderApprovals);
+        await Collect(context.FinishedGoodsTransferNoteApprovals);
+        await Collect(context.ProductionExtraPackingApprovals);
+        await Collect(context.ResponseApprovals);
+
+        var finalUserIds = new HashSet<Guid>(userIdsFromStages);
+
+        if (roleIdsFromStages.Count != 0)
+        {
+            var usersInRoles = await context
+                .UserRoles.Where(ur => roleIdsFromStages.Contains(ur.RoleId))
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            foreach (var uid in usersInRoles)
+                finalUserIds.Add(uid);
+        }
+
+        var users = await context
+            .Users.Include(u => u.Department)
+            .Where(u => finalUserIds.Contains(u.Id))
+            .ToListAsync();
+
+        return mapper.Map<List<UserDto>>(users);
+    }
+
     public async Task<Dictionary<string, int>> GetStatisticsOfEntitiesRequiringApproval(
         Guid userId,
         List<Guid> roleIds
