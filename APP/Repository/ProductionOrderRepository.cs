@@ -198,9 +198,18 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
     {
         var query = context
             .ProformaInvoices.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.AllocateProductionOrder)
                 .ThenInclude(p => p.ProductionOrder)
                     .ThenInclude(p => p.Customer)
+            .Include(p => p.AllocateProductionOrder)
+                .ThenInclude(p => p.ProductionOrder)
+                    .ThenInclude(p => p.Products)
+                        .ThenInclude(p => p.Product)
+            .Include(p => p.AllocateProductionOrder)
+                .ThenInclude(p => p.ProductionOrder)
+                    .ThenInclude(p => p.Products)
+                        .ThenInclude(p => p.ProductPacking)
             .Include(p => p.Products)
                 .ThenInclude(p => p.Product)
             .AsQueryable();
