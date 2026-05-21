@@ -20,20 +20,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         CreateMaterialAnalyticalRawDataRequest request
     )
     {
-        var existingAnalyticalRawData = await context.MaterialAnalyticalRawData.FirstOrDefaultAsync(
-            ad => ad.SpecNumber == request.SpecNumber
-        );
-        if (existingAnalyticalRawData is not null)
-        {
-            return Error.Validation(
-                "MaterialAnalyticalRawData.Exists",
-                $"Analytical raw data with this spec number {request.SpecNumber} already exists."
-            );
-        }
+        var form = await context.Forms.AnyAsync(f => f.Id == request.FormId);
 
-        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);
-
-        if (form is null)
+        if (!form)
         {
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }

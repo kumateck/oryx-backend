@@ -212,7 +212,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProducts(IFormFile file)
+    public async Task<IResult> UploadEmployees(IFormFile file)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
