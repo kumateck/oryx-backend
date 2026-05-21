@@ -29,8 +29,8 @@
 //             new()
 //             {
 //                 Name = "Maternity Leave",
-//                 NumberOfDays = 20,
-//                 DeductFromBalance = true,
+//                 NumberOfDays = 90,
+//                 DeductFromBalance = false,
 //                 IsPaid = true,
 //                 IsActive = true,
 //                 CreatedAt = DateTime.UtcNow,
