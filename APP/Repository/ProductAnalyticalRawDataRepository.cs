@@ -28,13 +28,13 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         {
             return Error.Validation(
                 "ProductAnalyticalRawData.Exists",
-                "Analytical raw data already exists."
+                $"Analytical raw data with spec number  already exists."
             );
         }
 
-        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == request.FormId);
+        var form = await context.Forms.AnyAsync(f => f.Id == request.FormId);
 
-        if (form is null)
+        if (!form)
         {
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
