@@ -994,6 +994,10 @@ public class RequisitionRepository(
                 .ThenInclude(i => i.Material)
             .Include(r => r.ProductionScheduleProduct)
                 .ThenInclude(rp => rp.Product)
+            .Include(r => r.ProductionScheduleProduct)
+                .ThenInclude(rp => rp.ProductionSchedule)
+            .Include(r => r.ProductionScheduleProduct)
+                .ThenInclude(rp => rp.ProductionActivity)
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
