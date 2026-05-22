@@ -1,9 +1,10 @@
 using APP.Extensions;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Users;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
@@ -11,6 +12,18 @@ namespace API.Controllers;
 [ApiController]
 public class ApprovalController(IApprovalRepository repository) : ControllerBase
 {
+    /// <summary>
+    /// Gets all users that have a pending approval.
+    /// </summary>
+    [HttpGet("users-with-pending")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserDto>))]
+    public async Task<IResult> GetUsersWithPendingApprovals()
+    {
+        var result = await repository.GetUsersWithPendingApprovals();
+        return TypedResults.Ok(result);
+    }
+
     /// <summary>
     /// Creates a new approval.
     /// </summary>
@@ -21,7 +34,8 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public async Task<IResult> CreateApproval([FromBody] CreateApprovalRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.CreateApproval(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -33,6 +47,19 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public IResult DelegateApproval([FromBody] DelegateApproval approval)
     {
         var result = repository.DelegateApproval(approval);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Transfers approval rights from one user to another.
+    /// </summary>
+    [HttpPost("transfer-rights")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> TransferApprovalRights([FromBody] TransferApprovalRequest request)
+    {
+        var result = await repository.TransferApprovalRights(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -56,7 +83,8 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public async Task<IResult> GetApprovalByModelId(string modelType, Guid modelId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.GetEntityRequiringApproval(modelType, modelId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -67,8 +95,15 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     /// </summary>
     [HttpGet]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ApprovalDto>>))]
-    public async Task<IResult> GetApprovals([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(Paginateable<IEnumerable<ApprovalDto>>)
+    )]
+    public async Task<IResult> GetApprovals(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string searchQuery = null
+    )
     {
         var result = await repository.GetApprovals(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -82,10 +117,14 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateApproval([FromBody] CreateApprovalRequest request, Guid approvalId)
+    public async Task<IResult> UpdateApproval(
+        [FromBody] CreateApprovalRequest request,
+        Guid approvalId
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.UpdateApproval(request, approvalId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -101,7 +140,8 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     public async Task<IResult> DeleteApproval(Guid approvalId)
     {
         var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
         var result = await repository.DeleteApproval(approvalId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -115,14 +155,25 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> ApproveItem(string modelType, Guid modelId, [FromBody] ApprovalRequestBody body)
+    public async Task<IResult> ApproveItem(
+        string modelType,
+        Guid modelId,
+        [FromBody] ApprovalRequestBody body
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.ApproveItem(modelType, modelId, Guid.Parse(userId), roleIds, body.Comments);
+        var result = await repository.ApproveItem(
+            modelType,
+            modelId,
+            Guid.Parse(userId),
+            roleIds,
+            body.Comments
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -134,14 +185,25 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> RejectItem(string modelType, Guid modelId, [FromBody] ApprovalRequestBody body)
+    public async Task<IResult> RejectItem(
+        string modelType,
+        Guid modelId,
+        [FromBody] ApprovalRequestBody body
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.RejectItem(modelType, modelId, Guid.Parse(userId), roleIds, body.Comments);
+        var result = await repository.RejectItem(
+            modelType,
+            modelId,
+            Guid.Parse(userId),
+            roleIds,
+            body.Comments
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -151,15 +213,22 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     [HttpGet("my-pending")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ApprovalEntity>))]
-    public async Task<IResult> GetPendingApprovals([FromQuery] string modelType)
+    public async Task<IResult> GetPendingApprovals(
+        [FromQuery] string modelType,
+        [FromQuery] Guid? userId
+    )
     {
-        var userId = (string)HttpContext.Items["Sub"];
+        var currentUserId = (string)HttpContext.Items["Sub"];
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
-        if (userId == null) return TypedResults.Unauthorized();
+        if (currentUserId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository.GetEntitiesRequiringApproval(Guid.Parse(userId),
-            roleIds, modelType);
+        var result = await repository.GetEntitiesRequiringApproval(
+            userId ?? Guid.Parse(currentUserId),
+            roleIds,
+            modelType
+        );
         return TypedResults.Ok(result);
     }
 
@@ -174,10 +243,13 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
 
-        if (userId == null) return TypedResults.Unauthorized();
+        if (userId == null)
+            return TypedResults.Unauthorized();
 
-        var result = await repository
-            .GetStatisticsOfEntitiesRequiringApproval(Guid.Parse(userId), roleIds);
+        var result = await repository.GetStatisticsOfEntitiesRequiringApproval(
+            Guid.Parse(userId),
+            roleIds
+        );
         return TypedResults.Ok(result);
     }
 }

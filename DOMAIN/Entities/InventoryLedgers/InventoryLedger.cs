@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.InventoryLedgers;
@@ -21,6 +22,9 @@ public class InventoryLedger : BaseEntity
 
     public Guid? ShelfMaterialBatchId { get; set; }
     public ShelfMaterialBatch ShelfMaterialBatch { get; set; }
+
+    public Guid? FinishedGoodsTransferNoteId { get; set; }
+    public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
 
     public decimal ChangeAmount { get; set; }
     public decimal PostTransactionBalance { get; set; }

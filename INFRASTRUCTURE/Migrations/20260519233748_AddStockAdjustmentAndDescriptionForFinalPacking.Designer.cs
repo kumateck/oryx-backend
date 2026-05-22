@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260519233748_AddStockAdjustmentAndDescriptionForFinalPacking")]
+    partial class AddStockAdjustmentAndDescriptionForFinalPacking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2846,9 +2849,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("FinishedGoodsTransferNoteId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid");
 
@@ -2884,8 +2884,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("FinishedGoodsTransferNoteId");
 
                     b.HasIndex("ItemId");
 
@@ -12470,9 +12468,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("FinishedGoodsTransferNoteId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid");
 
@@ -12512,8 +12507,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("FinishedGoodsTransferNoteId");
 
                     b.HasIndex("ItemId");
 
@@ -15849,10 +15842,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
-                        .WithMany()
-                        .HasForeignKey("FinishedGoodsTransferNoteId");
-
                     b.HasOne("DOMAIN.Entities.Items.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId");
@@ -15870,8 +15859,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("ShelfMaterialBatchId");
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("FinishedGoodsTransferNote");
 
                     b.Navigation("Item");
 
@@ -22111,10 +22098,6 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
-                    b.HasOne("DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote", "FinishedGoodsTransferNote")
-                        .WithMany()
-                        .HasForeignKey("FinishedGoodsTransferNoteId");
-
                     b.HasOne("DOMAIN.Entities.Items.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId");
@@ -22138,8 +22121,6 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("FinishedGoodsTransferNote");
 
                     b.Navigation("Item");
 

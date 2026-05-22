@@ -659,6 +659,7 @@ public class ApplicationDbContext(
     public DbSet<StockEntry> StockEntries { get; set; }
     public DbSet<StockAdjustment> StockAdjustments { get; set; }
     public DbSet<StockAdjustmentLine> StockAdjustmentLines { get; set; }
+    public DbSet<StockAdjustmentApproval> StockAdjustmentApprovals { get; set; }
     public DbSet<InventoryLedger> InventoryLedgers { get; set; }
     #endregion
 
