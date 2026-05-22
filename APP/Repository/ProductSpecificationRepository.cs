@@ -135,6 +135,10 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
     {
         var products = context
             .Products.IgnoreQueryFilters()
+            .IgnoreAutoIncludes()
+            .Include(p => p.BaseUoM)
+            .Include(p => p.Category)
+            .Include(p => p.Equipment)
             .Where(ps =>
                 !ps.DeletedAt.HasValue
                 && !context.ProductSpecifications.Any(m => m.ProductId == ps.Id)
