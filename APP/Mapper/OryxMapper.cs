@@ -281,13 +281,17 @@ public class OryxMapper : Profile
         CreateMap<CreateFinishedProductRequest, FinishedProduct>();
         CreateMap<FinishedProduct, FinishedProductDto>();
         CreateMap<CreateProductPackageRequest, ProductPackage>()
-            .AfterMap((src, dest) =>
-            {
-                dest.Substitutes = src.SubstituteMaterialIds.Select(id => new ProductPackageSubstitute
+            .AfterMap(
+                (src, dest) =>
                 {
-                    SubstituteMaterialId = id
-                }).ToList();
-            });
+                    dest.Substitutes = src
+                        .SubstituteMaterialIds.Select(id => new ProductPackageSubstitute
+                        {
+                            SubstituteMaterialId = id,
+                        })
+                        .ToList();
+                }
+            );
         CreateMap<ProductPackage, ProductPackageDto>();
         CreateMap<ProductPackageSubstitute, ProductPackageSubstituteDto>();
         CreateMap<CreateProductPacking, ProductPacking>()
@@ -312,13 +316,17 @@ public class OryxMapper : Profile
         CreateMap<CreateBillOfMaterialRequest, BillOfMaterial>();
         CreateMap<BillOfMaterial, BillOfMaterialDto>();
         CreateMap<CreateBoMItemsRequest, BillOfMaterialItem>()
-            .AfterMap((src, dest) =>
-            {
-                dest.Substitutes = src.SubstituteMaterialIds.Select(id => new BillOfMaterialItemSubstitute
+            .AfterMap(
+                (src, dest) =>
                 {
-                    SubstituteMaterialId = id
-                }).ToList();
-            });
+                    dest.Substitutes = src
+                        .SubstituteMaterialIds.Select(id => new BillOfMaterialItemSubstitute
+                        {
+                            SubstituteMaterialId = id,
+                        })
+                        .ToList();
+                }
+            );
         CreateMap<BillOfMaterialItem, BillOfMaterialItemDto>();
         CreateMap<BillOfMaterialItemSubstitute, BillOfMaterialItemSubstituteDto>();
         #endregion
@@ -346,6 +354,10 @@ public class OryxMapper : Profile
             .ForMember(
                 dest => dest.ProductionActivityId,
                 opt => opt.MapFrom(src => src.ProductionActivity.Id)
+            )
+            .ForMember(
+                dest => dest.BatchNumber,
+                opt => opt.MapFrom<BatchNumberResolverProductionSchedule>()
             );
 
         CreateMap<CreateFinalPacking, FinalPacking>();
