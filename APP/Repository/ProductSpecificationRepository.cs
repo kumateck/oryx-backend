@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductSpecifications;
 using INFRASTRUCTURE.Context;
@@ -90,6 +91,11 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             query = query.Where(p => p.IsVerified == isVerified.Value);
         }
 
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, ps => ps.Product.Code, ps => ps.Product.Name);
+        }
+
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
@@ -136,9 +142,19 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         var products = context
             .Products.IgnoreQueryFilters()
             .IgnoreAutoIncludes()
-            .Where(ps =>
-                !ps.DeletedAt.HasValue
-                && !context.ProductSpecifications.Any(m => m.ProductId == ps.Id)
+            .Where(p =>
+                !p.DeletedAt.HasValue
+                && (
+                    !context.ProductSpecifications.Any(ps =>
+                        ps.ProductId == p.Id && ps.TestStage == TestStage.Intermediate
+                    )
+                    || !context.ProductSpecifications.Any(ps =>
+                        ps.ProductId == p.Id && ps.TestStage == TestStage.Bulk
+                    )
+                    || !context.ProductSpecifications.Any(ps =>
+                        ps.ProductId == p.Id && ps.TestStage == TestStage.Finished
+                    )
+                )
             )
             .AsQueryable();
 
@@ -149,7 +165,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
 
         if (searchQuery != null)
         {
-            products = products.WhereSearch(searchQuery, ps => ps.Name);
+            products = products.WhereSearch(searchQuery, ps => ps.Name, ps => ps.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
