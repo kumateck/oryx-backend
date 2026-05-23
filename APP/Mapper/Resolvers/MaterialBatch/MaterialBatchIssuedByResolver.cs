@@ -1,5 +1,4 @@
 using AutoMapper;
-using DOMAIN.Entities.Materials.Batch;
 using INFRASTRUCTURE.Context;
 using SHARED;
 

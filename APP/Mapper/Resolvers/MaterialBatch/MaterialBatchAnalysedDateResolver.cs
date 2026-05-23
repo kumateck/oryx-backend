@@ -1,8 +1,6 @@
 using AutoMapper;
 using DOMAIN.Entities.Forms;
-using DOMAIN.Entities.Materials.Batch;
 using INFRASTRUCTURE.Context;
-using Microsoft.EntityFrameworkCore;
 
 namespace APP.Mapper.Resolvers.MaterialBatch;
 
