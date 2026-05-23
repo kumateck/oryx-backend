@@ -289,7 +289,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order.</param>
     /// <returns>Returns the purchase order details.</returns>
     [HttpGet("purchase-order/{purchaseOrderId}")]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PurchaseOrderDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetPurchaseOrder(Guid purchaseOrderId)
