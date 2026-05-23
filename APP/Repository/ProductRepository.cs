@@ -1226,7 +1226,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Code",
             "Product Name",
             "Packing Style",
-            "Total Quantity",
+            "Shipper QTY",
+            "Loose QTY",
             "UOM",
             "Batch No.",
             "FGTN ID",
@@ -1378,6 +1379,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 );
             }
 
+            decimal.TryParse(GetCell("Shipper QTY"), out var sQty);
+            decimal.TryParse(GetCell("Loose QTY"), out var lQty);
+            var quantity = (sQty * packing.PackPerShipper) + lQty;
+
             // Resolve Production Schedule Product
             var pspKey = $"{productCode}|{packingStyle}|{batchNo}";
             if (!pspLookup.TryGetValue(pspKey, out var psp))
@@ -1419,7 +1424,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                         ProductId = product.Id,
                         BatchNumber = batchNo,
                         BatchSize = BatchSize.Full,
-                        Quantity = decimal.TryParse(GetCell("Total Quantity"), out var q) ? q : 0,
+                        Quantity = quantity,
                         ProductPackingId = packing.Id,
                     };
                     newProductionScheduleProduct[pspKey] = psp;
@@ -1496,7 +1501,6 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             }
 
             // Parse shared data
-            decimal.TryParse(GetCell("Total Quantity"), out var quantity);
             var mfgDate = GetCell("Manufacturing Date");
             var expiryDate = GetCell("Expiry Date");
 
@@ -1614,7 +1618,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Code",
             "Product Name",
             "Packing Style",
-            "Total Quantity",
+            "Shipper QTY",
+            "Loose QTY",
             "Batch No.",
             "FGTN ID",
             "AR No.",
@@ -1630,19 +1635,25 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         int row = 2;
         foreach (var fgtn in fgtnList)
         {
+            var packPerShipper = fgtn.ProductPacking?.PackPerShipper ?? 1;
+            if (packPerShipper == 0) packPerShipper = 1;
+            var shipperQty = (int)(fgtn.TotalQuantity / packPerShipper);
+            var looseQty = fgtn.TotalQuantity % packPerShipper;
+
             worksheet.Cells[row, 1].Value = fgtn.ToWarehouse?.Name;
             worksheet.Cells[row, 2].Value = fgtn.ProductPacking?.Product?.Code;
             worksheet.Cells[row, 3].Value = fgtn.ProductPacking?.Product?.Name;
             worksheet.Cells[row, 4].Value = fgtn.ProductPacking?.Name;
-            //worksheet.Cells[row, 5].Value = fgtn.TotalQuantity;
-            // worksheet.Cells[row, 6].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
-            // worksheet.Cells[row, 7].Value = fgtn.TransferNoteNumber;
-            // worksheet.Cells[row, 8].Value = fgtn.QarNumber;
-            // worksheet.Cells[row, 9].Value =
-            //     fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
-            // worksheet.Cells[row, 10].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
-            //     "yyyy-MM-dd"
-            // );
+            worksheet.Cells[row, 5].Value = shipperQty;
+            worksheet.Cells[row, 6].Value = looseQty;
+            worksheet.Cells[row, 7].Value = fgtn.BatchManufacturingRecord?.BatchNumber;
+            worksheet.Cells[row, 8].Value = fgtn.TransferNoteNumber;
+            worksheet.Cells[row, 9].Value = fgtn.QarNumber;
+            worksheet.Cells[row, 10].Value =
+                fgtn.BatchManufacturingRecord?.ManufacturingDate?.ToString("yyyy-MM-dd");
+            worksheet.Cells[row, 11].Value = fgtn.BatchManufacturingRecord?.ExpiryDate?.ToString(
+                "yyyy-MM-dd"
+            );
             row++;
         }
 
@@ -1696,7 +1707,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             "Product Code",
             "Product Name",
             "Packing Style",
-            "Total Quantity",
+            "Shipper QTY",
+            "Loose QTY",
             "UOM",
             "Batch No.",
             "FGTN ID",
