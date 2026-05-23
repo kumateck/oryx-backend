@@ -20,6 +20,7 @@ using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
+using MassTransit.Initializers;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using SHARED;
@@ -373,10 +374,11 @@ public class ProcurementRepository(
         return purchaseOrder.Id;
     }
 
-    public async Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId)
+   public async Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId)
     {
         var purchaseOrder = await context
-            .PurchaseOrders.AsSplitQuery()
+            .PurchaseOrders
+            .AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po => po.Items)
                 .ThenInclude(i => i.Material)
@@ -387,22 +389,92 @@ public class ProcurementRepository(
             .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
 
         if (purchaseOrder is null)
-            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+        {
+            return Error.NotFound(
+                "PurchaseOrder.NotFound",
+                "Purchase order not found"
+            );
+        }
 
         var result = mapper.Map<PurchaseOrderDto>(
             purchaseOrder,
             opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder)
         );
+
+        var materialIds = result.Items
+            .Where(i => i.Material?.Id != null)
+            .Select(i => i.Material!.Id!.Value)
+            .Distinct()
+            .ToList();
+
+        // Load all quotation items in one query
+        var quotationItems = await context.SupplierQuotationItems
+            .AsNoTracking()
+            .Where(sq =>
+                sq.PurchaseOrderId == purchaseOrderId &&
+                materialIds.Contains(sq.MaterialId)
+            )
+            .Select(sq => new
+            {
+                sq.MaterialId,
+                sq.UoMId,
+                sq.PriceUoM
+            })
+            .ToListAsync();
+
+        // Composite key lookup: MaterialId + UoMId
+        var quotationLookup = quotationItems.ToDictionary(
+            q => (q.MaterialId, q.UoMId),
+            q => q.PriceUoM
+        );
+
+        // Load all manufacturers in one query
+        var manufacturers = await context.SupplierManufacturers
+            .AsNoTracking()
+            .Where(sm =>
+                sm.SupplierId == purchaseOrder.SupplierId &&
+                materialIds.Contains(sm.MaterialId.Value)
+            )
+            .Include(sm => sm.Manufacturer)
+            .GroupBy(sm => sm.MaterialId)
+            .ToDictionaryAsync(
+                g => g.Key,
+                g => g
+                    .Select(sm => new SupplierManufacturerDto
+                    {
+                        Manufacturer = new ManufacturerDto
+                        {
+                            Id = sm.Manufacturer.Id,
+                            Name = sm.Manufacturer.Name
+                        }
+                    })
+                    .Distinct()
+                    .ToList()
+            );
+
         foreach (var item in result.Items)
         {
-            if (item.Material?.Id != null)
-                item.Manufacturers = (
-                    await GetSupplierManufacturersByMaterial(
-                        item.Material.Id.Value,
-                        purchaseOrder.SupplierId
-                    )
-                ).Value;
+            if (item.Material?.Id == null || item.Uom?.Id == null)
+                continue;
+
+            var materialId = item.Material.Id.Value;
+            var uomId = item.Uom.Id;
+
+            // Assign Price UoM
+            if (quotationLookup.TryGetValue((materialId, uomId), out var priceUoM))
+            {
+                item.PriceUoM = priceUoM;
+            }
+
+            // Assign manufacturers
+            item.Manufacturers = manufacturers.TryGetValue(
+                materialId,
+                out var supplierManufacturers
+            )
+                ? supplierManufacturers
+                : [];
         }
+
         return result;
     }
 
