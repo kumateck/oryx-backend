@@ -1,6 +1,4 @@
 using AutoMapper;
-using DOMAIN.Entities.Materials.Batch;
-using INFRASTRUCTURE.Context;
 
 namespace APP.Mapper.Resolvers.MaterialBatch;
 

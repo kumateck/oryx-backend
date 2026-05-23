@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
-using DOMAIN.Entities.Warehouses;
 
 namespace DOMAIN.Entities.StockAdjustments;
 

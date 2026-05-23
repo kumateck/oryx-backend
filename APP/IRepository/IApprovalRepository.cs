@@ -1,7 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Users;
-using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace APP.IRepository;
