@@ -930,6 +930,7 @@ public class FormRepository(
         {
             var formResponses = await context
                 .FormResponses.AsSplitQuery()
+                .IgnoreQueryFilters()
                 .Where(f => f.ResponseId == response.Id)
                 .Include(formResponse => formResponse.FormField)
                     .ThenInclude(formField => formField.FormSection)
@@ -946,7 +947,7 @@ public class FormRepository(
                 {
                     return Error.Validation(
                         "Response.FormSection",
-                        $"{comply.FormSectionId} is not a valid forms section id"
+                        $"{comply.FormSectionId} is not a valid forms section id for material batch {materialBatchId}"
                     );
                 }
 
