@@ -1,5 +1,4 @@
 using AutoMapper;
-using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;

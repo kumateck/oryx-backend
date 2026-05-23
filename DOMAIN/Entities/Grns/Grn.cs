@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Materials.Batch;
-using SHARED;
 
 namespace DOMAIN.Entities.Grns;
 
