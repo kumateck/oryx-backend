@@ -20,18 +20,6 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         CreateProductAnalyticalRawDataRequest request
     )
     {
-        var existingAnalyticalRawData = await context
-            .ProductAnalyticalRawData.IgnoreQueryFilters()
-            .Where(ad => !ad.DeletedAt.HasValue)
-            .AnyAsync(ad => ad.SpecNumber == request.SpecNumber);
-        if (existingAnalyticalRawData)
-        {
-            return Error.Validation(
-                "ProductAnalyticalRawData.Exists",
-                $"Analytical raw data with spec number  already exists."
-            );
-        }
-
         var form = await context.Forms.AnyAsync(f => f.Id == request.FormId);
 
         if (!form)
