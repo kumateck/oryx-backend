@@ -20,7 +20,7 @@ public class SupplierDto : BaseDto
     public List<SupplierManufacturerDto> AssociatedManufacturers { get; set; } = [];
 }
 
-public class SupplierManufacturerDto : BaseDto
+public class SupplierManufacturerDto
 {
     public ManufacturerDto Manufacturer { get; set; }
     public MaterialDto Material { get; set; }

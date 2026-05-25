@@ -422,10 +422,12 @@ public class ProcurementRepository(
             .ToListAsync();
 
         // Composite key lookup: MaterialId + UoMId
-        var quotationLookup = quotationItems.ToDictionary(
-            q => (q.MaterialId, q.UoMId),
-            q => q.PriceUoM
-        );
+        var quotationLookup = quotationItems
+            .DistinctBy(q => (q.MaterialId, q.UoMId))
+            .ToDictionary(
+                q => (q.MaterialId, q.UoMId),
+                q => q.PriceUoM
+            );
 
         // Load all manufacturers in one query
         var manufacturers = await context.SupplierManufacturers
@@ -1527,10 +1529,12 @@ public class ProcurementRepository(
             })
             .ToListAsync();
 
-        var priceLookup = quotationItems.ToDictionary(
-            q => (q.PurchaseOrderId, q.MaterialId, q.UoMId),
-            q => q.PriceUoM
-        );
+        var priceLookup = quotationItems
+            .DistinctBy(q => (q.PurchaseOrderId, q.MaterialId, q.UoMId))
+            .ToDictionary(
+                q => (q.PurchaseOrderId, q.MaterialId, q.UoMId),
+                q => q.PriceUoM
+            );
 
         // =========================
         // Apply PriceUoM
@@ -1983,10 +1987,12 @@ public class ProcurementRepository(
         })
         .ToListAsync();
 
-    var priceLookup = quotationItems.ToDictionary(
-        q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId),
-        q => q.PriceUoM
-    );
+    var priceLookup = quotationItems
+        .DistinctBy(q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId))
+        .ToDictionary(
+            q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId),
+            q => q.PriceUoM
+        );
 
     // =========================
     // APPLY
@@ -2339,10 +2345,12 @@ public class ProcurementRepository(
         })
         .ToListAsync();
 
-    var priceLookup = quotationItems.ToDictionary(
-        x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId),
-        x => x.PriceUoM
-    );
+    var priceLookup = quotationItems
+        .DistinctBy(x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId))
+        .ToDictionary(
+            x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId),
+            x => x.PriceUoM
+        );
 
     // =========================
     // 2. MANUFACTURERS (BATCHED)
