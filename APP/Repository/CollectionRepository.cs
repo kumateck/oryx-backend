@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
@@ -27,247 +28,211 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class CollectionRepository(ApplicationDbContext context, IMapper mapper) : ICollectionRepository
+public class CollectionRepository(ApplicationDbContext context, IMapper mapper)
+    : ICollectionRepository
 {
-    public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(string itemType, MaterialKind? materialKind)
+    public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(
+        string itemType,
+        MaterialKind? materialKind
+    )
+    {
+        var query = GetItemCollectionQuery(itemType, materialKind);
+
+        if (query == null)
+        {
+            return Error.Validation("Item", "Invalid item type");
+        }
+
+        var items = await query.ToListAsync();
+        return Result.Success(items.AsEnumerable());
+    }
+
+    private IQueryable<CollectionItemDto> GetItemCollectionQuery(
+        string itemType,
+        MaterialKind? materialKind = null
+    )
     {
         return itemType switch
         {
-            nameof(ProductCategory) => mapper.Map<List<CollectionItemDto>>(
-                await context.ProductCategories.ToListAsync()),
-            nameof(Resource) => mapper.Map<List<CollectionItemDto>>(await context.Resources.ToListAsync()),
-            nameof(UnitOfMeasure) => mapper.Map<List<CollectionItemDto>>(await context.UnitOfMeasures.ToListAsync()),
-            nameof(PackageStyle) => mapper.Map<List<CollectionItemDto>>(await context.PackageStyles.ToListAsync()),
-            nameof(DeliveryMode) => mapper.Map<List<CollectionItemDto>>(await context.DeliveryModes.ToListAsync()),
-            nameof(TermsOfPayment) => mapper.Map<List<CollectionItemDto>>(await context.TermsOfPayments.ToListAsync()),
-            nameof(WorkCenter) => mapper.Map<List<CollectionItemDto>>(await context.WorkCenters.ToListAsync()),
-            nameof(Operation) => mapper.Map<List<CollectionItemDto>>(await context.Operations.ToListAsync()),
-            nameof(MaterialType) => mapper.Map<List<CollectionItemDto>>(await context.MaterialTypes.ToListAsync()),
-            nameof(MaterialCategory) => await GetMaterialCategories(materialKind),
-            nameof(ShiftCategory) => mapper.Map<List<CollectionItemDto>>(await context.ShiftCategories.Where(sc => sc.DeletedAt == null).ToListAsync()),
-            nameof(PackageType) => mapper.Map<List<CollectionItemDto>>(await context.PackageTypes.ToListAsync()),
-            nameof(User) => mapper.Map<List<CollectionItemDto>>(await context.Users.ToListAsync()),
-            nameof(Role) => mapper.Map<List<CollectionItemDto>>(await context.Roles.ToListAsync()),
-            nameof(Country) => mapper.Map<List<CollectionItemDto>>(await context.Countries.OrderBy(c => c.Name).ToListAsync()),
-            nameof(WarehouseLocation) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync()),
-            nameof(Warehouse) => mapper.Map<List<CollectionItemDto>>(await context.Warehouses.OrderBy(c => c.Name).ToListAsync()),
-            nameof(WarehouseLocationRack) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync()),
-            nameof(WarehouseLocationShelf) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync()),
-            nameof(Currency) => mapper.Map<List<CollectionItemDto>>(await context.Currencies.OrderBy(c => c.Name).ToListAsync()),
-            nameof(ShipmentDiscrepancyType) => mapper.Map<List<CollectionItemDto>>(await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync()),
-            nameof(Department) => mapper.Map<List<CollectionItemDto>>(await context.Departments.OrderBy(c => c.Name).ToListAsync()),
-            nameof(Charge) => mapper.Map<List<CollectionItemDto>>(await context.Charges.OrderBy(c => c.Name).ToListAsync()),
-            nameof(ProductState) => mapper.Map<List<CollectionItemDto>>(await context.ProductStates.OrderBy(c => c.Name).ToListAsync()),
-            nameof(MarketType) => mapper.Map<List<CollectionItemDto>>(await context.MarketTypes.OrderBy(c => c.Name).ToListAsync()),
-            nameof(Instrument) => mapper.Map<List<CollectionItemDto>>(await context.Instruments.OrderBy(c => c.Name).ToListAsync()),
-            nameof(ItemCategory) => mapper.Map<List<CollectionItemDto>>(await context.ItemCategories.OrderBy(c => c.Name).ToListAsync()),
-            nameof(WarehouseLocationName) => mapper.Map<List<CollectionItemDto>>(await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync()),
-            nameof(QcEquipmentCategory) => mapper.Map<List<CollectionItemDto>>(await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync()),
-            nameof(Reagent) => mapper.Map<List<CollectionItemDto>>(await context.Reagents.OrderBy(c => c.Name).ToListAsync()),
-            nameof(Site) => mapper.Map<List<CollectionItemDto>>(await context.Sites.OrderBy(c => c.Name).ToListAsync()),
-            _ => Error.Validation("Item", "Invalid item type")
+            nameof(ProductCategory) => context
+                .ProductCategories.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Resource) => context
+                .Resources.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(UnitOfMeasure) => context
+                .UnitOfMeasures.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(PackageStyle) => context
+                .PackageStyles.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(DeliveryMode) => context
+                .DeliveryModes.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(TermsOfPayment) => context
+                .TermsOfPayments.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(WorkCenter) => context
+                .WorkCenters.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Operation) => context
+                .Operations.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(MaterialType) => context
+                .MaterialTypes.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(MaterialCategory) => GetMaterialCategoriesQuery(materialKind),
+            nameof(ShiftCategory) => context
+                .ShiftCategories.AsNoTracking()
+                .Where(sc => sc.DeletedAt == null)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(PackageType) => context
+                .PackageTypes.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(User) => context
+                .Users.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Role) => context
+                .Roles.AsNoTracking()
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Country) => context
+                .Countries.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(WarehouseLocation) => context
+                .WarehouseLocations.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Warehouse) => context
+                .Warehouses.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(WarehouseLocationRack) => context
+                .WarehouseLocationRacks.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(WarehouseLocationShelf) => context
+                .WarehouseLocationShelves.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Currency) => context
+                .Currencies.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(ShipmentDiscrepancyType) => context
+                .ShipmentDiscrepancyTypes.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Department) => context
+                .Departments.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Charge) => context
+                .Charges.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(ProductState) => context
+                .ProductStates.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(FinishedGoodsTransferNote) => context
+                .FinishedGoodsTransferNotes.AsNoTracking()
+                .OrderBy(c => c.TransferNoteNumber)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(MarketType) => context
+                .MarketTypes.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Instrument) => context
+                .Instruments.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(ItemCategory) => context
+                .ItemCategories.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(WarehouseLocationName) => context
+                .WarehouseLocationNames.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(QcEquipmentCategory) => context
+                .QcEquipmentCategories.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Reagent) => context
+                .Reagents.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            nameof(Site) => context
+                .Sites.AsNoTracking()
+                .OrderBy(c => c.Name)
+                .ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider),
+            _ => null,
         };
     }
 
-    private async Task<List<CollectionItemDto>> GetMaterialCategories(MaterialKind? materialKind)
+    private IQueryable<CollectionItemDto> GetMaterialCategoriesQuery(MaterialKind? materialKind)
     {
-        var materialCategories = await context.MaterialCategories.ToListAsync();
+        var query = context.MaterialCategories.AsNoTracking();
         if (materialKind != null)
         {
-            materialCategories = materialCategories.Where(m => m.MaterialKind == materialKind).ToList();
+            query = query.Where(m => m.MaterialKind == materialKind);
         }
-        return mapper.Map<List<CollectionItemDto>>(materialCategories);
+        return query.ProjectTo<CollectionItemDto>(mapper.ConfigurationProvider);
     }
 
-    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(List<string> itemTypes, MaterialKind? materialKind = null)
+    public async Task<Result<Dictionary<string, IEnumerable<CollectionItemDto>>>> GetItemCollection(
+        List<string> itemTypes,
+        MaterialKind? materialKind = null
+    )
     {
         var result = new Dictionary<string, IEnumerable<CollectionItemDto>>();
         var invalidItemTypes = new List<string>();
 
         foreach (var itemType in itemTypes)
         {
-            switch (itemType)
+            var query = GetItemCollectionQuery(itemType, materialKind);
+            if (query != null)
             {
-                case nameof(ProductCategory):
-                    var productCategories = await context.ProductCategories.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(productCategories);
-                    break;
-
-                case nameof(Resource):
-                    var resources = await context.Resources.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(resources);
-                    break;
-
-                case nameof(UnitOfMeasure):
-                    var units = await context.UnitOfMeasures.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(units);
-                    break;
-
-                case nameof(PackageStyle):
-                    var packageStyles = await context.PackageStyles.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(packageStyles);
-                    break;
-
-                case nameof(TermsOfPayment):
-                    var termsOfPayments = await context.TermsOfPayments.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(termsOfPayments);
-                    break;
-
-                case nameof(DeliveryMode):
-                    var deliveryModes = await context.DeliveryModes.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(deliveryModes);
-                    break;
-
-                case nameof(WorkCenter):
-                    var workCenters = await context.WorkCenters.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(workCenters);
-                    break;
-
-                case nameof(Operation):
-                    var operations = await context.Operations.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(operations);
-                    break;
-
-                case nameof(MaterialType):
-                    var materialType = await context.MaterialTypes.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(materialType);
-                    break;
-
-                case nameof(MaterialCategory):
-                    var materialCategory = await context.MaterialCategories.ToListAsync();
-                    if (materialKind != null) materialCategory = materialCategory.Where(m => m.MaterialKind == materialKind).ToList();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(materialCategory);
-                    break;
-
-                case nameof(ShiftCategory):
-                    var shiftCategory = await context.ShiftCategories.Where(sc => sc.DeletedAt == null).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(shiftCategory);
-                    break;
-
-                case nameof(PackageType):
-                    var packageType = await context.PackageTypes.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(packageType);
-                    break;
-
-                case nameof(User):
-                    var user = await context.Users.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(user);
-                    break;
-
-                case nameof(Role):
-                    var role = await context.Roles.ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(role);
-                    break;
-
-                case nameof(Country):
-                    var countries = await context.Countries.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(countries);
-                    break;
-
-                case nameof(WarehouseLocation):
-                    var warehouseLocations = await context.WarehouseLocations.OrderBy(c => c.Name).Include(w => w.Warehouse).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocations);
-                    break;
-
-                case nameof(Warehouse):
-                    var warehouses = await context.Warehouses.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouses);
-                    break;
-
-                case nameof(Currency):
-                    var currencies = await context.Currencies.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(currencies);
-                    break;
-
-                case nameof(WarehouseLocationRack):
-                    var warehouseLocationRacks = await context.WarehouseLocationRacks.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationRacks);
-                    break;
-
-                case nameof(WarehouseLocationShelf):
-                    var warehouseLocationShelves = await context.WarehouseLocationShelves.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationShelves);
-                    break;
-
-                case nameof(ShipmentDiscrepancyType):
-                    var shipmentDiscrepancyTypes = await context.ShipmentDiscrepancyTypes.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(shipmentDiscrepancyTypes);
-                    break;
-
-                case nameof(Department):
-                    var departments = await context.Departments.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(departments);
-                    break;
-
-                case nameof(Charge):
-                    var charges = await context.Charges.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(charges);
-                    break;
-
-                case nameof(ProductState):
-                    var productStates = await context.ProductStates.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(productStates);
-                    break;
-
-                case nameof(MarketType):
-                    var marketType = await context.MarketTypes.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(marketType);
-                    break;
-
-                case nameof(Instrument):
-                    var instrument = await context.Instruments.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(instrument);
-                    break;
-
-                case nameof(ItemCategory):
-                    var itemCategory = await context.ItemCategories.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(itemCategory);
-                    break;
-
-                case nameof(WarehouseLocationName):
-                    var warehouseLocationNames = await context.WarehouseLocationNames.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(warehouseLocationNames);
-                    break;
-
-                case nameof(QcEquipmentCategory):
-                    var qcEquipmentCategories = await context.QcEquipmentCategories.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(qcEquipmentCategories);
-                    break;
-
-                case nameof(Reagent):
-                    var reagents = await context.Reagents.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(reagents);
-                    break;
-                
-                case nameof(Site):
-                    var sites = await context.Sites.OrderBy(c => c.Name).ToListAsync();
-                    result[itemType] = mapper.Map<List<CollectionItemDto>>(sites);
-                    break;
-
-                default:
-                    invalidItemTypes.Add(itemType);
-                    break;
+                result[itemType] = await query.ToListAsync();
+            }
+            else
+            {
+                invalidItemTypes.Add(itemType);
             }
         }
 
-        if (invalidItemTypes.Count == 0) return Result.Success(result);
+        if (invalidItemTypes.Count == 0)
+            return Result.Success(result);
         var invalidItems = string.Join(", ", invalidItemTypes);
         return Error.Validation("Item", $"Invalid item types: {invalidItems}");
     }
 
     public async Task<Result<IEnumerable<PackageStyleDto>>> GetPackageStyles()
     {
-        return mapper.Map<List<PackageStyleDto>>(await context.PackageStyles.ToListAsync());
+        var items = await context
+            .PackageStyles.AsNoTracking()
+            .ProjectTo<PackageStyleDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+        return Result.Success(items.AsEnumerable());
     }
 
     public async Task<Result<IEnumerable<DeliveryModeDto>>> GetDeliveryModes()
     {
-        return mapper.Map<List<DeliveryModeDto>>(await context.DeliveryModes.ToListAsync());
+        var items = await context
+            .DeliveryModes.AsNoTracking()
+            .ProjectTo<DeliveryModeDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+        return Result.Success(items.AsEnumerable());
     }
 
     public async Task<Result<IEnumerable<TermsOfPaymentDto>>> GetTermsOfPayments()
     {
-        return mapper.Map<List<TermsOfPaymentDto>>(await context.TermsOfPayments.ToListAsync());
+        var items = await context
+            .TermsOfPayments.AsNoTracking()
+            .ProjectTo<TermsOfPaymentDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+        return Result.Success(items.AsEnumerable());
     }
 
     public Result<IEnumerable<string>> GetItemTypes()
@@ -445,7 +410,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 await context.Reagents.AddAsync(reagent);
                 await context.SaveChangesAsync();
                 return reagent.Id;
-            
+
             case nameof(Site):
                 var site = mapper.Map<Site>(request);
                 await context.Sites.AddAsync(site);
@@ -457,7 +422,12 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         }
     }
 
-    public async Task<Result<Guid>> UpdateItem(CreateItemRequest request, Guid itemId, string itemType, Guid userId)
+    public async Task<Result<Guid>> UpdateItem(
+        CreateItemRequest request,
+        Guid itemId,
+        string itemType,
+        Guid userId
+    )
     {
         var nameExists = await CheckIfNameExists(itemType, request.Name, itemId);
         if (nameExists)
@@ -468,7 +438,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         switch (itemType)
         {
             case nameof(ProductCategory):
-                var productCategory = await context.ProductCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var productCategory = await context.ProductCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, productCategory);
                 productCategory.LastUpdatedById = userId;
                 context.ProductCategories.Update(productCategory);
@@ -484,7 +456,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return resource.Id;
 
             case nameof(UnitOfMeasure):
-                var unitOfMeasure = await context.UnitOfMeasures.FirstOrDefaultAsync(p => p.Id == itemId);
+                var unitOfMeasure = await context.UnitOfMeasures.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, unitOfMeasure);
                 unitOfMeasure.LastUpdatedById = userId;
                 context.UnitOfMeasures.Update(unitOfMeasure);
@@ -492,7 +466,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return unitOfMeasure.Id;
 
             case nameof(PackageStyle):
-                var packageStyle = await context.PackageStyles.FirstOrDefaultAsync(p => p.Id == itemId);
+                var packageStyle = await context.PackageStyles.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, packageStyle);
                 packageStyle.LastUpdatedById = userId;
                 context.PackageStyles.Update(packageStyle);
@@ -500,7 +476,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return packageStyle.Id;
 
             case nameof(DeliveryMode):
-                var deliveryMode = await context.DeliveryModes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var deliveryMode = await context.DeliveryModes.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, deliveryMode);
                 deliveryMode.LastUpdatedById = userId;
                 context.DeliveryModes.Update(deliveryMode);
@@ -508,7 +486,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return deliveryMode.Id;
 
             case nameof(TermsOfPayment):
-                var termsOfPayment = await context.TermsOfPayments.FirstOrDefaultAsync(p => p.Id == itemId);
+                var termsOfPayment = await context.TermsOfPayments.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, termsOfPayment);
                 termsOfPayment.LastUpdatedById = userId;
                 context.TermsOfPayments.Update(termsOfPayment);
@@ -532,7 +512,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return operation.Id;
 
             case nameof(MaterialType):
-                var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, materialType);
                 materialType.LastUpdatedById = userId;
                 context.MaterialTypes.Update(materialType);
@@ -540,7 +522,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return materialType.Id;
 
             case nameof(MaterialCategory):
-                var materialCategory = await context.MaterialCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var materialCategory = await context.MaterialCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, materialCategory);
                 materialCategory.LastUpdatedById = userId;
                 context.MaterialCategories.Update(materialCategory);
@@ -548,7 +532,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return materialCategory.Id;
 
             case nameof(ShiftCategory):
-                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId && p.LastDeletedById == null);
+                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId && p.LastDeletedById == null
+                );
                 mapper.Map(request, shiftCategory);
                 shiftCategory.LastUpdatedById = userId;
                 context.ShiftCategories.Update(shiftCategory);
@@ -556,7 +542,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return shiftCategory.Id;
 
             case nameof(PackageType):
-                var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, productPackageType);
                 productPackageType.LastUpdatedById = userId;
                 context.PackageTypes.Update(productPackageType);
@@ -572,7 +560,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return currency.Id;
 
             case nameof(ShipmentDiscrepancyType):
-                var shipmentDiscrepancyType = await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var shipmentDiscrepancyType =
+                    await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, shipmentDiscrepancyType);
                 shipmentDiscrepancyType.LastUpdatedById = userId;
                 context.ShipmentDiscrepancyTypes.Update(shipmentDiscrepancyType);
@@ -587,7 +576,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return charge.Id;
 
             case nameof(ProductState):
-                var productState = await context.ProductStates.FirstOrDefaultAsync(p => p.Id == itemId);
+                var productState = await context.ProductStates.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, productState);
                 context.ProductStates.Update(productState);
                 await context.SaveChangesAsync();
@@ -608,21 +599,26 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return instrument.Id;
 
             case nameof(ItemCategory):
-                var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 mapper.Map(request, itemCategory);
                 context.ItemCategories.Update(itemCategory);
                 await context.SaveChangesAsync();
                 return itemCategory.Id;
 
             case nameof(WarehouseLocationName):
-                var warehouseLocationName = await context.WarehouseLocationNames.FirstOrDefaultAsync(p => p.Id == itemId);
+                var warehouseLocationName =
+                    await context.WarehouseLocationNames.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, warehouseLocationName);
                 context.WarehouseLocationNames.Update(warehouseLocationName);
                 await context.SaveChangesAsync();
                 return warehouseLocationName.Id;
 
             case nameof(QcEquipmentCategory):
-                var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(
+                    p => p.Id == itemId
+                );
                 mapper.Map(request, qcEquipmentCategory);
                 context.QcEquipmentCategories.Update(qcEquipmentCategory);
                 await context.SaveChangesAsync();
@@ -634,7 +630,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Reagents.Update(reagent);
                 await context.SaveChangesAsync();
                 return reagent.Id;
-            
+
             case nameof(Site):
                 var site = await context.Sites.FirstOrDefaultAsync(p => p.Id == itemId);
                 mapper.Map(request, site);
@@ -648,45 +644,97 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
     }
 
     // Helper Method to Check for Duplicate Names
-    private async Task<bool> CheckIfNameExists(string itemType, string name, Guid? excludedId = null)
+    private async Task<bool> CheckIfNameExists(
+        string itemType,
+        string name,
+        Guid? excludedId = null
+    )
     {
         return itemType switch
         {
-            nameof(ProductCategory) => await context.ProductCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Resource) => await context.Resources.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(UnitOfMeasure) => await context.UnitOfMeasures.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(PackageStyle) => await context.PackageStyles.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(DeliveryMode) => await context.DeliveryModes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(TermsOfPayment) => await context.TermsOfPayments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(WorkCenter) => await context.WorkCenters.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Operation) => await context.Operations.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(MaterialCategory) => await context.MaterialCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(ShiftCategory) => await context.ShiftCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(PackageType) => await context.PackageTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Currency) => await context.Currencies.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Charge) => await context.Charges.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(ProductState) => await context.ProductStates.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(MarketType) => await context.MarketTypes.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Instrument) => await context.Instruments.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Reagent) => await context.Reagents.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            nameof(Site) => await context.Sites.AnyAsync(p => p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)),
-            _ => false
+            nameof(ProductCategory) => await context.ProductCategories.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Resource) => await context.Resources.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(UnitOfMeasure) => await context.UnitOfMeasures.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(PackageStyle) => await context.PackageStyles.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(DeliveryMode) => await context.DeliveryModes.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(TermsOfPayment) => await context.TermsOfPayments.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(WorkCenter) => await context.WorkCenters.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Operation) => await context.Operations.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(MaterialType) => await context.MaterialTypes.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(MaterialCategory) => await context.MaterialCategories.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(ShiftCategory) => await context.ShiftCategories.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(PackageType) => await context.PackageTypes.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Currency) => await context.Currencies.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(ShipmentDiscrepancyType) => await context.ShipmentDiscrepancyTypes.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Charge) => await context.Charges.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(ProductState) => await context.ProductStates.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(MarketType) => await context.MarketTypes.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Instrument) => await context.Instruments.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(ItemCategory) => await context.ItemCategories.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(WarehouseLocationName) => await context.WarehouseLocationNames.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(QcEquipmentCategory) => await context.QcEquipmentCategories.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Reagent) => await context.Reagents.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            nameof(Site) => await context.Sites.AnyAsync(p =>
+                p.Name == name && (!excludedId.HasValue || p.Id != excludedId.Value)
+            ),
+            _ => false,
         };
     }
 
     public async Task<Result> SoftDeleteItem(Guid itemId, string itemType, Guid userId)
     {
-        var currentTime = DateTime.UtcNow;  // or use DateTime.Now based on your timezone requirements
+        var currentTime = DateTime.UtcNow; // or use DateTime.Now based on your timezone requirements
 
         switch (itemType)
         {
             case nameof(ProductCategory):
-                var productCategory = await context.ProductCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var productCategory = await context.ProductCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (productCategory == null)
                     return Error.Validation("ProductCategory", "Not found");
                 productCategory.DeletedAt = currentTime;
@@ -706,7 +754,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(UnitOfMeasure):
-                var unitOfMeasure = await context.UnitOfMeasures.FirstOrDefaultAsync(p => p.Id == itemId);
+                var unitOfMeasure = await context.UnitOfMeasures.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (unitOfMeasure == null)
                     return Error.Validation("UnitOfMeasure", "Not found");
                 unitOfMeasure.DeletedAt = currentTime;
@@ -716,7 +766,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(PackageStyle):
-                var packageStyle = await context.PackageStyles.FirstOrDefaultAsync(p => p.Id == itemId);
+                var packageStyle = await context.PackageStyles.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (packageStyle == null)
                     return Error.Validation("PackageStyle", "Not found");
                 packageStyle.DeletedAt = currentTime;
@@ -726,7 +778,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(DeliveryMode):
-                var deliveryMode = await context.DeliveryModes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var deliveryMode = await context.DeliveryModes.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (deliveryMode == null)
                     return Error.Validation("DeliveryMode", "Not found");
                 deliveryMode.DeletedAt = currentTime;
@@ -736,7 +790,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(TermsOfPayment):
-                var termsOfPayment = await context.TermsOfPayments.FirstOrDefaultAsync(p => p.Id == itemId);
+                var termsOfPayment = await context.TermsOfPayments.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (termsOfPayment == null)
                     return Error.Validation("TermsOfPayment", "Not found");
                 termsOfPayment.DeletedAt = currentTime;
@@ -766,7 +822,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(MaterialType):
-                var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var materialType = await context.MaterialTypes.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (materialType == null)
                     return Error.Validation("MaterialType", "Not found");
                 materialType.DeletedAt = currentTime;
@@ -776,7 +834,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(MaterialCategory):
-                var materialCategory = await context.MaterialCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var materialCategory = await context.MaterialCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (materialCategory == null)
                     return Error.Validation("MaterialCategory", "Not found");
                 materialCategory.DeletedAt = currentTime;
@@ -786,7 +846,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(ShiftCategory):
-                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p => p.Id == itemId && p.LastDeletedById == null);
+                var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId && p.LastDeletedById == null
+                );
                 if (shiftCategory == null)
                     return Error.Validation("ShiftCategory", "Not found");
                 shiftCategory.DeletedAt = currentTime;
@@ -796,7 +858,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(PackageType):
-                var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var productPackageType = await context.PackageTypes.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (productPackageType == null)
                     return Error.Validation("MaterialCategory", "Not found");
                 productPackageType.DeletedAt = currentTime;
@@ -816,7 +880,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(ShipmentDiscrepancyType):
-                var shipmentDiscrepancyType = await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
+                var shipmentDiscrepancyType =
+                    await context.ShipmentDiscrepancyTypes.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (shipmentDiscrepancyType == null)
                     return Error.Validation("ShipmentDiscrepancy", "Not found");
                 shipmentDiscrepancyType.DeletedAt = currentTime;
@@ -836,7 +901,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(ProductState):
-                var productState = await context.ProductStates.FirstOrDefaultAsync(p => p.Id == itemId);
+                var productState = await context.ProductStates.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (productState == null)
                     return Error.Validation("Charge", "Not found");
                 productState.DeletedAt = currentTime;
@@ -866,7 +933,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(ItemCategory):
-                var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(p =>
+                    p.Id == itemId
+                );
                 if (itemCategory == null)
                     return Error.Validation("Item", "Not found");
                 itemCategory.DeletedAt = currentTime;
@@ -876,7 +945,8 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(WarehouseLocationName):
-                var warehouseLocationName = await context.WarehouseLocationNames.FirstOrDefaultAsync(p => p.Id == itemId);
+                var warehouseLocationName =
+                    await context.WarehouseLocationNames.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (warehouseLocationName == null)
                     return Error.Validation("WarehouseName", "Not found");
                 context.WarehouseLocationNames.Remove(warehouseLocationName);
@@ -884,7 +954,9 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 return Result.Success();
 
             case nameof(QcEquipmentCategory):
-                var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(p => p.Id == itemId);
+                var qcEquipmentCategory = await context.QcEquipmentCategories.FirstOrDefaultAsync(
+                    p => p.Id == itemId
+                );
                 if (qcEquipmentCategory == null)
                     return Error.Validation("QcEquipmentCategory", "Not found");
                 qcEquipmentCategory.DeletedAt = currentTime;
@@ -902,7 +974,7 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
                 context.Reagents.Update(reagent);
                 await context.SaveChangesAsync();
                 return Result.Success();
-            
+
             case nameof(Site):
                 var site = await context.Sites.FirstOrDefaultAsync(p => p.Id == itemId);
                 if (site == null)
@@ -935,10 +1007,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         return Result.Success();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter)
+    public async Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(
+        FilterUnitOfMeasure filter
+    )
     {
-        var query = context.UnitOfMeasures
-            .AsQueryable();
+        var query = context.UnitOfMeasures.AsQueryable();
 
         if (string.IsNullOrEmpty(filter.SearchQuery))
         {
@@ -964,30 +1037,32 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
 
     public async Task<Result<IEnumerable<OperationDto>>> GetOperations(Guid? departmentId)
     {
-        var query = context.Operations
-            .OrderBy(o => o.Order)
-            .AsQueryable();
+        var query = context.Operations.AsNoTracking().OrderBy(o => o.Order).AsQueryable();
 
         if (departmentId.HasValue)
         {
             query = query.Where(q => q.DepartmentId == departmentId);
         }
 
-        return mapper.Map<List<OperationDto>>(await query.ToListAsync());
+        var items = await query.ProjectTo<OperationDto>(mapper.ConfigurationProvider).ToListAsync();
+        return Result.Success(items.AsEnumerable());
     }
 
     public async Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId)
     {
-        return mapper.Map<UnitOfMeasureDto>(
-            await context.UnitOfMeasures.FirstOrDefaultAsync(p => p.Id == uomId));
-    }
+        var uom = await context
+            .UnitOfMeasures.AsNoTracking()
+            .ProjectTo<UnitOfMeasureDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync(p => p.Id == uomId);
 
+        return uom is null ? Error.NotFound("Uom", "Uom not found") : Result.Success(uom);
+    }
 
     public async Task<Result> UpdateUoM(CreateUnitOfMeasure request, Guid id)
     {
-        var uom = await context.UnitOfMeasures.
-            FirstOrDefaultAsync(u => u.Id == id);
-        if (uom is null) return Error.NotFound("Uom", "Uom not found");
+        var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Id == id);
+        if (uom is null)
+            return Error.NotFound("Uom", "Uom not found");
 
         if (await context.UnitOfMeasures.AnyAsync(u => u.Symbol == request.Symbol))
         {
@@ -1006,12 +1081,11 @@ public class CollectionRepository(ApplicationDbContext context, IMapper mapper) 
         return Result.Success();
     }
 
-
     public async Task<Result> DeleteUoM(Guid uomId)
     {
-        var uom = await context.UnitOfMeasures.
-            FirstOrDefaultAsync(u => u.Id == uomId);
-        if (uom is null) return Error.NotFound("Uom", "Uom not found");
+        var uom = await context.UnitOfMeasures.FirstOrDefaultAsync(u => u.Id == uomId);
+        if (uom is null)
+            return Error.NotFound("Uom", "Uom not found");
 
         uom.DeletedAt = DateTime.UtcNow;
         context.UnitOfMeasures.Update(uom);
