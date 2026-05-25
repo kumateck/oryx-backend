@@ -10,6 +10,8 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Users;
@@ -51,9 +53,40 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.MaterialCategory) // Include category if needed
             .FirstOrDefaultAsync(m => m.Id == materialId);
 
-        return material is null
-            ? MaterialErrors.NotFound(materialId)
-            : mapper.Map<MaterialDto>(material);
+        if (material is null)
+            return MaterialErrors.NotFound(materialId);
+
+        // Fetch Manufacturers
+        var manufacturers = await context
+            .ManufacturerMaterials.AsSplitQuery()
+            .Where(mm => mm.MaterialId == materialId)
+            .Include(mm => mm.Manufacturer)
+                .ThenInclude(m => m.Country)
+            .ToListAsync();
+
+        // Fetch Suppliers
+        var suppliers = await context
+            .SupplierManufacturers.AsSplitQuery()
+            .Where(sm => sm.MaterialId == materialId)
+            .Include(sm => sm.Supplier)
+                .ThenInclude(s => s.Country)
+            .Include(sm => sm.Supplier)
+                .ThenInclude(s => s.Currency)
+            .ToListAsync();
+
+        var dto = mapper.Map<MaterialDto>(material);
+
+        dto.Manufacturers = manufacturers
+            .Select(mm => mapper.Map<ManufacturerListDto>(mm.Manufacturer))
+            .DistinctBy(m => m.Id)
+            .ToList();
+
+        dto.Suppliers = suppliers
+            .Select(sm => mapper.Map<SupplierListDto>(sm.Supplier))
+            .DistinctBy(s => s.Id)
+            .ToList();
+
+        return dto;
     }
 
     // Get a paginated list of Materials
@@ -75,11 +108,62 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description, m => m.Code);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
-            mapper.Map<MaterialDto>
+            m => m
+        );
+
+        var materials = paginatedResult.Data.ToList();
+        var materialIds = materials.Select(m => m.Id).ToList();
+
+        // Fetch Manufacturers
+        var manufacturers = await context
+            .ManufacturerMaterials.AsSplitQuery()
+            .Where(mm => materialIds.Contains(mm.MaterialId))
+            .Include(mm => mm.Manufacturer)
+                .ThenInclude(m => m.Country)
+            .ToListAsync();
+
+        // Fetch Suppliers
+        var suppliers = await context
+            .SupplierManufacturers.AsSplitQuery()
+            .Where(sm => sm.MaterialId.HasValue && materialIds.Contains(sm.MaterialId.Value))
+            .Include(sm => sm.Supplier)
+                .ThenInclude(s => s.Country)
+            .Include(sm => sm.Supplier)
+                .ThenInclude(s => s.Currency)
+            .ToListAsync();
+
+        var materialDtos = mapper.Map<List<MaterialDto>>(materials);
+
+        foreach (var dto in materialDtos)
+        {
+            dto.Manufacturers = manufacturers
+                .Where(mm => mm.MaterialId == dto.Id)
+                .Select(mm => mapper.Map<ManufacturerListDto>(mm.Manufacturer))
+                .DistinctBy(m => m.Id)
+                .ToList();
+
+            dto.Suppliers = suppliers
+                .Where(sm => sm.MaterialId == dto.Id)
+                .Select(sm => mapper.Map<SupplierListDto>(sm.Supplier))
+                .DistinctBy(s => s.Id)
+                .ToList();
+        }
+
+        return Result.Success(
+            new Paginateable<IEnumerable<MaterialDto>>
+            {
+                Data = materialDtos,
+                PageIndex = paginatedResult.PageIndex,
+                PageCount = paginatedResult.PageCount,
+                TotalRecordCount = paginatedResult.TotalRecordCount,
+                StartPageIndex = paginatedResult.StartPageIndex,
+                NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
+                StopPageIndex = paginatedResult.StopPageIndex,
+            }
         );
     }
 
@@ -127,9 +211,49 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<List<MaterialDto>>> GetMaterials()
     {
-        return mapper.Map<List<MaterialDto>>(
-            await context.Materials.AsSplitQuery().Include(m => m.MaterialCategory).ToListAsync()
-        );
+        var materials = await context
+            .Materials.AsSplitQuery()
+            .Include(m => m.MaterialCategory)
+            .ToListAsync();
+
+        var materialIds = materials.Select(m => m.Id).ToList();
+
+        // Fetch Manufacturers
+        var manufacturers = await context
+            .ManufacturerMaterials.Where(mm => materialIds.Contains(mm.MaterialId))
+            .Include(mm => mm.Manufacturer)
+                .ThenInclude(m => m.Country)
+            .ToListAsync();
+
+        // Fetch Suppliers
+        var suppliers = await context
+            .SupplierManufacturers.Where(sm =>
+                sm.MaterialId.HasValue && materialIds.Contains(sm.MaterialId.Value)
+            )
+            .Include(sm => sm.Supplier)
+                .ThenInclude(s => s.Country)
+            .Include(sm => sm.Supplier)
+                .ThenInclude(s => s.Currency)
+            .ToListAsync();
+
+        var materialDtos = mapper.Map<List<MaterialDto>>(materials);
+
+        foreach (var dto in materialDtos)
+        {
+            dto.Manufacturers = manufacturers
+                .Where(mm => mm.MaterialId == dto.Id)
+                .Select(mm => mapper.Map<ManufacturerListDto>(mm.Manufacturer))
+                .DistinctBy(m => m.Id)
+                .ToList();
+
+            dto.Suppliers = suppliers
+                .Where(sm => sm.MaterialId == dto.Id)
+                .Select(sm => mapper.Map<SupplierListDto>(sm.Supplier))
+                .DistinctBy(s => s.Id)
+                .ToList();
+        }
+
+        return materialDtos;
     }
 
     // Update Material
@@ -2876,6 +3000,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(m => m.Material)
                 .ThenInclude(m => m.MaterialCategory)
             .Include(m => m.UoM)
+            .Include(m => m.DensityUoM)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
