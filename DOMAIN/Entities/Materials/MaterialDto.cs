@@ -1,6 +1,8 @@
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSpecifications;
+using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Procurement.Suppliers;
 
 namespace DOMAIN.Entities.Materials;
 
@@ -18,6 +20,8 @@ public class MaterialDto
     public MaterialSpecificationReducedDto Specification { get; set; }
     public decimal TotalStock { get; set; }
     public decimal ReservedStock { get; set; }
+    public List<SupplierListDto> Suppliers { get; set; } = [];
+    public List<ManufacturerListDto> Manufacturers { get; set; } = [];
 }
 
 public class MaterialWithWarehouseStockDto : MaterialDto
