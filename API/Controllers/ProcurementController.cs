@@ -1421,7 +1421,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialDistribution(Guid shipmentDocumentId)
+    public async Task<IResult> GetMaterialDistribution([FromRoute] Guid shipmentDocumentId)
     {
         var result = await repository.GetMaterialDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
