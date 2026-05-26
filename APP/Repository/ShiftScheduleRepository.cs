@@ -356,16 +356,34 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
-    public async Task<Result> ImportShiftAssignmentsFromExcel(IFormFile file, Guid departmentId, Guid shiftId)
+    public async Task<Result> ImportShiftAssignmentsFromExcel(
+    IFormFile file, Guid departmentId, Guid shiftId)
     {
-        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
-        if (department is null) return Error.NotFound("Department.NotFound", "Department not found.");
+        var department = await context.Departments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == departmentId);
 
-        var shiftSchedule = await context.ShiftSchedules.FirstOrDefaultAsync(s => s.Id == shiftId);
-        if (shiftSchedule is null) return Error.NotFound("ShiftSchedule.NotFound", "Shift schedule not found.");
+        if (department is null)
+            return Error.NotFound(
+                "Department.NotFound",
+                "Department not found.");
+
+        var shiftSchedule = await context.ShiftSchedules
+            .Include(s => s.ShiftTypes)
+            .FirstOrDefaultAsync(s => s.Id == shiftId);
+
+        if (shiftSchedule is null)
+            return Error.NotFound(
+                "ShiftSchedule.NotFound",
+                "Shift schedule not found.");
 
         var startDate = shiftSchedule.StartDate.Date;
         var endDate = shiftSchedule.EndDate.Date;
+
+        if (startDate > endDate)
+            return Error.Validation(
+                "ShiftSchedule.InvalidDateRange",
+                "Shift schedule has an invalid date range.");
 
         if (file == null || file.Length == 0)
             return UploadErrors.EmptyFile;
@@ -375,22 +393,35 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         stream.Position = 0;
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
+
         using var package = new ExcelPackage(stream);
+
         var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
         if (worksheet == null)
             return UploadErrors.WorksheetNotFound;
 
-        var headers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (worksheet.Dimension == null)
+            return Error.Validation(
+                "Worksheet.Empty",
+                "The uploaded worksheet is empty.");
+
+        var headers = new Dictionary<string, int>(
+            StringComparer.OrdinalIgnoreCase);
+
         for (var col = 1; col <= worksheet.Dimension.End.Column; col++)
         {
             var header = worksheet.Cells[1, col].Text.Trim();
+
             if (!string.IsNullOrWhiteSpace(header))
                 headers[header] = col;
         }
 
         var requiredHeaders = new[]
         {
-            "STAFF ID", "CATEGORY", "SHIFT TYPE"
+            "STAFF ID",
+            "CATEGORY",
+            "SHIFT TYPE"
         };
 
         foreach (var header in requiredHeaders)
@@ -399,99 +430,239 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                 return UploadErrors.MissingRequiredHeader(header);
         }
 
+        // PRELOAD DATA
+
+        var employees = await context.Employees
+            .Where(e => e.DepartmentId == departmentId)
+            .ToDictionaryAsync(
+                e => e.StaffNumber.Trim(),
+                StringComparer.OrdinalIgnoreCase);
+
+        var shiftCategories = await context.ShiftCategories
+            .ToDictionaryAsync(
+                c => c.Name.Trim(),
+                StringComparer.OrdinalIgnoreCase);
+
+        var shiftTypes = await context.ShiftTypes
+            .ToDictionaryAsync(
+                t => t.ShiftName.Trim(),
+                StringComparer.OrdinalIgnoreCase);
+
+        var employeeIds = employees.Values
+            .Select(e => e.Id)
+            .ToList();
+
+        var approvedLeaves = await context.LeaveRequests
+            .Where(l =>
+                employeeIds.Contains(l.EmployeeId) &&
+                l.LeaveStatus == LeaveStatus.Approved &&
+                l.EndDate.Date >= startDate &&
+                l.StartDate.Date <= endDate)
+            .ToListAsync();
+
+        var existingAssignments = await context.ShiftAssignments
+            .Where(sa =>
+                employeeIds.Contains(sa.EmployeeId) &&
+                sa.ShiftSchedules.StartDate <= endDate &&
+                sa.ShiftSchedules.EndDate >= startDate)
+            .Include(sa => sa.ShiftSchedules)
+            .ThenInclude(ss => ss.ShiftTypes)
+            .ToListAsync();
+
+        var existingDailyAssignments = await context.ShiftAssignments
+            .Where(sa =>
+                employeeIds.Contains(sa.EmployeeId) &&
+                sa.ScheduleDate >= startDate &&
+                sa.ScheduleDate <= endDate)
+            .Select(sa => new
+            {
+                sa.EmployeeId,
+                sa.ScheduleDate,
+                sa.ShiftScheduleId
+            })
+            .ToListAsync();
+
+        var existingAssignmentSet = existingDailyAssignments
+            .Select(x => $"{x.EmployeeId}_{x.ScheduleDate:yyyyMMdd}_{x.ShiftScheduleId}")
+            .ToHashSet();
+
         var assignments = new List<ShiftAssignment>();
         var skipped = new List<string>();
 
-        for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+        string GetCell(int row, string header)
+            => worksheet.Cells[row, headers[header]].Text.Trim();
+
+        static TimeSpan ParseTime(string time)
         {
-            string GetCell(string header) => worksheet.Cells[row, headers[header]].Text.Trim();
-
-            var staffIdStr = GetCell("STAFF ID");
-            var shiftCategoryName = GetCell("CATEGORY");
-            var shiftTypeName = GetCell("SHIFT TYPE");
-
-            var employee = await context.Employees.FirstOrDefaultAsync(e => e.StaffNumber == staffIdStr);
-            if (employee == null)
-            {
-                skipped.Add($"{staffIdStr} - Employee not found");
-                continue;
-            }
-
-            var shiftCategory = await context.ShiftCategories.FirstOrDefaultAsync(c => c.Name == shiftCategoryName);
-            if (shiftCategory == null)
-            {
-                skipped.Add($"{staffIdStr} - Shift category '{shiftCategoryName}' not found");
-                continue;
-            }
-
-            var shiftType = await context.ShiftTypes.FirstOrDefaultAsync(t => t.ShiftName == shiftTypeName);
-            if (shiftType == null)
-            {
-                skipped.Add($"{staffIdStr} - Shift type '{shiftTypeName}' not found");
-                continue;
-            }
-
-            // Leave check
-            var hasLeave = await context.LeaveRequests.AnyAsync(l =>
-                l.EmployeeId == employee.Id &&
-                l.LeaveStatus == LeaveStatus.Approved &&
-                l.EndDate.Date >= startDate &&
-                l.StartDate.Date <= endDate);
-
-            if (hasLeave)
-            {
-                skipped.Add($"{staffIdStr} - On approved leave during schedule period");
-                continue;
-            }
-
-            // Conflict check
-            var existingAssignments = await context.ShiftAssignments
-                .Where(sa =>
-                    sa.EmployeeId == employee.Id &&
-                    sa.ShiftSchedules.StartDate <= endDate &&
-                    sa.ShiftSchedules.EndDate >= startDate)
-                .Include(sa => sa.ShiftSchedules)
-                .ThenInclude(ss => ss.ShiftTypes)
-                .ToListAsync();
-
-            var hasConflict = existingAssignments.Any(sa =>
-                sa.ShiftSchedules.ShiftTypes.Any(existing =>
-                    shiftSchedule.ShiftTypes.Any(current =>
-                        ConvertTime(existing.StartTime) < ConvertTime(current.EndTime) &&
-                        ConvertTime(existing.EndTime) > ConvertTime(current.StartTime))));
-
-            if (hasConflict)
-            {
-                skipped.Add($"{staffIdStr} - Schedule conflict with existing assignment");
-                continue;
-            }
-
-            for (var date = startDate; date <= endDate; date = date.AddDays(1))
-            {
-                assignments.Add(new ShiftAssignment
-                {
-                    Id = Guid.NewGuid(),
-                    EmployeeId = employee.Id,
-                    ShiftScheduleId = shiftSchedule.Id,
-                    ShiftCategoryId = shiftCategory.Id,
-                    ShiftTypeId = shiftType.Id,
-                    ScheduleDate = date
-                });
-            }
+            return TimeSpan.Parse(time);
         }
 
-        if (assignments.Count == 0)
-            return Error.Validation("No.Assignments", "No valid assignments could be made due to conflicts or missing data.");
+        static bool HasTimeOverlap(
+            TimeSpan existingStart,
+            TimeSpan existingEnd,
+            TimeSpan currentStart,
+            TimeSpan currentEnd)
+        {
+            // Handle overnight shifts
 
-        await context.ShiftAssignments.AddRangeAsync(assignments);
-        shiftSchedule.ScheduleStatus = ScheduleStatus.Assigned;
-        await context.SaveChangesAsync();
+            if (existingEnd <= existingStart)
+                existingEnd = existingEnd.Add(TimeSpan.FromDays(1));
 
-        var message = $"Successfully imported {assignments.Count} assignments.";
-        if (skipped.Count != 0)
-            message += $" Skipped {skipped.Count}: {string.Join("; ", skipped)}";
+            if (currentEnd <= currentStart)
+                currentEnd = currentEnd.Add(TimeSpan.FromDays(1));
 
-        return Result.Success(message);
+            return existingStart < currentEnd &&
+                   existingEnd > currentStart;
+        }
+
+        await using var transaction =
+            await context.Database.BeginTransactionAsync();
+
+        try
+        {
+            for (var row = 2; row <= worksheet.Dimension.End.Row; row++)
+            {
+                var staffIdStr = GetCell(row, "STAFF ID");
+                var shiftCategoryName = GetCell(row, "CATEGORY");
+                var shiftTypeName = GetCell(row, "SHIFT TYPE");
+
+                if (string.IsNullOrWhiteSpace(staffIdStr))
+                {
+                    skipped.Add($"Row {row} - STAFF ID is empty");
+                    continue;
+                }
+
+                if (!employees.TryGetValue(staffIdStr, out var employee))
+                {
+                    skipped.Add(
+                        $"{staffIdStr} - Employee not found in selected department");
+
+                    continue;
+                }
+
+                if (!shiftCategories.TryGetValue(
+                        shiftCategoryName,
+                        out var shiftCategory))
+                {
+                    skipped.Add(
+                        $"{staffIdStr} - Shift category '{shiftCategoryName}' not found");
+
+                    continue;
+                }
+
+                if (!shiftTypes.TryGetValue(
+                        shiftTypeName,
+                        out var shiftType))
+                {
+                    skipped.Add(
+                        $"{staffIdStr} - Shift type '{shiftTypeName}' not found");
+
+                    continue;
+                }
+
+                // LEAVE CHECK
+
+                var hasLeave = approvedLeaves.Any(l =>
+                    l.EmployeeId == employee.Id);
+
+                if (hasLeave)
+                {
+                    skipped.Add(
+                        $"{staffIdStr} - Employee is on approved leave during schedule period");
+
+                    continue;
+                }
+
+                // CONFLICT CHECK
+
+                var employeeAssignments = existingAssignments
+                    .Where(sa => sa.EmployeeId == employee.Id)
+                    .ToList();
+
+                var hasConflict = employeeAssignments.Any(sa =>
+                    sa.ShiftSchedules != null &&
+                    sa.ShiftSchedules.ShiftTypes.Any(existing =>
+                        shiftSchedule.ShiftTypes.Any(current =>
+                            HasTimeOverlap(
+                                ParseTime(existing.StartTime),
+                                ParseTime(existing.EndTime),
+                                ParseTime(current.StartTime),
+                                ParseTime(current.EndTime)))));
+
+                if (hasConflict)
+                {
+                    skipped.Add(
+                        $"{staffIdStr} - Schedule conflict with existing assignment");
+
+                    continue;
+                }
+
+                for (var date = startDate;
+                     date <= endDate;
+                     date = date.AddDays(1))
+                {
+                    var duplicateKey =
+                        $"{employee.Id}_{date:yyyyMMdd}_{shiftSchedule.Id}";
+
+                    if (existingAssignmentSet.Contains(duplicateKey))
+                        continue;
+
+                    assignments.Add(new ShiftAssignment
+                    {
+                        Id = Guid.NewGuid(),
+                        EmployeeId = employee.Id,
+                        ShiftScheduleId = shiftSchedule.Id,
+                        ShiftCategoryId = shiftCategory.Id,
+                        ShiftTypeId = shiftType.Id,
+                        ScheduleDate = date,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    existingAssignmentSet.Add(duplicateKey);
+                }
+            }
+
+            if (assignments.Count == 0)
+            {
+                return Error.Validation(
+                    "Assignments.NoneCreated",
+                    "No valid assignments could be made due to conflicts or missing data.");
+            }
+
+            await context.ShiftAssignments.AddRangeAsync(assignments);
+
+            shiftSchedule.ScheduleStatus = ScheduleStatus.Assigned;
+
+            await context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            var distinctEmployees = assignments
+                .Select(a => a.EmployeeId)
+                .Distinct()
+                .Count();
+
+            var message =
+                $"Successfully imported {assignments.Count} assignments " +
+                $"for {distinctEmployees} employees.";
+
+            if (skipped.Count > 0)
+            {
+                message +=
+                    $" Skipped {skipped.Count} rows: " +
+                    $"{string.Join("; ", skipped)}";
+            }
+
+            return Result.Success(message);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+
+            return Error.Failure(
+                "ShiftAssignment.ImportFailed",
+                $"An error occurred while importing shift assignments: {ex}.");
+        }
     }
 
     private static TimeOnly ConvertTime(string time)
