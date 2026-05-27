@@ -13,7 +13,9 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -514,11 +516,13 @@ public class EmployeeRepository(ApplicationDbContext context,
                     "One or more warehouses were not found");
             }
             
-            if (warehouses.Any(w => w.DepartmentId != employeeDto.DepartmentId))
+            if (warehouses.Any(w =>
+                    (w.Type == WarehouseType.FinishedGoodsStorage && w.Division != department.Division) ||
+                    (w.Type != WarehouseType.FinishedGoodsStorage && w.DepartmentId != employeeDto.DepartmentId)))
             {
                 return Error.Validation(
                     "Warehouse.DepartmentMismatch",
-                    "One or more warehouses do not belong to the selected department");
+                    "One or more warehouses do not belong to the selected department or division");
             }
             
             employee.Warehouses = warehouses;
