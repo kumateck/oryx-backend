@@ -12,35 +12,49 @@ public class CreateEmployeeRequest
 {
     public string Avatar { get; set; }
 
-    [Required, StringLength(100)] public string FirstName { get; set; }
+    // [Required]
+    [StringLength(100)] public string FirstName { get; set; }
 
-    [Required, StringLength(100)] public string LastName { get; set; }
+    // [Required] 
+    [StringLength(100)] public string LastName { get; set; }
 
-    [Required] public DateTime DateOfBirth { get; set; }
+    // [Required]
+    public DateTime DateOfBirth { get; set; }
 
-    [Required] public Gender Gender { get; set; }
+    // [Required] 
+    public Gender Gender { get; set; }
 
-    [Required, Phone] public string PhoneNumber { get; set; }
+    // [Required]
+    [ Phone] public string PhoneNumber { get; set; }
 
-    [Required] public string Region { get; set; }
+    // [Required] 
+    public string Region { get; set; }
 
-    [Required] public EmployeeType Type { get; set; }
+    // [Required] 
+    public EmployeeType Type { get; set; }
 
-    [Required] public string Nationality { get; set; }
+    // [Required] 
+    public string Nationality { get; set; }
 
-    [Required, StringLength(150)] public string ResidentialAddress { get; set; }
+    // [Required] 
+    [StringLength(150)] public string ResidentialAddress { get; set; }
 
-    [Required] public MaritalStatus MaritalStatus { get; set; }
+    // [Required] 
+    public MaritalStatus MaritalStatus { get; set; }
 
-    [Required] public Religion Religion { get; set; }
+    // [Required] 
+    public Religion Religion { get; set; }
 
-    [Required] public DateTime DateEmployed { get; set; }
+    // [Required] 
+    public DateTime DateEmployed { get; set; }
 
-    [Required, StringLength(20)] public string BankAccountNumber { get; set; }
+    // [Required]
+    [StringLength(20)] public string BankAccountNumber { get; set; }
 
     [StringLength(13, ErrorMessage = "SSNIT Number must be exactly 13 characters")] public string SsnitNumber { get; set; }
 
-    [Required, StringLength(15), RegularExpression(@"^GHA-\d{9}-\d{1}$",
+    // [Required]
+    [StringLength(15), RegularExpression(@"^GHA-\d{9}-\d{1}$",
         ErrorMessage = "Ghana Card number must start with 'GHA-'. " +
                        "Total length must be between 11 and 15 characters.")]
     public string GhanaCardNumber { get; set; }
@@ -49,22 +63,29 @@ public class CreateEmployeeRequest
 
     [EmailAddress] public string Email { get; set; }
 
-    [Required] public PersonDto Mother { get; set; }
+    // [Required] 
+    public PersonDto Mother { get; set; }
 
-    [Required] public PersonDto Father { get; set; }
+    // [Required] 
+    public PersonDto Father { get; set; }
 
     public PersonDto Spouse { get; set; }
-    [Required] public EmergencyContactDto EmergencyContact { get; set; }
+    
+    // [Required]
+    public EmergencyContactDto EmergencyContact { get; set; }
 
-    [Required] public EmergencyContactDto NextOfKin { get; set; }
+    // [Required] 
+    public EmergencyContactDto NextOfKin { get; set; }
 
     public List<ChildDto> Children { get; set; } = [];
 
     public List<SiblingDto> Siblings { get; set; } = [];
 
-    [Required] public List<EducationDto> EducationBackground { get; set; } = [];
+    // [Required] 
+    public List<EducationDto> EducationBackground { get; set; } = [];
 
-    [Required] public List<EmploymentHistoryDto> EmploymentHistory { get; set; } = [];
+    // [Required] 
+    public List<EmploymentHistoryDto> EmploymentHistory { get; set; } = [];
 }
 
 public class UpdateEmployeeRequest : CreateEmployeeRequest
