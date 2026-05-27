@@ -856,7 +856,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
     /// <returns>Returns the shipment document details.</returns>
     [HttpGet("shipment-document/{shipmentDocumentId}")]
-    [AllowAnonymous]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDocumentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShipmentDocument(Guid shipmentDocumentId)
@@ -1421,7 +1421,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialDistribution(Guid shipmentDocumentId)
+    public async Task<IResult> GetMaterialDistribution([FromRoute] Guid shipmentDocumentId)
     {
         var result = await repository.GetMaterialDistribution(shipmentDocumentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

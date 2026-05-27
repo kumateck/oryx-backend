@@ -94,7 +94,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         bool? isVerified = null
     )
     {
-        var query = context.Products.AsSplitQuery().AsQueryable();
+        var query = context.Products.IgnoreQueryFilters().AsSplitQuery().AsQueryable();
 
         if (isVerified.HasValue)
         {
@@ -1636,7 +1636,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         foreach (var fgtn in fgtnList)
         {
             var packPerShipper = fgtn.ProductPacking?.PackPerShipper ?? 1;
-            if (packPerShipper == 0) packPerShipper = 1;
+            if (packPerShipper == 0)
+                packPerShipper = 1;
             var shipperQty = (int)(fgtn.TotalQuantity / packPerShipper);
             var looseQty = fgtn.TotalQuantity % packPerShipper;
 

@@ -11,12 +11,13 @@ using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
 using INFRASTRUCTURE.Context;
+using Microsoft.Extensions.Caching.Memory;
 using SHARED;
 using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class UserRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper)
+public class UserRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper, IMemoryCache cache)
     : IUserRepository
 {
     public async Task<Result<Guid>> CreateUser(CreateUserRequest request)
@@ -251,6 +252,24 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         }
 
         return result;
+    }
+
+    public async Task<Result> SwitchDepartment(Guid departmentId, Guid userId, string token)
+    {
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return UserErrors.NotFound(userId);
+
+        var departmentExists = await context.Departments.AnyAsync(d => d.Id == departmentId);
+        if (!departmentExists) return Error.NotFound("Department.NotFound", "Department not found");
+
+        user.DepartmentId = departmentId;
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+
+        // Invalidate the cache for this token to force reload in JwtMiddleware
+        cache.Remove(token);
+
+        return Result.Success();
     }
 
     private async Task<bool> EmailIsUnique(string email)

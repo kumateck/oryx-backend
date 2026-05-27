@@ -157,6 +157,23 @@ public class UserController(IUserRepository repo) : ControllerBase
         }
     }
 
+    [Authorize(Roles = RoleUtils.WarehouseManger + "," + RoleUtils.AppRoleAdmin + "," + RoleUtils.AppRoleSuper)]
+    [HttpPost("switch-department/{departmentId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SwitchDepartment(Guid departmentId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
+        if (string.IsNullOrEmpty(token)) return TypedResults.Unauthorized();
+
+        var response = await repo.SwitchDepartment(departmentId, Guid.Parse(userId), token);
+        return response.IsSuccess ? TypedResults.Ok() : response.ToProblemDetails();
+    }
+
     //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
     [HttpPut("toggle-disable/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
