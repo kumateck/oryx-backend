@@ -12,8 +12,9 @@ public interface IEmployeeRepository
     Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
     Task<Result<Guid>> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
     Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);
-    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? status, int page, int pageSize,
-       string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null);
+    Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize, EmployeeStatus? status,
+        string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null,
+        EmployeeSortBy? sortBy = 0, SortDirection sortDirection = SortDirection.None);
     Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
     Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date);
     Task<Result<EmployeeDto>> GetEmployee(Guid id);

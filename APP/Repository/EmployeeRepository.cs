@@ -353,24 +353,28 @@ public class EmployeeRepository(ApplicationDbContext context,
             mapper.Map<EmployeeDto>(employee,
                 opts => { opts.Items[AppConstants.ModelType] = nameof(Employee); });
     }
-
-    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(EmployeeStatus? activeStatus,
-        int page, int pageSize,
-        string searchQuery = null, string designation = null, string department = null, bool? isNotUser = null)
+    public async Task<Result<Paginateable<IEnumerable<EmployeeDto>>>> GetEmployees(int page, int pageSize,
+        EmployeeStatus? activeStatus,
+        string searchQuery = null,
+        string designation = null,
+        string department = null,
+        bool? isNotUser = null,
+        EmployeeSortBy? sortBy = EmployeeSortBy.CreatedAt,
+        SortDirection sortDirection = SortDirection.None)
     {
         var query = context.Employees
             .AsSplitQuery()
             .Include(e => e.Department)
             .Include(e => e.Designation)
             .Include(e => e.ReportingManager)
-            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,
                 q => q.FirstName,
-                q => q.LastName, q => q.Email,
+                q => q.LastName,
+                q => q.Email,
                 q => q.FirstName + " " + q.LastName,
                 q => q.StaffNumber,
                 q => q.PhoneNumber,
@@ -397,14 +401,57 @@ public class EmployeeRepository(ApplicationDbContext context,
             query = query.Where(e => !context.Users.Any(u => u.Email == e.Email));
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
+        if (sortBy.HasValue)
+        {
+            query = ApplySorting(query, sortBy.Value, sortDirection);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(query,
             page,
             pageSize,
             mapper.Map<EmployeeDto>
         );
     }
 
+    private static IQueryable<Employee> ApplySorting(
+        IQueryable<Employee> query,
+        EmployeeSortBy sortBy,
+        SortDirection direction)
+    {
+        return sortBy switch
+        {
+            EmployeeSortBy.FirstName =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.FirstName)
+                    : query.OrderByDescending(e => e.FirstName),
+
+            EmployeeSortBy.LastName =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.LastName)
+                    : query.OrderByDescending(e => e.LastName),
+
+            EmployeeSortBy.Email =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.Email)
+                    : query.OrderByDescending(e => e.Email),
+
+            EmployeeSortBy.Department =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.Department.Name)
+                    : query.OrderByDescending(e => e.Department.Name),
+
+            EmployeeSortBy.Designation =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.Designation.Name)
+                    : query.OrderByDescending(e => e.Designation.Name),
+
+            _ =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.CreatedAt)
+                    : query.OrderByDescending(e => e.CreatedAt)
+        };
+    }
+    
     public async Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request)
     {
         var employee = await context.Employees.Include(employee => employee.Department)
