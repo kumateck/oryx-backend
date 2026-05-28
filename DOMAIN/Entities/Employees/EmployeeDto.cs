@@ -8,6 +8,7 @@ using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
+using SHARED;
 
 namespace DOMAIN.Entities.Employees;
 
@@ -75,4 +76,14 @@ public class EmployeeDto : WithAttachment
     public EmployeeInactiveStatus? InactiveStatus { get; set; }
     public DateTime? SuspensionStartDate { get; set; }
     public DateTime? SuspensionEndDate { get; set; }
+}
+
+public enum EmployeeSortBy
+{
+    CreatedAt,
+    FirstName,
+    LastName,
+    Email,
+    Department,
+    Designation
 }
