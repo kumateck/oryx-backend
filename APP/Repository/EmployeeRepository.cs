@@ -432,10 +432,15 @@ public class EmployeeRepository(ApplicationDbContext context,
                     ? query.OrderBy(e => e.LastName)
                     : query.OrderByDescending(e => e.LastName),
 
-            EmployeeSortBy.Email =>
+            EmployeeSortBy.StaffId =>
                 direction == SortDirection.Ascending
-                    ? query.OrderBy(e => e.Email)
-                    : query.OrderByDescending(e => e.Email),
+                    ? query.OrderBy(e => e.StaffNumber)
+                    : query.OrderByDescending(e => e.StaffNumber),
+           
+            EmployeeSortBy.EmployeeType =>
+                direction == SortDirection.Ascending
+                    ? query.OrderBy(e => e.Type)
+                    : query.OrderByDescending(e => e.Type),
 
             EmployeeSortBy.Department =>
                 direction == SortDirection.Ascending

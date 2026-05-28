@@ -83,7 +83,8 @@ public enum EmployeeSortBy
     CreatedAt,
     FirstName,
     LastName,
-    Email,
+    StaffId,
+    EmployeeType,
     Department,
     Designation
 }
