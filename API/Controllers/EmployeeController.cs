@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Employees;
 using Microsoft.AspNetCore.Authorization;
+using SHARED;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -69,13 +70,16 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Retrieves a paginated list of employees based on search criteria.
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
-    public async Task<IResult> GetEmployees([FromQuery] EmployeeStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+    public async Task<IResult> GetEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] EmployeeStatus? status = null, 
         [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null,
-        [FromQuery] bool? isNotUser = null
+        [FromQuery] bool? isNotUser = null, [FromQuery] EmployeeSortBy? sortBy = EmployeeSortBy.CreatedAt,
+        [FromQuery] SortDirection sortDirection = SortDirection.None
         )
     {
-        var result = await repository.GetEmployees(status, page, pageSize, searchQuery, designation, department, isNotUser);
+        var result = await repository.GetEmployees(page, pageSize, status,  searchQuery, designation, 
+            department, isNotUser, sortBy, sortDirection);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
