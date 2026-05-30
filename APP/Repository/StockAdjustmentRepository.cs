@@ -192,6 +192,7 @@ public class StockAdjustmentRepository(
             .StockAdjustments.AsSplitQuery()
             .Include(a => a.Lines)
                 .ThenInclude(l => l.Item)
+                    .ThenInclude(i => i.UnitOfMeasure)
             .Include(a => a.Lines)
                 .ThenInclude(l => l.ShelfMaterialBatch)
                     .ThenInclude(s => s.MaterialBatch)
@@ -200,12 +201,16 @@ public class StockAdjustmentRepository(
                 .ThenInclude(l => l.ShelfMaterialBatch)
                     .ThenInclude(s => s.WarehouseLocationShelf)
             .Include(a => a.Lines)
+                .ThenInclude(l => l.ShelfMaterialBatch)
+                    .ThenInclude(s => s.UoM)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.FinishedGoodsTransferNote)
+                    .ThenInclude(t => t.UoM)
+            .Include(a => a.Lines)
                 .ThenInclude(l => l.FinishedGoodsTransferNote)
                     .ThenInclude(t => t.BatchManufacturingRecord)
                         .ThenInclude(b => b.ProductionScheduleProduct)
                             .ThenInclude(p => p.Product)
-            .Include(a => a.Lines)
-                .ThenInclude(l => l.UoM)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (adjustment == null)
@@ -240,7 +245,19 @@ public class StockAdjustmentRepository(
                     PhysicalCount = l.PhysicalCount,
                     SystemQuantitySnapshot = l.SystemQuantitySnapshot,
                     Variance = l.Variance,
-                    UoM = mapper.Map<UnitOfMeasureDto>(l.UoM),
+                    Uom = adjustment.TargetType switch
+                    {
+                        StockAdjustmentTarget.Item => mapper.Map<UnitOfMeasureDto>(
+                            l.Item?.UnitOfMeasure
+                        ),
+                        StockAdjustmentTarget.Material => mapper.Map<UnitOfMeasureDto>(
+                            l.ShelfMaterialBatch?.UoM
+                        ),
+                        StockAdjustmentTarget.Product => mapper.Map<UnitOfMeasureDto>(
+                            l.FinishedGoodsTransferNote?.UoM
+                        ),
+                        _ => null,
+                    },
                     ReasonCode = l.ReasonCode,
                     Notes = l.Notes,
                 })

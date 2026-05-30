@@ -32,7 +32,7 @@ public class StockAdjustmentLineDetailDto
     public decimal PhysicalCount { get; set; }
     public decimal SystemQuantitySnapshot { get; set; }
     public decimal Variance { get; set; }
-    public UnitOfMeasureDto UoM { get; set; }
+    public UnitOfMeasureDto Uom { get; set; }
     public string ReasonCode { get; set; }
     public string Notes { get; set; }
 }
