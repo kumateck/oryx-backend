@@ -17,5 +17,6 @@ public interface IStockAdjustmentRepository
         bool? approved = null,
         StockAdjustmentTarget? targetType = null
     );
+    Task<Result<StockAdjustmentDetailDto>> GetStockAdjustment(Guid id);
     Task<Result> ApplyStockAdjustment(Guid adjustmentId, Guid userId);
 }

@@ -1,6 +1,8 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.InventoryLedgers;
 using DOMAIN.Entities.ItemTransactionLogs;
@@ -13,7 +15,8 @@ namespace APP.Repository;
 
 public class StockAdjustmentRepository(
     ApplicationDbContext context,
-    IApprovalRepository approvalRepository
+    IApprovalRepository approvalRepository,
+    IMapper mapper
 ) : IStockAdjustmentRepository
 {
     public async Task<Result<StockAdjustmentSummaryDto>> CreateStockAdjustment(
@@ -112,7 +115,8 @@ public class StockAdjustmentRepository(
 
         // Check if it was auto-approved (no stages)
         var updatedAdjustment = await context
-            .StockAdjustments.Include(a => a.Lines)
+            .StockAdjustments.AsSplitQuery()
+            .Include(a => a.Lines)
             .FirstOrDefaultAsync(a => a.Id == adjustment.Id);
 
         if (updatedAdjustment is { Approved: true })
@@ -180,6 +184,85 @@ public class StockAdjustmentRepository(
                 TargetType = a.TargetType,
             }
         );
+    }
+
+    public async Task<Result<StockAdjustmentDetailDto>> GetStockAdjustment(Guid id)
+    {
+        var adjustment = await context
+            .StockAdjustments.AsSplitQuery()
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.Item)
+                    .ThenInclude(i => i.UnitOfMeasure)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.ShelfMaterialBatch)
+                    .ThenInclude(s => s.MaterialBatch)
+                        .ThenInclude(mb => mb.Material)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.ShelfMaterialBatch)
+                    .ThenInclude(s => s.WarehouseLocationShelf)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.ShelfMaterialBatch)
+                    .ThenInclude(s => s.UoM)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.FinishedGoodsTransferNote)
+                    .ThenInclude(t => t.UoM)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.FinishedGoodsTransferNote)
+                    .ThenInclude(t => t.BatchManufacturingRecord)
+                        .ThenInclude(b => b.ProductionScheduleProduct)
+                            .ThenInclude(p => p.Product)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+        if (adjustment == null)
+            return Error.NotFound("StockAdjustment.NotFound", "Stock adjustment not found.");
+
+        return new StockAdjustmentDetailDto
+        {
+            Id = adjustment.Id,
+            AdjustmentNumber = adjustment.AdjustmentNumber,
+            AdjustmentDate = adjustment.AdjustmentDate,
+            Approved = adjustment.Approved,
+            TargetType = adjustment.TargetType,
+            CreatedAt = adjustment.CreatedAt,
+            Lines = adjustment
+                .Lines.Select(l => new StockAdjustmentLineDetailDto
+                {
+                    Id = l.Id,
+                    ItemId = l.ItemId,
+                    ItemName = l.Item?.Name,
+                    ItemCode = l.Item?.Code,
+                    ShelfMaterialBatchId = l.ShelfMaterialBatchId,
+                    BatchNumber = l.ShelfMaterialBatch?.MaterialBatch?.BatchNumber,
+                    MaterialName = l.ShelfMaterialBatch?.MaterialBatch?.Material?.Name,
+                    ShelfName = l.ShelfMaterialBatch?.WarehouseLocationShelf?.Name,
+                    FinishedGoodsTransferNoteId = l.FinishedGoodsTransferNoteId,
+                    TransferNoteNumber = l.FinishedGoodsTransferNote?.TransferNoteNumber,
+                    ProductName = l.FinishedGoodsTransferNote
+                        ?.BatchManufacturingRecord
+                        ?.ProductionScheduleProduct
+                        ?.Product
+                        ?.Name,
+                    PhysicalCount = l.PhysicalCount,
+                    SystemQuantitySnapshot = l.SystemQuantitySnapshot,
+                    Variance = l.Variance,
+                    Uom = adjustment.TargetType switch
+                    {
+                        StockAdjustmentTarget.Item => mapper.Map<UnitOfMeasureDto>(
+                            l.Item?.UnitOfMeasure
+                        ),
+                        StockAdjustmentTarget.Material => mapper.Map<UnitOfMeasureDto>(
+                            l.ShelfMaterialBatch?.UoM
+                        ),
+                        StockAdjustmentTarget.Product => mapper.Map<UnitOfMeasureDto>(
+                            l.FinishedGoodsTransferNote?.UoM
+                        ),
+                        _ => null,
+                    },
+                    ReasonCode = l.ReasonCode,
+                    Notes = l.Notes,
+                })
+                .ToList(),
+        };
     }
 
     public async Task<Result> ApplyStockAdjustment(Guid adjustmentId, Guid userId)

@@ -28,7 +28,6 @@ public class CreateStockAdjustmentLineRequest
 
     [Required]
     public StockAdjustmentReasonCode ReasonCode { get; set; }
-
     public string Notes { get; set; }
 }
 

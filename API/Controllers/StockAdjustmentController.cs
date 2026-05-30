@@ -87,4 +87,18 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
         var result = await repository.GetStockAdjustments(page, pageSize, searchQuery, approved);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// Fetches a detailed stock adjustment by its unique ID.
+    /// </summary>
+    /// <param name="id">The GUID of the stock adjustment.</param>
+    /// <returns>A detailed view of the stock adjustment including its lines.</returns>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockAdjustmentDetailDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockAdjustmentById([FromRoute] Guid id)
+    {
+        var result = await repository.GetStockAdjustment(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
