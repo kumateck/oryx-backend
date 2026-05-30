@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530212026_RenameToUoM")]
+    partial class RenameToUoM
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -12508,6 +12511,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("SystemQuantitySnapshot")
                         .HasColumnType("numeric");
 
+                    b.Property<Guid?>("UoMId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -12529,6 +12535,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ShelfMaterialBatchId");
 
                     b.HasIndex("StockAdjustmentId");
+
+                    b.HasIndex("UoMId");
 
                     b.ToTable("StockAdjustmentLines");
                 });
@@ -22148,6 +22156,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
+                        .WithMany()
+                        .HasForeignKey("UoMId");
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("FinishedGoodsTransferNote");
@@ -22161,6 +22173,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ShelfMaterialBatch");
 
                     b.Navigation("StockAdjustment");
+
+                    b.Navigation("UoM");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.StockEntries.StockEntry", b =>
