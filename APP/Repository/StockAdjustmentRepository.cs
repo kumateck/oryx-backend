@@ -1,6 +1,8 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.InventoryLedgers;
 using DOMAIN.Entities.ItemTransactionLogs;
@@ -13,7 +15,8 @@ namespace APP.Repository;
 
 public class StockAdjustmentRepository(
     ApplicationDbContext context,
-    IApprovalRepository approvalRepository
+    IApprovalRepository approvalRepository,
+    IMapper mapper
 ) : IStockAdjustmentRepository
 {
     public async Task<Result<StockAdjustmentSummaryDto>> CreateStockAdjustment(
@@ -112,7 +115,8 @@ public class StockAdjustmentRepository(
 
         // Check if it was auto-approved (no stages)
         var updatedAdjustment = await context
-            .StockAdjustments.Include(a => a.Lines)
+            .StockAdjustments.AsSplitQuery()
+            .Include(a => a.Lines)
             .FirstOrDefaultAsync(a => a.Id == adjustment.Id);
 
         if (updatedAdjustment is { Approved: true })
@@ -200,6 +204,8 @@ public class StockAdjustmentRepository(
                     .ThenInclude(t => t.BatchManufacturingRecord)
                         .ThenInclude(b => b.ProductionScheduleProduct)
                             .ThenInclude(p => p.Product)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.UnitOfMeasure)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (adjustment == null)
@@ -234,6 +240,7 @@ public class StockAdjustmentRepository(
                     PhysicalCount = l.PhysicalCount,
                     SystemQuantitySnapshot = l.SystemQuantitySnapshot,
                     Variance = l.Variance,
+                    UnitOfMeasure = mapper.Map<UnitOfMeasureDto>(l.UnitOfMeasure),
                     ReasonCode = l.ReasonCode,
                     Notes = l.Notes,
                 })

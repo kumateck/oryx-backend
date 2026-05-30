@@ -28,7 +28,7 @@ public class CreateStockAdjustmentLineRequest
 
     [Required]
     public StockAdjustmentReasonCode ReasonCode { get; set; }
-
+    public Guid? UomId { get; set; }
     public string Notes { get; set; }
 }
 
