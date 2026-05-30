@@ -27,7 +27,7 @@ public class StockAdjustmentLine : BaseEntity
     public decimal SystemQuantitySnapshot { get; set; }
     public decimal Variance { get; set; }
     public Guid? UomId { get; set; }
-    public UnitOfMeasure UnitOfMeasure { get; set; }
+    public UnitOfMeasure UoM { get; set; }
 
     [Required]
     [StringLength(1000)]
