@@ -205,7 +205,7 @@ public class StockAdjustmentRepository(
                         .ThenInclude(b => b.ProductionScheduleProduct)
                             .ThenInclude(p => p.Product)
             .Include(a => a.Lines)
-                .ThenInclude(l => l.UnitOfMeasure)
+                .ThenInclude(l => l.UoM)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (adjustment == null)
@@ -240,7 +240,7 @@ public class StockAdjustmentRepository(
                     PhysicalCount = l.PhysicalCount,
                     SystemQuantitySnapshot = l.SystemQuantitySnapshot,
                     Variance = l.Variance,
-                    UnitOfMeasure = mapper.Map<UnitOfMeasureDto>(l.UnitOfMeasure),
+                    UoM = mapper.Map<UnitOfMeasureDto>(l.UoM),
                     ReasonCode = l.ReasonCode,
                     Notes = l.Notes,
                 })
