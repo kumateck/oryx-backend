@@ -1,3 +1,5 @@
+using DOMAIN.Entities.Base;
+
 namespace DOMAIN.Entities.StockAdjustments;
 
 public class StockAdjustmentSummaryDto
@@ -9,4 +11,16 @@ public class StockAdjustmentSummaryDto
     public decimal TotalVariance { get; set; }
     public bool Approved { get; set; }
     public StockAdjustmentTarget TargetType { get; set; }
+    public List<StockAdjustmentLineSummaryDto> Lines { get; set; } = [];
+}
+
+public class StockAdjustmentLineSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string CodeOrBatch { get; set; }
+    public decimal PhysicalCount { get; set; }
+    public decimal SystemQuantitySnapshot { get; set; }
+    public decimal Variance { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
 }
