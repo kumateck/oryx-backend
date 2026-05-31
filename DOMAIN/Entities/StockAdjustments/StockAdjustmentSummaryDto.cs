@@ -1,3 +1,5 @@
+using DOMAIN.Entities.Base;
+
 namespace DOMAIN.Entities.StockAdjustments;
 
 public class StockAdjustmentSummaryDto
@@ -20,5 +22,5 @@ public class StockAdjustmentLineSummaryDto
     public decimal PhysicalCount { get; set; }
     public decimal SystemQuantitySnapshot { get; set; }
     public decimal Variance { get; set; }
-    public string UomSymbol { get; set; }
+    public UnitOfMeasureDto UoM { get; set; }
 }

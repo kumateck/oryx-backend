@@ -199,34 +199,52 @@ public class StockAdjustmentRepository(
                 TotalVariance = a.Lines.Sum(l => Math.Abs(l.Variance)),
                 Approved = a.Approved,
                 TargetType = a.TargetType,
-                Lines = a.Lines.Select(l => new StockAdjustmentLineSummaryDto
-                {
-                    Id = l.Id,
-                    Name = a.TargetType switch
+                Lines = a
+                    .Lines.Select(l => new StockAdjustmentLineSummaryDto
                     {
-                        StockAdjustmentTarget.Item => l.Item?.Name,
-                        StockAdjustmentTarget.Material => l.ShelfMaterialBatch?.MaterialBatch?.Material?.Name,
-                        StockAdjustmentTarget.Product => l.FinishedGoodsTransferNote?.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.Name,
-                        _ => null
-                    },
-                    CodeOrBatch = a.TargetType switch
-                    {
-                        StockAdjustmentTarget.Item => l.Item?.Code,
-                        StockAdjustmentTarget.Material => l.ShelfMaterialBatch?.MaterialBatch?.BatchNumber,
-                        StockAdjustmentTarget.Product => l.FinishedGoodsTransferNote?.TransferNoteNumber,
-                        _ => null
-                    },
-                    PhysicalCount = l.PhysicalCount,
-                    SystemQuantitySnapshot = l.SystemQuantitySnapshot,
-                    Variance = l.Variance,
-                    UomSymbol = a.TargetType switch
-                    {
-                        StockAdjustmentTarget.Item => l.Item?.UnitOfMeasure?.Symbol,
-                        StockAdjustmentTarget.Material => l.ShelfMaterialBatch?.UoM?.Symbol,
-                        StockAdjustmentTarget.Product => l.FinishedGoodsTransferNote?.UoM?.Symbol,
-                        _ => null
-                    }
-                }).ToList()
+                        Id = l.Id,
+                        Name = a.TargetType switch
+                        {
+                            StockAdjustmentTarget.Item => l.Item?.Name,
+                            StockAdjustmentTarget.Material => l.ShelfMaterialBatch
+                                ?.MaterialBatch
+                                ?.Material
+                                ?.Name,
+                            StockAdjustmentTarget.Product => l.FinishedGoodsTransferNote
+                                ?.BatchManufacturingRecord
+                                ?.ProductionScheduleProduct
+                                ?.Product
+                                ?.Name,
+                            _ => null,
+                        },
+                        CodeOrBatch = a.TargetType switch
+                        {
+                            StockAdjustmentTarget.Item => l.Item?.Code,
+                            StockAdjustmentTarget.Material => l.ShelfMaterialBatch
+                                ?.MaterialBatch
+                                ?.BatchNumber,
+                            StockAdjustmentTarget.Product =>
+                                l.FinishedGoodsTransferNote?.TransferNoteNumber,
+                            _ => null,
+                        },
+                        PhysicalCount = l.PhysicalCount,
+                        SystemQuantitySnapshot = l.SystemQuantitySnapshot,
+                        Variance = l.Variance,
+                        UoM = a.TargetType switch
+                        {
+                            StockAdjustmentTarget.Item => mapper.Map<UnitOfMeasureDto>(
+                                l.Item?.UnitOfMeasure
+                            ),
+                            StockAdjustmentTarget.Material => mapper.Map<UnitOfMeasureDto>(
+                                l.ShelfMaterialBatch?.UoM
+                            ),
+                            StockAdjustmentTarget.Product => mapper.Map<UnitOfMeasureDto>(
+                                l.FinishedGoodsTransferNote?.UoM
+                            ),
+                            _ => null,
+                        },
+                    })
+                    .ToList(),
             }
         );
     }
