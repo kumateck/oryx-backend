@@ -868,8 +868,11 @@ public class OryxMapper : Profile
         #region Form
 
         CreateMap<CreateFormRequest, Form>();
+        CreateMap<UpdateFormMetadataRequest, Form>();
         CreateMap<CreateFormSectionRequest, FormSection>();
+        CreateMap<UpdateFormSectionRequest, FormSection>();
         CreateMap<CreateFormFieldRequest, FormField>();
+        CreateMap<UpdateFormFieldRequest, FormField>();
         CreateMap<CreateFormAssigneeRequest, FormAssignee>();
         CreateMap<CreateFormReviewerRequest, FormReviewer>();
 

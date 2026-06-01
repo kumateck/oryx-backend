@@ -190,6 +190,38 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return Result.Success();
     }
 
+    public async Task<Result> AssignAnalyticalTestRequest(
+        Guid id,
+        AssignAnalyticalTestRequest request
+    )
+    {
+        var test = await context
+            .AnalyticalTestRequests.AsSplitQuery()
+            .Include(a => a.Assignees)
+            .FirstOrDefaultAsync(atr => atr.Id == id);
+
+        if (test is null)
+        {
+            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        }
+
+        test.Assignees.Clear();
+        test.Assignees.AddRange(
+            request.UserIds.Select(userId => new AnalyticalTestRequestAssignee
+            {
+                AnalyticalTestRequestId = id,
+                UserId = userId,
+            })
+        );
+
+        test.Status = AnalyticalTestStatus.Assigned;
+        test.AssignedAt = DateTime.UtcNow;
+
+        context.AnalyticalTestRequests.Update(test);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteAnalyticalTestRequest(Guid id, Guid userId)
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);

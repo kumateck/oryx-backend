@@ -81,23 +81,182 @@ public class FormController(IFormRepository repository) : ControllerBase
     }
 
     /// <summary>
-    /// Updates a specific form by its ID.
+    /// Updates form metadata.
     /// </summary>
-    /// <param name="request">The CreateFormRequest object containing updated form data.</param>
-    /// <param name="formId">The ID of the form to be updated.</param>
-    /// <returns>Returns a success or failure result.</returns>
-    [HttpPut("{formId}")]
+    [HttpPut("{formId}/metadata")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateForm([FromBody] CreateFormRequest request, Guid formId)
+    public async Task<IResult> UpdateFormMetadata(
+        [FromRoute] Guid formId,
+        [FromBody] UpdateFormMetadataRequest request
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateForm(request, formId, Guid.Parse(userId));
+        var result = await repository.UpdateFormMetadata(formId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Adds a section to a form.
+    /// </summary>
+    [HttpPost("{formId}/section")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddFormSection(
+        [FromRoute] Guid formId,
+        [FromBody] CreateFormSectionRequest request
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.AddFormSection(formId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a form section.
+    /// </summary>
+    [HttpPut("section/{sectionId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateFormSection(
+        [FromRoute] Guid sectionId,
+        [FromBody] UpdateFormSectionRequest request
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateFormSection(sectionId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a form section.
+    /// </summary>
+    [HttpDelete("section/{sectionId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteFormSection([FromRoute] Guid sectionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteFormSection(sectionId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Adds a field to a section.
+    /// </summary>
+    [HttpPost("section/{sectionId}/field")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddFormField(
+        [FromRoute] Guid sectionId,
+        [FromBody] CreateFormFieldRequest request
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.AddFormField(sectionId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Updates a form field.
+    /// </summary>
+    [HttpPut("field/{fieldId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateFormField(
+        [FromRoute] Guid fieldId,
+        [FromBody] UpdateFormFieldRequest request
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateFormField(fieldId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a form field.
+    /// </summary>
+    [HttpDelete("field/{fieldId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteFormField([FromRoute] Guid fieldId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteFormField(fieldId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Adds a reviewer to a form.
+    /// </summary>
+    [HttpPost("{formId}/reviewer")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AddFormReviewer(
+        [FromRoute] Guid formId,
+        [FromBody] CreateFormReviewerRequest request
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.AddFormReviewer(formId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Deletes a reviewer from a form.
+    /// </summary>
+    [HttpDelete("{formId}/reviewer/{reviewerUserId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> DeleteFormReviewer(
+        [FromRoute] Guid formId,
+        [FromRoute] Guid reviewerUserId
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.DeleteFormReviewer(formId, reviewerUserId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

@@ -11,7 +11,15 @@ public interface IFormRepository
     Task<Result<FormDto>> GetForm(Guid formId);
     Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter);
     Task<Result<Paginateable<IEnumerable<FormSectionDto>>>> GetFormSections(FormFilter filter);
-    Task<Result> UpdateForm(CreateFormRequest request, Guid formId, Guid userId);
+    Task<Result> UpdateFormMetadata(Guid formId, UpdateFormMetadataRequest request, Guid userId);
+    Task<Result<Guid>> AddFormSection(Guid formId, CreateFormSectionRequest request, Guid userId);
+    Task<Result> UpdateFormSection(Guid sectionId, UpdateFormSectionRequest request, Guid userId);
+    Task<Result> DeleteFormSection(Guid sectionId, Guid userId);
+    Task<Result<Guid>> AddFormField(Guid sectionId, CreateFormFieldRequest request, Guid userId);
+    Task<Result> UpdateFormField(Guid fieldId, UpdateFormFieldRequest request, Guid userId);
+    Task<Result> DeleteFormField(Guid fieldId, Guid userId);
+    Task<Result> AddFormReviewer(Guid formId, CreateFormReviewerRequest request, Guid userId);
+    Task<Result> DeleteFormReviewer(Guid formId, Guid reviewerUserId, Guid userId);
 
     //Task<Result> ResetForm(Guid formId, Guid userId);
     Task<Result> DeleteForm(Guid formId, Guid userId);
