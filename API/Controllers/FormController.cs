@@ -81,6 +81,27 @@ public class FormController(IFormRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Updates a specific form by its ID.
+    /// </summary>
+    /// <param name="request">The CreateFormRequest object containing updated form data.</param>
+    /// <param name="formId">The ID of the form to be updated.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPut("{formId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateForm([FromBody] CreateFormRequest request, Guid formId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateForm(request, formId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Updates form metadata.
     /// </summary>
     [HttpPut("{formId}/metadata")]
