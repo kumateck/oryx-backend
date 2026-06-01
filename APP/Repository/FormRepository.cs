@@ -170,6 +170,168 @@ public class FormRepository(
         return Result.Success();
     }
 
+    public async Task<Result> UpdateFormMetadata(
+        Guid formId,
+        UpdateFormMetadataRequest request,
+        Guid userId
+    )
+    {
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == formId);
+
+        if (form == null)
+            return FormErrors.NotFound(formId);
+
+        form.Name = request.Name;
+        form.Type = request.Type;
+        form.LastUpdatedById = userId;
+        form.UpdatedAt = DateTime.UtcNow;
+
+        context.Forms.Update(form);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Guid>> AddFormSection(
+        Guid formId,
+        CreateFormSectionRequest request,
+        Guid userId
+    )
+    {
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == formId);
+        if (form == null)
+            return FormErrors.NotFound(formId);
+
+        var section = mapper.Map<FormSection>(request);
+        section.FormId = formId;
+        section.CreatedById = userId;
+
+        await context.FormSections.AddAsync(section);
+        await context.SaveChangesAsync();
+
+        return section.Id;
+    }
+
+    public async Task<Result> UpdateFormSection(
+        Guid sectionId,
+        UpdateFormSectionRequest request,
+        Guid userId
+    )
+    {
+        var section = await context.FormSections.FirstOrDefaultAsync(s => s.Id == sectionId);
+        if (section == null)
+            return Error.NotFound("FormSection.NotFound", "Form section not found");
+
+        mapper.Map(request, section);
+        section.LastUpdatedById = userId;
+        section.UpdatedAt = DateTime.UtcNow;
+
+        context.FormSections.Update(section);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteFormSection(Guid sectionId, Guid userId)
+    {
+        var section = await context.FormSections.FirstOrDefaultAsync(s => s.Id == sectionId);
+        if (section == null)
+            return Error.NotFound("FormSection.NotFound", "Form section not found");
+
+        section.DeletedAt = DateTime.UtcNow;
+        section.LastDeletedById = userId;
+
+        context.FormSections.Update(section);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<Guid>> AddFormField(
+        Guid sectionId,
+        CreateFormFieldRequest request,
+        Guid userId
+    )
+    {
+        var section = await context.FormSections.FirstOrDefaultAsync(s => s.Id == sectionId);
+        if (section == null)
+            return Error.NotFound("FormSection.NotFound", "Form section not found");
+
+        var field = mapper.Map<FormField>(request);
+        field.FormSectionId = sectionId;
+        field.CreatedById = userId;
+
+        await context.FormFields.AddAsync(field);
+        await context.SaveChangesAsync();
+
+        return field.Id;
+    }
+
+    public async Task<Result> UpdateFormField(
+        Guid fieldId,
+        UpdateFormFieldRequest request,
+        Guid userId
+    )
+    {
+        var field = await context.FormFields.FirstOrDefaultAsync(f => f.Id == fieldId);
+        if (field == null)
+            return Error.NotFound("FormField.NotFound", "Form field not found");
+
+        mapper.Map(request, field);
+        field.LastUpdatedById = userId;
+        field.UpdatedAt = DateTime.UtcNow;
+
+        context.FormFields.Update(field);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteFormField(Guid fieldId, Guid userId)
+    {
+        var field = await context.FormFields.FirstOrDefaultAsync(f => f.Id == fieldId);
+        if (field == null)
+            return Error.NotFound("FormField.NotFound", "Form field not found");
+
+        field.DeletedAt = DateTime.UtcNow;
+        field.LastDeletedById = userId;
+
+        context.FormFields.Update(field);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> AddFormReviewer(
+        Guid formId,
+        CreateFormReviewerRequest request,
+        Guid userId
+    )
+    {
+        var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == formId);
+        if (form == null)
+            return FormErrors.NotFound(formId);
+
+        if (await context.FormReviewers.AnyAsync(r => r.FormId == formId && r.UserId == request.UserId))
+            return Error.Validation("FormReviewer", "User is already a reviewer for this form");
+
+        var reviewer = mapper.Map<FormReviewer>(request);
+        reviewer.FormId = formId;
+
+        await context.FormReviewers.AddAsync(reviewer);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteFormReviewer(Guid formId, Guid reviewerUserId, Guid userId)
+    {
+        var reviewer = await context.FormReviewers.FirstOrDefaultAsync(r =>
+            r.FormId == formId && r.UserId == reviewerUserId
+        );
+
+        if (reviewer == null)
+            return Error.NotFound("FormReviewer.NotFound", "Form reviewer not found");
+
+        context.FormReviewers.Remove(reviewer);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteForm(Guid formId, Guid userId)
     {
         var form = await context.Forms.FirstOrDefaultAsync(f => f.Id == formId);
