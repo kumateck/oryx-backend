@@ -37,6 +37,19 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
+    
+    /// <summary>
+    /// Swap an employee shift assignment with another employee
+    /// </summary>
+    [HttpPost("swap")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SwapShift([FromBody] SwapShiftRequest request)
+    {
+        var result = await repository.SwapShift(request);
+        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+    }
+    
     /// <summary>
     /// Returns a paginated list of shift schedules based on a search criteria.
     /// </summary>

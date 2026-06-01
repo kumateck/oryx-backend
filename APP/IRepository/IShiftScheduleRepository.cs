@@ -19,6 +19,7 @@ public interface IShiftScheduleRepository
     Task<Result<IEnumerable<ShiftAssignmentDto>>> GetShiftScheduleRangeView(Guid shiftScheduleId, DateTime startDate, DateTime endDate);
 
     Task<Result> AssignEmployeesToShift(AssignShiftRequest request);
+    Task<Result> SwapShift(SwapShiftRequest request);
     Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request);
 
     Task<Result> UpdateShiftAssignment(Guid id, UpdateShiftAssignment request);
