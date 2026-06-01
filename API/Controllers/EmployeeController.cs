@@ -70,7 +70,6 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Retrieves a paginated list of employees based on search criteria.
     /// </summary>
     [HttpGet]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
     public async Task<IResult> GetEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] EmployeeStatus? status = null, 
         [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null,
