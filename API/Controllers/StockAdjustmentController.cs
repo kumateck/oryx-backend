@@ -84,7 +84,13 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
         [FromQuery] StockAdjustmentTarget? targetType = null
     )
     {
-        var result = await repository.GetStockAdjustments(page, pageSize, searchQuery, approved);
+        var result = await repository.GetStockAdjustments(
+            page,
+            pageSize,
+            searchQuery,
+            approved,
+            targetType
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
