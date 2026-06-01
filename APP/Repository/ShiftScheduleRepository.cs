@@ -416,6 +416,73 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
+    public async Task<Result> SwapShift(SwapShiftRequest request)
+    {
+        var assignment = await context.ShiftAssignments
+            .Include(sa => sa.ShiftSchedules)
+                .ThenInclude(ss => ss.ShiftTypes)
+            .FirstOrDefaultAsync(sa =>
+                sa.EmployeeId == request.EmployeeId &&
+                sa.ShiftScheduleId == request.ShiftScheduleId &&
+                sa.ShiftCategoryId == request.ShiftCategoryId &&
+                sa.ShiftTypeId == request.ShiftTypeId &&
+                sa.ScheduleDate.Date == request.ScheduleDate.Date);
+
+        if (assignment is null)
+            return Error.NotFound(
+                "ShiftAssignment.NotFound",
+                "Shift assignment not found."
+            );
+
+        var newEmployee = await context.Employees
+            .AnyAsync(e => e.Id == request.NewEmployeeId);
+
+        if (!newEmployee)
+            return Error.NotFound(
+                "Employee.NotFound",
+                "Replacement employee not found."
+            );
+
+        var hasLeave = await context.LeaveRequests.AnyAsync(l =>
+            l.EmployeeId == request.NewEmployeeId &&
+            l.LeaveStatus == LeaveStatus.Approved &&
+            request.ScheduleDate.Date >= l.StartDate.Date &&
+            request.ScheduleDate.Date <= l.EndDate.Date);
+
+        if (hasLeave)
+            return Error.Validation(
+                "Employee.OnLeave",
+                "Replacement employee is on approved leave."
+            );
+
+        var currentShiftType = await context.ShiftTypes
+            .FirstOrDefaultAsync(st => st.Id == request.ShiftTypeId);
+
+        var conflictingAssignments = await context.ShiftAssignments
+            .Where(sa =>
+                sa.EmployeeId == request.NewEmployeeId &&
+                sa.ScheduleDate.Date == request.ScheduleDate.Date &&
+                sa.Id != assignment.Id)
+            .Include(sa => sa.ShiftType)
+            .ToListAsync();
+
+        var hasConflict = conflictingAssignments.Any(sa =>
+            ConvertTime(sa.ShiftType.StartTime) < ConvertTime(currentShiftType.EndTime) &&
+            ConvertTime(sa.ShiftType.EndTime) > ConvertTime(currentShiftType.StartTime));
+
+        if (hasConflict)
+            return Error.Validation(
+                "Employee.Conflict",
+                "Replacement employee already has a conflicting shift."
+            );
+
+        assignment.EmployeeId = request.NewEmployeeId;
+
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
     public async Task<Result> ImportShiftAssignmentsFromExcel(
         IFormFile file,
         Guid departmentId,
