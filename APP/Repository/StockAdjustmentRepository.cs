@@ -151,6 +151,23 @@ public class StockAdjustmentRepository(
         var query = context
             .StockAdjustments.AsSplitQuery()
             .Include(a => a.Lines)
+                .ThenInclude(l => l.Item)
+                    .ThenInclude(i => i.UnitOfMeasure)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.ShelfMaterialBatch)
+                    .ThenInclude(s => s.MaterialBatch)
+                        .ThenInclude(mb => mb.Material)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.ShelfMaterialBatch)
+                    .ThenInclude(s => s.UoM)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.FinishedGoodsTransferNote)
+                    .ThenInclude(t => t.UoM)
+            .Include(a => a.Lines)
+                .ThenInclude(l => l.FinishedGoodsTransferNote)
+                    .ThenInclude(t => t.BatchManufacturingRecord)
+                        .ThenInclude(b => b.ProductionScheduleProduct)
+                            .ThenInclude(p => p.Product)
             .OrderByDescending(a => a.AdjustmentDate)
             .AsQueryable();
 
@@ -182,6 +199,52 @@ public class StockAdjustmentRepository(
                 TotalVariance = a.Lines.Sum(l => Math.Abs(l.Variance)),
                 Approved = a.Approved,
                 TargetType = a.TargetType,
+                Lines = a
+                    .Lines.Select(l => new StockAdjustmentLineSummaryDto
+                    {
+                        Id = l.Id,
+                        Name = a.TargetType switch
+                        {
+                            StockAdjustmentTarget.Item => l.Item?.Name,
+                            StockAdjustmentTarget.Material => l.ShelfMaterialBatch
+                                ?.MaterialBatch
+                                ?.Material
+                                ?.Name,
+                            StockAdjustmentTarget.Product => l.FinishedGoodsTransferNote
+                                ?.BatchManufacturingRecord
+                                ?.ProductionScheduleProduct
+                                ?.Product
+                                ?.Name,
+                            _ => null,
+                        },
+                        CodeOrBatch = a.TargetType switch
+                        {
+                            StockAdjustmentTarget.Item => l.Item?.Code,
+                            StockAdjustmentTarget.Material => l.ShelfMaterialBatch
+                                ?.MaterialBatch
+                                ?.BatchNumber,
+                            StockAdjustmentTarget.Product =>
+                                l.FinishedGoodsTransferNote?.TransferNoteNumber,
+                            _ => null,
+                        },
+                        PhysicalCount = l.PhysicalCount,
+                        SystemQuantitySnapshot = l.SystemQuantitySnapshot,
+                        Variance = l.Variance,
+                        UoM = a.TargetType switch
+                        {
+                            StockAdjustmentTarget.Item => mapper.Map<UnitOfMeasureDto>(
+                                l.Item?.UnitOfMeasure
+                            ),
+                            StockAdjustmentTarget.Material => mapper.Map<UnitOfMeasureDto>(
+                                l.ShelfMaterialBatch?.UoM
+                            ),
+                            StockAdjustmentTarget.Product => mapper.Map<UnitOfMeasureDto>(
+                                l.FinishedGoodsTransferNote?.UoM
+                            ),
+                            _ => null,
+                        },
+                    })
+                    .ToList(),
             }
         );
     }
