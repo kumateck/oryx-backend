@@ -224,6 +224,10 @@ public interface IMaterialRepository
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetExpiredMaterialBatches(
         MaterialFilter filter
     );
+    
+    Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetAboutToExpireMaterialBatches(
+        MaterialFilter filter
+    );
     Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind);
     Task<Result<Paginateable<IEnumerable<MaterialRejectDto>>>> GetMaterialRejected(
         int page,

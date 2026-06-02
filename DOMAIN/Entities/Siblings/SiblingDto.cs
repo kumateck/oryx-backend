@@ -7,7 +7,9 @@ public class SiblingDto
 {
     [StringLength(100)] public string FullName { get; set; }
 
-    [Required][Phone] public string Contact { get; set; }
+    // [Required]
+    [Phone] public string Contact { get; set; }
 
-    [Required] public Gender Gender { get; set; }
+    // [Required] 
+    public Gender Gender { get; set; }
 }
