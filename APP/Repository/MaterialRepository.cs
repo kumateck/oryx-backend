@@ -3811,6 +3811,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Material)
             .Include(b => b.Checklist)
             .Include(b => b.Grn)
+            .Include(b => b.ShelfMaterialBatches)
             .Where(b => b.ExpiryDate < DateTime.UtcNow)
             .ToListAsync();
 
@@ -3847,25 +3848,38 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetAboutToExpireMaterialBatches(MaterialFilter filter)
     {
+        var now = DateTime.UtcNow.Date;
+        var cutoff = now.AddMonths(3);
+
         var query = context.MaterialBatches
             .AsSplitQuery()
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
             .Include(b => b.Grn)
-            .Where(b => b.ExpiryDate < DateTime.UtcNow)
+            .Include(b => b.ShelfMaterialBatches)
+            .Where(b =>
+                b.ExpiryDate >= now &&
+                b.ExpiryDate <= cutoff)
             .AsQueryable();
+       
 
         // Date filters
         if (filter.StartDate.HasValue)
         {
-            var startDate = filter.StartDate.Value.Date;
+            var startDate = DateTime.SpecifyKind(
+                filter.StartDate.Value.Date,
+                DateTimeKind.Utc);
+
             query = query.Where(b => b.ExpiryDate >= startDate);
         }
 
         if (filter.EndDate.HasValue)
         {
-            var endDate = filter.EndDate.Value.Date.AddDays(1);
+            var endDate = DateTime.SpecifyKind(
+                filter.EndDate.Value.Date.AddDays(1),
+                DateTimeKind.Utc);
+
             query = query.Where(b => b.ExpiryDate < endDate);
         }
         
