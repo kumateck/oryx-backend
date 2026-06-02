@@ -3845,6 +3845,55 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return PaginationHelper.Paginate(filter.Page, filter.PageSize, batches);
     }
 
+    public async Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetAboutToExpireMaterialBatches(MaterialFilter filter)
+    {
+        var query = context.MaterialBatches
+            .AsSplitQuery()
+            .Include(b => b.MassMovements)
+            .Include(b => b.Material)
+            .Include(b => b.Checklist)
+            .Include(b => b.Grn)
+            .Where(b => b.ExpiryDate < DateTime.UtcNow)
+            .AsQueryable();
+
+        // Date filters
+        if (filter.StartDate.HasValue)
+        {
+            var startDate = filter.StartDate.Value.Date;
+            query = query.Where(b => b.ExpiryDate >= startDate);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var endDate = filter.EndDate.Value.Date.AddDays(1);
+            query = query.Where(b => b.ExpiryDate < endDate);
+        }
+        
+        var entities = await query.ToListAsync();
+
+        var batches = mapper.Map<List<MaterialBatchDto>>(entities);
+
+        foreach (var batch in batches)
+        {
+            batch.Locations = GetCurrentLocations(batch);
+        }
+
+        // Warehouse filter (in-memory because of computed locations)
+        if (filter.WarehouseIds?.Count > 0)
+        {
+            batches = batches
+                .Where(b =>
+                    b.Locations.Any(l =>
+                        l.Location?.Id != null &&
+                        filter.WarehouseIds.Contains(l.Location.Id.Value)
+                    )
+                )
+                .ToList();
+        }
+
+        return PaginationHelper.Paginate(filter.Page, filter.PageSize, batches);
+    }
+
     public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind)
     {
         var linkedMaterialIds = await context
