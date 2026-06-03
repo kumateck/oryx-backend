@@ -863,6 +863,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("batches/expired")]
+    [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
@@ -872,12 +873,13 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetExpiredMaterialBatches(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Retrieves a  list of material batches that are about to expire
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("batches/about-to-expire")]
+    [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
@@ -1121,7 +1123,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Gets a report of inconsistencies between batch aggregates and ledger records.
     /// </summary>
     [HttpGet("diagnostics/inconsistencies")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<BatchInconsistencyReport>))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<BatchInconsistencyReport>)
+    )]
     public async Task<IResult> GetInconsistencyReport()
     {
         var result = await repository.GetInconsistencyReport();
