@@ -3825,6 +3825,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var query = context
             .MaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
@@ -3852,7 +3853,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (filter.EndDate.HasValue)
         {
-            var endDate = DateTime.SpecifyKind(filter.EndDate.Value.Date.AddDays(1), DateTimeKind.Utc);
+            var endDate = DateTime.SpecifyKind(
+                filter.EndDate.Value.Date.AddDays(1),
+                DateTimeKind.Utc
+            );
             query = query.Where(b => b.ExpiryDate < endDate);
         }
 
@@ -3861,13 +3865,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             query = query.Where(b =>
                 b.ShelfMaterialBatches.Any(smb =>
                     filter.WarehouseIds.Contains(
-                        smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
                     )
                 ) || b.ReservedQuantities.Any(rq => filter.WarehouseIds.Contains(rq.WarehouseId))
             );
         }
 
-        var result = await PaginationHelper.GetPaginatedResultAsync(
+        return await PaginationHelper.GetPaginatedResultAsync(
             query,
             filter,
             entity =>
@@ -3877,8 +3884,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return dto;
             }
         );
-
-        return result;
     }
 
     public async Task<
@@ -3890,6 +3895,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var query = context
             .MaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
@@ -3932,13 +3938,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             query = query.Where(b =>
                 b.ShelfMaterialBatches.Any(smb =>
                     filter.WarehouseIds.Contains(
-                        smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
                     )
                 ) || b.ReservedQuantities.Any(rq => filter.WarehouseIds.Contains(rq.WarehouseId))
             );
         }
 
-        var result = await PaginationHelper.GetPaginatedResultAsync(
+        return await PaginationHelper.GetPaginatedResultAsync(
             query,
             filter,
             entity =>
@@ -3948,8 +3957,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return dto;
             }
         );
-
-        return result;
     }
 
     public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind)
