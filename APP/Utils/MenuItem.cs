@@ -105,7 +105,8 @@ public static class MenuConfig
                 new(PermissionSubmodules.RejectedMaterials, [PermissionKeys.CanViewRejectedRawMaterials, PermissionKeys.CanViewRejectedPackagingMaterials], route: "/warehouse/rejected-materials", order: 7),
                 new(PermissionSubmodules.IssueStockRequisitions, [PermissionKeys.CanViewRawMaterialRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions], route: "/warehouse/issue-stock-requisitions", order: 8),
                 new(PermissionSubmodules.StockTransferIssues, [PermissionKeys.CanViewRawMaterialTransferList, PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanViewPackagingMaterialTransferList, PermissionKeys.CanIssuePackagingMaterialStockTransfers], route: "/warehouse/stock-transfer-issues", order: 9),
-                new(PermissionSubmodules.Locations, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 10)
+                new(PermissionSubmodules.ExpiredMaterials, [PermissionKeys.CanViewExpiredMaterials, PermissionKeys.CanViewAboutToExpireMaterials], route: "/warehouse/expired-materials", order: 10),
+                new(PermissionSubmodules.Locations, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 11)
             ]
         ),
 

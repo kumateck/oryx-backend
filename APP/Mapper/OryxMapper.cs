@@ -447,6 +447,8 @@ public class OryxMapper : Profile
                 dest => dest.IssuedBy,
                 opt => opt.MapFrom<MaterialBatchUserIssuedByResolver>()
             )
+            .ForMember(dest => dest.Shelves, opt => opt.MapFrom(src => src.ShelfMaterialBatches))
+            .ForMember(dest => dest.ReservedQuantities, opt => opt.MapFrom(src => src.ReservedQuantities))
             .ForMember(dest => dest.IssuedAt, opt => opt.MapFrom<MaterialBatchIssuedAtResolver>());
 
         CreateMap<MaterialBatch, MaterialBatchListDto>()

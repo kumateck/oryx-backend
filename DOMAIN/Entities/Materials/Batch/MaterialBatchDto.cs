@@ -36,8 +36,8 @@ public class MaterialBatchDto : IGrnEnrichedDto
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
     public List<SrDto> SampleWeights { get; set; } = [];
-    public List<MassMaterialBatchMovementDto> MassMovements { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
+    public List<ShelfMaterialBatchDto> Shelves { get; set; } = [];
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
     public DateTime? ReturnDate { get; set; }

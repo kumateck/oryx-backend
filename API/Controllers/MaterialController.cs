@@ -863,6 +863,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("batches/expired")]
+    [Authorize(PermissionKeys.CanViewExpiredMaterials)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
@@ -878,6 +879,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("batches/about-to-expire")]
+    [Authorize(PermissionKeys.CanViewAboutToExpireMaterials)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)

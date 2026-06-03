@@ -428,15 +428,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId)
     {
         var batch = await context
-            .MaterialBatches.Include(b => b.Material)
+            .MaterialBatches.AsSplitQuery()
+            .Include(b => b.Material)
             .Include(b => b.Events)
                 .ThenInclude(m => m.User)
             .Include(b => b.Events)
                 .ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (batch is null)
@@ -461,10 +465,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(m => m.User)
             .Include(b => b.Events)
                 .ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -499,10 +506,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(m => m.User)
             .Include(b => b.Events)
                 .ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .Where(b => b.MaterialId == materialId)
             .ToListAsync();
 
@@ -926,33 +936,28 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     private List<CurrentLocationDto> GetCurrentLocations(MaterialBatchDto batch)
     {
-        // Dictionary to track the total quantity at each location
+        // Dictionary to track the total quantity at each location (Warehouse)
         var locationQuantities = new Dictionary<CollectionItemDto, decimal>();
 
-        // Track the movements and update the locations accordingly
-        foreach (var movement in batch.MassMovements)
+        // Add quantities from shelves
+        foreach (var shelfBatch in batch.Shelves)
         {
-            var fromLocation = movement.FromWarehouse;
-            var toLocation = movement.ToWarehouse;
-
-            // If moving to a location, increase the quantity at the destination
-            if (toLocation is not null)
+            var warehouse = shelfBatch.WarehouseLocationShelf?.WarehouseLocationRack?.WarehouseLocation?.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(toLocation, 0);
-                locationQuantities[toLocation] += movement.Quantity;
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += shelfBatch.Quantity;
             }
+        }
 
-            // If moving from a location, decrease the quantity at the origin
-            if (fromLocation is not null)
+        // Add quantities from reserved (production warehouse)
+        foreach (var reserved in batch.ReservedQuantities)
+        {
+            var warehouse = reserved.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(fromLocation, 0);
-                locationQuantities[fromLocation] -= movement.Quantity;
-
-                // Ensure no negative quantities
-                if (locationQuantities[fromLocation] < 0)
-                {
-                    locationQuantities[fromLocation] = 0;
-                }
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += reserved.Quantity;
             }
         }
 
@@ -971,30 +976,25 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Dictionary to track the total quantity at each location
         var locationQuantities = new Dictionary<Warehouse, decimal>();
 
-        // Track the movements and update the locations accordingly
-        foreach (var movement in batch.MassMovements)
+        // Add quantities from shelves
+        foreach (var shelfBatch in batch.ShelfMaterialBatches)
         {
-            var fromLocation = movement.FromWarehouse;
-            var toLocation = movement.ToWarehouse;
-
-            // If moving to a location, increase the quantity at the destination
-            if (toLocation is not null)
+            var warehouse = shelfBatch.WarehouseLocationShelf?.WarehouseLocationRack?.WarehouseLocation?.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(toLocation, 0);
-                locationQuantities[toLocation] += movement.Quantity;
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += shelfBatch.Quantity;
             }
+        }
 
-            // If moving from a location, decrease the quantity at the origin
-            if (fromLocation is not null)
+        // Add quantities from reserved (production warehouse)
+        foreach (var reserved in batch.ReservedQuantities)
+        {
+            var warehouse = reserved.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(fromLocation, 0);
-                locationQuantities[fromLocation] -= movement.Quantity;
-
-                // Ensure no negative quantities
-                if (locationQuantities[fromLocation] < 0)
-                {
-                    locationQuantities[fromLocation] = 0;
-                }
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += reserved.Quantity;
             }
         }
 
@@ -2152,13 +2152,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .MaterialBatches.AsSplitQuery()
             .Where(b =>
                 b.MaterialId == materialId
-                && b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)
+                && (b.ShelfMaterialBatches.Any(smb =>
+                    smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouseId) || b.ReservedQuantities.Any(rq => rq.WarehouseId == warehouseId))
             ) // Ensure the batch is in the warehouse
             .OrderBy(b => b.ExpiryDate) // FIFO
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .ToList();
 
         foreach (var batch in batches)
@@ -3805,15 +3810,28 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Result<Paginateable<IEnumerable<MaterialBatchDto>>>
     > GetExpiredMaterialBatches(MaterialFilter filter)
     {
-        var query = await context
+        var queryBuilder = context
             .MaterialBatches.AsSplitQuery()
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
             .Include(b => b.Grn)
             .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .Where(b => b.ExpiryDate < DateTime.UtcNow)
-            .ToListAsync();
+            .AsQueryable();
+
+        if (filter.MaterialKind.HasValue)
+        {
+            queryBuilder = queryBuilder.Where(b => b.Material.Kind == filter.MaterialKind.Value);
+        }
+
+        var query = await queryBuilder.ToListAsync();
 
         var batches = mapper.Map<List<MaterialBatchDto>>(query);
 
@@ -3858,10 +3876,21 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Include(b => b.Checklist)
             .Include(b => b.Grn)
             .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .Where(b =>
                 b.ExpiryDate >= now &&
                 b.ExpiryDate <= cutoff)
             .AsQueryable();
+
+        if (filter.MaterialKind.HasValue)
+        {
+            query = query.Where(b => b.Material.Kind == filter.MaterialKind.Value);
+        }
        
 
         // Date filters

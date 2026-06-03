@@ -294,6 +294,7 @@ public static class PermissionKeys
     public const string CanSwapPackagingMaterialRequisitions = "CanSwapPackagingMaterialRequisitions";
     public const string CanViewMaterialsReturnNote = "CanViewMaterialsReturnNote";
     public const string CanViewExpiredMaterials = "CanViewExpiredMaterials";
+    public const string CanViewAboutToExpireMaterials = "CanViewAboutToExpireMaterials";
     public const string CanViewRawMaterialLocationChartList = "CanViewRawMaterialLocationChartList";
     public const string CanReassignRawMaterialStock = "CanReassignRawMaterialStock";
     public const string CanViewRawMaterialLocationList = "CanViewRawMaterialLocationList";
@@ -948,6 +949,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanViewMaterialsReturnNote);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanAssignPackagingMaterialsStockToShelves);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewExpiredMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewAboutToExpireMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationChartList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanReassignRawMaterialStock);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationList);
