@@ -100,6 +100,22 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     }
 
     /// <summary>
+    /// Assigns users to an analytical test request.
+    /// </summary>
+    [HttpPut("assign/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AssignAnalyticalTestRequest(
+        [FromRoute] Guid id,
+        [FromBody] AssignAnalyticalTestRequest request
+    )
+    {
+        var result = await repository.AssignAnalyticalTestRequest(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes an analytical test request.
     /// </summary>
     [HttpDelete("{id:guid}")]

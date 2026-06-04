@@ -83,6 +83,7 @@ public static class PermissionSubmodules
     public const string AnalyticalTestRequests = "Analytical Test Requests";
     public const string PendingApprovals = "Pending Approvals";
     public const string Verification = "Verification";
+    public const string TransferApprovalRights = "Transfer Approval Rights";
 
     // Finished Goods Warehouse
     public const string CustomerManagement = "Customer Management";
@@ -91,6 +92,8 @@ public static class PermissionSubmodules
     public const string ProformaInvoice = "Proforma Invoice";
     public const string Invoice = "Invoice";
     public const string Allocations = "Allocations";
+    public const string FinishedGoodsTransferNote = "Finished Goods Transfer Note";
+    public const string ApprovedProducts = "Approved Products";
 
     // STORES
     public const string GeneralInventory = "General Inventory";
@@ -291,6 +294,7 @@ public static class PermissionKeys
     public const string CanSwapPackagingMaterialRequisitions = "CanSwapPackagingMaterialRequisitions";
     public const string CanViewMaterialsReturnNote = "CanViewMaterialsReturnNote";
     public const string CanViewExpiredMaterials = "CanViewExpiredMaterials";
+    public const string CanViewAboutToExpireMaterials = "CanViewAboutToExpireMaterials";
     public const string CanViewRawMaterialLocationChartList = "CanViewRawMaterialLocationChartList";
     public const string CanReassignRawMaterialStock = "CanReassignRawMaterialStock";
     public const string CanViewRawMaterialLocationList = "CanViewRawMaterialLocationList";
@@ -323,6 +327,9 @@ public static class PermissionKeys
     public const string CanApproveIncomingStockTransferRequest = "CanApproveIncomingStockTransferRequest";
     public const string CanRejectIncomingStockTransferRequest = "CanRejectIncomingStockTransferRequest";
     public const string CanViewOutgoingStockTransferRequests = "CanViewOutgoingStockTransferRequests";
+    public const string CanCreateInternalStockTransfer = "CanCreateInternalStockTransfer";
+    public const string CanAddProductsToProductSchedule = "CanAddProductsToProductSchedule";
+    public const string CanRemoveProductsFromProductSchedule = "CanRemoveProductsFromProductSchedule";
 
     // Quality Control
     public const string CanViewRawMaterialGoodsReceiptNotes = "CanViewRawMaterialGoodsReceiptNotes";
@@ -335,9 +342,13 @@ public static class PermissionKeys
     public const string CanAssignPackagingMaterialTest = "CanAssignPackagingMaterialTest";
     public const string CanStartPackagingMaterialTest = "CanStartPackagingMaterialTest";
     public const string CanCheckPackagingMaterialTestResult = "CanCheckPackagingMaterialTestResult";
+    public const string CanReassignRawMaterialTest = "CanReassignRawMaterialTest";
+    public const string CanReassignPackagingMaterialTest = "CanReassignPackagingMaterialTest";
     public const string CanViewProductAnalyticalTestRequests = "CanViewProductAnalyticalTestRequests";
+    public const string CanViewProductAnalyticalTestRequestsForAnalysing = "CanViewProductAnalyticalTestRequestsForAnalysing";
     public const string CanAcknowledgeSampleTaken = "CanAcknowledgeSampleTaken";
     public const string CanAssignProductTest = "CanAssignProductTest";
+    public const string CanReassignProductTest = "CanReassignProductTest";
     public const string CanStartProductTest = "CanStartProductTest";
     public const string CanCheckProductTest = "CanCheckProductTest";
     public const string CanVerifyProduct = "CanVerifyProduct";
@@ -388,10 +399,12 @@ public static class PermissionKeys
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
     public const string CanIssueBmr = "CanIssueBmr";
     public const string CanViewAnalyticalTestRequests = "CanViewAnalyticalTestRequests";
+    public const string CanViewAnalyticalTestRequestsForSampling = "CanViewAnalyticalTestRequestsForSampling";
     public const string CanTakeSamples = "CanTakeSamples";
     public const string CanViewPendingApprovals = "CanViewPendingApprovals";
     public const string CanApprovePendingApproval = "CanApprovePendingApproval";
     public const string CanRejectPendingApproval = "CanRejectPendingApproval";
+    public const string CanTransferApprovalRights = "CanTransferApprovalRights";
 
     // Finished Goods Warehouse
     public const string CanViewCustomers = "CanViewCustomers";
@@ -410,6 +423,9 @@ public static class PermissionKeys
     public const string CanCreateWaybillForFgw = "CanCreateWaybillForFgw";
     public const string CanEditWaybillForFgw = "CanEditWaybillForFgw";
     public const string CanDeleteWaybillForFgw = "CanDeleteWaybillForFgw";
+    public const string CanViewFgtn = "CanViewFgtn";
+    public const string CanApproveFgtn = "CanApproveFgtn";
+    public const string CanViewApprovedProducts = "CanViewApprovedProducts";
 
     // STORES
     public const string CanViewItemsInReagentStore = "CanViewItemsInReagentStore";
@@ -933,6 +949,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanViewMaterialsReturnNote);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanAssignPackagingMaterialsStockToShelves);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewExpiredMaterials);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewAboutToExpireMaterials);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationChartList);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanReassignRawMaterialStock);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationList);
@@ -953,6 +970,7 @@ public static class PermissionUtils
         // Production
         addPermission(PermissionModules.Production, PermissionSubmodules.Requisitions, PermissionKeys.CanViewRawMaterialRequisitionsForProduction);
         addPermission(PermissionModules.Production, PermissionSubmodules.Requisitions, PermissionKeys.CanViewPackagingMaterialRequisitionsForProduction);
+        addPermission(PermissionModules.Production, PermissionSubmodules.Requisitions, PermissionKeys.CanCreateInternalStockTransfer);
         addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanViewRawMaterialRequisitionsForCreation);
         addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanCreateRawMaterialRequisitions);
         addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanViewPackageMaterialRequisitionsForCreation);
@@ -963,6 +981,8 @@ public static class PermissionUtils
         addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanViewProductSchedules);
         addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanCreateProductSchedule);
         addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanEditProductSchedule);
+        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanAddProductsToProductSchedule);
+        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanRemoveProductsFromProductSchedule);
         addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanViewIncomingStockTransferRequests);
         addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanApproveIncomingStockTransferRequest);
         addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanRejectIncomingStockTransferRequest);
@@ -974,14 +994,18 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanAssignRawMaterialTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanStartRawMaterialTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanCheckRawMaterialTestResult);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanReassignRawMaterialTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanViewPackagingMaterialGoodsReceiptNotes);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanTakePackagingMaterialSample);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanAssignPackagingMaterialTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanStartPackagingMaterialTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanCheckPackagingMaterialTestResult);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanReassignPackagingMaterialTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanViewProductAnalyticalTestRequests);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanAcknowledgeSampleTaken);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanAssignProductTest);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanReassignProductTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanStartProductTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanCheckProductTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanViewRawMaterialStps);
@@ -1025,6 +1049,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanViewIssuedBmrBprs);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanIssueBmr);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequests);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequestsForSampling);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanTakeSamples);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProduct);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyRawMaterialSpecification);
@@ -1036,6 +1061,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanViewPendingApprovals);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanApprovePendingApproval);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectPendingApproval);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.TransferApprovalRights, PermissionKeys.CanTransferApprovalRights);
 
         // Finished Goods Warehouse
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.CustomerManagement, PermissionKeys.CanViewCustomers);
@@ -1052,6 +1078,9 @@ public static class PermissionUtils
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Invoice, PermissionKeys.CanViewInvoice);
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanViewWaybillForFgw);
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanCreateWaybillForFgw);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.FinishedGoodsTransferNote, PermissionKeys.CanViewFgtn);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.FinishedGoodsTransferNote, PermissionKeys.CanApproveFgtn);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ApprovedProducts, PermissionKeys.CanViewApprovedProducts);
 
         // STORES
         addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanViewItemsInReagentStore);

@@ -428,15 +428,19 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     public async Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId)
     {
         var batch = await context
-            .MaterialBatches.Include(b => b.Material)
+            .MaterialBatches.AsSplitQuery()
+            .Include(b => b.Material)
             .Include(b => b.Events)
                 .ThenInclude(m => m.User)
             .Include(b => b.Events)
                 .ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (batch is null)
@@ -461,10 +465,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(m => m.User)
             .Include(b => b.Events)
                 .ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -499,10 +506,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ThenInclude(m => m.User)
             .Include(b => b.Events)
                 .ThenInclude(m => m.ConsumptionWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .Where(b => b.MaterialId == materialId)
             .ToListAsync();
 
@@ -926,33 +936,32 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
     private List<CurrentLocationDto> GetCurrentLocations(MaterialBatchDto batch)
     {
-        // Dictionary to track the total quantity at each location
+        // Dictionary to track the total quantity at each location (Warehouse)
         var locationQuantities = new Dictionary<CollectionItemDto, decimal>();
 
-        // Track the movements and update the locations accordingly
-        foreach (var movement in batch.MassMovements)
+        // Add quantities from shelves
+        foreach (var shelfBatch in batch.Shelves)
         {
-            var fromLocation = movement.FromWarehouse;
-            var toLocation = movement.ToWarehouse;
-
-            // If moving to a location, increase the quantity at the destination
-            if (toLocation is not null)
+            var warehouse = shelfBatch
+                .WarehouseLocationShelf
+                ?.WarehouseLocationRack
+                ?.WarehouseLocation
+                ?.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(toLocation, 0);
-                locationQuantities[toLocation] += movement.Quantity;
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += shelfBatch.Quantity;
             }
+        }
 
-            // If moving from a location, decrease the quantity at the origin
-            if (fromLocation is not null)
+        // Add quantities from reserved (production warehouse)
+        foreach (var reserved in batch.ReservedQuantities)
+        {
+            var warehouse = reserved.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(fromLocation, 0);
-                locationQuantities[fromLocation] -= movement.Quantity;
-
-                // Ensure no negative quantities
-                if (locationQuantities[fromLocation] < 0)
-                {
-                    locationQuantities[fromLocation] = 0;
-                }
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += reserved.Quantity;
             }
         }
 
@@ -971,30 +980,29 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         // Dictionary to track the total quantity at each location
         var locationQuantities = new Dictionary<Warehouse, decimal>();
 
-        // Track the movements and update the locations accordingly
-        foreach (var movement in batch.MassMovements)
+        // Add quantities from shelves
+        foreach (var shelfBatch in batch.ShelfMaterialBatches)
         {
-            var fromLocation = movement.FromWarehouse;
-            var toLocation = movement.ToWarehouse;
-
-            // If moving to a location, increase the quantity at the destination
-            if (toLocation is not null)
+            var warehouse = shelfBatch
+                .WarehouseLocationShelf
+                ?.WarehouseLocationRack
+                ?.WarehouseLocation
+                ?.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(toLocation, 0);
-                locationQuantities[toLocation] += movement.Quantity;
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += shelfBatch.Quantity;
             }
+        }
 
-            // If moving from a location, decrease the quantity at the origin
-            if (fromLocation is not null)
+        // Add quantities from reserved (production warehouse)
+        foreach (var reserved in batch.ReservedQuantities)
+        {
+            var warehouse = reserved.Warehouse;
+            if (warehouse != null)
             {
-                locationQuantities.TryAdd(fromLocation, 0);
-                locationQuantities[fromLocation] -= movement.Quantity;
-
-                // Ensure no negative quantities
-                if (locationQuantities[fromLocation] < 0)
-                {
-                    locationQuantities[fromLocation] = 0;
-                }
+                locationQuantities.TryAdd(warehouse, 0);
+                locationQuantities[warehouse] += reserved.Quantity;
             }
         }
 
@@ -2152,13 +2160,23 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .MaterialBatches.AsSplitQuery()
             .Where(b =>
                 b.MaterialId == materialId
-                && b.MassMovements.Any(m => m.ToWarehouseId == warehouseId)
+                && (
+                    b.ShelfMaterialBatches.Any(smb =>
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId == warehouseId
+                    ) || b.ReservedQuantities.Any(rq => rq.WarehouseId == warehouseId)
+                )
             ) // Ensure the batch is in the warehouse
             .OrderBy(b => b.ExpiryDate) // FIFO
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.ToWarehouse)
-            .Include(b => b.MassMovements)
-                .ThenInclude(m => m.FromWarehouse)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .ToList();
 
         foreach (var batch in batches)
@@ -3805,44 +3823,140 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Result<Paginateable<IEnumerable<MaterialBatchDto>>>
     > GetExpiredMaterialBatches(MaterialFilter filter)
     {
-        var query = await context
+        var query = context
             .MaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
             .Include(b => b.Grn)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
             .Where(b => b.ExpiryDate < DateTime.UtcNow)
-            .ToListAsync();
+            .AsQueryable();
 
-        var batches = mapper.Map<List<MaterialBatchDto>>(query);
-
-        foreach (var batch in batches)
+        if (filter.MaterialKind.HasValue)
         {
-            batch.Locations = GetCurrentLocations(batch);
+            query = query.Where(b => b.Material.Kind == filter.MaterialKind.Value);
         }
 
         if (filter.StartDate.HasValue)
         {
-            batches = batches.Where(b => b.ExpiryDate >= filter.StartDate.Value).ToList();
+            var startDate = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(b => b.ExpiryDate >= startDate);
         }
 
         if (filter.EndDate.HasValue)
         {
-            batches = batches.Where(b => b.ExpiryDate < filter.EndDate.Value.AddDays(1)).ToList();
+            var endDate = DateTime.SpecifyKind(
+                filter.EndDate.Value.Date.AddDays(1),
+                DateTimeKind.Utc
+            );
+            query = query.Where(b => b.ExpiryDate < endDate);
         }
 
-        if (filter.WarehouseIds.Count != 0)
+        if (filter.WarehouseIds?.Count > 0)
         {
-            batches = batches
-                .Where(b =>
-                    b.Locations.Any(l =>
-                        l.Location?.Id != null && filter.WarehouseIds.Contains(l.Location.Id.Value)
+            query = query.Where(b =>
+                b.ShelfMaterialBatches.Any(smb =>
+                    filter.WarehouseIds.Contains(
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
                     )
-                )
-                .ToList();
+                ) || b.ReservedQuantities.Any(rq => filter.WarehouseIds.Contains(rq.WarehouseId))
+            );
         }
 
-        return PaginationHelper.Paginate(filter.Page, filter.PageSize, batches);
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            filter,
+            entity =>
+            {
+                var dto = mapper.Map<MaterialBatchDto>(entity);
+                dto.Locations = GetCurrentLocations(dto);
+                return dto;
+            }
+        );
+    }
+
+    public async Task<
+        Result<Paginateable<IEnumerable<MaterialBatchDto>>>
+    > GetAboutToExpireMaterialBatches(MaterialFilter filter)
+    {
+        var now = DateTime.UtcNow.Date;
+        var cutoff = now.AddMonths(3);
+
+        var query = context
+            .MaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(b => b.MassMovements)
+            .Include(b => b.Material)
+            .Include(b => b.Checklist)
+            .Include(b => b.Grn)
+            .Include(b => b.ShelfMaterialBatches)
+                .ThenInclude(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+            .Include(b => b.ReservedQuantities)
+                .ThenInclude(rq => rq.Warehouse)
+            .Where(b => b.ExpiryDate >= now && b.ExpiryDate <= cutoff)
+            .AsQueryable();
+
+        if (filter.MaterialKind.HasValue)
+        {
+            query = query.Where(b => b.Material.Kind == filter.MaterialKind.Value);
+        }
+
+        // Date filters
+        if (filter.StartDate.HasValue)
+        {
+            var startDate = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+
+            query = query.Where(b => b.ExpiryDate >= startDate);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var endDate = DateTime.SpecifyKind(
+                filter.EndDate.Value.Date.AddDays(1),
+                DateTimeKind.Utc
+            );
+
+            query = query.Where(b => b.ExpiryDate < endDate);
+        }
+
+        if (filter.WarehouseIds?.Count > 0)
+        {
+            query = query.Where(b =>
+                b.ShelfMaterialBatches.Any(smb =>
+                    filter.WarehouseIds.Contains(
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
+                    )
+                ) || b.ReservedQuantities.Any(rq => filter.WarehouseIds.Contains(rq.WarehouseId))
+            );
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            filter,
+            entity =>
+            {
+                var dto = mapper.Map<MaterialBatchDto>(entity);
+                dto.Locations = GetCurrentLocations(dto);
+                return dto;
+            }
+        );
     }
 
     public async Task<Result<List<MaterialDto>>> GetMaterialsNotLinkedToSpec(MaterialKind kind)
