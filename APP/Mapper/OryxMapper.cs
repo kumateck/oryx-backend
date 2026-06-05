@@ -810,6 +810,7 @@ public class OryxMapper : Profile
         CreateMap<CreateShipmentDocumentRequest, ShipmentDocument>();
         CreateMap<ShipmentDocument, ShipmentDocumentDto>()
             .ForMember(dest => dest.HasBillingSheet, opt => opt.MapFrom<HasBillingSheetResolver>())
+            .ForMember(dest => dest.HasApprovedBillingSheet, opt => opt.MapFrom<HasApprovedBillingSheetResolver>())
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();

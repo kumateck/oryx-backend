@@ -20,6 +20,7 @@ public class ShipmentDocumentDto : WithAttachment
     public DateTime? AtPortAt { get; set; }
     public DateTime? CompletedDistributionAt { get; set; }
     public bool HasBillingSheet { get; set; }
+    public bool HasApprovedBillingSheet { get; set; }
     public bool Approved { get; set; }
 }
 

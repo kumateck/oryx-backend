@@ -2121,7 +2121,7 @@ public class ApprovalRepository(
                     )
                 );
 
-                stageToApproveBs.Status = ApprovalStatus.Approved;
+                stageToApproveBs.Status = ApprovalStatus.Rejected;
                 stageToApproveBs.ApprovalTime = DateTime.UtcNow;
                 stageToApproveBs.Comments = comments;
                 await context.SaveChangesAsync();
@@ -2130,7 +2130,7 @@ public class ApprovalRepository(
                     {
                         UserId = userId,
                         Comments = comments,
-                        Status = ApprovalStatus.Approved,
+                        Status = ApprovalStatus.Rejected,
                         ModelId = billingSheet.Id,
                     }
                 );
