@@ -373,11 +373,10 @@ public class ProcurementRepository(
         return purchaseOrder.Id;
     }
 
-   public async Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId)
+    public async Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId)
     {
         var purchaseOrder = await context
-            .PurchaseOrders
-            .AsSplitQuery()
+            .PurchaseOrders.AsSplitQuery()
             .Include(po => po.Supplier)
             .Include(po => po.Items)
                 .ThenInclude(i => i.Material)
@@ -389,10 +388,7 @@ public class ProcurementRepository(
 
         if (purchaseOrder is null)
         {
-            return Error.NotFound(
-                "PurchaseOrder.NotFound",
-                "Purchase order not found"
-            );
+            return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
         }
 
         var result = mapper.Map<PurchaseOrderDto>(
@@ -400,57 +396,53 @@ public class ProcurementRepository(
             opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder)
         );
 
-        var materialIds = result.Items
-            .Where(i => i.Material?.Id != null)
+        var materialIds = result
+            .Items.Where(i => i.Material?.Id != null)
             .Select(i => i.Material!.Id!.Value)
             .Distinct()
             .ToList();
 
         // Load all quotation items in one query
-        var quotationItems = await context.SupplierQuotationItems
-            .AsNoTracking()
+        var quotationItems = await context
+            .SupplierQuotationItems.AsNoTracking()
             .Where(sq =>
-                sq.PurchaseOrderId == purchaseOrderId &&
-                materialIds.Contains(sq.MaterialId)
+                sq.PurchaseOrderId == purchaseOrderId && materialIds.Contains(sq.MaterialId)
             )
             .Select(sq => new
             {
                 sq.MaterialId,
                 sq.UoMId,
-                sq.PriceUoM
+                sq.PriceUoM,
             })
             .ToListAsync();
 
         // Composite key lookup: MaterialId + UoMId
         var quotationLookup = quotationItems
             .DistinctBy(q => (q.MaterialId, q.UoMId))
-            .ToDictionary(
-                q => (q.MaterialId, q.UoMId),
-                q => q.PriceUoM
-            );
+            .ToDictionary(q => (q.MaterialId, q.UoMId), q => q.PriceUoM);
 
         // Load all manufacturers in one query
-        var manufacturers = await context.SupplierManufacturers
-            .AsNoTracking()
+        var manufacturers = await context
+            .SupplierManufacturers.AsNoTracking()
             .Where(sm =>
-                sm.SupplierId == purchaseOrder.SupplierId &&
-                materialIds.Contains(sm.MaterialId.Value)
+                sm.SupplierId == purchaseOrder.SupplierId
+                && materialIds.Contains(sm.MaterialId.Value)
             )
             .Include(sm => sm.Manufacturer)
             .GroupBy(sm => sm.MaterialId)
             .ToDictionaryAsync(
                 g => g.Key,
-                g => g
-                    .Select(sm => new SupplierManufacturerDto
-                    {
-                        Manufacturer = new ManufacturerDto
+                g =>
+                    g.Select(sm => new SupplierManufacturerDto
                         {
-                            Id = sm.Manufacturer.Id,
-                            Name = sm.Manufacturer.Name
-                        }
-                    })
-                    .Distinct()
-                    .ToList()
+                            Manufacturer = new ManufacturerDto
+                            {
+                                Id = sm.Manufacturer.Id,
+                                Name = sm.Manufacturer.Name,
+                            },
+                        })
+                        .Distinct()
+                        .ToList()
             );
 
         foreach (var item in result.Items)
@@ -1186,7 +1178,8 @@ public class ProcurementRepository(
     )
     {
         var query = context
-            .BillingSheets.Include(bs => bs.Supplier)
+            .BillingSheets.AsSplitQuery()
+            .Include(bs => bs.Supplier)
             .Include(bs => bs.Invoice)
             .AsQueryable();
 
@@ -1226,6 +1219,11 @@ public class ProcurementRepository(
             return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
         }
 
+        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid)
+        {
+            return Error.Validation("BillingSheet.Pending", "Billing sheet is pending approval");
+        }
+
         mapper.Map(request, existingBillingSheet);
         existingBillingSheet.LastUpdatedById = userId;
 
@@ -1248,6 +1246,11 @@ public class ProcurementRepository(
         if (existingBillingSheet is null)
         {
             return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
+        }
+
+        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid)
+        {
+            return Error.Validation("BillingSheet.Pending", "Billing sheet is pending approval");
         }
 
         existingBillingSheet.Charges.AddRange(mapper.Map<List<BillingSheetCharge>>(request));
@@ -1308,10 +1311,12 @@ public class ProcurementRepository(
     )
     {
         var exists = await context.ShipmentDocuments.AnyAsync(sd => sd.Code == request.Code);
-        if (exists) 
-            return Error.Validation("ShipmentDocument.Exists",
-            $"Shipment document with code {request.Code} already exists");
-        
+        if (exists)
+            return Error.Validation(
+                "ShipmentDocument.Exists",
+                $"Shipment document with code {request.Code} already exists"
+            );
+
         var shipmentDocument = mapper.Map<ShipmentDocument>(request);
         shipmentDocument.Type = DocType.Shipment;
         shipmentDocument.Status = ShipmentStatus.New;
@@ -1456,8 +1461,7 @@ public class ProcurementRepository(
     public async Task<Result<ShipmentDocumentDto>> GetShipmentDocument(Guid shipmentDocumentId)
     {
         var shipmentDocument = await context
-            .ShipmentDocuments
-            .AsNoTracking()
+            .ShipmentDocuments.AsNoTracking()
             .AsSplitQuery()
             .Include(s => s.ShipmentInvoice)
                 .ThenInclude(i => i.Items)
@@ -1472,10 +1476,7 @@ public class ProcurementRepository(
 
         if (shipmentDocument is null)
         {
-            return Error.NotFound(
-                "ShipmentDocument.NotFound",
-                "Shipment document not found"
-            );
+            return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
 
         var result = mapper.Map<ShipmentDocumentDto>(
@@ -1486,66 +1487,50 @@ public class ProcurementRepository(
         // =========================
         // Flatten invoice items
         // =========================
-        var items = result.ShipmentInvoice?.Items?
-            .Where(i =>
-                i.Material?.Id != null &&
-                i.UoM?.Id != null &&
-                i.PurchaseOrder?.Id != null
-            )
-            .ToList() ?? [];
+        var items =
+            result
+                .ShipmentInvoice?.Items?.Where(i =>
+                    i.Material?.Id != null && i.UoM?.Id != null && i.PurchaseOrder?.Id != null
+                )
+                .ToList()
+            ?? [];
 
-        var materialIds = items
-            .Select(i => i.Material.Id)
-            .Distinct()
-            .ToList();
+        var materialIds = items.Select(i => i.Material.Id).Distinct().ToList();
 
-        var uomIds = items
-            .Select(i => i.UoM.Id)
-            .Distinct()
-            .ToList();
+        var uomIds = items.Select(i => i.UoM.Id).Distinct().ToList();
 
-        var purchaseOrderIds = items
-            .Select(i => i.PurchaseOrder.Id)
-            .Distinct()
-            .ToList();
+        var purchaseOrderIds = items.Select(i => i.PurchaseOrder.Id).Distinct().ToList();
 
         // =========================
         // Batch PriceUoM load
         // =========================
-        var quotationItems = await context.SupplierQuotationItems
-            .AsNoTracking()
+        var quotationItems = await context
+            .SupplierQuotationItems.AsNoTracking()
             .Where(q =>
-                q.PurchaseOrderId.HasValue &&
-                purchaseOrderIds.Contains(q.PurchaseOrderId.Value) &&
-                materialIds.Contains(q.MaterialId) &&
-                uomIds.Contains(q.UoMId)
+                q.PurchaseOrderId.HasValue
+                && purchaseOrderIds.Contains(q.PurchaseOrderId.Value)
+                && materialIds.Contains(q.MaterialId)
+                && uomIds.Contains(q.UoMId)
             )
             .Select(q => new
             {
                 q.PurchaseOrderId,
                 q.MaterialId,
                 q.UoMId,
-                q.PriceUoM
+                q.PriceUoM,
             })
             .ToListAsync();
 
         var priceLookup = quotationItems
             .DistinctBy(q => (q.PurchaseOrderId, q.MaterialId, q.UoMId))
-            .ToDictionary(
-                q => (q.PurchaseOrderId, q.MaterialId, q.UoMId),
-                q => q.PriceUoM
-            );
+            .ToDictionary(q => (q.PurchaseOrderId, q.MaterialId, q.UoMId), q => q.PriceUoM);
 
         // =========================
         // Apply PriceUoM
         // =========================
         foreach (var item in items)
         {
-            var key = (
-                item.PurchaseOrder.Id,
-                item.Material.Id,
-                item.UoM.Id
-            );
+            var key = (item.PurchaseOrder.Id, item.Material.Id, item.UoM.Id);
 
             if (priceLookup.TryGetValue(key, out var priceUoM))
             {
@@ -1921,108 +1906,89 @@ public class ProcurementRepository(
     }
 
     public async Task<Result<IEnumerable<ShipmentInvoiceDto>>> GetUnattachedShipmentInvoices()
-{
-    var unattachedShipmentInvoices = await context
-        .ShipmentInvoices
-        .AsNoTracking()
-        .AsSplitQuery()
-        .Where(si => !context.ShipmentDocuments.Any(sd => sd.ShipmentInvoiceId == si.Id))
-        .Include(si => si.Items)
-            .ThenInclude(item => item.Material)
-        .Include(si => si.Items)
-            .ThenInclude(item => item.UoM)
-        .Include(si => si.Items)
-            .ThenInclude(item => item.Manufacturer)
-        .Include(si => si.Items)
-            .ThenInclude(item => item.PurchaseOrder)
-        .OrderByDescending(s => s.CreatedAt)
-        .ToListAsync();
-
-    var result = mapper.Map<List<ShipmentInvoiceDto>>(unattachedShipmentInvoices);
-
-    // =========================
-    // Flatten items
-    // =========================
-    var allItems = result
-        .SelectMany(i => i.Items)
-        .Where(i =>
-            i.Material?.Id != null &&
-            i.UoM?.Id != null &&
-            i.PurchaseOrder?.Id != null
-        )
-        .ToList();
-
-    var materialIds = allItems
-        .Select(i => i.Material.Id)
-        .Distinct()
-        .ToList();
-
-    var uomIds = allItems
-        .Select(i => i.UoM.Id)
-        .Distinct()
-        .ToList();
-
-    var purchaseOrderIds = allItems
-        .Select(i => i.PurchaseOrder!.Id!.Value)
-        .Distinct()
-        .ToList();
-
-    // =========================
-    // PRICE UoM (BATCHED)
-    // =========================
-    var quotationItems = await context.SupplierQuotationItems
-        .AsNoTracking()
-        .Where(q =>
-            q.PurchaseOrderId.HasValue &&
-            purchaseOrderIds.Contains(q.PurchaseOrderId.Value) &&
-            materialIds.Contains(q.MaterialId) &&
-            uomIds.Contains(q.UoMId)
-        )
-        .Select(q => new
-        {
-            q.PurchaseOrderId,
-            q.MaterialId,
-            q.UoMId,
-            q.PriceUoM
-        })
-        .ToListAsync();
-
-    var priceLookup = quotationItems
-        .DistinctBy(q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId))
-        .ToDictionary(
-            q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId),
-            q => q.PriceUoM
-        );
-
-    // =========================
-    // APPLY
-    // =========================
-    foreach (var invoice in result)
     {
-        foreach (var item in invoice.Items)
+        var unattachedShipmentInvoices = await context
+            .ShipmentInvoices.AsNoTracking()
+            .AsSplitQuery()
+            .Where(si => !context.ShipmentDocuments.Any(sd => sd.ShipmentInvoiceId == si.Id))
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Material)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.UoM)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.Manufacturer)
+            .Include(si => si.Items)
+                .ThenInclude(item => item.PurchaseOrder)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+
+        var result = mapper.Map<List<ShipmentInvoiceDto>>(unattachedShipmentInvoices);
+
+        // =========================
+        // Flatten items
+        // =========================
+        var allItems = result
+            .SelectMany(i => i.Items)
+            .Where(i => i.Material?.Id != null && i.UoM?.Id != null && i.PurchaseOrder?.Id != null)
+            .ToList();
+
+        var materialIds = allItems.Select(i => i.Material.Id).Distinct().ToList();
+
+        var uomIds = allItems.Select(i => i.UoM.Id).Distinct().ToList();
+
+        var purchaseOrderIds = allItems.Select(i => i.PurchaseOrder!.Id!.Value).Distinct().ToList();
+
+        // =========================
+        // PRICE UoM (BATCHED)
+        // =========================
+        var quotationItems = await context
+            .SupplierQuotationItems.AsNoTracking()
+            .Where(q =>
+                q.PurchaseOrderId.HasValue
+                && purchaseOrderIds.Contains(q.PurchaseOrderId.Value)
+                && materialIds.Contains(q.MaterialId)
+                && uomIds.Contains(q.UoMId)
+            )
+            .Select(q => new
+            {
+                q.PurchaseOrderId,
+                q.MaterialId,
+                q.UoMId,
+                q.PriceUoM,
+            })
+            .ToListAsync();
+
+        var priceLookup = quotationItems
+            .DistinctBy(q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId))
+            .ToDictionary(q => (q.PurchaseOrderId!.Value, q.MaterialId, q.UoMId), q => q.PriceUoM);
+
+        // =========================
+        // APPLY
+        // =========================
+        foreach (var invoice in result)
         {
-            if (item.Material?.Id == null ||
-                item.UoM?.Id == null ||
-                item.PurchaseOrder?.Id == null)
+            foreach (var item in invoice.Items)
             {
-                continue;
-            }
+                if (
+                    item.Material?.Id == null
+                    || item.UoM?.Id == null
+                    || item.PurchaseOrder?.Id == null
+                )
+                {
+                    continue;
+                }
 
-            var key = (
-                item.PurchaseOrder.Id.Value,
-                item.Material.Id,
-                item.UoM.Id
-            );
+                var key = (item.PurchaseOrder.Id.Value, item.Material.Id, item.UoM.Id);
 
-            if (priceLookup.TryGetValue(key, out var priceUoM))
-            {
-                item.PriceUoM = priceUoM;
+                if (priceLookup.TryGetValue(key, out var priceUoM))
+                {
+                    item.PriceUoM = priceUoM;
+                }
             }
         }
-    }
 
-    return result;
-}
+        return result;
+    }
 
     public async Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(
         Guid shipmentDiscrepancyId
@@ -2279,132 +2245,118 @@ public class ProcurementRepository(
                          po.Items.Any(poi => poi.QuantityInvoiced > 0) &&
                          po.Items.Any(poi => poi.QuantityInvoiced < poi.Quantity))
             .ToListAsync();*/
-        
-    var purchaseOrders = await context
-        .PurchaseOrders
-        .IgnoreQueryFilters()
-        .AsSplitQuery()
-        .AsNoTracking()
-        .Include(po => po.Supplier)
-        .Include(po => po.Items)
-            .ThenInclude(i => i.Material)
-        .Include(po => po.Items)
-            .ThenInclude(i => i.UoM)
-        .Where(po =>
-            po.SupplierId == supplierId &&
-            po.Status != PurchaseOrderStatus.Linked &&
-            !po.DeletedAt.HasValue
-        )
-        .ToListAsync();
 
-    // filter out fully invoiced items
-    foreach (var po in purchaseOrders)
-    {
-        po.Items = po.Items
-            .Where(i => i.QuantityInvoiced < i.Quantity)
+        var purchaseOrders = await context
+            .PurchaseOrders.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .AsNoTracking()
+            .Include(po => po.Supplier)
+            .Include(po => po.Items)
+                .ThenInclude(i => i.Material)
+            .Include(po => po.Items)
+                .ThenInclude(i => i.UoM)
+            .Where(po =>
+                po.SupplierId == supplierId
+                && po.Status != PurchaseOrderStatus.Linked
+                && !po.DeletedAt.HasValue
+            )
+            .ToListAsync();
+
+        // filter out fully invoiced items
+        foreach (var po in purchaseOrders)
+        {
+            po.Items = po.Items.Where(i => i.QuantityInvoiced < i.Quantity).ToList();
+        }
+
+        var result = mapper.Map<List<PurchaseOrderDto>>(
+            purchaseOrders,
+            opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder)
+        );
+
+        var allItems = result
+            .SelectMany(po => po.Items)
+            .Where(i => i.Material?.Id != null && i.Uom?.Id != null)
             .ToList();
-    }
 
-    var result = mapper.Map<List<PurchaseOrderDto>>(
-        purchaseOrders,
-        opt => opt.Items[AppConstants.ModelType] = nameof(PurchaseOrder)
-    );
+        var materialIds = allItems.Select(i => i.Material!.Id!.Value).Distinct().ToList();
 
-    var allItems = result
-        .SelectMany(po => po.Items)
-        .Where(i => i.Material?.Id != null && i.Uom?.Id != null)
-        .ToList();
+        var uomIds = allItems.Select(i => i.Uom.Id).Distinct().ToList();
 
-    var materialIds = allItems
-        .Select(i => i.Material!.Id!.Value)
-        .Distinct()
-        .ToList();
-
-    var uomIds = allItems
-        .Select(i => i.Uom.Id)
-        .Distinct()
-        .ToList();
-
-    // =========================
-    // 1. PRICE UoM (BATCHED)
-    // =========================
-    var quotationItems = await context.SupplierQuotationItems
-        .AsNoTracking()
-        .Where(q =>
-            q.PurchaseOrderId.HasValue &&
-            q.SupplierQuotation.SupplierId == supplierId &&
-            materialIds.Contains(q.MaterialId) &&
-            uomIds.Contains(q.UoMId)
-        )
-        .Select(q => new
-        {
-            q.PurchaseOrderId,
-            q.MaterialId,
-            q.UoMId,
-            q.PriceUoM
-        })
-        .ToListAsync();
-
-    var priceLookup = quotationItems
-        .DistinctBy(x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId))
-        .ToDictionary(
-            x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId),
-            x => x.PriceUoM
-        );
-
-    // =========================
-    // 2. MANUFACTURERS (BATCHED)
-    // =========================
-    var manufacturers = await context.SupplierManufacturers
-        .AsNoTracking()
-        .Where(sm =>
-            sm.SupplierId == supplierId &&
-            materialIds.Contains(sm.MaterialId.Value)
-        )
-        .Include(sm => sm.Manufacturer)
-        .GroupBy(sm => sm.MaterialId)
-        .ToDictionaryAsync(
-            g => g.Key,
-            g => g.Select(sm => new SupplierManufacturerDto
+        // =========================
+        // 1. PRICE UoM (BATCHED)
+        // =========================
+        var quotationItems = await context
+            .SupplierQuotationItems.AsNoTracking()
+            .Where(q =>
+                q.PurchaseOrderId.HasValue
+                && q.SupplierQuotation.SupplierId == supplierId
+                && materialIds.Contains(q.MaterialId)
+                && uomIds.Contains(q.UoMId)
+            )
+            .Select(q => new
             {
-                Manufacturer = new ManufacturerDto
+                q.PurchaseOrderId,
+                q.MaterialId,
+                q.UoMId,
+                q.PriceUoM,
+            })
+            .ToListAsync();
+
+        var priceLookup = quotationItems
+            .DistinctBy(x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId))
+            .ToDictionary(x => (x.PurchaseOrderId!.Value, x.MaterialId, x.UoMId), x => x.PriceUoM);
+
+        // =========================
+        // 2. MANUFACTURERS (BATCHED)
+        // =========================
+        var manufacturers = await context
+            .SupplierManufacturers.AsNoTracking()
+            .Where(sm => sm.SupplierId == supplierId && materialIds.Contains(sm.MaterialId.Value))
+            .Include(sm => sm.Manufacturer)
+            .GroupBy(sm => sm.MaterialId)
+            .ToDictionaryAsync(
+                g => g.Key,
+                g =>
+                    g.Select(sm => new SupplierManufacturerDto
+                        {
+                            Manufacturer = new ManufacturerDto
+                            {
+                                Id = sm.Manufacturer.Id,
+                                Name = sm.Manufacturer.Name,
+                            },
+                        })
+                        .Distinct()
+                        .ToList()
+            );
+
+        // =========================
+        // 3. APPLY DATA
+        // =========================
+        foreach (var po in result)
+        {
+            foreach (var item in po.Items)
+            {
+                if (item.Material?.Id == null || item.Uom?.Id == null)
+                    continue;
+
+                var materialId = item.Material.Id.Value;
+                var uomId = item.Uom.Id;
+
+                // Price UoM
+                var key = (po.Id, materialId, uomId);
+                if (priceLookup.TryGetValue(key, out var priceUoM))
                 {
-                    Id = sm.Manufacturer.Id,
-                    Name = sm.Manufacturer.Name
+                    item.PriceUoM = priceUoM;
                 }
-            }).Distinct().ToList()
-        );
 
-    // =========================
-    // 3. APPLY DATA
-    // =========================
-    foreach (var po in result)
-    {
-        foreach (var item in po.Items)
-        {
-            if (item.Material?.Id == null || item.Uom?.Id == null)
-                continue;
-
-            var materialId = item.Material.Id.Value;
-            var uomId = item.Uom.Id;
-
-            // Price UoM
-            var key = (po.Id, materialId, uomId);
-            if (priceLookup.TryGetValue(key, out var priceUoM))
-            {
-                item.PriceUoM = priceUoM;
-            }
-
-            // Manufacturers
-            item.Manufacturers =
-                manufacturers.TryGetValue(materialId, out var list)
+                // Manufacturers
+                item.Manufacturers = manufacturers.TryGetValue(materialId, out var list)
                     ? list
                     : [];
+            }
         }
-    }
 
-    return result;
-
+        return result;
     }
 
     /*public async Task<Result<List<PurchaseOrderDto>>> GetSupplierPurchaseOrdersNotLinkedOrPartiallyUsedAsync(Guid supplierId)
