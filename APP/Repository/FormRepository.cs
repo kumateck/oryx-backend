@@ -8,6 +8,7 @@ using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -307,7 +308,11 @@ public class FormRepository(
         if (form == null)
             return FormErrors.NotFound(formId);
 
-        if (await context.FormReviewers.AnyAsync(r => r.FormId == formId && r.UserId == request.UserId))
+        if (
+            await context.FormReviewers.AnyAsync(r =>
+                r.FormId == formId && r.UserId == request.UserId
+            )
+        )
             return Error.Validation("FormReviewer", "User is already a reviewer for this form");
 
         var reviewer = mapper.Map<FormReviewer>(request);
@@ -877,6 +882,26 @@ public class FormRepository(
 
         if (existingFieldAssignees != null)
         {
+            if (existingFieldAssignees.AssigneeId != request.AssigneeId)
+            {
+                // Check if a response exists for this field
+                var hasResponse = await context.FormResponses.AnyAsync(fr =>
+                    fr.FormFieldId == formField.Id
+                    && fr.Response.FormId == formAssignee.FormId
+                    && fr.Response.MaterialBatchId == formAssignee.MaterialBatchId
+                    && fr.Response.BatchManufacturingRecordId
+                        == formAssignee.BatchManufacturingRecordId
+                    && fr.Response.ProductionActivityStepId == formAssignee.ProductionActivityStepId
+                );
+
+                if (hasResponse)
+                {
+                    return Error.Validation(
+                        "FormAssignee.HasResponses",
+                        "Cannot reassign user because they have already submitted a response for this field."
+                    );
+                }
+            }
             existingFieldAssignees.AssigneeId = request.AssigneeId;
             context.FormFieldAssignees.Update(existingFieldAssignees);
         }
@@ -1575,6 +1600,82 @@ public class FormRepository(
         question.LastDeletedById = userId;
         question.DeletedAt = DateTime.UtcNow;
         context.Questions.Update(question);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formAssigneeId)
+    {
+        var users = await context
+            .FormFieldAssignees.Where(fa =>
+                fa.FormAssigneeId == formAssigneeId && fa.AssigneeId != null
+            )
+            .Select(fa => fa.Assignee)
+            .Distinct()
+            .ToListAsync();
+
+        return mapper.Map<List<UserDto>>(users);
+    }
+
+    public async Task<Result> ReassignFormAssignee(ReassignFormAssigneeRequest request)
+    {
+        var formAssignee = await context
+            .FormAssignees.Include(fa => fa.FieldAssignees)
+            .FirstOrDefaultAsync(fa => fa.Id == request.FormAssigneeId);
+
+        if (formAssignee == null)
+            return FormErrors.NotFound(request.FormAssigneeId);
+
+        var assignmentsToChange = formAssignee
+            .FieldAssignees.Where(fa => fa.AssigneeId == request.OldAssigneeId)
+            .ToList();
+
+        if (assignmentsToChange.Count == 0)
+            return Error.Validation(
+                "FormAssignee.NoAssignments",
+                "User is not assigned to any fields in this form."
+            );
+
+        // Check if ANY of these fields have responses
+        var existingResponse = await context.Responses.FirstOrDefaultAsync(r =>
+            r.FormId == formAssignee.FormId
+            && r.MaterialBatchId == formAssignee.MaterialBatchId
+            && r.BatchManufacturingRecordId == formAssignee.BatchManufacturingRecordId
+            && r.ProductionActivityStepId == formAssignee.ProductionActivityStepId
+        );
+
+        if (existingResponse != null)
+        {
+            var fieldIdsWithResponses = await context
+                .FormResponses.Where(fr => fr.ResponseId == existingResponse.Id)
+                .Select(fr => fr.FormFieldId)
+                .ToListAsync();
+
+            var blockedFields = assignmentsToChange
+                .Where(fa => fieldIdsWithResponses.Contains(fa.FormFieldId))
+                .ToList();
+
+            if (blockedFields.Count > 0)
+            {
+                return Error.Validation(
+                    "FormAssignee.HasResponses",
+                    "Cannot reassign user because they have already submitted responses for some fields."
+                );
+            }
+        }
+
+        foreach (var assignment in assignmentsToChange)
+        {
+            if (request.NewAssigneeId.HasValue)
+            {
+                assignment.AssigneeId = request.NewAssigneeId.Value;
+            }
+            else
+            {
+                context.FormFieldAssignees.Remove(assignment);
+            }
+        }
+
         await context.SaveChangesAsync();
         return Result.Success();
     }
