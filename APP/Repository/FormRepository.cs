@@ -1604,12 +1604,12 @@ public class FormRepository(
         return Result.Success();
     }
 
-    public async Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formAssigneeId)
+    public async Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formId)
     {
         var users = await context
-            .FormFieldAssignees.Where(fa =>
-                fa.FormAssigneeId == formAssigneeId && fa.AssigneeId != null
-            )
+            .FormFieldAssignees.AsSplitQuery()
+            .Include(f => f.Assignee)
+            .Where(fa => fa.FormAssignee.FormId == formId && fa.AssigneeId != null)
             .Select(fa => fa.Assignee)
             .Distinct()
             .ToListAsync();
