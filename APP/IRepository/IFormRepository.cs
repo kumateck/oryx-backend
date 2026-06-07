@@ -105,7 +105,7 @@ public interface IFormRepository
     Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId);
     Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId);
 
-    Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formAssigneeId);
+    Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formId);
 
     Task<Result> ReassignFormAssignee(ReassignFormAssigneeRequest request);
 }
