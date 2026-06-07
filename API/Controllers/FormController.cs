@@ -3,7 +3,6 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
-using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -278,7 +277,11 @@ public class FormController(IFormRepository repository) : ControllerBase
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.DeleteFormReviewer(formId, reviewerUserId, Guid.Parse(userId));
+        var result = await repository.DeleteFormReviewer(
+            formId,
+            reviewerUserId,
+            Guid.Parse(userId)
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -769,19 +772,18 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a list of unique users assigned to a specific form.
     /// </summary>
-    /// <param name="formAssigneeId">The unique identifier of the form assignment.</param>
+    /// <param name="formId">The id of the form.</param>
     /// <returns>Returns a list of users assigned to the form.</returns>
-    [HttpGet("assignees/{formAssigneeId:guid}/users")]
+    [HttpGet("assignees/{formId:guid}/users")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormAssigneeUsers(Guid formAssigneeId)
+    public async Task<IResult> GetFormAssigneeUsers(Guid formId)
     {
-        var result = await repository.GetFormAssigneeUsers(formAssigneeId);
+        var result = await repository.GetFormAssigneeUsers(formId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
 
     /// <summary>
     /// Retrieves a Form Assignee associated with a specific Material Batch.
