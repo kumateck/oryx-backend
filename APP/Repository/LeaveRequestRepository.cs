@@ -475,4 +475,35 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         await context.SaveChangesAsync();
         return Result.Success();
     }
+    
+    public async Task<Result> CancelLeaveRequest(Guid leaveRequestId, Guid userId)
+    {
+        var leaveRequest = await context.LeaveRequests
+            .Include(l => l.Employee)
+            .FirstOrDefaultAsync(l =>
+                l.Id == leaveRequestId &&
+                l.Approved);
+
+        if (leaveRequest is null)
+        {
+            return Error.NotFound(
+                "LeaveRequest.NotFound",
+                "Leave request not found.");
+        }
+
+        if (leaveRequest.StartDate <= DateTime.UtcNow.Date)
+        {
+            return Error.Validation(
+                "LeaveRequest.CannotCancel",
+                "Only future leave requests can be cancelled.");
+        }
+
+        leaveRequest.DeletedAt = DateTime.UtcNow;
+        leaveRequest.LastDeletedById = userId;
+        leaveRequest.LeaveStatus = LeaveStatus.Cancelled;
+
+        await context.SaveChangesAsync();
+
+        return Result.Success();
+    }
 }
