@@ -686,7 +686,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            var oldEmail = employee.Email;
+            var oldEmail = employee.Email ?? "";
             employee.Email = newEmail;
             context.Employees.Update(employee);
             await context.SaveChangesAsync();
