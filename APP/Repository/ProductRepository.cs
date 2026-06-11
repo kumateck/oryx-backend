@@ -54,7 +54,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result<ProductDto>> GetProduct(Guid productId)
     {
         var product = await context
-            .Products.AsSplitQuery()
+            .Products.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(p => p.BaseUoM)
             .Include(p => p.Equipment)
             .Include(p => p.BillOfMaterials)
@@ -77,7 +78,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Include(p => p.Packings)
                 .ThenInclude(p => p.BasePackingUoM)
             .Include(p => p.CreatedBy)
-            .FirstOrDefaultAsync(p => p.Id == productId);
+            .FirstOrDefaultAsync(p => p.Id == productId && !p.DeletedAt.HasValue);
 
         return product is null
             ? ProductErrors.NotFound(productId)
