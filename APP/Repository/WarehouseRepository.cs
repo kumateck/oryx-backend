@@ -1395,12 +1395,17 @@ public class WarehouseRepository(
     > GetProductBinCardInformation(int page, int pageSize, string searchQuery, Guid productId)
     {
         var query = context
-            .ProductBinCardInformation.AsSplitQuery()
+            .ProductBinCardInformation
+            .IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(bci => bci.Batch)
                 .ThenInclude(bci => bci.ProductionScheduleProduct)
                     .ThenInclude(p => p.Product)
             .Include(bci => bci.UoM)
-            .Where(bci => bci.Batch.ProductionScheduleProduct.ProductId == productId)
+            .Where(bci =>
+                bci.Batch.ProductionScheduleProduct.ProductId == productId
+                && !bci.DeletedAt.HasValue
+            )
             .OrderBy(b => b.CreatedAt)
             .AsQueryable();
 
