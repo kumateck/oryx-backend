@@ -1405,8 +1405,6 @@ public class WarehouseRepository(
             .Where(bci =>
                 bci.Batch.ProductionScheduleProduct.ProductId == productId
                 && !bci.DeletedAt.HasValue
-                && !bci.Batch.DeletedAt.HasValue
-                && !bci.Batch.ProductionScheduleProduct.Product.DeletedAt.HasValue
             )
             .OrderBy(b => b.CreatedAt)
             .AsQueryable();
