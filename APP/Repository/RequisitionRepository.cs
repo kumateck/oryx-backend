@@ -1775,10 +1775,11 @@ public class RequisitionRepository(
                     )
                     .ToListAsync();
 
-                foreach (var supplierQuotation in supplierQuotationItems)
+                foreach (var otherSupplierQuotationItem in supplierQuotationItems)
                 {
-                    supplierQuotation.PurchaseOrderId = poId;
-                    context.SupplierQuotationItems.Update(supplierQuotation);
+                    otherSupplierQuotationItem.PurchaseOrderId = poId;
+                    otherSupplierQuotationItem.Status = SupplierQuotationItemStatus.NotUsed;
+                    context.SupplierQuotationItems.Update(otherSupplierQuotationItem);
                 }
             }
 
@@ -1787,27 +1788,36 @@ public class RequisitionRepository(
 
         var supplierQuotations = await context
             .SupplierQuotations.AsSplitQuery()
+            .Include(s => s.Supplier)
             .Include(s => s.Items)
                 .ThenInclude(s => s.SupplierQuotation)
                     .ThenInclude(s => s.Supplier)
             .Where(s =>
-                s.ReceivedQuotation
-                && s.Items.Any(i =>
-                    i.Status == SupplierQuotationItemStatus.NotProcessed
-                    && i.SupplierQuotation.Supplier.Type == type
+                s.Supplier.Type == type
+                && (
+                    (s.ReceivedQuotation && s.Items.Any(i => i.Status == SupplierQuotationItemStatus.NotProcessed))
+                    || (!s.ReceivedQuotation && s.Items.All(i => i.Status != SupplierQuotationItemStatus.NotProcessed))
                 )
             )
             .ToListAsync();
 
         foreach (var supplierQuotation in supplierQuotations)
         {
-            foreach (
-                var item in supplierQuotation.Items.Where(item =>
-                    item.Status == SupplierQuotationItemStatus.NotProcessed
-                )
-            )
+            if (supplierQuotation.ReceivedQuotation)
             {
-                item.Status = SupplierQuotationItemStatus.NotUsed;
+                foreach (
+                    var item in supplierQuotation.Items.Where(item =>
+                        item.Status == SupplierQuotationItemStatus.NotProcessed
+                    )
+                )
+                {
+                    item.Status = SupplierQuotationItemStatus.NotUsed;
+                }
+            }
+
+            if (supplierQuotation.Items.All(i => i.Status != SupplierQuotationItemStatus.NotProcessed))
+            {
+                supplierQuotation.ReceivedQuotation = true;
             }
         }
 
