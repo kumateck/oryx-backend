@@ -923,7 +923,8 @@ public class FormRepository(
     public async Task<Result> SubmitFormAssigneeFinal(Guid formAssigneeId)
     {
         var formAssignee = await context
-            .FormAssignees.Include(r => r.FieldAssignees)
+            .FormAssignees.AsSplitQuery()
+            .Include(r => r.FieldAssignees)
             .FirstOrDefaultAsync(r => r.Id == formAssigneeId);
 
         if (formAssignee == null)
