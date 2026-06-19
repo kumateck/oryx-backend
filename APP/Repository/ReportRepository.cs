@@ -1575,8 +1575,7 @@ public class ReportRepository(
                 BatchNumber = f.BatchManufacturingRecord != null
                     ? f.BatchManufacturingRecord.BatchNumber
                     : "No Batch",
-
-                TotalQuantity = f.TotalQuantity,
+                f.TotalQuantity,
                 UomName = f.UoM != null ? f.UoM.Name : "N/A",
 
                 ProductionDepartment = f.FromWarehouse != null
@@ -1612,7 +1611,7 @@ public class ReportRepository(
             })
             .Select(g => new
             {
-                Key = g.Key,
+                g.Key,
                 NumberOfBatches = g.Where(x =>
                         !string.IsNullOrEmpty(x.BatchNumber) && x.BatchNumber != "No Batch"
                     )
@@ -1703,11 +1702,11 @@ public class ReportRepository(
 
                 ManufacturingDate = f.BatchManufacturingRecord != null
                     ? f.BatchManufacturingRecord.ManufacturingDate
-                    : (DateTime?)null,
+                    : null,
 
                 ExpiryDate = f.BatchManufacturingRecord != null
                     ? f.BatchManufacturingRecord.ExpiryDate
-                    : (DateTime?)null,
+                    : null,
 
                 PackingStyle = f.ProductPacking != null ? f.ProductPacking.Name : "N/A",
 
@@ -1779,13 +1778,15 @@ public class ReportRepository(
                     .ThenInclude(p => p.Department)
             .Include(f => f.UoM)
             .Include(f => f.ToWarehouse)
-            .Where(f => f.IsApproved && !f.DeletedAt.HasValue)
-            .AsEnumerable()
-            .Where(f => f.RemainingQuantity > 0);
+            .Where(f => f.IsApproved && !f.DeletedAt.HasValue);
+
+        var notes = await query.Where(f => f.TotalQuantity - f.AllocatedQuantity > 0).ToListAsync();
+
+        var filteredNotes = notes.AsEnumerable();
 
         if (productId.HasValue)
         {
-            query = query.Where(f =>
+            filteredNotes = filteredNotes.Where(f =>
                 f.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId == productId.Value
                 || f.ProductPacking?.ProductId == productId.Value
             );
@@ -1793,19 +1794,19 @@ public class ReportRepository(
 
         if (warehouseId.HasValue)
         {
-            query = query.Where(f => f.ToWarehouseId == warehouseId.Value);
+            filteredNotes = filteredNotes.Where(f => f.ToWarehouseId == warehouseId.Value);
         }
 
         if (departmentId.HasValue)
         {
-            query = query.Where(f =>
+            filteredNotes = filteredNotes.Where(f =>
                 f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.DepartmentId
                     == departmentId.Value
                 || f.ProductPacking?.Product?.DepartmentId == departmentId.Value
             );
         }
 
-        var rawData = query
+        var rawData = filteredNotes
             .Select(f => new
             {
                 Product = f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product
@@ -1844,7 +1845,7 @@ public class ReportRepository(
             })
             .Select(g => new
             {
-                Key = g.Key,
+                g.Key,
                 NumberOfBatches = g.Where(x => !string.IsNullOrEmpty(x.BatchNumber))
                     .Select(x => x.BatchNumber)
                     .Distinct()
@@ -1898,13 +1899,15 @@ public class ReportRepository(
                     .ThenInclude(p => p.Department)
             .Include(f => f.UoM)
             .Include(f => f.ToWarehouse)
-            .Where(f => f.IsApproved && !f.DeletedAt.HasValue)
-            .AsEnumerable()
-            .Where(f => f.RemainingQuantity > 0);
+            .Where(f => f.IsApproved && !f.DeletedAt.HasValue);
+
+        var notes = await query.Where(f => f.TotalQuantity - f.AllocatedQuantity > 0).ToListAsync();
+
+        var filteredNotes = notes.AsEnumerable();
 
         if (productId.HasValue)
         {
-            query = query.Where(f =>
+            filteredNotes = filteredNotes.Where(f =>
                 f.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId == productId.Value
                 || f.ProductPacking?.ProductId == productId.Value
             );
@@ -1912,12 +1915,12 @@ public class ReportRepository(
 
         if (warehouseId.HasValue)
         {
-            query = query.Where(f => f.ToWarehouseId == warehouseId.Value);
+            filteredNotes = filteredNotes.Where(f => f.ToWarehouseId == warehouseId.Value);
         }
 
         if (departmentId.HasValue)
         {
-            query = query.Where(f =>
+            filteredNotes = filteredNotes.Where(f =>
                 f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product?.DepartmentId
                     == departmentId.Value
                 || f.ProductPacking?.Product?.DepartmentId == departmentId.Value
@@ -1926,24 +1929,26 @@ public class ReportRepository(
 
         if (!string.IsNullOrWhiteSpace(batchNumber))
         {
-            query = query.Where(f =>
+            filteredNotes = filteredNotes.Where(f =>
                 f.BatchManufacturingRecord?.BatchNumber.Contains(batchNumber) == true
             );
         }
 
         if (expiryDateFrom.HasValue)
         {
-            query = query.Where(f =>
+            filteredNotes = filteredNotes.Where(f =>
                 f.BatchManufacturingRecord?.ExpiryDate >= expiryDateFrom.Value
             );
         }
 
         if (expiryDateTo.HasValue)
         {
-            query = query.Where(f => f.BatchManufacturingRecord?.ExpiryDate <= expiryDateTo.Value);
+            filteredNotes = filteredNotes.Where(f =>
+                f.BatchManufacturingRecord?.ExpiryDate <= expiryDateTo.Value
+            );
         }
 
-        var rawData = query
+        var rawData = filteredNotes
             .Select(f => new
             {
                 Product = f.BatchManufacturingRecord?.ProductionScheduleProduct?.Product
@@ -2568,7 +2573,6 @@ public class ReportRepository(
         if (filter.StartDate.HasValue)
         {
             baseQuery = baseQuery.Where(bs => bs.CreatedAt >= filter.StartDate.Value);
-            ;
         }
 
         if (filter.EndDate.HasValue)
@@ -2668,20 +2672,18 @@ public class ReportRepository(
                         && poLookup.TryGetValue(g.SupplierId.Value, out var supplierPOs)
                     )
                     {
-                        var recentPO = supplierPOs
+                        var recentPo = supplierPOs
                             .OrderByDescending(po => po.CreatedAt)
                             .FirstOrDefault();
-                        if (recentPO != null)
+                        if (recentPo != null)
                         {
-                            transactionAmount = recentPO.TotalCifValue;
-                            transactionType = recentPO.TermsOfPaymentName;
+                            transactionAmount = recentPo.TotalCifValue;
+                            transactionType = recentPo.TermsOfPaymentName;
 
-                            if (poiLookup.TryGetValue(recentPO.Id, out var matIds))
+                            if (poiLookup.TryGetValue(recentPo.Id, out var matIds))
                             {
                                 materialNames = matIds
-                                    .Select(id =>
-                                        materialLookup.TryGetValue(id, out var name) ? name : null
-                                    )
+                                    .Select(id => materialLookup.GetValueOrDefault(id))
                                     .Where(n => n != null)
                                     .ToList();
                             }
@@ -2830,19 +2832,17 @@ public class ReportRepository(
                     {
                         No = index + 1,
 
-                        SupplierName = supplierLookup.TryGetValue(po.SupplierId, out var suppliers)
-                            ? suppliers.Name
+                        SupplierName = supplierLookup.TryGetValue(po.SupplierId, out var vendor)
+                            ? vendor.Name
                             : null,
 
                         ProformaInvoiceNumber = po.ProFormaInvoiceNumber,
                         PurchaseOrderNumber = po.Code,
 
-                        MaterialName = materialLookup.TryGetValue(poi.MaterialId, out var mName)
-                            ? mName
-                            : null,
+                        MaterialName = materialLookup.GetValueOrDefault(poi.MaterialId),
 
                         OrderQuantity = poi.Quantity,
-                        UomName = uomLookup.TryGetValue(poi.UoMId, out var uName) ? uName : null,
+                        UomName = uomLookup.GetValueOrDefault(poi.UoMId),
 
                         UnitPrice = poi.Price,
                         CurrencySymbol =
@@ -3043,19 +3043,13 @@ public class ReportRepository(
                         PoNumber = po.Code,
                         InvoiceNumber = invoice.Code,
 
-                        MaterialName = materialLookup.TryGetValue(poi.MaterialId, out var mName)
-                            ? mName
-                            : null,
+                        MaterialName = materialLookup.GetValueOrDefault(poi.MaterialId),
 
                         OrderedQuantity = poi.Quantity,
-                        OrderedUom = uomLookup.TryGetValue(poi.UoMId, out var uSymbol)
-                            ? uSymbol
-                            : null,
+                        OrderedUom = uomLookup.GetValueOrDefault(poi.UoMId),
 
                         QuantityReceived = poi.QuantityInvoiced,
-                        ReceivedUom = uomLookup.TryGetValue(poi.UoMId, out var rSymbol)
-                            ? rSymbol
-                            : null,
+                        ReceivedUom = uomLookup.GetValueOrDefault(poi.UoMId),
 
                         UnitCost = poi.Price,
                         CurrencySymbol =
@@ -3235,7 +3229,6 @@ public class ReportRepository(
             DateFilter.Today => now.Date,
             DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
             DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
-            DateFilter.AllTime => null,
             _ => null,
         };
 
@@ -3324,7 +3317,7 @@ public class ReportRepository(
             .ToListAsync();
 
         var quotationLookup = quotationCounts.ToDictionary(
-            x => ((SupplierType)x.SupplierType, x.Status),
+            x => (x.SupplierType, x.Status),
             x => x.Count
         );
 
@@ -3378,7 +3371,6 @@ public class ReportRepository(
             DateFilter.Today => now.Date,
             DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
             DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
-            DateFilter.AllTime => null,
             _ => null,
         };
 
@@ -3411,10 +3403,7 @@ public class ReportRepository(
 
         var incomingLookup = incomingCounts.ToDictionary(x => x.Key, x => x.Count);
         var outgoingLookup = outgoingCounts.ToDictionary(x => x.Key, x => x.Count);
-        var requisitionLookup = requisitionCounts.ToDictionary(
-            x => (RequestStatus)x.Key,
-            x => x.Count
-        );
+        var requisitionLookup = requisitionCounts.ToDictionary(x => x.Key, x => x.Count);
 
         return Result.Success(
             new WarehouseDashboardReportDto
@@ -3638,10 +3627,10 @@ public class ReportRepository(
                 .Where(x => x.CheckedAt == null)
                 .Select(x => new MaterialChecklistItemDto
                 {
-                    MaterialName = x.Name,
-                    MaterialCode = x.Code,
-                    Quantity = x.Quantity,
-                    UomSymbol = x.UomSymbol,
+                    MaterialName = x?.Name,
+                    MaterialCode = x?.Code,
+                    Quantity = x?.Quantity ?? 0,
+                    UomSymbol = x?.UomSymbol,
                 })
                 .ToList(),
 
@@ -3668,7 +3657,6 @@ public class ReportRepository(
             DateFilter.Today => now.Date,
             DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
             DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
-            DateFilter.AllTime => null,
             _ => null,
         };
 
@@ -3679,7 +3667,7 @@ public class ReportRepository(
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        var lookup = shipmentCounts.ToDictionary(x => (ShipmentStatus)x.Status, x => x.Count);
+        var lookup = shipmentCounts.ToDictionary(x => x.Status, x => x.Count);
 
         return Result.Success(
             new ShipmentStatusReportDto
@@ -3703,7 +3691,6 @@ public class ReportRepository(
             DateFilter.Today => now.Date,
             DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
             DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
-            DateFilter.AllTime => null,
             _ => null,
         };
         var itemsCount = await context
@@ -3712,7 +3699,7 @@ public class ReportRepository(
             .GroupBy(i => i.Store)
             .Select(g => new { Store = g.Key, Count = g.Count() })
             .ToListAsync();
-        var itemsLookup = itemsCount.ToDictionary(x => (Store)x.Store, x => x.Count);
+        var itemsLookup = itemsCount.ToDictionary(x => x.Store, x => x.Count);
         var itemsDashboard = new ItemCountDto
         {
             EquipmentStoreCount = itemsLookup.GetValueOrDefault(Store.EquipmentStore, 0),
@@ -3721,17 +3708,14 @@ public class ReportRepository(
             ReagentStoreCount = itemsLookup.GetValueOrDefault(Store.ReagentStore, 0),
         };
 
-        var itemRequistionCount = await context
+        var itemRequisitionCount = await context
             .ItemStockRequisitions.IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
             .GroupBy(i => i.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        var requisitionLookup = itemRequistionCount.ToDictionary(
-            x => (IssueItemStockRequisitionStatus)x.Status,
-            x => x.Count
-        );
+        var requisitionLookup = itemRequisitionCount.ToDictionary(x => x.Status, x => x.Count);
         var itemStockRequisition = new ItemStockRequisitionCountDto
         {
             PartialCount = requisitionLookup.GetValueOrDefault(
@@ -3789,7 +3773,6 @@ public class ReportRepository(
             DateFilter.Today => now.Date,
             DateFilter.ThisWeek => now.Date.AddDays(-(int)now.DayOfWeek),
             DateFilter.ThisMonth => now.Date.AddDays(1 - now.Day),
-            DateFilter.AllTime => null,
             _ => null,
         };
         var totalService = await context
@@ -3797,16 +3780,13 @@ public class ReportRepository(
             .Where(s => s.DeletedAt == null)
             .CountAsync();
 
-        var jobrequisition = await context
+        var jobrequisiition = await context
             .JobRequests.IgnoreQueryFilters()
             .Where(j => j.DeletedAt == null)
             .GroupBy(j => j.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync();
-        var jobRequestLookup = jobrequisition.ToDictionary(
-            x => (JobRequestStatus)x.Status,
-            x => x.Count
-        );
+        var jobRequestLookup = jobrequisiition.ToDictionary(x => x.Status, x => x.Count);
         var jobRequisitionCount = new JobRequisitionCountDto
         {
             Pending = jobRequestLookup.GetValueOrDefault(JobRequestStatus.Pending, 0),
@@ -3891,11 +3871,11 @@ public class ReportRepository(
             invoice.Products.Select(p => new
             {
                 Invoice = invoice,
-                Product = p.Product,
+                p.Product,
                 InvoiceProduct = p,
                 Allocation = invoice.AllocateProductionOrder,
-                ProductionOrder = invoice.AllocateProductionOrder.ProductionOrder,
-                Customer = invoice.AllocateProductionOrder.ProductionOrder.Customer,
+                invoice.AllocateProductionOrder.ProductionOrder,
+                invoice.AllocateProductionOrder.ProductionOrder.Customer,
             })
         );
 
@@ -3992,9 +3972,9 @@ public class ReportRepository(
                         {
                             Invoice = invoice,
                             InvoiceProduct = p,
-                            Product = p.Product,
+                            p.Product,
                             Allocation = invoice.AllocateProductionOrder,
-                            ProductionOrder = invoice.AllocateProductionOrder.ProductionOrder,
+                            invoice.AllocateProductionOrder.ProductionOrder,
                             Fulfilled = fq,
                             Batch = fq.FinishedGoodsTransferNote.BatchManufacturingRecord,
                         })
