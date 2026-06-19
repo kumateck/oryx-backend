@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using DOMAIN.Entities.Permissions;
+
 namespace APP.Utils;
 
 public static class PermissionModules
@@ -191,16 +192,20 @@ public static class PermissionKeys
     public const string CanViewLocalQuotationResponse = "CanViewLocalQuotationResponse";
     public const string CanSendLocalQuotationResponse = "CanSendLocalQuotationResponse";
     public const string CanViewForeignVendorPricing = "CanViewForeignVendorPricing";
-    public const string CanApplyChangesForForeignVendorPricingSelection = "CanApplyChangesForForeignVendorPricingSelection";
+    public const string CanApplyChangesForForeignVendorPricingSelection =
+        "CanApplyChangesForForeignVendorPricingSelection";
     public const string CanViewLocalVendorPricing = "CanViewLocalVendorPricing";
-    public const string CanApplyChangesForLocalVendorPricingSelection = "CanApplyChangesForLocalVendorPricingSelection";
+    public const string CanApplyChangesForLocalVendorPricingSelection =
+        "CanApplyChangesForLocalVendorPricingSelection";
     public const string CanViewForeignProformaRequest = "CanViewForeignProformaRequest";
     public const string CanSendForeignProformaRequest = "CanSendForeignProformaRequest";
     public const string CanViewLocalProformaRequest = "CanViewLocalProformaRequest";
     public const string CanSendLocalProformaRequest = "CanSendLocalProformaRequest";
-    public const string CanViewForeignProformaInvoiceSubmissions = "CanViewForeignProformaInvoiceSubmissions";
+    public const string CanViewForeignProformaInvoiceSubmissions =
+        "CanViewForeignProformaInvoiceSubmissions";
     public const string CanSendForeignProformaInvoice = "CanSendForeignProformaInvoice";
-    public const string CanViewLocalProformaInvoiceSubmissions = "CanViewLocalProformaInvoiceSubmissions";
+    public const string CanViewLocalProformaInvoiceSubmissions =
+        "CanViewLocalProformaInvoiceSubmissions";
     public const string CanSendLocalProformaInvoice = "CanSendLocalProformaInvoice";
     public const string CanViewForeignPurchaseOrder = "CanViewForeignPurchaseOrder";
     public const string CanViewApprovedForeignPurchaseOrder = "CanViewApprovedForeignPurchaseOrder";
@@ -217,11 +222,13 @@ public static class PermissionKeys
     public const string CanReviseForeignPurchaseOrder = "CanReviseForeignPurchaseOrder";
     public const string CanDeleteForeignPurchaseOrderItem = "CanDeleteForeignPurchaseOrderItem";
     public const string CanReAssignForeignPurchaseOrderItem = "CanReAssignForeignPurchaseOrderItem";
-    public const string CanChangeSupplySourceForeignPurchaseOrderItem = "CanChangeSupplySourceForeignPurchaseOrderItem";
+    public const string CanChangeSupplySourceForeignPurchaseOrderItem =
+        "CanChangeSupplySourceForeignPurchaseOrderItem";
     public const string CanReviseLocalPurchaseOrder = "CanReviseLocalPurchaseOrder";
     public const string CanDeleteLocalPurchaseOrderItem = "CanDeleteLocalPurchaseOrderItem";
     public const string CanReAssignLocalPurchaseOrderItem = "CanReAssignLocalPurchaseOrderItem";
-    public const string CanChangeSupplySourceLocalPurchaseOrderItem = "CanChangeSupplySourceLocalPurchaseOrderItem";
+    public const string CanChangeSupplySourceLocalPurchaseOrderItem =
+        "CanChangeSupplySourceLocalPurchaseOrderItem";
     public const string CanViewMaterialDistribution = "CanViewMaterialDistribution";
     public const string CanDistributeMaterial = "CanDistributeMaterial";
 
@@ -249,11 +256,12 @@ public static class PermissionKeys
 
     // Warehouse
     public const string CanViewRawMaterialsItems = "CanViewRawMaterialsItems";
-    public const string CanCreatePreSamplingChecklist= "CanCreatePreSamplingChecklist";
+    public const string CanCreatePreSamplingChecklist = "CanCreatePreSamplingChecklist";
     public const string CanCreateChecklistForRawMaterials = "CanCreateChecklistForRawMaterials";
     public const string CanCreateGrnForRawMaterials = "CanCreateGrnForRawMaterials";
     public const string CanViewPackagingMaterialsItems = "CanViewPackagingMaterialsItems";
-    public const string CanCreateChecklistForPackagingMaterials = "CanCreateChecklistForPackagingMaterials";
+    public const string CanCreateChecklistForPackagingMaterials =
+        "CanCreateChecklistForPackagingMaterials";
     public const string CanCreateGrnForPackagingMaterials = "CanCreateGrnForPackagingMaterials";
     public const string CanViewRawMaterials = "CanViewRawMaterials";
     public const string CanViewQuarantineRawMaterials = "CanViewQuarantineRawMaterials";
@@ -261,12 +269,15 @@ public static class PermissionKeys
     public const string CanViewDistributedRawMaterials = "CanViewDistributedRawMaterials";
     public const string CanViewRawMaterialsReceivedList = "CanViewRawMaterialsReceivedList";
     public const string CanViewPackagingMaterials = "CanViewPackagingMaterials";
-    public const string CanViewDistributedPackagingMaterials = "CanViewDistributedPackagingMaterials";
+    public const string CanViewDistributedPackagingMaterials =
+        "CanViewDistributedPackagingMaterials";
     public const string CanViewQuarantinePackagingMaterials = "CanViewQuarantinePackagingMaterials";
     public const string CanDistributePackagingMaterials = "CanDistributePackagingMaterials";
-    public const string CanViewPackagingMaterialsReceivedList = "CanViewPackagingMaterialsReceivedList";
+    public const string CanViewPackagingMaterialsReceivedList =
+        "CanViewPackagingMaterialsReceivedList";
     public const string CanAssignRawMaterialsStockToShelves = "CanAssignRawMaterialsStockToShelves";
-    public const string CanAssignPackagingMaterialsStockToShelves = "CanAssignPackagingMaterialsStockToShelves";
+    public const string CanAssignPackagingMaterialsStockToShelves =
+        "CanAssignPackagingMaterialsStockToShelves";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
     public const string CanViewApprovedPackagingMaterials = "CanViewApprovedPackagingMaterials";
     public const string CanViewLinkedRawMaterials = "CanViewLinkedRawMaterials";
@@ -289,47 +300,65 @@ public static class PermissionKeys
     public const string CanViewRawMaterialRequisitions = "CanViewRawMaterialRequisitions";
     public const string CanIssueRawMaterialRequisitions = "CanIssueRawMaterialRequisitions";
     public const string CanSwapRawMaterialRequisitions = "CanSwapRawMaterialRequisitions";
-    public const string CanViewPackagingMaterialRequisitions = "CanViewPackagingMaterialRequisitions";
-    public const string CanIssuePackagingMaterialRequisitions = "CanIssuePackagingMaterialRequisitions";
-    public const string CanSwapPackagingMaterialRequisitions = "CanSwapPackagingMaterialRequisitions";
+    public const string CanViewPackagingMaterialRequisitions =
+        "CanViewPackagingMaterialRequisitions";
+    public const string CanIssuePackagingMaterialRequisitions =
+        "CanIssuePackagingMaterialRequisitions";
+    public const string CanSwapPackagingMaterialRequisitions =
+        "CanSwapPackagingMaterialRequisitions";
     public const string CanViewMaterialsReturnNote = "CanViewMaterialsReturnNote";
     public const string CanViewExpiredMaterials = "CanViewExpiredMaterials";
     public const string CanViewAboutToExpireMaterials = "CanViewAboutToExpireMaterials";
     public const string CanViewRawMaterialLocationChartList = "CanViewRawMaterialLocationChartList";
     public const string CanReassignRawMaterialStock = "CanReassignRawMaterialStock";
     public const string CanViewRawMaterialLocationList = "CanViewRawMaterialLocationList";
-    public const string CanViewPackagingMaterialLocationChartList = "CanViewPackagingMaterialLocationChartList";
+    public const string CanViewPackagingMaterialLocationChartList =
+        "CanViewPackagingMaterialLocationChartList";
     public const string CanReassignPackagingMaterialStock = "CanReassignPackagingMaterialStock";
-    public const string CanViewPackagingMaterialLocationList = "CanViewPackagingMaterialLocationList";
+    public const string CanViewPackagingMaterialLocationList =
+        "CanViewPackagingMaterialLocationList";
     public const string CanViewRawMaterialTransferList = "CanViewRawMaterialTransferList";
     public const string CanIssueRawMaterialStockTransfers = "CanIssueRawMaterialStockTransfers";
-    public const string CanViewPackagingMaterialTransferList = "CanViewPackagingMaterialTransferList";
-    public const string CanIssuePackagingMaterialStockTransfers = "CanIssuePackagingMaterialStockTransfers";
+    public const string CanViewPackagingMaterialTransferList =
+        "CanViewPackagingMaterialTransferList";
+    public const string CanIssuePackagingMaterialStockTransfers =
+        "CanIssuePackagingMaterialStockTransfers";
     public const string CanAssignRawMaterialStockTransfers = "CanAssignRawMaterialStockTransfers";
-    public const string CanAssignPackagingMaterialStockTransfers = "CanAssignPackagingMaterialStockTransfers";
+    public const string CanAssignPackagingMaterialStockTransfers =
+        "CanAssignPackagingMaterialStockTransfers";
     public const string CanViewMaterialStockAdjustment = "CanViewMaterialStockAdjustment";
     public const string CanCreateMaterialStockAdjustment = "CanCreateMaterialStockAdjustment";
 
     // Production
-    public const string CanViewRawMaterialRequisitionsForProduction = "CanViewRawMaterialRequisitions";
-    public const string CanViewPackagingMaterialRequisitionsForProduction = "CanViewPackagingMaterialRequisitions";
-    public const string CanViewRawMaterialRequisitionsForCreation = "CanViewRawMaterialRequisitionsForCreation";
+    public const string CanViewRawMaterialRequisitionsForProduction =
+        "CanViewRawMaterialRequisitions";
+    public const string CanViewPackagingMaterialRequisitionsForProduction =
+        "CanViewPackagingMaterialRequisitions";
+    public const string CanViewRawMaterialRequisitionsForCreation =
+        "CanViewRawMaterialRequisitionsForCreation";
     public const string CanCreateRawMaterialRequisitions = "CanCreateRawMaterialRequisitions";
-    public const string CanViewPackageMaterialRequisitionsForCreation = "CanViewPackageMaterialRequisitionsForCreation";
-    public const string CanCreatePackageMaterialRequisitions = "CanCreatePackageMaterialRequisitions";
+    public const string CanViewPackageMaterialRequisitionsForCreation =
+        "CanViewPackageMaterialRequisitionsForCreation";
+    public const string CanCreatePackageMaterialRequisitions =
+        "CanCreatePackageMaterialRequisitions";
     public const string CanViewPlannedProducts = "CanViewPlannedProducts";
     public const string CanCreateNewProductionPlan = "CanCreateNewProductionPlan";
     public const string CanEditProductionPlan = "CanEditProductionPlan";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
     public const string CanCreateProductSchedule = "CanCreateProductSchedule";
     public const string CanEditProductSchedule = "CanEditProductSchedule";
-    public const string CanViewIncomingStockTransferRequests = "CanViewIncomingStockTransferRequests";
-    public const string CanApproveIncomingStockTransferRequest = "CanApproveIncomingStockTransferRequest";
-    public const string CanRejectIncomingStockTransferRequest = "CanRejectIncomingStockTransferRequest";
-    public const string CanViewOutgoingStockTransferRequests = "CanViewOutgoingStockTransferRequests";
+    public const string CanViewIncomingStockTransferRequests =
+        "CanViewIncomingStockTransferRequests";
+    public const string CanApproveIncomingStockTransferRequest =
+        "CanApproveIncomingStockTransferRequest";
+    public const string CanRejectIncomingStockTransferRequest =
+        "CanRejectIncomingStockTransferRequest";
+    public const string CanViewOutgoingStockTransferRequests =
+        "CanViewOutgoingStockTransferRequests";
     public const string CanCreateInternalStockTransfer = "CanCreateInternalStockTransfer";
     public const string CanAddProductsToProductSchedule = "CanAddProductsToProductSchedule";
-    public const string CanRemoveProductsFromProductSchedule = "CanRemoveProductsFromProductSchedule";
+    public const string CanRemoveProductsFromProductSchedule =
+        "CanRemoveProductsFromProductSchedule";
 
     // Quality Control
     public const string CanViewRawMaterialGoodsReceiptNotes = "CanViewRawMaterialGoodsReceiptNotes";
@@ -337,15 +366,18 @@ public static class PermissionKeys
     public const string CanAssignRawMaterialTest = "CanAssignRawMaterialTest";
     public const string CanStartRawMaterialTest = "CanStartRawMaterialTest";
     public const string CanCheckRawMaterialTestResult = "CanCheckRawMaterialTestResult";
-    public const string CanViewPackagingMaterialGoodsReceiptNotes = "CanViewPackagingMaterialGoodsReceiptNotes";
+    public const string CanViewPackagingMaterialGoodsReceiptNotes =
+        "CanViewPackagingMaterialGoodsReceiptNotes";
     public const string CanTakePackagingMaterialSample = "CanTakePackagingMaterialSample";
     public const string CanAssignPackagingMaterialTest = "CanAssignPackagingMaterialTest";
     public const string CanStartPackagingMaterialTest = "CanStartPackagingMaterialTest";
     public const string CanCheckPackagingMaterialTestResult = "CanCheckPackagingMaterialTestResult";
     public const string CanReassignRawMaterialTest = "CanReassignRawMaterialTest";
     public const string CanReassignPackagingMaterialTest = "CanReassignPackagingMaterialTest";
-    public const string CanViewProductAnalyticalTestRequests = "CanViewProductAnalyticalTestRequests";
-    public const string CanViewProductAnalyticalTestRequestsForAnalysing = "CanViewProductAnalyticalTestRequestsForAnalysing";
+    public const string CanViewProductAnalyticalTestRequests =
+        "CanViewProductAnalyticalTestRequests";
+    public const string CanViewProductAnalyticalTestRequestsForAnalysing =
+        "CanViewProductAnalyticalTestRequestsForAnalysing";
     public const string CanAcknowledgeSampleTaken = "CanAcknowledgeSampleTaken";
     public const string CanAssignProductTest = "CanAssignProductTest";
     public const string CanReassignProductTest = "CanReassignProductTest";
@@ -365,11 +397,16 @@ public static class PermissionKeys
     public const string CanEditRawMaterialSpecification = "CanEditRawMaterialSpecification";
     public const string CanDeleteRawMaterialSpecification = "CanDeleteRawMaterialSpecification";
     public const string CanVerifyRawMaterialSpecification = "CanVerifyRawMaterialSpecification";
-    public const string CanViewPackagingMaterialSpecifications = "CanViewPackagingMaterialSpecifications";
-    public const string CanCreatePackagingMaterialSpecification = "CanCreatePackagingMaterialSpecification";
-    public const string CanEditPackagingMaterialSpecification = "CanEditPackagingMaterialSpecification";
-    public const string CanDeletePackagingMaterialSpecification = "CanDeletePackagingMaterialSpecification";
-    public const string CanVerifyPackagingMaterialSpecification = "CanVerifyPackagingMaterialSpecification";
+    public const string CanViewPackagingMaterialSpecifications =
+        "CanViewPackagingMaterialSpecifications";
+    public const string CanCreatePackagingMaterialSpecification =
+        "CanCreatePackagingMaterialSpecification";
+    public const string CanEditPackagingMaterialSpecification =
+        "CanEditPackagingMaterialSpecification";
+    public const string CanDeletePackagingMaterialSpecification =
+        "CanDeletePackagingMaterialSpecification";
+    public const string CanVerifyPackagingMaterialSpecification =
+        "CanVerifyPackagingMaterialSpecification";
     public const string CanViewRawMaterialArds = "CanViewRawMaterialArds";
     public const string CanCreateRawMaterialArd = "CanCreateRawMaterialArd";
     public const string CanEditRawMaterialArd = "CanEditRawMaterialArd";
@@ -399,7 +436,8 @@ public static class PermissionKeys
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
     public const string CanIssueBmr = "CanIssueBmr";
     public const string CanViewAnalyticalTestRequests = "CanViewAnalyticalTestRequests";
-    public const string CanViewAnalyticalTestRequestsForSampling = "CanViewAnalyticalTestRequestsForSampling";
+    public const string CanViewAnalyticalTestRequestsForSampling =
+        "CanViewAnalyticalTestRequestsForSampling";
     public const string CanTakeSamples = "CanTakeSamples";
     public const string CanViewPendingApprovals = "CanViewPendingApprovals";
     public const string CanApprovePendingApproval = "CanApprovePendingApproval";
@@ -445,43 +483,68 @@ public static class PermissionKeys
     public const string CanEditItemInItStore = "CanEditItemInItStore";
     public const string CanDeleteItemFromItStore = "CanDeleteItemFromItStore";
     public const string CanViewReagentStoreReceivingArea = "CanViewReagentStoreReceivingArea";
-    public const string CanApproveReagentStoreReceivingAreaEntry = "CanApproveReagentStoreReceivingAreaEntry";
-    public const string CanRejectReagentStoreReceivingAreaEntry = "CanRejectReagentStoreReceivingAreaEntry";
+    public const string CanApproveReagentStoreReceivingAreaEntry =
+        "CanApproveReagentStoreReceivingAreaEntry";
+    public const string CanRejectReagentStoreReceivingAreaEntry =
+        "CanRejectReagentStoreReceivingAreaEntry";
     public const string CanViewEquipmentStoreReceivingArea = "CanViewEquipmentStoreReceivingArea";
-    public const string CanApproveEquipmentStoreReceivingAreaEntry = "CanApproveEquipmentStoreReceivingAreaEntry";
-    public const string CanRejectEquipmentStoreReceivingAreaEntry = "CanRejectEquipmentStoreReceivingAreaEntry";
+    public const string CanApproveEquipmentStoreReceivingAreaEntry =
+        "CanApproveEquipmentStoreReceivingAreaEntry";
+    public const string CanRejectEquipmentStoreReceivingAreaEntry =
+        "CanRejectEquipmentStoreReceivingAreaEntry";
     public const string CanViewGeneralStoreReceivingArea = "CanViewGeneralStoreReceivingArea";
-    public const string CanApproveGeneralStoreReceivingAreaEntry = "CanApproveGeneralStoreReceivingAreaEntry";
-    public const string CanRejectGeneralStoreReceivingAreaEntry = "CanRejectGeneralStoreReceivingAreaEntry";
+    public const string CanApproveGeneralStoreReceivingAreaEntry =
+        "CanApproveGeneralStoreReceivingAreaEntry";
+    public const string CanRejectGeneralStoreReceivingAreaEntry =
+        "CanRejectGeneralStoreReceivingAreaEntry";
     public const string CanViewItStoreReceivingArea = "CanViewItStoreReceivingArea";
     public const string CanApproveItStoreReceivingAreaEntry = "CanApproveItStoreReceivingAreaEntry";
     public const string CanRejectItStoreReceivingAreaEntry = "CanRejectItStoreReceivingAreaEntry";
     public const string CanViewReagentStoreAvailableStocks = "CanViewReagentStoreAvailableStocks";
-    public const string CanViewEquipmentStoreAvailableStocks = "CanViewEquipmentStoreAvailableStocks";
+    public const string CanViewEquipmentStoreAvailableStocks =
+        "CanViewEquipmentStoreAvailableStocks";
     public const string CanViewGeneralStoreAvailableStocks = "CanViewGeneralStoreAvailableStocks";
     public const string CanViewItStoreAvailableStocks = "CanViewItStoreAvailableStocks";
-    public const string CanViewReagentStorePurchaseRequisitions = "CanViewReagentStorePurchaseRequisitions";
-    public const string CanCreateReagentStorePurchaseRequisition = "CanCreateReagentStorePurchaseRequisition";
-    public const string CanEditReagentStorePurchaseRequisition = "CanEditReagentStorePurchaseRequisition";
-    public const string CanDeleteReagentStorePurchaseRequisition = "CanDeleteReagentStorePurchaseRequisition";
-    public const string CanViewEquipmentStorePurchaseRequisitions = "CanViewEquipmentStorePurchaseRequisitions";
-    public const string CanCreateEquipmentStorePurchaseRequisition = "CanCreateEquipmentStorePurchaseRequisition";
-    public const string CanEditEquipmentStorePurchaseRequisition = "CanEditEquipmentStorePurchaseRequisition";
-    public const string CanDeleteEquipmentStorePurchaseRequisition = "CanDeleteEquipmentStorePurchaseRequisition";
-    public const string CanViewGeneralStorePurchaseRequisitions = "CanViewGeneralStorePurchaseRequisitions";
-    public const string CanCreateGeneralStorePurchaseRequisition = "CanCreateGeneralStorePurchaseRequisition";
-    public const string CanEditGeneralStorePurchaseRequisition = "CanEditGeneralStorePurchaseRequisition";
-    public const string CanDeleteGeneralStorePurchaseRequisition = "CanDeleteGeneralStorePurchaseRequisition";
+    public const string CanViewReagentStorePurchaseRequisitions =
+        "CanViewReagentStorePurchaseRequisitions";
+    public const string CanCreateReagentStorePurchaseRequisition =
+        "CanCreateReagentStorePurchaseRequisition";
+    public const string CanEditReagentStorePurchaseRequisition =
+        "CanEditReagentStorePurchaseRequisition";
+    public const string CanDeleteReagentStorePurchaseRequisition =
+        "CanDeleteReagentStorePurchaseRequisition";
+    public const string CanViewEquipmentStorePurchaseRequisitions =
+        "CanViewEquipmentStorePurchaseRequisitions";
+    public const string CanCreateEquipmentStorePurchaseRequisition =
+        "CanCreateEquipmentStorePurchaseRequisition";
+    public const string CanEditEquipmentStorePurchaseRequisition =
+        "CanEditEquipmentStorePurchaseRequisition";
+    public const string CanDeleteEquipmentStorePurchaseRequisition =
+        "CanDeleteEquipmentStorePurchaseRequisition";
+    public const string CanViewGeneralStorePurchaseRequisitions =
+        "CanViewGeneralStorePurchaseRequisitions";
+    public const string CanCreateGeneralStorePurchaseRequisition =
+        "CanCreateGeneralStorePurchaseRequisition";
+    public const string CanEditGeneralStorePurchaseRequisition =
+        "CanEditGeneralStorePurchaseRequisition";
+    public const string CanDeleteGeneralStorePurchaseRequisition =
+        "CanDeleteGeneralStorePurchaseRequisition";
     public const string CanViewItStorePurchaseRequisitions = "CanViewItStorePurchaseRequisitions";
     public const string CanCreateItStorePurchaseRequisition = "CanCreateItStorePurchaseRequisition";
     public const string CanEditItStorePurchaseRequisition = "CanEditItStorePurchaseRequisition";
     public const string CanDeleteItStorePurchaseRequisition = "CanDeleteItStorePurchaseRequisition";
-    public const string CanViewReagentStoreStockRequisitions = "CanViewReagentStoreStockRequisitions";
-    public const string CanCreateReagentStoreStockRequisition = "CanCreateReagentStoreStockRequisition";
-    public const string CanViewEquipmentStoreStockRequisitions = "CanViewEquipmentStoreStockRequisitions";
-    public const string CanCreateEquipmentStoreStockRequisition = "CanCreateEquipmentStoreStockRequisition";
-    public const string CanViewGeneralStoreStockRequisitions = "CanViewGeneralStoreStockRequisitions";
-    public const string CanCreateGeneralStoreStockRequisition = "CanCreateGeneralStoreStockRequisition";
+    public const string CanViewReagentStoreStockRequisitions =
+        "CanViewReagentStoreStockRequisitions";
+    public const string CanCreateReagentStoreStockRequisition =
+        "CanCreateReagentStoreStockRequisition";
+    public const string CanViewEquipmentStoreStockRequisitions =
+        "CanViewEquipmentStoreStockRequisitions";
+    public const string CanCreateEquipmentStoreStockRequisition =
+        "CanCreateEquipmentStoreStockRequisition";
+    public const string CanViewGeneralStoreStockRequisitions =
+        "CanViewGeneralStoreStockRequisitions";
+    public const string CanCreateGeneralStoreStockRequisition =
+        "CanCreateGeneralStoreStockRequisition";
     public const string CanViewItStoreStockRequisitions = "CanViewItStoreStockRequisitions";
     public const string CanCreateItStoreStockRequisition = "CanCreateItStoreStockRequisition";
     public const string CanViewReagentStoreIssueStocks = "CanViewReagentStoreIssueStocks";
@@ -508,40 +571,64 @@ public static class PermissionKeys
     public const string CanCreateItStoreReturnItem = "CanCreateItStoreReturnItem";
     public const string CanEditItStoreReturnItem = "CanEditItStoreReturnItem";
     public const string CanDeleteItStoreReturnItem = "CanDeleteItStoreReturnItem";
-    public const string CanViewReagentStoreDamageMissingItems = "CanViewReagentStoreDamageMissingItems";
-    public const string CanCreateReagentStoreDamageMissingItemRecord = "CanCreateReagentStoreDamageMissingItemRecord";
-    public const string CanEditReagentStoreDamageMissingItemRecord = "CanEditReagentStoreDamageMissingItemRecord";
-    public const string CanDeleteReagentStoreDamageMissingItemRecord = "CanDeleteReagentStoreDamageMissingItemRecord";
-    public const string CanViewEquipmentStoreDamageMissingItems = "CanViewEquipmentStoreDamageMissingItems";
-    public const string CanCreateEquipmentStoreDamageMissingItemRecord = "CanCreateEquipmentStoreDamageMissingItemRecord";
-    public const string CanEditEquipmentStoreDamageMissingItemRecord = "CanEditEquipmentStoreDamageMissingItemRecord";
-    public const string CanDeleteEquipmentStoreDamageMissingItemRecord = "CanDeleteEquipmentStoreDamageMissingItemRecord";
-    public const string CanViewGeneralStoreDamageMissingItems = "CanViewGeneralStoreDamageMissingItems";
-    public const string CanCreateGeneralStoreDamageMissingItemRecord = "CanCreateGeneralStoreDamageMissingItemRecord";
-    public const string CanEditGeneralStoreDamageMissingItemRecord = "CanEditGeneralStoreDamageMissingItemRecord";
-    public const string CanDeleteGeneralStoreDamageMissingItemRecord = "CanDeleteGeneralStoreDamageMissingItemRecord";
+    public const string CanViewReagentStoreDamageMissingItems =
+        "CanViewReagentStoreDamageMissingItems";
+    public const string CanCreateReagentStoreDamageMissingItemRecord =
+        "CanCreateReagentStoreDamageMissingItemRecord";
+    public const string CanEditReagentStoreDamageMissingItemRecord =
+        "CanEditReagentStoreDamageMissingItemRecord";
+    public const string CanDeleteReagentStoreDamageMissingItemRecord =
+        "CanDeleteReagentStoreDamageMissingItemRecord";
+    public const string CanViewEquipmentStoreDamageMissingItems =
+        "CanViewEquipmentStoreDamageMissingItems";
+    public const string CanCreateEquipmentStoreDamageMissingItemRecord =
+        "CanCreateEquipmentStoreDamageMissingItemRecord";
+    public const string CanEditEquipmentStoreDamageMissingItemRecord =
+        "CanEditEquipmentStoreDamageMissingItemRecord";
+    public const string CanDeleteEquipmentStoreDamageMissingItemRecord =
+        "CanDeleteEquipmentStoreDamageMissingItemRecord";
+    public const string CanViewGeneralStoreDamageMissingItems =
+        "CanViewGeneralStoreDamageMissingItems";
+    public const string CanCreateGeneralStoreDamageMissingItemRecord =
+        "CanCreateGeneralStoreDamageMissingItemRecord";
+    public const string CanEditGeneralStoreDamageMissingItemRecord =
+        "CanEditGeneralStoreDamageMissingItemRecord";
+    public const string CanDeleteGeneralStoreDamageMissingItemRecord =
+        "CanDeleteGeneralStoreDamageMissingItemRecord";
     public const string CanViewItStoreDamageMissingItems = "CanViewItStoreDamageMissingItems";
-    public const string CanCreateItStoreDamageMissingItemRecord = "CanCreateItStoreDamageMissingItemRecord";
-    public const string CanEditItStoreDamageMissingItemRecord = "CanEditItStoreDamageMissingItemRecord";
-    public const string CanDeleteItStoreDamageMissingItemRecord = "CanDeleteItStoreDamageMissingItemRecord";
+    public const string CanCreateItStoreDamageMissingItemRecord =
+        "CanCreateItStoreDamageMissingItemRecord";
+    public const string CanEditItStoreDamageMissingItemRecord =
+        "CanEditItStoreDamageMissingItemRecord";
+    public const string CanDeleteItStoreDamageMissingItemRecord =
+        "CanDeleteItStoreDamageMissingItemRecord";
 
     // Service and Store Procurement
     public const string CanViewPurchaseRequisitionsSourcing = "CanViewPurchaseRequisitionsSourcing";
-    public const string CanSourcePurchaseRequisitionSourcing = "CanSourcePurchaseRequisitionSourcing";
-    public const string CanViewQuotationRequestsForTrustedVendors = "CanViewQuotationRequestsForTrustedVendors";
-    public const string CanCreateQuotationRequestForTrustedVendor = "CanCreateQuotationRequestForTrustedVendor";
-    public const string CanViewQuotationResponsesForTrustedVendors = "CanViewQuotationResponsesForTrustedVendors";
-    public const string CanSendQuotationResponseForTrustedVendor = "CanSendQuotationResponseForTrustedVendor";
+    public const string CanSourcePurchaseRequisitionSourcing =
+        "CanSourcePurchaseRequisitionSourcing";
+    public const string CanViewQuotationRequestsForTrustedVendors =
+        "CanViewQuotationRequestsForTrustedVendors";
+    public const string CanCreateQuotationRequestForTrustedVendor =
+        "CanCreateQuotationRequestForTrustedVendor";
+    public const string CanViewQuotationResponsesForTrustedVendors =
+        "CanViewQuotationResponsesForTrustedVendors";
+    public const string CanSendQuotationResponseForTrustedVendor =
+        "CanSendQuotationResponseForTrustedVendor";
     public const string CanViewServicesQuotationResponses = "CanViewServicesQuotationResponses";
     public const string CanSendServicesQuotationResponse = "CanSendServicesQuotationResponse";
     public const string CanViewOpenMarketQuotationSheets = "CanViewOpenMarketQuotationSheets";
     public const string CanCreateOpenMarketQuotationSheet = "CanCreateOpenMarketQuotationSheet";
-    public const string CanViewTrustedVendorPricingSelection = "CanViewTrustedVendorPricingSelection";
-    public const string CanApplyChangesForTrustedVendorPricingSelection = "CanApplyChangesForTrustedVendorPricingSelection";
+    public const string CanViewTrustedVendorPricingSelection =
+        "CanViewTrustedVendorPricingSelection";
+    public const string CanApplyChangesForTrustedVendorPricingSelection =
+        "CanApplyChangesForTrustedVendorPricingSelection";
     public const string CanViewOpenMarketPricingSelection = "CanViewOpenMarketPricingSelection";
-    public const string CanApplyChangesForOpenMarketPricingSelection = "CanApplyChangesForOpenMarketPricingSelection";
+    public const string CanApplyChangesForOpenMarketPricingSelection =
+        "CanApplyChangesForOpenMarketPricingSelection";
     public const string CanViewServicesPricingSelection = "CanViewServicesPricingSelection";
-    public const string CanApplyChangesForServicesPricingSelection = "CanApplyChangesForServicesPricingSelection";
+    public const string CanApplyChangesForServicesPricingSelection =
+        "CanApplyChangesForServicesPricingSelection";
     public const string CanViewServicesProformaRequests = "CanViewServicesProformaRequests";
     public const string CanSendServicesProformaRequest = "CanSendServicesProformaRequest";
     public const string CanViewServicesProformaResponses = "CanViewServicesProformaResponses";
@@ -552,8 +639,10 @@ public static class PermissionKeys
     public const string CanCreateOpenMarketMemo = "CanCreateOpenMarketMemo";
     public const string CanViewServicesMemo = "CanViewServicesMemo";
     public const string CanCreateServicesMemo = "CanCreateServicesMemo";
-    public const string CanViewPurchaseOrdersForTrustedVendors = "CanViewPurchaseOrdersForTrustedVendors";
-    public const string CanCreatePurchaseOrderForTrustedVendor = "CanCreatePurchaseOrderForTrustedVendor";
+    public const string CanViewPurchaseOrdersForTrustedVendors =
+        "CanViewPurchaseOrdersForTrustedVendors";
+    public const string CanCreatePurchaseOrderForTrustedVendor =
+        "CanCreatePurchaseOrderForTrustedVendor";
     public const string CanViewOpenMarketPurchaseOrders = "CanViewOpenMarketPurchaseOrders";
     public const string CanCreateOpenMarketPurchaseOrder = "CanCreateOpenMarketPurchaseOrder";
     public const string CanViewServicesPurchaseOrders = "CanViewServicesPurchaseOrders";
@@ -601,6 +690,7 @@ public static class PermissionKeys
     public const string CanCreateLeaveRequest = "CanCreateLeaveRequest";
     public const string CanEditLeaveRequest = "CanEditLeaveRequest";
     public const string CanRecallLeave = "CanRecallLeave";
+    public const string CanCancelLeave = "CanCancelLeave";
     public const string CanViewLeaveType = "CanViewLeaveType";
     public const string CanCreateLeaveType = "CanCreateLeaveType";
     public const string CanEditLeaveType = "CanEditLeaveType";
@@ -811,652 +901,3115 @@ public static class PermissionUtils
         Action<string, string, string> addPermission = (module, submodule, key) =>
         {
             var name = GenerateDisplayName(key);
-            permissions.Add(new PermissionDto(module, submodule, key, name, CreateDescription(name)));
+            permissions.Add(
+                new PermissionDto(module, submodule, key, name, CreateDescription(name))
+            );
         };
 
         // Procurement
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseRequisition, PermissionKeys.CanViewPurchaseRequisitions);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseRequisition, PermissionKeys.CanSourcePurchaseRequisition);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsRequest, PermissionKeys.CanViewForeignQuotation);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsRequest, PermissionKeys.CanSendForeignQuotationRequest);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsRequest, PermissionKeys.CanViewLocalQuotation);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsRequest, PermissionKeys.CanSendLocalQuotationRequest);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsResponses, PermissionKeys.CanViewForeignQuotationResponse);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsResponses, PermissionKeys.CanSendForeignQuotationResponse);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsResponses, PermissionKeys.CanViewLocalQuotationResponse);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.QuotationsResponses, PermissionKeys.CanSendLocalQuotationResponse);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PriceComparison, PermissionKeys.CanViewForeignVendorPricing);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PriceComparison, PermissionKeys.CanApplyChangesForForeignVendorPricingSelection);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PriceComparison, PermissionKeys.CanViewLocalVendorPricing);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PriceComparison, PermissionKeys.CanApplyChangesForLocalVendorPricingSelection);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaRequest, PermissionKeys.CanViewForeignProformaRequest);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaRequest, PermissionKeys.CanSendForeignProformaRequest);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaRequest, PermissionKeys.CanViewLocalProformaRequest);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaRequest, PermissionKeys.CanSendLocalProformaRequest);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaResponses, PermissionKeys.CanViewForeignProformaInvoiceSubmissions);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaResponses, PermissionKeys.CanSendForeignProformaInvoice);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaResponses, PermissionKeys.CanViewLocalProformaInvoiceSubmissions);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ProformaResponses, PermissionKeys.CanSendLocalProformaInvoice);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CreatePurchaseOrdersPage, PermissionKeys.CanViewForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CreatePurchaseOrdersPage, PermissionKeys.CanViewApprovedForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CreatePurchaseOrdersPage, PermissionKeys.CanCreateForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CreatePurchaseOrdersPage, PermissionKeys.CanViewLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CreatePurchaseOrdersPage, PermissionKeys.CanViewApprovedLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CreatePurchaseOrdersPage, PermissionKeys.CanCreateLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CheckPurchaseOrderPage, PermissionKeys.CanViewForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CheckPurchaseOrderPage, PermissionKeys.CanViewApprovedForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CheckPurchaseOrderPage, PermissionKeys.CanCheckForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CheckPurchaseOrderPage, PermissionKeys.CanViewLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CheckPurchaseOrderPage, PermissionKeys.CanViewApprovedLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.CheckPurchaseOrderPage, PermissionKeys.CanCheckLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanViewForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanViewApprovedForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanSendForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanSendApprovedForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanViewLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanViewApprovedLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanSendLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.ApprovePurchaseOrderPage, PermissionKeys.CanSendApprovedLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanViewForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanCreateForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanReviseForeignPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanDeleteForeignPurchaseOrderItem);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanReAssignForeignPurchaseOrderItem);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanChangeSupplySourceForeignPurchaseOrderItem);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanViewLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanViewApprovedLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanCreateLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanReviseLocalPurchaseOrder);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanDeleteLocalPurchaseOrderItem);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanReAssignLocalPurchaseOrderItem);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanChangeSupplySourceLocalPurchaseOrderItem);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.MaterialDistribution, PermissionKeys.CanViewMaterialDistribution);
-        addPermission(PermissionModules.Procurement, PermissionSubmodules.MaterialDistribution, PermissionKeys.CanDistributeMaterial);
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseRequisition,
+            PermissionKeys.CanViewPurchaseRequisitions
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseRequisition,
+            PermissionKeys.CanSourcePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsRequest,
+            PermissionKeys.CanViewForeignQuotation
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsRequest,
+            PermissionKeys.CanSendForeignQuotationRequest
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsRequest,
+            PermissionKeys.CanViewLocalQuotation
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsRequest,
+            PermissionKeys.CanSendLocalQuotationRequest
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsResponses,
+            PermissionKeys.CanViewForeignQuotationResponse
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsResponses,
+            PermissionKeys.CanSendForeignQuotationResponse
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsResponses,
+            PermissionKeys.CanViewLocalQuotationResponse
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.QuotationsResponses,
+            PermissionKeys.CanSendLocalQuotationResponse
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PriceComparison,
+            PermissionKeys.CanViewForeignVendorPricing
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PriceComparison,
+            PermissionKeys.CanApplyChangesForForeignVendorPricingSelection
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PriceComparison,
+            PermissionKeys.CanViewLocalVendorPricing
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PriceComparison,
+            PermissionKeys.CanApplyChangesForLocalVendorPricingSelection
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaRequest,
+            PermissionKeys.CanViewForeignProformaRequest
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaRequest,
+            PermissionKeys.CanSendForeignProformaRequest
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaRequest,
+            PermissionKeys.CanViewLocalProformaRequest
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaRequest,
+            PermissionKeys.CanSendLocalProformaRequest
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaResponses,
+            PermissionKeys.CanViewForeignProformaInvoiceSubmissions
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaResponses,
+            PermissionKeys.CanSendForeignProformaInvoice
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaResponses,
+            PermissionKeys.CanViewLocalProformaInvoiceSubmissions
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ProformaResponses,
+            PermissionKeys.CanSendLocalProformaInvoice
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CreatePurchaseOrdersPage,
+            PermissionKeys.CanViewForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CreatePurchaseOrdersPage,
+            PermissionKeys.CanViewApprovedForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CreatePurchaseOrdersPage,
+            PermissionKeys.CanCreateForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CreatePurchaseOrdersPage,
+            PermissionKeys.CanViewLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CreatePurchaseOrdersPage,
+            PermissionKeys.CanViewApprovedLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CreatePurchaseOrdersPage,
+            PermissionKeys.CanCreateLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanViewForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanViewApprovedForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanCheckForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanViewLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanViewApprovedLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanCheckLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanViewForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanViewApprovedForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanSendForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanSendApprovedForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanViewLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanViewApprovedLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanSendLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.ApprovePurchaseOrderPage,
+            PermissionKeys.CanSendApprovedLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanViewForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanCreateForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanReviseForeignPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanDeleteForeignPurchaseOrderItem
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanReAssignForeignPurchaseOrderItem
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanChangeSupplySourceForeignPurchaseOrderItem
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanViewLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanViewApprovedLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanCreateLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanReviseLocalPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanDeleteLocalPurchaseOrderItem
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanReAssignLocalPurchaseOrderItem
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.PurchaseOrderListPage,
+            PermissionKeys.CanChangeSupplySourceLocalPurchaseOrderItem
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.MaterialDistribution,
+            PermissionKeys.CanViewMaterialDistribution
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.MaterialDistribution,
+            PermissionKeys.CanDistributeMaterial
+        );
 
         // Logistics
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanCreateShipmentInvoice);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanViewShipmentInvoice);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanEditShipmentInvoice);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice, PermissionKeys.CanDeleteShipmentInvoice);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanCreateWaybill);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanViewWaybill);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanChangeWaybillStatus);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanEditWaybill);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.Waybill, PermissionKeys.CanDeleteWaybill);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanCreateShipmentDocument);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanViewShipmentDocument);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanChangeShipmentDocumentStatus);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanEditShipmentDocument);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument, PermissionKeys.CanDeleteShipmentDocument);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanCreateBillingSheet);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanViewBillingSheet);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanEditBillingSheet);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.BillingSheet, PermissionKeys.CanDeleteBillingSheet);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.AvailableStock, PermissionKeys.CanViewRawMaterialStock);
-        addPermission(PermissionModules.Logistics, PermissionSubmodules.AvailableStock, PermissionKeys.CanViewPackingMaterialStock);
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentInvoice,
+            PermissionKeys.CanCreateShipmentInvoice
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentInvoice,
+            PermissionKeys.CanViewShipmentInvoice
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentInvoice,
+            PermissionKeys.CanEditShipmentInvoice
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentInvoice,
+            PermissionKeys.CanDeleteShipmentInvoice
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Waybill,
+            PermissionKeys.CanCreateWaybill
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Waybill,
+            PermissionKeys.CanViewWaybill
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Waybill,
+            PermissionKeys.CanChangeWaybillStatus
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Waybill,
+            PermissionKeys.CanEditWaybill
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Waybill,
+            PermissionKeys.CanDeleteWaybill
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanCreateShipmentDocument
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanViewShipmentDocument
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanChangeShipmentDocumentStatus
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanEditShipmentDocument
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanDeleteShipmentDocument
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanCreateBillingSheet
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanViewBillingSheet
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanEditBillingSheet
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanDeleteBillingSheet
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.AvailableStock,
+            PermissionKeys.CanViewRawMaterialStock
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.AvailableStock,
+            PermissionKeys.CanViewPackingMaterialStock
+        );
 
         // Warehouse
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewRawMaterialsItems);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewRawMaterialsReceivedList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreatePreSamplingChecklist);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateChecklistForRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateGrnForRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanViewPackagingMaterialsItems);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateChecklistForPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ReceivingArea, PermissionKeys.CanCreateGrnForPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantineRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanDistributeRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewDistributedRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewDistributedPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanViewQuarantinePackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.QuarantineAreaGrn, PermissionKeys.CanDistributePackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.DistributedArea, PermissionKeys.CanViewRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.DistributedArea, PermissionKeys.CanAssignRawMaterialsStockToShelves);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.DistributedArea, PermissionKeys.CanViewPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.DistributedArea, PermissionKeys.CanAssignPackagingMaterialsStockToShelves);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewApprovedRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewApprovedPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanViewLinkedRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditLinkedRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanUnlinkRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanViewLinkedPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanUnlinkPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.UnlinkedMaterials, PermissionKeys.CanViewUnlinkedRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.UnlinkedMaterials, PermissionKeys.CanLinkRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.UnlinkedMaterials, PermissionKeys.CanViewUnlinkedPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.UnlinkedMaterials, PermissionKeys.CanLinkPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanCreateNewRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanEditRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanDeleteRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanViewPackagingMaterialsReceivedList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanCreateNewPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanEditPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.Materials, PermissionKeys.CanDeletePackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.RejectedMaterials, PermissionKeys.CanViewRejectedRawMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.RejectedMaterials, PermissionKeys.CanViewRejectedPackagingMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanViewRawMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanSwapRawMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanSwapPackagingMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExtraPackagingRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExtraPackagingRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanViewMaterialsReturnNote);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialReturnNote, PermissionKeys.CanAssignPackagingMaterialsStockToShelves);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewExpiredMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ExpiredMaterials, PermissionKeys.CanViewAboutToExpireMaterials);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationChartList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanReassignRawMaterialStock);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewRawMaterialLocationList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewPackagingMaterialLocationChartList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanReassignPackagingMaterialStock);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.MaterialLocation, PermissionKeys.CanViewPackagingMaterialLocationList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment, PermissionKeys.CanViewMaterialStockAdjustment);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment, PermissionKeys.CanCreateMaterialStockAdjustment);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanViewRawMaterialTransferList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanIssueRawMaterialStockTransfers);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanViewPackagingMaterialTransferList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferIssues, PermissionKeys.CanIssuePackagingMaterialStockTransfers);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferredAllocated, PermissionKeys.CanViewRawMaterialTransferList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferredAllocated, PermissionKeys.CanAssignRawMaterialStockTransfers);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferredAllocated, PermissionKeys.CanViewPackagingMaterialTransferList);
-        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockTransferredAllocated, PermissionKeys.CanAssignPackagingMaterialStockTransfers);
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanViewRawMaterialsItems
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanViewRawMaterialsReceivedList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanCreatePreSamplingChecklist
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanCreateChecklistForRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanCreateGrnForRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanViewPackagingMaterialsItems
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanCreateChecklistForPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ReceivingArea,
+            PermissionKeys.CanCreateGrnForPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanViewRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanViewQuarantineRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanDistributeRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanViewDistributedRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanViewPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanViewDistributedPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanViewQuarantinePackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.QuarantineAreaGrn,
+            PermissionKeys.CanDistributePackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.DistributedArea,
+            PermissionKeys.CanViewRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.DistributedArea,
+            PermissionKeys.CanAssignRawMaterialsStockToShelves
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.DistributedArea,
+            PermissionKeys.CanViewPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.DistributedArea,
+            PermissionKeys.CanAssignPackagingMaterialsStockToShelves
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ApprovedMaterials,
+            PermissionKeys.CanViewApprovedRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ApprovedMaterials,
+            PermissionKeys.CanViewApprovedPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.LinkedMaterials,
+            PermissionKeys.CanViewLinkedRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.LinkedMaterials,
+            PermissionKeys.CanEditLinkedRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.LinkedMaterials,
+            PermissionKeys.CanUnlinkRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.LinkedMaterials,
+            PermissionKeys.CanViewLinkedPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.LinkedMaterials,
+            PermissionKeys.CanUnlinkPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.UnlinkedMaterials,
+            PermissionKeys.CanViewUnlinkedRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.UnlinkedMaterials,
+            PermissionKeys.CanLinkRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.UnlinkedMaterials,
+            PermissionKeys.CanViewUnlinkedPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.UnlinkedMaterials,
+            PermissionKeys.CanLinkPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanViewRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanCreateNewRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanEditRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanDeleteRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanViewPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanViewPackagingMaterialsReceivedList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanCreateNewPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanEditPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.Materials,
+            PermissionKeys.CanDeletePackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.RejectedMaterials,
+            PermissionKeys.CanViewRejectedRawMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.RejectedMaterials,
+            PermissionKeys.CanViewRejectedPackagingMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanViewRawMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanIssueRawMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanSwapRawMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanViewPackagingMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanIssuePackagingMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanSwapPackagingMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ExtraPackagingRequisitions,
+            PermissionKeys.CanViewPackagingMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ExtraPackagingRequisitions,
+            PermissionKeys.CanIssuePackagingMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialReturnNote,
+            PermissionKeys.CanViewMaterialsReturnNote
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialReturnNote,
+            PermissionKeys.CanAssignPackagingMaterialsStockToShelves
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ExpiredMaterials,
+            PermissionKeys.CanViewExpiredMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.ExpiredMaterials,
+            PermissionKeys.CanViewAboutToExpireMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialLocation,
+            PermissionKeys.CanViewRawMaterialLocationChartList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialLocation,
+            PermissionKeys.CanReassignRawMaterialStock
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialLocation,
+            PermissionKeys.CanViewRawMaterialLocationList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialLocation,
+            PermissionKeys.CanViewPackagingMaterialLocationChartList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialLocation,
+            PermissionKeys.CanReassignPackagingMaterialStock
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialLocation,
+            PermissionKeys.CanViewPackagingMaterialLocationList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanViewMaterialStockAdjustment
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanCreateMaterialStockAdjustment
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferIssues,
+            PermissionKeys.CanViewRawMaterialTransferList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferIssues,
+            PermissionKeys.CanIssueRawMaterialStockTransfers
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferIssues,
+            PermissionKeys.CanViewPackagingMaterialTransferList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferIssues,
+            PermissionKeys.CanIssuePackagingMaterialStockTransfers
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferredAllocated,
+            PermissionKeys.CanViewRawMaterialTransferList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferredAllocated,
+            PermissionKeys.CanAssignRawMaterialStockTransfers
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferredAllocated,
+            PermissionKeys.CanViewPackagingMaterialTransferList
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.StockTransferredAllocated,
+            PermissionKeys.CanAssignPackagingMaterialStockTransfers
+        );
 
         // Production
-        addPermission(PermissionModules.Production, PermissionSubmodules.Requisitions, PermissionKeys.CanViewRawMaterialRequisitionsForProduction);
-        addPermission(PermissionModules.Production, PermissionSubmodules.Requisitions, PermissionKeys.CanViewPackagingMaterialRequisitionsForProduction);
-        addPermission(PermissionModules.Production, PermissionSubmodules.Requisitions, PermissionKeys.CanCreateInternalStockTransfer);
-        addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanViewRawMaterialRequisitionsForCreation);
-        addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanCreateRawMaterialRequisitions);
-        addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanViewPackageMaterialRequisitionsForCreation);
-        addPermission(PermissionModules.Production, PermissionSubmodules.CreatePurchaseRequisitions, PermissionKeys.CanCreatePackageMaterialRequisitions);
-        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanViewPlannedProducts);
-        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanCreateNewProductionPlan);
-        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanEditProductionPlan);
-        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanViewProductSchedules);
-        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanCreateProductSchedule);
-        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanEditProductSchedule);
-        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanAddProductsToProductSchedule);
-        addPermission(PermissionModules.Production, PermissionSubmodules.ProductSchedule, PermissionKeys.CanRemoveProductsFromProductSchedule);
-        addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanViewIncomingStockTransferRequests);
-        addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanApproveIncomingStockTransferRequest);
-        addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanRejectIncomingStockTransferRequest);
-        addPermission(PermissionModules.Production, PermissionSubmodules.StockTransferRequests, PermissionKeys.CanViewOutgoingStockTransferRequests);
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Requisitions,
+            PermissionKeys.CanViewRawMaterialRequisitionsForProduction
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Requisitions,
+            PermissionKeys.CanViewPackagingMaterialRequisitionsForProduction
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Requisitions,
+            PermissionKeys.CanCreateInternalStockTransfer
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.CreatePurchaseRequisitions,
+            PermissionKeys.CanViewRawMaterialRequisitionsForCreation
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.CreatePurchaseRequisitions,
+            PermissionKeys.CanCreateRawMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.CreatePurchaseRequisitions,
+            PermissionKeys.CanViewPackageMaterialRequisitionsForCreation
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.CreatePurchaseRequisitions,
+            PermissionKeys.CanCreatePackageMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewPlannedProducts
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateNewProductionPlan
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditProductionPlan
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanViewProductSchedules
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanCreateProductSchedule
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanEditProductSchedule
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanAddProductsToProductSchedule
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanRemoveProductsFromProductSchedule
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.StockTransferRequests,
+            PermissionKeys.CanViewIncomingStockTransferRequests
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.StockTransferRequests,
+            PermissionKeys.CanApproveIncomingStockTransferRequest
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.StockTransferRequests,
+            PermissionKeys.CanRejectIncomingStockTransferRequest
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.StockTransferRequests,
+            PermissionKeys.CanViewOutgoingStockTransferRequests
+        );
 
         // Quality Control
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanViewRawMaterialGoodsReceiptNotes);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanTakeRawMaterialSample);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanAssignRawMaterialTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanStartRawMaterialTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanCheckRawMaterialTestResult);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanReassignRawMaterialTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanViewPackagingMaterialGoodsReceiptNotes);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanTakePackagingMaterialSample);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanAssignPackagingMaterialTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanStartPackagingMaterialTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanCheckPackagingMaterialTestResult);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanReassignPackagingMaterialTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanViewProductAnalyticalTestRequests);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanAcknowledgeSampleTaken);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanAssignProductTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanReassignProductTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanStartProductTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanCheckProductTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanViewRawMaterialStps);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanCreateRawMaterialStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditRawMaterialStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanDeleteRawMaterialStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanViewPackagingMaterialStps);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanCreatePackagingMaterialStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditPackagingMaterialStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanDeletePackagingMaterialStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewRawMaterialSpecifications);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanCreateRawMaterialSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditRawMaterialSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanDeleteRawMaterialSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewPackagingMaterialSpecifications);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanCreatePackagingMaterialSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditPackagingMaterialSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanDeletePackagingMaterialSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanViewRawMaterialArds);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanCreateRawMaterialArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanEditRawMaterialArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanDeleteRawMaterialArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanViewPackagingMaterialArds);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanCreatePackagingMaterialArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanEditPackagingMaterialArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialArd, PermissionKeys.CanDeletePackagingMaterialArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanViewProductStps);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanCreateProductStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanEditProductStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanDeleteProductStp);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductSpecifications);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanCreateProductSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanDeleteProductSpecification);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanViewProductArds);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanCreateProductArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanEditProductArd);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductArd, PermissionKeys.CanDeleteProductArd);
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanViewRawMaterialGoodsReceiptNotes
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanTakeRawMaterialSample
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanAssignRawMaterialTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanStartRawMaterialTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanCheckRawMaterialTestResult
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanReassignRawMaterialTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanViewPackagingMaterialGoodsReceiptNotes
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanTakePackagingMaterialSample
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanAssignPackagingMaterialTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanStartPackagingMaterialTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanCheckPackagingMaterialTestResult
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanReassignPackagingMaterialTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanViewProductAnalyticalTestRequests
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanAcknowledgeSampleTaken
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanAssignProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanReassignProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanStartProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanCheckProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanViewRawMaterialStps
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanCreateRawMaterialStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanEditRawMaterialStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanDeleteRawMaterialStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanViewPackagingMaterialStps
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanCreatePackagingMaterialStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanEditPackagingMaterialStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialStp,
+            PermissionKeys.CanDeletePackagingMaterialStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanViewRawMaterialSpecifications
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanCreateRawMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanEditRawMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanDeleteRawMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanViewPackagingMaterialSpecifications
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanCreatePackagingMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanEditPackagingMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanDeletePackagingMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanViewRawMaterialArds
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanCreateRawMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanEditRawMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanDeleteRawMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanViewPackagingMaterialArds
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanCreatePackagingMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanEditPackagingMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.MaterialArd,
+            PermissionKeys.CanDeletePackagingMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductStp,
+            PermissionKeys.CanViewProductStps
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductStp,
+            PermissionKeys.CanCreateProductStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductStp,
+            PermissionKeys.CanEditProductStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductStp,
+            PermissionKeys.CanDeleteProductStp
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductSpecification,
+            PermissionKeys.CanViewProductSpecifications
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductSpecification,
+            PermissionKeys.CanCreateProductSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductSpecification,
+            PermissionKeys.CanEditProductSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductSpecification,
+            PermissionKeys.CanDeleteProductSpecification
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductArd,
+            PermissionKeys.CanViewProductArds
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductArd,
+            PermissionKeys.CanCreateProductArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductArd,
+            PermissionKeys.CanEditProductArd
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.ProductArd,
+            PermissionKeys.CanDeleteProductArd
+        );
 
         // Quality Assurance
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanViewIssuedBmrBprs);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.IssueBmr, PermissionKeys.CanIssueBmr);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequests);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanViewAnalyticalTestRequestsForSampling);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.AnalyticalTestRequests, PermissionKeys.CanTakeSamples);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProduct);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyRawMaterialSpecification);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyPackagingMaterialSpecification);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProductSpecification);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyRawMaterialArd);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyPackagingMaterialArd);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.Verification, PermissionKeys.CanVerifyProductArd);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanViewPendingApprovals);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanApprovePendingApproval);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectPendingApproval);
-        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.TransferApprovalRights, PermissionKeys.CanTransferApprovalRights);
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.IssueBmr,
+            PermissionKeys.CanViewIssuedBmrBprs
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.IssueBmr,
+            PermissionKeys.CanIssueBmr
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.AnalyticalTestRequests,
+            PermissionKeys.CanViewAnalyticalTestRequests
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.AnalyticalTestRequests,
+            PermissionKeys.CanViewAnalyticalTestRequestsForSampling
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.AnalyticalTestRequests,
+            PermissionKeys.CanTakeSamples
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyProduct
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyRawMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyPackagingMaterialSpecification
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyProductSpecification
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyRawMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyPackagingMaterialArd
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.Verification,
+            PermissionKeys.CanVerifyProductArd
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals,
+            PermissionKeys.CanViewPendingApprovals
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals,
+            PermissionKeys.CanApprovePendingApproval
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals,
+            PermissionKeys.CanRejectPendingApproval
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.TransferApprovalRights,
+            PermissionKeys.CanTransferApprovalRights
+        );
 
         // Finished Goods Warehouse
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.CustomerManagement, PermissionKeys.CanViewCustomers);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.CustomerManagement, PermissionKeys.CanCreateCustomer);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.CustomerManagement, PermissionKeys.CanEditCustomer);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.CustomerManagement, PermissionKeys.CanDeleteCustomer);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ProductionOrders, PermissionKeys.CanViewOrder);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ProductionOrders, PermissionKeys.CanCreateOrders);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ProductionOrders, PermissionKeys.CanGeneratePackingList);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.PackingList, PermissionKeys.CanViewPackingList);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanGenerateProformaInvoice);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanViewProformaInvoice);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ProformaInvoice, PermissionKeys.CanSendProformaInvoice);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Invoice, PermissionKeys.CanViewInvoice);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanViewWaybillForFgw);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanCreateWaybillForFgw);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.FinishedGoodsTransferNote, PermissionKeys.CanViewFgtn);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.FinishedGoodsTransferNote, PermissionKeys.CanApproveFgtn);
-        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.ApprovedProducts, PermissionKeys.CanViewApprovedProducts);
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanViewCustomers
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanCreateCustomer
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanEditCustomer
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanDeleteCustomer
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanViewOrder
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanCreateOrders
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanGeneratePackingList
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.PackingList,
+            PermissionKeys.CanViewPackingList
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanGenerateProformaInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanViewProformaInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanSendProformaInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Invoice,
+            PermissionKeys.CanViewInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanViewWaybillForFgw
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanCreateWaybillForFgw
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.FinishedGoodsTransferNote,
+            PermissionKeys.CanViewFgtn
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.FinishedGoodsTransferNote,
+            PermissionKeys.CanApproveFgtn
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ApprovedProducts,
+            PermissionKeys.CanViewApprovedProducts
+        );
 
         // STORES
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanViewItemsInReagentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanCreateNewItemInReagentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanEditItemInReagentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanDeleteItemFromReagentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanViewItemsInEquipmentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanCreateNewItemInEquipmentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanEditItemInEquipmentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanDeleteItemFromEquipmentStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanViewItemsInGeneralStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanCreateNewItemInGeneralStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanEditItemInGeneralStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanDeleteItemFromGeneralStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanViewItemsInItStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanCreateNewItemInItStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanEditItemInItStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.GeneralInventory, PermissionKeys.CanDeleteItemFromItStore);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanViewReagentStoreReceivingArea);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanApproveReagentStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanRejectReagentStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanViewEquipmentStoreReceivingArea);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanApproveEquipmentStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanRejectEquipmentStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanViewGeneralStoreReceivingArea);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanApproveGeneralStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanRejectGeneralStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanViewItStoreReceivingArea);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanApproveItStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReceivingArea, PermissionKeys.CanRejectItStoreReceivingAreaEntry);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresAvailableStocks, PermissionKeys.CanViewReagentStoreAvailableStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresAvailableStocks, PermissionKeys.CanViewEquipmentStoreAvailableStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresAvailableStocks, PermissionKeys.CanViewGeneralStoreAvailableStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresAvailableStocks, PermissionKeys.CanViewItStoreAvailableStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanViewReagentStorePurchaseRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanCreateReagentStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanEditReagentStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanDeleteReagentStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanViewEquipmentStorePurchaseRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanCreateEquipmentStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanEditEquipmentStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanDeleteEquipmentStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanViewGeneralStorePurchaseRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanCreateGeneralStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanEditGeneralStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanDeleteGeneralStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanViewItStorePurchaseRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanCreateItStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanEditItStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresPurchaseRequisition, PermissionKeys.CanDeleteItStorePurchaseRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanViewReagentStoreStockRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanCreateReagentStoreStockRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanViewEquipmentStoreStockRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanCreateEquipmentStoreStockRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanViewGeneralStoreStockRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanCreateGeneralStoreStockRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanViewItStoreStockRequisitions);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresStockRequisition, PermissionKeys.CanCreateItStoreStockRequisition);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanViewReagentStoreIssueStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanCreateReagentStoreIssueStock);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanViewEquipmentStoreIssueStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanCreateEquipmentStoreIssueStock);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanViewGeneralStoreIssueStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanCreateGeneralStoreIssueStock);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanViewItStoreIssueStocks);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresIssueStockRequisition, PermissionKeys.CanCreateItStoreIssueStock);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanViewReagentStoreReturnItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanCreateReagentStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanEditReagentStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanDeleteReagentStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanViewEquipmentStoreReturnItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanCreateEquipmentStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanEditEquipmentStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanDeleteEquipmentStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanViewGeneralStoreReturnItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanCreateGeneralStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanEditGeneralStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanDeleteGeneralStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanViewItStoreReturnItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanCreateItStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanEditItStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.StoresReturnMaterials, PermissionKeys.CanDeleteItStoreReturnItem);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanViewReagentStoreDamageMissingItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanCreateReagentStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanEditReagentStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanDeleteReagentStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanViewEquipmentStoreDamageMissingItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanCreateEquipmentStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanEditEquipmentStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanDeleteEquipmentStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanViewGeneralStoreDamageMissingItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanCreateGeneralStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanEditGeneralStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanDeleteGeneralStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanViewItStoreDamageMissingItems);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanCreateItStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanEditItStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.DamageMissingItems, PermissionKeys.CanDeleteItStoreDamageMissingItemRecord);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.VendorManagement, PermissionKeys.CanViewVendors);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.VendorManagement, PermissionKeys.CanCreateVendor);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.VendorManagement, PermissionKeys.CanUpdateVendorDetails);
-        addPermission(PermissionModules.Stores, PermissionSubmodules.VendorManagement, PermissionKeys.CanDeleteVendor);
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanViewItemsInReagentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanCreateNewItemInReagentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanEditItemInReagentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanDeleteItemFromReagentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanViewItemsInEquipmentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanCreateNewItemInEquipmentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanEditItemInEquipmentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanDeleteItemFromEquipmentStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanViewItemsInGeneralStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanCreateNewItemInGeneralStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanEditItemInGeneralStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanDeleteItemFromGeneralStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanViewItemsInItStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanCreateNewItemInItStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanEditItemInItStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.GeneralInventory,
+            PermissionKeys.CanDeleteItemFromItStore
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanViewReagentStoreReceivingArea
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanApproveReagentStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanRejectReagentStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanViewEquipmentStoreReceivingArea
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanApproveEquipmentStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanRejectEquipmentStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanViewGeneralStoreReceivingArea
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanApproveGeneralStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanRejectGeneralStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanViewItStoreReceivingArea
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanApproveItStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReceivingArea,
+            PermissionKeys.CanRejectItStoreReceivingAreaEntry
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresAvailableStocks,
+            PermissionKeys.CanViewReagentStoreAvailableStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresAvailableStocks,
+            PermissionKeys.CanViewEquipmentStoreAvailableStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresAvailableStocks,
+            PermissionKeys.CanViewGeneralStoreAvailableStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresAvailableStocks,
+            PermissionKeys.CanViewItStoreAvailableStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanViewReagentStorePurchaseRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanCreateReagentStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanEditReagentStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanDeleteReagentStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanViewEquipmentStorePurchaseRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanCreateEquipmentStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanEditEquipmentStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanDeleteEquipmentStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanViewGeneralStorePurchaseRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanCreateGeneralStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanEditGeneralStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanDeleteGeneralStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanViewItStorePurchaseRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanCreateItStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanEditItStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresPurchaseRequisition,
+            PermissionKeys.CanDeleteItStorePurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanViewReagentStoreStockRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanCreateReagentStoreStockRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanViewEquipmentStoreStockRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanCreateEquipmentStoreStockRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanViewGeneralStoreStockRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanCreateGeneralStoreStockRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanViewItStoreStockRequisitions
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresStockRequisition,
+            PermissionKeys.CanCreateItStoreStockRequisition
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanViewReagentStoreIssueStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanCreateReagentStoreIssueStock
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanViewEquipmentStoreIssueStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanCreateEquipmentStoreIssueStock
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanViewGeneralStoreIssueStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanCreateGeneralStoreIssueStock
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanViewItStoreIssueStocks
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresIssueStockRequisition,
+            PermissionKeys.CanCreateItStoreIssueStock
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanViewReagentStoreReturnItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanCreateReagentStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanEditReagentStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanDeleteReagentStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanViewEquipmentStoreReturnItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanCreateEquipmentStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanEditEquipmentStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanDeleteEquipmentStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanViewGeneralStoreReturnItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanCreateGeneralStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanEditGeneralStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanDeleteGeneralStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanViewItStoreReturnItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanCreateItStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanEditItStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.StoresReturnMaterials,
+            PermissionKeys.CanDeleteItStoreReturnItem
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanViewReagentStoreDamageMissingItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanCreateReagentStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanEditReagentStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanDeleteReagentStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanViewEquipmentStoreDamageMissingItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanCreateEquipmentStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanEditEquipmentStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanDeleteEquipmentStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanViewGeneralStoreDamageMissingItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanCreateGeneralStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanEditGeneralStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanDeleteGeneralStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanViewItStoreDamageMissingItems
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanCreateItStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanEditItStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.DamageMissingItems,
+            PermissionKeys.CanDeleteItStoreDamageMissingItemRecord
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.VendorManagement,
+            PermissionKeys.CanViewVendors
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.VendorManagement,
+            PermissionKeys.CanCreateVendor
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.VendorManagement,
+            PermissionKeys.CanUpdateVendorDetails
+        );
+        addPermission(
+            PermissionModules.Stores,
+            PermissionSubmodules.VendorManagement,
+            PermissionKeys.CanDeleteVendor
+        );
 
         // Service and Store Procurement
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.PurchaseRequisitionSourcing, PermissionKeys.CanViewPurchaseRequisitionsSourcing);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.PurchaseRequisitionSourcing, PermissionKeys.CanSourcePurchaseRequisitionSourcing);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceQuotationRequests, PermissionKeys.CanViewQuotationRequestsForTrustedVendors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceQuotationRequests, PermissionKeys.CanCreateQuotationRequestForTrustedVendor);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceQuotationResponses, PermissionKeys.CanViewQuotationResponsesForTrustedVendors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceQuotationResponses, PermissionKeys.CanSendQuotationResponseForTrustedVendor);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceQuotationResponses, PermissionKeys.CanViewServicesQuotationResponses);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceQuotationResponses, PermissionKeys.CanSendServicesQuotationResponse);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.OpenMarketQuotationSheet, PermissionKeys.CanViewOpenMarketQuotationSheets);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.OpenMarketQuotationSheet, PermissionKeys.CanCreateOpenMarketQuotationSheet);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePriceComparison, PermissionKeys.CanViewTrustedVendorPricingSelection);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePriceComparison, PermissionKeys.CanApplyChangesForTrustedVendorPricingSelection);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePriceComparison, PermissionKeys.CanViewOpenMarketPricingSelection);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePriceComparison, PermissionKeys.CanApplyChangesForOpenMarketPricingSelection);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePriceComparison, PermissionKeys.CanViewServicesPricingSelection);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePriceComparison, PermissionKeys.CanApplyChangesForServicesPricingSelection);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceProformaRequests, PermissionKeys.CanViewServicesProformaRequests);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceProformaRequests, PermissionKeys.CanSendServicesProformaRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceProformaResponses, PermissionKeys.CanViewServicesProformaResponses);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceProformaResponses, PermissionKeys.CanSendServicesProformaResponse);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.Memos, PermissionKeys.CanViewMemoForTrustedVendors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.Memos, PermissionKeys.CanCreateMemoForTrustedVendor);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.Memos, PermissionKeys.CanViewOpenMarketMemo);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.Memos, PermissionKeys.CanCreateOpenMarketMemo);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.Memos, PermissionKeys.CanViewServicesMemo);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.Memos, PermissionKeys.CanCreateServicesMemo);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePurchaseOrders, PermissionKeys.CanViewPurchaseOrdersForTrustedVendors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePurchaseOrders, PermissionKeys.CanCreatePurchaseOrderForTrustedVendor);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePurchaseOrders, PermissionKeys.CanViewOpenMarketPurchaseOrders);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePurchaseOrders, PermissionKeys.CanCreateOpenMarketPurchaseOrder);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePurchaseOrders, PermissionKeys.CanViewServicesPurchaseOrders);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServicePurchaseOrders, PermissionKeys.CanCreateServicesPurchaseOrder);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanViewServices);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanCreateService);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanEditService);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanDeleteService);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanViewContractors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanCreateContractors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanEditContractors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.ServiceManagement, PermissionKeys.CanDeleteContractors);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanViewJobRequests);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanCreateJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanEditJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanDeleteJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanAcknowledgeJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanAssignJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanStartJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobRequests, PermissionKeys.CanCompleteJobRequest);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobOrders, PermissionKeys.CanViewJobOrders);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobOrders, PermissionKeys.CanCreateJobOrder);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobOrders, PermissionKeys.CanEditJobOrder);
-        addPermission(PermissionModules.ServiceAndStoreProcurement, PermissionSubmodules.JobOrders, PermissionKeys.CanDeleteJobOrder);
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.PurchaseRequisitionSourcing,
+            PermissionKeys.CanViewPurchaseRequisitionsSourcing
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.PurchaseRequisitionSourcing,
+            PermissionKeys.CanSourcePurchaseRequisitionSourcing
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceQuotationRequests,
+            PermissionKeys.CanViewQuotationRequestsForTrustedVendors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceQuotationRequests,
+            PermissionKeys.CanCreateQuotationRequestForTrustedVendor
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceQuotationResponses,
+            PermissionKeys.CanViewQuotationResponsesForTrustedVendors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceQuotationResponses,
+            PermissionKeys.CanSendQuotationResponseForTrustedVendor
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceQuotationResponses,
+            PermissionKeys.CanViewServicesQuotationResponses
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceQuotationResponses,
+            PermissionKeys.CanSendServicesQuotationResponse
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.OpenMarketQuotationSheet,
+            PermissionKeys.CanViewOpenMarketQuotationSheets
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.OpenMarketQuotationSheet,
+            PermissionKeys.CanCreateOpenMarketQuotationSheet
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePriceComparison,
+            PermissionKeys.CanViewTrustedVendorPricingSelection
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePriceComparison,
+            PermissionKeys.CanApplyChangesForTrustedVendorPricingSelection
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePriceComparison,
+            PermissionKeys.CanViewOpenMarketPricingSelection
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePriceComparison,
+            PermissionKeys.CanApplyChangesForOpenMarketPricingSelection
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePriceComparison,
+            PermissionKeys.CanViewServicesPricingSelection
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePriceComparison,
+            PermissionKeys.CanApplyChangesForServicesPricingSelection
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceProformaRequests,
+            PermissionKeys.CanViewServicesProformaRequests
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceProformaRequests,
+            PermissionKeys.CanSendServicesProformaRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceProformaResponses,
+            PermissionKeys.CanViewServicesProformaResponses
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceProformaResponses,
+            PermissionKeys.CanSendServicesProformaResponse
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.Memos,
+            PermissionKeys.CanViewMemoForTrustedVendors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.Memos,
+            PermissionKeys.CanCreateMemoForTrustedVendor
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.Memos,
+            PermissionKeys.CanViewOpenMarketMemo
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.Memos,
+            PermissionKeys.CanCreateOpenMarketMemo
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.Memos,
+            PermissionKeys.CanViewServicesMemo
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.Memos,
+            PermissionKeys.CanCreateServicesMemo
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePurchaseOrders,
+            PermissionKeys.CanViewPurchaseOrdersForTrustedVendors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePurchaseOrders,
+            PermissionKeys.CanCreatePurchaseOrderForTrustedVendor
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePurchaseOrders,
+            PermissionKeys.CanViewOpenMarketPurchaseOrders
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePurchaseOrders,
+            PermissionKeys.CanCreateOpenMarketPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePurchaseOrders,
+            PermissionKeys.CanViewServicesPurchaseOrders
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServicePurchaseOrders,
+            PermissionKeys.CanCreateServicesPurchaseOrder
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanViewServices
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanCreateService
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanEditService
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanDeleteService
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanViewContractors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanCreateContractors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanEditContractors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.ServiceManagement,
+            PermissionKeys.CanDeleteContractors
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanViewJobRequests
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanCreateJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanEditJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanDeleteJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanAcknowledgeJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanAssignJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanStartJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanCompleteJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobOrders,
+            PermissionKeys.CanViewJobOrders
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobOrders,
+            PermissionKeys.CanCreateJobOrder
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobOrders,
+            PermissionKeys.CanEditJobOrder
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobOrders,
+            PermissionKeys.CanDeleteJobOrder
+        );
 
         // Human Resources
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanViewActiveEmployee);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanViewInactiveEmployee);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanViewNewEmployee);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanRegisterEmployee);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanUpdateEmployeeInfo);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanUpdateEmployeeEmail);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.EmployeeManagement, PermissionKeys.CanViewEmployeeDetails);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.DepartmentEmployeeExport, PermissionKeys.CanViewDepartmentEmployee);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.DepartmentEmployeeExport, PermissionKeys.CanExportDepartmentEmployee);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanViewDesignation);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanCreateDesignation);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanEditDesignation);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.DesignationManagement, PermissionKeys.CanDeleteDesignation);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.StaffRequisition, PermissionKeys.CanViewStaffRequisition);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.StaffRequisition, PermissionKeys.CanCreateStaffRequisition);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.StaffRequisition, PermissionKeys.CanEditStaffRequisition);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.StaffRequisition, PermissionKeys.CanDeleteStaffRequisition);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanViewLeaveRequests);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanCreateLeaveRequest);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanEditLeaveRequest);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveManagement, PermissionKeys.CanRecallLeave);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveTypeConfiguration, PermissionKeys.CanViewLeaveType);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveTypeConfiguration, PermissionKeys.CanCreateLeaveType);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveTypeConfiguration, PermissionKeys.CanEditLeaveType);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.LeaveTypeConfiguration, PermissionKeys.CanDeleteLeaveType);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.AttendanceReportUpload, PermissionKeys.CanViewAttendanceReportUpload);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.AttendanceReportUpload, PermissionKeys.CanSubmitAttendanceReportUpload);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.AttendanceReportUpload, PermissionKeys.CanCancelAttendanceReportUpload);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.ShiftScheduleReportUpload, PermissionKeys.CanViewShiftScheduleReportUpload);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.ShiftScheduleReportUpload, PermissionKeys.CanSubmitShiftScheduleReportUpload);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.OvertimeManagement, PermissionKeys.CanViewOvertimeManagement);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.OvertimeManagement, PermissionKeys.CanCreateOvertimeManagement);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.OvertimeManagement, PermissionKeys.CanEditOvertimeManagement);
-        addPermission(PermissionModules.HumanResources, PermissionSubmodules.OvertimeManagement, PermissionKeys.CanDeleteOvertimeManagement);
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanViewActiveEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanViewInactiveEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanViewNewEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanRegisterEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanUpdateEmployeeInfo
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanUpdateEmployeeEmail
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanViewEmployeeDetails
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.DepartmentEmployeeExport,
+            PermissionKeys.CanViewDepartmentEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.DepartmentEmployeeExport,
+            PermissionKeys.CanExportDepartmentEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.DesignationManagement,
+            PermissionKeys.CanViewDesignation
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.DesignationManagement,
+            PermissionKeys.CanCreateDesignation
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.DesignationManagement,
+            PermissionKeys.CanEditDesignation
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.DesignationManagement,
+            PermissionKeys.CanDeleteDesignation
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanViewStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanCreateStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanEditStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanDeleteStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanViewLeaveRequests
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanCreateLeaveRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanEditLeaveRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanRecallLeave
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanCancelLeave
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanViewLeaveType
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanCreateLeaveType
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanEditLeaveType
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanDeleteLeaveType
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.AttendanceReportUpload,
+            PermissionKeys.CanViewAttendanceReportUpload
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.AttendanceReportUpload,
+            PermissionKeys.CanSubmitAttendanceReportUpload
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.AttendanceReportUpload,
+            PermissionKeys.CanCancelAttendanceReportUpload
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.ShiftScheduleReportUpload,
+            PermissionKeys.CanViewShiftScheduleReportUpload
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.ShiftScheduleReportUpload,
+            PermissionKeys.CanSubmitShiftScheduleReportUpload
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanViewOvertimeManagement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanCreateOvertimeManagement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanEditOvertimeManagement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanDeleteOvertimeManagement
+        );
 
         // IT Support
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanViewActiveUser);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanCreateUser);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanEditUser);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanBlockUser);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanViewInactiveUser);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanUnblockUser);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.AuditTrail, PermissionKeys.CanViewAuditTrail);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManageRoles, PermissionKeys.CanViewRoles);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManageRoles, PermissionKeys.CanCreateRole);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManageRoles, PermissionKeys.CanEditRole);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManageRoles, PermissionKeys.CanDeleteRole);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManagePermissions, PermissionKeys.CanViewPermissions);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManagePermissions, PermissionKeys.CanUpdateExistingPermission);
-        addPermission(PermissionModules.ItSupport, PermissionSubmodules.ManagePermissions, PermissionKeys.CanResetPermission);
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanViewActiveUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanCreateUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanEditUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanBlockUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanViewInactiveUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanUnblockUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.AuditTrail,
+            PermissionKeys.CanViewAuditTrail
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManageRoles,
+            PermissionKeys.CanViewRoles
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManageRoles,
+            PermissionKeys.CanCreateRole
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManageRoles,
+            PermissionKeys.CanEditRole
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManageRoles,
+            PermissionKeys.CanDeleteRole
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManagePermissions,
+            PermissionKeys.CanViewPermissions
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManagePermissions,
+            PermissionKeys.CanUpdateExistingPermission
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.ManagePermissions,
+            PermissionKeys.CanResetPermission
+        );
 
         // Settings
-        addPermission(PermissionModules.Settings, PermissionSubmodules.ProductsCategory, PermissionKeys.CanViewProductCategories);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.ProductsCategory, PermissionKeys.CanCreateProductCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.ProductsCategory, PermissionKeys.CanEditProductCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.ProductsCategory, PermissionKeys.CanDeleteProductCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewRawCategories);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreateRawCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditRawCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeleteRawCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewPackageCategories);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreatePackageCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditPackageCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeletePackageCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewItemCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreateItemCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditItemCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeleteItemCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewEquipmentCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreateEquipmentCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditEquipmentCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeleteEquipmentCategory);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewMaterialTypes);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreateMaterialType);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditMaterialType);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeleteMaterialType);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewUomStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreateUomStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditUomStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeleteUomStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewPackageStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreatePackageStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditPackageStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeletePackageStyle);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanViewProductState);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanCreateProductState);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanEditProductState);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Products, PermissionKeys.CanDeleteProductState);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanViewResources);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanCreateResource);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanEditResource);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanDeleteResource);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanViewOperations);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanCreateOperation);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanEditOperation);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanDeleteOperation);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanViewWorkCenters);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanCreateWorkCenter);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanEditWorkCenter);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanDeleteWorkCenter);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Site, PermissionKeys.CanViewSite);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Site, PermissionKeys.CanCreateSite);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Site, PermissionKeys.CanEditWorkSite);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Site, PermissionKeys.CanDeleteSite);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CountryAddress, PermissionKeys.CanViewCountries);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CountryAddress, PermissionKeys.CanCreateCountries);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CountryAddress, PermissionKeys.CanEditCountries);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CountryAddress, PermissionKeys.CanDeleteCountries);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Schedules, PermissionKeys.CanViewShiftSchedules);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Schedules, PermissionKeys.CanCreateShiftSchedules);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Schedules, PermissionKeys.CanEditShiftSchedules);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Schedules, PermissionKeys.CanDeleteShiftSchedules);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanViewPaymentTerms);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanCreatePaymentTerm);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanEditPaymentTerm);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.TermsOfPayment, PermissionKeys.CanDeletePaymentTerm);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanViewDeliveryModes);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanCreateDeliveryMode);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanEditDeliveryMode);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.DeliveryMode, PermissionKeys.CanDeleteDeliveryMode);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Charges, PermissionKeys.CanViewCharges);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Charges, PermissionKeys.CanCreateCharges);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Charges, PermissionKeys.CanEditCharges);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Charges, PermissionKeys.CanDeleteCharges);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Threshold, PermissionKeys.CanViewThreshold);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Threshold, PermissionKeys.CanCreateThreshold);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Threshold, PermissionKeys.CanEditThreshold);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Threshold, PermissionKeys.CanDeleteThreshold);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanViewCodeSettings);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanCreateNewCodes);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanEditCodeSettings);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.CodeSettings, PermissionKeys.CanDeleteCodeSettings);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanViewQuestions);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanCreateQuestions);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanEditQuestions);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanDeleteQuestions);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanViewTemplate);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanCreateTemplate);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanEditTemplate);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanDeleteTemplate);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanViewAlerts);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanCreateNewAlerts);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanEditAlerts);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanEnableDisableAlerts);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.AlertsNotifications, PermissionKeys.CanDeleteAlerts);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanViewApprovals);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanCreateNewApproval);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanEditApprovalWorkflow);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.Approvals, PermissionKeys.CanDeleteApprovals);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.SignatureSettings, PermissionKeys.CanViewSignatureSettings);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.SignatureSettings, PermissionKeys.CanCreateSignatureSettings);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.ChangePassword, PermissionKeys.CanViewChangePassword);
-        addPermission(PermissionModules.Settings, PermissionSubmodules.ChangePassword, PermissionKeys.CanChangePassword);
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.ProductsCategory,
+            PermissionKeys.CanViewProductCategories
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.ProductsCategory,
+            PermissionKeys.CanCreateProductCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.ProductsCategory,
+            PermissionKeys.CanEditProductCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.ProductsCategory,
+            PermissionKeys.CanDeleteProductCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewRawCategories
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateRawCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditRawCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeleteRawCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewPackageCategories
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreatePackageCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditPackageCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeletePackageCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewItemCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateItemCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditItemCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeleteItemCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewEquipmentCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateEquipmentCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditEquipmentCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeleteEquipmentCategory
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewMaterialTypes
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateMaterialType
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditMaterialType
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeleteMaterialType
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewUomStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateUomStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditUomStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeleteUomStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewPackageStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreatePackageStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditPackageStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeletePackageStyle
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanViewProductState
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateProductState
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanEditProductState
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanDeleteProductState
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanViewResources
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanCreateResource
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanEditResource
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanDeleteResource
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanViewOperations
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanCreateOperation
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanEditOperation
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanDeleteOperation
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanViewWorkCenters
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanCreateWorkCenter
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanEditWorkCenter
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanDeleteWorkCenter
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Site,
+            PermissionKeys.CanViewSite
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Site,
+            PermissionKeys.CanCreateSite
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Site,
+            PermissionKeys.CanEditWorkSite
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Site,
+            PermissionKeys.CanDeleteSite
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CountryAddress,
+            PermissionKeys.CanViewCountries
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CountryAddress,
+            PermissionKeys.CanCreateCountries
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CountryAddress,
+            PermissionKeys.CanEditCountries
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CountryAddress,
+            PermissionKeys.CanDeleteCountries
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Schedules,
+            PermissionKeys.CanViewShiftSchedules
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Schedules,
+            PermissionKeys.CanCreateShiftSchedules
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Schedules,
+            PermissionKeys.CanEditShiftSchedules
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Schedules,
+            PermissionKeys.CanDeleteShiftSchedules
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.TermsOfPayment,
+            PermissionKeys.CanViewPaymentTerms
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.TermsOfPayment,
+            PermissionKeys.CanCreatePaymentTerm
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.TermsOfPayment,
+            PermissionKeys.CanEditPaymentTerm
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.TermsOfPayment,
+            PermissionKeys.CanDeletePaymentTerm
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DeliveryMode,
+            PermissionKeys.CanViewDeliveryModes
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DeliveryMode,
+            PermissionKeys.CanCreateDeliveryMode
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DeliveryMode,
+            PermissionKeys.CanEditDeliveryMode
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DeliveryMode,
+            PermissionKeys.CanDeleteDeliveryMode
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Charges,
+            PermissionKeys.CanViewCharges
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Charges,
+            PermissionKeys.CanCreateCharges
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Charges,
+            PermissionKeys.CanEditCharges
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Charges,
+            PermissionKeys.CanDeleteCharges
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Threshold,
+            PermissionKeys.CanViewThreshold
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Threshold,
+            PermissionKeys.CanCreateThreshold
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Threshold,
+            PermissionKeys.CanEditThreshold
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Threshold,
+            PermissionKeys.CanDeleteThreshold
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CodeSettings,
+            PermissionKeys.CanViewCodeSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CodeSettings,
+            PermissionKeys.CanCreateNewCodes
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CodeSettings,
+            PermissionKeys.CanEditCodeSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.CodeSettings,
+            PermissionKeys.CanDeleteCodeSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanViewQuestions
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanCreateQuestions
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanEditQuestions
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanDeleteQuestions
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanViewTemplate
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanCreateTemplate
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanEditTemplate
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanDeleteTemplate
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.AlertsNotifications,
+            PermissionKeys.CanViewAlerts
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.AlertsNotifications,
+            PermissionKeys.CanCreateNewAlerts
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.AlertsNotifications,
+            PermissionKeys.CanEditAlerts
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.AlertsNotifications,
+            PermissionKeys.CanEnableDisableAlerts
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.AlertsNotifications,
+            PermissionKeys.CanDeleteAlerts
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Approvals,
+            PermissionKeys.CanViewApprovals
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Approvals,
+            PermissionKeys.CanCreateNewApproval
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Approvals,
+            PermissionKeys.CanEditApprovalWorkflow
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Approvals,
+            PermissionKeys.CanDeleteApprovals
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.SignatureSettings,
+            PermissionKeys.CanViewSignatureSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.SignatureSettings,
+            PermissionKeys.CanCreateSignatureSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.ChangePassword,
+            PermissionKeys.CanViewChangePassword
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.ChangePassword,
+            PermissionKeys.CanChangePassword
+        );
 
         // Inventory Management
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Manufacturers, PermissionKeys.CanViewManufacturers);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Manufacturers, PermissionKeys.CanCreateManufacturer);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Manufacturers, PermissionKeys.CanUpdateManufacturerDetails);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Manufacturers, PermissionKeys.CanDeleteManufacturer);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Suppliers, PermissionKeys.CanViewVendors);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Suppliers, PermissionKeys.CanCreateVendor);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Suppliers, PermissionKeys.CanUpdateVendorDetails);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Suppliers, PermissionKeys.CanDeleteVendor);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanViewWarehouses);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Locations, PermissionKeys.CanViewLocations);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Locations, PermissionKeys.CanAddNewLocation);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Locations, PermissionKeys.CanEditLocation);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Locations, PermissionKeys.CanDeleteLocation);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Racks, PermissionKeys.CanViewRacks);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Racks, PermissionKeys.CanAddNewRack);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Racks, PermissionKeys.CanEditRack);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Racks, PermissionKeys.CanDeleteRack);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Shelves, PermissionKeys.CanViewShelves);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Shelves, PermissionKeys.CanAddNewShelf);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Shelves, PermissionKeys.CanEditShelf);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Shelves, PermissionKeys.CanDeleteShelf);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Equipment, PermissionKeys.CanViewEquipment);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Equipment, PermissionKeys.CanCreateEquipment);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Equipment, PermissionKeys.CanEditEquipmentDetails);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Equipment, PermissionKeys.CanDeleteEquipment);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.QcEquipment, PermissionKeys.CanViewQcEquipment);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.QcEquipment, PermissionKeys.CanCreateQcEquipment);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.QcEquipment, PermissionKeys.CanEditQcEquipmentDetails);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.QcEquipment, PermissionKeys.CanDeleteQcEquipment);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.UnitOfMeasure, PermissionKeys.CanViewUnitOfMeasure);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.UnitOfMeasure, PermissionKeys.CanCreateUnitOfMeasure);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.UnitOfMeasure, PermissionKeys.CanEditUnitOfMeasure);
-        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.UnitOfMeasure, PermissionKeys.CanDeleteUnitOfMeasure);
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Manufacturers,
+            PermissionKeys.CanViewManufacturers
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Manufacturers,
+            PermissionKeys.CanCreateManufacturer
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Manufacturers,
+            PermissionKeys.CanUpdateManufacturerDetails
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Manufacturers,
+            PermissionKeys.CanDeleteManufacturer
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanViewVendors
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanCreateVendor
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanUpdateVendorDetails
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanDeleteVendor
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Warehouses,
+            PermissionKeys.CanViewWarehouses
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Locations,
+            PermissionKeys.CanViewLocations
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Locations,
+            PermissionKeys.CanAddNewLocation
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Locations,
+            PermissionKeys.CanEditLocation
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Locations,
+            PermissionKeys.CanDeleteLocation
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Racks,
+            PermissionKeys.CanViewRacks
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Racks,
+            PermissionKeys.CanAddNewRack
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Racks,
+            PermissionKeys.CanEditRack
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Racks,
+            PermissionKeys.CanDeleteRack
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Shelves,
+            PermissionKeys.CanViewShelves
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Shelves,
+            PermissionKeys.CanAddNewShelf
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Shelves,
+            PermissionKeys.CanEditShelf
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Shelves,
+            PermissionKeys.CanDeleteShelf
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Equipment,
+            PermissionKeys.CanViewEquipment
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Equipment,
+            PermissionKeys.CanCreateEquipment
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Equipment,
+            PermissionKeys.CanEditEquipmentDetails
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Equipment,
+            PermissionKeys.CanDeleteEquipment
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.QcEquipment,
+            PermissionKeys.CanViewQcEquipment
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.QcEquipment,
+            PermissionKeys.CanCreateQcEquipment
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.QcEquipment,
+            PermissionKeys.CanEditQcEquipmentDetails
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.QcEquipment,
+            PermissionKeys.CanDeleteQcEquipment
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.UnitOfMeasure,
+            PermissionKeys.CanViewUnitOfMeasure
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.UnitOfMeasure,
+            PermissionKeys.CanCreateUnitOfMeasure
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.UnitOfMeasure,
+            PermissionKeys.CanEditUnitOfMeasure
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.UnitOfMeasure,
+            PermissionKeys.CanDeleteUnitOfMeasure
+        );
 
         // Organizational Structure
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Departments, PermissionKeys.CanViewDepartments);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Departments, PermissionKeys.CanCreateNewDepartment);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Departments, PermissionKeys.CanEditDepartment);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Departments, PermissionKeys.CanDeleteDepartment);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.WorkingDays, PermissionKeys.CanViewWorkingDays);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.WorkingDays, PermissionKeys.CanCreateWorkingDays);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.WorkingDays, PermissionKeys.CanResetWorkingDays);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Holidays, PermissionKeys.CanViewHolidays);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Holidays, PermissionKeys.CanCreateHoliday);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Holidays, PermissionKeys.CanEditHoliday);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.Holidays, PermissionKeys.CanDeleteHoliday);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsType, PermissionKeys.CanViewShiftTypes);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsType, PermissionKeys.CanCreateShiftType);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsType, PermissionKeys.CanEditShiftType);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsType, PermissionKeys.CanDeleteShiftType);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanViewShiftSchedule);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanCreateShiftSchedule);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanEditShiftSchedule);
-        addPermission(PermissionModules.OrganizationalStructure, PermissionSubmodules.ShiftsSchedule, PermissionKeys.CanDeleteShiftSchedule);
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Departments,
+            PermissionKeys.CanViewDepartments
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Departments,
+            PermissionKeys.CanCreateNewDepartment
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Departments,
+            PermissionKeys.CanEditDepartment
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Departments,
+            PermissionKeys.CanDeleteDepartment
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.WorkingDays,
+            PermissionKeys.CanViewWorkingDays
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.WorkingDays,
+            PermissionKeys.CanCreateWorkingDays
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.WorkingDays,
+            PermissionKeys.CanResetWorkingDays
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Holidays,
+            PermissionKeys.CanViewHolidays
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Holidays,
+            PermissionKeys.CanCreateHoliday
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Holidays,
+            PermissionKeys.CanEditHoliday
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.Holidays,
+            PermissionKeys.CanDeleteHoliday
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsType,
+            PermissionKeys.CanViewShiftTypes
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsType,
+            PermissionKeys.CanCreateShiftType
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsType,
+            PermissionKeys.CanEditShiftType
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsType,
+            PermissionKeys.CanDeleteShiftType
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsSchedule,
+            PermissionKeys.CanViewShiftSchedule
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsSchedule,
+            PermissionKeys.CanCreateShiftSchedule
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsSchedule,
+            PermissionKeys.CanEditShiftSchedule
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftsSchedule,
+            PermissionKeys.CanDeleteShiftSchedule
+        );
 
         // Reports
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewHumanResourcesReport);
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewInventoryReport);
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewQcAndQaReport);
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewWarehouseReport);
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewStoreAndInventoryReport);
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewProcurementReport);
-        addPermission(PermissionModules.Reports, PermissionSubmodules.Reports, PermissionKeys.CanViewFgtnReport);
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewHumanResourcesReport
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewInventoryReport
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewQcAndQaReport
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewWarehouseReport
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewStoreAndInventoryReport
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewProcurementReport
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.Reports,
+            PermissionKeys.CanViewFgtnReport
+        );
 
         return permissions;
     }
