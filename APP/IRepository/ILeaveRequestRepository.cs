@@ -14,5 +14,5 @@ public interface ILeaveRequestRepository
     Task<Result> ReapplyLeaveRequest(Guid leaveRequestId, ReapplyLeaveRequest reapplyLeaveRequest);
     Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest leaveRecallRequest);
     Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId);
-    Task<Result> CancelLeaveRequest(Guid leaveRequestId, Guid userId);
+    Task<Result> CancelLeaveRequest(Guid leaveRequestId);
 }
