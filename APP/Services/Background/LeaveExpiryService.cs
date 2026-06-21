@@ -20,7 +20,7 @@ public class LeaveExpiryService(IServiceScopeFactory scopeFactory) : BackgroundS
                 var today = DateTime.UtcNow;
 
                 var expiredLeaves = await dbContext.LeaveRequests
-                    .Where(l => l.EndDate < today && l.LeaveStatus == LeaveStatus.Approved && l.LastDeletedById == null)
+                    .Where(l => l.EndDate < today)
                     .ToListAsync(stoppingToken);
 
                 foreach (var leave in expiredLeaves)

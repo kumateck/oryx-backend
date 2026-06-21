@@ -153,7 +153,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.CancelLeaveRequest(id, Guid.Parse(userId));
+        var result = await repository.CancelLeaveRequest(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

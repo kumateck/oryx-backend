@@ -476,7 +476,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         return Result.Success();
     }
     
-    public async Task<Result> CancelLeaveRequest(Guid leaveRequestId, Guid userId)
+    public async Task<Result> CancelLeaveRequest(Guid leaveRequestId)
     {
         var leaveRequest = await context.LeaveRequests
             .Include(l => l.Employee)
@@ -497,9 +497,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
                 "LeaveRequest.CannotCancel",
                 "Only future leave requests can be cancelled.");
         }
-
-        leaveRequest.DeletedAt = DateTime.UtcNow;
-        leaveRequest.LastDeletedById = userId;
+        
         leaveRequest.LeaveStatus = LeaveStatus.Cancelled;
 
         await context.SaveChangesAsync();
