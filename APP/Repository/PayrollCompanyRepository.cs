@@ -14,20 +14,18 @@ public class PayrollCompanyRepository(ApplicationDbContext context, IMapper mapp
     public async Task<Result<Guid>> CreatePayrollCompany(CreatePayrollCompanyRequest request)
     {
         var currency = await context.Currencies.AnyAsync(c => c.Id == request.CurrencyId);
-        if (currency) return Error.NotFound("Currency.NotFound", "Currency not found");        
+        if (!currency) return Error.NotFound("Currency.NotFound", "Currency not found");        
         
         var country = await context.Countries.AnyAsync(c => c.Id == request.CountryId);
-        if (country) return Error.NotFound("Country.NotFound", "Country not found");
+        if (!country) return Error.NotFound("Country.NotFound", "Country not found");
         
         var site = await context.Sites.AnyAsync(c => c.Id == request.SiteId);
-        if (site) return Error.NotFound("Site.NotFound", "Site not found");
+        if (!site) return Error.NotFound("Site.NotFound", "Site not found");
         
-        var payGroup = await context.PayGroups.AnyAsync(c => c.Id == request.PayGroupId);
-        if (payGroup) return Error.NotFound("PayGroup.NotFound", "Pay group not found");
-        
-        var ssnitNumber = await context.Employees.AnyAsync(c => c.SsnitNumber == request.StatutoryEmployerId);
-        if (ssnitNumber) return Error.NotFound("StatutoryEmployee.NotFound", "Statutory employee not found");
-        
+        // review the employer statutory id
+        // var ssnitNumber = await context.Employees.AnyAsync(c => c.SsnitNumber == request.StatutoryEmployerId);
+        // if (ssnitNumber) return Error.NotFound("StatutoryEmployee.NotFound", "Statutory employee not found");
+        //
         var payrollCompany = mapper.Map<PayrollCompany>(request);
         await context.PayrollCompanies.AddAsync(payrollCompany);
         await context.SaveChangesAsync();
