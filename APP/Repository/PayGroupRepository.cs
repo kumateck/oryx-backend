@@ -21,7 +21,7 @@ public class PayGroupRepository(ApplicationDbContext context, IMapper mapper) : 
         var calendarExists = await context.PayrollCalendars.AnyAsync(p => p.Id == request.PayrollCalendarId);
         if (!calendarExists) return Error.NotFound("PayrollCalendar.NotFound", "Payroll calendar not found");
 
-        var currencyExists = await context.Currencies.AnyAsync(c => c.Id == request.DefaultCurrencyId);
+        var currencyExists = await context.Currencies.AnyAsync(c => c.Id == request.CurrencyId);
         if (!currencyExists) return Error.NotFound("Currency.NotFound", "Currency not found");
         
         var payGroup = mapper.Map<PayGroup>(request);
