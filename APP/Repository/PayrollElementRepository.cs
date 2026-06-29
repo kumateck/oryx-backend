@@ -13,7 +13,8 @@ public class PayrollElementRepository(ApplicationDbContext context, IMapper mapp
 {
     public async Task<Result<Guid>> CreatePayrollElement(CreatePayrollElementRequest request)
     {
-        var exists = await context.PayrollElements.AnyAsync(p => p.PayrollCompanyId == request.PayrollCompanyId);
+        var exists = await context.PayrollElements.AnyAsync(p => p.Type == request.Type 
+                                                                 && p.PayrollCompanyId == request.PayrollCompanyId);
         
         if (exists) return Error.NotFound("PayrollElement.Exists", "Payroll element exists");
         
