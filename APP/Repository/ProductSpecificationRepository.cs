@@ -58,6 +58,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             }
 
             var productSpec = mapper.Map<ProductSpecification>(request);
+            productSpec.Reference = SpecificationReferenceHelper.FormatReference(request.Reference);
             productSpec.ProductId = product.Id;
             await context.ProductSpecifications.AddAsync(productSpec);
             mappings.Add(
@@ -270,6 +271,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         {
             var oldSpecNumber = spec.SpecificationNumber;
             mapper.Map(request, spec);
+            spec.Reference = SpecificationReferenceHelper.FormatReference(request.Reference);
 
             if (oldSpecNumber != spec.SpecificationNumber)
             {

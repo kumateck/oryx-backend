@@ -431,6 +431,40 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Requests a retest for a material batch.
+    /// </summary>
+    [HttpPost("batch/{batchId:guid}/request-retest")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RequestRetest([FromRoute] Guid batchId, [FromBody] RequestRetestDto request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.RequestRetest(batchId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Completes a retest by extending the expiry date.
+    /// </summary>
+    [HttpPost("batch/{batchId:guid}/complete-retest")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CompleteRetest([FromRoute] Guid batchId, [FromBody] CompleteRetestDto request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.CompleteRetest(batchId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Supplies a material batch to warehouse shelves.
     /// </summary>
     /// <param name="request">The SupplyMaterialBatchRequest object.</param>

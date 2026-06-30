@@ -2784,6 +2784,42 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
+    public async Task<Result> RequestRetest(Guid materialBatchId, RequestRetestDto request, Guid userId)
+    {
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == materialBatchId);
+        if (batch is null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+        }
+
+        batch.Status = BatchStatus.Retest;
+        batch.RetestDate = DateTime.UtcNow;
+        batch.UpdatedAt = DateTime.UtcNow;
+        batch.LastUpdatedById = userId;
+
+        context.MaterialBatches.Update(batch);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> CompleteRetest(Guid materialBatchId, CompleteRetestDto request, Guid userId)
+    {
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == materialBatchId);
+        if (batch is null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+        }
+
+        batch.ExpiryDate = request.ExtendedExpiryDate;
+        batch.Status = BatchStatus.Available;
+        batch.UpdatedAt = DateTime.UtcNow;
+        batch.LastUpdatedById = userId;
+
+        context.MaterialBatches.Update(batch);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> CreateMaterialDepartment(
         List<CreateMaterialDepartment> materialDepartments,
         Guid userId

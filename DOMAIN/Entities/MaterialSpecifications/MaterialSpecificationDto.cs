@@ -16,6 +16,7 @@ public class MaterialSpecificationDto : BaseDto
     public FormDto Form { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
+    public string Reference { get; set; }
     public Guid UserId { get; set; }
     public UserDto User { get; set; }
     public MaterialAnalyticalRawDataDto MaterialAnalyticalRawData { get; set; }

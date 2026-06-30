@@ -20,6 +20,7 @@ public class ProductSpecification : BaseEntity, IVerifiable
     public Form Form { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
+    public string Reference { get; set; }
     public Guid UserId { get; set; }
     public User User { get; set; }
     public TestStage TestStage { get; set; }

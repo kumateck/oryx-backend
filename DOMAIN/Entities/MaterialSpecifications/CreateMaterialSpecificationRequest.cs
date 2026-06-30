@@ -12,6 +12,7 @@ public class CreateMaterialSpecificationRequest
     [Required] public Guid FormId { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
+    public string Reference { get; set; }
 
     [Required] public Guid UserId { get; set; }
     [Required] public List<Guid> MaterialIds { get; set; }
@@ -28,6 +29,7 @@ public class UpdateMaterialSpecificationRequest
     [Required] public Guid FormId { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
+    public string Reference { get; set; }
 }
 
 public class AddRemoveMaterialToSpecificationRequest

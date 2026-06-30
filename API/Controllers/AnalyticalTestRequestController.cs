@@ -116,6 +116,56 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     }
 
     /// <summary>
+    /// Reassigns users to an analytical test request.
+    /// </summary>
+    [HttpPut("reassign/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ReassignAnalyticalTestRequest(
+        [FromRoute] Guid id,
+        [FromBody] AssignAnalyticalTestRequest request
+    )
+    {
+        var result = await repository.ReassignAnalyticalTestRequest(id, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Requests a retest for an analytical test request.
+    /// </summary>
+    [HttpPost("request-retest/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RequestRetest([FromRoute] Guid id)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.RequestRetest(id, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Completes a retest by extending the expiry date.
+    /// </summary>
+    [HttpPost("complete-retest/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CompleteRetest([FromRoute] Guid id, [FromQuery] DateTime extendedExpiryDate)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.CompleteRetest(id, extendedExpiryDate, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Deletes an analytical test request.
     /// </summary>
     [HttpDelete("{id:guid}")]

@@ -1221,6 +1221,9 @@ public class OryxMapper : Profile
         CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>()
             .ForMember(dest => dest.Assignees, opt => opt.Ignore());
 
+        CreateMap<DOMAIN.Entities.OosInvestigations.InitiateOosInvestigationRequest, DOMAIN.Entities.OosInvestigations.OosInvestigation>();
+        CreateMap<DOMAIN.Entities.OosInvestigations.OosInvestigation, DOMAIN.Entities.OosInvestigations.OosInvestigationDto>();
+
         #endregion
 
         #region Alerts
