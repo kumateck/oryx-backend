@@ -103,6 +103,7 @@ using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.TaxProfiles;
 using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
@@ -1724,6 +1725,14 @@ public class OryxMapper : Profile
 
         CreateMap<PayrollLoanLedger, PayrollLoanLedgerDto>();
         CreateMap<CreatePayrollLoanLedgerRequest, PayrollLoanLedger>();
+
+        #endregion
+
+
+        #region Tax Profile
+
+        CreateMap<CreateTaxProfileRequest, TaxProfile>();
+        CreateMap<TaxProfile, TaxProfileDto>();
 
         #endregion
         
