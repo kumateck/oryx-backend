@@ -6,7 +6,7 @@ public class CreateEmployeePayrollProfileRequest
 {
     [Required] public Guid EmployeeId { get; set; }
     [Required] public Guid PayGroupId { get; set; }
-    [Required] public Guid PayCurrencyId { get; set; }
+    [Required] public Guid CurrencyId { get; set; }
     public PayrollPaymentMethod PaymentMethod { get; set; }
 
     [StringLength(20)] public string BankCode { get; set; }
