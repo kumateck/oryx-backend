@@ -102,6 +102,7 @@ using DOMAIN.Entities.Shipments.Request;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
+using DOMAIN.Entities.StatutoryProfiles;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.TaxProfiles;
 using DOMAIN.Entities.Thresholds;
@@ -1733,6 +1734,13 @@ public class OryxMapper : Profile
 
         CreateMap<CreateTaxProfileRequest, TaxProfile>();
         CreateMap<TaxProfile, TaxProfileDto>();
+
+        #endregion
+
+        #region Statutory Profile
+
+        CreateMap<CreateStatutoryProfileRequest, StatutoryProfile>();
+        CreateMap<StatutoryProfile, StatutoryProfileDto>();
 
         #endregion
         
