@@ -1613,8 +1613,8 @@ public class OryxMapper : Profile
         
         #region Payroll Element Assignments
 
-        CreateMap<CreatePayrollElementAssignment, PayrollElement>();
-        CreateMap<PayrollElement, PayrollElementAssignmentDto>();
+        CreateMap<CreatePayrollElementAssignment, PayrollElementAssignment>();
+        CreateMap<PayrollElementAssignment, PayrollElementAssignmentDto>();
 
         #endregion
         

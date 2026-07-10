@@ -14,10 +14,10 @@ public class PayrollElementAssignmentRepository(ApplicationDbContext context, IM
     public async Task<Result<Guid>> CreatePayrollElementAssignment(CreatePayrollElementAssignment request)
     {
         var employee = await context.Employees.AnyAsync(x => x.Id == request.EmployeeId);
-        if (employee) return Error.NotFound("Employee.NotFound","Employee not found");
+        if (!employee) return Error.NotFound("Employee.NotFound","Employee not found");
         
         var element = await context.PayrollElements.AnyAsync(x => x.Id == request.PayrollElementId);
-        if (element) return Error.NotFound("PayrollElement.NotFound", "PayrollElement not found");
+        if (!element) return Error.NotFound("PayrollElement.NotFound", "PayrollElement not found");
         
         if (request.EffectiveFrom > request.EffectiveTo) return 
             Error.Validation("EffectiveFrom", "EffectiveFrom cannot be after EffectiveTo");
@@ -33,7 +33,11 @@ public class PayrollElementAssignmentRepository(ApplicationDbContext context, IM
         int page, int pageSize, string searchQuery, Guid? employeeId = null, Guid? payrollElementId = null,
         PayrollElementAssignmentStatus? status = null)
     {
-        var query = context.PayrollElementAssignments.AsQueryable();
+        var query = context.PayrollElementAssignments
+            .Include(p => p.PayrollElement)
+            .Include(p => p.Employee)
+            .AsQueryable();
+        
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery);
@@ -60,8 +64,13 @@ public class PayrollElementAssignmentRepository(ApplicationDbContext context, IM
 
     public async Task<Result<PayrollElementAssignmentDto>> GetPayrollElementAssignment(Guid id)
     {
-        var assignment = await context.PayrollElementAssignments.FirstOrDefaultAsync(x => x.Id == id);
-        return assignment is null ? Error.NotFound("PayrollElementAssignment.NotFound", "PayrollElement not found")
+        var assignment = await context.PayrollElementAssignments
+            .Include(p => p.PayrollElement)
+            .Include(p => p.Employee)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        
+        return assignment is null ? 
+            Error.NotFound("PayrollElementAssignment.NotFound", "PayrollElement not found")
             : mapper.Map<PayrollElementAssignmentDto>(assignment);
     }
 

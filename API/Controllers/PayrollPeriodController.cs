@@ -88,21 +88,21 @@ public class PayrollPeriodController(IPayrollPeriodRepository repository) : Cont
     {
         var result = await repository.UpdatePayrollPeriod(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    } 
-    
+    }
+
     /// <summary>
     /// Hard closes or soft closes a specific payroll period by its ID.
     /// </summary>
     /// <param name="request">The CreatePayrollPeriodRequest object.</param>
-    /// <param name="id">The ID of the payroll period.</param>
     /// <returns>Returns success or failure.</returns>
-    [HttpPut("{id:guid}/close")]
+    [HttpPut("close")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> ClosePayrollPeriod([FromBody] ClosePayrollPeriodRequest request, [FromRoute] Guid id)
+    public async Task<IResult> ClosePayrollPeriod([FromBody] ClosePayrollPeriodRequest request)
     {
-        var result = await repository.ClosePayrollPeriod(request, id);
+        var userId = (string) HttpContext.Items["Sub"];
+        var result = await repository.ClosePayrollPeriod(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
     

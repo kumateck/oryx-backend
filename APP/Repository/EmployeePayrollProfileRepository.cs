@@ -32,7 +32,13 @@ public class EmployeePayrollProfileRepository(ApplicationDbContext context, IMap
     public async Task<Result<Paginateable<IEnumerable<EmployeePayrollProfileDto>>>> GetEmployeePayrollProfiles(int page, int pageSize,
         string searchQuery, Guid? payGroupId = null)
     {
-        var query = context.EmployeePayrollProfiles.AsQueryable();
+        var query = context.EmployeePayrollProfiles
+            .Include(e => e.Employee)
+            .Include(e => e.Currency)
+            .Include(e => e.PayGroup)
+            .Include(e => e.StatutoryProfile)
+            .Include(e => e.TaxProfile)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -49,7 +55,14 @@ public class EmployeePayrollProfileRepository(ApplicationDbContext context, IMap
 
     public async Task<Result<EmployeePayrollProfileDto>> GetEmployeePayrollProfile(Guid id)
     {
-        var employeeProfile = await context.EmployeePayrollProfiles.FirstOrDefaultAsync(p => p.Id == id);
+        var employeeProfile = await context.EmployeePayrollProfiles
+            .Include(e => e.Employee)
+            .Include(e => e.Currency)
+            .Include(e => e.PayGroup)
+            .Include(e => e.StatutoryProfile)
+            .Include(e => e.TaxProfile)
+            .FirstOrDefaultAsync(p => p.Id == id);
+        
         return employeeProfile is null
             ? Error.NotFound("EmployeePayrollProfile.NotFound",
                 "Employee payroll profile not found") :
@@ -59,6 +72,11 @@ public class EmployeePayrollProfileRepository(ApplicationDbContext context, IMap
     public async Task<Result<EmployeePayrollProfileDto>> GetEmployeePayrollProfileByEmployee(Guid employeeId)
     {
         var profile = await context.EmployeePayrollProfiles
+            .Include(e => e.Employee)
+            .Include(e => e.Currency)
+            .Include(e => e.PayGroup)
+            .Include(e => e.StatutoryProfile)
+            .Include(e => e.TaxProfile)
             .Where(p => p.EmployeeId == employeeId && p.EffectiveTo == null)
             .FirstOrDefaultAsync();
 

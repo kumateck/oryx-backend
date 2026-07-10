@@ -25,7 +25,9 @@ public class PayrollCalendarRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<Paginateable<IEnumerable<PayrollCalendarDto>>>> GetPayrollCalendars(int page, int pageSize, string searchQuery, Guid? payrollCompanyId = null)
     {
-        var query = context.PayrollCalendars.AsQueryable();
+        var query = context.PayrollCalendars
+            .Include(p => p.PayrollCompany)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery,p => p.Name);

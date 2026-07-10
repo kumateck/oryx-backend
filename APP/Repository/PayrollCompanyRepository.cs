@@ -32,9 +32,16 @@ public class PayrollCompanyRepository(ApplicationDbContext context, IMapper mapp
         return payrollCompany.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<PayrollCompanyDto>>>> GetPayrollCompanies(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<PayrollCompanyDto>>>> GetPayrollCompanies(int page,
+        int pageSize, string searchQuery)
     {
-        var query = context.PayrollCompanies.AsQueryable();
+        var query = context.PayrollCompanies
+            .Include(p => p.PayGroups)
+            .Include(p => p.Currency)
+            .Include(p => p.Site)
+            .Include(p => p.Country)
+            .AsQueryable();
+        
         if (!string.IsNullOrEmpty(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q => q.Code,
@@ -46,8 +53,15 @@ public class PayrollCompanyRepository(ApplicationDbContext context, IMapper mapp
 
     public async Task<Result<PayrollCompanyDto>> GetPayrollCompany(Guid payrollCompanyId)
     {
-        var payrollCompany = await context.PayrollCompanies.FirstOrDefaultAsync(p => p.Id == payrollCompanyId);
-        return payrollCompany is null ? Error.NotFound("PayrollCompany.NotFound", "Payroll Company not found")
+        var payrollCompany = await context.PayrollCompanies
+            .Include(p => p.PayGroups)
+            .Include(p => p.Currency)
+            .Include(p => p.Site)
+            .Include(p => p.Country)
+            .FirstOrDefaultAsync(p => p.Id == payrollCompanyId);
+        
+        return payrollCompany is null ? 
+            Error.NotFound("PayrollCompany.NotFound", "Payroll Company not found")
             : mapper.Map<PayrollCompanyDto>(payrollCompany);
     }
 
@@ -73,7 +87,6 @@ public class PayrollCompanyRepository(ApplicationDbContext context, IMapper mapp
         var hasPayGroups = await context.PayrollCompanies.AnyAsync(p => p.PayGroups.Count > 0);
         if (hasPayGroups) return Error.Validation("PayrollCompany.InUse", "Payroll company has associated " +
                                                                           "pay groups and cannot be deleted");
-
         payrollCompany.LastDeletedById = id;
         payrollCompany.DeletedAt = DateTime.UtcNow;
         

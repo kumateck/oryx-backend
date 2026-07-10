@@ -29,7 +29,12 @@ public class PayrollRetroAdjustmentRepository(ApplicationDbContext context, IMap
         int pageSize, string searchQuery, Guid? payrollCompanyId = null, Guid? employeeId = null,
         PayrollRetroAdjustmentStatus? status = null)
     {
-        var query = context.PayrollRetroAdjustments.AsQueryable();
+        var query = context.PayrollRetroAdjustments
+            .Include(q => q.PayrollCompany)
+            .Include(q => q.Employee)
+            .Include(q => q.SourcePeriod)
+            .Include(q => q.TargetRun)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -50,7 +55,13 @@ public class PayrollRetroAdjustmentRepository(ApplicationDbContext context, IMap
 
     public async Task<Result<PayrollRetroAdjustmentDto>> GetRetroAdjustment(Guid id)
     {
-        var adjustment = await context.PayrollRetroAdjustments.FirstOrDefaultAsync(q => q.Id == id);
+        var adjustment = await context.PayrollRetroAdjustments
+            .Include(q => q.PayrollCompany)
+            .Include(q => q.Employee)
+            .Include(q => q.SourcePeriod)
+            .Include(q => q.TargetRun)
+            .FirstOrDefaultAsync(q => q.Id == id);
+        
         return adjustment is null ? 
             Error.NotFound("PayrollRetroAdjustment.NotFound","Payroll retro adjustment not found") 
             : mapper.Map<PayrollRetroAdjustmentDto>(adjustment);

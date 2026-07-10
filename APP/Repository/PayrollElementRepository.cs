@@ -29,7 +29,9 @@ public class PayrollElementRepository(ApplicationDbContext context, IMapper mapp
     {
         var query = context.PayrollElements
             .Include(p => p.Versions)
+            .Include(p => p.PayrollCompany)
             .AsQueryable();
+        
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q=>q.Name);
@@ -53,7 +55,9 @@ public class PayrollElementRepository(ApplicationDbContext context, IMapper mapp
     {
         var element = await context.PayrollElements
             .Include(e =>e.Versions)
+            .Include(e => e.PayrollCompany)
             .FirstOrDefaultAsync(p => p.Id == id);
+        
         return element is null ? 
             Error.NotFound("PayrollElement.NotFound","Payroll element not found") :
             mapper.Map<PayrollElementDto>(element);
@@ -62,7 +66,8 @@ public class PayrollElementRepository(ApplicationDbContext context, IMapper mapp
     public async Task<Result> UpdatePayrollElement(Guid id, CreatePayrollElementRequest request)
     {
         var element = await context.PayrollElements.FirstOrDefaultAsync(p => p.Id == id);
-        if (element is null) return Error.NotFound("PayrollElement.NotFound", "Payroll element not found");
+        if (element is null) return Error.NotFound("PayrollElement.NotFound",
+            "Payroll element not found");
         
         mapper.Map(request, element);
         context.PayrollElements.Update(element);
@@ -107,6 +112,7 @@ public class PayrollElementRepository(ApplicationDbContext context, IMapper mapp
     public async Task<Result<PayrollElementVersionDto>> GetPayrollElementVersion(Guid id)
     {
         var element = await context.PayrollElementVersions
+            .Include(p => p.PayrollElement)
             .FirstOrDefaultAsync(p => p.Id == id);
         return element is null ? 
             Error.NotFound("PayrollElementVersion.NotFound","Payroll element version not found") :

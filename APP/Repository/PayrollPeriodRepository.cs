@@ -34,7 +34,12 @@ public class PayrollPeriodRepository(ApplicationDbContext context, IMapper mappe
         string searchQuery, Guid? payrollCompanyId = null,
         PayrollPeriodStatus? status = null)
     {
-        var query = context.PayrollPeriods.AsQueryable();
+        var query = context.PayrollPeriods
+            .Include(p => p.PayrollCompany)
+            .Include(p => p.PayrollCalendar)
+            .Include(p => p.ClosedBy)
+            .AsQueryable();
+        
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             query = query.WhereSearch(searchQuery, q=> q.Code);
@@ -52,8 +57,14 @@ public class PayrollPeriodRepository(ApplicationDbContext context, IMapper mappe
 
     public async Task<Result<PayrollPeriodDto>> GetPayrollPeriod(Guid id)
     {
-        var  period = await context.PayrollPeriods.FirstOrDefaultAsync(p => p.Id == id);
-        return period is null ? Error.NotFound("PayrollPeriod.NotFound", "Payroll period not found")
+        var period = await context.PayrollPeriods
+            .Include(p => p.PayrollCompany)
+            .Include(p => p.PayrollCalendar)
+            .Include(p => p.ClosedBy)
+            .FirstOrDefaultAsync(p => p.Id == id);
+        
+        return period is null ? 
+            Error.NotFound("PayrollPeriod.NotFound", "Payroll period not found")
             : mapper.Map<PayrollPeriodDto>(period);
     }
 
@@ -77,7 +88,10 @@ public class PayrollPeriodRepository(ApplicationDbContext context, IMapper mappe
         var period = await context.PayrollPeriods.FirstOrDefaultAsync(p => p.Id == request.PeriodId); 
         if (period is null) return Error.NotFound("PayrollPeriod.NotFound",
             "Payroll period not found");
-
+        
+        if (period.Status == PayrollPeriodStatus.HardClosed)
+            return Error.Validation("PayrollPeriod.AlreadyClosed", "Period is already closed");
+        
         switch (period.Status)
         {
             case PayrollPeriodStatus.Open:
@@ -88,7 +102,6 @@ public class PayrollPeriodRepository(ApplicationDbContext context, IMapper mappe
                 period.Status = PayrollPeriodStatus.HardClosed;
                 period.HardClosedAt = DateTime.UtcNow;
                 break;
-            case PayrollPeriodStatus.HardClosed:
             default:
                 return Error.Validation("PayrollPeriod.AlreadyClosed",
                     "Period is already hard-closed.");
