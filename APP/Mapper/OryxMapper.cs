@@ -229,6 +229,9 @@ public class OryxMapper : Profile
         CreateMap<Memo, CollectionItemDto>();
         CreateMap<JobOrder, CollectionItemDto>();
         CreateMap<ServiceProvider, CollectionItemDto>();
+        CreateMap<PayrollCalendar, CollectionItemDto>();
+        CreateMap<PayrollCompany, CollectionItemDto>();
+        CreateMap<Employee, CollectionItemDto>();
         #endregion
 
         #region Operation

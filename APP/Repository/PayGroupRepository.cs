@@ -32,7 +32,10 @@ public class PayGroupRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<Paginateable<IEnumerable<PayGroupDto>>>> GetPayGroups(int page, int pageSize, string searchQuery)
     {
-        var query = context.PayGroups.AsQueryable();
+        var query = context.PayGroups
+            .Include(p => p.PayrollCalendar)
+            .Include(p => p.Currency)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
             query = query.WhereSearch(searchQuery, q => q.Name, q => q.Code);
@@ -44,7 +47,10 @@ public class PayGroupRepository(ApplicationDbContext context, IMapper mapper) : 
 
     public async Task<Result<PayGroupDto>> GetPayGroup(Guid id)
     {
-        var payGroup = await context.PayGroups.FirstOrDefaultAsync(p => p.Id == id);
+        var payGroup = await context.PayGroups
+            .Include(p => p.PayrollCalendar)
+            .Include(p => p.Currency)
+            .FirstOrDefaultAsync(p => p.Id == id);
         return payGroup is null ? Error.NotFound("PayGroup.NotFound","PayGroup not found")
             : mapper.Map<PayGroupDto>(payGroup);
     }
