@@ -1640,6 +1640,7 @@ public class OryxMapper : Profile
         CreateMap<CreatePayrollElementRequest, PayrollElement>();
         CreateMap<PayrollElement, PayrollElementDto>();
         CreateMap<PayrollElementVersion, PayrollElementVersionDto>();
+        CreateMap<CreatePayrollElementVersionRequest, PayrollElementVersion>();
 
         #endregion
         

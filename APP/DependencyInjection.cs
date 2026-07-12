@@ -148,6 +148,7 @@ public static class DependencyInjection
         services.AddScoped<IPayrollRunRepository, PayrollRunRepository>();
         services.AddScoped<IPayrollValidationIssueRepository, PayrollValidationIssueRepository>();
         services.AddScoped<IPayrollVarianceFlagRepository, PayrollVarianceFlagRepository>();
+        services.AddScoped<IPayrollCountryPackRepository, PayrollCountryPackRepository>();
 
 
         services.AddScoped<IBlobStorageService, BlobStorageService>();
