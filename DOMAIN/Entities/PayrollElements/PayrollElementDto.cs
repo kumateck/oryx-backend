@@ -20,9 +20,8 @@ public class PayrollElementDto : BaseDto
     public List<PayrollElementVersionDto> Versions { get; set; } = [];
 }
 
-public class PayrollElementVersionDto : BaseDto
+public class PayrollElementVersionDto
 {
-    public CollectionItemDto PayrollElement { get; set; }
     public int VersionNumber { get; set; }
     public DateTime EffectiveFrom { get; set; }
     public DateTime? EffectiveTo { get; set; }
