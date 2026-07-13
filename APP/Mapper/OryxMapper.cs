@@ -1667,6 +1667,7 @@ public class OryxMapper : Profile
         CreateMap<PayrollRunTransitionRequest, PayrollRun>();
         CreateMap<CancelPayrollRunRequest, PayrollRun>();
         CreateMap<PayrollRun, PayrollRunDto>();
+        CreateMap<PayrollRun, PayrollRunSummaryDto>();
 
         #endregion
         
