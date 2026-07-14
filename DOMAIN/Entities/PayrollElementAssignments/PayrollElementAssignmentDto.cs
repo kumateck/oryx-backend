@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.PayrollElements;
 using SHARED;
 
 namespace DOMAIN.Entities.PayrollElementAssignments;
@@ -6,7 +7,7 @@ namespace DOMAIN.Entities.PayrollElementAssignments;
 public class PayrollElementAssignmentDto : BaseDto
 {
     public CollectionItemDto Employee { get; set; }
-    public CollectionItemDto PayrollElement { get; set; }
+    public PayrollElementDto PayrollElement { get; set; }
 
     public decimal? OverrideAmount { get; set; }
     public decimal? OverrideRate { get; set; }

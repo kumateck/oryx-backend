@@ -231,10 +231,16 @@ public class OryxMapper : Profile
         CreateMap<ServiceProvider, CollectionItemDto>();
         CreateMap<PayrollCalendar, CollectionItemDto>();
         CreateMap<PayrollCompany, CollectionItemDto>();
-        CreateMap<Employee, CollectionItemDto>();
+        CreateMap<Employee, CollectionItemDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
+            .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.StaffNumber));
         CreateMap<PayGroup, CollectionItemDto>();
         CreateMap<TaxProfile, CollectionItemDto>();
         CreateMap<StatutoryProfile, CollectionItemDto>();
+        CreateMap<PayrollPeriod, CollectionItemDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Code));
+        CreateMap<PayrollRun, CollectionItemDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Code));
         #endregion
 
         #region Operation
