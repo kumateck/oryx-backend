@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
-[ApiController, Authorize]
-[Route("api/payroll/runs/{payrollRunId:guid}/payment-batch")]
+[ApiController]
+[Route("api/v{version:apiVersion}/payroll/runs/{payrollRunId:guid}/payment-batch")]
 public class PayrollPaymentBatchController(IPayrollPaymentBatchRepository repository) : ControllerBase
 {
     /// <summary>
@@ -17,6 +17,7 @@ public class PayrollPaymentBatchController(IPayrollPaymentBatchRepository reposi
     /// <param name="payrollRunId">The payroll run Id.</param>
     /// <returns>Returns the ID of the created payroll payment batch.</returns>
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreatePayrollPaymentBatch([FromRoute] Guid payrollRunId)

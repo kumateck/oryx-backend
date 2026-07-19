@@ -13,12 +13,15 @@ public class PayrollPaymentBatchRepository(ApplicationDbContext context, IMapper
 {
     public async Task<Result<Guid>> CreatePayrollPaymentBatch(Guid payrollRunId)
     {
-        var run = await context.PayrollRuns.FirstOrDefaultAsync(p => p.Id == payrollRunId);
+        var run = await context.PayrollRuns
+            .Include(p => p.PayGroup)
+            .FirstOrDefaultAsync(p => p.Id == payrollRunId);
         if (run is null) return Error.NotFound("PayrollRun.NotFound","Payroll run not found");
 
         var batch = new PayrollPaymentBatch
         {
             PayrollRunId = payrollRunId,
+            CurrencyId = run.PayGroup.CurrencyId,
             TotalAmount = run.NetTotal
         };
         
