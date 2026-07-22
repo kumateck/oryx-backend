@@ -686,10 +686,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var query = await context
             .ProductPackings.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
                 .ThenInclude(p => p.Uom)
             .Include(p => p.BasePackingUoM)
-            .Where(p => p.ProductId == productId)
+            .Where(p => p.ProductId == productId &&p.DeletedAt == null)
             .ToListAsync();
 
         return mapper.Map<List<ProductPackingDto>>(query);
