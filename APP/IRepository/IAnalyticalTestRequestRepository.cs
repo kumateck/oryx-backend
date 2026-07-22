@@ -16,6 +16,9 @@ public interface IAnalyticalTestRequestRepository
     Task<Result> UpdateAnalyticalTestRequest(Guid id, CreateAnalyticalTestRequest request);
     Task<Result> UpdateAnalyticalTestRequest(Guid id, UpdateAnalyticalTestRequest request, Guid userId);
     Task<Result> AssignAnalyticalTestRequest(Guid id, AssignAnalyticalTestRequest request);
+    Task<Result> ReassignAnalyticalTestRequest(Guid id, AssignAnalyticalTestRequest request);
+    Task<Result> RequestRetest(Guid id, Guid userId);
+    Task<Result> CompleteRetest(Guid id, DateTime extendedExpiryDate, Guid userId);
     Task<Result> DeleteAnalyticalTestRequest(Guid id, Guid userId);
     Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequestByActivityStep(Guid activityStepId);
 

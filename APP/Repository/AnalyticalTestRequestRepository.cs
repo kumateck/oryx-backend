@@ -222,6 +222,49 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         return Result.Success();
     }
 
+    public async Task<Result> ReassignAnalyticalTestRequest(
+        Guid id,
+        AssignAnalyticalTestRequest request
+    )
+    {
+        return await AssignAnalyticalTestRequest(id, request);
+    }
+
+    public async Task<Result> RequestRetest(Guid id, Guid userId)
+    {
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
+        if (test is null)
+        {
+            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        }
+
+        test.Status = AnalyticalTestStatus.Testing;
+        test.LastUpdatedById = userId;
+        test.UpdatedAt = DateTime.UtcNow;
+
+        context.AnalyticalTestRequests.Update(test);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> CompleteRetest(Guid id, DateTime extendedExpiryDate, Guid userId)
+    {
+        var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
+        if (test is null)
+        {
+            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        }
+
+        test.ExpiryDate = extendedExpiryDate;
+        test.Status = AnalyticalTestStatus.Released;
+        test.LastUpdatedById = userId;
+        test.UpdatedAt = DateTime.UtcNow;
+
+        context.AnalyticalTestRequests.Update(test);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> DeleteAnalyticalTestRequest(Guid id, Guid userId)
     {
         var test = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr => atr.Id == id);
