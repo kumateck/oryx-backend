@@ -531,6 +531,7 @@ public class ApplicationDbContext(
     public DbSet<AnalyticalTestRequest> AnalyticalTestRequests { get; set; }
     public DbSet<AnalyticalTestRequestAssignee> AnalyticalTestRequestAssignees { get; set; }
     public DbSet<ProductState> ProductStates { get; set; }
+    public DbSet<DOMAIN.Entities.OosInvestigations.OosInvestigation> OosInvestigations { get; set; }
 
     #endregion
 
