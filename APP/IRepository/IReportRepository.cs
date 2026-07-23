@@ -11,6 +11,7 @@ using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
+using DOMAIN.Entities.Reports.WarehouseDashboardKpi;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -98,6 +99,30 @@ public interface IReportRepository
         InvoicedProductFilters filters);
     Task<Result<List<InvoicedProductsDetailedReportDto>>> GetInvoicedProductsDetailedReport(
         InvoicedProductFilters filters);
+
+    Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<DockToStockTimeDto>>> GetDockToStockTime(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<StockTransferFulfilmentRateDto>>> GetStockTransferFulfilmentRate(
+        WarehouseKpiFilterDto filter, Guid departmentId);
+
+    Task<Result<ReceivingPipelineSnapshotDto>> GetReceivingPipelineSnapshot(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<ExpiryRiskIndexDto>>> GetExpiryRiskIndex(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<ReorderAlertCountDto>>> GetReorderAlertCount(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<SwapRequestActivityDto>> GetSwapRequestActivity(
+        WarehouseKpiFilterDto filter, Guid departmentId);
+
+    Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(
+        WarehouseKpiFilterDto filter);
 
     // Production Dashboard KPI Widgets (KPI 6 - 12)
     Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
