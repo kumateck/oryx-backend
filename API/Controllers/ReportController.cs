@@ -712,89 +712,208 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     /// <summary>
-    /// KPI 6 - Schedule Adherence (On-Time Completion Rate).
+    /// Gets warehouse capacity utilisation — percentage of occupied vs total shelf slots.
     /// </summary>
-    [HttpGet("kpi/schedule-adherence")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduleAdherenceDto>))]
+    [HttpGet("warehouse-kpi/capacity-utilisation")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<WarehouseCapacityUtilisationDto>)
+    )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetScheduleAdherence([FromQuery] ProductionKpiFilter filter)
-    {
-        var result = await repository.GetScheduleAdherence(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// KPI 7 - Production Output Volume.
-    /// </summary>
-    [HttpGet("kpi/production-output-volume")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionOutputVolumeDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetProductionOutputVolume([FromQuery] ProductionKpiFilter filter)
-    {
-        var result = await repository.GetProductionOutputVolume(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// KPI 8 - ATR Testing Backlog.
-    /// </summary>
-    [HttpGet("kpi/atr-testing-backlog")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AtrTestingBacklogDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetAtrTestingBacklog([FromQuery] ProductionKpiFilter filter)
-    {
-        var result = await repository.GetAtrTestingBacklog(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// KPI 9 - Stock Requisition Pending for Production.
-    /// </summary>
-    [HttpGet("kpi/stock-requisition-pending")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockRequisitionPendingDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetStockRequisitionPending([FromQuery] ProductionKpiFilter filter)
-    {
-        var result = await repository.GetStockRequisitionPending(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// KPI 10 - FGTN Pending Approval.
-    /// </summary>
-    [HttpGet("kpi/fgtn-pending-approval")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FgtnPendingApprovalDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetFgtnPendingApproval([FromQuery] ProductionKpiFilter filter)
-    {
-        var result = await repository.GetFgtnPendingApproval(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    /// <summary>
-    /// KPI 11 - Production Order Delivery Status.
-    /// </summary>
-    [HttpGet("kpi/production-order-delivery-status")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionOrderDeliveryStatusDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetProductionOrderDeliveryStatus(
-        [FromQuery] ProductionKpiFilter filter,
-        [FromQuery] Guid? customerId = null
+    public async Task<IResult> GetWarehouseCapacityUtilisation(
+        [FromQuery] Guid? WarehouseId
     )
     {
-        var result = await repository.GetProductionOrderDeliveryStatus(filter, customerId);
+        var filter = new WarehouseKpiFilterDto { WarehouseId = WarehouseId };
+        var result = await repository.GetWarehouseCapacityUtilisation(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// KPI 12 - Material Return Rate.
+    /// Gets dock-to-stock time — average and median hours between material arrival and GRN generation.
     /// </summary>
-    [HttpGet("kpi/material-return-rate")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialReturnRateDto>))]
+    [HttpGet("warehouse-kpi/dock-to-stock")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<DockToStockTimeDto>)
+    )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetMaterialReturnRate([FromQuery] ProductionKpiFilter filter)
+    public async Task<IResult> GetDockToStockTime(
+        [FromQuery] Guid? WarehouseId,
+        [FromQuery] DateFilter? DatePreset,
+        [FromQuery] DateTime? CustomStartDate,
+        [FromQuery] DateTime? CustomEndDate
+    )
     {
-        var result = await repository.GetMaterialReturnRate(filter);
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = WarehouseId,
+            DatePreset = DatePreset,
+            CustomStartDate = CustomStartDate,
+            CustomEndDate = CustomEndDate
+        };
+        var result = await repository.GetDockToStockTime(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets stock transfer fulfilment rate — percentage of transfers that have reached Issued status.
+    /// </summary>
+    [HttpGet("warehouse-kpi/stock-transfer-fulfilment")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<StockTransferFulfilmentRateDto>)
+    )]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetStockTransferFulfilmentRate(
+        [FromQuery] DateFilter? DatePreset,
+        [FromQuery] DateTime? CustomStartDate,
+        [FromQuery] DateTime? CustomEndDate,
+        [FromQuery] Guid? FromDepartmentId,
+        [FromQuery] Guid? ToDepartmentId
+    )
+    {
+        var departmentIdStr = (string?)HttpContext.Items["Department"];
+        if (
+            string.IsNullOrWhiteSpace(departmentIdStr)
+            || !Guid.TryParse(departmentIdStr, out var departmentId)
+        )
+            return TypedResults.Unauthorized();
+
+        var filter = new WarehouseKpiFilterDto
+        {
+            DatePreset = DatePreset,
+            CustomStartDate = CustomStartDate,
+            CustomEndDate = CustomEndDate,
+            FromDepartmentId = FromDepartmentId,
+            ToDepartmentId = ToDepartmentId
+        };
+        var result = await repository.GetStockTransferFulfilmentRate(filter, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets receiving pipeline snapshot — count of inbound materials grouped by processing stage.
+    /// </summary>
+    [HttpGet("warehouse-kpi/receiving-pipeline")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(ReceivingPipelineSnapshotDto)
+    )]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetReceivingPipeline(
+        [FromQuery] Guid? WarehouseId
+    )
+    {
+        var filter = new WarehouseKpiFilterDto { WarehouseId = WarehouseId };
+        var result = await repository.GetReceivingPipelineSnapshot(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets expiry risk index — material batches grouped by days until expiry.
+    /// </summary>
+    [HttpGet("warehouse-kpi/expiry-risk-index")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<ExpiryRiskIndexDto>)
+    )]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetExpiryRiskIndex(
+        [FromQuery] Guid? WarehouseId,
+        [FromQuery] ExpiryWindowFilter? ExpiryWindow
+    )
+    {
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = WarehouseId,
+            ExpiryWindow = ExpiryWindow
+        };
+        var result = await repository.GetExpiryRiskIndex(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets reorder alert count — materials whose stock is at or below reorder level.
+    /// </summary>
+    [HttpGet("warehouse-kpi/reorder-alert-count")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<ReorderAlertCountDto>)
+    )]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetReorderAlertCount(
+        [FromQuery] MaterialKind? MaterialKind
+    )
+    {
+        var departmentIdStr = (string?)HttpContext.Items["Department"];
+        if (
+            string.IsNullOrWhiteSpace(departmentIdStr)
+            || !Guid.TryParse(departmentIdStr, out var departmentId)
+        )
+            return TypedResults.Unauthorized();
+
+        var filter = new WarehouseKpiFilterDto
+        {
+            DepartmentId = departmentId,
+            MaterialKind = MaterialKind
+        };
+        var result = await repository.GetReorderAlertCount(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets swap request activity — count of swap requests by approval status for a period.
+    /// </summary>
+    [HttpGet("warehouse-kpi/swap-request-activity")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(SwapRequestActivityDto)
+    )]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetSwapRequestActivity(
+        [FromQuery] Guid? WarehouseId,
+        [FromQuery] DateFilter? DatePreset,
+        [FromQuery] DateTime? CustomStartDate,
+        [FromQuery] DateTime? CustomEndDate
+    )
+    {
+        var departmentIdStr = (string?)HttpContext.Items["Department"];
+        if (
+            string.IsNullOrWhiteSpace(departmentIdStr)
+            || !Guid.TryParse(departmentIdStr, out var departmentId)
+        )
+            return TypedResults.Unauthorized();
+
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = WarehouseId,
+            DatePreset = DatePreset,
+            CustomStartDate = CustomStartDate,
+            CustomEndDate = CustomEndDate
+        };
+        var result = await repository.GetSwapRequestActivity(filter, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("warehouse-kpi/material-movement-count")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialMovementCountDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetMaterialMovementCount(
+        [FromQuery] Guid? WarehouseId,
+        [FromQuery] DateFilter? DatePreset = null,
+        [FromQuery] DateTime? CustomStartDate = null,
+        [FromQuery] DateTime? CustomEndDate = null
+    )
+    {
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = WarehouseId,
+            DatePreset = DatePreset,
+            CustomStartDate = CustomStartDate,
+            CustomEndDate = CustomEndDate
+        };
+        var result = await repository.GetMaterialMovementCount(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

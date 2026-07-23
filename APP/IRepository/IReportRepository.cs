@@ -218,4 +218,27 @@ public interface IReportRepository
     Task<Result<List<FgtnPendingApprovalDto>>> GetFgtnPendingApproval(ProductionKpiFilter filter);
     Task<Result<List<ProductionOrderDeliveryStatusDto>>> GetProductionOrderDeliveryStatus(ProductionKpiFilter filter, Guid? customerId);
     Task<Result<List<MaterialReturnRateDto>>> GetMaterialReturnRate(ProductionKpiFilter filter);
+    Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<DockToStockTimeDto>>> GetDockToStockTime(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<StockTransferFulfilmentRateDto>>> GetStockTransferFulfilmentRate(
+        WarehouseKpiFilterDto filter, Guid departmentId);
+
+    Task<Result<ReceivingPipelineSnapshotDto>> GetReceivingPipelineSnapshot(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<ExpiryRiskIndexDto>>> GetExpiryRiskIndex(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<ReorderAlertCountDto>>> GetReorderAlertCount(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<SwapRequestActivityDto>> GetSwapRequestActivity(
+        WarehouseKpiFilterDto filter, Guid departmentId);
+
+    Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(
+        WarehouseKpiFilterDto filter);
 }
