@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
@@ -102,26 +103,103 @@ public interface IReportRepository
         InvoicedProductFilters filters);
 
     Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
-        WarehouseKpiFilterDto filter);
+        WarehouseKpiFilterDto filter, Guid? departmentId);
 
     Task<Result<IEnumerable<DockToStockTimeDto>>> GetDockToStockTime(
-        WarehouseKpiFilterDto filter);
+        WarehouseKpiFilterDto filter, Guid? departmentId);
 
     Task<Result<IEnumerable<StockTransferFulfilmentRateDto>>> GetStockTransferFulfilmentRate(
-        WarehouseKpiFilterDto filter, Guid departmentId);
+        WarehouseKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<ReceivingPipelineSnapshotDto>> GetReceivingPipelineSnapshot(
-        WarehouseKpiFilterDto filter);
+    Task<Result<IEnumerable<ReceivingPipelineSnapshotDto>>> GetReceivingPipelineSnapshot(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
 
     Task<Result<IEnumerable<ExpiryRiskIndexDto>>> GetExpiryRiskIndex(
-        WarehouseKpiFilterDto filter);
+        WarehouseKpiFilterDto filter, Guid? departmentId);
 
     Task<Result<IEnumerable<ReorderAlertCountDto>>> GetReorderAlertCount(
         WarehouseKpiFilterDto filter);
 
-    Task<Result<SwapRequestActivityDto>> GetSwapRequestActivity(
-        WarehouseKpiFilterDto filter, Guid departmentId);
+    Task<Result<IEnumerable<SwapRequestActivityDto>>> GetSwapRequestActivity(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
 
+    Task<Result<IEnumerable<MaterialMovementCountDto>>> GetMaterialMovementCount(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<List<MaterialsStockSummaryDto>>> GetMaterialsStockSummary(
+        Guid? departmentId = null, MaterialKind? materialKind = null, Guid? materialId = null);
+
+    Task<Result<List<MaterialsStockBatchDetailDto>>> GetMaterialsStockBatchDetail(
+        Guid? departmentId = null, MaterialKind? materialKind = null,
+        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null);
+
+    Task<Result<List<ShelfUtilisationDetailDto>>> GetShelfUtilisationDetail(
+        Guid? warehouseId = null, Guid? locationId = null, OccupancyStatus? occupancyStatus = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<GoodsReceivingRegisterDto>>> GetGoodsReceivingRegister(
+        ReportFilter filter, string grnStatus = null, Guid? supplierId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<ReceivingPerformanceDetailDto>>> GetReceivingPerformanceDetail(
+        ReportFilter filter, Guid? warehouseId = null, Guid? supplierId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<PutawayRegisterDto>>> GetPutawayRegister(
+        ReportFilter filter, Guid? warehouseId = null, Guid? employeeId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<StockAdjustmentAuditDto>>> GetStockAdjustmentAudit(
+        ReportFilter filter, string reasonCode = null, Guid? warehouseId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<BatchTraceabilityDto>>> GetBatchTraceability(
+        Guid materialBatchId, ReportFilter filter, Guid? departmentId = null);
+
+    Task<Result<List<InterWarehouseSwapRequestDto>>> GetInterWarehouseSwapRequests(
+        ReportFilter filter, Guid? warehouseId = null, string status = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<StockTransferInterDepartmentDetailDto>>> GetStockTransferInterDepartmentDetail(
+        ReportFilter filter, Guid? fromDepartmentId = null, Guid? toDepartmentId = null,
+        string status = null, Guid? departmentId = null);
+
+    Task<Result<List<MaterialExpiryProjectionDto>>> GetMaterialExpiryProjection(
+        ExpiryWindowFilter? window = null, Guid? warehouseId = null, Guid? materialId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<SlowMovingInventoryDto>>> GetSlowMovingInventory(
+        InactivityThreshold threshold = InactivityThreshold.Days90, Guid? warehouseId = null,
+        Guid? materialId = null, Guid? departmentId = null);
+
+    Task<Result<List<BinCardTransactionLedgerDto>>> GetBinCardTransactionLedger(
+        Guid materialBatchId, ReportFilter filter, Guid? departmentId = null);
+
+    Task<Result<IEnumerable<OperationsSummaryDto>>> GetOperationsSummary(
+        ReportFilter filter, Guid? warehouseId = null, Guid? departmentId = null);
+
+    Task<Result<List<QcPendingDto>>> GetQcPendingReport(
+        Guid? warehouseId = null, Guid? supplierId = null, Guid? departmentId = null);
+
+    Task<Result<List<ReorderLevelVsStockDto>>> GetReorderLevelVsStock(
+        Guid? departmentId = null, MaterialKind? materialKind = null);
+
+    Task<Result<List<InventoryValuationSummaryDto>>> GetInventoryValuationSummary(
+        WarehouseType? warehouseType = null, Division? division = null,
+        UnitOfMeasureCategory? uomGroup = null, Guid? departmentId = null);
+
+    Task<Result<List<InventoryValuationDetailDto>>> GetInventoryValuationDetail(
+        WarehouseType? warehouseType = null, Division? division = null,
+        Guid? warehouseId = null, string valuationType = null,
+        Guid? materialId = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<WarehouseEmployeeActivityDto>>> GetWarehouseEmployeeActivity(
+        ReportFilter filter, Guid? employeeId = null, Guid? departmentId = null);
+
+    Task<Result<List<ArrivalLocationStatusDto>>> GetArrivalLocationStatus(
+        Guid? warehouseId = null, string status = null, int agingThresholdDays = 3,
+        Guid? departmentId = null);
     Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(
         WarehouseKpiFilterDto filter);
 
