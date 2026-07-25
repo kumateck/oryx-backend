@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
