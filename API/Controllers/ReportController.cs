@@ -914,4 +914,91 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetMaterialMovementCount(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// KPI 6 - Schedule Adherence (On-Time Completion Rate).
+    /// </summary>
+    [HttpGet("kpi/schedule-adherence")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduleAdherenceDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetScheduleAdherence([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetScheduleAdherence(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 7 - Production Output Volume.
+    /// </summary>
+    [HttpGet("kpi/production-output-volume")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionOutputVolumeDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetProductionOutputVolume([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetProductionOutputVolume(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 8 - ATR Testing Backlog.
+    /// </summary>
+    [HttpGet("kpi/atr-testing-backlog")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AtrTestingBacklogDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetAtrTestingBacklog([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetAtrTestingBacklog(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 9 - Stock Requisition Pending for Production.
+    /// </summary>
+    [HttpGet("kpi/stock-requisition-pending")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockRequisitionPendingDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetStockRequisitionPending([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetStockRequisitionPending(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 10 - FGTN Pending Approval.
+    /// </summary>
+    [HttpGet("kpi/fgtn-pending-approval")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FgtnPendingApprovalDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetFgtnPendingApproval([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetFgtnPendingApproval(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 11 - Production Order Delivery Status.
+    /// </summary>
+    [HttpGet("kpi/production-order-delivery-status")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionOrderDeliveryStatusDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetProductionOrderDeliveryStatus(
+        [FromQuery] ProductionKpiFilter filter,
+        [FromQuery] Guid? customerId = null
+    )
+    {
+        var result = await repository.GetProductionOrderDeliveryStatus(filter, customerId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 12 - Material Return Rate.
+    /// </summary>
+    [HttpGet("kpi/material-return-rate")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialReturnRateDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetMaterialReturnRate([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetMaterialReturnRate(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
