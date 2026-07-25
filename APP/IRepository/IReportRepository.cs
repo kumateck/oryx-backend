@@ -1,4 +1,3 @@
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
@@ -200,4 +199,13 @@ public interface IReportRepository
     Task<Result<List<ArrivalLocationStatusDto>>> GetArrivalLocationStatus(
         Guid? warehouseId = null, string status = null, int agingThresholdDays = 3,
         Guid? departmentId = null);
+
+    // Production Dashboard KPI Widgets (KPI 6 - 12)
+    Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
+    Task<Result<List<ProductionOutputVolumeDto>>> GetProductionOutputVolume(ProductionKpiFilter filter);
+    Task<Result<List<AtrTestingBacklogDto>>> GetAtrTestingBacklog(ProductionKpiFilter filter);
+    Task<Result<List<StockRequisitionPendingDto>>> GetStockRequisitionPending(ProductionKpiFilter filter);
+    Task<Result<List<FgtnPendingApprovalDto>>> GetFgtnPendingApproval(ProductionKpiFilter filter);
+    Task<Result<List<ProductionOrderDeliveryStatusDto>>> GetProductionOrderDeliveryStatus(ProductionKpiFilter filter, Guid? customerId);
+    Task<Result<List<MaterialReturnRateDto>>> GetMaterialReturnRate(ProductionKpiFilter filter);
 }

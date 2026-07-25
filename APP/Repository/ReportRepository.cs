@@ -148,13 +148,13 @@ public class ReportRepository(
             .ToListAsync();
 
         var rawWarehouse = await context
-            .Warehouses
+            .Warehouses.IgnoreQueryFilters()
             .FirstOrDefaultAsync(w =>
                 w.DepartmentId == departmentId && w.Type == WarehouseType.RawMaterialStorage
             );
 
         var packageWarehouse = await context
-            .Warehouses
+            .Warehouses.IgnoreQueryFilters()
             .FirstOrDefaultAsync(w =>
                 w.DepartmentId == departmentId && w.Type == WarehouseType.PackagedStorage
             );
@@ -1541,7 +1541,7 @@ public class ReportRepository(
     {
         var query = context
             .FinishedGoodsTransferNotes.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Include(f => f.ProductPacking)
                 .ThenInclude(pp => pp.Product)
             .Include(f => f.UoM)
@@ -1663,7 +1663,7 @@ public class ReportRepository(
     {
         var query = context
             .FinishedGoodsTransferNotes.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Include(f => f.ProductPacking)
                 .ThenInclude(pp => pp.Product)
             .Include(f => f.UoM)
@@ -1771,7 +1771,7 @@ public class ReportRepository(
     {
         var query = context
             .FinishedGoodsTransferNotes.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(f => f.BatchManufacturingRecord)
                 .ThenInclude(b => b.ProductionScheduleProduct)
@@ -1892,7 +1892,7 @@ public class ReportRepository(
     {
         var query = context
             .FinishedGoodsTransferNotes.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(f => f.BatchManufacturingRecord)
                 .ThenInclude(b => b.ProductionScheduleProduct)
@@ -2206,7 +2206,7 @@ public class ReportRepository(
 
         var productQuery = context
             .Products.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(p => !p.DeletedAt.HasValue);
 
         if (filter.DepartmentId.HasValue)
@@ -2288,7 +2288,7 @@ public class ReportRepository(
             pendingOrders + partialPackingReadyOrders + fullPackingReadyOrders;
 
         var fgtnQuery = context
-            .FinishedGoodsTransferNotes
+            .FinishedGoodsTransferNotes.IgnoreQueryFilters()
             .Include(f => f.Approvals)
             .Include(f => f.ProductPacking)
                 .ThenInclude(pp => pp.Product)
@@ -2388,7 +2388,7 @@ public class ReportRepository(
     {
         var baseQuery = context
             .SupplierManufacturers.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Include(sm => sm.UoM)
             .Include(sm => sm.Manufacturer)
             .Where(sm => sm.DeletedAt == null);
@@ -2460,7 +2460,7 @@ public class ReportRepository(
 
         var manufacturerMaterials = await context
             .ManufacturerMaterials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(mm => mm.DeletedAt == null && manufacturerIds.Contains(mm.ManufacturerId))
             .ToListAsync();
 
@@ -2572,7 +2572,7 @@ public class ReportRepository(
     {
         var baseQuery = context
             .BillingSheets.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(bs => bs.DeletedAt == null);
         if (filter.StartDate.HasValue)
         {
@@ -2624,7 +2624,7 @@ public class ReportRepository(
         // Include TermsOfPayment in the query
         var purchaseOrders = await context
             .PurchaseOrders.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Include(po => po.TermsOfPayment)
             .Where(po => po.DeletedAt == null && supplierIds.Contains(po.SupplierId))
             .Select(po => new
@@ -2641,7 +2641,7 @@ public class ReportRepository(
 
         var purchaseOrderItems = await context
             .PurchaseOrderItems.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(poi => poi.DeletedAt == null && purchaseOrderIds.Contains(poi.PurchaseOrderId))
             .Select(poi => new { poi.PurchaseOrderId, poi.MaterialId })
             .ToListAsync();
@@ -2650,7 +2650,7 @@ public class ReportRepository(
 
         var materials = await context
             .Materials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(m => materialIds.Contains(m.Id))
             .Select(m => new { m.Id, m.Name })
             .ToListAsync();
@@ -2721,7 +2721,7 @@ public class ReportRepository(
     {
         var baseQuery = context
             .PurchaseOrders.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(po => po.DeletedAt == null);
 
         if (filter.StartDate.HasValue)
@@ -2763,7 +2763,7 @@ public class ReportRepository(
         var supplierIds = purchaseOrders.Select(o => o.SupplierId).Distinct().ToList();
         var suppliers = await context
             .Suppliers.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(s => supplierIds.Contains(s.Id) && s.DeletedAt == null)
             .Select(s => new
             {
@@ -2776,7 +2776,7 @@ public class ReportRepository(
 
         var purchaseOrderItems = await context
             .PurchaseOrderItems.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(poi => poi.DeletedAt == null && purchaseOrderIds.Contains(poi.PurchaseOrderId))
             .Select(poi => new
             {
@@ -2798,14 +2798,14 @@ public class ReportRepository(
 
         var materials = await context
             .Materials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(m => materialIds.Contains(m.Id) && m.DeletedAt == null)
             .Select(m => new { m.Id, m.Name })
             .ToListAsync();
         var materialLookup = materials.ToDictionary(m => m.Id, m => m.Name);
         var uoms = await context
             .UnitOfMeasures.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(u => uomIds.Contains(u.Id) && u.DeletedAt == null)
             .Select(u => new { u.Id, u.Symbol })
             .ToListAsync();
@@ -2813,7 +2813,7 @@ public class ReportRepository(
         var uomLookup = uoms.ToDictionary(u => u.Id, u => u.Symbol);
         var currencies = await context
             .Currencies.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(c => currencyIds.Contains(c.Id) && c.DeletedAt == null)
             .Select(c => new { c.Id, c.Symbol })
             .ToListAsync();
@@ -2879,7 +2879,7 @@ public class ReportRepository(
     {
         var baseQuery = context
             .PurchaseOrders.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(po => po.DeletedAt == null);
 
         if (filter.StartDate.HasValue)
@@ -2924,7 +2924,7 @@ public class ReportRepository(
 
         var shipmentInvoices = await context
             .ShipmentInvoices.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(si => si.DeletedAt == null && proformaCodes.Contains(si.Code))
             .Select(si => new
             {
@@ -2949,7 +2949,7 @@ public class ReportRepository(
 
         var suppliers = await context
             .Suppliers.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(s => supplierIds.Contains(s.Id))
             .Select(s => new
             {
@@ -2964,7 +2964,7 @@ public class ReportRepository(
 
         var purchaseOrderItems = await context
             .PurchaseOrderItems.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(poi => poi.DeletedAt == null && purchaseOrderIds.Contains(poi.PurchaseOrderId))
             .Select(poi => new
             {
@@ -2989,7 +2989,7 @@ public class ReportRepository(
 
         var materials = await context
             .Materials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(m => materialIds.Contains(m.Id))
             .Select(m => new { m.Id, m.Name })
             .ToListAsync();
@@ -2998,7 +2998,7 @@ public class ReportRepository(
 
         var uoms = await context
             .UnitOfMeasures.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(u => uomIds.Contains(u.Id))
             .Select(u => new { u.Id, u.Symbol })
             .ToListAsync();
@@ -3007,7 +3007,7 @@ public class ReportRepository(
 
         var currencies = await context
             .Currencies.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(c => currencyIds.Contains(c.Id))
             .Select(c => new { c.Id, c.Symbol })
             .ToListAsync();
@@ -3074,7 +3074,7 @@ public class ReportRepository(
     public async Task<Result<ProductionDashboardDto>> GetProductionDashboard(Guid departmentId)
     {
         var requisitionQuery = context
-            .Requisitions
+            .Requisitions.IgnoreQueryFilters()
             .Where(r => r.DepartmentId == departmentId && r.DeletedAt == null);
 
         var requisitionCounts = await requisitionQuery
@@ -3102,7 +3102,7 @@ public class ReportRepository(
 
         var materialDepartments = await context
             .MaterialDepartments.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(md => md.DepartmentId == departmentId && md.DeletedAt == null)
             .Select(md => new
             {
@@ -3116,7 +3116,7 @@ public class ReportRepository(
 
         var materials = await context
             .Materials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(m => materialIds.Contains(m.Id))
             .Select(m => new
             {
@@ -3130,7 +3130,7 @@ public class ReportRepository(
 
         var shelfQuantities = await context
             .ShelfMaterialBatches.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(smb =>
                 smb.DeletedAt == null && materialIds.Contains(smb.MaterialBatch.MaterialId)
             )
@@ -3164,7 +3164,7 @@ public class ReportRepository(
             .ToList();
 
         var productionQuery = context
-            .ProductionSchedules
+            .ProductionSchedules.IgnoreQueryFilters()
             .Where(p => p.DepartmentId == departmentId && p.DeletedAt == null);
 
         var productionCounts = await productionQuery
@@ -3191,7 +3191,7 @@ public class ReportRepository(
         };
 
         var stockQuery = context
-            .StockTransferSources
+            .StockTransferSources.IgnoreQueryFilters()
             .Where(s => s.FromDepartmentId == departmentId && s.DeletedAt == null);
 
         var stockCounts = await stockQuery
@@ -3238,7 +3238,7 @@ public class ReportRepository(
 
         // Purchase Orders
         var purchaseOrderCounts = await context
-            .PurchaseOrders
+            .PurchaseOrders.IgnoreQueryFilters()
             .Where(po => po.DeletedAt == null && (startDate == null || po.CreatedAt >= startDate))
             .GroupBy(po => po.Status)
             .Select(g => new { g.Key, Count = g.Count() })
@@ -3268,7 +3268,7 @@ public class ReportRepository(
 
         // Requisitions
         var requisitionCounts = await context
-            .Requisitions
+            .Requisitions.IgnoreQueryFilters()
             .Where(r => r.DeletedAt == null && (startDate == null || r.CreatedAt >= startDate))
             .GroupBy(r => r.Status)
             .Select(g => new { g.Key, Count = g.Count() })
@@ -3289,7 +3289,7 @@ public class ReportRepository(
 
         // Material Distribution
         var distributionCounts = await context
-            .DistributeMaterials
+            .DistributeMaterials.IgnoreQueryFilters()
             .Where(dm => dm.DeletedAt == null && (startDate == null || dm.CreatedAt >= startDate))
             .GroupBy(dm => dm.Status)
             .Select(g => new { g.Key, Count = g.Count() })
@@ -3307,7 +3307,7 @@ public class ReportRepository(
 
         // Supplier Quotation Items
         var quotationCounts = await context
-            .SupplierQuotationItems
+            .SupplierQuotationItems.IgnoreQueryFilters()
             .Where(sqi =>
                 sqi.DeletedAt == null && (startDate == null || sqi.CreatedAt >= startDate)
             )
@@ -3379,7 +3379,7 @@ public class ReportRepository(
         };
 
         var baseQuery = context
-            .StockTransferSources
+            .StockTransferSources.IgnoreQueryFilters()
             .Where(st => st.DeletedAt == null && (startDate == null || st.CreatedAt >= startDate));
 
         var incomingCounts = await baseQuery
@@ -3395,7 +3395,7 @@ public class ReportRepository(
             .ToListAsync();
 
         var requisitionCounts = await context
-            .Requisitions
+            .Requisitions.IgnoreQueryFilters()
             .Where(r =>
                 r.DeletedAt == null
                 && r.DepartmentId == departmentId
@@ -3458,7 +3458,7 @@ public class ReportRepository(
         var now = DateTime.UtcNow;
 
         var expiredMaterials = await context
-            .ShelfMaterialBatches
+            .ShelfMaterialBatches.IgnoreQueryFilters()
             .Where(smb =>
                 smb.DeletedAt == null
                 && smb.Quantity > 0
@@ -3494,7 +3494,7 @@ public class ReportRepository(
     {
         var reservedMaterialQuery = context
             .MaterialBatchReservedQuantities.AsSplitQuery()
-            
+            .IgnoreQueryFilters()
             .Where(r =>
                 r.DeletedAt == null
                 && (!departmentId.HasValue || r.Warehouse.DepartmentId == departmentId.Value)
@@ -3540,7 +3540,7 @@ public class ReportRepository(
     )
     {
         var materialDepartments = await context
-            .MaterialDepartments
+            .MaterialDepartments.IgnoreQueryFilters()
             .Where(md => md.DepartmentId == departmentId && md.DeletedAt == null)
             .Select(md => new
             {
@@ -3554,7 +3554,7 @@ public class ReportRepository(
 
         var materials = await context
             .Materials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(m => materialIds.Contains(m.Id))
             .Select(m => new
             {
@@ -3568,7 +3568,7 @@ public class ReportRepository(
 
         var shelfQuantities = await context
             .ShelfMaterialBatches.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(smb =>
                 smb.DeletedAt == null && materialIds.Contains(smb.MaterialBatch.MaterialId)
             )
@@ -3608,7 +3608,7 @@ public class ReportRepository(
     {
         var query = context
             .DistributedRequisitionMaterials.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(drm =>
                 drm.DeletedAt == null
                 && drm.WarehouseArrivalLocation.Warehouse.DepartmentId == departmentId
@@ -3665,7 +3665,7 @@ public class ReportRepository(
         };
 
         var shipmentCounts = await context
-            .ShipmentDocuments
+            .ShipmentDocuments.IgnoreQueryFilters()
             .Where(sd => sd.DeletedAt == null && (startDate == null || sd.CreatedAt >= startDate))
             .GroupBy(sd => sd.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
@@ -3698,7 +3698,7 @@ public class ReportRepository(
             _ => null,
         };
         var itemsCount = await context
-            .Items
+            .Items.IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
             .GroupBy(i => i.Store)
             .Select(g => new { Store = g.Key, Count = g.Count() })
@@ -3713,7 +3713,7 @@ public class ReportRepository(
         };
 
         var itemRequisitionCount = await context
-            .ItemStockRequisitions
+            .ItemStockRequisitions.IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
             .GroupBy(i => i.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
@@ -3737,7 +3737,7 @@ public class ReportRepository(
         };
 
         var totalVendors = await context
-            .Vendors
+            .Vendors.IgnoreQueryFilters()
             .Where(v => v.DeletedAt == null)
             .CountAsync();
 
@@ -3754,7 +3754,7 @@ public class ReportRepository(
     {
         var items = await context
             .Items.AsNoTracking()
-            
+            .IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null && i.IsActive && i.AvailableQuantity <= i.ReorderLevel)
             .Select(i => new ItemBelowReorderDto
             {
@@ -3780,12 +3780,12 @@ public class ReportRepository(
             _ => null,
         };
         var totalService = await context
-            .Services
+            .Services.IgnoreQueryFilters()
             .Where(s => s.DeletedAt == null)
             .CountAsync();
 
         var jobrequisiition = await context
-            .JobRequests
+            .JobRequests.IgnoreQueryFilters()
             .Where(j => j.DeletedAt == null)
             .GroupBy(j => j.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
@@ -3812,7 +3812,7 @@ public class ReportRepository(
         };
 
         var contractorsCount = await context
-            .ServiceProviders
+            .ServiceProviders.IgnoreQueryFilters()
             .Where(i => i.DeletedAt == null && (startDate == null || i.CreatedAt >= startDate))
             .CountAsync();
 
@@ -3832,7 +3832,7 @@ public class ReportRepository(
         var invoicesQuery = context
             .ProformaInvoices.AsNoTracking()
             .AsSplitQuery()
-            
+            .IgnoreQueryFilters()
             .Where(p => !p.DeletedAt.HasValue);
 
         if (filters.StartDate.HasValue)
@@ -3928,7 +3928,7 @@ public class ReportRepository(
         var invoicesQuery = context
             .ProformaInvoices.AsNoTracking()
             .AsSplitQuery()
-            
+            .IgnoreQueryFilters()
             .Where(p => !p.DeletedAt.HasValue);
 
         if (filters.StartDate.HasValue)
@@ -6651,6 +6651,548 @@ public class ReportRepository(
             })
             .OrderByDescending(x => x.DaysInArrival)
             .Select((x, i) => { x.No = i + 1; return x; })
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    // ---------------------------------------------------------------------
+    // Production Dashboard KPI Widgets (KPI 6 - 12)
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// KPI 6 - Schedule Adherence (On-Time Completion Rate). Compares the
+    /// actual completion time of each completed production activity against the
+    /// scheduled end time of its schedule, grouped by department.
+    /// </summary>
+    public async Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(
+        ProductionKpiFilter filter
+    )
+    {
+        var query = context
+            .ProductionActivities.IgnoreQueryFilters()
+            .Where(a =>
+                a.DeletedAt == null
+                && a.Status == ProductionStatus.Completed
+                && a.CompletedAt.HasValue
+            );
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(a =>
+                a.ProductionScheduleProduct.ProductionSchedule.DepartmentId
+                == filter.DepartmentId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            query = query.Where(a => a.CompletedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(a => a.CompletedAt < end);
+        }
+
+        var rows = await query
+            .Select(a => new
+            {
+                a.ProductionScheduleProduct.ProductionSchedule.DepartmentId,
+                DepartmentName = a.ProductionScheduleProduct.ProductionSchedule.Department.Name,
+                CompletedAt = a.CompletedAt.Value,
+                a.ProductionScheduleProduct.ProductionSchedule.ScheduledEndTime,
+            })
+            .ToListAsync();
+
+        var result = rows.GroupBy(r => new { r.DepartmentId, r.DepartmentName })
+            .Select(g =>
+            {
+                var onTime = g.Count(x => x.CompletedAt <= x.ScheduledEndTime);
+                var total = g.Count();
+                return new ScheduleAdherenceDto
+                {
+                    DepartmentId = g.Key.DepartmentId,
+                    Department = g.Key.DepartmentName,
+                    OnTime = onTime,
+                    Delayed = total - onTime,
+                    TotalCompleted = total,
+                    AdherencePercentage =
+                        total == 0 ? 0 : Math.Round((decimal)onTime / total * 100, 2),
+                };
+            })
+            .OrderBy(x => x.Department)
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 7 - Production Output Volume. Total quantity packed segmented by
+    /// department and division.
+    /// </summary>
+    public async Task<Result<List<ProductionOutputVolumeDto>>> GetProductionOutputVolume(
+        ProductionKpiFilter filter
+    )
+    {
+        var query = context.FinalPackings.IgnoreQueryFilters().Where(fp => fp.DeletedAt == null);
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(fp =>
+                fp.ProductionScheduleProduct.Product.DepartmentId == filter.DepartmentId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            query = query.Where(fp => fp.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(fp => fp.CreatedAt < end);
+        }
+
+        var rows = await query
+            .Select(fp => new
+            {
+                fp.ProductionScheduleProduct.Product.DepartmentId,
+                DepartmentName = fp.ProductionScheduleProduct.Product.Department.Name,
+                fp.ProductionScheduleProduct.Product.Division,
+                fp.ProductionScheduleProduct.ProductId,
+                fp.ProductionScheduleProduct.BatchNumber,
+                Uom = fp.ProductionScheduleProduct.Product.BaseUoM.Symbol,
+                fp.TotalQuantityPacked,
+            })
+            .ToListAsync();
+
+        var result = rows.GroupBy(r => new
+            {
+                r.DepartmentId,
+                r.DepartmentName,
+                r.Division,
+            })
+            .Select(g => new ProductionOutputVolumeDto
+            {
+                DepartmentId = g.Key.DepartmentId,
+                Department = g.Key.DepartmentName,
+                Division = g.Key.Division,
+                ProductCount = g.Select(x => x.ProductId).Distinct().Count(),
+                TotalBatchCount = g.Select(x => x.BatchNumber)
+                    .Where(b => b != null)
+                    .Distinct()
+                    .Count(),
+                TotalQuantityPacked = g.Sum(x => x.TotalQuantityPacked),
+                Uom = g.Select(x => x.Uom).FirstOrDefault(u => u != null),
+            })
+            .OrderBy(x => x.Department)
+            .ThenBy(x => x.Division)
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 8 - ATR Testing Backlog. Batch Manufacturing Records awaiting QC
+    /// action (New / Testing / TestTaken) grouped by department.
+    /// </summary>
+    public async Task<Result<List<AtrTestingBacklogDto>>> GetAtrTestingBacklog(
+        ProductionKpiFilter filter
+    )
+    {
+        var backlogStatuses = new[]
+        {
+            BatchManufacturingStatus.New,
+            BatchManufacturingStatus.Testing,
+            BatchManufacturingStatus.TestTaken,
+        };
+
+        var query = context
+            .BatchManufacturingRecords.IgnoreQueryFilters()
+            .Where(b => b.DeletedAt == null && backlogStatuses.Contains(b.Status));
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(b =>
+                b.ProductionScheduleProduct.ProductionSchedule.DepartmentId
+                == filter.DepartmentId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            query = query.Where(b => b.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(b => b.CreatedAt < end);
+        }
+
+        var rows = await query
+            .Select(b => new
+            {
+                b.ProductionScheduleProduct.ProductionSchedule.DepartmentId,
+                DepartmentName = b.ProductionScheduleProduct.ProductionSchedule.Department.Name,
+                b.Status,
+                b.CreatedAt,
+            })
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        var result = rows.GroupBy(r => new { r.DepartmentId, r.DepartmentName })
+            .Select(g => new AtrTestingBacklogDto
+            {
+                DepartmentId = g.Key.DepartmentId,
+                Department = g.Key.DepartmentName,
+                NewNotSampled = g.Count(x => x.Status == BatchManufacturingStatus.New),
+                Testing = g.Count(x => x.Status == BatchManufacturingStatus.Testing),
+                TestTaken = g.Count(x => x.Status == BatchManufacturingStatus.TestTaken),
+                TotalBacklog = g.Count(),
+                OldestWaitingDays = g.Any() ? (int)(now - g.Min(x => x.CreatedAt)).TotalDays : 0,
+            })
+            .OrderBy(x => x.Department)
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 9 - Stock Requisition Pending for Production. Stock transfer sources
+    /// still open (InProgress / Approved), with rejects reported alongside,
+    /// grouped by destination department.
+    /// </summary>
+    public async Task<Result<List<StockRequisitionPendingDto>>> GetStockRequisitionPending(
+        ProductionKpiFilter filter
+    )
+    {
+        var statuses = new[]
+        {
+            StockTransferStatus.InProgress,
+            StockTransferStatus.Approved,
+            StockTransferStatus.Rejected,
+        };
+
+        var query = context
+            .StockTransferSources.IgnoreQueryFilters()
+            .Where(s => s.DeletedAt == null && statuses.Contains(s.Status));
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(s => s.ToDepartmentId == filter.DepartmentId.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            query = query.Where(s => s.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(s => s.CreatedAt < end);
+        }
+
+        var rows = await query
+            .Select(s => new
+            {
+                s.ToDepartmentId,
+                DepartmentName = s.ToDepartment.Name,
+                s.Status,
+                s.CreatedAt,
+            })
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        var result = rows.GroupBy(r => new { r.ToDepartmentId, r.DepartmentName })
+            .Select(g =>
+            {
+                var pending = g.Where(x =>
+                        x.Status == StockTransferStatus.InProgress
+                        || x.Status == StockTransferStatus.Approved
+                    )
+                    .ToList();
+                return new StockRequisitionPendingDto
+                {
+                    DepartmentId = g.Key.ToDepartmentId,
+                    Department = g.Key.DepartmentName,
+                    InProgress = g.Count(x => x.Status == StockTransferStatus.InProgress),
+                    Approved = g.Count(x => x.Status == StockTransferStatus.Approved),
+                    Reject = g.Count(x => x.Status == StockTransferStatus.Rejected),
+                    Total = g.Count(),
+                    OldestPendingDays =
+                        pending.Count != 0
+                            ? (int)(now - pending.Min(x => x.CreatedAt)).TotalDays
+                            : 0,
+                };
+            })
+            .OrderBy(x => x.Department)
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 10 - FGTN Pending Approval. Finished Goods Transfer Notes awaiting
+    /// approval, grouped by the source production department.
+    /// </summary>
+    public async Task<Result<List<FgtnPendingApprovalDto>>> GetFgtnPendingApproval(
+        ProductionKpiFilter filter
+    )
+    {
+        var query = context
+            .FinishedGoodsTransferNotes.IgnoreQueryFilters()
+            .Where(f => f.DeletedAt == null);
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(f => f.FromWarehouse.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            query = query.Where(f => f.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(f => f.CreatedAt < end);
+        }
+
+        var rows = await query
+            .Select(f => new
+            {
+                f.FromWarehouse.DepartmentId,
+                DepartmentName = f.FromWarehouse.Department.Name,
+                f.IsApproved,
+                f.CreatedAt,
+            })
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        var result = rows.GroupBy(r => new { r.DepartmentId, r.DepartmentName })
+            .Select(g =>
+            {
+                var pending = g.Where(x => !x.IsApproved).ToList();
+                return new FgtnPendingApprovalDto
+                {
+                    DepartmentId = g.Key.DepartmentId,
+                    FromDepartment = g.Key.DepartmentName,
+                    PendingApproval = pending.Count,
+                    Approved = g.Count(x => x.IsApproved),
+                    AverageAgingDays =
+                        pending.Count != 0
+                            ? Math.Round(
+                                (decimal)pending.Average(x => (now - x.CreatedAt).TotalDays),
+                                2
+                            )
+                            : 0,
+                };
+            })
+            .OrderBy(x => x.FromDepartment)
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 11 - Production Order Delivery Status. Order counts per status with
+    /// their allocation, loaded and delivered figures.
+    /// </summary>
+    public async Task<
+        Result<List<ProductionOrderDeliveryStatusDto>>
+    > GetProductionOrderDeliveryStatus(ProductionKpiFilter filter, Guid? customerId)
+    {
+        var orderQuery = context
+            .ProductionOrders.IgnoreQueryFilters()
+            .Where(o => o.DeletedAt == null);
+
+        if (customerId.HasValue)
+            orderQuery = orderQuery.Where(o => o.CustomerId == customerId.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            orderQuery = orderQuery.Where(o => o.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            orderQuery = orderQuery.Where(o => o.CreatedAt < end);
+        }
+
+        var orderCounts = await orderQuery
+            .GroupBy(o => o.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var allocationQuery = context
+            .AllocateProductionOrders.IgnoreQueryFilters()
+            .Where(a => a.DeletedAt == null);
+
+        if (customerId.HasValue)
+            allocationQuery = allocationQuery.Where(a =>
+                a.ProductionOrder.CustomerId == customerId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            allocationQuery = allocationQuery.Where(a => a.ProductionOrder.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            allocationQuery = allocationQuery.Where(a => a.ProductionOrder.CreatedAt < end);
+        }
+
+        var allocationCounts = await allocationQuery
+            .GroupBy(a => a.ProductionOrder.Status)
+            .Select(g => new
+            {
+                Status = g.Key,
+                Allocated = g.Count(),
+                Loaded = g.Count(x => x.Status == AllocateProductionOrderStatus.Loaded),
+                Delivered = g.Count(x => x.Status == AllocateProductionOrderStatus.Delivered),
+            })
+            .ToListAsync();
+
+        var statuses = new[]
+        {
+            ProductionOrderStatus.Pending,
+            ProductionOrderStatus.PartialPackingReady,
+            ProductionOrderStatus.FullPackingReady,
+        };
+
+        var result = statuses
+            .Select(status =>
+            {
+                var alloc = allocationCounts.FirstOrDefault(a => a.Status == status);
+                return new ProductionOrderDeliveryStatusDto
+                {
+                    Status = status,
+                    StatusName = status.ToString(),
+                    OrderCount = orderCounts.FirstOrDefault(o => o.Status == status)?.Count ?? 0,
+                    AllocatedCount = alloc?.Allocated ?? 0,
+                    Loaded = alloc?.Loaded ?? 0,
+                    Delivered = alloc?.Delivered ?? 0,
+                };
+            })
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 12 - Material Return Rate. Compares quantity issued to production
+    /// against quantity returned, grouped by production department.
+    /// </summary>
+    public async Task<Result<List<MaterialReturnRateDto>>> GetMaterialReturnRate(
+        ProductionKpiFilter filter
+    )
+    {
+        // Issued quantities are keyed on the destination (production) department.
+        var issuedQuery = context
+            .StockTransferSources.IgnoreQueryFilters()
+            .Where(s => s.DeletedAt == null && s.Status == StockTransferStatus.Issued);
+
+        if (filter.DepartmentId.HasValue)
+            issuedQuery = issuedQuery.Where(s => s.ToDepartmentId == filter.DepartmentId.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            issuedQuery = issuedQuery.Where(s => s.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            issuedQuery = issuedQuery.Where(s => s.CreatedAt < end);
+        }
+
+        var issued = await issuedQuery
+            .GroupBy(s => new { s.ToDepartmentId, DepartmentName = s.ToDepartment.Name })
+            .Select(g => new
+            {
+                g.Key.ToDepartmentId,
+                g.Key.DepartmentName,
+                IssuedQuantity = g.Sum(x => x.Quantity),
+            })
+            .ToListAsync();
+
+        // Returned quantities are keyed on the schedule's production department.
+        var returnQuery = context
+            .MaterialReturnNotes.IgnoreQueryFilters()
+            .Where(r => r.DeletedAt == null);
+
+        if (filter.DepartmentId.HasValue)
+            returnQuery = returnQuery.Where(r =>
+                r.ProductionScheduleProduct.ProductionSchedule.DepartmentId
+                == filter.DepartmentId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value;
+            returnQuery = returnQuery.Where(r => r.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            returnQuery = returnQuery.Where(r => r.CreatedAt < end);
+        }
+
+        var returns = await returnQuery
+            .Select(r => new
+            {
+                r.ProductionScheduleProduct.ProductionSchedule.DepartmentId,
+                DepartmentName = r.ProductionScheduleProduct.ProductionSchedule.Department.Name,
+                PartialQuantity = r.PartialReturns.Sum(p => (decimal?)p.Quantity) ?? 0,
+                FullQuantity =
+                    r.FullReturns.Sum(f => (decimal?)f.MaterialBatchReservedQuantity.Quantity) ?? 0,
+            })
+            .ToListAsync();
+
+        var returnGroups = returns
+            .GroupBy(r => new { r.DepartmentId, r.DepartmentName })
+            .Select(g => new
+            {
+                g.Key.DepartmentId,
+                g.Key.DepartmentName,
+                ReturnedQuantity = g.Sum(x => x.PartialQuantity + x.FullQuantity),
+                NoteCount = g.Count(),
+            })
+            .ToList();
+
+        var departmentIds = issued
+            .Select(i => (Guid?)i.ToDepartmentId)
+            .Union(returnGroups.Select(r => r.DepartmentId))
+            .Distinct()
+            .ToList();
+
+        var result = departmentIds
+            .Select(deptId =>
+            {
+                var iss = issued.FirstOrDefault(i => i.ToDepartmentId == deptId);
+                var ret = returnGroups.FirstOrDefault(r => r.DepartmentId == deptId);
+                var issuedQty = iss?.IssuedQuantity ?? 0;
+                var returnedQty = ret?.ReturnedQuantity ?? 0;
+                return new MaterialReturnRateDto
+                {
+                    DepartmentId = deptId,
+                    Department = iss?.DepartmentName ?? ret?.DepartmentName,
+                    TotalIssuedQuantity = issuedQty,
+                    TotalReturnedQuantity = returnedQty,
+                    ReturnRatePercentage =
+                        issuedQty == 0 ? 0 : Math.Round(returnedQty / issuedQty * 100, 2),
+                    ReturnNoteCount = ret?.NoteCount ?? 0,
+                };
+            })
+            .OrderBy(x => x.Department)
             .ToList();
 
         return Result.Success(result);
