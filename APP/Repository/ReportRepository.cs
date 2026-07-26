@@ -25,6 +25,7 @@ using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.GeneralInventory;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.StockAdjustments;
+using DOMAIN.Entities.Reports.HrDashboardKpi;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
@@ -10238,5 +10239,156 @@ public class ReportRepository(
             .ToList();
 
         return Result.Success(result);
+    }
+
+    public async Task<Result<IEnumerable<EmployeeHeadcountSnapshotDto>>> GetEmployeeHeadcountSnapshot(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.DepartmentId.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (filter.EmployeeType.HasValue)
+            query = query.Where(e => e.Type == filter.EmployeeType.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(e => e.Status == filter.Status.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unknown";
+
+            var permanentActive = await query
+                .CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active);
+            var casualActive = await query
+                .CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active);
+            var permanentInactive = await query
+                .CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive);
+            var casualInactive = await query
+                .CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive);
+
+            return Result.Success(new List<EmployeeHeadcountSnapshotDto>
+            {
+                new EmployeeHeadcountSnapshotDto
+                {
+                    Department = deptName,
+                    PermanentActive = permanentActive,
+                    CasualActive = casualActive,
+                    PermanentInactive = permanentInactive,
+                    CasualInactive = casualInactive,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    PermanentActive = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active),
+                    CasualActive = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active),
+                    PermanentInactive = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive),
+                    CasualInactive = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .OrderBy(g => g.Department)
+                .Select(g => new EmployeeHeadcountSnapshotDto
+                {
+                    Department = g.Department,
+                    PermanentActive = g.PermanentActive,
+                    CasualActive = g.CasualActive,
+                    PermanentInactive = g.PermanentInactive,
+                    CasualInactive = g.CasualInactive,
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<EmployeeGenderRatioDto>>> GetEmployeeGenderRatio(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.DepartmentId.HasValue && e.Status == EmployeeStatus.Active);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unknown";
+
+            var permMale = await query.CountAsync(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Male);
+            var permFemale = await query.CountAsync(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Female);
+            var casualMale = await query.CountAsync(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Male);
+            var casualFemale = await query.CountAsync(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Female);
+
+            var totalMale = permMale + casualMale;
+            var totalFemale = permFemale + casualFemale;
+            var ratio = totalFemale > 0
+                ? $"{(decimal)totalMale / totalFemale:0.##}:1"
+                : $"{totalMale}:0";
+
+            return Result.Success(new List<EmployeeGenderRatioDto>
+            {
+                new EmployeeGenderRatioDto
+                {
+                    Department = deptName,
+                    PermanentMale = permMale,
+                    PermanentFemale = permFemale,
+                    CasualMale = casualMale,
+                    CasualFemale = casualFemale,
+                    GenderRatio = ratio,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    PermanentMale = g.Count(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Male),
+                    PermanentFemale = g.Count(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Female),
+                    CasualMale = g.Count(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Male),
+                    CasualFemale = g.Count(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Female),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .OrderBy(g => g.Department)
+                .Select(g =>
+                {
+                    var totalMale = g.PermanentMale + g.CasualMale;
+                    var totalFemale = g.PermanentFemale + g.CasualFemale;
+                    var ratio = totalFemale > 0
+                        ? $"{(decimal)totalMale / totalFemale:0.##}:1"
+                        : $"{totalMale}:0";
+
+                    return new EmployeeGenderRatioDto
+                    {
+                        Department = g.Department,
+                        PermanentMale = g.PermanentMale,
+                        PermanentFemale = g.PermanentFemale,
+                        CasualMale = g.CasualMale,
+                        CasualFemale = g.CasualFemale,
+                        GenderRatio = ratio,
+                    };
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
     }
 }

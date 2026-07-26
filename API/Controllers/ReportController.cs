@@ -9,6 +9,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.GeneralInventory;
+using DOMAIN.Entities.Reports.HrDashboardKpi;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
@@ -1486,5 +1487,33 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var result = await repository.GetArrivalLocationStatus(WarehouseId, Status, AgingThresholdDays ?? 3);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/employee-headcount")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeHeadcountSnapshotDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeHeadcount(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] EmployeeType? EmployeeType,
+        [FromQuery] EmployeeStatus? Status)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            EmployeeType = EmployeeType,
+            Status = Status,
+        };
+        var result = await repository.GetEmployeeHeadcountSnapshot(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/employee-gender-ratio")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeGenderRatioDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeGenderRatio(
+        [FromQuery] Guid? DepartmentId)
+    {
+        var filter = new HrKpiFilterDto();
+        var result = await repository.GetEmployeeGenderRatio(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
     }
 }
