@@ -1516,4 +1516,38 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetEmployeeGenderRatio(filter, DepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
     }
+
+    [HttpGet("hr-kpi/leave-request-pipeline")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<LeaveRequestPipelineDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveRequestPipeline(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] DateTime? StartDate,
+        [FromQuery] DateTime? EndDate)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            StartDate = StartDate,
+            EndDate = EndDate,
+        };
+        var result = await repository.GetLeaveRequestPipeline(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/overtime-request-activity")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<OvertimeRequestActivityDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetOvertimeRequestActivity(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] DateTime? StartDate,
+        [FromQuery] DateTime? EndDate)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            StartDate = StartDate,
+            EndDate = EndDate,
+        };
+        var result = await repository.GetOvertimeRequestActivity(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
 }

@@ -218,4 +218,10 @@ public interface IReportRepository
 
     Task<Result<IEnumerable<EmployeeGenderRatioDto>>> GetEmployeeGenderRatio(
         HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<LeaveRequestPipelineDto>>> GetLeaveRequestPipeline(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<OvertimeRequestActivityDto>>> GetOvertimeRequestActivity(
+        HrKpiFilterDto filter, Guid? departmentId);
 }

@@ -10391,4 +10391,199 @@ public class ReportRepository(
             return Result.Success(results.AsEnumerable());
         }
     }
+
+    public async Task<Result<IEnumerable<LeaveRequestPipelineDto>>> GetLeaveRequestPipeline(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.LeaveRequests.IgnoreQueryFilters().AsNoTracking()
+            .Include(lr => lr.Employee)
+            .Where(lr => !lr.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(lr => lr.Employee.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(lr => lr.StartDate >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(lr => lr.EndDate <= filter.EndDate.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(lr => lr.Employee.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var groups = await query
+                .GroupBy(lr => lr.RequestCategory)
+                .Select(g => new
+                {
+                    Category = g.Key,
+                    Pending = g.Count(lr => lr.LeaveStatus == LeaveStatus.Pending),
+                    Approved = g.Count(lr => lr.LeaveStatus == LeaveStatus.Approved),
+                    Rejected = g.Count(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+                    Expired = g.Count(lr => lr.LeaveStatus == LeaveStatus.Expired),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new LeaveRequestPipelineDto
+                {
+                    Department = deptName,
+                    Category = g.Category.ToString(),
+                    Pending = g.Pending,
+                    Approved = g.Approved,
+                    Rejected = g.Rejected,
+                    Expired = g.Expired,
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(lr => new { DeptName = lr.Employee.Department.Name, lr.RequestCategory })
+                .Select(g => new
+                {
+                    Department = g.Key.DeptName,
+                    Category = g.Key.RequestCategory,
+                    Pending = g.Count(lr => lr.LeaveStatus == LeaveStatus.Pending),
+                    Approved = g.Count(lr => lr.LeaveStatus == LeaveStatus.Approved),
+                    Rejected = g.Count(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+                    Expired = g.Count(lr => lr.LeaveStatus == LeaveStatus.Expired),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new LeaveRequestPipelineDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    Category = g.Category.ToString(),
+                    Pending = g.Pending,
+                    Approved = g.Approved,
+                    Rejected = g.Rejected,
+                    Expired = g.Expired,
+                })
+                .OrderBy(r => r.Department)
+                .ThenBy(r => r.Category)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<OvertimeRequestActivityDto>>> GetOvertimeRequestActivity(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.OvertimeRequests.IgnoreQueryFilters().AsNoTracking()
+            .Where(o => !o.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(o => o.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(o => o.OvertimeDate >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(o => o.OvertimeDate <= filter.EndDate.Value);
+
+        var rawData = await query
+            .Select(o => new
+            {
+                o.Status,
+                o.StartTime,
+                o.EndTime,
+                DeptName = o.Department.Name,
+            })
+            .ToListAsync();
+
+        var computed = rawData.Select(d => new
+        {
+            d.Status,
+            d.DeptName,
+            TotalHours = ComputeOvertimeHours(d.StartTime, d.EndTime),
+        });
+
+        if (departmentId.HasValue)
+        {
+            var deptName = computed.Select(d => d.DeptName).FirstOrDefault() ?? "Unassigned Department";
+
+            var groups = computed
+                .GroupBy(d => d.Status)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count(),
+                    TotalHours = g.Sum(d => d.TotalHours),
+                })
+                .ToList();
+
+            var allStatuses = new[] { OvertimeStatus.Pending, OvertimeStatus.Approved, OvertimeStatus.Rejected, OvertimeStatus.Expired };
+
+            var results = allStatuses
+                .Select(s =>
+                {
+                    var match = groups.FirstOrDefault(g => g.Status == s);
+                    var approvedHours = s == OvertimeStatus.Approved
+                        ? (match?.TotalHours ?? 0)
+                        : 0;
+
+                    return new OvertimeRequestActivityDto
+                    {
+                        Department = deptName,
+                        Status = s.ToString(),
+                        Count = match?.Count ?? 0,
+                        TotalHoursRequested = match?.TotalHours ?? 0,
+                        ApprovedHours = approvedHours,
+                    };
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+        else
+        {
+            var groups = computed
+                .GroupBy(d => new { d.DeptName, d.Status })
+                .Select(g => new
+                {
+                    Department = g.Key.DeptName,
+                    Status = g.Key.Status,
+                    Count = g.Count(),
+                    TotalHours = g.Sum(d => d.TotalHours),
+                })
+                .ToList();
+
+            var allStatuses = new[] { OvertimeStatus.Pending, OvertimeStatus.Approved, OvertimeStatus.Rejected, OvertimeStatus.Expired };
+
+            var results = groups
+                .Select(g =>
+                {
+                    var approvedHours = g.Status == OvertimeStatus.Approved ? g.TotalHours : 0;
+                    return new OvertimeRequestActivityDto
+                    {
+                        Department = g.Department ?? "Unassigned Department",
+                        Status = g.Status.ToString(),
+                        Count = g.Count,
+                        TotalHoursRequested = g.TotalHours,
+                        ApprovedHours = approvedHours,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ThenBy(r => r.Status)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    private static int ComputeOvertimeHours(string startTime, string endTime)
+    {
+        if (!TimeOnly.TryParse(startTime, out var start) || !TimeOnly.TryParse(endTime, out var end))
+            return 0;
+
+        var duration = end.ToTimeSpan() - start.ToTimeSpan();
+        return (int)duration.TotalHours;
+    }
 }
