@@ -13,6 +13,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -10572,6 +10573,225 @@ public class ReportRepository(
                 })
                 .OrderBy(r => r.Department)
                 .ThenBy(r => r.Status)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<DailyAttendanceRateDto>>> GetDailyAttendanceRate(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var targetDate = filter.StartDate?.Date ?? DateTime.UtcNow.Date;
+
+        var presentStaffNumbers = await context.AttendanceRecords
+            .IgnoreQueryFilters().AsNoTracking()
+            .Where(a => a.TimeStamp.Date == targetDate && a.WorkState == WorkState.CheckIn)
+            .Select(a => a.EmployeeId)
+            .Distinct()
+            .ToListAsync();
+
+        var employeeQuery = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.Status == EmployeeStatus.Active);
+
+        if (departmentId.HasValue)
+            employeeQuery = employeeQuery.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await employeeQuery
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var expectedTotal = await employeeQuery.CountAsync();
+            var present = await employeeQuery
+                .CountAsync(e => presentStaffNumbers.Contains(e.StaffNumber));
+            var absent = expectedTotal - present;
+            var rate = expectedTotal > 0 ? Math.Round((decimal)present / expectedTotal * 100, 2) : 0;
+
+            return Result.Success(new List<DailyAttendanceRateDto>
+            {
+                new DailyAttendanceRateDto
+                {
+                    Department = deptName,
+                    Present = present,
+                    Absent = absent,
+                    ExpectedTotal = expectedTotal,
+                    AttendanceRatePercent = rate,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var expectedByDept = await employeeQuery
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Expected = g.Count() })
+                .ToListAsync();
+
+            var presentByDept = await employeeQuery
+                .Where(e => presentStaffNumbers.Contains(e.StaffNumber))
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Present = g.Count() })
+                .ToListAsync();
+
+            var results = expectedByDept
+                .Select(e =>
+                {
+                    var present = presentByDept.FirstOrDefault(p => p.Department == e.Department)?.Present ?? 0;
+                    return new DailyAttendanceRateDto
+                    {
+                        Department = e.Department ?? "Unassigned Department",
+                        Present = present,
+                        Absent = e.Expected - present,
+                        ExpectedTotal = e.Expected,
+                        AttendanceRatePercent = e.Expected > 0
+                            ? Math.Round((decimal)present / e.Expected * 100, 2)
+                            : 0,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<StaffRequisitionPipelineDto>>> GetStaffRequisitionPipeline(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.StaffRequisitions.IgnoreQueryFilters().AsNoTracking()
+            .Where(sr => !sr.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(sr => sr.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(sr => sr.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(sr => sr.CreatedAt <= filter.EndDate.Value);
+
+        var statuses = new[]
+        {
+            StaffRequisitionStatus.New,
+            StaffRequisitionStatus.Pending,
+            StaffRequisitionStatus.Approved,
+            StaffRequisitionStatus.Rejected,
+        };
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(sr => sr.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var groups = await query
+                .GroupBy(sr => sr.StaffRequisitionStatus)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count(),
+                    TotalPositions = g.Sum(sr => sr.StaffRequired),
+                })
+                .ToListAsync();
+
+            var results = statuses
+                .Select(s =>
+                {
+                    var match = groups.FirstOrDefault(g => g.Status == s);
+                    return new StaffRequisitionPipelineDto
+                    {
+                        Department = deptName,
+                        Status = s.ToString(),
+                        Count = match?.Count ?? 0,
+                        TotalPositionsRequired = match?.TotalPositions ?? 0,
+                    };
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(sr => new { sr.Department.Name, sr.StaffRequisitionStatus })
+                .Select(g => new
+                {
+                    Department = g.Key.Name,
+                    Status = g.Key.StaffRequisitionStatus,
+                    Count = g.Count(),
+                    TotalPositions = g.Sum(sr => sr.StaffRequired),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new StaffRequisitionPipelineDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    Status = g.Status.ToString(),
+                    Count = g.Count,
+                    TotalPositionsRequired = g.TotalPositions,
+                })
+                .OrderBy(r => r.Department)
+                .ThenBy(r => r.Status)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<EmployeeGradeLevelDistributionDto>>> GetEmployeeGradeLevelDistribution(
+        Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.Status == EmployeeStatus.Active);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var juniorStaff = await query.CountAsync(e => e.Level == EmployeeLevel.JuniorStaff);
+            var seniorStaff = await query.CountAsync(e => e.Level == EmployeeLevel.SeniorStaff);
+            var seniorMgmt = await query.CountAsync(e => e.Level == EmployeeLevel.SeniorManagement);
+
+            return Result.Success(new List<EmployeeGradeLevelDistributionDto>
+            {
+                new EmployeeGradeLevelDistributionDto
+                {
+                    Department = deptName,
+                    JuniorStaff = juniorStaff,
+                    SeniorStaff = seniorStaff,
+                    SeniorManagement = seniorMgmt,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    JuniorStaff = g.Count(e => e.Level == EmployeeLevel.JuniorStaff),
+                    SeniorStaff = g.Count(e => e.Level == EmployeeLevel.SeniorStaff),
+                    SeniorManagement = g.Count(e => e.Level == EmployeeLevel.SeniorManagement),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new EmployeeGradeLevelDistributionDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    JuniorStaff = g.JuniorStaff,
+                    SeniorStaff = g.SeniorStaff,
+                    SeniorManagement = g.SeniorManagement,
+                })
+                .OrderBy(r => r.Department)
                 .ToList();
 
             return Result.Success(results.AsEnumerable());

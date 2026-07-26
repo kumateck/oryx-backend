@@ -1550,4 +1550,46 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetOvertimeRequestActivity(filter, DepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
     }
+
+    [HttpGet("hr-kpi/daily-attendance-rate")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<DailyAttendanceRateDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetDailyAttendanceRate(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] DateTime? Date)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            StartDate = Date,
+        };
+        var result = await repository.GetDailyAttendanceRate(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/staff-requisition-pipeline")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StaffRequisitionPipelineDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetStaffRequisitionPipeline(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] DateTime? StartDate,
+        [FromQuery] DateTime? EndDate)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            StartDate = StartDate,
+            EndDate = EndDate,
+        };
+        var result = await repository.GetStaffRequisitionPipeline(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/employee-grade-level-distribution")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeGradeLevelDistributionDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeGradeLevelDistribution(
+        [FromQuery] Guid? DepartmentId)
+    {
+        var result = await repository.GetEmployeeGradeLevelDistribution(DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
 }

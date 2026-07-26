@@ -224,4 +224,13 @@ public interface IReportRepository
 
     Task<Result<IEnumerable<OvertimeRequestActivityDto>>> GetOvertimeRequestActivity(
         HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<DailyAttendanceRateDto>>> GetDailyAttendanceRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<StaffRequisitionPipelineDto>>> GetStaffRequisitionPipeline(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<EmployeeGradeLevelDistributionDto>>> GetEmployeeGradeLevelDistribution(
+        Guid? departmentId);
 }

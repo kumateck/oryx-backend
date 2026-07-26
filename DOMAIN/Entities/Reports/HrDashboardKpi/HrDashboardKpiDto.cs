@@ -46,6 +46,32 @@ public class OvertimeRequestActivityDto
     public int ApprovedHours { get; set; }
 }
 
+public class DailyAttendanceRateDto
+{
+    public string Department { get; set; }
+    public int Present { get; set; }
+    public int Absent { get; set; }
+    public int ExpectedTotal { get; set; }
+    public decimal AttendanceRatePercent { get; set; }
+}
+
+public class StaffRequisitionPipelineDto
+{
+    public string Department { get; set; }
+    public string Status { get; set; }
+    public int Count { get; set; }
+    public int TotalPositionsRequired { get; set; }
+}
+
+public class EmployeeGradeLevelDistributionDto
+{
+    public string Department { get; set; }
+    public int JuniorStaff { get; set; }
+    public int SeniorStaff { get; set; }
+    public int SeniorManagement { get; set; }
+    public int Total => JuniorStaff + SeniorStaff + SeniorManagement;
+}
+
 public class HrKpiFilterDto
 {
     public Guid? DepartmentId { get; set; }
