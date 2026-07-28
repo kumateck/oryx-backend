@@ -224,7 +224,5 @@ public interface IReportRepository
 
     Task<Result<SwapRequestActivityDto>> GetSwapRequestActivity(
         WarehouseKpiFilterDto filter, Guid departmentId);
-
-    Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(
-        WarehouseKpiFilterDto filter);
+    
 }
