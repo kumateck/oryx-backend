@@ -6630,11 +6630,6 @@ public class ReportRepository(
         return Result.Success(result);
     }
 
-    public async Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(WarehouseKpiFilterDto filter)
-    {
-        throw new NotImplementedException();
-    }
-
     // ---------------------------------------------------------------------
     // Production Dashboard KPI Widgets (KPI 6 - 12)
     // ---------------------------------------------------------------------

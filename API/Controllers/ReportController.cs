@@ -719,11 +719,11 @@ public class ReportController(IReportRepository repository) : ControllerBase
     )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetWarehouseCapacityUtilisation(
-        [FromQuery] Guid? WarehouseId
+        [FromQuery] Guid? WarehouseId, [FromQuery] Guid? departmentId
     )
     {
         var filter = new WarehouseKpiFilterDto { WarehouseId = WarehouseId };
-        var result = await repository.GetWarehouseCapacityUtilisation(filter);
+        var result = await repository.GetWarehouseCapacityUtilisation(filter, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -899,6 +899,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetMaterialMovementCount(
         [FromQuery] Guid? WarehouseId,
+        [FromQuery] Guid DepartmentId,
         [FromQuery] DateFilter? DatePreset = null,
         [FromQuery] DateTime? CustomStartDate = null,
         [FromQuery] DateTime? CustomEndDate = null
@@ -911,7 +912,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
             CustomStartDate = CustomStartDate,
             CustomEndDate = CustomEndDate
         };
-        var result = await repository.GetMaterialMovementCount(filter);
+        var result = await repository.GetMaterialMovementCount(filter, DepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
