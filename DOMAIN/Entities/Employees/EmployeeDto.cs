@@ -8,7 +8,6 @@ using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Users;
-using SHARED;
 
 namespace DOMAIN.Entities.Employees;
 

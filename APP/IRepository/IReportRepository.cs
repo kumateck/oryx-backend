@@ -200,8 +200,6 @@ public interface IReportRepository
     Task<Result<List<ArrivalLocationStatusDto>>> GetArrivalLocationStatus(
         Guid? warehouseId = null, string status = null, int agingThresholdDays = 3,
         Guid? departmentId = null);
-    Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(
-        WarehouseKpiFilterDto filter);
 
     Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
         WarehouseKpiFilterDto filter, Guid? departmentId);

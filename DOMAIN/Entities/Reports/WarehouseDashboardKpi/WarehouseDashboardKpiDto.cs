@@ -1,7 +1,6 @@
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
-using DOMAIN.Entities.Products;
 
 namespace DOMAIN.Entities.Reports.WarehouseDashboardKpi;
 
