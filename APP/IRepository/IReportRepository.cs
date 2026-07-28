@@ -233,4 +233,16 @@ public interface IReportRepository
 
     Task<Result<IEnumerable<EmployeeGradeLevelDistributionDto>>> GetEmployeeGradeLevelDistribution(
         Guid? departmentId);
+
+    Task<Result<IEnumerable<NewHiresThisPeriodDto>>> GetNewHiresThisPeriod(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<EmployeeTurnoverRateDto>>> GetEmployeeTurnoverRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<LeaveUtilisationRateDto>>> GetLeaveUtilisationRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
+        Guid? departmentId);
 }

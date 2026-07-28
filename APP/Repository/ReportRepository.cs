@@ -9,6 +9,7 @@ using DOMAIN.Entities.Items;
 using DOMAIN.Entities.ItemStockRequisitions;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.LeaveEntitlements;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
@@ -10790,6 +10791,342 @@ public class ReportRepository(
                     JuniorStaff = g.JuniorStaff,
                     SeniorStaff = g.SeniorStaff,
                     SeniorManagement = g.SeniorManagement,
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<NewHiresThisPeriodDto>>> GetNewHiresThisPeriod(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.Status == EmployeeStatus.New);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(e => e.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(e => e.CreatedAt <= filter.EndDate.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var permCount = await query.CountAsync(e => e.Type == EmployeeType.Permanent);
+            var casualCount = await query.CountAsync(e => e.Type == EmployeeType.Casual);
+
+            return Result.Success(new List<NewHiresThisPeriodDto>
+            {
+                new NewHiresThisPeriodDto
+                {
+                    Department = deptName,
+                    PermanentNewHires = permCount,
+                    CasualNewHires = casualCount,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    PermanentNewHires = g.Count(e => e.Type == EmployeeType.Permanent),
+                    CasualNewHires = g.Count(e => e.Type == EmployeeType.Casual),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new NewHiresThisPeriodDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    PermanentNewHires = g.PermanentNewHires,
+                    CasualNewHires = g.CasualNewHires,
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<EmployeeTurnoverRateDto>>> GetEmployeeTurnoverRate(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var inactiveStatuses = new[]
+        {
+            EmployeeInactiveStatus.Resignation,
+            EmployeeInactiveStatus.Termination,
+            EmployeeInactiveStatus.SummaryDismissed,
+            EmployeeInactiveStatus.VacatedPost,
+        };
+
+        var baseQuery = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            baseQuery = baseQuery.Where(e => e.DepartmentId == departmentId.Value);
+
+        var startDate = filter.StartDate ?? DateTime.UtcNow.Date.AddMonths(-1);
+        var endDate = filter.EndDate ?? DateTime.UtcNow.Date;
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await baseQuery
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var leavers = await baseQuery
+                .CountAsync(e => e.InactiveStatus.HasValue
+                    && inactiveStatuses.Contains(e.InactiveStatus.Value)
+                    && e.ExitDate.HasValue
+                    && e.ExitDate >= startDate
+                    && e.ExitDate <= endDate);
+
+            var startHeadcount = await baseQuery
+                .CountAsync(e => e.CreatedAt < startDate
+                    && (!e.ExitDate.HasValue || e.ExitDate >= startDate));
+
+            var endHeadcount = await baseQuery
+                .CountAsync(e => e.CreatedAt <= endDate
+                    && (!e.ExitDate.HasValue || e.ExitDate > endDate));
+
+            var avgHeadcount = (startHeadcount + endHeadcount) / 2m;
+            var turnoverRate = avgHeadcount > 0 ? Math.Round(leavers / avgHeadcount * 100, 2) : 0;
+
+            return Result.Success(new List<EmployeeTurnoverRateDto>
+            {
+                new EmployeeTurnoverRateDto
+                {
+                    Department = deptName,
+                    Leavers = leavers,
+                    AverageHeadcount = avgHeadcount,
+                    TurnoverRatePercent = turnoverRate,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var leaversByDept = await baseQuery
+                .Where(e => e.InactiveStatus.HasValue
+                    && inactiveStatuses.Contains(e.InactiveStatus.Value)
+                    && e.ExitDate.HasValue
+                    && e.ExitDate >= startDate
+                    && e.ExitDate <= endDate)
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Leavers = g.Count() })
+                .ToListAsync();
+
+            var startByDept = await baseQuery
+                .Where(e => e.CreatedAt < startDate && (!e.ExitDate.HasValue || e.ExitDate >= startDate))
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var endByDept = await baseQuery
+                .Where(e => e.CreatedAt <= endDate && (!e.ExitDate.HasValue || e.ExitDate > endDate))
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var allDepts = startByDept.Select(d => d.Department)
+                .Union(endByDept.Select(d => d.Department))
+                .Union(leaversByDept.Select(d => d.Department))
+                .Distinct()
+                .ToList();
+
+            var results = allDepts
+                .Select(dept =>
+                {
+                    var leavers = leaversByDept.FirstOrDefault(l => l.Department == dept)?.Leavers ?? 0;
+                    var startCount = startByDept.FirstOrDefault(s => s.Department == dept)?.Count ?? 0;
+                    var endCount = endByDept.FirstOrDefault(e => e.Department == dept)?.Count ?? 0;
+                    var avgHeadcount = (startCount + endCount) / 2m;
+                    var turnoverRate = avgHeadcount > 0 ? Math.Round(leavers / avgHeadcount * 100, 2) : 0;
+
+                    return new EmployeeTurnoverRateDto
+                    {
+                        Department = dept ?? "Unassigned Department",
+                        Leavers = leavers,
+                        AverageHeadcount = avgHeadcount,
+                        TurnoverRatePercent = turnoverRate,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<LeaveUtilisationRateDto>>> GetLeaveUtilisationRate(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var year = filter.Year ?? DateTime.UtcNow.Year;
+
+        var employeeBase = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            employeeBase = employeeBase.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await employeeBase
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var staffDue = await employeeBase.CountAsync();
+
+            var totalDaysAllowed = await employeeBase
+                .SumAsync(e => e.Designation != null ? e.Designation.MaximumLeaveDays : 0);
+
+            var daysUsedData = await context.LeaveRequests.IgnoreQueryFilters().AsNoTracking()
+                .Where(lr => !lr.DeletedAt.HasValue
+                    && lr.Approved
+                    && lr.Employee.DepartmentId == departmentId.Value
+                    && lr.StartDate.Year == year)
+                .Select(lr => new { lr.StartDate, lr.EndDate })
+                .ToListAsync();
+
+            var totalDaysUsed = daysUsedData.Sum(lr => (lr.EndDate - lr.StartDate).Days);
+            var utilisationRate = totalDaysAllowed > 0
+                ? Math.Round((decimal)totalDaysUsed / totalDaysAllowed * 100, 2)
+                : 0;
+
+            return Result.Success(new List<LeaveUtilisationRateDto>
+            {
+                new LeaveUtilisationRateDto
+                {
+                    Department = deptName,
+                    StaffDueForLeave = staffDue,
+                    TotalDaysAllowed = totalDaysAllowed,
+                    TotalDaysUsed = totalDaysUsed,
+                    UtilisationPercent = utilisationRate,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var staffAndAllowedByDept = await
+                (from e in employeeBase
+                 group e by e.Department.Name into g
+                 select new
+                 {
+                     Department = g.Key,
+                     StaffDue = g.Count(),
+                     TotalAllowed = g.Sum(e => e.Designation != null ? e.Designation.MaximumLeaveDays : 0)
+                 })
+                .ToListAsync();
+
+            var daysUsedByDept = await
+                (from lr in context.LeaveRequests.IgnoreQueryFilters().AsNoTracking()
+                 join e in context.Employees.IgnoreQueryFilters().AsNoTracking()
+                     .Where(emp => !emp.DeletedAt.HasValue)
+                     on lr.EmployeeId equals e.Id
+                 where !lr.DeletedAt.HasValue
+                     && lr.Approved
+                     && lr.StartDate.Year == year
+                 select new { DaysDiff = (lr.EndDate - lr.StartDate).Days, DeptName = e.Department.Name })
+                .GroupBy(x => x.DeptName)
+                .Select(g => new { Department = g.Key, Total = g.Sum(x => x.DaysDiff) })
+                .ToListAsync();
+
+            var allDepts = staffAndAllowedByDept.Select(d => d.Department)
+                .Union(daysUsedByDept.Select(d => d.Department))
+                .Distinct()
+                .ToList();
+
+            var results = allDepts
+                .Select(dept =>
+                {
+                    var staffInfo = staffAndAllowedByDept.FirstOrDefault(s => s.Department == dept);
+                    var staffDue = staffInfo?.StaffDue ?? 0;
+                    var daysAllowed = staffInfo?.TotalAllowed ?? 0;
+                    var daysUsed = daysUsedByDept.FirstOrDefault(d => d.Department == dept)?.Total ?? 0;
+                    var utilisationRate = daysAllowed > 0
+                        ? Math.Round((decimal)daysUsed / daysAllowed * 100, 2)
+                        : 0;
+
+                    return new LeaveUtilisationRateDto
+                    {
+                        Department = dept ?? "Unassigned Department",
+                        StaffDueForLeave = staffDue,
+                        TotalDaysAllowed = daysAllowed,
+                        TotalDaysUsed = daysUsed,
+                        UtilisationPercent = utilisationRate,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
+        Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.ActiveStatus.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var underQuestion = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.Question);
+            var formalWarning = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.Warning);
+            var finalWarning = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.FinalWarning);
+            var suspended = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.Suspension);
+
+            return Result.Success(new List<ActiveDisciplinaryActionsDto>
+            {
+                new ActiveDisciplinaryActionsDto
+                {
+                    Department = deptName,
+                    UnderQuestion = underQuestion,
+                    FormalWarning = formalWarning,
+                    FinalWarning = finalWarning,
+                    Suspended = suspended,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    UnderQuestion = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.Question),
+                    FormalWarning = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.Warning),
+                    FinalWarning = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.FinalWarning),
+                    Suspended = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.Suspension),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new ActiveDisciplinaryActionsDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    UnderQuestion = g.UnderQuestion,
+                    FormalWarning = g.FormalWarning,
+                    FinalWarning = g.FinalWarning,
+                    Suspended = g.Suspended,
                 })
                 .OrderBy(r => r.Department)
                 .ToList();

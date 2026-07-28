@@ -72,6 +72,41 @@ public class EmployeeGradeLevelDistributionDto
     public int Total => JuniorStaff + SeniorStaff + SeniorManagement;
 }
 
+public class NewHiresThisPeriodDto
+{
+    public string Department { get; set; }
+    public int PermanentNewHires { get; set; }
+    public int CasualNewHires { get; set; }
+    public int TotalNewHires => PermanentNewHires + CasualNewHires;
+}
+
+public class EmployeeTurnoverRateDto
+{
+    public string Department { get; set; }
+    public int Leavers { get; set; }
+    public decimal AverageHeadcount { get; set; }
+    public decimal TurnoverRatePercent { get; set; }
+}
+
+public class LeaveUtilisationRateDto
+{
+    public string Department { get; set; }
+    public int StaffDueForLeave { get; set; }
+    public int TotalDaysAllowed { get; set; }
+    public int TotalDaysUsed { get; set; }
+    public decimal UtilisationPercent { get; set; }
+}
+
+public class ActiveDisciplinaryActionsDto
+{
+    public string Department { get; set; }
+    public int UnderQuestion { get; set; }
+    public int FormalWarning { get; set; }
+    public int FinalWarning { get; set; }
+    public int Suspended { get; set; }
+    public int TotalUnderDisciplinaryAction => UnderQuestion + FormalWarning + FinalWarning + Suspended;
+}
+
 public class HrKpiFilterDto
 {
     public Guid? DepartmentId { get; set; }
@@ -79,4 +114,5 @@ public class HrKpiFilterDto
     public EmployeeStatus? Status { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+    public int? Year { get; set; }
 }

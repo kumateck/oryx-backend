@@ -1592,4 +1592,63 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetEmployeeGradeLevelDistribution(DepartmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
     }
+
+    [HttpGet("hr-kpi/new-hires-this-period")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<NewHiresThisPeriodDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetNewHiresThisPeriod(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] DateTime? StartDate,
+        [FromQuery] DateTime? EndDate)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            StartDate = StartDate,
+            EndDate = EndDate,
+        };
+        var result = await repository.GetNewHiresThisPeriod(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/employee-turnover-rate")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeTurnoverRateDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeTurnoverRate(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] DateTime? StartDate,
+        [FromQuery] DateTime? EndDate)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            StartDate = StartDate,
+            EndDate = EndDate,
+        };
+        var result = await repository.GetEmployeeTurnoverRate(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/leave-utilisation-rate")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<LeaveUtilisationRateDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveUtilisationRate(
+        [FromQuery] Guid? DepartmentId,
+        [FromQuery] int? Year)
+    {
+        var filter = new HrKpiFilterDto
+        {
+            Year = Year,
+        };
+        var result = await repository.GetLeaveUtilisationRate(filter, DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr-kpi/active-disciplinary-actions")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ActiveDisciplinaryActionsDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetActiveDisciplinaryActions(
+        [FromQuery] Guid? DepartmentId)
+    {
+        var result = await repository.GetActiveDisciplinaryActions(DepartmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
 }
