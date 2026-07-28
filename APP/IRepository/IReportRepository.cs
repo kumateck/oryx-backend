@@ -181,9 +181,7 @@ public interface IReportRepository
 
     Task<Result<List<QcPendingDto>>> GetQcPendingReport(
         Guid? warehouseId = null, Guid? supplierId = null, Guid? departmentId = null);
-
-    Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(
-        WarehouseKpiFilterDto filter);
+    
 
     // Production Dashboard KPI Widgets (KPI 6 - 12)
     Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
