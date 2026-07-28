@@ -13,7 +13,6 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;

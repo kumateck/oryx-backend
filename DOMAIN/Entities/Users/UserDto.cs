@@ -4,7 +4,6 @@ using DOMAIN.Entities.Roles;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SHARED;
 
 namespace DOMAIN.Entities.Users;
 
