@@ -23,8 +23,6 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.GeneralInventory;
-using DOMAIN.Entities.BinCards;
-using DOMAIN.Entities.StockAdjustments;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
@@ -9290,6 +9288,11 @@ public class ReportRepository(
             .ToList();
 
         return Result.Success(result);
+    }
+
+    public async Task<Result<MaterialMovementCountDto>> GetMaterialMovementCount(WarehouseKpiFilterDto filter)
+    {
+        throw new NotImplementedException();
     }
 
     // ---------------------------------------------------------------------

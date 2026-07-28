@@ -1,10 +1,10 @@
 using APP.Extensions;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.Notifications;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
