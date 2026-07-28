@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.Auth;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Mvc;
 using ForgotPasswordRequest = DOMAIN.Entities.Auth.ForgotPasswordRequest;
 
 namespace API.Controllers;
