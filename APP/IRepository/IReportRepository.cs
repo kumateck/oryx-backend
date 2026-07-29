@@ -14,6 +14,7 @@ using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Reports.WarehouseDashboardKpi;
+using DOMAIN.Entities.Reports.HrDashboardKpi;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -117,6 +118,9 @@ public interface IReportRepository
     Task<Result<IEnumerable<ExpiryRiskIndexDto>>> GetExpiryRiskIndex(
         WarehouseKpiFilterDto filter, Guid? departmentId);
 
+    Task<Result<IEnumerable<ReorderAlertCountDto>>> GetReorderAlertCount(
+        WarehouseKpiFilterDto filter);
+
     Task<Result<IEnumerable<SwapRequestActivityDto>>> GetSwapRequestActivity(
         WarehouseKpiFilterDto filter, Guid? departmentId);
 
@@ -177,7 +181,16 @@ public interface IReportRepository
 
     Task<Result<List<QcPendingDto>>> GetQcPendingReport(
         Guid? warehouseId = null, Guid? supplierId = null, Guid? departmentId = null);
+    
 
+    // Production Dashboard KPI Widgets (KPI 6 - 12)
+    Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
+    Task<Result<List<ProductionOutputVolumeDto>>> GetProductionOutputVolume(ProductionKpiFilter filter);
+    Task<Result<List<AtrTestingBacklogDto>>> GetAtrTestingBacklog(ProductionKpiFilter filter);
+    Task<Result<List<StockRequisitionPendingDto>>> GetStockRequisitionPending(ProductionKpiFilter filter);
+    Task<Result<List<FgtnPendingApprovalDto>>> GetFgtnPendingApproval(ProductionKpiFilter filter);
+    Task<Result<List<ProductionOrderDeliveryStatusDto>>> GetProductionOrderDeliveryStatus(ProductionKpiFilter filter, Guid? customerId);
+    Task<Result<List<MaterialReturnRateDto>>> GetMaterialReturnRate(ProductionKpiFilter filter);
     Task<Result<List<ReorderLevelVsStockDto>>> GetReorderLevelVsStock(
         Guid? departmentId = null, MaterialKind? materialKind = null);
 
@@ -198,31 +211,36 @@ public interface IReportRepository
         Guid? warehouseId = null, string status = null, int agingThresholdDays = 3,
         Guid? departmentId = null);
 
-    // Production Dashboard KPI Widgets (KPI 6 - 12)
-    Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
-    Task<Result<List<ProductionOutputVolumeDto>>> GetProductionOutputVolume(ProductionKpiFilter filter);
-    Task<Result<List<AtrTestingBacklogDto>>> GetAtrTestingBacklog(ProductionKpiFilter filter);
-    Task<Result<List<StockRequisitionPendingDto>>> GetStockRequisitionPending(ProductionKpiFilter filter);
-    Task<Result<List<FgtnPendingApprovalDto>>> GetFgtnPendingApproval(ProductionKpiFilter filter);
-    Task<Result<List<ProductionOrderDeliveryStatusDto>>> GetProductionOrderDeliveryStatus(ProductionKpiFilter filter, Guid? customerId);
-    Task<Result<List<MaterialReturnRateDto>>> GetMaterialReturnRate(ProductionKpiFilter filter);
+    Task<Result<IEnumerable<EmployeeHeadcountSnapshotDto>>> GetEmployeeHeadcountSnapshot(
+        HrKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<IEnumerable<DockToStockTimeDto>>> GetDockToStockTime(
-        WarehouseKpiFilterDto filter);
+    Task<Result<IEnumerable<EmployeeGenderRatioDto>>> GetEmployeeGenderRatio(
+        HrKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<IEnumerable<StockTransferFulfilmentRateDto>>> GetStockTransferFulfilmentRate(
-        WarehouseKpiFilterDto filter, Guid departmentId);
+    Task<Result<IEnumerable<LeaveRequestPipelineDto>>> GetLeaveRequestPipeline(
+        HrKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<ReceivingPipelineSnapshotDto>> GetReceivingPipelineSnapshot(
-        WarehouseKpiFilterDto filter);
+    Task<Result<IEnumerable<OvertimeRequestActivityDto>>> GetOvertimeRequestActivity(
+        HrKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<IEnumerable<ExpiryRiskIndexDto>>> GetExpiryRiskIndex(
-        WarehouseKpiFilterDto filter);
+    Task<Result<IEnumerable<DailyAttendanceRateDto>>> GetDailyAttendanceRate(
+        HrKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<IEnumerable<ReorderAlertCountDto>>> GetReorderAlertCount(
-        WarehouseKpiFilterDto filter);
+    Task<Result<IEnumerable<StaffRequisitionPipelineDto>>> GetStaffRequisitionPipeline(
+        HrKpiFilterDto filter, Guid? departmentId);
 
-    Task<Result<SwapRequestActivityDto>> GetSwapRequestActivity(
-        WarehouseKpiFilterDto filter, Guid departmentId);
-    
+    Task<Result<IEnumerable<EmployeeGradeLevelDistributionDto>>> GetEmployeeGradeLevelDistribution(
+        Guid? departmentId);
+
+    Task<Result<IEnumerable<NewHiresThisPeriodDto>>> GetNewHiresThisPeriod(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<EmployeeTurnoverRateDto>>> GetEmployeeTurnoverRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<LeaveUtilisationRateDto>>> GetLeaveUtilisationRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
+        Guid? departmentId);
 }
