@@ -1,3 +1,6 @@
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Base;
+
 namespace DOMAIN.Entities.Reports.Warehouse;
 
 public class MaterialsStockSummaryDto
