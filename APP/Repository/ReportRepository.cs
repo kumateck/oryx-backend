@@ -13,6 +13,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -23,6 +24,7 @@ using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.GeneralInventory;
+using DOMAIN.Entities.Reports.HrDashboardKpi;
 using DOMAIN.Entities.Reports.HumanResource;
 using DOMAIN.Entities.Reports.Procurement;
 using DOMAIN.Entities.Reports.PurchaseOrder;
@@ -4018,55 +4020,7 @@ public class ReportRepository(
         return Result.Success(data);
     }
 
-    public async Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
-        WarehouseKpiFilterDto filter, Guid? departmentId)
-    {
-        var query = context
-            .Warehouses.IgnoreQueryFilters().AsNoTracking()
-            .Where(w => !w.DeletedAt.HasValue);
-
-        if (departmentId.HasValue)
-            query = query.Where(w => w.DepartmentId == departmentId.Value);
-
-        if (filter.WarehouseId.HasValue)
-            query = query.Where(w => w.Id == filter.WarehouseId.Value);
-
-        var raw = await query
-            .Select(w => new
-            {
-                DepartmentName = w.Department.Name,
-                w.Name,
-                w.Type,
-                TotalShelves = w
-                    .Locations.SelectMany(l => l.Racks)
-                    .SelectMany(r => r.Shelves)
-                    .Count(),
-                OccupiedShelves = w
-                    .Locations.SelectMany(l => l.Racks)
-                    .SelectMany(r => r.Shelves)
-                    .Count(s => s.MaterialBatches.Any())
-            })
-            .ToListAsync();
-
-        var result = raw
-            .Select(r => new WarehouseCapacityUtilisationDto
-            {
-                Department = r.DepartmentName,
-                Warehouse = r.Name,
-                WarehouseType = r.Type,
-                TotalShelves = r.TotalShelves,
-                OccupiedShelves = r.OccupiedShelves,
-                AvailableShelves = r.TotalShelves - r.OccupiedShelves,
-                UtilisationPercentage = r.TotalShelves > 0
-                    ? Math.Round((decimal)r.OccupiedShelves / r.TotalShelves * 100, 2)
-                    : 0
-            })
-            .OrderBy(d => d.Warehouse)
-            .ToList();
-
-        return Result.Success(result.AsEnumerable());
-    }
-
+ 
     public async Task<Result<IEnumerable<DockToStockTimeDto>>> GetDockToStockTime(
         WarehouseKpiFilterDto filter, Guid? departmentId)
     {
@@ -4124,14 +4078,14 @@ public class ReportRepository(
         if (endDate.HasValue)
             drmQuery = drmQuery.Where(drm => drm.CheckedAt <= endDate.Value);
         
-        // change this
         var records = await drmQuery
-            .SelectMany(drm => drm.DistributedRequisitionItems, (drm, dri) => new
+            .SelectMany(drm => drm.DistributedRequisitionItems)
+            .Select(dri => new
             {
                 DepartmentName = dri.Warehouse.Department.Name,
                 WarehouseName = dri.Warehouse.Name,
-                CheckedAt = drm.CheckedAt.Value,
-                GrnGeneratedAt = drm.GrnGeneratedAt.Value
+                CheckedAt = dri.DistributedRequisitionMaterial.CheckedAt.Value,
+                GrnGeneratedAt = dri.DistributedRequisitionMaterial.GrnGeneratedAt.Value
             })
             .ToListAsync();
 
@@ -4308,7 +4262,7 @@ public class ReportRepository(
 
             var pending = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Pending);
             var arrived = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Arrived);
-            var checked_ = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Checked);
+            var checkedStatus = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Checked);
             var grnGenerated = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.GrnGenerated);
             var distributedTotal = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Distributed);
 
@@ -4324,7 +4278,7 @@ public class ReportRepository(
             }
 
             var distributed = distributedTotal - assigned;
-            var total = pending + arrived + checked_ + grnGenerated + distributed + assigned;
+            var total = pending + arrived + checkedStatus + grnGenerated + distributed + assigned;
 
             var deptName = await baseQuery
                 .Select(drm => drm.WarehouseArrivalLocation.Warehouse.Department.Name)
@@ -4337,7 +4291,7 @@ public class ReportRepository(
                     Department = deptName,
                     Pending = pending,
                     Arrived = arrived,
-                    Checked = checked_,
+                    Checked = checkedStatus,
                     GrnGenerated = grnGenerated,
                     Distributed = distributed,
                     Assigned = assigned,
@@ -4362,7 +4316,7 @@ public class ReportRepository(
 
                 var pending = stageCounts.GetValueOrDefault(DistributedRequisitionMaterialStatus.Pending);
                 var arrived = stageCounts.GetValueOrDefault(DistributedRequisitionMaterialStatus.Arrived);
-                var checked_ = stageCounts.GetValueOrDefault(DistributedRequisitionMaterialStatus.Checked);
+                var checkedStatus = stageCounts.GetValueOrDefault(DistributedRequisitionMaterialStatus.Checked);
                 var grnGenerated = stageCounts.GetValueOrDefault(DistributedRequisitionMaterialStatus.GrnGenerated);
                 var distributedTotal = stageCounts.GetValueOrDefault(DistributedRequisitionMaterialStatus.Distributed);
 
@@ -4383,14 +4337,14 @@ public class ReportRepository(
                 }
 
                 var distributed = distributedTotal - assigned;
-                var total = pending + arrived + checked_ + grnGenerated + distributed + assigned;
+                var total = pending + arrived + checkedStatus + grnGenerated + distributed + assigned;
 
                 results.Add(new ReceivingPipelineSnapshotDto
                 {
                     Department = deptName,
                     Pending = pending,
                     Arrived = arrived,
-                    Checked = checked_,
+                    Checked = checkedStatus,
                     GrnGenerated = grnGenerated,
                     Distributed = distributed,
                     Assigned = assigned,
@@ -5017,7 +4971,7 @@ public class ReportRepository(
                 LocationName = s.WarehouseLocationRack.WarehouseLocation.Name,
                 RackName = s.WarehouseLocationRack.Name,
                 LocationId = s.WarehouseLocationRack.WarehouseLocationId,
-                WarehouseId = s.WarehouseLocationRack.WarehouseLocation.WarehouseId,
+                s.WarehouseLocationRack.WarehouseLocation.WarehouseId
             })
             .ToListAsync();
 
@@ -5071,7 +5025,7 @@ public class ReportRepository(
                 OccupancyStatus = status,
                 DistinctBatches = batchCount,
                 TotalQuantity = hasBatches ? summary.TotalQuantity : 0m,
-                LastUpdated = hasBatches ? summary.LastUpdated : (DateTime?)null,
+                LastUpdated = hasBatches ? summary.LastUpdated : null,
             };
         });
 
@@ -5134,15 +5088,16 @@ public class ReportRepository(
                     md.DepartmentId == departmentId.Value && !md.DeletedAt.HasValue)));
 
         var rawData = await query
-            .SelectMany(g => g.MaterialBatches, (g, mb) => new
+            .SelectMany(g => g.MaterialBatches)
+            .Select(mb => new
             {
-                g.GrnNumber,
-                g.Status,
-                g.CreatedAt,
-                g.CarrierName,
-                g.VehicleNumber,
-                g.DeclarationNumber,
-                g.Remarks,
+                mb.Grn.GrnNumber,
+                mb.Grn.Status,
+                mb.Grn.CreatedAt,
+                mb.Grn.CarrierName,
+                mb.Grn.VehicleNumber,
+                mb.Grn.DeclarationNumber,
+                mb.Grn.Remarks,
                 MaterialName = mb.Material.Name,
                 QuantityReceived = mb.TotalQuantity,
                 UomSymbol = mb.UoM.Symbol,
@@ -5202,23 +5157,24 @@ public class ReportRepository(
                 md.DepartmentId == departmentId.Value && !md.DeletedAt.HasValue));
 
         var rawData = await query
-            .SelectMany(drm => drm.DistributedRequisitionItems, (drm, dri) => new
+            .SelectMany(drm => drm.DistributedRequisitionItems)
+            .Select(dri => new
             {
                 WarehouseName = dri.Warehouse.Name,
-                WarehouseId = dri.WarehouseId,
-                SupplierName = drm.ShipmentInvoice.Supplier.Name,
-                MaterialName = drm.Material.Name,
+                dri.WarehouseId,
+                SupplierName = dri.DistributedRequisitionMaterial.ShipmentInvoice.Supplier.Name,
+                MaterialName = dri.DistributedRequisitionMaterial.Material.Name,
                 dri.Quantity,
-                ArrivedAt = drm.ArrivedAt ?? (DateTime?)drm.CreatedAt,
-                CheckedAt = drm.CheckedAt,
-                GrnGeneratedAt = drm.GrnGeneratedAt,
-                DistributedAt = drm.DistributedAt,
-                ApprovedAt = drm.CheckLists
+                ArrivedAt = dri.DistributedRequisitionMaterial.ArrivedAt ?? (DateTime?)dri.DistributedRequisitionMaterial.CreatedAt,
+                dri.DistributedRequisitionMaterial.CheckedAt,
+                dri.DistributedRequisitionMaterial.GrnGeneratedAt,
+                dri.DistributedRequisitionMaterial.DistributedAt,
+                ApprovedAt = dri.DistributedRequisitionMaterial.CheckLists
                     .SelectMany(cl => cl.MaterialBatches)
                     .Where(mb => !mb.DeletedAt.HasValue)
                     .Select(mb => mb.DateApproved)
                     .FirstOrDefault(),
-                AssignedAt = drm.Material.Batches
+                AssignedAt = dri.DistributedRequisitionMaterial.Material.Batches
                     .SelectMany(mb => mb.ShelfMaterialBatches)
                     .Where(smb => !smb.DeletedAt.HasValue)
                     .Select(smb => (DateTime?)smb.CreatedAt)
@@ -5568,8 +5524,8 @@ public class ReportRepository(
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<SwapRequestStatus>(status, true, out var parsed))
             query = query.Where(sr => sr.Status == parsed);
 
-        var data = await query
-            .SelectMany(sr => sr.FirstSwapShelfMaterialBatches, (sr, sw) => new
+        var requests = await query
+            .Select(sr => new
             {
                 FirstWarehouseName = sr.FirstWarehouse.Name,
                 SecondWarehouseName = sr.SecondWarehouse.Name,
@@ -5579,15 +5535,35 @@ public class ReportRepository(
                 sr.ActionNote,
                 ActionedByFirstName = sr.ActionedBy.FirstName,
                 ActionedByLastName = sr.ActionedBy.LastName,
-                MaterialName = sw.MaterialBatch.Material.Name,
-                sw.MaterialBatch.BatchNumber,
-                sw.Quantity,
-                UomSymbol = sw.UoM.Symbol,
                 Requester = sr.CreatedBy.FirstName + " " + sr.CreatedBy.LastName,
+                Batches = sr.FirstSwapShelfMaterialBatches.Select(sw => new
+                {
+                    MaterialName = sw.MaterialBatch.Material.Name,
+                    sw.MaterialBatch.BatchNumber,
+                    sw.Quantity,
+                    UomSymbol = sw.UoM.Symbol,
+                }).ToList()
             })
             .ToListAsync();
 
-        var result = data
+        var flat = requests.SelectMany(sr => sr.Batches.Select(b => new
+        {
+            sr.FirstWarehouseName,
+            sr.SecondWarehouseName,
+            sr.Status,
+            sr.CreatedAt,
+            sr.ActionedAt,
+            sr.ActionNote,
+            sr.ActionedByFirstName,
+            sr.ActionedByLastName,
+            b.MaterialName,
+            b.BatchNumber,
+            b.Quantity,
+            b.UomSymbol,
+            sr.Requester,
+        })).ToList();
+
+        var result = flat
             .OrderByDescending(x => x.CreatedAt)
             .Select((x, i) => new InterWarehouseSwapRequestDto
             {
@@ -5747,11 +5723,11 @@ public class ReportRepository(
             {
                 return window.Value switch
                 {
-                    ExpiryWindowFilter.Within30Days => x.daysUntilExpiry >= 0 && x.daysUntilExpiry <= 30,
-                    ExpiryWindowFilter.Within31To60Days => x.daysUntilExpiry >= 31 && x.daysUntilExpiry <= 60,
-                    ExpiryWindowFilter.Within61To90Days => x.daysUntilExpiry >= 61 && x.daysUntilExpiry <= 90,
-                    ExpiryWindowFilter.Over90Days => x.daysUntilExpiry > 90,
-                    _ => true,
+                    ExpiryWindowFilter.Within30Days     => x.daysUntilExpiry is >= 0 and <= 30,
+                    ExpiryWindowFilter.Within31To60Days => x.daysUntilExpiry is >= 31 and <= 60,
+                    ExpiryWindowFilter.Within61To90Days => x.daysUntilExpiry is >= 61 and <= 90,
+                    ExpiryWindowFilter.Over90Days       => x.daysUntilExpiry > 90,
+                    _                                   => true
                 };
             });
         }
@@ -5782,8 +5758,6 @@ public class ReportRepository(
         InactivityThreshold threshold = InactivityThreshold.Days90, Guid? warehouseId = null,
         Guid? materialId = null, Guid? departmentId = null)
     {
-        var cutoff = DateTime.UtcNow.Date.AddDays(-(int)threshold);
-
         var query = context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
             .Where(smb => !smb.DeletedAt.HasValue && smb.Quantity > 0
                 && !smb.MaterialBatch.DeletedAt.HasValue);
@@ -6127,7 +6101,7 @@ public class ReportRepository(
 
         return Result.Success(result);
     }
-
+    
     public async Task<Result<List<ReorderLevelVsStockDto>>> GetReorderLevelVsStock(
         Guid? departmentId = null, MaterialKind? materialKind = null)
     {
@@ -6193,7 +6167,7 @@ public class ReportRepository(
                 var suggestedOrder = Math.Max(0, first.ReOrderLevel - currentStock);
                 var risk = monthsOfStock < 1 ? "High" : monthsOfStock <= 3 ? "Medium" : "Low";
 
-                return g.Select((md, idx) => new ReorderLevelVsStockDto
+                return g.Select(md => new ReorderLevelVsStockDto
                 {
                     Material = md.MaterialName,
                     MaterialCode = md.Code,
@@ -6244,11 +6218,11 @@ public class ReportRepository(
             {
                 WarehouseType = smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Type,
-                Division = smb.WarehouseLocationShelf.WarehouseLocationRack
+                smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Department.Division,
                 smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Name,
-                MaterialId = smb.MaterialBatch.MaterialId,
+                smb.MaterialBatch.MaterialId,
                 smb.Quantity,
                 UomCategory = smb.UoM != null ? smb.UoM.Category : smb.MaterialBatch.UoM.Category,
                 UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol,
@@ -6379,7 +6353,7 @@ public class ReportRepository(
             {
                 WarehouseType = smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Type,
-                Division = smb.WarehouseLocationShelf.WarehouseLocationRack
+                smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Department.Division,
                 WarehouseName = smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.Warehouse.Name,
@@ -7228,11 +7202,12 @@ public class ReportRepository(
             drmQuery = drmQuery.Where(drm => drm.CheckedAt <= endDate.Value);
 
         var records = await drmQuery
-            .SelectMany(drm => drm.DistributedRequisitionItems, (drm, dri) => new
+            .SelectMany(drm => drm.DistributedRequisitionItems)
+            .Select(dri => new
             {
                 WarehouseName = dri.Warehouse.Name,
-                CheckedAt = drm.CheckedAt.Value,
-                GrnGeneratedAt = drm.GrnGeneratedAt.Value
+                CheckedAt = dri.DistributedRequisitionMaterial.CheckedAt.Value,
+                GrnGeneratedAt = dri.DistributedRequisitionMaterial.GrnGeneratedAt.Value
             })
             .ToListAsync();
 
@@ -7395,7 +7370,7 @@ public class ReportRepository(
 
         var pending = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Pending);
         var arrived = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Arrived);
-        var checked_ = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Checked);
+        var checkedStatus = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Checked);
         var grnGenerated = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.GrnGenerated);
         var distributedTotal = stageLookup.GetValueOrDefault(DistributedRequisitionMaterialStatus.Distributed);
 
@@ -7412,13 +7387,13 @@ public class ReportRepository(
 
         var distributed = distributedTotal - assigned;
 
-        var total = pending + arrived + checked_ + grnGenerated + distributed + assigned;
+        var total = pending + arrived + checkedStatus + grnGenerated + distributed + assigned;
 
         return Result.Success(new ReceivingPipelineSnapshotDto
         {
             Pending = pending,
             Arrived = arrived,
-            Checked = checked_,
+            Checked = checkedStatus,
             GrnGenerated = grnGenerated,
             Distributed = distributed,
             Assigned = assigned,
@@ -7601,4 +7576,962 @@ public class ReportRepository(
         });
     }
     
+
+    public async Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
+        WarehouseKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context
+            .Warehouses.IgnoreQueryFilters().AsNoTracking()
+            .Where(w => !w.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(w => w.DepartmentId == departmentId.Value);
+
+        if (filter.WarehouseId.HasValue)
+            query = query.Where(w => w.Id == filter.WarehouseId.Value);
+
+        var raw = await query
+            .Select(w => new
+            {
+                DepartmentName = w.Department.Name,
+                w.Name,
+                w.Type,
+                TotalShelves = w
+                    .Locations.SelectMany(l => l.Racks)
+                    .SelectMany(r => r.Shelves)
+                    .Count(),
+                OccupiedShelves = w
+                    .Locations.SelectMany(l => l.Racks)
+                    .SelectMany(r => r.Shelves)
+                    .Count(s => s.MaterialBatches.Any())
+            })
+            .ToListAsync();
+
+        var result = raw
+            .Select(r => new WarehouseCapacityUtilisationDto
+            {
+                Department = r.DepartmentName,
+                Warehouse = r.Name,
+                WarehouseType = r.Type,
+                TotalShelves = r.TotalShelves,
+                OccupiedShelves = r.OccupiedShelves,
+                AvailableShelves = r.TotalShelves - r.OccupiedShelves,
+                UtilisationPercentage = r.TotalShelves > 0
+                    ? Math.Round((decimal)r.OccupiedShelves / r.TotalShelves * 100, 2)
+                    : 0
+            })
+            .OrderBy(d => d.Warehouse)
+            .ToList();
+
+        return Result.Success(result.AsEnumerable());
+    }
+ 
+    public async Task<Result<IEnumerable<EmployeeHeadcountSnapshotDto>>> GetEmployeeHeadcountSnapshot(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.DepartmentId.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (filter.EmployeeType.HasValue)
+            query = query.Where(e => e.Type == filter.EmployeeType.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(e => e.Status == filter.Status.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unknown";
+
+            var permanentActive = await query
+                .CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active);
+            var casualActive = await query
+                .CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active);
+            var permanentInactive = await query
+                .CountAsync(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive);
+            var casualInactive = await query
+                .CountAsync(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive);
+
+            return Result.Success(new List<EmployeeHeadcountSnapshotDto>
+            {
+                new EmployeeHeadcountSnapshotDto
+                {
+                    Department = deptName,
+                    PermanentActive = permanentActive,
+                    CasualActive = casualActive,
+                    PermanentInactive = permanentInactive,
+                    CasualInactive = casualInactive,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    PermanentActive = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Active),
+                    CasualActive = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Active),
+                    PermanentInactive = g.Count(e => e.Type == EmployeeType.Permanent && e.Status == EmployeeStatus.Inactive),
+                    CasualInactive = g.Count(e => e.Type == EmployeeType.Casual && e.Status == EmployeeStatus.Inactive),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .OrderBy(g => g.Department)
+                .Select(g => new EmployeeHeadcountSnapshotDto
+                {
+                    Department = g.Department,
+                    PermanentActive = g.PermanentActive,
+                    CasualActive = g.CasualActive,
+                    PermanentInactive = g.PermanentInactive,
+                    CasualInactive = g.CasualInactive,
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<EmployeeGenderRatioDto>>> GetEmployeeGenderRatio(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.DepartmentId.HasValue && e.Status == EmployeeStatus.Active);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unknown";
+
+            var permMale = await query.CountAsync(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Male);
+            var permFemale = await query.CountAsync(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Female);
+            var casualMale = await query.CountAsync(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Male);
+            var casualFemale = await query.CountAsync(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Female);
+
+            var totalMale = permMale + casualMale;
+            var totalFemale = permFemale + casualFemale;
+            var ratio = totalFemale > 0
+                ? $"{(decimal)totalMale / totalFemale:0.##}:1"
+                : $"{totalMale}:0";
+
+            return Result.Success(new List<EmployeeGenderRatioDto>
+            {
+                new EmployeeGenderRatioDto
+                {
+                    Department = deptName,
+                    PermanentMale = permMale,
+                    PermanentFemale = permFemale,
+                    CasualMale = casualMale,
+                    CasualFemale = casualFemale,
+                    GenderRatio = ratio,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    PermanentMale = g.Count(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Male),
+                    PermanentFemale = g.Count(e => e.Type == EmployeeType.Permanent && e.Gender == Gender.Female),
+                    CasualMale = g.Count(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Male),
+                    CasualFemale = g.Count(e => e.Type == EmployeeType.Casual && e.Gender == Gender.Female),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .OrderBy(g => g.Department)
+                .Select(g =>
+                {
+                    var totalMale = g.PermanentMale + g.CasualMale;
+                    var totalFemale = g.PermanentFemale + g.CasualFemale;
+                    var ratio = totalFemale > 0
+                        ? $"{(decimal)totalMale / totalFemale:0.##}:1"
+                        : $"{totalMale}:0";
+
+                    return new EmployeeGenderRatioDto
+                    {
+                        Department = g.Department,
+                        PermanentMale = g.PermanentMale,
+                        PermanentFemale = g.PermanentFemale,
+                        CasualMale = g.CasualMale,
+                        CasualFemale = g.CasualFemale,
+                        GenderRatio = ratio,
+                    };
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<LeaveRequestPipelineDto>>> GetLeaveRequestPipeline(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.LeaveRequests.IgnoreQueryFilters().AsNoTracking()
+            .Include(lr => lr.Employee)
+            .Where(lr => !lr.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(lr => lr.Employee.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(lr => lr.StartDate >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(lr => lr.EndDate <= filter.EndDate.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(lr => lr.Employee.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var groups = await query
+                .GroupBy(lr => lr.RequestCategory)
+                .Select(g => new
+                {
+                    Category = g.Key,
+                    Pending = g.Count(lr => lr.LeaveStatus == LeaveStatus.Pending),
+                    Approved = g.Count(lr => lr.LeaveStatus == LeaveStatus.Approved),
+                    Rejected = g.Count(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+                    Expired = g.Count(lr => lr.LeaveStatus == LeaveStatus.Expired),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new LeaveRequestPipelineDto
+                {
+                    Department = deptName,
+                    Category = g.Category.ToString(),
+                    Pending = g.Pending,
+                    Approved = g.Approved,
+                    Rejected = g.Rejected,
+                    Expired = g.Expired,
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(lr => new { DeptName = lr.Employee.Department.Name, lr.RequestCategory })
+                .Select(g => new
+                {
+                    Department = g.Key.DeptName,
+                    Category = g.Key.RequestCategory,
+                    Pending = g.Count(lr => lr.LeaveStatus == LeaveStatus.Pending),
+                    Approved = g.Count(lr => lr.LeaveStatus == LeaveStatus.Approved),
+                    Rejected = g.Count(lr => lr.LeaveStatus == LeaveStatus.Rejected),
+                    Expired = g.Count(lr => lr.LeaveStatus == LeaveStatus.Expired),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new LeaveRequestPipelineDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    Category = g.Category.ToString(),
+                    Pending = g.Pending,
+                    Approved = g.Approved,
+                    Rejected = g.Rejected,
+                    Expired = g.Expired,
+                })
+                .OrderBy(r => r.Department)
+                .ThenBy(r => r.Category)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+   public async Task<Result<IEnumerable<OvertimeRequestActivityDto>>> GetOvertimeRequestActivity(
+    HrKpiFilterDto filter, Guid? departmentId)
+{
+    var query = context.OvertimeRequests.IgnoreQueryFilters().AsNoTracking()
+        .Where(o => !o.DeletedAt.HasValue);
+
+    if (departmentId.HasValue)
+        query = query.Where(o => o.DepartmentId == departmentId.Value);
+
+    if (filter.StartDate.HasValue)
+        query = query.Where(o => o.OvertimeDate >= filter.StartDate.Value);
+
+    if (filter.EndDate.HasValue)
+        query = query.Where(o => o.OvertimeDate <= filter.EndDate.Value);
+
+    var rawData = await query
+        .Select(o => new
+        {
+            o.Status,
+            o.StartTime,
+            o.EndTime,
+            DeptName = o.Department.Name,
+        })
+        .ToListAsync();
+
+    var computed = rawData.Select(d => new
+    {
+        d.Status,
+        d.DeptName,
+        TotalHours = ComputeOvertimeHours(d.StartTime, d.EndTime),
+    }).ToList();
+
+    var allStatuses = new[]
+    {
+        OvertimeStatus.Pending,
+        OvertimeStatus.Approved,
+        OvertimeStatus.Rejected,
+        OvertimeStatus.Expired
+    };
+
+    if (departmentId.HasValue)
+    {
+        // Single department – always return all four statuses
+        var deptName = computed.Select(d => d.DeptName).FirstOrDefault()
+                       ?? "Unassigned Department";
+
+        var groups = computed
+            .GroupBy(d => d.Status)
+            .ToDictionary(g => g.Key, g => new
+            {
+                Count = g.Count(),
+                TotalHours = g.Sum(x => x.TotalHours)
+            });
+
+        var results = allStatuses.Select(s =>
+        {
+            groups.TryGetValue(s, out var match);
+
+            return new OvertimeRequestActivityDto
+            {
+                Department = deptName,
+                Status = s.ToString(),
+                Count = match?.Count ?? 0,
+                TotalHoursRequested = match?.TotalHours ?? 0,
+                ApprovedHours = s == OvertimeStatus.Approved
+                    ? (match?.TotalHours ?? 0)
+                    : 0
+            };
+        }).ToList();
+
+        return Result.Success(results.AsEnumerable());
+    }
+    else
+    {
+        // All departments – always return every status for every department that has data
+        var groups = computed
+            .GroupBy(d => new { d.DeptName, d.Status })
+            .ToDictionary(
+                g => (Dept: g.Key.DeptName, g.Key.Status),
+                g => new
+                {
+                    Count = g.Count(),
+                    TotalHours = g.Sum(x => x.TotalHours)
+                });
+
+        var departments = groups.Keys
+            .Select(k => k.Dept)
+            .Distinct()
+            .DefaultIfEmpty("Unassigned Department");
+
+        var results = departments
+            .SelectMany(dept => allStatuses.Select(status =>
+            {
+                groups.TryGetValue((dept, status), out var match);
+
+                return new OvertimeRequestActivityDto
+                {
+                    Department = dept ?? "Unassigned Department",
+                    Status = status.ToString(),
+                    Count = match?.Count ?? 0,
+                    TotalHoursRequested = match?.TotalHours ?? 0,
+                    ApprovedHours = status == OvertimeStatus.Approved
+                        ? (match?.TotalHours ?? 0)
+                        : 0
+                };
+            }))
+            .OrderBy(r => r.Department)
+            .ThenBy(r => r.Status)
+            .ToList();
+
+        return Result.Success(results.AsEnumerable());
+    }
+}
+    public async Task<Result<IEnumerable<DailyAttendanceRateDto>>> GetDailyAttendanceRate(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var targetDate = filter.StartDate?.Date ?? DateTime.UtcNow.Date;
+
+        var presentStaffNumbers = await context.AttendanceRecords
+            .IgnoreQueryFilters().AsNoTracking()
+            .Where(a => a.TimeStamp.Date == targetDate && a.WorkState == WorkState.CheckIn)
+            .Select(a => a.EmployeeId)
+            .Distinct()
+            .ToListAsync();
+
+        var employeeQuery = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.Status == EmployeeStatus.Active);
+
+        if (departmentId.HasValue)
+            employeeQuery = employeeQuery.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await employeeQuery
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var expectedTotal = await employeeQuery.CountAsync();
+            var present = await employeeQuery
+                .CountAsync(e => presentStaffNumbers.Contains(e.StaffNumber));
+            var absent = expectedTotal - present;
+            var rate = expectedTotal > 0 ? Math.Round((decimal)present / expectedTotal * 100, 2) : 0;
+
+            return Result.Success(new List<DailyAttendanceRateDto>
+            {
+                new DailyAttendanceRateDto
+                {
+                    Department = deptName,
+                    Present = present,
+                    Absent = absent,
+                    ExpectedTotal = expectedTotal,
+                    AttendanceRatePercent = rate,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var expectedByDept = await employeeQuery
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Expected = g.Count() })
+                .ToListAsync();
+
+            var presentByDept = await employeeQuery
+                .Where(e => presentStaffNumbers.Contains(e.StaffNumber))
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Present = g.Count() })
+                .ToListAsync();
+
+            var results = expectedByDept
+                .Select(e =>
+                {
+                    var present = presentByDept.FirstOrDefault(p => p.Department == e.Department)?.Present ?? 0;
+                    return new DailyAttendanceRateDto
+                    {
+                        Department = e.Department ?? "Unassigned Department",
+                        Present = present,
+                        Absent = e.Expected - present,
+                        ExpectedTotal = e.Expected,
+                        AttendanceRatePercent = e.Expected > 0
+                            ? Math.Round((decimal)present / e.Expected * 100, 2)
+                            : 0,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<StaffRequisitionPipelineDto>>> GetStaffRequisitionPipeline(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.StaffRequisitions.IgnoreQueryFilters().AsNoTracking()
+            .Where(sr => !sr.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(sr => sr.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(sr => sr.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(sr => sr.CreatedAt <= filter.EndDate.Value);
+
+        var statuses = new[]
+        {
+            StaffRequisitionStatus.New,
+            StaffRequisitionStatus.Pending,
+            StaffRequisitionStatus.Approved,
+            StaffRequisitionStatus.Rejected,
+        };
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(sr => sr.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var groups = await query
+                .GroupBy(sr => sr.StaffRequisitionStatus)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count(),
+                    TotalPositions = g.Sum(sr => sr.StaffRequired),
+                })
+                .ToListAsync();
+
+            var results = statuses
+                .Select(s =>
+                {
+                    var match = groups.FirstOrDefault(g => g.Status == s);
+                    return new StaffRequisitionPipelineDto
+                    {
+                        Department = deptName,
+                        Status = s.ToString(),
+                        Count = match?.Count ?? 0,
+                        TotalPositionsRequired = match?.TotalPositions ?? 0,
+                    };
+                })
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(sr => new { sr.Department.Name, sr.StaffRequisitionStatus })
+                .Select(g => new
+                {
+                    Department = g.Key.Name,
+                    Status = g.Key.StaffRequisitionStatus,
+                    Count = g.Count(),
+                    TotalPositions = g.Sum(sr => sr.StaffRequired),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new StaffRequisitionPipelineDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    Status = g.Status.ToString(),
+                    Count = g.Count,
+                    TotalPositionsRequired = g.TotalPositions,
+                })
+                .OrderBy(r => r.Department)
+                .ThenBy(r => r.Status)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<EmployeeGradeLevelDistributionDto>>> GetEmployeeGradeLevelDistribution(
+        Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.Status == EmployeeStatus.Active);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var juniorStaff = await query.CountAsync(e => e.Level == EmployeeLevel.JuniorStaff);
+            var seniorStaff = await query.CountAsync(e => e.Level == EmployeeLevel.SeniorStaff);
+            var seniorMgmt = await query.CountAsync(e => e.Level == EmployeeLevel.SeniorManagement);
+
+            return Result.Success(new List<EmployeeGradeLevelDistributionDto>
+            {
+                new EmployeeGradeLevelDistributionDto
+                {
+                    Department = deptName,
+                    JuniorStaff = juniorStaff,
+                    SeniorStaff = seniorStaff,
+                    SeniorManagement = seniorMgmt,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    JuniorStaff = g.Count(e => e.Level == EmployeeLevel.JuniorStaff),
+                    SeniorStaff = g.Count(e => e.Level == EmployeeLevel.SeniorStaff),
+                    SeniorManagement = g.Count(e => e.Level == EmployeeLevel.SeniorManagement),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new EmployeeGradeLevelDistributionDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    JuniorStaff = g.JuniorStaff,
+                    SeniorStaff = g.SeniorStaff,
+                    SeniorManagement = g.SeniorManagement,
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<NewHiresThisPeriodDto>>> GetNewHiresThisPeriod(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.Status == EmployeeStatus.New);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(e => e.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(e => e.CreatedAt <= filter.EndDate.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var permCount = await query.CountAsync(e => e.Type == EmployeeType.Permanent);
+            var casualCount = await query.CountAsync(e => e.Type == EmployeeType.Casual);
+
+            return Result.Success(new List<NewHiresThisPeriodDto>
+            {
+                new NewHiresThisPeriodDto
+                {
+                    Department = deptName,
+                    PermanentNewHires = permCount,
+                    CasualNewHires = casualCount,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    PermanentNewHires = g.Count(e => e.Type == EmployeeType.Permanent),
+                    CasualNewHires = g.Count(e => e.Type == EmployeeType.Casual),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new NewHiresThisPeriodDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    PermanentNewHires = g.PermanentNewHires,
+                    CasualNewHires = g.CasualNewHires,
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<EmployeeTurnoverRateDto>>> GetEmployeeTurnoverRate(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var inactiveStatuses = new[]
+        {
+            EmployeeInactiveStatus.Resignation,
+            EmployeeInactiveStatus.Termination,
+            EmployeeInactiveStatus.SummaryDismissed,
+            EmployeeInactiveStatus.VacatedPost,
+        };
+
+        var baseQuery = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            baseQuery = baseQuery.Where(e => e.DepartmentId == departmentId.Value);
+
+        var startDate = filter.StartDate ?? DateTime.UtcNow.Date.AddMonths(-1);
+        var endDate = filter.EndDate ?? DateTime.UtcNow.Date;
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await baseQuery
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var leavers = await baseQuery
+                .CountAsync(e => e.InactiveStatus.HasValue
+                    && inactiveStatuses.Contains(e.InactiveStatus.Value)
+                    && e.ExitDate.HasValue
+                    && e.ExitDate >= startDate
+                    && e.ExitDate <= endDate);
+
+            var startHeadcount = await baseQuery
+                .CountAsync(e => e.CreatedAt < startDate
+                    && (!e.ExitDate.HasValue || e.ExitDate >= startDate));
+
+            var endHeadcount = await baseQuery
+                .CountAsync(e => e.CreatedAt <= endDate
+                    && (!e.ExitDate.HasValue || e.ExitDate > endDate));
+
+            var avgHeadcount = (startHeadcount + endHeadcount) / 2m;
+            var turnoverRate = avgHeadcount > 0 ? Math.Round(leavers / avgHeadcount * 100, 2) : 0;
+
+            return Result.Success(new List<EmployeeTurnoverRateDto>
+            {
+                new EmployeeTurnoverRateDto
+                {
+                    Department = deptName,
+                    Leavers = leavers,
+                    AverageHeadcount = avgHeadcount,
+                    TurnoverRatePercent = turnoverRate,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var leaversByDept = await baseQuery
+                .Where(e => e.InactiveStatus.HasValue
+                    && inactiveStatuses.Contains(e.InactiveStatus.Value)
+                    && e.ExitDate.HasValue
+                    && e.ExitDate >= startDate
+                    && e.ExitDate <= endDate)
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Leavers = g.Count() })
+                .ToListAsync();
+
+            var startByDept = await baseQuery
+                .Where(e => e.CreatedAt < startDate && (!e.ExitDate.HasValue || e.ExitDate >= startDate))
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var endByDept = await baseQuery
+                .Where(e => e.CreatedAt <= endDate && (!e.ExitDate.HasValue || e.ExitDate > endDate))
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new { Department = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var allDepts = startByDept.Select(d => d.Department)
+                .Union(endByDept.Select(d => d.Department))
+                .Union(leaversByDept.Select(d => d.Department))
+                .Distinct()
+                .ToList();
+
+            var results = allDepts
+                .Select(dept =>
+                {
+                    var leavers = leaversByDept.FirstOrDefault(l => l.Department == dept)?.Leavers ?? 0;
+                    var startCount = startByDept.FirstOrDefault(s => s.Department == dept)?.Count ?? 0;
+                    var endCount = endByDept.FirstOrDefault(e => e.Department == dept)?.Count ?? 0;
+                    var avgHeadcount = (startCount + endCount) / 2m;
+                    var turnoverRate = avgHeadcount > 0 ? Math.Round(leavers / avgHeadcount * 100, 2) : 0;
+
+                    return new EmployeeTurnoverRateDto
+                    {
+                        Department = dept ?? "Unassigned Department",
+                        Leavers = leavers,
+                        AverageHeadcount = avgHeadcount,
+                        TurnoverRatePercent = turnoverRate,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<LeaveUtilisationRateDto>>> GetLeaveUtilisationRate(
+        HrKpiFilterDto filter, Guid? departmentId)
+    {
+        var year = filter.Year ?? DateTime.UtcNow.Year;
+
+        var employeeBase = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue);
+
+        if (departmentId.HasValue)
+            employeeBase = employeeBase.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await employeeBase
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var staffDue = await employeeBase.CountAsync();
+
+            var totalDaysAllowed = await employeeBase
+                .SumAsync(e => e.Designation != null ? e.Designation.MaximumLeaveDays : 0);
+
+            var daysUsedData = await context.LeaveRequests.IgnoreQueryFilters().AsNoTracking()
+                .Where(lr => !lr.DeletedAt.HasValue
+                    && lr.Approved
+                    && lr.Employee.DepartmentId == departmentId.Value
+                    && lr.StartDate.Year == year)
+                .Select(lr => new { lr.StartDate, lr.EndDate })
+                .ToListAsync();
+
+            var totalDaysUsed = daysUsedData.Sum(lr => (lr.EndDate - lr.StartDate).Days);
+            var utilisationRate = totalDaysAllowed > 0
+                ? Math.Round((decimal)totalDaysUsed / totalDaysAllowed * 100, 2)
+                : 0;
+
+            return Result.Success(new List<LeaveUtilisationRateDto>
+            {
+                new LeaveUtilisationRateDto
+                {
+                    Department = deptName,
+                    StaffDueForLeave = staffDue,
+                    TotalDaysAllowed = totalDaysAllowed,
+                    TotalDaysUsed = totalDaysUsed,
+                    UtilisationPercent = utilisationRate,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var staffAndAllowedByDept = await
+                (from e in employeeBase
+                 group e by e.Department.Name into g
+                 select new
+                 {
+                     Department = g.Key,
+                     StaffDue = g.Count(),
+                     TotalAllowed = g.Sum(e => e.Designation != null ? e.Designation.MaximumLeaveDays : 0)
+                 })
+                .ToListAsync();
+
+            var daysUsedByDept = await
+                (from lr in context.LeaveRequests.IgnoreQueryFilters().AsNoTracking()
+                 join e in context.Employees.IgnoreQueryFilters().AsNoTracking()
+                     .Where(emp => !emp.DeletedAt.HasValue)
+                     on lr.EmployeeId equals e.Id
+                 where !lr.DeletedAt.HasValue
+                     && lr.Approved
+                     && lr.StartDate.Year == year
+                 select new { DaysDiff = (lr.EndDate - lr.StartDate).Days, DeptName = e.Department.Name })
+                .GroupBy(x => x.DeptName)
+                .Select(g => new { Department = g.Key, Total = g.Sum(x => x.DaysDiff) })
+                .ToListAsync();
+
+            var allDepts = staffAndAllowedByDept.Select(d => d.Department)
+                .Union(daysUsedByDept.Select(d => d.Department))
+                .Distinct()
+                .ToList();
+
+            var results = allDepts
+                .Select(dept =>
+                {
+                    var staffInfo = staffAndAllowedByDept.FirstOrDefault(s => s.Department == dept);
+                    var staffDue = staffInfo?.StaffDue ?? 0;
+                    var daysAllowed = staffInfo?.TotalAllowed ?? 0;
+                    var daysUsed = daysUsedByDept.FirstOrDefault(d => d.Department == dept)?.Total ?? 0;
+                    var utilisationRate = daysAllowed > 0
+                        ? Math.Round((decimal)daysUsed / daysAllowed * 100, 2)
+                        : 0;
+
+                    return new LeaveUtilisationRateDto
+                    {
+                        Department = dept ?? "Unassigned Department",
+                        StaffDueForLeave = staffDue,
+                        TotalDaysAllowed = daysAllowed,
+                        TotalDaysUsed = daysUsed,
+                        UtilisationPercent = utilisationRate,
+                    };
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    public async Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
+        Guid? departmentId)
+    {
+        var query = context.Employees.IgnoreQueryFilters().AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue && e.ActiveStatus.HasValue);
+
+        if (departmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+        if (departmentId.HasValue)
+        {
+            var deptName = await query
+                .Select(e => e.Department.Name)
+                .FirstOrDefaultAsync() ?? "Unassigned Department";
+
+            var underQuestion = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.Question);
+            var formalWarning = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.Warning);
+            var finalWarning = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.FinalWarning);
+            var suspended = await query.CountAsync(e => e.ActiveStatus == EmployeeActiveStatus.Suspension);
+
+            return Result.Success(new List<ActiveDisciplinaryActionsDto>
+            {
+                new ActiveDisciplinaryActionsDto
+                {
+                    Department = deptName,
+                    UnderQuestion = underQuestion,
+                    FormalWarning = formalWarning,
+                    FinalWarning = finalWarning,
+                    Suspended = suspended,
+                }
+            }.AsEnumerable());
+        }
+        else
+        {
+            var groups = await query
+                .GroupBy(e => e.Department.Name)
+                .Select(g => new
+                {
+                    Department = g.Key,
+                    UnderQuestion = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.Question),
+                    FormalWarning = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.Warning),
+                    FinalWarning = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.FinalWarning),
+                    Suspended = g.Count(e => e.ActiveStatus == EmployeeActiveStatus.Suspension),
+                })
+                .ToListAsync();
+
+            var results = groups
+                .Select(g => new ActiveDisciplinaryActionsDto
+                {
+                    Department = g.Department ?? "Unassigned Department",
+                    UnderQuestion = g.UnderQuestion,
+                    FormalWarning = g.FormalWarning,
+                    FinalWarning = g.FinalWarning,
+                    Suspended = g.Suspended,
+                })
+                .OrderBy(r => r.Department)
+                .ToList();
+
+            return Result.Success(results.AsEnumerable());
+        }
+    }
+
+    private static int ComputeOvertimeHours(string startTime, string endTime)
+    {
+        if (!TimeOnly.TryParse(startTime, out var start) || !TimeOnly.TryParse(endTime, out var end))
+            return 0;
+
+        var duration = end.ToTimeSpan() - start.ToTimeSpan();
+        return (int)duration.TotalHours;
+    }
 }
