@@ -494,12 +494,19 @@ public class ReportRepository(
         MovementReportFilter filter
     )
     {
-        var start = filter.StartDate ?? DateTime.UtcNow.AddMonths(-1);
-        var end = filter.EndDate ?? DateTime.UtcNow;
+        var start = filter.StartDate.HasValue
+            ? DateTime.SpecifyKind(filter.StartDate.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow.AddMonths(-1);
+        var end = filter.EndDate.HasValue
+            ? DateTime.SpecifyKind(filter.EndDate.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow;
 
-        // Get employees who were either hired or left during the period
-        var query = context
-            .Employees.Include(e => e.Department)
+        var query = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(e => e.Department)
             .Where(e =>
                 (e.DateEmployed >= start && e.DateEmployed <= end)
                 || (
@@ -528,94 +535,82 @@ public class ReportRepository(
             {
                 var isCasual = emp.Type == EmployeeType.Casual;
 
-                switch (emp.Status)
+                // New hire: DateEmployed falls within the period
+                if (emp.DateEmployed >= start && emp.DateEmployed <= end)
                 {
-                    // Count new hires during the period
-                    case EmployeeStatus.New when isCasual:
+                    if (isCasual)
+                    {
                         dto.CasualNew++;
                         totals.CasualNew++;
-                        break;
-                    case EmployeeStatus.New:
+                    }
+                    else
+                    {
                         dto.PermanentNew++;
                         totals.PermanentNew++;
-                        break;
-                    // Count exits during the period (only for inactive employees)
-                    case EmployeeStatus.Inactive
-                        when emp.ExitDate.HasValue
-                            && emp.ExitDate >= start
-                            && emp.ExitDate <= end
-                            && emp.InactiveStatus.HasValue:
-                        switch (emp.InactiveStatus.Value)
-                        {
-                            case EmployeeInactiveStatus.Resignation:
-                                if (isCasual)
-                                {
-                                    dto.CasualResignation++;
-                                    totals.CasualResignation++;
-                                }
-                                else
-                                {
-                                    dto.PermanentResignation++;
-                                    totals.PermanentResignation++;
-                                }
-                                break;
+                    }
+                    continue;
+                }
 
-                            case EmployeeInactiveStatus.Termination:
-                            case EmployeeInactiveStatus.Deceased:
-                                if (isCasual)
-                                {
-                                    dto.CasualTermination++;
-                                    totals.CasualTermination++;
-                                }
-                                else
-                                {
-                                    dto.PermanentTermination++;
-                                    totals.PermanentTermination++;
-                                }
-                                break;
+                // Exit: Status is Inactive and ExitDate falls within the period
+                if (
+                    emp.Status == EmployeeStatus.Inactive
+                    && emp.ExitDate.HasValue
+                    && emp.ExitDate >= start
+                    && emp.ExitDate <= end
+                    && emp.InactiveStatus.HasValue
+                )
+                {
+                    switch (emp.InactiveStatus.Value)
+                    {
+                        case EmployeeInactiveStatus.Resignation:
+                            if (isCasual)
+                            {
+                                dto.CasualResignation++;
+                                totals.CasualResignation++;
+                            }
+                            else
+                            {
+                                dto.PermanentResignation++;
+                                totals.PermanentResignation++;
+                            }
+                            break;
 
-                            case EmployeeInactiveStatus.SummaryDismissed:
-                                if (isCasual)
-                                {
-                                    dto.CasualSDVP++;
-                                    totals.CasualSDVP++;
-                                }
-                                else
-                                {
-                                    dto.PermanentSDVP++;
-                                    totals.PermanentSDVP++;
-                                }
-                                break;
+                        case EmployeeInactiveStatus.Termination:
+                        case EmployeeInactiveStatus.Deceased:
+                            if (isCasual)
+                            {
+                                dto.CasualTermination++;
+                                totals.CasualTermination++;
+                            }
+                            else
+                            {
+                                dto.PermanentTermination++;
+                                totals.PermanentTermination++;
+                            }
+                            break;
 
-                            case EmployeeInactiveStatus.Transfer:
-                                // Transfers are typically permanent employees
-                                if (!isCasual)
-                                {
-                                    dto.PermanentTransfer++;
-                                    totals.PermanentTransfer++;
-                                }
-                                break;
+                        case EmployeeInactiveStatus.SummaryDismissed:
+                        case EmployeeInactiveStatus.VacatedPost:
+                            if (isCasual)
+                            {
+                                dto.CasualSDVP++;
+                                totals.CasualSDVP++;
+                            }
+                            else
+                            {
+                                dto.PermanentSDVP++;
+                                totals.PermanentSDVP++;
+                            }
+                            break;
 
-                            case EmployeeInactiveStatus.VacatedPost:
-                                // These might need separate handling depending on your business rules
-                                // For now, treating them as terminations
-                                if (isCasual)
-                                {
-                                    dto.CasualSDVP++;
-                                    totals.CasualSDVP++;
-                                }
-                                else
-                                {
-                                    dto.PermanentSDVP++;
-                                    totals.PermanentSDVP++;
-                                }
-                                break;
-
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-
-                        break;
+                        case EmployeeInactiveStatus.Transfer:
+                            if (!isCasual)
+                            {
+                                dto.PermanentTransfer++;
+                                totals.PermanentTransfer++;
+                            }
+                            break;
+                    }
                 }
             }
 
@@ -629,28 +624,19 @@ public class ReportRepository(
 
     public async Task<Result<StaffTotalReport>> GetStaffTotalReport(MovementReportFilter filter)
     {
-        var employees = context
-            .Employees.Include(e => e.Department)
-            .Where(e =>
-                (e.Type == EmployeeType.Casual || e.Type == EmployeeType.Permanent)
-                && !e.InactiveStatus.HasValue
-            );
+        var employees = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.Status == EmployeeStatus.Active
+                && (e.Type == EmployeeType.Casual || e.Type == EmployeeType.Permanent));
 
         if (filter.DepartmentId.HasValue)
-        {
             employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
-        }
-
-        if (filter.StartDate.HasValue && filter.EndDate.HasValue)
-        {
-            employees = employees.Where(e =>
-                e.DateEmployed.Date >= filter.StartDate.Value.Date
-                && e.DateEmployed.Date <= filter.EndDate.Value.Date
-            );
-        }
 
         var groupedResults = await employees
-            .GroupBy(e => e.Department.Name ?? "Unassigned")
+            .GroupBy(e => e.Department != null ? e.Department.Name : "Unassigned")
             .Select(g => new StaffTotalSummary
             {
                 Department = g.Key,
@@ -833,61 +819,152 @@ public class ReportRepository(
 
     public async Task<Result<StaffTurnoverReportDto>> GetStaffTurnoverReport(ReportFilter filter)
     {
-        var currentYear = DateTime.UtcNow.Year;
+        var start = filter.StartDate.HasValue
+            ? DateTime.SpecifyKind(filter.StartDate.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow.AddMonths(-1);
+        var end = filter.EndDate.HasValue
+            ? DateTime.SpecifyKind(filter.EndDate.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow;
 
-        var startYear = filter.StartDate?.Year ?? currentYear;
-        var endYear = filter.EndDate?.Year ?? currentYear;
-
-        filter.StartDate = new DateTime(startYear, 1, 1);
-        filter.EndDate = new DateTime(endYear, 12, 31);
-
-        var leavers = await context
-            .Employees.Where(e =>
-                e.ExitDate.HasValue && e.ExitDate.Value.Year == filter.StartDate.Value.Year
-            )
+        var employees = await context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(e => e.Department)
+            .Where(e => e.DateEmployed <= end)
             .ToListAsync();
 
-        var startCount = await context
-            .Employees.Where(e =>
-                e.DateEmployed <= filter.StartDate.Value
-                && (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value)
-            )
-            .CountAsync();
+        var headcountAtStart = employees.Count(e =>
+            e.DateEmployed <= start && (!e.ExitDate.HasValue || e.ExitDate > start));
 
-        var endCount = await context
-            .Employees.Where(e =>
-                e.DateEmployed <= filter.EndDate.Value
-                && (!e.ExitDate.HasValue || e.ExitDate >= filter.EndDate.Value)
-            )
-            .CountAsync();
+        var headcountAtEnd = employees.Count(e =>
+            e.DateEmployed <= end && (!e.ExitDate.HasValue || e.ExitDate > end));
 
-        var averageEmployees = (startCount + endCount) / 2.0;
-        var turnoverRate = averageEmployees == 0 ? 0 : leavers.Count / averageEmployees * 100.0;
+        var averageHeadcount = (headcountAtStart + headcountAtEnd) / 2.0;
 
-        var exitedEmployees = await context
-            .Employees.Include(e => e.Department)
-            .Where(e => e.ExitDate.HasValue && e.ExitDate.Value.Year == filter.EndDate.Value.Year)
-            .ToListAsync();
+        var leavers = employees.Where(e =>
+            e.ExitDate.HasValue && e.ExitDate >= start && e.ExitDate <= end
+            && e.Status == EmployeeStatus.Inactive
+            && e.InactiveStatus.HasValue
+        ).ToList();
 
-        var departmentSummaries = exitedEmployees
-            .GroupBy(e => e.Department?.Name ?? "Unassigned")
-            .Select(group => new StaffTurnoverCountDto
-            {
-                DepartmentName = group.Key,
-                ExitReasons = group
-                    .GroupBy(e => e.InactiveStatus?.ToString() ?? "Unknown")
-                    .ToDictionary(g => g.Key, g => g.Count()),
-            })
-            .ToList();
+        var grandTotalLeavers = leavers.Count;
+        var organisationTurnover = averageHeadcount > 0
+            ? Math.Round(grandTotalLeavers / averageHeadcount * 100, 2)
+            : 0;
 
-        var grandTotal = departmentSummaries.Sum(d => d.TotalLeavers);
+        var departmentGroups = leavers.GroupBy(e => e.Department?.Name ?? "Unassigned");
 
-        return new StaffTurnoverReportDto
+        var departments = new List<StaffTurnoverCountDto>();
+        var no = 1;
+
+        foreach (var dept in departmentGroups)
         {
-            TurnoverRate = Math.Round(turnoverRate, 2),
-            GrandTotalLeavers = grandTotal,
-            DepartmentSummaries = departmentSummaries,
-        };
+            var deptLeavers = dept.ToList();
+            var deptTotalLeavers = deptLeavers.Count;
+
+            var deptHeadcountStart = employees.Count(e =>
+                e.Department?.Name == dept.Key
+                && e.DateEmployed <= start
+                && (!e.ExitDate.HasValue || e.ExitDate > start));
+
+            var deptHeadcountEnd = employees.Count(e =>
+                e.Department?.Name == dept.Key
+                && e.DateEmployed <= end
+                && (!e.ExitDate.HasValue || e.ExitDate > end));
+
+            var deptAvgHeadcount = (deptHeadcountStart + deptHeadcountEnd) / 2.0;
+            var deptTurnover = deptAvgHeadcount > 0
+                ? Math.Round(deptTotalLeavers / deptAvgHeadcount * 100, 2)
+                : 0;
+
+            var exitReasonGroups = deptLeavers.GroupBy(e => e.InactiveStatus.ToString());
+
+            foreach (var reason in exitReasonGroups)
+            {
+                departments.Add(new StaffTurnoverCountDto
+                {
+                    No = no++,
+                    Department = dept.Key,
+                    ExitReason = reason.Key,
+                    LeaverCount = reason.Count(),
+                    TotalLeavers = deptTotalLeavers,
+                    AverageHeadcount = Math.Round(deptAvgHeadcount, 1),
+                    DepartmentalTurnover = deptTurnover,
+                });
+            }
+        }
+
+        return Result.Success(new StaffTurnoverReportDto
+        {
+            Departments = departments,
+            OrganisationTurnover = organisationTurnover,
+            GrandTotalLeavers = grandTotalLeavers,
+        });
+    }
+
+    public async Task<Result<List<LeaveRegisterReportDto>>> GetLeaveRegister(LeaveRegisterFilter filter)
+    {
+        var query = context.LeaveRequests
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(lr => lr.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(lr => lr.LeaveType).Include(leaveRequest => leaveRequest.Approvals)
+            .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(lr => lr.Employee.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.LeaveCategory.HasValue)
+            query = query.Where(lr => lr.RequestCategory == filter.LeaveCategory.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(lr => lr.LeaveStatus == filter.Status.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(lr => lr.StartDate >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(lr => lr.EndDate <= filter.EndDate.Value);
+
+        var leaveRequests = await query.ToListAsync();
+
+        var result = leaveRequests.Select((lr, idx) => new LeaveRegisterReportDto
+        {
+            No = idx + 1,
+            EmployeeName = lr.Employee != null
+                ? lr.Employee.FirstName + " " + lr.Employee.LastName
+                : "Unknown",
+            StaffNumber = lr.Employee?.StaffNumber ?? "N/A",
+            Department = lr.Employee?.Department != null
+                ? lr.Employee.Department.Name
+                : "Unassigned",
+            LeaveCategory = lr.RequestCategory.ToString(),
+            LeaveType = lr.LeaveType?.Name ?? "N/A",
+            StartDate = lr.StartDate,
+            EndDate = lr.EndDate,
+            DurationDays = (lr.EndDate - lr.StartDate).Days + 1,
+            PaidDays = lr.PaidDays,
+            UnpaidDays = lr.UnpaidDays,
+            Status = lr.LeaveStatus.ToString(),
+            Justification = lr.Justification,
+            ContactPerson = lr.ContactPerson,
+            Destination = lr.Destination,
+            ApprovedBy = lr.Approvals
+                .Where(a => a.Status == ApprovalStatus.Approved)
+                .Select(a => a.ApprovedBy != null
+                    ? a.ApprovedBy.FirstName + " " + a.ApprovedBy.LastName
+                    : null)
+                .FirstOrDefault() ?? "N/A",
+            DateApplied = lr.CreatedAt,
+        }).ToList();
+
+        return Result.Success(result);
     }
 
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(

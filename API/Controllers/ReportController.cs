@@ -3,6 +3,7 @@ using APP.IRepository;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Materials.Batch;
@@ -194,6 +195,28 @@ public class ReportController(IReportRepository repository) : ControllerBase
     public async Task<IResult> GetStaffTurnoverReport([FromQuery] MovementReportFilter filter)
     {
         var result = await repository.GetStaffTurnoverReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("leave-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] RequestCategory? leaveCategory,
+        [FromQuery] LeaveStatus? status,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var filter = new LeaveRegisterFilter
+        {
+            DepartmentId = departmentId,
+            LeaveCategory = leaveCategory,
+            Status = status,
+            StartDate = startDate,
+            EndDate = endDate,
+        };
+        var result = await repository.GetLeaveRegister(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
