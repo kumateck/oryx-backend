@@ -39,6 +39,8 @@ public interface IReportRepository
 
     Task<Result<List<LeaveRegisterReportDto>>> GetLeaveRegister(LeaveRegisterFilter filter);
 
+    Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter);
+
     Task<Result<QaDashboardDto>> GetQaDashboardReport(ReportFilter filter, Guid? productId);
 
     Task<Result<QcDashboardDto>> GetQcDashboardReport(ReportFilter filter, Guid? productId, Guid? materialId);

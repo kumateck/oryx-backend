@@ -967,6 +967,74 @@ public class ReportRepository(
         return Result.Success(result);
     }
 
+    public async Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter)
+    {
+        var year = filter.LeaveYear ?? DateTime.UtcNow.Year;
+
+        var employees = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.EmployeeId.HasValue)
+            employees = employees.Where(e => e.Id == filter.EmployeeId.Value);
+
+        var employeeList = await employees.ToListAsync();
+
+        var employeeIds = employeeList.Select(e => e.Id).Distinct().ToList();
+
+        var approvedLeaves = await context.LeaveRequests
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(lr =>
+                employeeIds.Contains(lr.EmployeeId)
+                && lr.LeaveStatus == LeaveStatus.Approved
+                && lr.StartDate.Year == year
+            )
+            .ToListAsync();
+
+        var daysUsedByEmployee = approvedLeaves
+            .GroupBy(lr => lr.EmployeeId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Sum(lr => (lr.EndDate - lr.StartDate).Days + 1)
+            );
+
+        var result = employeeList.Select((emp, idx) =>
+        {
+            var daysAllowed = emp.Designation?.MaximumLeaveDays ?? 0;
+            var daysUsed = daysUsedByEmployee.TryGetValue(emp.Id, out var used) ? used : 0;
+            var daysRemaining = daysAllowed - daysUsed;
+            var utilisation = daysAllowed > 0
+                ? Math.Round((double)daysUsed / daysAllowed * 100, 1)
+                : 0;
+
+            return new LeaveBalanceReportDto
+            {
+                No = idx + 1,
+                EmployeeName = emp.FirstName + " " + emp.LastName,
+                StaffNumber = emp.StaffNumber ?? "N/A",
+                Department = emp.Department != null ? emp.Department.Name : "Unassigned",
+                LeaveYear = year,
+                DaysAllowed = daysAllowed,
+                DaysUsed = daysUsed,
+                DaysRemaining = daysRemaining,
+                Utilisation = utilisation,
+            };
+        }).ToList();
+
+        return Result.Success(result);
+    }
+
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(
         ReportFilter filter,
         Guid? productId

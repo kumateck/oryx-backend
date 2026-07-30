@@ -219,7 +219,25 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetLeaveRegister(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-
+    
+    [HttpGet("/leave-balance")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveBalanceReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveBalance(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] int? leaveYear,
+        [FromQuery] Guid? employeeId)
+    {
+        var filter = new LeaveBalanceFilter
+        {
+            DepartmentId = departmentId,
+            LeaveYear = leaveYear,
+            EmployeeId = employeeId,
+        };
+        var result = await repository.GetLeaveBalance(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+    
     /// <summary>
     /// Gets a list of materials ready for checklist for a specific user.
     /// </summary>
