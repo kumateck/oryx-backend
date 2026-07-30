@@ -904,137 +904,6 @@ public class ReportRepository(
         });
     }
 
-    public async Task<Result<List<LeaveRegisterReportDto>>> GetLeaveRegister(LeaveRegisterFilter filter)
-    {
-        var query = context.LeaveRequests
-            .AsSplitQuery()
-            .IgnoreAutoIncludes()
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Include(lr => lr.Employee)
-            .ThenInclude(e => e.Department)
-            .Include(lr => lr.LeaveType).Include(leaveRequest => leaveRequest.Approvals)
-            .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
-            .AsQueryable();
-
-        if (filter.DepartmentId.HasValue)
-            query = query.Where(lr => lr.Employee.DepartmentId == filter.DepartmentId.Value);
-
-        if (filter.LeaveCategory.HasValue)
-            query = query.Where(lr => lr.RequestCategory == filter.LeaveCategory.Value);
-
-        if (filter.Status.HasValue)
-            query = query.Where(lr => lr.LeaveStatus == filter.Status.Value);
-
-        if (filter.StartDate.HasValue)
-            query = query.Where(lr => lr.StartDate >= filter.StartDate.Value);
-
-        if (filter.EndDate.HasValue)
-            query = query.Where(lr => lr.EndDate <= filter.EndDate.Value);
-
-        var leaveRequests = await query.ToListAsync();
-
-        var result = leaveRequests.Select((lr, idx) => new LeaveRegisterReportDto
-        {
-            No = idx + 1,
-            EmployeeName = lr.Employee != null
-                ? lr.Employee.FirstName + " " + lr.Employee.LastName
-                : "Unknown",
-            StaffNumber = lr.Employee?.StaffNumber ?? "N/A",
-            Department = lr.Employee?.Department != null
-                ? lr.Employee.Department.Name
-                : "Unassigned",
-            LeaveCategory = lr.RequestCategory.ToString(),
-            LeaveType = lr.LeaveType?.Name ?? "N/A",
-            StartDate = lr.StartDate,
-            EndDate = lr.EndDate,
-            DurationDays = (lr.EndDate - lr.StartDate).Days + 1,
-            PaidDays = lr.PaidDays,
-            UnpaidDays = lr.UnpaidDays,
-            Status = lr.LeaveStatus.ToString(),
-            Justification = lr.Justification,
-            ContactPerson = lr.ContactPerson,
-            Destination = lr.Destination,
-            ApprovedBy = lr.Approvals
-                .Where(a => a.Status == ApprovalStatus.Approved)
-                .Select(a => a.ApprovedBy != null
-                    ? a.ApprovedBy.FirstName + " " + a.ApprovedBy.LastName
-                    : null)
-                .FirstOrDefault() ?? "N/A",
-            DateApplied = lr.CreatedAt,
-        }).ToList();
-
-        return Result.Success(result);
-    }
-
-    public async Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter)
-    {
-        var year = filter.LeaveYear ?? DateTime.UtcNow.Year;
-
-        var employees = context.Employees
-            .AsSplitQuery()
-            .IgnoreAutoIncludes()
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Include(e => e.Department)
-            .Include(e => e.Designation)
-            .AsQueryable();
-
-        if (filter.DepartmentId.HasValue)
-            employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
-
-        if (filter.EmployeeId.HasValue)
-            employees = employees.Where(e => e.Id == filter.EmployeeId.Value);
-
-        var employeeList = await employees.ToListAsync();
-
-        var employeeIds = employeeList.Select(e => e.Id).Distinct().ToList();
-
-        var approvedLeaves = await context.LeaveRequests
-            .AsSplitQuery()
-            .IgnoreAutoIncludes()
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .Where(lr =>
-                employeeIds.Contains(lr.EmployeeId)
-                && lr.LeaveStatus == LeaveStatus.Approved
-                && lr.StartDate.Year == year
-            )
-            .ToListAsync();
-
-        var daysUsedByEmployee = approvedLeaves
-            .GroupBy(lr => lr.EmployeeId)
-            .ToDictionary(
-                g => g.Key,
-                g => g.Sum(lr => (lr.EndDate - lr.StartDate).Days + 1)
-            );
-
-        var result = employeeList.Select((emp, idx) =>
-        {
-            var daysAllowed = emp.Designation?.MaximumLeaveDays ?? 0;
-            var daysUsed = daysUsedByEmployee.TryGetValue(emp.Id, out var used) ? used : 0;
-            var daysRemaining = daysAllowed - daysUsed;
-            var utilisation = daysAllowed > 0
-                ? Math.Round((double)daysUsed / daysAllowed * 100, 1)
-                : 0;
-
-            return new LeaveBalanceReportDto
-            {
-                No = idx + 1,
-                EmployeeName = emp.FirstName + " " + emp.LastName,
-                StaffNumber = emp.StaffNumber ?? "N/A",
-                Department = emp.Department != null ? emp.Department.Name : "Unassigned",
-                LeaveYear = year,
-                DaysAllowed = daysAllowed,
-                DaysUsed = daysUsed,
-                DaysRemaining = daysRemaining,
-                Utilisation = utilisation,
-            };
-        }).ToList();
-
-        return Result.Success(result);
-    }
-
     public async Task<Result<QaDashboardDto>> GetQaDashboardReport(
         ReportFilter filter,
         Guid? productId
@@ -9025,5 +8894,219 @@ public class ReportRepository(
 
         var duration = end.ToTimeSpan() - start.ToTimeSpan();
         return (int)duration.TotalHours;
+    }
+
+    public async Task<Result<List<LeaveRegisterReportDto>>> GetLeaveRegister(LeaveRegisterFilter filter)
+    {
+        var query = context.LeaveRequests
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(lr => lr.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(lr => lr.LeaveType)
+            .Include(lr => lr.Approvals)
+            .ThenInclude(a => a.ApprovedBy)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(lr => lr.Employee.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.LeaveCategory.HasValue)
+            query = query.Where(lr => lr.RequestCategory == filter.LeaveCategory.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(lr => lr.LeaveStatus == filter.Status.Value);
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(lr => lr.StartDate >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+            query = query.Where(lr => lr.EndDate <= filter.EndDate.Value);
+
+        var leaveRequests = await query.ToListAsync();
+
+        var result = leaveRequests.Select((lr, idx) => new LeaveRegisterReportDto
+        {
+            No = idx + 1,
+            EmployeeName = lr.Employee != null
+                ? lr.Employee.FirstName + " " + lr.Employee.LastName
+                : "Unknown",
+            StaffNumber = lr.Employee?.StaffNumber ?? "N/A",
+            Department = lr.Employee?.Department != null
+                ? lr.Employee.Department.Name
+                : "Unassigned",
+            LeaveCategory = lr.RequestCategory.ToString(),
+            LeaveType = lr.LeaveType?.Name ?? "N/A",
+            StartDate = lr.StartDate,
+            EndDate = lr.EndDate,
+            DurationDays = (lr.EndDate - lr.StartDate).Days + 1,
+            PaidDays = lr.PaidDays,
+            UnpaidDays = lr.UnpaidDays,
+            Status = lr.LeaveStatus.ToString(),
+            Justification = lr.Justification,
+            ContactPerson = lr.ContactPerson,
+            Destination = lr.Destination,
+            ApprovedBy = lr.Approvals
+                .Where(a => a.Status == ApprovalStatus.Approved)
+                .Select(a => a.ApprovedBy != null
+                    ? a.ApprovedBy.FirstName + " " + a.ApprovedBy.LastName
+                    : null)
+                .FirstOrDefault() ?? "N/A",
+            DateApplied = lr.CreatedAt,
+        }).ToList();
+
+        return Result.Success(result);
+    }
+
+    public async Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter)
+    {
+        var year = filter.LeaveYear ?? DateTime.UtcNow.Year;
+
+        var employees = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            employees = employees.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.EmployeeId.HasValue)
+            employees = employees.Where(e => e.Id == filter.EmployeeId.Value);
+
+        var employeeList = await employees.ToListAsync();
+
+        var employeeIds = employeeList.Select(e => e.Id).Distinct().ToList();
+
+        var approvedLeaves = await context.LeaveRequests
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(lr =>
+                employeeIds.Contains(lr.EmployeeId)
+                && lr.LeaveStatus == LeaveStatus.Approved
+                && lr.StartDate.Year == year
+            )
+            .ToListAsync();
+
+        var daysUsedByEmployee = approvedLeaves
+            .GroupBy(lr => lr.EmployeeId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Sum(lr => (lr.EndDate - lr.StartDate).Days + 1)
+            );
+
+        var result = employeeList.Select((emp, idx) =>
+        {
+            var daysAllowed = emp.Designation?.MaximumLeaveDays ?? 0;
+            var daysUsed = daysUsedByEmployee.TryGetValue(emp.Id, out var used) ? used : 0;
+            var daysRemaining = daysAllowed - daysUsed;
+            var utilisation = daysAllowed > 0
+                ? Math.Round((double)daysUsed / daysAllowed * 100, 1)
+                : 0;
+
+            return new LeaveBalanceReportDto
+            {
+                No = idx + 1,
+                EmployeeName = emp.FirstName + " " + emp.LastName,
+                StaffNumber = emp.StaffNumber ?? "N/A",
+                Department = emp.Department != null ? emp.Department.Name : "Unassigned",
+                LeaveYear = year,
+                DaysAllowed = daysAllowed,
+                DaysUsed = daysUsed,
+                DaysRemaining = daysRemaining,
+                Utilisation = utilisation,
+            };
+        }).ToList();
+
+        return Result.Success(result);
+    }
+
+    public async Task<Result<List<LeaveApprovalAuditReportDto>>> GetLeaveApprovalAudit(LeaveApprovalAuditFilter filter)
+    {
+        var start = filter.StartDate.HasValue
+            ? DateTime.SpecifyKind(filter.StartDate.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow.AddMonths(-1);
+        var end = filter.EndDate.HasValue
+            ? DateTime.SpecifyKind(filter.EndDate.Value, DateTimeKind.Utc)
+            : DateTime.UtcNow;
+
+        var query = context.LeaveRequests
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Include(lr => lr.Employee)
+            .ThenInclude(e => e.Department)
+            .Include(lr => lr.Approvals)
+            .ThenInclude(a => a.ApprovedBy)
+            .Where(lr => lr.CreatedAt >= start && lr.CreatedAt <= end)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(lr => lr.Employee.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(lr => lr.LeaveStatus == filter.Status.Value);
+
+        var leaveRequests = await query.ToListAsync();
+
+        var result = new List<LeaveApprovalAuditReportDto>();
+        var no = 1;
+
+        foreach (var lr in leaveRequests)
+        {
+            var durationDays = (lr.EndDate - lr.StartDate).Days + 1;
+            var employeeName = lr.Employee != null
+                ? lr.Employee.FirstName + " " + lr.Employee.LastName
+                : "Unknown";
+
+            if (lr.Approvals == null || lr.Approvals.Count == 0)
+            {
+                result.Add(new LeaveApprovalAuditReportDto
+                {
+                    No = no++,
+                    Employee = employeeName,
+                    LeaveCategory = lr.RequestCategory.ToString(),
+                    DurationDays = durationDays,
+                    ApprovalStage = "No approvals",
+                    Approver = "N/A",
+                    ActionTaken = "Pending",
+                    ActionDate = null,
+                    Comments = null,
+                    FinalStatus = lr.LeaveStatus.ToString(),
+                });
+                continue;
+            }
+
+            foreach (var approval in lr.Approvals.OrderBy(a => a.Order))
+            {
+                var approverName = approval.ApprovedBy != null
+                    ? approval.ApprovedBy.FirstName + " " + approval.ApprovedBy.LastName
+                    : "N/A";
+
+                result.Add(new LeaveApprovalAuditReportDto
+                {
+                    No = no++,
+                    Employee = employeeName,
+                    LeaveCategory = lr.RequestCategory.ToString(),
+                    DurationDays = durationDays,
+                    ApprovalStage = $"Stage {approval.Order}",
+                    Approver = approverName,
+                    ActionTaken = approval.Status.ToString(),
+                    ActionDate = approval.ApprovalTime,
+                    Comments = approval.Comments,
+                    FinalStatus = lr.LeaveStatus.ToString(),
+                });
+            }
+        }
+
+        return Result.Success(result);
     }
 }

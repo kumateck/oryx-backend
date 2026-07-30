@@ -198,46 +198,6 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    [HttpGet("leave-register")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveRegisterReportDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetLeaveRegister(
-        [FromQuery] Guid? departmentId,
-        [FromQuery] RequestCategory? leaveCategory,
-        [FromQuery] LeaveStatus? status,
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate)
-    {
-        var filter = new LeaveRegisterFilter
-        {
-            DepartmentId = departmentId,
-            LeaveCategory = leaveCategory,
-            Status = status,
-            StartDate = startDate,
-            EndDate = endDate,
-        };
-        var result = await repository.GetLeaveRegister(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
-    [HttpGet("/leave-balance")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveBalanceReportDto>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetLeaveBalance(
-        [FromQuery] Guid? departmentId,
-        [FromQuery] int? leaveYear,
-        [FromQuery] Guid? employeeId)
-    {
-        var filter = new LeaveBalanceFilter
-        {
-            DepartmentId = departmentId,
-            LeaveYear = leaveYear,
-            EmployeeId = employeeId,
-        };
-        var result = await repository.GetLeaveBalance(filter);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-    
     /// <summary>
     /// Gets a list of materials ready for checklist for a specific user.
     /// </summary>
@@ -1561,6 +1521,66 @@ public class ReportController(IReportRepository repository) : ControllerBase
             DepartmentId = departmentId,
         };
         var result = await repository.GetStaffGradeLevel(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/leave-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] RequestCategory? leaveCategory,
+        [FromQuery] LeaveStatus? status,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var filter = new LeaveRegisterFilter
+        {
+            DepartmentId = departmentId,
+            LeaveCategory = leaveCategory,
+            Status = status,
+            StartDate = startDate,
+            EndDate = endDate,
+        };
+        var result = await repository.GetLeaveRegister(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/leave-balance")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveBalanceReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveBalance(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] int? leaveYear,
+        [FromQuery] Guid? employeeId)
+    {
+        var filter = new LeaveBalanceFilter
+        {
+            DepartmentId = departmentId,
+            LeaveYear = leaveYear,
+            EmployeeId = employeeId,
+        };
+        var result = await repository.GetLeaveBalance(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/leave-approval-audit")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveApprovalAuditReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveApprovalAudit(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] LeaveStatus? status)
+    {
+        var filter = new LeaveApprovalAuditFilter
+        {
+            DepartmentId = departmentId,
+            StartDate = startDate,
+            EndDate = endDate,
+            Status = status,
+        };
+        var result = await repository.GetLeaveApprovalAudit(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
