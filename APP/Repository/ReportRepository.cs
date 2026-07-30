@@ -8526,6 +8526,126 @@ public class ReportRepository(
         }
     }
 
+    public async Task<Result<List<EmployeeMasterListReportDto>>> GetEmployeeMasterList(
+        EmployeeMasterListFilter filter)
+    {
+        var query = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue)
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .Include(e => e.ReportingManager)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.EmployeeType.HasValue)
+            query = query.Where(e => e.Type == filter.EmployeeType.Value);
+
+        if (filter.GradeLevel.HasValue)
+            query = query.Where(e => e.Level == filter.GradeLevel.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(e => e.Status == filter.Status.Value);
+
+        var result = await query
+            .OrderBy(e => e.LastName)
+            .ThenBy(e => e.FirstName)
+            .Select(e => new EmployeeMasterListReportDto
+            {
+                StaffNumber = e.StaffNumber,
+                FirstName = e.FirstName,
+                LastName = e.LastName,
+                Email = e.Email,
+                PhoneNumber = e.PhoneNumber,
+                Gender = e.Gender.ToString(),
+                DateOfBirth = e.DateOfBirth,
+                DateEmployed = e.DateEmployed,
+                EmploymentType = e.Type.ToString(),
+                GradeLevel = e.Level.ToString() ?? "N/A",
+                Status = e.Status.ToString(),
+                Department = e.Department != null ? e.Department.Name : "Unassigned",
+                Designation = e.Designation != null ? e.Designation.Name : "N/A",
+                ReportingManager = e.ReportingManager != null
+                    ? e.ReportingManager.FirstName + " " + e.ReportingManager.LastName
+                    : "N/A",
+                Nationality = e.Nationality,
+                Region = e.Region,
+                MaritalStatus = e.MaritalStatus.ToString(),
+                Religion = e.Religion.ToString(),
+                BankAccountNumber = e.BankAccountNumber,
+                SsnitNumber = e.SsnitNumber,
+                GhanaCardNumber = e.GhanaCardNumber,
+                AnnualLeaveEntitlement = e.AnnualLeaveDays,
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((e, idx) =>
+        {
+            e.No = idx + 1;
+            return e;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
+    public async Task<Result<List<EmployeeDirectoryByDepartmentDto>>> GetEmployeeDirectoryByDepartment(
+        EmployeeDirectoryFilter filter)
+    {
+        var query = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue)
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .Include(e => e.ReportingManager)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.GradeLevel.HasValue)
+            query = query.Where(e => e.Level == filter.GradeLevel.Value);
+
+        if (filter.EmployeeType.HasValue)
+            query = query.Where(e => e.Type == filter.EmployeeType.Value);
+
+        var result = await query
+            .OrderBy(e => e.Department != null ? e.Department.Name : "Unassigned")
+            .ThenBy(e => e.LastName)
+            .ThenBy(e => e.FirstName)
+            .Select(e => new EmployeeDirectoryByDepartmentDto
+            {
+                Department = e.Department != null ? e.Department.Name : "Unassigned",
+                StaffNumber = e.StaffNumber,
+                EmployeeName = e.FirstName + " " + e.LastName,
+                Designation = e.Designation != null ? e.Designation.Name : "N/A",
+                GradeLevel = e.Level.ToString() ?? "N/A",
+                EmploymentType = e.Type.ToString(),
+                Status = e.Status == EmployeeStatus.Active ? "Active" : "Inactive",
+                ReportingManager = e.ReportingManager != null
+                    ? e.ReportingManager.FirstName + " " + e.ReportingManager.LastName
+                    : "N/A",
+                Email = e.Email,
+                Phone = e.PhoneNumber,
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((e, idx) =>
+        {
+            e.No = idx + 1;
+            return e;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
     private static int ComputeOvertimeHours(string startTime, string endTime)
     {
         if (!TimeOnly.TryParse(startTime, out var start) || !TimeOnly.TryParse(endTime, out var end))

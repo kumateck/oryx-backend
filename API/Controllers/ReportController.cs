@@ -1456,4 +1456,42 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetActiveDisciplinaryActions(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
     }
+
+    [HttpGet("hr/employee-master-list")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMasterListReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeMasterList(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] EmployeeType? employeeType,
+        [FromQuery] EmployeeLevel? gradeLevel,
+        [FromQuery] EmployeeStatus? status)
+    {
+        var filter = new EmployeeMasterListFilter
+        {
+            DepartmentId = departmentId,
+            EmployeeType = employeeType,
+            GradeLevel = gradeLevel,
+            Status = status,
+        };
+        var result = await repository.GetEmployeeMasterList(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-directory-by-department")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeDirectoryByDepartmentDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeDirectoryByDepartment(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] EmployeeLevel? gradeLevel,
+        [FromQuery] EmployeeType? employeeType)
+    {
+        var filter = new EmployeeDirectoryFilter
+        {
+            DepartmentId = departmentId,
+            GradeLevel = gradeLevel,
+            EmployeeType = employeeType,
+        };
+        var result = await repository.GetEmployeeDirectoryByDepartment(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }

@@ -243,4 +243,10 @@ public interface IReportRepository
 
     Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
         Guid? departmentId);
+
+    Task<Result<List<EmployeeMasterListReportDto>>> GetEmployeeMasterList(
+        EmployeeMasterListFilter filter);
+
+    Task<Result<List<EmployeeDirectoryByDepartmentDto>>> GetEmployeeDirectoryByDepartment(
+        EmployeeDirectoryFilter filter);
 }
