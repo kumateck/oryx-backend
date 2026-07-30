@@ -249,4 +249,10 @@ public interface IReportRepository
 
     Task<Result<List<EmployeeDirectoryByDepartmentDto>>> GetEmployeeDirectoryByDepartment(
         EmployeeDirectoryFilter filter);
+
+    Task<Result<List<EmployeeDemographicsReportDto>>> GetEmployeeDemographics(
+        EmployeeDemographicsFilter filter);
+
+    Task<Result<List<StaffGradeLevelReportDto>>> GetStaffGradeLevel(
+        StaffGradeLevelFilter filter);
 }

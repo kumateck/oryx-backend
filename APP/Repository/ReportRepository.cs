@@ -8646,6 +8646,233 @@ public class ReportRepository(
         return Result.Success(numbered);
     }
 
+    public async Task<Result<List<EmployeeDemographicsReportDto>>> GetEmployeeDemographics(
+        EmployeeDemographicsFilter filter)
+    {
+        var query = context.Employees
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        var employees = await query
+            .Select(e => new
+            {
+                e.Gender,
+                e.DateOfBirth,
+                e.MaritalStatus,
+                e.Religion,
+                e.Nationality,
+                e.Type,
+            })
+            .ToListAsync();
+
+        var grandTotal = employees.Count;
+        if (grandTotal == 0)
+            return Result.Success(new List<EmployeeDemographicsReportDto>());
+
+        var result = new List<EmployeeDemographicsReportDto>();
+        var no = 1;
+
+        var genderGroups = employees
+            .GroupBy(e => e.Gender.ToString())
+            .Select(g => new
+            {
+                Dimension = "Gender",
+                Category = g.Key,
+                PermanentCount = g.Count(e => e.Type == EmployeeType.Permanent),
+                CasualCount = g.Count(e => e.Type == EmployeeType.Casual),
+            });
+
+        foreach (var g in genderGroups)
+        {
+            var total = g.PermanentCount + g.CasualCount;
+            result.Add(new EmployeeDemographicsReportDto
+            {
+                No = no++,
+                Dimension = g.Dimension,
+                Category = g.Category,
+                PermanentCount = g.PermanentCount,
+                CasualCount = g.CasualCount,
+                TotalCount = total,
+                Percentage = Math.Round((double)total / grandTotal * 100, 1),
+            });
+        }
+
+        var ageGroups = employees
+            .GroupBy(e =>
+            {
+                var age = DateTime.Today.Year - e.DateOfBirth.Year;
+                if (e.DateOfBirth.Date > DateTime.Today.AddYears(-age)) age--;
+                return age switch
+                {
+                    >= 20 and <= 30 => "20-30",
+                    >= 31 and <= 40 => "31-40",
+                    >= 41 and <= 50 => "41-50",
+                    >= 51 => "51+",
+                    _ => "Under 20",
+                };
+            })
+            .Select(g => new
+            {
+                Dimension = "Age Group",
+                Category = g.Key,
+                PermanentCount = g.Count(e => e.Type == EmployeeType.Permanent),
+                CasualCount = g.Count(e => e.Type == EmployeeType.Casual),
+            });
+
+        foreach (var g in ageGroups)
+        {
+            var total = g.PermanentCount + g.CasualCount;
+            result.Add(new EmployeeDemographicsReportDto
+            {
+                No = no++,
+                Dimension = g.Dimension,
+                Category = g.Category,
+                PermanentCount = g.PermanentCount,
+                CasualCount = g.CasualCount,
+                TotalCount = total,
+                Percentage = Math.Round((double)total / grandTotal * 100, 1),
+            });
+        }
+
+        var maritalGroups = employees
+            .GroupBy(e => e.MaritalStatus.ToString())
+            .Select(g => new
+            {
+                Dimension = "Marital Status",
+                Category = g.Key,
+                PermanentCount = g.Count(e => e.Type == EmployeeType.Permanent),
+                CasualCount = g.Count(e => e.Type == EmployeeType.Casual),
+            });
+
+        foreach (var g in maritalGroups)
+        {
+            var total = g.PermanentCount + g.CasualCount;
+            result.Add(new EmployeeDemographicsReportDto
+            {
+                No = no++,
+                Dimension = g.Dimension,
+                Category = g.Category,
+                PermanentCount = g.PermanentCount,
+                CasualCount = g.CasualCount,
+                TotalCount = total,
+                Percentage = Math.Round((double)total / grandTotal * 100, 1),
+            });
+        }
+
+        var religionGroups = employees
+            .GroupBy(e => e.Religion.ToString())
+            .Select(g => new
+            {
+                Dimension = "Religion",
+                Category = g.Key,
+                PermanentCount = g.Count(e => e.Type == EmployeeType.Permanent),
+                CasualCount = g.Count(e => e.Type == EmployeeType.Casual),
+            });
+
+        foreach (var g in religionGroups)
+        {
+            var total = g.PermanentCount + g.CasualCount;
+            result.Add(new EmployeeDemographicsReportDto
+            {
+                No = no++,
+                Dimension = g.Dimension,
+                Category = g.Category,
+                PermanentCount = g.PermanentCount,
+                CasualCount = g.CasualCount,
+                TotalCount = total,
+                Percentage = Math.Round((double)total / grandTotal * 100, 1),
+            });
+        }
+
+        var nationalityGroups = employees
+            .GroupBy(e => e.Nationality ?? "Unknown")
+            .Select(g => new
+            {
+                Dimension = "Nationality",
+                Category = g.Key,
+                PermanentCount = g.Count(e => e.Type == EmployeeType.Permanent),
+                CasualCount = g.Count(e => e.Type == EmployeeType.Casual),
+            });
+
+        foreach (var g in nationalityGroups)
+        {
+            var total = g.PermanentCount + g.CasualCount;
+            result.Add(new EmployeeDemographicsReportDto
+            {
+                No = no++,
+                Dimension = g.Dimension,
+                Category = g.Category,
+                PermanentCount = g.PermanentCount,
+                CasualCount = g.CasualCount,
+                TotalCount = total,
+                Percentage = Math.Round((double)total / grandTotal * 100, 1),
+            });
+        }
+
+        return Result.Success(result);
+    }
+
+    public async Task<Result<List<StaffGradeLevelReportDto>>> GetStaffGradeLevel(
+        StaffGradeLevelFilter filter)
+    {
+        var query = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => !e.DeletedAt.HasValue)
+            .Include(e => e.Department)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        var employees = await query
+            .Select(e => new
+            {
+                e.DepartmentId,
+                DepartmentName = e.Department != null ? e.Department.Name : "Unassigned",
+                e.Level,
+                e.Gender,
+            })
+            .ToListAsync();
+
+        var grouped = employees
+            .GroupBy(e => new { e.DepartmentId, e.DepartmentName })
+            .Select(g => new StaffGradeLevelReportDto
+            {
+                Department = g.Key.DepartmentName,
+                SeniorMgtMale = g.Count(e => e.Level == EmployeeLevel.SeniorManagement && e.Gender == Gender.Male),
+                SeniorMgtFemale = g.Count(e => e.Level == EmployeeLevel.SeniorManagement && e.Gender == Gender.Female),
+                SeniorStaffMale = g.Count(e => e.Level == EmployeeLevel.SeniorStaff && e.Gender == Gender.Male),
+                SeniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.SeniorStaff && e.Gender == Gender.Female),
+                JuniorStaffMale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Male),
+                JuniorStaffFemale = g.Count(e => e.Level == EmployeeLevel.JuniorStaff && e.Gender == Gender.Female),
+            })
+            .ToList();
+
+        foreach (var dept in grouped)
+        {
+            dept.TotalMale = dept.SeniorMgtMale + dept.SeniorStaffMale + dept.JuniorStaffMale;
+            dept.TotalFemale = dept.SeniorMgtFemale + dept.SeniorStaffFemale + dept.JuniorStaffFemale;
+            dept.DepartmentalTotal = dept.TotalMale + dept.TotalFemale;
+        }
+
+        var numbered = grouped.Select((e, idx) =>
+        {
+            e.No = idx + 1;
+            return e;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
     private static int ComputeOvertimeHours(string startTime, string endTime)
     {
         if (!TimeOnly.TryParse(startTime, out var start) || !TimeOnly.TryParse(endTime, out var end))

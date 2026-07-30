@@ -1494,4 +1494,32 @@ public class ReportController(IReportRepository repository) : ControllerBase
         var result = await repository.GetEmployeeDirectoryByDepartment(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    [HttpGet("hr/employee-demographics")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeDemographicsReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeDemographics(
+        [FromQuery] Guid? departmentId)
+    {
+        var filter = new EmployeeDemographicsFilter
+        {
+            DepartmentId = departmentId,
+        };
+        var result = await repository.GetEmployeeDemographics(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/staff-grade-level")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StaffGradeLevelReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetStaffGradeLevel(
+        [FromQuery] Guid? departmentId)
+    {
+        var filter = new StaffGradeLevelFilter
+        {
+            DepartmentId = departmentId,
+        };
+        var result = await repository.GetStaffGradeLevel(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
 }
