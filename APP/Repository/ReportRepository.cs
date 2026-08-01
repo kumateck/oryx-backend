@@ -9120,6 +9120,7 @@ public class ReportRepository(
             .IgnoreAutoIncludes()
             .IgnoreQueryFilters()
             .AsNoTracking()
+            .Where(o => !o.DeletedAt.HasValue)
             .AsQueryable();
 
         if (filter.DepartmentId.HasValue)
@@ -9182,6 +9183,7 @@ public class ReportRepository(
             .IgnoreAutoIncludes()
             .IgnoreQueryFilters()
             .AsNoTracking()
+            .Where(s => !s.DeletedAt.HasValue)
             .AsQueryable();
 
         if (filter.DepartmentId.HasValue)
@@ -9244,7 +9246,7 @@ public class ReportRepository(
             .IgnoreAutoIncludes()
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(e => e.ActiveStatus.HasValue)
+            .Where(e => e.ActiveStatus.HasValue && !e.DeletedAt.HasValue)
             .AsQueryable();
 
         if (filter.DepartmentId.HasValue)
@@ -9291,7 +9293,7 @@ public class ReportRepository(
             .IgnoreAutoIncludes()
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(e => e.InactiveStatus.HasValue)
+            .Where(e => e.InactiveStatus.HasValue && !e.DeletedAt.HasValue)
             .AsQueryable();
 
         if (filter.DepartmentId.HasValue)
@@ -9364,7 +9366,7 @@ public class ReportRepository(
             .IgnoreAutoIncludes()
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(e => e.Status == EmployeeStatus.Active
+            .Where(e => e.Status == EmployeeStatus.Active && !e.DeletedAt.HasValue
                 && ((needAnniversary && (crossesYear
                     ? (e.DateEmployed.Month >= startMonth || e.DateEmployed.Month <= endMonth)
                     : (e.DateEmployed.Month >= startMonth && e.DateEmployed.Month <= endMonth)))
