@@ -3,6 +3,7 @@ using APP.IRepository;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
+using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Materials.Batch;
@@ -1455,5 +1456,131 @@ public class ReportController(IReportRepository repository) : ControllerBase
     {
         var result = await repository.GetActiveDisciplinaryActions(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-master-list")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMasterListReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeMasterList(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] EmployeeType? employeeType,
+        [FromQuery] EmployeeLevel? gradeLevel,
+        [FromQuery] EmployeeStatus? status)
+    {
+        var filter = new EmployeeMasterListFilter
+        {
+            DepartmentId = departmentId,
+            EmployeeType = employeeType,
+            GradeLevel = gradeLevel,
+            Status = status,
+        };
+        var result = await repository.GetEmployeeMasterList(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-directory-by-department")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeDirectoryByDepartmentDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeDirectoryByDepartment(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] EmployeeLevel? gradeLevel,
+        [FromQuery] EmployeeType? employeeType)
+    {
+        var filter = new EmployeeDirectoryFilter
+        {
+            DepartmentId = departmentId,
+            GradeLevel = gradeLevel,
+            EmployeeType = employeeType,
+        };
+        var result = await repository.GetEmployeeDirectoryByDepartment(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-demographics")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeDemographicsReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeDemographics(
+        [FromQuery] Guid? departmentId)
+    {
+        var filter = new EmployeeDemographicsFilter
+        {
+            DepartmentId = departmentId,
+        };
+        var result = await repository.GetEmployeeDemographics(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/staff-grade-level")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StaffGradeLevelReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetStaffGradeLevel(
+        [FromQuery] Guid? departmentId)
+    {
+        var filter = new StaffGradeLevelFilter
+        {
+            DepartmentId = departmentId,
+        };
+        var result = await repository.GetStaffGradeLevel(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/leave-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] RequestCategory? leaveCategory,
+        [FromQuery] LeaveStatus? status,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var filter = new LeaveRegisterFilter
+        {
+            DepartmentId = departmentId,
+            LeaveCategory = leaveCategory,
+            Status = status,
+            StartDate = startDate,
+            EndDate = endDate,
+        };
+        var result = await repository.GetLeaveRegister(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/leave-balance")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveBalanceReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveBalance(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] int? leaveYear,
+        [FromQuery] Guid? employeeId)
+    {
+        var filter = new LeaveBalanceFilter
+        {
+            DepartmentId = departmentId,
+            LeaveYear = leaveYear,
+            EmployeeId = employeeId,
+        };
+        var result = await repository.GetLeaveBalance(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/leave-approval-audit")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<LeaveApprovalAuditReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetLeaveApprovalAudit(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] LeaveStatus? status)
+    {
+        var filter = new LeaveApprovalAuditFilter
+        {
+            DepartmentId = departmentId,
+            StartDate = startDate,
+            EndDate = endDate,
+            Status = status,
+        };
+        var result = await repository.GetLeaveApprovalAudit(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
