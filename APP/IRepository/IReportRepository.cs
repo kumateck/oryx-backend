@@ -243,4 +243,22 @@ public interface IReportRepository
 
     Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
         Guid? departmentId);
+
+    Task<Result<List<EmployeeMasterListReportDto>>> GetEmployeeMasterList(
+        EmployeeMasterListFilter filter);
+
+    Task<Result<List<EmployeeDirectoryByDepartmentDto>>> GetEmployeeDirectoryByDepartment(
+        EmployeeDirectoryFilter filter);
+
+    Task<Result<List<EmployeeDemographicsReportDto>>> GetEmployeeDemographics(
+        EmployeeDemographicsFilter filter);
+
+    Task<Result<List<StaffGradeLevelReportDto>>> GetStaffGradeLevel(
+        StaffGradeLevelFilter filter);
+
+    Task<Result<List<LeaveRegisterReportDto>>> GetLeaveRegister(LeaveRegisterFilter filter);
+
+    Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter);
+
+    Task<Result<List<LeaveApprovalAuditReportDto>>> GetLeaveApprovalAudit(LeaveApprovalAuditFilter filter);
 }

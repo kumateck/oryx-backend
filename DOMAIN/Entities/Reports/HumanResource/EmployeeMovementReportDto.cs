@@ -22,10 +22,17 @@ public class EmployeeMovementGrandTotalDto
     public int CasualTermination { get; set; }
     public int CasualSDVP { get; set; }
 
-    // Total calculations - net movement for the period
-    public int TotalPermanent => PermanentNew - PermanentTransfer - PermanentResignation - PermanentTermination - PermanentSDVP;
-    public int TotalCasual => CasualNew - CasualResignation - CasualTermination - CasualSDVP;
-    public int GrandTotal => TotalPermanent + TotalCasual;
+    // Net Movement = (Total New Hires) - (Total Leavers)
+    public int NetMovement =>
+        (PermanentNew + CasualNew)
+        - (
+            PermanentResignation
+            + PermanentTermination
+            + PermanentSDVP
+            + CasualResignation
+            + CasualTermination
+            + CasualSDVP
+        );
 }
 
 public class EmployeeMovementCountDto : EmployeeMovementGrandTotalDto
