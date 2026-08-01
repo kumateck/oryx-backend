@@ -271,4 +271,6 @@ public interface IReportRepository
     Task<Result<List<EmployeeExitReportDto>>> GetEmployeeExitReport(EmployeeExitFilter filter);
 
     Task<Result<List<EmployeeAnniversaryBirthdayReportDto>>> GetEmployeeAnniversaryBirthdayReport(EmployeeAnniversaryBirthdayFilter filter);
+
+    Task<Result<List<ShiftScheduleRegisterReportDto>>> GetShiftScheduleRegister(ShiftScheduleRegisterFilter filter);
 }

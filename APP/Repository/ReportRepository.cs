@@ -9450,4 +9450,61 @@ public class ReportRepository(
 
         return Result.Success(result);
     }
+
+    // ── Report 19: Shift Schedule Register ────────────────────────────────────
+
+    public async Task<Result<List<ShiftScheduleRegisterReportDto>>> GetShiftScheduleRegister(
+        ShiftScheduleRegisterFilter filter)
+    {
+        var query = context.ShiftAssignments
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(sa => !sa.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(sa => sa.ShiftSchedules.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(sa => sa.ShiftSchedules.ScheduleStatus == filter.Status.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(sa => sa.ScheduleDate >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = DateTime.SpecifyKind(filter.EndDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(sa => sa.ScheduleDate <= end);
+        }
+
+        var result = await query
+            .OrderBy(sa => sa.ScheduleDate)
+            .ThenBy(sa => sa.ShiftSchedules.ScheduleName)
+            .Select(sa => new ShiftScheduleRegisterReportDto
+            {
+                ScheduleName = sa.ShiftSchedules.ScheduleName,
+                Frequency = sa.ShiftSchedules.Frequency.ToString(),
+                StartDate = sa.ShiftSchedules.StartDate,
+                EndDate = sa.ShiftSchedules.EndDate,
+                Status = sa.ShiftSchedules.ScheduleStatus.ToString(),
+                Employee = sa.Employee.FirstName + " " + sa.Employee.LastName,
+                ShiftType = sa.ShiftType.ShiftName,
+                ShiftDate = sa.ScheduleDate,
+                RotationType = sa.ShiftType.RotationType.ToString(),
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((sa, idx) =>
+        {
+            sa.No = idx + 1;
+            return sa;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
 }

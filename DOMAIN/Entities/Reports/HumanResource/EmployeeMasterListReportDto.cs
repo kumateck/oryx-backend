@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.StaffRequisitions;
 
 namespace DOMAIN.Entities.Reports.HumanResource;
@@ -293,4 +294,28 @@ public class EmployeeAnniversaryBirthdayFilter
     public string EventType { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+}
+
+// ── Report 19: Shift Schedule Register ────────────────────────────────────────
+
+public class ShiftScheduleRegisterReportDto
+{
+    public int No { get; set; }
+    public string ScheduleName { get; set; }
+    public string Frequency { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public string Status { get; set; }
+    public string Employee { get; set; }
+    public string ShiftType { get; set; }
+    public DateTime ShiftDate { get; set; }
+    public string RotationType { get; set; }
+}
+
+public class ShiftScheduleRegisterFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public ScheduleStatus? Status { get; set; }
 }

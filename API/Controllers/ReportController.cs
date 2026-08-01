@@ -19,6 +19,7 @@ using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Reports.WarehouseDashboardKpi;
+using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Authorization;
@@ -1681,6 +1682,26 @@ public class ReportController(IReportRepository repository) : ControllerBase
             EndDate = endDate,
         };
         var result = await repository.GetEmployeeAnniversaryBirthdayReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/shift-schedule-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShiftScheduleRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetShiftScheduleRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] ScheduleStatus? status)
+    {
+        var filter = new ShiftScheduleRegisterFilter
+        {
+            DepartmentId = departmentId,
+            StartDate = startDate,
+            EndDate = endDate,
+            Status = status,
+        };
+        var result = await repository.GetShiftScheduleRegister(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
