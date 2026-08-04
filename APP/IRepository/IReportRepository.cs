@@ -261,4 +261,16 @@ public interface IReportRepository
     Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter);
 
     Task<Result<List<LeaveApprovalAuditReportDto>>> GetLeaveApprovalAudit(LeaveApprovalAuditFilter filter);
+
+    Task<Result<List<OvertimeRequestRegisterReportDto>>> GetOvertimeRequestRegister(OvertimeRequestRegisterFilter filter);
+
+    Task<Result<List<StaffRequisitionRegisterReportDto>>> GetStaffRequisitionRegister(StaffRequisitionRegisterFilter filter);
+
+    Task<Result<List<EmployeeDisciplinaryReportDto>>> GetEmployeeDisciplinaryReport(EmployeeDisciplinaryFilter filter);
+
+    Task<Result<List<EmployeeExitReportDto>>> GetEmployeeExitReport(EmployeeExitFilter filter);
+
+    Task<Result<List<EmployeeAnniversaryBirthdayReportDto>>> GetEmployeeAnniversaryBirthdayReport(EmployeeAnniversaryBirthdayFilter filter);
+
+    Task<Result<List<ShiftScheduleRegisterReportDto>>> GetShiftScheduleRegister(ShiftScheduleRegisterFilter filter);
 }

@@ -9109,4 +9109,402 @@ public class ReportRepository(
 
         return Result.Success(result);
     }
+
+    // ── Report 14: Overtime Request Register ──────────────────────────────────
+
+    public async Task<Result<List<OvertimeRequestRegisterReportDto>>> GetOvertimeRequestRegister(
+        OvertimeRequestRegisterFilter filter)
+    {
+        var query = context.OvertimeRequests
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(o => !o.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(o => o.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(o => o.Status == filter.Status.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(o => o.OvertimeDate >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = DateTime.SpecifyKind(filter.EndDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(o => o.OvertimeDate <= end);
+        }
+
+        var result = await query
+            .OrderBy(o => o.OvertimeDate)
+            .Select(o => new OvertimeRequestRegisterReportDto
+            {
+                RequestCode = o.Code,
+                Department = o.Department != null ? o.Department.Name : "Unassigned",
+                Employees = string.Join(", ", o.Employees.Select(e => e.FirstName + " " + e.LastName)),
+                OvertimeDate = o.OvertimeDate,
+                StartTime = o.StartTime,
+                EndTime = o.EndTime,
+                TotalHours = o.TotalHours,
+                Justification = o.Justification,
+                Status = o.Status.ToString(),
+                ApprovedBy = o.Approvals
+                    .Where(a => a.Status == ApprovalStatus.Approved)
+                    .Select(a => a.ApprovedBy != null
+                        ? a.ApprovedBy.FirstName + " " + a.ApprovedBy.LastName
+                        : null)
+                    .FirstOrDefault() ?? "N/A",
+                DateRequested = o.CreatedAt,
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((o, idx) =>
+        {
+            o.No = idx + 1;
+            return o;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
+    // ── Report 15: Staff Requisition Register ─────────────────────────────────
+
+    public async Task<Result<List<StaffRequisitionRegisterReportDto>>> GetStaffRequisitionRegister(
+        StaffRequisitionRegisterFilter filter)
+    {
+        var query = context.StaffRequisitions
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(s => !s.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(s => s.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(s => s.StaffRequisitionStatus == filter.Status.Value);
+
+        if (filter.AppointmentType.HasValue)
+            query = query.Where(s => s.AppointmentType == filter.AppointmentType.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(s => s.CreatedAt >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = DateTime.SpecifyKind(filter.EndDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(s => s.CreatedAt <= end);
+        }
+
+        var result = await query
+            .OrderBy(s => s.CreatedAt)
+            .Select(s => new StaffRequisitionRegisterReportDto
+            {
+                Department = s.Department != null ? s.Department.Name : "Unassigned",
+                Designation = s.Designation != null ? s.Designation.Name : "Unassigned",
+                PositionsRequired = s.StaffRequired,
+                AppointmentType = s.AppointmentType.ToString(),
+                BudgetStatus = s.BudgetStatus.ToString(),
+                RequestUrgency = s.RequestUrgency.ToString("dd MMM yyyy"),
+                BusinessJustification = s.Justification,
+                RequiredQualifications = s.Qualification,
+                EducationRequirements = s.EducationalQualification,
+                AdditionalRequirements = s.AdditionalRequirements,
+                Status = s.StaffRequisitionStatus.ToString(),
+                DateRequested = s.CreatedAt,
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((s, idx) =>
+        {
+            s.No = idx + 1;
+            return s;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
+    // ── Report 16: Employee Suspension & Disciplinary Action ──────────────────
+
+    public async Task<Result<List<EmployeeDisciplinaryReportDto>>> GetEmployeeDisciplinaryReport(
+        EmployeeDisciplinaryFilter filter)
+    {
+        var today = DateTime.UtcNow;
+        var query = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.ActiveStatus.HasValue && !e.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.DisciplinaryStatus.HasValue)
+            query = query.Where(e => e.ActiveStatus == filter.DisciplinaryStatus.Value);
+
+        var result = await query
+            .OrderBy(e => e.Department!.Name)
+            .ThenBy(e => e.LastName)
+            .Select(e => new EmployeeDisciplinaryReportDto
+            {
+                EmployeeName = e.FirstName + " " + e.LastName,
+                StaffNumber = e.StaffNumber,
+                Department = e.Department != null ? e.Department.Name : "Unassigned",
+                Designation = e.Designation != null ? e.Designation.Name : "Unassigned",
+                DisciplinaryStatus = e.ActiveStatus!.Value.ToString(),
+                SuspensionStartDate = e.SuspensionStartDate,
+                SuspensionEndDate = e.SuspensionEndDate,
+                ActiveStatus = e.Status.ToString(),
+                DaysUnderAction = e.SuspensionStartDate.HasValue
+                    ? ((e.SuspensionEndDate ?? today) - e.SuspensionStartDate.Value).Days + 1
+                    : 0,
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((e, idx) =>
+        {
+            e.No = idx + 1;
+            return e;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
+    // ── Report 17: Employee Exit & Separation ─────────────────────────────────
+
+    public async Task<Result<List<EmployeeExitReportDto>>> GetEmployeeExitReport(
+        EmployeeExitFilter filter)
+    {
+        var query = context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.InactiveStatus.HasValue && !e.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(e => e.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.ExitReason.HasValue)
+            query = query.Where(e => e.InactiveStatus == filter.ExitReason.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(e => e.ExitDate.HasValue && e.ExitDate.Value >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = DateTime.SpecifyKind(filter.EndDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(e => e.ExitDate.HasValue && e.ExitDate.Value <= end);
+        }
+
+        var result = await query
+            .OrderBy(e => e.ExitDate)
+            .Select(e => new EmployeeExitReportDto
+            {
+                EmployeeName = e.FirstName + " " + e.LastName,
+                StaffNumber = e.StaffNumber,
+                Department = e.Department != null ? e.Department.Name : "Unassigned",
+                Designation = e.Designation != null ? e.Designation.Name : "Unassigned",
+                EmploymentType = e.Type.ToString(),
+                GradeLevel = e.Level.ToString(),
+                ExitReason = e.InactiveStatus!.Value.ToString(),
+                ExitDate = e.ExitDate ?? e.UpdatedAt ?? e.CreatedAt,
+                DateEmployed = e.DateEmployed,
+                TenureYears = e.DateEmployed > DateTime.MinValue
+                    ? (int)(((e.ExitDate ?? e.UpdatedAt ?? e.CreatedAt) - e.DateEmployed).TotalDays / 365.25)
+                    : 0,
+                NoticePeriodServed = e.ExitDate.HasValue
+                    ? $"{Math.Max(0, (e.ExitDate.Value - e.DateEmployed).Days)} days"
+                    : "N/A",
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((e, idx) =>
+        {
+            e.No = idx + 1;
+            return e;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
+
+    // ── Report 18: Employee Anniversary & Birthday List ───────────────────────
+
+    public async Task<Result<List<EmployeeAnniversaryBirthdayReportDto>>> GetEmployeeAnniversaryBirthdayReport(
+        EmployeeAnniversaryBirthdayFilter filter)
+    {
+        var today = DateTime.UtcNow;
+        var startDate = filter.StartDate ?? today;
+        var endDate = filter.EndDate ?? today.AddMonths(3);
+
+        var startMonth = startDate.Month;
+        var endMonth = endDate.Month;
+        var crossesYear = startMonth > endMonth;
+
+        var needAnniversary = string.IsNullOrEmpty(filter.EventType) || filter.EventType == "Anniversary";
+        var needBirthday = string.IsNullOrEmpty(filter.EventType) || filter.EventType == "Birthday";
+
+        var employees = await context.Employees
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(e => e.Status == EmployeeStatus.Active && !e.DeletedAt.HasValue
+                && ((needAnniversary && (crossesYear
+                    ? (e.DateEmployed.Month >= startMonth || e.DateEmployed.Month <= endMonth)
+                    : (e.DateEmployed.Month >= startMonth && e.DateEmployed.Month <= endMonth)))
+                || (needBirthday && (crossesYear
+                    ? (e.DateOfBirth.Month >= startMonth || e.DateOfBirth.Month <= endMonth)
+                    : (e.DateOfBirth.Month >= startMonth && e.DateOfBirth.Month <= endMonth)))))
+            .Select(e => new
+            {
+                e.FirstName,
+                e.LastName,
+                e.StaffNumber,
+                DepartmentName = e.Department != null ? e.Department.Name : "Unassigned",
+                DesignationName = e.Designation != null ? e.Designation.Name : "Unassigned",
+                e.DateEmployed,
+                e.DateOfBirth,
+            })
+            .ToListAsync();
+
+        var result = new List<EmployeeAnniversaryBirthdayReportDto>();
+
+        foreach (var e in employees)
+        {
+            // Work Anniversary
+            if (e.DateEmployed > DateTime.MinValue)
+            {
+                var anniversaryThisYear = DateTime.SpecifyKind(new DateTime(today.Year, e.DateEmployed.Month, e.DateEmployed.Day), DateTimeKind.Utc);
+                if (anniversaryThisYear < today)
+                    anniversaryThisYear = anniversaryThisYear.AddYears(1);
+
+                if (anniversaryThisYear >= startDate && anniversaryThisYear <= endDate
+                    && (string.IsNullOrEmpty(filter.EventType) || filter.EventType == "Anniversary"))
+                {
+                    var yearsOfService = today.Year - e.DateEmployed.Year;
+                    if (today < e.DateEmployed.AddYears(yearsOfService))
+                        yearsOfService--;
+
+                    result.Add(new EmployeeAnniversaryBirthdayReportDto
+                    {
+                        EventType = "Work Anniversary",
+                        EmployeeName = e.FirstName + " " + e.LastName,
+                        StaffNumber = e.StaffNumber,
+                        Department = e.DepartmentName,
+                        Designation = e.DesignationName,
+                        EventDate = anniversaryThisYear,
+                        YearsOfService = yearsOfService,
+                    });
+                }
+            }
+
+            // Birthday
+            if (e.DateOfBirth > DateTime.MinValue)
+            {
+                var birthdayThisYear = DateTime.SpecifyKind(new DateTime(today.Year, e.DateOfBirth.Month, e.DateOfBirth.Day), DateTimeKind.Utc);
+                if (birthdayThisYear < today)
+                    birthdayThisYear = birthdayThisYear.AddYears(1);
+
+                if (birthdayThisYear >= startDate && birthdayThisYear <= endDate
+                    && (string.IsNullOrEmpty(filter.EventType) || filter.EventType == "Birthday"))
+                {
+                    var age = today.Year - e.DateOfBirth.Year;
+                    if (today < e.DateOfBirth.AddYears(age))
+                        age--;
+
+                    result.Add(new EmployeeAnniversaryBirthdayReportDto
+                    {
+                        EventType = "Birthday",
+                        EmployeeName = e.FirstName + " " + e.LastName,
+                        StaffNumber = e.StaffNumber,
+                        Department = e.DepartmentName,
+                        Designation = e.DesignationName,
+                        EventDate = birthdayThisYear,
+                        Age = age,
+                    });
+                }
+            }
+        }
+
+        result = result.OrderBy(r => r.EventDate).ToList();
+        for (var i = 0; i < result.Count; i++)
+            result[i].No = i + 1;
+
+        return Result.Success(result);
+    }
+
+    // ── Report 19: Shift Schedule Register ────────────────────────────────────
+
+    public async Task<Result<List<ShiftScheduleRegisterReportDto>>> GetShiftScheduleRegister(
+        ShiftScheduleRegisterFilter filter)
+    {
+        var query = context.ShiftAssignments
+            .AsSplitQuery()
+            .IgnoreAutoIncludes()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(sa => !sa.DeletedAt.HasValue)
+            .AsQueryable();
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(sa => sa.ShiftSchedules.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.Status.HasValue)
+            query = query.Where(sa => sa.ShiftSchedules.ScheduleStatus == filter.Status.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(sa => sa.ScheduleDate >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = DateTime.SpecifyKind(filter.EndDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(sa => sa.ScheduleDate <= end);
+        }
+
+        var result = await query
+            .OrderBy(sa => sa.ScheduleDate)
+            .ThenBy(sa => sa.ShiftSchedules.ScheduleName)
+            .Select(sa => new ShiftScheduleRegisterReportDto
+            {
+                ScheduleName = sa.ShiftSchedules.ScheduleName,
+                Frequency = sa.ShiftSchedules.Frequency.ToString(),
+                StartDate = sa.ShiftSchedules.StartDate,
+                EndDate = sa.ShiftSchedules.EndDate,
+                Status = sa.ShiftSchedules.ScheduleStatus.ToString(),
+                Employee = sa.Employee.FirstName + " " + sa.Employee.LastName,
+                ShiftType = sa.ShiftType.ShiftName,
+                ShiftDate = sa.ScheduleDate,
+                RotationType = sa.ShiftType.RotationType.ToString(),
+            })
+            .ToListAsync();
+
+        var numbered = result.Select((sa, idx) =>
+        {
+            sa.No = idx + 1;
+            return sa;
+        }).ToList();
+
+        return Result.Success(numbered);
+    }
 }

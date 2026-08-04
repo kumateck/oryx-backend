@@ -1,5 +1,8 @@
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.StaffRequisitions;
 
 namespace DOMAIN.Entities.Reports.HumanResource;
 
@@ -166,4 +169,153 @@ public class LeaveApprovalAuditFilter
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public LeaveStatus? Status { get; set; }
+}
+
+// ── Report 14: Overtime Request Register ──────────────────────────────────────
+
+public class OvertimeRequestRegisterReportDto
+{
+    public int No { get; set; }
+    public string RequestCode { get; set; }
+    public string Department { get; set; }
+    public string Employees { get; set; }
+    public DateTime OvertimeDate { get; set; }
+    public string StartTime { get; set; }
+    public string EndTime { get; set; }
+    public int TotalHours { get; set; }
+    public string Justification { get; set; }
+    public string Status { get; set; }
+    public string ApprovedBy { get; set; }
+    public DateTime DateRequested { get; set; }
+}
+
+public class OvertimeRequestRegisterFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public OvertimeStatus? Status { get; set; }
+}
+
+// ── Report 15: Staff Requisition Register ─────────────────────────────────────
+
+public class StaffRequisitionRegisterReportDto
+{
+    public int No { get; set; }
+    public string Department { get; set; }
+    public string Designation { get; set; }
+    public int PositionsRequired { get; set; }
+    public string AppointmentType { get; set; }
+    public string BudgetStatus { get; set; }
+    public string RequestUrgency { get; set; }
+    public string BusinessJustification { get; set; }
+    public string RequiredQualifications { get; set; }
+    public string EducationRequirements { get; set; }
+    public string AdditionalRequirements { get; set; }
+    public string Status { get; set; }
+    public DateTime DateRequested { get; set; }
+}
+
+public class StaffRequisitionRegisterFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public StaffRequisitionStatus? Status { get; set; }
+    public AppointmentType? AppointmentType { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+}
+
+// ── Report 16: Employee Suspension & Disciplinary Action ──────────────────────
+
+public class EmployeeDisciplinaryReportDto
+{
+    public int No { get; set; }
+    public string EmployeeName { get; set; }
+    public string StaffNumber { get; set; }
+    public string Department { get; set; }
+    public string Designation { get; set; }
+    public string DisciplinaryStatus { get; set; }
+    public DateTime? SuspensionStartDate { get; set; }
+    public DateTime? SuspensionEndDate { get; set; }
+    public string ActiveStatus { get; set; }
+    public int DaysUnderAction { get; set; }
+}
+
+public class EmployeeDisciplinaryFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public EmployeeActiveStatus? DisciplinaryStatus { get; set; }
+}
+
+// ── Report 17: Employee Exit & Separation ─────────────────────────────────────
+
+public class EmployeeExitReportDto
+{
+    public int No { get; set; }
+    public string EmployeeName { get; set; }
+    public string StaffNumber { get; set; }
+    public string Department { get; set; }
+    public string Designation { get; set; }
+    public string EmploymentType { get; set; }
+    public string GradeLevel { get; set; }
+    public string ExitReason { get; set; }
+    public DateTime ExitDate { get; set; }
+    public DateTime DateEmployed { get; set; }
+    public int TenureYears { get; set; }
+    public string NoticePeriodServed { get; set; }
+}
+
+public class EmployeeExitFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public EmployeeInactiveStatus? ExitReason { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+}
+
+// ── Report 18: Employee Anniversary & Birthday List ───────────────────────────
+
+public class EmployeeAnniversaryBirthdayReportDto
+{
+    public int No { get; set; }
+    public string EventType { get; set; }
+    public string EmployeeName { get; set; }
+    public string StaffNumber { get; set; }
+    public string Department { get; set; }
+    public string Designation { get; set; }
+    public DateTime EventDate { get; set; }
+    public int? YearsOfService { get; set; }
+    public int? Age { get; set; }
+}
+
+public class EmployeeAnniversaryBirthdayFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public string EventType { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+}
+
+// ── Report 19: Shift Schedule Register ────────────────────────────────────────
+
+public class ShiftScheduleRegisterReportDto
+{
+    public int No { get; set; }
+    public string ScheduleName { get; set; }
+    public string Frequency { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public string Status { get; set; }
+    public string Employee { get; set; }
+    public string ShiftType { get; set; }
+    public DateTime ShiftDate { get; set; }
+    public string RotationType { get; set; }
+}
+
+public class ShiftScheduleRegisterFilter
+{
+    public Guid? DepartmentId { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public ScheduleStatus? Status { get; set; }
 }

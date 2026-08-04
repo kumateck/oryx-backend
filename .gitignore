@@ -83,3 +83,6 @@ entrance_env
 *.userosscache
 *.sln.docstates
 .vscode/
+
+# AI agent instructions
+AGENTS.md
