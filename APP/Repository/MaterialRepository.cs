@@ -1692,16 +1692,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .Warehouses.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(dw =>
                     dw.DepartmentId == department.Id && dw.Type == warehouseType
+                    && !dw.DeletedAt.HasValue
                 );
 
             if (warehouse is null)
             {
                 continue;
             }
-
+            
             decimal totalStock = 0;
 
-            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
             if (stockResult.IsSuccess)
             {
                 totalStock = stockResult.Value;
@@ -1831,6 +1832,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 m.Batch.Status == BatchStatus.Available
                 && m.Batch.MaterialId == materialId
                 && m.ToWarehouseId == warehouseId
+                && !m.DeletedAt.HasValue
             )
             .SumAsync(m => m.Quantity);
 
@@ -1844,6 +1846,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 && m.Batch.MaterialId == materialId
                 && m.FromWarehouse != null
                 && m.FromWarehouseId == warehouseId
+                && !m.DeletedAt.HasValue
             )
             .SumAsync(m => m.Quantity);
 
@@ -1858,6 +1861,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 && e.ConsumptionWarehouse != null
                 && e.ConsumptionWarehouseId == warehouseId
                 && e.Type == EventType.Consumed
+                && !e.DeletedAt.HasValue
             )
             .SumAsync(e => e.Quantity);
 
@@ -1865,7 +1869,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .MaterialBatchReservedQuantities.AsSplitQuery()
             .Include(m => m.MaterialBatch)
             .Where(m =>
-                m.MaterialBatch.MaterialId == materialId /* && m.WarehouseId == warehouseId*/
+                m.MaterialBatch.MaterialId == materialId && m.WarehouseId == warehouseId
             )
             .SumAsync(e => e.Quantity);
 
