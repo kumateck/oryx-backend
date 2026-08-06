@@ -119,8 +119,8 @@ public class SupplierQuotationRequest
 public class SupplierQuotationResponseDto
 {
     public Guid Id { get; set; }
-    public decimal Price { get; set; }
-    public string PriceUoM { get; set; }
+    [Required] public decimal Price { get; set; }
+    [Required(ErrorMessage = "Price UoM is required")] public string PriceUoM { get; set; }
 }
 
 public class SupplierPriceComparison
