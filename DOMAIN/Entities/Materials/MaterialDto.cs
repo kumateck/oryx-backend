@@ -42,6 +42,12 @@ public class BatchQuantityDto
     public decimal Quantity { get; set; }
 }
 
+public class MaterialWarehouseStockBreakdown
+{
+    public decimal WarehouseStock { get; set; }
+    public decimal ExpiredQuantity { get; set; }
+}
+
 public class MaterialCategoryDto : BaseDto
 {
     public string Name { get; set; }
@@ -54,6 +60,7 @@ public class MaterialDepartmentWithWarehouseStockDto : MaterialDepartmentDto
     public decimal WarehouseStock { get; set; }
     public decimal PendingStockTransferQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
+    public decimal ExpiredQuantity { get; set; }
 }
 
 public class MaterialWithStockDto

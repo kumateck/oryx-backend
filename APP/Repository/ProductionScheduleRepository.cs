@@ -4720,7 +4720,7 @@ public class ProductionScheduleRepository(
             .Concat(product.Packages.Select(p => p.MaterialId))
             .ToList();
 
-        var rawStockLevels = await context
+        var rawStockRows = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .Where(s =>
                 materialIds.Contains(s.MaterialBatch.MaterialId)
@@ -4728,9 +4728,22 @@ public class ProductionScheduleRepository(
                     == rawWarehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
+            .Select(s => new
+            {
+                s.MaterialBatch.MaterialId,
+                s.Quantity,
+                s.MaterialBatch.ExpiryDate,
+            })
+            .ToListAsync();
+
+        var rawStockLevels = rawStockRows
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+
+        var rawExpiredStockLevels = rawStockRows
+            .Where(r => r.ExpiryDate.HasValue && r.ExpiryDate.Value < DateTime.UtcNow)
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
         var rawMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -4773,6 +4786,7 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
                     QuantityOnHand = quantityOnHand,
+                    ExpiredQuantity = rawExpiredStockLevels.GetValueOrDefault(item.MaterialId, 0),
                     ReservedQuantity = rawTotalReservedQuantities.GetValueOrDefault(
                         item.MaterialId
                     ),
@@ -4790,7 +4804,7 @@ public class ProductionScheduleRepository(
                 "No packing material warehouse is associated with current user"
             );
 
-        var packingStockLevels = await context
+        var packingStockRows = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .Where(s =>
                 materialIds.Contains(s.MaterialBatch.MaterialId)
@@ -4798,9 +4812,22 @@ public class ProductionScheduleRepository(
                     == packingWarehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
+            .Select(s => new
+            {
+                s.MaterialBatch.MaterialId,
+                s.Quantity,
+                s.MaterialBatch.ExpiryDate,
+            })
+            .ToListAsync();
+
+        var packingStockLevels = packingStockRows
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+
+        var packingExpiredStockLevels = packingStockRows
+            .Where(r => r.ExpiryDate.HasValue && r.ExpiryDate.Value < DateTime.UtcNow)
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
         var packageMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -4843,6 +4870,10 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
                     QuantityOnHand = quantityOnHand,
+                    ExpiredQuantity = packingExpiredStockLevels.GetValueOrDefault(
+                        item.MaterialId,
+                        0
+                    ),
                     ReservedQuantity = packingTotalReservedQuantities.GetValueOrDefault(
                         item.MaterialId,
                         0
