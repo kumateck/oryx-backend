@@ -62,6 +62,10 @@ public interface IMaterialRepository
     );
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    );
     Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
         Guid materialId,
         Guid? departmentId = null,
