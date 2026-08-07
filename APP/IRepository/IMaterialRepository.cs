@@ -61,6 +61,7 @@ public interface IMaterialRepository
         decimal quantity
     );
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<decimal>> GetUsableMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(
         Guid materialId,
