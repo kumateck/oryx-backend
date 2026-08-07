@@ -5,6 +5,7 @@ using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Reports;
@@ -18,6 +19,8 @@ using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Reports.WarehouseDashboardKpi;
+using DOMAIN.Entities.ShiftSchedules;
+using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -1581,6 +1584,124 @@ public class ReportController(IReportRepository repository) : ControllerBase
             Status = status,
         };
         var result = await repository.GetLeaveApprovalAudit(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/overtime-request-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<OvertimeRequestRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetOvertimeRequestRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] OvertimeStatus? status)
+    {
+        var filter = new OvertimeRequestRegisterFilter
+        {
+            DepartmentId = departmentId,
+            StartDate = startDate,
+            EndDate = endDate,
+            Status = status,
+        };
+        var result = await repository.GetOvertimeRequestRegister(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/staff-requisition-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StaffRequisitionRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetStaffRequisitionRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] StaffRequisitionStatus? status,
+        [FromQuery] AppointmentType? appointmentType,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var filter = new StaffRequisitionRegisterFilter
+        {
+            DepartmentId = departmentId,
+            Status = status,
+            AppointmentType = appointmentType,
+            StartDate = startDate,
+            EndDate = endDate,
+        };
+        var result = await repository.GetStaffRequisitionRegister(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-disciplinary-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeDisciplinaryReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeDisciplinaryReport(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] EmployeeActiveStatus? disciplinaryStatus)
+    {
+        var filter = new EmployeeDisciplinaryFilter
+        {
+            DepartmentId = departmentId,
+            DisciplinaryStatus = disciplinaryStatus,
+        };
+        var result = await repository.GetEmployeeDisciplinaryReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-exit-report")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeExitReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeExitReport(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] EmployeeInactiveStatus? exitReason,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var filter = new EmployeeExitFilter
+        {
+            DepartmentId = departmentId,
+            ExitReason = exitReason,
+            StartDate = startDate,
+            EndDate = endDate,
+        };
+        var result = await repository.GetEmployeeExitReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/employee-anniversary-birthday")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeAnniversaryBirthdayReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetEmployeeAnniversaryBirthdayReport(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] string? eventType,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        var filter = new EmployeeAnniversaryBirthdayFilter
+        {
+            DepartmentId = departmentId,
+            EventType = eventType,
+            StartDate = startDate,
+            EndDate = endDate,
+        };
+        var result = await repository.GetEmployeeAnniversaryBirthdayReport(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("hr/shift-schedule-register")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShiftScheduleRegisterReportDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetShiftScheduleRegister(
+        [FromQuery] Guid? departmentId,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        [FromQuery] ScheduleStatus? status)
+    {
+        var filter = new ShiftScheduleRegisterFilter
+        {
+            DepartmentId = departmentId,
+            StartDate = startDate,
+            EndDate = endDate,
+            Status = status,
+        };
+        var result = await repository.GetShiftScheduleRegister(filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

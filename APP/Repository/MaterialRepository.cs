@@ -1907,6 +1907,40 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Math.Max(totalQuantity, 0);
     }
 
+    public async Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    )
+    {
+        var rows = await context
+            .ShelfMaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+                .ThenInclude(wls => wls.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                        .ThenInclude(wl => wl.Warehouse)
+            .Where(s =>
+                s.MaterialBatch.MaterialId == materialId
+                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouseId
+                && !s.DeletedAt.HasValue
+            )
+            .Select(s => new { s.Quantity, s.MaterialBatch.ExpiryDate })
+            .ToListAsync();
+
+        var totalQuantity = rows.Sum(r => r.Quantity);
+        var expiredQuantity = rows
+            .Where(r => r.ExpiryDate.HasValue && r.ExpiryDate.Value < DateTime.UtcNow)
+            .Sum(r => r.Quantity);
+
+        return new MaterialWarehouseStockBreakdown
+        {
+            WarehouseStock = Math.Max(totalQuantity, 0),
+            ExpiredQuantity = Math.Max(expiredQuantity, 0),
+        };
+    }
+
     public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
         Guid materialId,
         Guid? departmentId,
@@ -3115,14 +3149,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return Error.NotFound("Warehouse", "Warehouse not found");
             }
 
-            var warehouseStockResult = await GetShelfMaterialStockInWarehouse(
+            var warehouseStockResult = await GetShelfMaterialStockAndExpiredQuantityInWarehouse(
                 result.Material.Id,
                 warehouse.Id
             );
             if (warehouseStockResult.IsFailure)
                 continue;
 
-            result.WarehouseStock = warehouseStockResult.Value;
+            result.WarehouseStock = warehouseStockResult.Value.WarehouseStock;
+            result.ExpiredQuantity = warehouseStockResult.Value.ExpiredQuantity;
 
             result.PendingStockTransferQuantity = await context
                 .StockTransferSources.AsSplitQuery()
