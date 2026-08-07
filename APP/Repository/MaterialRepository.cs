@@ -1702,7 +1702,10 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             decimal totalStock = 0;
 
-            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetUsableMassMaterialStockInWarehouse(
+                materialId,
+                warehouse.Id
+            );
             if (stockResult.IsSuccess)
             {
                 totalStock = stockResult.Value;
@@ -1872,6 +1875,58 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 m.MaterialBatch.MaterialId == materialId && m.WarehouseId == warehouseId
             )
             .SumAsync(e => e.Quantity);
+
+        var totalQuantityInLocation =
+            batchesInLocation
+            - batchesMovedOut
+            - batchesConsumedAtLocation
+            - batchReservedQuantities;
+
+        return Math.Max(totalQuantityInLocation, 0);
+    }
+
+    public async Task<Result<decimal>> GetUsableMassMaterialStockInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    )
+    {
+        var usableBatchIds = await context
+            .MaterialBatches.IgnoreQueryFilters()
+            .Where(b =>
+                b.MaterialId == materialId
+                && b.Status == BatchStatus.Available
+                && (b.ExpiryDate == null || b.ExpiryDate >= DateTime.UtcNow)
+            )
+            .Select(b => b.Id)
+            .ToListAsync();
+
+        if (usableBatchIds.Count == 0)
+            return 0m;
+
+        var batchesInLocation = await context
+            .MassMaterialBatchMovements.IgnoreQueryFilters()
+            .Where(m => usableBatchIds.Contains(m.BatchId) && m.ToWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+
+        var batchesMovedOut = await context
+            .MassMaterialBatchMovements.IgnoreQueryFilters()
+            .Where(m => usableBatchIds.Contains(m.BatchId) && m.FromWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+
+        var batchesConsumedAtLocation = await context
+            .MaterialBatchEvents.IgnoreQueryFilters()
+            .Where(e =>
+                usableBatchIds.Contains(e.BatchId)
+                && e.ConsumptionWarehouseId == warehouseId
+                && e.Type == EventType.Consumed
+            )
+            .SumAsync(e => e.Quantity);
+
+        var batchReservedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(m =>
+                usableBatchIds.Contains(m.MaterialBatchId)
+            )
+            .SumAsync(m => m.Quantity);
 
         var totalQuantityInLocation =
             batchesInLocation
@@ -2609,10 +2664,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var warehouse in warehouses)
         {
             // 1️⃣ Get raw stock in warehouse
-            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+                materialId,
+                warehouse.Id
+            );
             if (!stockResult.IsSuccess)
                 continue;
-            var grossStock = stockResult.Value;
+            var grossStock = stockResult.Value.WarehouseStock;
+            var expiredQuantity = stockResult.Value.ExpiredQuantity;
 
             // 2️⃣ Add reserved if this is a production warehouse
             var reservedQty = await context
@@ -2644,6 +2703,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 {
                     Warehouse = mapper.Map<WarehouseDto>(warehouse),
                     StockQuantity = finalStock,
+                    ExpiredQuantity = expiredQuantity,
                 }
             );
         }

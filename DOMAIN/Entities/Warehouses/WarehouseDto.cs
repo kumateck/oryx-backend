@@ -133,6 +133,7 @@ public class WarehouseStockDto
 {
     public WarehouseDto Warehouse { get; set; }
     public decimal StockQuantity { get; set; }
+    public decimal ExpiredQuantity { get; set; }
 }
 
 public class WareHouseLocationDto
