@@ -1702,7 +1702,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             
             decimal totalStock = 0;
 
-            var stockResult = await GetUsableMassMaterialStockInWarehouse(
+            var stockResult = await GetUsableShelfMaterialStockInWarehouse(
                 materialId,
                 warehouse.Id
             );
@@ -1994,6 +1994,40 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             WarehouseStock = Math.Max(totalQuantity, 0),
             ExpiredQuantity = Math.Max(expiredQuantity, 0),
         };
+    }
+
+    public async Task<Result<decimal>> GetUsableShelfMaterialStockInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    )
+    {
+        var totalQuantity = await context
+            .ShelfMaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+                .ThenInclude(wls => wls.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                        .ThenInclude(wl => wl.Warehouse)
+            .Where(s =>
+                s.MaterialBatch.MaterialId == materialId
+                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouseId
+                && !s.DeletedAt.HasValue
+                && s.MaterialBatch.Status == BatchStatus.Available
+                && (
+                    s.MaterialBatch.ExpiryDate == null
+                    || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                )
+            )
+            .SumAsync(s => s.Quantity);
+
+        var reservedQuantity = await context
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId)
+            .SumAsync(r => r.Quantity);
+
+        return Math.Max(totalQuantity - reservedQuantity, 0);
     }
 
     public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
