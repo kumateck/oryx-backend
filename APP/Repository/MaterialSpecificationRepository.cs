@@ -106,7 +106,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                 searchQuery,
                 q => q.SpecificationNumber,
                 q => q.Description,
-                q => q.Material.Name
+                q => q.Material.Name,
+                q => q.Material.Code
             );
         }
 

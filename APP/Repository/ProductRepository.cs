@@ -104,7 +104,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, f => f.Name);
+            query = query.WhereSearch(searchQuery, f => f.Name, f => f.Code);
         }
 
         if (departmentId.HasValue)

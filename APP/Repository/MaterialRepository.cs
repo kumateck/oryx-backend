@@ -476,7 +476,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, b => b.Material.Name);
+            query = query.WhereSearch(searchQuery, b => b.Material.Name, b => b.Material.Code);
         }
 
         var result = await PaginationHelper.GetPaginatedResultAsync(

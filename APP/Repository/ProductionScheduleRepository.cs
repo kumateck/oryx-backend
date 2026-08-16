@@ -4163,7 +4163,7 @@ public class ProductionScheduleRepository(
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Material.Name);
+            query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
         }
 
         if (kind.HasValue)
