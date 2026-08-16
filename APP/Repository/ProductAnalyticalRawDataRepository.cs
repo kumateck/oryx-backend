@@ -72,7 +72,8 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
                 searchQuery,
                 ad => ad.SpecNumber,
                 ad => ad.ProductStandardTestProcedure.StpNumber,
-                ad => ad.ProductStandardTestProcedure.Product.Name
+                ad => ad.ProductStandardTestProcedure.Product.Name,
+                ad => ad.ProductStandardTestProcedure.Product.Code
             );
         }
 

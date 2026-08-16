@@ -1693,7 +1693,7 @@ public class WarehouseRepository(
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, drm => drm.Product.Name);
+            query = query.WhereSearch(searchQuery, drm => drm.Product.Name, drm => drm.Product.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

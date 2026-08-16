@@ -93,7 +93,12 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
+            query = query.WhereSearch(
+                searchQuery,
+                stp => stp.StpNumber,
+                stp => stp.Material.Name,
+                stp => stp.Material.Code
+            );
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -208,7 +213,7 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description);
+            query = query.WhereSearch(searchQuery, m => m.Name, m => m.Description, m => m.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
