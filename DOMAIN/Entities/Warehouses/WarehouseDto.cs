@@ -49,6 +49,45 @@ public class WarehouseLocationRackDto
     public List<WarehouseLocationShelfDto> Shelves { get; set; } = [];
 }
 
+/// <summary>
+/// Lean projection of a rack for "what's on the shelves" browsing/listing use
+/// cases -- deliberately excludes specification, reserved-stock, supplier/
+/// manufacturer, and sampling details, which are expensive to compute and
+/// rarely needed just to see what material/quantity sits where. Prefer this
+/// over <see cref="WarehouseLocationRackDto"/> unless you specifically need
+/// those extra details.
+/// </summary>
+public class WarehouseLocationRackSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public CollectionItemDto WarehouseLocation { get; set; }
+    public List<WarehouseLocationShelfSummaryDto> Shelves { get; set; } = [];
+}
+
+public class WarehouseLocationShelfSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public List<ShelfMaterialBatchSummaryDto> MaterialBatches { get; set; } = [];
+}
+
+public class ShelfMaterialBatchSummaryDto
+{
+    public Guid Id { get; set; }
+    public Guid MaterialBatchId { get; set; }
+    public Guid MaterialId { get; set; }
+    public string MaterialCode { get; set; }
+    public string MaterialName { get; set; }
+    public string BatchNumber { get; set; }
+    public decimal Quantity { get; set; }
+    public CollectionItemDto UoM { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public BatchStatus Status { get; set; }
+}
+
 public class WarehouseArrivalLocationDto
 {
     public Guid Id { get; set; }

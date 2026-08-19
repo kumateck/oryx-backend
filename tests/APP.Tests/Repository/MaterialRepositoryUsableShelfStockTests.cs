@@ -199,4 +199,28 @@ public class MaterialRepositoryUsableShelfStockTests
         Assert.True(result.IsSuccess);
         Assert.Equal(600m, result.Value);
     }
+
+    [Fact]
+    public async Task SentinelMinValueExpiryDate_TreatedAsUsable()
+    {
+        // Regression test: an ExpiryDate stored as 0001-01-01 (DateTime.MinValue)
+        // means "never set", not "expired" -- e.g. PMC151 (Cartons Paracetamol
+        // Tablet), which was showing as Unavailable with all 5000 pcs counted
+        // as expired instead of usable.
+        await using var context = CreateContext();
+        var (warehouseId, shelfId) = SeedWarehouseShelf(context);
+        var materialId = Guid.NewGuid();
+
+        SeedShelfMaterialBatch(context, shelfId, materialId, 5000m, DateTime.MinValue);
+        await context.SaveChangesAsync();
+
+        var repository = new MaterialRepository(context, null!);
+        var result = await repository.GetUsableShelfMaterialStockInWarehouse(
+            materialId,
+            warehouseId
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(5000m, result.Value);
+    }
 }

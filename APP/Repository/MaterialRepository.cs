@@ -1895,7 +1895,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(b =>
                 b.MaterialId == materialId
                 && b.Status == BatchStatus.Available
-                && (b.ExpiryDate == null || b.ExpiryDate >= DateTime.UtcNow)
+                && (
+                    b.ExpiryDate == null
+                    || b.ExpiryDate == DateTime.MinValue
+                    || b.ExpiryDate >= DateTime.UtcNow
+                )
             )
             .Select(b => b.Id)
             .ToListAsync();
@@ -1986,7 +1990,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var totalQuantity = rows.Sum(r => r.Quantity);
         var expiredQuantity = rows
-            .Where(r => r.ExpiryDate.HasValue && r.ExpiryDate.Value < DateTime.UtcNow)
+            .Where(r =>
+                r.ExpiryDate.HasValue
+                && r.ExpiryDate.Value != DateTime.MinValue
+                && r.ExpiryDate.Value < DateTime.UtcNow
+            )
             .Sum(r => r.Quantity);
 
         return new MaterialWarehouseStockBreakdown
@@ -2017,6 +2025,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 && s.MaterialBatch.Status == BatchStatus.Available
                 && (
                     s.MaterialBatch.ExpiryDate == null
+                    || s.MaterialBatch.ExpiryDate == DateTime.MinValue
                     || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
                 )
             )
@@ -2379,7 +2388,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouseId
                 )
-                && (b.ExpiryDate == null || DateTime.UtcNow <= b.ExpiryDate)
+                && (
+                    b.ExpiryDate == null
+                    || b.ExpiryDate == DateTime.MinValue
+                    || DateTime.UtcNow <= b.ExpiryDate
+                )
                 && b.Status == BatchStatus.Available
             )
             .OrderBy(b => b.ReturnDate == null) // false (not null) first, true (null) last
@@ -2399,6 +2412,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         == warehouseId
                     && (
                         smb.MaterialBatch.ExpiryDate == null
+                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
                         || DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
                     )
                 )
@@ -4006,7 +4020,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                             .ThenInclude(l => l.Warehouse)
             .Include(b => b.ReservedQuantities)
                 .ThenInclude(rq => rq.Warehouse)
-            .Where(b => b.ExpiryDate < DateTime.UtcNow)
+            .Where(b =>
+                b.ExpiryDate.HasValue
+                && b.ExpiryDate.Value != DateTime.MinValue
+                && b.ExpiryDate.Value < DateTime.UtcNow
+            )
             .AsQueryable();
 
         if (filter.MaterialKind.HasValue)

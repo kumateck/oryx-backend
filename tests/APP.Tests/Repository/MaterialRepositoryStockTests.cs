@@ -218,4 +218,28 @@ public class MaterialRepositoryStockTests
         Assert.Equal(300m, result.Value.WarehouseStock);
         Assert.Equal(0m, result.Value.ExpiredQuantity);
     }
+
+    [Fact]
+    public async Task SentinelMinValueExpiryDate_TreatedAsNotExpired()
+    {
+        // Regression test: an ExpiryDate stored as 0001-01-01 (DateTime.MinValue)
+        // represents "no expiry date was ever entered", not a real expired date.
+        // A batch like this must count as usable stock, not expired stock.
+        await using var context = CreateContext();
+        var (warehouseId, shelfId) = SeedWarehouseShelf(context);
+        var materialId = Guid.NewGuid();
+
+        SeedShelfMaterialBatch(context, shelfId, materialId, 5000m, DateTime.MinValue);
+        await context.SaveChangesAsync();
+
+        var repository = new MaterialRepository(context, null!);
+        var result = await repository.GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+            materialId,
+            warehouseId
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(5000m, result.Value.WarehouseStock);
+        Assert.Equal(0m, result.Value.ExpiredQuantity);
+    }
 }
