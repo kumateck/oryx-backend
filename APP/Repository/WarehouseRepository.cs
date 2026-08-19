@@ -9,6 +9,7 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
+using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Users;
@@ -521,22 +522,169 @@ public class WarehouseRepository(
         if (warehouse is null)
             return UserErrors.WarehouseNotFound(kind);
 
-        var query = await context
+        // .IgnoreAutoIncludes() is required here: Material.Batches, and
+        // MaterialBatch.Events/ReservedQuantities/UoM/ShelfMaterialBatches are
+        // all globally configured as AutoInclude() (see ApplicationDbContext).
+        // Without suppressing that, loading a shelf's MaterialBatch->Material
+        // recursively pulls in every batch that material has ever had, system
+        // -wide, plus each of those batches' own auto-included collections --
+        // an unbounded fan-out that turned this endpoint into a ~1 minute load
+        // for warehouses with even a few hundred shelf placements. Only the
+        // navigations actually needed by WarehouseLocationRackDto are restored
+        // explicitly below (Material.Batches.ShelfMaterialBatches is kept
+        // because MaterialDto.TotalStock is computed from it).
+        var racks = await context
             .WarehouseLocationRacks.IgnoreQueryFilters()
+            .IgnoreAutoIncludes()
             .AsSplitQuery()
             .Include(r => r.WarehouseLocation)
             .Include(r => r.Shelves)
                 .ThenInclude(s => s.MaterialBatches)
                     .ThenInclude(smb => smb.MaterialBatch)
                         .ThenInclude(mb => mb.Material)
+                            .ThenInclude(m => m.Batches)
+                                .ThenInclude(b => b.ShelfMaterialBatches)
+            .Include(r => r.Shelves)
+                .ThenInclude(s => s.MaterialBatches)
+                    .ThenInclude(smb => smb.MaterialBatch)
+                        .ThenInclude(mb => mb.UoM)
             .Include(r => r.Shelves)
                 .ThenInclude(s => s.MaterialBatches)
                     .ThenInclude(smb => smb.MaterialBatch)
                         .ThenInclude(mb => mb.Checklist)
+                            .ThenInclude(c => c.Supplier)
+            .Include(r => r.Shelves)
+                .ThenInclude(s => s.MaterialBatches)
+                    .ThenInclude(smb => smb.MaterialBatch)
+                        .ThenInclude(mb => mb.Checklist)
+                            .ThenInclude(c => c.Manufacturer)
             .Where(r => r.WarehouseLocation.WarehouseId == warehouse.Id)
             .ToListAsync();
 
-        return mapper.Map<List<WarehouseLocationRackDto>>(query);
+        // These four resolvers (SupplierName/ManufacturerName already short-
+        // circuited by the Checklist includes above; ArNumber/SampledBy and
+        // the two Material-level resolvers below) otherwise fire 1-2 separate
+        // DB round trips PER shelf-batch / PER distinct material -- the other
+        // dominant cost alongside the auto-include fan-out. Bulk-load once and
+        // hand them through via mapper Items instead.
+        var materialBatchIds = racks
+            .SelectMany(r => r.Shelves)
+            .SelectMany(s => s.MaterialBatches)
+            .Select(smb => smb.MaterialBatchId)
+            .Distinct()
+            .ToList();
+
+        var materialIds = racks
+            .SelectMany(r => r.Shelves)
+            .SelectMany(s => s.MaterialBatches)
+            .Select(smb => smb.MaterialBatch.MaterialId)
+            .Distinct()
+            .ToList();
+
+        var samplings = await context
+            .MaterialSamplings.IgnoreQueryFilters()
+            .Include(s => s.CreatedBy)
+            .Where(s => materialBatchIds.Contains(s.MaterialBatchId))
+            .ToListAsync();
+
+        var specificationsByMaterialId = await context
+            .MaterialSpecifications.IgnoreQueryFilters()
+            .Where(s => materialIds.Contains(s.MaterialId))
+            .GroupBy(s => s.MaterialId)
+            .ToDictionaryAsync(g => g.Key, g => g.First());
+
+        var reservedQuantitiesByMaterialId = await context
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId) && !r.DeletedAt.HasValue)
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Total = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
+
+        return mapper.Map<List<WarehouseLocationRackDto>>(
+            racks,
+            opts =>
+            {
+                opts.Items["Samplings"] = samplings;
+                opts.Items["MaterialSpecifications"] = specificationsByMaterialId;
+                opts.Items["ReservedQuantities"] = reservedQuantitiesByMaterialId;
+            }
+        );
+    }
+
+    // Lean, projection-based sibling of GetWarehouseLocationRacks(kind, userId).
+    // A plain .Select() into the DTO shape never touches the AutoInclude-heavy
+    // Material/MaterialBatch navigations (Include-based entity materialization
+    // is what triggers those, not a projection), and it never invokes the
+    // AutoMapper resolvers that were firing per-row DB queries for
+    // specification/reserved-stock/supplier/manufacturer/sampling details --
+    // none of which this summary shape exposes. Use this unless a caller
+    // specifically needs the full WarehouseLocationRackDto detail.
+    public async Task<Result<List<WarehouseLocationRackSummaryDto>>> GetWarehouseLocationRackSummaries(
+        MaterialKind kind,
+        Guid userId
+    )
+    {
+        var user = await context
+            .Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            return UserErrors.NotFound(userId);
+
+        var warehouse =
+            kind == MaterialKind.Raw
+                ? user.GetUserRawWarehouse()
+                : user.GetUserPackagingWarehouse();
+
+        if (warehouse is null)
+            return UserErrors.WarehouseNotFound(kind);
+
+        var racks = await context
+            .WarehouseLocationRacks.IgnoreQueryFilters()
+            .Where(r => r.WarehouseLocation.WarehouseId == warehouse.Id && !r.DeletedAt.HasValue)
+            .Select(r => new WarehouseLocationRackSummaryDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Description = r.Description,
+                WarehouseLocation = new CollectionItemDto
+                {
+                    Id = r.WarehouseLocation.Id,
+                    Name = r.WarehouseLocation.Name,
+                },
+                Shelves = r
+                    .Shelves.Where(s => !s.DeletedAt.HasValue)
+                    .Select(s => new WarehouseLocationShelfSummaryDto
+                    {
+                        Id = s.Id,
+                        Code = s.Code,
+                        Name = s.Name,
+                        MaterialBatches = s
+                            .MaterialBatches.Where(smb => !smb.DeletedAt.HasValue)
+                            .Select(smb => new ShelfMaterialBatchSummaryDto
+                            {
+                                Id = smb.Id,
+                                MaterialBatchId = smb.MaterialBatchId,
+                                MaterialId = smb.MaterialBatch.MaterialId,
+                                MaterialCode = smb.MaterialBatch.Material.Code,
+                                MaterialName = smb.MaterialBatch.Material.Name,
+                                BatchNumber = smb.MaterialBatch.BatchNumber,
+                                Quantity = smb.Quantity,
+                                UoM = new CollectionItemDto
+                                {
+                                    Id = smb.MaterialBatch.UoM.Id,
+                                    Name = smb.MaterialBatch.UoM.Name,
+                                    Symbol = smb.MaterialBatch.UoM.Symbol,
+                                },
+                                ExpiryDate = smb.MaterialBatch.ExpiryDate,
+                                Status = smb.MaterialBatch.Status,
+                            })
+                            .ToList(),
+                    })
+                    .ToList(),
+            })
+            .ToListAsync();
+
+        return racks;
     }
 
     public async Task<Result> UpdateWarehouseLocationRack(
@@ -1693,7 +1841,7 @@ public class WarehouseRepository(
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, drm => drm.Product.Name);
+            query = query.WhereSearch(searchQuery, drm => drm.Product.Name, drm => drm.Product.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

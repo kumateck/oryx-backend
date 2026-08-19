@@ -61,6 +61,10 @@ public interface IWarehouseRepository
         MaterialKind kind,
         Guid userId
     );
+    Task<Result<List<WarehouseLocationRackSummaryDto>>> GetWarehouseLocationRackSummaries(
+        MaterialKind kind,
+        Guid userId
+    );
     Task<Result> UpdateWarehouseLocationRack(
         CreateWarehouseLocationRackRequest request,
         Guid rackId,

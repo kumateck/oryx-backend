@@ -77,7 +77,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, f => f.Product.Name);
+            query = query.WhereSearch(searchQuery, f => f.Product.Name, f => f.Product.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
