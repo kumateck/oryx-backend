@@ -112,4 +112,70 @@ public class MaterialStandardTestProcedureSearchTests
         Assert.True(result.IsSuccess);
         Assert.Equal(0, result.Value.TotalRecordCount);
     }
+
+    [Fact]
+    public async Task UnusedMaterials_SearchByMaterialCode_FindsMaterial()
+    {
+        await using var context = CreateContext();
+        var mapper = CreateMapper(context);
+
+        var material = new Material
+        {
+            Id = Guid.NewGuid(),
+            Code = "RMA006",
+            Name = "Amoxicillin Trihydrate Compacted",
+            Kind = MaterialKind.Raw,
+        };
+        context.Materials.Add(material);
+        // No MaterialStandardTestProcedure linked -- this material is "unused".
+        await context.SaveChangesAsync();
+
+        var repository = new MaterialStandardTestProcedureRepository(context, mapper);
+        var result = await repository.GetMaterialsNotUsedInStandardTestProcedure(
+            page: 1,
+            pageSize: 50,
+            searchQuery: "RMA006",
+            kind: MaterialKind.Raw
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value.TotalRecordCount);
+        Assert.Equal(material.Id, Assert.Single(result.Value.Data).Id);
+    }
+
+    [Fact]
+    public async Task UnusedMaterials_AlreadyUsedMaterial_ExcludedEvenIfCodeMatches()
+    {
+        await using var context = CreateContext();
+        var mapper = CreateMapper(context);
+
+        var material = new Material
+        {
+            Id = Guid.NewGuid(),
+            Code = "RMA003",
+            Name = "Alginic Acid",
+            Kind = MaterialKind.Raw,
+        };
+        context.Materials.Add(material);
+        context.MaterialStandardTestProcedures.Add(
+            new MaterialStandardTestProcedure
+            {
+                Id = Guid.NewGuid(),
+                StpNumber = "QCD/STP/RM/003",
+                MaterialId = material.Id,
+            }
+        );
+        await context.SaveChangesAsync();
+
+        var repository = new MaterialStandardTestProcedureRepository(context, mapper);
+        var result = await repository.GetMaterialsNotUsedInStandardTestProcedure(
+            page: 1,
+            pageSize: 50,
+            searchQuery: "RMA003",
+            kind: MaterialKind.Raw
+        );
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value.TotalRecordCount);
+    }
 }

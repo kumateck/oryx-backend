@@ -10,6 +10,15 @@ public class ReservedMaterialStockResolver(ApplicationDbContext dbContext) :
 {
     public decimal Resolve(Material source, MaterialDto destination, decimal destMember, ResolutionContext context)
     {
+        if (
+            context.TryGetItems(out var items)
+            && items.TryGetValue("ReservedQuantities", out var reservedObj)
+            && reservedObj is Dictionary<Guid, decimal> reservedByMaterialId
+        )
+        {
+            return reservedByMaterialId.GetValueOrDefault(source.Id, 0);
+        }
+
         return dbContext.MaterialBatchReservedQuantities
                 .AsSplitQuery()
                 .IgnoreQueryFilters()

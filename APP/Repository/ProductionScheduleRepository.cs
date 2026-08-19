@@ -1367,7 +1367,11 @@ public class ProductionScheduleRepository(
                 && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouse.Id
                 && !s.DeletedAt.HasValue
-                && s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                && (
+                    s.MaterialBatch.ExpiryDate == null
+                    || s.MaterialBatch.ExpiryDate == DateTime.MinValue
+                    || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                )
             )
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
@@ -4741,7 +4745,11 @@ public class ProductionScheduleRepository(
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
         var rawExpiredStockLevels = rawStockRows
-            .Where(r => r.ExpiryDate.HasValue && r.ExpiryDate.Value < DateTime.UtcNow)
+            .Where(r =>
+                r.ExpiryDate.HasValue
+                && r.ExpiryDate.Value != DateTime.MinValue
+                && r.ExpiryDate.Value < DateTime.UtcNow
+            )
             .GroupBy(r => r.MaterialId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
@@ -4825,7 +4833,11 @@ public class ProductionScheduleRepository(
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
         var packingExpiredStockLevels = packingStockRows
-            .Where(r => r.ExpiryDate.HasValue && r.ExpiryDate.Value < DateTime.UtcNow)
+            .Where(r =>
+                r.ExpiryDate.HasValue
+                && r.ExpiryDate.Value != DateTime.MinValue
+                && r.ExpiryDate.Value < DateTime.UtcNow
+            )
             .GroupBy(r => r.MaterialId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
