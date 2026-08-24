@@ -427,16 +427,29 @@ public class RequisitionRepository(
                 }
             }
 
-            // 2. Find minimum expiry date of current batches
+            // 2. Find minimum expiry date of current batches. A batch whose
+            // ExpiryDate is the DateTime.MinValue sentinel (no real expiry was
+            // ever entered -- see the department-stock/forecast fixes) must be
+            // excluded here too: treating it as a real date would make it the
+            // "earliest" expiry, which then makes the alternative-batch filter
+            // below impossible to satisfy (nothing expires before year 1) and
+            // silently returns zero alternatives.
             DateTime? minExpiryDate = null;
             if (materialAlternative.CurrentReservedBatches.Count != 0)
             {
                 minExpiryDate = materialAlternative
-                    .CurrentReservedBatches.Where(b => b.Batch.ExpiryDate.HasValue)
+                    .CurrentReservedBatches.Where(b =>
+                        b.Batch.ExpiryDate.HasValue && b.Batch.ExpiryDate.Value != DateTime.MinValue
+                    )
                     .Min(b => b.Batch.ExpiryDate);
             }
 
-            // 3. Find alternative batches across ALL warehouses EXCEPT our own department
+            // 3. Find alternative batches across ALL warehouses EXCEPT our own department.
+            // Only ever suggest usable stock: never already-expired batches --
+            // the whole point is to surface batches that are *about to* expire
+            // (prioritized soonest-first via the OrderBy below) so they get
+            // consumed before they're wasted, not batches that already can't
+            // be used.
             var query = context
                 .ShelfMaterialBatches.IgnoreQueryFilters()
                 .AsSplitQuery()
@@ -451,6 +464,11 @@ public class RequisitionRepository(
                     && smb.Quantity > 0
                     && !smb.DeletedAt.HasValue
                     && smb.MaterialBatch.Status == BatchStatus.Available
+                    && (
+                        smb.MaterialBatch.ExpiryDate == null
+                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
+                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                    )
                     && !departmentWarehouseIds.Contains(
                         smb.WarehouseLocationShelf
                             .WarehouseLocationRack

@@ -266,12 +266,50 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
+    private static readonly OperationAction[] MainActions =
+    [
+        OperationAction.BmrAndBprRequisitionOrIssue,
+        OperationAction.StockRequisitionOrIssue,
+        OperationAction.FinalPackingAndPartialReturn,
+        OperationAction.TransferFinishedProducts,
+        OperationAction.Dispatch,
+        OperationAction.Atr,
+    ];
+
+    private static Result ValidateAutomatedStepsHaveNoMainAction(List<CreateRouteRequest> request)
+    {
+        foreach (var routeRequest in request)
+        {
+            if (routeRequest.IsCritical)
+                continue;
+
+            var hasMainAction =
+                routeRequest.ResponsibleUsers.Any(u => MainActions.Contains(u.Action))
+                || routeRequest.ResponsibleRoles.Any(r => MainActions.Contains(r.Action));
+
+            if (hasMainAction)
+                return Error.Validation(
+                    "Route.Validation",
+                    $"Step at order {routeRequest.Order} is marked as not critical (Automated), "
+                        + "but has a main action (e.g. ATR, Dispatch, Stock Requisition) assigned to it. "
+                        + "Automated steps only auto-advance to InProgress and can never be completed, manually or automatically. "
+                        + "Either mark the step as Critical, or remove the main action."
+                );
+        }
+
+        return Result.Success();
+    }
+
     public async Task<Result> CreateRoute(
         List<CreateRouteRequest> request,
         Guid productId,
         Guid userId
     )
     {
+        var validation = ValidateAutomatedStepsHaveNoMainAction(request);
+        if (validation.IsFailure)
+            return validation;
+
         var product = await context
             .Products.AsSplitQuery()
             .Include(product => product.Routes)
