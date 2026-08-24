@@ -406,28 +406,63 @@ public class ProductionScheduleRepository(
                     "This product has no procedures defined hence a production activity cannot commence."
                 );
 
+            // Directly-assigned responsible users are an explicit choice made during
+            // procedure configuration, so they are not re-filtered by department here.
             var users = product
                 .Routes.SelectMany(r => r.ResponsibleUsers)
                 .Select(r => r.User)
                 .ToList();
-            users = users.Where(u => u.DepartmentId == product.DepartmentId).ToList();
-            var roleNames = product
+
+            var responsibleRoles = product
                 .Routes.SelectMany(r => r.ResponsibleRoles)
-                .Select(rr => rr.Role?.Name)
-                .Where(name => !string.IsNullOrEmpty(name))
-                .Distinct()
+                .Select(rr => rr.Role)
+                .Where(role => role != null && !string.IsNullOrEmpty(role.Name))
+                .DistinctBy(role => role.Id)
                 .ToList();
+
+            var roleDepartmentsByRoleId = (
+                await context
+                    .RoleDepartments.Where(rd =>
+                        responsibleRoles.Select(role => role.Id).Contains(rd.RoleId)
+                    )
+                    .ToListAsync()
+            ).ToLookup(rd => rd.RoleId, rd => rd.DepartmentId);
 
             var roleUsersMap = new Dictionary<string, IList<User>>();
-            foreach (var roleName in roleNames)
+            foreach (var role in responsibleRoles)
             {
-                roleUsersMap[roleName] = await userManager.GetUsersInRoleAsync(roleName);
+                var usersInThisRole = await userManager.GetUsersInRoleAsync(role.Name);
+
+                if (role.Type == DepartmentType.Production)
+                {
+                    // Production-department roles are scoped to the product's own department.
+                    usersInThisRole = usersInThisRole
+                        .Where(u => u.DepartmentId == product.DepartmentId)
+                        .ToList();
+                }
+                else
+                {
+                    // Non-production roles (e.g. QA/QC) are scoped to whichever
+                    // department(s) the role is explicitly associated with, since their
+                    // members won't sit in the product's production department. If no
+                    // association is configured, fall back to unfiltered rather than
+                    // silently dropping a required responsible party.
+                    var roleDepartmentIds = roleDepartmentsByRoleId[role.Id].ToList();
+                    if (roleDepartmentIds.Count > 0)
+                    {
+                        usersInThisRole = usersInThisRole
+                            .Where(u =>
+                                u.DepartmentId.HasValue
+                                && roleDepartmentIds.Contains(u.DepartmentId.Value)
+                            )
+                            .ToList();
+                    }
+                }
+
+                roleUsersMap[role.Name] = usersInThisRole;
             }
 
-            var usersInRole = roleUsersMap
-                .Values.SelectMany(uList => uList)
-                .Where(u => u.DepartmentId == product.DepartmentId)
-                .ToList();
+            var usersInRole = roleUsersMap.Values.SelectMany(uList => uList).ToList();
 
             var quantity = productionScheduleProduct.Quantity;
 
