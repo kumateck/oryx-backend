@@ -120,12 +120,47 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return mapper.Map<UserWithRoleDto>(user);
     }
 
-    public async Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId)
+    public async Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId, Guid? departmentId = null)
     {
         var role = await context.Roles.FirstOrDefaultAsync(u => u.Id == roleId);
         if (role == null) return RoleErrors.NotFound(roleId);
         var roleName = role.Name ?? "";
         var usersInThisRole = await userManager.GetUsersInRoleAsync(roleName);
+
+        if (departmentId is not null)
+        {
+            if (role.Type == DepartmentType.Production)
+            {
+                // Production-department roles are scoped to the caller's department
+                // (e.g. the product's own production department).
+                usersInThisRole = usersInThisRole
+                    .Where(u => u.DepartmentId == departmentId)
+                    .ToList();
+            }
+            else
+            {
+                // Non-production roles (e.g. QA/QC) are scoped to whichever
+                // department(s) the role is explicitly associated with, since their
+                // members won't sit in the caller's production department. If no
+                // association is configured, fall back to unfiltered rather than
+                // silently dropping a required responsible party.
+                var roleDepartmentIds = await context
+                    .RoleDepartments.Where(rd => rd.RoleId == roleId)
+                    .Select(rd => rd.DepartmentId)
+                    .ToListAsync();
+
+                if (roleDepartmentIds.Count > 0)
+                {
+                    usersInThisRole = usersInThisRole
+                        .Where(u =>
+                            u.DepartmentId.HasValue
+                            && roleDepartmentIds.Contains(u.DepartmentId.Value)
+                        )
+                        .ToList();
+                }
+            }
+        }
+
         return mapper.Map<List<UserWithRoleDto>>(usersInThisRole);
     }
 

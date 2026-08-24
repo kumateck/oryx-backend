@@ -61,12 +61,12 @@ public class UserController(IUserRepository repo) : ControllerBase
     [HttpGet("role/{roleId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserWithRoleDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetUserByRole(Guid roleId)
+    public async Task<IResult> GetUserByRole(Guid roleId, [FromQuery(Name = "departmentId")] Guid? departmentId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var response = await repo.GetUsersByRoleId(roleId);
+        var response = await repo.GetUsersByRoleId(roleId, departmentId);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 

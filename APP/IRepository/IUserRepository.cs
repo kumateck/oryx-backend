@@ -14,7 +14,7 @@ public interface IUserRepository
     Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
         string searchQuery, bool? isDisabled);
     Task<Result<UserWithRoleDto>> GetUser(Guid userId);
-    Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId);
+    Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId, Guid? departmentId = null);
     Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId);
     Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id);
     Task<Result> DeleteUser(Guid id, Guid userId);
