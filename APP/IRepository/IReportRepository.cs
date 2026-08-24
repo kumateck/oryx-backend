@@ -1,7 +1,9 @@
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Items;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Reports.FinishedGoodsTransferNotes;
 using DOMAIN.Entities.Reports.GeneralInventory;
@@ -11,6 +13,8 @@ using DOMAIN.Entities.Reports.PurchaseOrder;
 using DOMAIN.Entities.Reports.Services;
 using DOMAIN.Entities.Reports.Shipments;
 using DOMAIN.Entities.Reports.Warehouse;
+using DOMAIN.Entities.Reports.WarehouseDashboardKpi;
+using DOMAIN.Entities.Reports.HrDashboardKpi;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
 
@@ -98,4 +102,175 @@ public interface IReportRepository
         InvoicedProductFilters filters);
     Task<Result<List<InvoicedProductsDetailedReportDto>>> GetInvoicedProductsDetailedReport(
         InvoicedProductFilters filters);
+
+    Task<Result<IEnumerable<WarehouseCapacityUtilisationDto>>> GetWarehouseCapacityUtilisation(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<DockToStockTimeDto>>> GetDockToStockTime(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<StockTransferFulfilmentRateDto>>> GetStockTransferFulfilmentRate(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<ReceivingPipelineSnapshotDto>>> GetReceivingPipelineSnapshot(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<ExpiryRiskIndexDto>>> GetExpiryRiskIndex(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<ReorderAlertCountDto>>> GetReorderAlertCount(
+        WarehouseKpiFilterDto filter);
+
+    Task<Result<IEnumerable<SwapRequestActivityDto>>> GetSwapRequestActivity(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<MaterialMovementCountDto>>> GetMaterialMovementCount(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<List<MaterialsStockSummaryDto>>> GetMaterialsStockSummary(
+        Guid? departmentId = null, MaterialKind? materialKind = null, Guid? materialId = null);
+
+    Task<Result<List<MaterialsStockBatchDetailDto>>> GetMaterialsStockBatchDetail(
+        Guid? departmentId = null, MaterialKind? materialKind = null,
+        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null);
+
+    Task<Result<List<ShelfUtilisationDetailDto>>> GetShelfUtilisationDetail(
+        Guid? warehouseId = null, Guid? locationId = null, OccupancyStatus? occupancyStatus = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<GoodsReceivingRegisterDto>>> GetGoodsReceivingRegister(
+        ReportFilter filter, string grnStatus = null, Guid? supplierId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<ReceivingPerformanceDetailDto>>> GetReceivingPerformanceDetail(
+        ReportFilter filter, Guid? warehouseId = null, Guid? supplierId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<PutawayRegisterDto>>> GetPutawayRegister(
+        ReportFilter filter, Guid? warehouseId = null, Guid? employeeId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<StockAdjustmentAuditDto>>> GetStockAdjustmentAudit(
+        ReportFilter filter, string reasonCode = null, Guid? warehouseId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<BatchTraceabilityDto>>> GetBatchTraceability(
+        Guid materialBatchId, ReportFilter filter, Guid? departmentId = null);
+
+    Task<Result<List<InterWarehouseSwapRequestDto>>> GetInterWarehouseSwapRequests(
+        ReportFilter filter, Guid? warehouseId = null, string status = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<StockTransferInterDepartmentDetailDto>>> GetStockTransferInterDepartmentDetail(
+        ReportFilter filter, Guid? fromDepartmentId = null, Guid? toDepartmentId = null,
+        string status = null, Guid? departmentId = null);
+
+    Task<Result<List<MaterialExpiryProjectionDto>>> GetMaterialExpiryProjection(
+        ExpiryWindowFilter? window = null, Guid? warehouseId = null, Guid? materialId = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<SlowMovingInventoryDto>>> GetSlowMovingInventory(
+        InactivityThreshold threshold = InactivityThreshold.Days90, Guid? warehouseId = null,
+        Guid? materialId = null, Guid? departmentId = null);
+
+    Task<Result<List<BinCardTransactionLedgerDto>>> GetBinCardTransactionLedger(
+        Guid materialBatchId, ReportFilter filter, Guid? departmentId = null);
+
+    Task<Result<IEnumerable<OperationsSummaryDto>>> GetOperationsSummary(
+        ReportFilter filter, Guid? warehouseId = null, Guid? departmentId = null);
+
+    Task<Result<List<QcPendingDto>>> GetQcPendingReport(
+        Guid? warehouseId = null, Guid? supplierId = null, Guid? departmentId = null);
+    
+
+    // Production Dashboard KPI Widgets (KPI 6 - 12)
+    Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
+    Task<Result<List<ProductionOutputVolumeDto>>> GetProductionOutputVolume(ProductionKpiFilter filter);
+    Task<Result<List<AtrTestingBacklogDto>>> GetAtrTestingBacklog(ProductionKpiFilter filter);
+    Task<Result<List<StockRequisitionPendingDto>>> GetStockRequisitionPending(ProductionKpiFilter filter);
+    Task<Result<List<FgtnPendingApprovalDto>>> GetFgtnPendingApproval(ProductionKpiFilter filter);
+    Task<Result<List<ProductionOrderDeliveryStatusDto>>> GetProductionOrderDeliveryStatus(ProductionKpiFilter filter, Guid? customerId);
+    Task<Result<List<MaterialReturnRateDto>>> GetMaterialReturnRate(ProductionKpiFilter filter);
+    Task<Result<List<ReorderLevelVsStockDto>>> GetReorderLevelVsStock(
+        Guid? departmentId = null, MaterialKind? materialKind = null);
+
+    Task<Result<List<InventoryValuationSummaryDto>>> GetInventoryValuationSummary(
+        WarehouseType? warehouseType = null, Division? division = null,
+        UnitOfMeasureCategory? uomGroup = null, Guid? departmentId = null);
+
+    Task<Result<List<InventoryValuationDetailDto>>> GetInventoryValuationDetail(
+        WarehouseType? warehouseType = null, Division? division = null,
+        Guid? warehouseId = null, string valuationType = null,
+        Guid? materialId = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null,
+        Guid? departmentId = null);
+
+    Task<Result<List<WarehouseEmployeeActivityDto>>> GetWarehouseEmployeeActivity(
+        ReportFilter filter, Guid? employeeId = null, Guid? departmentId = null);
+
+    Task<Result<List<ArrivalLocationStatusDto>>> GetArrivalLocationStatus(
+        Guid? warehouseId = null, string status = null, int agingThresholdDays = 3,
+        Guid? departmentId = null);
+
+    Task<Result<IEnumerable<EmployeeHeadcountSnapshotDto>>> GetEmployeeHeadcountSnapshot(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<EmployeeGenderRatioDto>>> GetEmployeeGenderRatio(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<LeaveRequestPipelineDto>>> GetLeaveRequestPipeline(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<OvertimeRequestActivityDto>>> GetOvertimeRequestActivity(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<DailyAttendanceRateDto>>> GetDailyAttendanceRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<StaffRequisitionPipelineDto>>> GetStaffRequisitionPipeline(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<EmployeeGradeLevelDistributionDto>>> GetEmployeeGradeLevelDistribution(
+        Guid? departmentId);
+
+    Task<Result<IEnumerable<NewHiresThisPeriodDto>>> GetNewHiresThisPeriod(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<EmployeeTurnoverRateDto>>> GetEmployeeTurnoverRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<LeaveUtilisationRateDto>>> GetLeaveUtilisationRate(
+        HrKpiFilterDto filter, Guid? departmentId);
+
+    Task<Result<IEnumerable<ActiveDisciplinaryActionsDto>>> GetActiveDisciplinaryActions(
+        Guid? departmentId);
+
+    Task<Result<List<EmployeeMasterListReportDto>>> GetEmployeeMasterList(
+        EmployeeMasterListFilter filter);
+
+    Task<Result<List<EmployeeDirectoryByDepartmentDto>>> GetEmployeeDirectoryByDepartment(
+        EmployeeDirectoryFilter filter);
+
+    Task<Result<List<EmployeeDemographicsReportDto>>> GetEmployeeDemographics(
+        EmployeeDemographicsFilter filter);
+
+    Task<Result<List<StaffGradeLevelReportDto>>> GetStaffGradeLevel(
+        StaffGradeLevelFilter filter);
+
+    Task<Result<List<LeaveRegisterReportDto>>> GetLeaveRegister(LeaveRegisterFilter filter);
+
+    Task<Result<List<LeaveBalanceReportDto>>> GetLeaveBalance(LeaveBalanceFilter filter);
+
+    Task<Result<List<LeaveApprovalAuditReportDto>>> GetLeaveApprovalAudit(LeaveApprovalAuditFilter filter);
+
+    Task<Result<List<OvertimeRequestRegisterReportDto>>> GetOvertimeRequestRegister(OvertimeRequestRegisterFilter filter);
+
+    Task<Result<List<StaffRequisitionRegisterReportDto>>> GetStaffRequisitionRegister(StaffRequisitionRegisterFilter filter);
+
+    Task<Result<List<EmployeeDisciplinaryReportDto>>> GetEmployeeDisciplinaryReport(EmployeeDisciplinaryFilter filter);
+
+    Task<Result<List<EmployeeExitReportDto>>> GetEmployeeExitReport(EmployeeExitFilter filter);
+
+    Task<Result<List<EmployeeAnniversaryBirthdayReportDto>>> GetEmployeeAnniversaryBirthdayReport(EmployeeAnniversaryBirthdayFilter filter);
+
+    Task<Result<List<ShiftScheduleRegisterReportDto>>> GetShiftScheduleRegister(ShiftScheduleRegisterFilter filter);
 }

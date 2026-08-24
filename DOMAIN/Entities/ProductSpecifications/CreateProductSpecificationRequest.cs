@@ -20,6 +20,7 @@ public class CreateProductSpecificationRequest
 
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
+    public string Reference { get; set; }
 }
 
 public class UpdateProductSpecificationRequest
@@ -36,6 +37,7 @@ public class UpdateProductSpecificationRequest
 
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
+    public string Reference { get; set; }
 }
 
 public class AddRemoveProductToSpecificationRequest

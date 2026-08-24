@@ -406,28 +406,63 @@ public class ProductionScheduleRepository(
                     "This product has no procedures defined hence a production activity cannot commence."
                 );
 
+            // Directly-assigned responsible users are an explicit choice made during
+            // procedure configuration, so they are not re-filtered by department here.
             var users = product
                 .Routes.SelectMany(r => r.ResponsibleUsers)
                 .Select(r => r.User)
                 .ToList();
-            users = users.Where(u => u.DepartmentId == product.DepartmentId).ToList();
-            var roleNames = product
+
+            var responsibleRoles = product
                 .Routes.SelectMany(r => r.ResponsibleRoles)
-                .Select(rr => rr.Role?.Name)
-                .Where(name => !string.IsNullOrEmpty(name))
-                .Distinct()
+                .Select(rr => rr.Role)
+                .Where(role => role != null && !string.IsNullOrEmpty(role.Name))
+                .DistinctBy(role => role.Id)
                 .ToList();
+
+            var roleDepartmentsByRoleId = (
+                await context
+                    .RoleDepartments.Where(rd =>
+                        responsibleRoles.Select(role => role.Id).Contains(rd.RoleId)
+                    )
+                    .ToListAsync()
+            ).ToLookup(rd => rd.RoleId, rd => rd.DepartmentId);
 
             var roleUsersMap = new Dictionary<string, IList<User>>();
-            foreach (var roleName in roleNames)
+            foreach (var role in responsibleRoles)
             {
-                roleUsersMap[roleName] = await userManager.GetUsersInRoleAsync(roleName);
+                var usersInThisRole = await userManager.GetUsersInRoleAsync(role.Name);
+
+                if (role.Type == DepartmentType.Production)
+                {
+                    // Production-department roles are scoped to the product's own department.
+                    usersInThisRole = usersInThisRole
+                        .Where(u => u.DepartmentId == product.DepartmentId)
+                        .ToList();
+                }
+                else
+                {
+                    // Non-production roles (e.g. QA/QC) are scoped to whichever
+                    // department(s) the role is explicitly associated with, since their
+                    // members won't sit in the product's production department. If no
+                    // association is configured, fall back to unfiltered rather than
+                    // silently dropping a required responsible party.
+                    var roleDepartmentIds = roleDepartmentsByRoleId[role.Id].ToList();
+                    if (roleDepartmentIds.Count > 0)
+                    {
+                        usersInThisRole = usersInThisRole
+                            .Where(u =>
+                                u.DepartmentId.HasValue
+                                && roleDepartmentIds.Contains(u.DepartmentId.Value)
+                            )
+                            .ToList();
+                    }
+                }
+
+                roleUsersMap[role.Name] = usersInThisRole;
             }
 
-            var usersInRole = roleUsersMap
-                .Values.SelectMany(uList => uList)
-                .Where(u => u.DepartmentId == product.DepartmentId)
-                .ToList();
+            var usersInRole = roleUsersMap.Values.SelectMany(uList => uList).ToList();
 
             var quantity = productionScheduleProduct.Quantity;
 
@@ -1367,7 +1402,11 @@ public class ProductionScheduleRepository(
                 && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouse.Id
                 && !s.DeletedAt.HasValue
-                && s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                && (
+                    s.MaterialBatch.ExpiryDate == null
+                    || s.MaterialBatch.ExpiryDate == DateTime.MinValue
+                    || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                )
             )
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
@@ -4163,7 +4202,7 @@ public class ProductionScheduleRepository(
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, q => q.Material.Name);
+            query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
         }
 
         if (kind.HasValue)
@@ -4720,7 +4759,7 @@ public class ProductionScheduleRepository(
             .Concat(product.Packages.Select(p => p.MaterialId))
             .ToList();
 
-        var rawStockLevels = await context
+        var rawStockRows = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .Where(s =>
                 materialIds.Contains(s.MaterialBatch.MaterialId)
@@ -4728,9 +4767,26 @@ public class ProductionScheduleRepository(
                     == rawWarehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
+            .Select(s => new
+            {
+                s.MaterialBatch.MaterialId,
+                s.Quantity,
+                s.MaterialBatch.ExpiryDate,
+            })
+            .ToListAsync();
+
+        var rawStockLevels = rawStockRows
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+
+        var rawExpiredStockLevels = rawStockRows
+            .Where(r =>
+                r.ExpiryDate.HasValue
+                && r.ExpiryDate.Value != DateTime.MinValue
+                && r.ExpiryDate.Value < DateTime.UtcNow
+            )
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
         var rawMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -4773,6 +4829,7 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
                     QuantityOnHand = quantityOnHand,
+                    ExpiredQuantity = rawExpiredStockLevels.GetValueOrDefault(item.MaterialId, 0),
                     ReservedQuantity = rawTotalReservedQuantities.GetValueOrDefault(
                         item.MaterialId
                     ),
@@ -4790,7 +4847,7 @@ public class ProductionScheduleRepository(
                 "No packing material warehouse is associated with current user"
             );
 
-        var packingStockLevels = await context
+        var packingStockRows = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .Where(s =>
                 materialIds.Contains(s.MaterialBatch.MaterialId)
@@ -4798,9 +4855,26 @@ public class ProductionScheduleRepository(
                     == packingWarehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
+            .Select(s => new
+            {
+                s.MaterialBatch.MaterialId,
+                s.Quantity,
+                s.MaterialBatch.ExpiryDate,
+            })
+            .ToListAsync();
+
+        var packingStockLevels = packingStockRows
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+
+        var packingExpiredStockLevels = packingStockRows
+            .Where(r =>
+                r.ExpiryDate.HasValue
+                && r.ExpiryDate.Value != DateTime.MinValue
+                && r.ExpiryDate.Value < DateTime.UtcNow
+            )
+            .GroupBy(r => r.MaterialId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
         var packageMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -4843,6 +4917,10 @@ public class ProductionScheduleRepository(
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
                     QuantityOnHand = quantityOnHand,
+                    ExpiredQuantity = packingExpiredStockLevels.GetValueOrDefault(
+                        item.MaterialId,
+                        0
+                    ),
                     ReservedQuantity = packingTotalReservedQuantities.GetValueOrDefault(
                         item.MaterialId,
                         0

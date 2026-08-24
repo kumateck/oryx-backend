@@ -277,7 +277,11 @@ public class FormController(IFormRepository repository) : ControllerBase
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.DeleteFormReviewer(formId, reviewerUserId, Guid.Parse(userId));
+        var result = await repository.DeleteFormReviewer(
+            formId,
+            reviewerUserId,
+            Guid.Parse(userId)
+        );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -714,6 +718,23 @@ public class FormController(IFormRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Reassigns form fields from one user to another or removes assignments.
+    /// </summary>
+    /// <param name="request">The ReassignFormAssigneeRequest object containing reassignment data.</param>
+    /// <returns>Returns a success or failure result.</returns>
+    [HttpPost("assignees/reassign")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> ReassignFormAssignee([FromBody] ReassignFormAssigneeRequest request)
+    {
+        var result = await repository.ReassignFormAssignee(request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Submits a new form assignee with its field assignments.
     /// </summary>
     /// <param name="request">The CreateFormAssigneeRequest object containing form and field assignment data.</param>
@@ -739,12 +760,28 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
     [HttpGet("assignees/{formAssigneeId:guid}")]
     [Authorize]
-    [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFormAssignee(Guid formAssigneeId)
     {
         var result = await repository.GetFormAssignee(formAssigneeId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves a list of unique users assigned to a specific form.
+    /// </summary>
+    /// <param name="formId">The id of the form.</param>
+    /// <returns>Returns a list of users assigned to the form.</returns>
+    [HttpGet("assignees/{formId:guid}/users")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetFormAssigneeUsers(Guid formId)
+    {
+        var result = await repository.GetFormAssigneeUsers(formId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -48,9 +48,10 @@ public class ForecastMaterialDto
     public MaterialDto Material { get; set; }
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
+    public decimal ExpiredQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
-    public bool IsAvailable => QuantityOnHand > QuantityNeeded;
+    public bool IsAvailable => QuantityOnHand - ExpiredQuantity > QuantityNeeded;
 }
 
 public class ProductionScheduleProcurementPackageDto

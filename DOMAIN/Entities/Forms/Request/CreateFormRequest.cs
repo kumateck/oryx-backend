@@ -114,3 +114,10 @@ public class SaveFormAssigneeDraftRequest
     public TestStage? Stage { get; set; }
     public Guid? AssigneeId { get; set; }
 }
+
+public class ReassignFormAssigneeRequest
+{
+    public Guid FormAssigneeId { get; set; }
+    public Guid OldAssigneeId { get; set; }
+    public Guid? NewAssigneeId { get; set; }
+}

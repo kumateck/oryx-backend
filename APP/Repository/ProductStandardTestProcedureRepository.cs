@@ -76,7 +76,12 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
+            query = query.WhereSearch(
+                searchQuery,
+                stp => stp.StpNumber,
+                stp => stp.Product.Name,
+                stp => stp.Product.Code
+            );
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -91,7 +96,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
                 )
         );
     }
-    
+
     public async Task<
         Result<List<ProductStandardTestProcedureDto>>
     > GetProductStandardTestProcedureByStpNumber(string stpNumber)
@@ -186,7 +191,7 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, f => f.Name);
+            query = query.WhereSearch(searchQuery, f => f.Name, f => f.Code);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -318,7 +323,12 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, stp => stp.StpNumber);
+            query = query.WhereSearch(
+                searchQuery,
+                stp => stp.StpNumber,
+                stp => stp.Product.Name,
+                stp => stp.Product.Code
+            );
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(

@@ -810,6 +810,7 @@ public class OryxMapper : Profile
         CreateMap<CreateShipmentDocumentRequest, ShipmentDocument>();
         CreateMap<ShipmentDocument, ShipmentDocumentDto>()
             .ForMember(dest => dest.HasBillingSheet, opt => opt.MapFrom<HasBillingSheetResolver>())
+            .ForMember(dest => dest.HasApprovedBillingSheet, opt => opt.MapFrom<HasApprovedBillingSheetResolver>())
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
 
         CreateMap<CreateShipmentInvoice, ShipmentInvoice>();
@@ -1219,6 +1220,9 @@ public class OryxMapper : Profile
         CreateMap<CreateAnalyticalTestRequest, AnalyticalTestRequest>();
         CreateMap<AnalyticalTestRequest, AnalyticalTestRequestDto>()
             .ForMember(dest => dest.Assignees, opt => opt.Ignore());
+
+        CreateMap<DOMAIN.Entities.OosInvestigations.InitiateOosInvestigationRequest, DOMAIN.Entities.OosInvestigations.OosInvestigation>();
+        CreateMap<DOMAIN.Entities.OosInvestigations.OosInvestigation, DOMAIN.Entities.OosInvestigations.OosInvestigationDto>();
 
         #endregion
 

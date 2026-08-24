@@ -320,6 +320,29 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     /// <summary>
+    /// Retrieves a list of racks in warehouse locations for the logged-in user's
+    /// department, as a lean summary (material name/code, batch number,
+    /// quantity, expiry, status) without specification/reserved-stock/
+    /// supplier/manufacturer/sampling detail. Prefer this over
+    /// <c>rack/by-department</c> unless you specifically need that extra detail.
+    /// </summary>
+    [HttpGet("rack/by-department/summary")]
+    [Authorize]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<WarehouseLocationRackSummaryDto>)
+    )]
+    public async Task<IResult> GetWarehouseLocationRackSummaries([FromQuery] MaterialKind kind)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.GetWarehouseLocationRackSummaries(kind, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Updates an existing warehouse location rack.
     /// </summary>
     [HttpPut("rack/{rackId}")]

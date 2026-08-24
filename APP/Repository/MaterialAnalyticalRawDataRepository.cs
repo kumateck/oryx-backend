@@ -78,7 +78,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
                 searchQuery,
                 ad => ad.SpecNumber,
                 ad => ad.MaterialStandardTestProcedure.StpNumber,
-                ad => ad.MaterialStandardTestProcedure.Material.Name
+                ad => ad.MaterialStandardTestProcedure.Material.Name,
+                ad => ad.MaterialStandardTestProcedure.Material.Code
             );
         }
 

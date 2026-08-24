@@ -476,7 +476,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, b => b.Material.Name);
+            query = query.WhereSearch(searchQuery, b => b.Material.Name, b => b.Material.Code);
         }
 
         var result = await PaginationHelper.GetPaginatedResultAsync(
@@ -1692,16 +1692,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .Warehouses.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(dw =>
                     dw.DepartmentId == department.Id && dw.Type == warehouseType
+                    && !dw.DeletedAt.HasValue
                 );
 
             if (warehouse is null)
             {
                 continue;
             }
-
+            
             decimal totalStock = 0;
 
-            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetUsableShelfMaterialStockInWarehouse(
+                materialId,
+                warehouse.Id
+            );
             if (stockResult.IsSuccess)
             {
                 totalStock = stockResult.Value;
@@ -1831,6 +1835,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 m.Batch.Status == BatchStatus.Available
                 && m.Batch.MaterialId == materialId
                 && m.ToWarehouseId == warehouseId
+                && !m.DeletedAt.HasValue
             )
             .SumAsync(m => m.Quantity);
 
@@ -1844,6 +1849,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 && m.Batch.MaterialId == materialId
                 && m.FromWarehouse != null
                 && m.FromWarehouseId == warehouseId
+                && !m.DeletedAt.HasValue
             )
             .SumAsync(m => m.Quantity);
 
@@ -1858,6 +1864,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 && e.ConsumptionWarehouse != null
                 && e.ConsumptionWarehouseId == warehouseId
                 && e.Type == EventType.Consumed
+                && !e.DeletedAt.HasValue
             )
             .SumAsync(e => e.Quantity);
 
@@ -1865,9 +1872,65 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .MaterialBatchReservedQuantities.AsSplitQuery()
             .Include(m => m.MaterialBatch)
             .Where(m =>
-                m.MaterialBatch.MaterialId == materialId /* && m.WarehouseId == warehouseId*/
+                m.MaterialBatch.MaterialId == materialId && m.WarehouseId == warehouseId
             )
             .SumAsync(e => e.Quantity);
+
+        var totalQuantityInLocation =
+            batchesInLocation
+            - batchesMovedOut
+            - batchesConsumedAtLocation
+            - batchReservedQuantities;
+
+        return Math.Max(totalQuantityInLocation, 0);
+    }
+
+    public async Task<Result<decimal>> GetUsableMassMaterialStockInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    )
+    {
+        var usableBatchIds = await context
+            .MaterialBatches.IgnoreQueryFilters()
+            .Where(b =>
+                b.MaterialId == materialId
+                && b.Status == BatchStatus.Available
+                && (
+                    b.ExpiryDate == null
+                    || b.ExpiryDate == DateTime.MinValue
+                    || b.ExpiryDate >= DateTime.UtcNow
+                )
+            )
+            .Select(b => b.Id)
+            .ToListAsync();
+
+        if (usableBatchIds.Count == 0)
+            return 0m;
+
+        var batchesInLocation = await context
+            .MassMaterialBatchMovements.IgnoreQueryFilters()
+            .Where(m => usableBatchIds.Contains(m.BatchId) && m.ToWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+
+        var batchesMovedOut = await context
+            .MassMaterialBatchMovements.IgnoreQueryFilters()
+            .Where(m => usableBatchIds.Contains(m.BatchId) && m.FromWarehouseId == warehouseId)
+            .SumAsync(m => m.Quantity);
+
+        var batchesConsumedAtLocation = await context
+            .MaterialBatchEvents.IgnoreQueryFilters()
+            .Where(e =>
+                usableBatchIds.Contains(e.BatchId)
+                && e.ConsumptionWarehouseId == warehouseId
+                && e.Type == EventType.Consumed
+            )
+            .SumAsync(e => e.Quantity);
+
+        var batchReservedQuantities = await context
+            .MaterialBatchReservedQuantities.Where(m =>
+                usableBatchIds.Contains(m.MaterialBatchId)
+            )
+            .SumAsync(m => m.Quantity);
 
         var totalQuantityInLocation =
             batchesInLocation
@@ -1901,6 +1964,79 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(s => s.Quantity);
 
         return Math.Max(totalQuantity, 0);
+    }
+
+    public async Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    )
+    {
+        var rows = await context
+            .ShelfMaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+                .ThenInclude(wls => wls.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                        .ThenInclude(wl => wl.Warehouse)
+            .Where(s =>
+                s.MaterialBatch.MaterialId == materialId
+                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouseId
+                && !s.DeletedAt.HasValue
+            )
+            .Select(s => new { s.Quantity, s.MaterialBatch.ExpiryDate })
+            .ToListAsync();
+
+        var totalQuantity = rows.Sum(r => r.Quantity);
+        var expiredQuantity = rows
+            .Where(r =>
+                r.ExpiryDate.HasValue
+                && r.ExpiryDate.Value != DateTime.MinValue
+                && r.ExpiryDate.Value < DateTime.UtcNow
+            )
+            .Sum(r => r.Quantity);
+
+        return new MaterialWarehouseStockBreakdown
+        {
+            WarehouseStock = Math.Max(totalQuantity, 0),
+            ExpiredQuantity = Math.Max(expiredQuantity, 0),
+        };
+    }
+
+    public async Task<Result<decimal>> GetUsableShelfMaterialStockInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    )
+    {
+        var totalQuantity = await context
+            .ShelfMaterialBatches.AsSplitQuery()
+            .IgnoreQueryFilters()
+            .Include(s => s.MaterialBatch)
+            .Include(s => s.WarehouseLocationShelf)
+                .ThenInclude(wls => wls.WarehouseLocationRack)
+                    .ThenInclude(w => w.WarehouseLocation)
+                        .ThenInclude(wl => wl.Warehouse)
+            .Where(s =>
+                s.MaterialBatch.MaterialId == materialId
+                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                    == warehouseId
+                && !s.DeletedAt.HasValue
+                && s.MaterialBatch.Status == BatchStatus.Available
+                && (
+                    s.MaterialBatch.ExpiryDate == null
+                    || s.MaterialBatch.ExpiryDate == DateTime.MinValue
+                    || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                )
+            )
+            .SumAsync(s => s.Quantity);
+
+        var reservedQuantity = await context
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId)
+            .SumAsync(r => r.Quantity);
+
+        return Math.Max(totalQuantity - reservedQuantity, 0);
     }
 
     public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
@@ -2252,7 +2388,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouseId
                 )
-                && (b.ExpiryDate == null || DateTime.UtcNow <= b.ExpiryDate)
+                && (
+                    b.ExpiryDate == null
+                    || b.ExpiryDate == DateTime.MinValue
+                    || DateTime.UtcNow <= b.ExpiryDate
+                )
                 && b.Status == BatchStatus.Available
             )
             .OrderBy(b => b.ReturnDate == null) // false (not null) first, true (null) last
@@ -2272,6 +2412,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         == warehouseId
                     && (
                         smb.MaterialBatch.ExpiryDate == null
+                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
                         || DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
                     )
                 )
@@ -2571,10 +2712,14 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         foreach (var warehouse in warehouses)
         {
             // 1️⃣ Get raw stock in warehouse
-            var stockResult = await GetShelfMaterialStockInWarehouse(materialId, warehouse.Id);
+            var stockResult = await GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+                materialId,
+                warehouse.Id
+            );
             if (!stockResult.IsSuccess)
                 continue;
-            var grossStock = stockResult.Value;
+            var grossStock = stockResult.Value.WarehouseStock;
+            var expiredQuantity = stockResult.Value.ExpiredQuantity;
 
             // 2️⃣ Add reserved if this is a production warehouse
             var reservedQty = await context
@@ -2606,6 +2751,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 {
                     Warehouse = mapper.Map<WarehouseDto>(warehouse),
                     StockQuantity = finalStock,
+                    ExpiredQuantity = expiredQuantity,
                 }
             );
         }
@@ -2781,6 +2927,42 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         context.MaterialBatches.UpdateRange(materialBatches);
         await context.SaveChangesAsync();
 
+        return Result.Success();
+    }
+
+    public async Task<Result> RequestRetest(Guid materialBatchId, RequestRetestDto request, Guid userId)
+    {
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == materialBatchId);
+        if (batch is null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+        }
+
+        batch.Status = BatchStatus.Retest;
+        batch.RetestDate = DateTime.UtcNow;
+        batch.UpdatedAt = DateTime.UtcNow;
+        batch.LastUpdatedById = userId;
+
+        context.MaterialBatches.Update(batch);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> CompleteRetest(Guid materialBatchId, CompleteRetestDto request, Guid userId)
+    {
+        var batch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == materialBatchId);
+        if (batch is null)
+        {
+            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
+        }
+
+        batch.ExpiryDate = request.ExtendedExpiryDate;
+        batch.Status = BatchStatus.Available;
+        batch.UpdatedAt = DateTime.UtcNow;
+        batch.LastUpdatedById = userId;
+
+        context.MaterialBatches.Update(batch);
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 
@@ -3075,14 +3257,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 return Error.NotFound("Warehouse", "Warehouse not found");
             }
 
-            var warehouseStockResult = await GetShelfMaterialStockInWarehouse(
+            var warehouseStockResult = await GetShelfMaterialStockAndExpiredQuantityInWarehouse(
                 result.Material.Id,
                 warehouse.Id
             );
             if (warehouseStockResult.IsFailure)
                 continue;
 
-            result.WarehouseStock = warehouseStockResult.Value;
+            result.WarehouseStock = warehouseStockResult.Value.WarehouseStock;
+            result.ExpiredQuantity = warehouseStockResult.Value.ExpiredQuantity;
 
             result.PendingStockTransferQuantity = await context
                 .StockTransferSources.AsSplitQuery()
@@ -3837,7 +4020,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                             .ThenInclude(l => l.Warehouse)
             .Include(b => b.ReservedQuantities)
                 .ThenInclude(rq => rq.Warehouse)
-            .Where(b => b.ExpiryDate < DateTime.UtcNow)
+            .Where(b =>
+                b.ExpiryDate.HasValue
+                && b.ExpiryDate.Value != DateTime.MinValue
+                && b.ExpiryDate.Value < DateTime.UtcNow
+            )
             .AsQueryable();
 
         if (filter.MaterialKind.HasValue)

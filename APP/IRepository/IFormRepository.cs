@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
+using DOMAIN.Entities.Users;
 using SHARED;
 
 namespace APP.IRepository;
@@ -103,4 +104,8 @@ public interface IFormRepository
     Task<Result<FormAssigneeDto>> GetFormAssignee(Guid formAssigneeId);
     Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId);
     Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId);
+
+    Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formId);
+
+    Task<Result> ReassignFormAssignee(ReassignFormAssigneeRequest request);
 }

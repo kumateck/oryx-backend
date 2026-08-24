@@ -59,6 +59,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             }
 
             var materialSpec = mapper.Map<MaterialSpecification>(request);
+            materialSpec.Reference = SpecificationReferenceHelper.FormatReference(request.Reference);
             materialSpec.MaterialId = material.Id;
             await context.MaterialSpecifications.AddAsync(materialSpec);
             mappings.Add(
@@ -105,7 +106,8 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                 searchQuery,
                 q => q.SpecificationNumber,
                 q => q.Description,
-                q => q.Material.Name
+                q => q.Material.Name,
+                q => q.Material.Code
             );
         }
 
@@ -255,6 +257,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         {
             var oldSpecNumber = spec.SpecificationNumber;
             mapper.Map(request, spec);
+            spec.Reference = SpecificationReferenceHelper.FormatReference(request.Reference);
 
             if (oldSpecNumber != spec.SpecificationNumber)
             {

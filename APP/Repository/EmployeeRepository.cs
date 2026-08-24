@@ -13,7 +13,6 @@ using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
-using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
@@ -686,7 +685,7 @@ public class EmployeeRepository(ApplicationDbContext context,
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            var oldEmail = employee.Email;
+            var oldEmail = employee.Email ?? "";
             employee.Email = newEmail;
             context.Employees.Update(employee);
             await context.SaveChangesAsync();

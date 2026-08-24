@@ -74,4 +74,5 @@ public enum LeaveStatus
     Expired,
     Recalled,
     Reapplied,
+    Cancelled
 }

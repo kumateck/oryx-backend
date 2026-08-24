@@ -61,7 +61,13 @@ public interface IMaterialRepository
         decimal quantity
     );
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<decimal>> GetUsableMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<decimal>> GetUsableShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
+    Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(
+        Guid materialId,
+        Guid warehouseId
+    );
     Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
         Guid materialId,
         Guid? departmentId = null,
@@ -97,6 +103,8 @@ public interface IMaterialRepository
         decimal quantity
     );
     Task<Result> UpdateBatchStatus(UpdateBatchStatusRequest request, Guid userId);
+    Task<Result> RequestRetest(Guid materialBatchId, RequestRetestDto request, Guid userId);
+    Task<Result> CompleteRetest(Guid materialBatchId, CompleteRetestDto request, Guid userId);
     Task<Result> MoveMaterialBatchV2(MoveShelfMaterialBatchRequest request, Guid userId);
     Task<Result> SupplyMaterialBatchToWarehouse(SupplyMaterialBatchRequest request, Guid userId);
     Task<Result<Paginateable<IEnumerable<MaterialDetailsDto>>>> GetApprovedMaterials(

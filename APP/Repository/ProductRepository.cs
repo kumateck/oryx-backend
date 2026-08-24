@@ -54,7 +54,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result<ProductDto>> GetProduct(Guid productId)
     {
         var product = await context
-            .Products.AsSplitQuery()
+            .Products.IgnoreQueryFilters()
+            .AsSplitQuery()
             .Include(p => p.BaseUoM)
             .Include(p => p.Equipment)
             .Include(p => p.BillOfMaterials)
@@ -77,7 +78,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Include(p => p.Packings)
                 .ThenInclude(p => p.BasePackingUoM)
             .Include(p => p.CreatedBy)
-            .FirstOrDefaultAsync(p => p.Id == productId);
+            .FirstOrDefaultAsync(p => p.Id == productId && !p.DeletedAt.HasValue);
 
         return product is null
             ? ProductErrors.NotFound(productId)
@@ -103,7 +104,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, f => f.Name);
+            query = query.WhereSearch(searchQuery, f => f.Name, f => f.Code);
         }
 
         if (departmentId.HasValue)
@@ -265,12 +266,50 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
+    private static readonly OperationAction[] MainActions =
+    [
+        OperationAction.BmrAndBprRequisitionOrIssue,
+        OperationAction.StockRequisitionOrIssue,
+        OperationAction.FinalPackingAndPartialReturn,
+        OperationAction.TransferFinishedProducts,
+        OperationAction.Dispatch,
+        OperationAction.Atr,
+    ];
+
+    private static Result ValidateAutomatedStepsHaveNoMainAction(List<CreateRouteRequest> request)
+    {
+        foreach (var routeRequest in request)
+        {
+            if (routeRequest.IsCritical)
+                continue;
+
+            var hasMainAction =
+                routeRequest.ResponsibleUsers.Any(u => MainActions.Contains(u.Action))
+                || routeRequest.ResponsibleRoles.Any(r => MainActions.Contains(r.Action));
+
+            if (hasMainAction)
+                return Error.Validation(
+                    "Route.Validation",
+                    $"Step at order {routeRequest.Order} is marked as not critical (Automated), "
+                        + "but has a main action (e.g. ATR, Dispatch, Stock Requisition) assigned to it. "
+                        + "Automated steps only auto-advance to InProgress and can never be completed, manually or automatically. "
+                        + "Either mark the step as Critical, or remove the main action."
+                );
+        }
+
+        return Result.Success();
+    }
+
     public async Task<Result> CreateRoute(
         List<CreateRouteRequest> request,
         Guid productId,
         Guid userId
     )
     {
+        var validation = ValidateAutomatedStepsHaveNoMainAction(request);
+        if (validation.IsFailure)
+            return validation;
+
         var product = await context
             .Products.AsSplitQuery()
             .Include(product => product.Routes)
@@ -685,10 +724,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var query = await context
             .ProductPackings.AsSplitQuery()
+            .IgnoreQueryFilters()
             .Include(p => p.PackingLists.OrderBy(pp => pp.Order))
                 .ThenInclude(p => p.Uom)
             .Include(p => p.BasePackingUoM)
-            .Where(p => p.ProductId == productId)
+            .Where(p => p.ProductId == productId &&p.DeletedAt == null)
             .ToListAsync();
 
         return mapper.Map<List<ProductPackingDto>>(query);
