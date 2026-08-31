@@ -665,6 +665,12 @@ public class ProductionScheduleRepository(
                 );
         }
 
+        // A step that is already InProgress triggers material consumption when re-submitted
+        // (e.g. double-click or a retried request). Treat re-submission as a no-op so batches
+        // aren't consumed twice for the same step.
+        if (status == ProductionStatus.InProgress && activityStep.Status == ProductionStatus.InProgress)
+            return Result.Success();
+
         activityStep.Status = status;
 
         switch (status)

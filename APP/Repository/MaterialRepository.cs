@@ -604,12 +604,25 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             )
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
+        var reservedQuantities = await context
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .AsSplitQuery()
+            .Where(r =>
+                materialIds.Contains(r.MaterialBatch.MaterialId)
+                && r.WarehouseId == warehouse.Id
+                && r.DeletedAt == null
+            )
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Total = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
+
         var materialDetails = paginatedResult
             .Data.Select(m => new MaterialDetailsDto
             {
                 Material = mapper.Map<MaterialDto>(m),
                 UnitOfMeasure = uoms.GetValueOrDefault(m.Id),
                 TotalAvailableQuantity = stocks.GetValueOrDefault(m.Id, 0),
+                ReservedQuantity = reservedQuantities.GetValueOrDefault(m.Id, 0),
             })
             .ToList();
 
@@ -692,12 +705,22 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     "Unit of measure not found for this department."
                 );
 
+            var reservedQuantity = await context
+                .MaterialBatchReservedQuantities.AsSplitQuery()
+                .Where(r =>
+                    r.MaterialBatch.MaterialId == m.Id
+                    && r.WarehouseId == warehouse.Id
+                    && r.DeletedAt == null
+                )
+                .SumAsync(r => r.Quantity);
+
             materialDetails.Add(
                 new MaterialDetailsDto
                 {
                     Material = m,
                     UnitOfMeasure = unitOfMeasureDto,
                     TotalAvailableQuantity = totalAvailableQuantity.Value,
+                    ReservedQuantity = reservedQuantity,
                 }
             );
         }
@@ -781,6 +804,20 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(md => md.DepartmentId == departmentId && materialIds.Contains(md.MaterialId))
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
+        var reservedQuery = context
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId) && r.DeletedAt == null);
+
+        if (departmentId.HasValue)
+        {
+            reservedQuery = reservedQuery.Where(r => r.Warehouse.DepartmentId == departmentId);
+        }
+
+        var reservedQuantities = await reservedQuery
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .Select(g => new { MaterialId = g.Key, Total = g.Sum(r => r.Quantity) })
+            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
+
         var result = raw.Select(r => new MaterialDetailsDto
             {
                 Material = new MaterialDto
@@ -795,6 +832,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 },
                 UnitOfMeasure = uoms.GetValueOrDefault(r.Id),
                 TotalAvailableQuantity = r.TotalAvailableQuantity,
+                ReservedQuantity = reservedQuantities.GetValueOrDefault(r.Id, 0),
             })
             .ToList();
 
@@ -4801,6 +4839,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 WHERE NOT EXISTS (SELECT 1 FROM ""ShelfMaterialBatches"" smb WHERE smb.""MaterialBatchId"" = mb.""Id"")
                 AND (SELECT ""IsUnlimited"" FROM ""Materials"" WHERE ""Id"" = mb.""MaterialId"") = false
                 AND mb.""QuantityAssigned"" != 0"
+            );
+
+            // 4. Status Correction: a batch with nothing left to consume should be marked Consumed (7),
+            // not left as Available (3), after the aggregates above have been synced.
+            await context.Database.ExecuteSqlRawAsync(
+                @"
+                UPDATE ""MaterialBatches""
+                SET ""Status"" = 7
+                WHERE ""Status"" = 3
+                AND (SELECT ""IsUnlimited"" FROM ""Materials"" WHERE ""Id"" = ""MaterialId"") = false
+                AND (""TotalQuantity"" - ""ConsumedQuantity"") <= 0"
             );
 
             await transaction.CommitAsync();

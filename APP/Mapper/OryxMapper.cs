@@ -1273,9 +1273,21 @@ public class OryxMapper : Profile
         #region Production Orders
         CreateMap<CreateProductionOrderRequest, ProductionOrder>();
         CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
-        CreateMap<ProductionOrder, ProductionOrderDto>();
-        CreateMap<ProductionOrder, ProductionOrderListDto>();
-        CreateMap<ProductionOrder, ProductionOrderDetailDto>();
+        CreateMap<ProductionOrder, ProductionOrderDto>()
+            .ForMember(
+                dest => dest.TotalValue,
+                opt => opt.MapFrom(src => src.Products.Sum(p => p.TotalValue))
+            );
+        CreateMap<ProductionOrder, ProductionOrderListDto>()
+            .ForMember(
+                dest => dest.TotalValue,
+                opt => opt.MapFrom(src => src.Products.Sum(p => p.TotalValue))
+            );
+        CreateMap<ProductionOrder, ProductionOrderDetailDto>()
+            .ForMember(
+                dest => dest.TotalValue,
+                opt => opt.MapFrom(src => src.Products.Sum(p => p.TotalValue))
+            );
         CreateMap<ProductionOrderProducts, ProductionOrderProductsDto>();
         CreateMap<ProductionOrderProductQuantity, ProductionOrderProductQuantityDto>();
 
