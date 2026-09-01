@@ -34,6 +34,7 @@ public class MaterialDetailsDto
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public decimal TotalAvailableQuantity { get; set; }
+    public decimal ReservedQuantity { get; set; }
 }
 
 public class BatchQuantityDto

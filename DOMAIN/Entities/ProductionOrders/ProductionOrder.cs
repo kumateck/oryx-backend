@@ -48,7 +48,7 @@ public class ProductionOrderProducts
     public decimal TotalBatches => Product?.FullBatchSize > 0
         ? TotalVolume / Product.FullBatchSize
         : 0;
-    public decimal TotalValue => TotalOrderQuantity * Product?.Price ?? 0;
+    public decimal TotalValue => TotalOrderQuantity * (Product?.Price ?? 0);
     public bool Fulfilled { get; set; }
     public List<ProductionOrderProductQuantity> FulfilledQuantities { get; set; } = [];
     public decimal RemainingQuantity => TotalOrderQuantity

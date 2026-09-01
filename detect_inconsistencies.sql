@@ -1,5 +1,33 @@
 -- Comprehensive Inconsistency Detection Script (Warehouse-Aware)
 -- Database: PostgreSQL
+-- Run this before fix_inconsistencies.sql. "Unlimited" materials (e.g. WATER) are excluded
+-- throughout since they use a sentinel quantity and never reconcile against real stock.
+
+-- === Duplicate event check (run first) ===
+-- Flags pairs of events on the same batch/type/warehouse/quantity logged within 60 seconds
+-- of each other -- the signature of a double-submitted request (see ERTT-4523367). These are
+-- NOT auto-fixed by fix_inconsistencies.sql; a human must pick which row to delete.
+SELECT
+    mb."BatchNumber",
+    a."Type",
+    a."Quantity",
+    a."ConsumptionWarehouseId",
+    a."CreatedAt" as first_event_at,
+    b."CreatedAt" as second_event_at,
+    a."Id" as first_event_id,
+    b."Id" as second_event_id,
+    'CRITICAL: Possible duplicate event' as InconsistencyType
+FROM "MaterialBatchEvents" a
+JOIN "MaterialBatchEvents" b ON a."BatchId" = b."BatchId"
+    AND a."Type" = b."Type"
+    AND a."Quantity" = b."Quantity"
+    AND a."Id" < b."Id"
+    AND COALESCE(a."ConsumptionWarehouseId"::text, '') = COALESCE(b."ConsumptionWarehouseId"::text, '')
+    AND ABS(EXTRACT(EPOCH FROM (b."CreatedAt" - a."CreatedAt"))) < 60
+JOIN "MaterialBatches" mb ON mb."Id" = a."BatchId"
+JOIN "Materials" m ON m."Id" = mb."MaterialId"
+WHERE m."IsUnlimited" = false
+ORDER BY a."CreatedAt";
 
 WITH ShelfByWarehouse AS (
     SELECT 
@@ -24,14 +52,16 @@ EventsByWarehouse AS (
     GROUP BY "BatchId", "ConsumptionWarehouseId"
 ),
 GlobalAggregates AS (
-    SELECT 
-        "Id" as BatchId,
-        "BatchNumber",
-        "Status", -- 3 is Available, 7 is Consumed
-        "TotalQuantity",
-        "ConsumedQuantity",
-        "QuantityAssigned"
-    FROM "MaterialBatches"
+    SELECT
+        mb."Id" as BatchId,
+        mb."BatchNumber",
+        mb."Status", -- 3 is Available, 7 is Consumed
+        mb."TotalQuantity",
+        mb."ConsumedQuantity",
+        mb."QuantityAssigned"
+    FROM "MaterialBatches" mb
+    JOIN "Materials" m ON m."Id" = mb."MaterialId"
+    WHERE m."IsUnlimited" = false
 ),
 WarehouseLevels AS (
     SELECT 
