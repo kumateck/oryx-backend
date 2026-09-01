@@ -32,6 +32,12 @@ namespace API.Controllers;
 [Authorize]
 public class ReportController(IReportRepository repository) : ControllerBase
 {
+    private bool TryGetAuthenticatedDepartment(out Guid departmentId)
+    {
+        var value = HttpContext.Items["Department"] as string;
+        return Guid.TryParse(value, out departmentId);
+    }
+
     /// <summary>
     /// Gets the production report for a specific department.
     /// </summary>
@@ -84,7 +90,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Gets the logistics reporting dashboard
     /// </summary>
     [HttpGet("logistics")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseReportDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LogisticsReportDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLogisticsReport([FromQuery] ReportFilter filter)
     {
@@ -212,7 +218,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialsReadyForChecklist([FromQuery] ReportFilter filter)
     {
-        var userId = (string)HttpContext.Items["User"];
+        var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
 
@@ -371,7 +377,6 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves a report of supplier materials based on filters.
     /// </summary>
     [HttpGet("supplier-materials")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierMaterialReportDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSupplierMaterialReport(
@@ -445,7 +450,6 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Provides a stock quantity overview per store type, showing total item quantities.
     /// </summary>
     [HttpGet("vendor-item/summary")]
-    [AllowAnonymous]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<VendorStoreItemStockSummaryDto>)
@@ -726,10 +730,19 @@ public class ReportController(IReportRepository repository) : ControllerBase
     )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetWarehouseCapacityUtilisation(
-        [FromQuery] Guid? warehouseId, [FromQuery] Guid? departmentId
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division
     )
     {
-        var filter = new WarehouseKpiFilterDto { WarehouseId = warehouseId };
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division
+        };
         var result = await repository.GetWarehouseCapacityUtilisation(filter, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -745,15 +758,20 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetDockToStockTime(
         [FromQuery] Guid? warehouseId,
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division,
         [FromQuery] DateFilter? datePreset,
         [FromQuery] DateTime? customStartDate,
-        [FromQuery] DateTime? customEndDate,
-        [FromQuery] Guid? departmentId
+        [FromQuery] DateTime? customEndDate
     )
     {
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
         var filter = new WarehouseKpiFilterDto
         {
             WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division,
             DatePreset = datePreset,
             CustomStartDate = customStartDate,
             CustomEndDate = customEndDate
@@ -809,10 +827,18 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetReceivingPipeline(
         [FromQuery] Guid? warehouseId,
-        [FromQuery] Guid? departmentId
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division
     )
     {
-        var filter = new WarehouseKpiFilterDto { WarehouseId = warehouseId };
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division
+        };
         var result = await repository.GetReceivingPipelineSnapshot(filter, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -828,13 +854,18 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetExpiryRiskIndex(
         [FromQuery] Guid? warehouseId,
-        [FromQuery] ExpiryWindowFilter? expiryWindow,
-        [FromQuery] Guid? departmentId
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division,
+        [FromQuery] ExpiryWindowFilter? expiryWindow
     )
     {
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
         var filter = new WarehouseKpiFilterDto
         {
             WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division,
             ExpiryWindow = expiryWindow
         };
         var result = await repository.GetExpiryRiskIndex(filter, departmentId);
@@ -876,20 +907,25 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [HttpGet("warehouse-kpi/swap-request-activity")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(SwapRequestActivityDto)
+        Type = typeof(IEnumerable<SwapRequestActivityDto>)
     )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetSwapRequestActivity(
         [FromQuery] Guid? warehouseId,
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division,
         [FromQuery] DateFilter? datePreset,
         [FromQuery] DateTime? customStartDate,
-        [FromQuery] DateTime? customEndDate,
-        [FromQuery] Guid? departmentId
+        [FromQuery] DateTime? customEndDate
     )
     {
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
         var filter = new WarehouseKpiFilterDto
         {
             WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division,
             DatePreset = datePreset,
             CustomStartDate = customStartDate,
             CustomEndDate = customEndDate
@@ -899,24 +935,59 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     [HttpGet("warehouse-kpi/material-movement-count")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialMovementCountDto))]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<MaterialMovementCountDto>)
+    )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetMaterialMovementCount(
         [FromQuery] Guid? warehouseId,
-        [FromQuery] Guid? departmentId,
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division,
         [FromQuery] DateFilter? datePreset = null,
         [FromQuery] DateTime? customStartDate = null,
         [FromQuery] DateTime? customEndDate = null
     )
     {
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
         var filter = new WarehouseKpiFilterDto
         {
             WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division,
             DatePreset = datePreset,
             CustomStartDate = customStartDate,
             CustomEndDate = customEndDate
         };
         var result = await repository.GetMaterialMovementCount(filter, departmentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Gets source-owned warehouse analytics freshness watermarks and source row counts.
+    /// </summary>
+    [HttpGet("warehouse-kpi/freshness")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(IEnumerable<WarehouseDataFreshnessDto>)
+    )]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetWarehouseKpiFreshness(
+        [FromQuery] Guid? warehouseId,
+        [FromQuery] WarehouseType? warehouseType,
+        [FromQuery] Division? division
+    )
+    {
+        if (!TryGetAuthenticatedDepartment(out var departmentId))
+            return TypedResults.Unauthorized();
+        var filter = new WarehouseKpiFilterDto
+        {
+            WarehouseId = warehouseId,
+            WarehouseType = warehouseType,
+            Division = division
+        };
+        var result = await repository.GetWarehouseKpiFreshness(filter, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

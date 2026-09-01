@@ -656,11 +656,77 @@ public class ReportRepository(
         );
     }
 
-    public Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(
+    public async Task<Result<StaffGenderRatioReport>> GetStaffGenderRatioReport(
         MovementReportFilter filter
     )
     {
-        throw new NotImplementedException();
+        var query = context
+            .Employees.AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(employee =>
+                employee.Status == EmployeeStatus.Active
+                && (employee.Type == EmployeeType.Casual
+                    || employee.Type == EmployeeType.Permanent)
+            );
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(employee => employee.DepartmentId == filter.DepartmentId.Value);
+
+        if (filter.StartDate.HasValue)
+        {
+            var start = filter.StartDate.Value.Date;
+            query = query.Where(employee => employee.DateEmployed >= start);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            var endExclusive = filter.EndDate.Value.Date.AddDays(1);
+            query = query.Where(employee => employee.DateEmployed < endExclusive);
+        }
+
+        var employees = await query
+            .Select(employee => new
+            {
+                Department = employee.Department != null
+                    ? employee.Department.Name
+                    : "Unassigned",
+                employee.Type,
+                employee.Gender,
+            })
+            .ToListAsync();
+
+        var departments = employees
+            .GroupBy(employee => employee.Department)
+            .Select(group => new StaffGenderRatioCountDto
+            {
+                Department = group.Key,
+                NumberOfCasualMale = group.Count(employee =>
+                    employee.Type == EmployeeType.Casual && employee.Gender == Gender.Male
+                ),
+                NumberOfCasualFemale = group.Count(employee =>
+                    employee.Type == EmployeeType.Casual && employee.Gender == Gender.Female
+                ),
+                NumberOfPermanentMale = group.Count(employee =>
+                    employee.Type == EmployeeType.Permanent && employee.Gender == Gender.Male
+                ),
+                NumberOfPermanentFemale = group.Count(employee =>
+                    employee.Type == EmployeeType.Permanent && employee.Gender == Gender.Female
+                ),
+            })
+            .OrderBy(department => department.Department)
+            .ToList();
+
+        var totals = new StaffGenderRatioTotalDto
+        {
+            NumberOfCasualMale = departments.Sum(item => item.NumberOfCasualMale),
+            NumberOfCasualFemale = departments.Sum(item => item.NumberOfCasualFemale),
+            NumberOfPermanentMale = departments.Sum(item => item.NumberOfPermanentMale),
+            NumberOfPermanentFemale = departments.Sum(item => item.NumberOfPermanentFemale),
+        };
+
+        return Result.Success(
+            new StaffGenderRatioReport { Departments = departments, Totals = totals }
+        );
     }
 
     /*
@@ -4092,8 +4158,25 @@ public class ReportRepository(
         if (endDate.HasValue)
             drmQuery = drmQuery.Where(drm => drm.CheckedAt <= endDate.Value);
         
-        var records = await drmQuery
-            .SelectMany(drm => drm.DistributedRequisitionItems)
+        var itemQuery = drmQuery.SelectMany(drm => drm.DistributedRequisitionItems);
+
+        if (departmentId.HasValue)
+            itemQuery = itemQuery.Where(dri =>
+                dri.Warehouse.DepartmentId == departmentId.Value);
+
+        if (filter.WarehouseId.HasValue)
+            itemQuery = itemQuery.Where(dri =>
+                dri.WarehouseId == filter.WarehouseId.Value);
+
+        if (filter.WarehouseType.HasValue)
+            itemQuery = itemQuery.Where(dri =>
+                dri.Warehouse.Type == filter.WarehouseType.Value);
+
+        if (filter.Division.HasValue)
+            itemQuery = itemQuery.Where(dri =>
+                dri.Warehouse.Division == filter.Division.Value);
+
+        var records = await itemQuery
             .Select(dri => new
             {
                 DepartmentName = dri.Warehouse.Department.Name,
@@ -4265,6 +4348,14 @@ public class ReportRepository(
             baseQuery = baseQuery.Where(drm =>
                 drm.WarehouseArrivalLocation.WarehouseId == filter.WarehouseId.Value);
 
+        if (filter.WarehouseType.HasValue)
+            baseQuery = baseQuery.Where(drm =>
+                drm.WarehouseArrivalLocation.Warehouse.Type == filter.WarehouseType.Value);
+
+        if (filter.Division.HasValue)
+            baseQuery = baseQuery.Where(drm =>
+                drm.WarehouseArrivalLocation.Warehouse.Division == filter.Division.Value);
+
         if (departmentId.HasValue)
         {
             var stageCounts = await baseQuery
@@ -4409,6 +4500,7 @@ public class ReportRepository(
                 && smb.Quantity > 0
                 && smb.MaterialBatch.ExpiryDate.HasValue
                 && !smb.MaterialBatch.DeletedAt.HasValue
+                && !smb.MaterialBatch.Material.IsUnlimited
             );
 
         if (departmentId.HasValue)
@@ -4421,6 +4513,16 @@ public class ReportRepository(
                 smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.WarehouseId == filter.WarehouseId.Value);
 
+        if (filter.WarehouseType.HasValue)
+            query = query.Where(smb =>
+                smb.WarehouseLocationShelf.WarehouseLocationRack
+                    .WarehouseLocation.Warehouse.Type == filter.WarehouseType.Value);
+
+        if (filter.Division.HasValue)
+            query = query.Where(smb =>
+                smb.WarehouseLocationShelf.WarehouseLocationRack
+                    .WarehouseLocation.Warehouse.Division == filter.Division.Value);
+
         var grouped = await query
             .GroupBy(smb => new
             {
@@ -4432,7 +4534,7 @@ public class ReportRepository(
                     : smb.MaterialBatch.ExpiryDate <= threshold60 ? 1
                     : smb.MaterialBatch.ExpiryDate <= threshold90 ? 2
                     : 3,
-                UomSymbol = smb.MaterialBatch.UoM.Symbol
+                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol
             })
             .Select(g => new
             {
@@ -4621,6 +4723,17 @@ public class ReportRepository(
                 || sr.SecondWarehouseId == warehouseId);
         }
 
+
+        if (filter.WarehouseType.HasValue)
+            baseQuery = baseQuery.Where(sr =>
+                sr.FirstWarehouse.Type == filter.WarehouseType.Value
+                || sr.SecondWarehouse.Type == filter.WarehouseType.Value);
+
+        if (filter.Division.HasValue)
+            baseQuery = baseQuery.Where(sr =>
+                sr.FirstWarehouse.Division == filter.Division.Value
+                || sr.SecondWarehouse.Division == filter.Division.Value);
+
         if (departmentId.HasValue)
         {
             baseQuery = baseQuery.Where(sr =>
@@ -4728,6 +4841,17 @@ public class ReportRepository(
                 smb.WarehouseLocationShelf.WarehouseLocationRack
                     .WarehouseLocation.WarehouseId == warehouseId);
         }
+
+
+        if (filter.WarehouseType.HasValue)
+            baseQuery = baseQuery.Where(smb =>
+                smb.WarehouseLocationShelf.WarehouseLocationRack
+                    .WarehouseLocation.Warehouse.Type == filter.WarehouseType.Value);
+
+        if (filter.Division.HasValue)
+            baseQuery = baseQuery.Where(smb =>
+                smb.WarehouseLocationShelf.WarehouseLocationRack
+                    .WarehouseLocation.Warehouse.Division == filter.Division.Value);
 
         if (departmentId.HasValue)
         {
@@ -7453,6 +7577,7 @@ public class ReportRepository(
                 && smb.Quantity > 0
                 && smb.MaterialBatch.ExpiryDate.HasValue
                 && !smb.MaterialBatch.DeletedAt.HasValue
+                && !smb.MaterialBatch.Material.IsUnlimited
             );
 
         if (filter.WarehouseId.HasValue)
@@ -7469,7 +7594,7 @@ public class ReportRepository(
                     : smb.MaterialBatch.ExpiryDate <= threshold60 ? 1
                     : smb.MaterialBatch.ExpiryDate <= threshold90 ? 2
                     : 3,
-                UomSymbol = smb.MaterialBatch.UoM.Symbol
+                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol
             })
             .Select(g => new
             {
@@ -7604,6 +7729,12 @@ public class ReportRepository(
         if (filter.WarehouseId.HasValue)
             query = query.Where(w => w.Id == filter.WarehouseId.Value);
 
+        if (filter.WarehouseType.HasValue)
+            query = query.Where(w => w.Type == filter.WarehouseType.Value);
+
+        if (filter.Division.HasValue)
+            query = query.Where(w => w.Division == filter.Division.Value);
+
         var raw = await query
             .Select(w => new
             {
@@ -7638,6 +7769,84 @@ public class ReportRepository(
             .ToList();
 
         return Result.Success(result.AsEnumerable());
+    }
+
+    public async Task<Result<IEnumerable<WarehouseDataFreshnessDto>>> GetWarehouseKpiFreshness(
+        WarehouseKpiFilterDto filter, Guid? departmentId)
+    {
+        var warehouses = context.Warehouses.IgnoreQueryFilters().AsNoTracking()
+            .Where(w => !w.DeletedAt.HasValue);
+        if (departmentId.HasValue)
+            warehouses = warehouses.Where(w => w.DepartmentId == departmentId.Value);
+        if (filter.WarehouseId.HasValue)
+            warehouses = warehouses.Where(w => w.Id == filter.WarehouseId.Value);
+        if (filter.WarehouseType.HasValue)
+            warehouses = warehouses.Where(w => w.Type == filter.WarehouseType.Value);
+        if (filter.Division.HasValue)
+            warehouses = warehouses.Where(w => w.Division == filter.Division.Value);
+
+        var warehouseIds = warehouses.Select(w => w.Id);
+        var inbound = context.DistributedRequisitionMaterials.IgnoreQueryFilters().AsNoTracking()
+            .Where(drm => !drm.DeletedAt.HasValue &&
+                drm.DistributedRequisitionItems.Any(dri => warehouseIds.Contains(dri.WarehouseId)));
+        var receiving = inbound.Where(drm => drm.WarehouseArrivalLocationId.HasValue &&
+            warehouseIds.Contains(drm.WarehouseArrivalLocation.WarehouseId));
+        var dock = inbound.Where(drm => drm.CheckedAt.HasValue && drm.GrnGeneratedAt.HasValue);
+        var shelfStock = context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
+            .Where(smb => !smb.DeletedAt.HasValue && warehouseIds.Contains(
+                smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId));
+        var expiry = shelfStock.Where(smb => smb.Quantity > 0 &&
+            smb.MaterialBatch.ExpiryDate.HasValue &&
+            !smb.MaterialBatch.Material.IsUnlimited);
+        var transfers = context.StockTransferSources.IgnoreQueryFilters().AsNoTracking()
+            .Where(sts => !sts.DeletedAt.HasValue);
+        if (departmentId.HasValue)
+            transfers = transfers.Where(sts => sts.FromDepartmentId == departmentId.Value ||
+                sts.ToDepartmentId == departmentId.Value);
+        var materialDepartments = context.MaterialDepartments.IgnoreQueryFilters().AsNoTracking()
+            .Where(md => !md.DeletedAt.HasValue);
+        if (departmentId.HasValue)
+            materialDepartments = materialDepartments.Where(md =>
+                md.DepartmentId == departmentId.Value);
+        var swaps = context.SwapRequests.IgnoreQueryFilters().AsNoTracking()
+            .Where(sr => !sr.DeletedAt.HasValue &&
+                (warehouseIds.Contains(sr.FirstWarehouseId) ||
+                 warehouseIds.Contains(sr.SecondWarehouseId)));
+
+        var sources = new List<WarehouseDataFreshnessDto>
+        {
+            await BuildFreshness("Warehouse Master", warehouses),
+            await BuildFreshness("Dock-to-Stock", dock),
+            await BuildFreshness("Stock Transfers", transfers),
+            await BuildFreshness("Receiving Pipeline", receiving),
+            await BuildFreshness("Expiry Risk", expiry),
+            await BuildFreshness("Re-order Alerts", materialDepartments),
+            await BuildFreshness("Swap Requests", swaps),
+            await BuildFreshness("Material Movements", shelfStock)
+        };
+
+        return Result.Success(sources.AsEnumerable());
+    }
+
+    private static async Task<WarehouseDataFreshnessDto> BuildFreshness<T>(
+        string source, IQueryable<T> query) where T : BaseEntity
+    {
+        var summary = await query
+            .GroupBy(_ => 1)
+            .Select(group => new
+            {
+                RecordCount = group.Count(),
+                LastChangedAt = group.Max(item =>
+                    (DateTime?)(item.UpdatedAt ?? item.CreatedAt))
+            })
+            .FirstOrDefaultAsync();
+
+        return new WarehouseDataFreshnessDto
+        {
+            Source = source,
+            RecordCount = summary?.RecordCount ?? 0,
+            LastChangedAt = summary?.LastChangedAt
+        };
     }
  
     public async Task<Result<IEnumerable<EmployeeHeadcountSnapshotDto>>> GetEmployeeHeadcountSnapshot(
