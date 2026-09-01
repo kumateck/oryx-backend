@@ -822,7 +822,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [HttpGet("warehouse-kpi/receiving-pipeline")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(ReceivingPipelineSnapshotDto)
+        Type = typeof(IEnumerable<ReceivingPipelineSnapshotDto>)
     )]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetReceivingPipeline(
