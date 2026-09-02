@@ -20,6 +20,7 @@ COPY APP/*.csproj ./APP/
 COPY DOMAIN/*.csproj ./DOMAIN/
 COPY INFRASTRUCTURE/*.csproj ./INFRASTRUCTURE/
 COPY SHARED/*.csproj ./SHARED/
+COPY tests/APP.Tests/*.csproj ./tests/APP.Tests/
 
 # Restore dependencies (this layer will be cached if project files don't change)
 RUN dotnet restore
@@ -30,6 +31,7 @@ COPY APP/ ./APP/
 COPY DOMAIN/ ./DOMAIN/
 COPY INFRASTRUCTURE/ ./INFRASTRUCTURE/
 COPY SHARED/ ./SHARED/
+COPY tests/APP.Tests/ ./tests/APP.Tests/
 
 # Build and publish in one step
 RUN dotnet publish API/API.csproj -c Release -o /app/out --no-restore
