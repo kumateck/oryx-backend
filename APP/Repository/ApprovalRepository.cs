@@ -1050,6 +1050,7 @@ public class ApprovalRepository(
                             );
                         var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a =>
                             a.ProductionActivityStepId == response.ProductionActivityStepId
+                            && a.BatchManufacturingRecordId == response.BatchManufacturingRecordId
                         );
                         if (atr is null)
                             return Error.NotFound(

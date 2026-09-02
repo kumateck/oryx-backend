@@ -1533,6 +1533,14 @@ public class ApplicationDbContext(
             .Entity<FormResponse>()
             .HasQueryFilter(a => a.FormField != null && !a.FormField.DeletedAt.HasValue);
         modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
+        modelBuilder.Entity<Response>()
+            .HasIndex(a => a.BatchManufacturingRecordId);
+        modelBuilder.Entity<Response>()
+            .HasIndex(a => new { a.BatchManufacturingRecordId, a.ProductionActivityStepId })
+            .IsUnique()
+            .HasFilter(
+                "\"BatchManufacturingRecordId\" IS NOT NULL AND \"ProductionActivityStepId\" IS NOT NULL"
+            );
 
         modelBuilder.Entity<Question>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<QuestionOption>().HasQueryFilter(a => !a.DeletedAt.HasValue);

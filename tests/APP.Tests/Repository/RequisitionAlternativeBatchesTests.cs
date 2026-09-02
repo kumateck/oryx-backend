@@ -287,4 +287,85 @@ public class RequisitionAlternativeBatchesTests
         var materialAlternative = Assert.Single(result.Value);
         Assert.NotEmpty(materialAlternative.AlternativeBatches);
     }
+
+    [Fact]
+    public async Task BatchWithPendingSwap_NotSuggestedAsAlternative()
+    {
+        // A shelf batch already committed to a pending swap isn't actually free
+        // stock - it shouldn't be offered again as an alternative for another
+        // swap until that swap is approved or rejected.
+        await using var context = CreateContext();
+        var materialId = Guid.NewGuid();
+        var (requisition, _, userId) = SeedStockRequisition(context, materialId);
+        var (otherWarehouseId, shelfId) = SeedOtherDepartmentWarehouseShelf(context);
+
+        SeedShelfBatch(context, shelfId, materialId, 50m, DateTime.UtcNow.AddDays(10));
+        var pendingSwapBatch = context.ShelfMaterialBatches.Local.Last();
+
+        SeedShelfBatch(context, shelfId, materialId, 30m, DateTime.UtcNow.AddDays(20));
+        var freeBatch = context.ShelfMaterialBatches.Local.Last();
+
+        var swapUom = new UnitOfMeasure
+        {
+            Id = Guid.NewGuid(),
+            Name = "Kilogram",
+            Symbol = "kg",
+        };
+        context.UnitOfMeasures.Add(swapUom);
+
+        context.SwapRequests.Add(
+            new SwapRequest
+            {
+                Id = Guid.NewGuid(),
+                FirstWarehouseId = otherWarehouseId,
+                SecondWarehouseId = Guid.NewGuid(),
+                Status = SwapRequestStatus.Pending,
+                FirstSwapShelfMaterialBatches =
+                [
+                    new SwapShelfMaterialBatch
+                    {
+                        ShelfMaterialBatchId = pendingSwapBatch.Id,
+                        MaterialBatchId = pendingSwapBatch.MaterialBatchId,
+                        UoMId = swapUom.Id,
+                        Quantity = 50m,
+                    },
+                ],
+                SecondSwapShelfMaterialBatches =
+                [
+                    new SwapShelfMaterialBatch
+                    {
+                        ShelfMaterialBatchId = Guid.NewGuid(),
+                        MaterialBatchId = Guid.NewGuid(),
+                        UoMId = swapUom.Id,
+                        Quantity = 50m,
+                    },
+                ],
+            }
+        );
+        await context.SaveChangesAsync();
+
+        var mapper = CreateMapper(context);
+        var repository = new RequisitionRepository(
+            context,
+            mapper,
+            null!,
+            null!,
+            null!,
+            null!,
+            new MaterialRepository(context, mapper),
+            null!,
+            null!
+        );
+
+        var result = await repository.GetAlternativeBatchesForStockRequisition(
+            requisition.Id,
+            userId
+        );
+
+        Assert.True(result.IsSuccess);
+        var materialAlternative = Assert.Single(result.Value);
+        var alternative = Assert.Single(materialAlternative.AlternativeBatches);
+        Assert.Equal(freeBatch.MaterialBatchId, alternative.Batch.Id);
+        Assert.Equal(30m, alternative.QuantityAvailable);
+    }
 }
