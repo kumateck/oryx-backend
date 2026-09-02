@@ -1,3 +1,4 @@
+using System.Data;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -389,6 +390,7 @@ public class FormRepository(
                 var existingBmrResponse = await context.Responses.FirstOrDefaultAsync(r =>
                     r.BatchManufacturingRecordId == request.BatchManufacturingRecordId.Value
                     && r.FormId == request.FormId
+                    && r.ProductionActivityStepId == request.ProductionActivityStepId
                 );
 
                 if (existingBmrResponse != null)
@@ -1086,6 +1088,8 @@ public class FormRepository(
         List<CertificateOfAnalysisComplies> complies
     )
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
         var response = await context.Responses.FirstOrDefaultAsync(r =>
             r.MaterialBatchId == materialBatchId
         );
@@ -1098,17 +1102,12 @@ public class FormRepository(
         if (batch == null)
             return MaterialErrors.NotFound(materialBatchId);
 
-        var approval = await context.Approvals.FirstOrDefaultAsync(a =>
-            a.ItemType == nameof(Response)
-        );
-        if (approval == null)
-            return Error.Validation(
-                "Response.Approval",
-                "Approval configuration for response does not exist. Kindly create an approval in the settings."
-            );
+        var approvalValidation = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
+        if (!approvalValidation.IsSuccess) return approvalValidation.Error;
 
         response.CheckedAt = DateTime.UtcNow;
         response.CheckedById = userId;
+        response.LastUpdatedById = userId;
         context.Responses.Update(response);
 
         batch.Status = BatchStatus.Checked;
@@ -1126,12 +1125,11 @@ public class FormRepository(
 
             foreach (var comply in complies)
             {
-                var formSection = formResponses
+                var sectionResponses = formResponses
                     .Where(f => f.FormField.FormSectionId == comply.FormSectionId)
-                    .Select(f => f.FormField.FormSection)
-                    .FirstOrDefault();
+                    .ToList();
 
-                if (formSection == null)
+                if (sectionResponses.Count == 0)
                 {
                     return Error.Validation(
                         "Response.FormSection",
@@ -1139,12 +1137,14 @@ public class FormRepository(
                     );
                 }
 
-                formSection.Complies = comply.Complies;
+                foreach (var sectionResponse in sectionResponses)
+                    sectionResponse.Complies = comply.Complies;
             }
         }
 
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 
@@ -1155,6 +1155,8 @@ public class FormRepository(
         List<CertificateOfAnalysisComplies> complies
     )
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
         var response = await context.Responses.FirstOrDefaultAsync(r =>
             r.BatchManufacturingRecordId == batchManufacturingRecordId
             && r.ProductionActivityStepId == productionActivityStepId
@@ -1168,17 +1170,12 @@ public class FormRepository(
         if (bmr == null)
             return MaterialErrors.NotFound(batchManufacturingRecordId);
 
-        var approval = await context.Approvals.FirstOrDefaultAsync(a =>
-            a.ItemType == nameof(Response)
-        );
-        if (approval == null)
-            return Error.Validation(
-                "Response.Approval",
-                "Approval configuration for response does not exist. Kindly create an approval in the settings."
-            );
+        var approvalValidation = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
+        if (!approvalValidation.IsSuccess) return approvalValidation.Error;
 
         response.CheckedAt = DateTime.UtcNow;
         response.CheckedById = userId;
+        response.LastUpdatedById = userId;
         context.Responses.Update(response);
 
         bmr.Status = BatchManufacturingStatus.Checked;
@@ -1195,12 +1192,11 @@ public class FormRepository(
 
             foreach (var comply in complies)
             {
-                var formSection = formResponses
+                var sectionResponses = formResponses
                     .Where(f => f.FormField.FormSectionId == comply.FormSectionId)
-                    .Select(f => f.FormField.FormSection)
-                    .FirstOrDefault();
+                    .ToList();
 
-                if (formSection == null)
+                if (sectionResponses.Count == 0)
                 {
                     return Error.Validation(
                         "Response.FormSection",
@@ -1208,12 +1204,14 @@ public class FormRepository(
                     );
                 }
 
-                formSection.Complies = comply.Complies;
+                foreach (var sectionResponse in sectionResponses)
+                    sectionResponse.Complies = comply.Complies;
             }
         }
 
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 
@@ -1318,9 +1316,13 @@ public class FormRepository(
         return mapper.Map<FormAssigneeDto>(formAssignee);
     }
 
-    public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId)
+    public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(
+        Guid materialBatchId,
+        TestStage? stage,
+        Guid? productionActivityStepId
+    )
     {
-        var formAssignee = await context
+        var query = context
             .FormAssignees.AsSplitQuery()
             .Include(fa => fa.Form)
                 .ThenInclude(f => f.Sections)
@@ -1332,7 +1334,16 @@ public class FormRepository(
             .Include(fa => fa.FieldAssignees)
                 .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
-            .FirstOrDefaultAsync(fa => fa.MaterialBatchId == materialBatchId);
+            .Where(fa => fa.MaterialBatchId == materialBatchId);
+
+        if (stage.HasValue)
+            query = query.Where(fa => fa.Stage == stage.Value);
+        if (productionActivityStepId.HasValue)
+            query = query.Where(fa => fa.ProductionActivityStepId == productionActivityStepId.Value);
+
+        var formAssignee = await query
+            .OrderByDescending(fa => fa.CreatedAt)
+            .FirstOrDefaultAsync();
 
         if (formAssignee == null)
             return FormErrors.NotFound(materialBatchId);
@@ -1340,9 +1351,13 @@ public class FormRepository(
         return mapper.Map<FormAssigneeDto>(formAssignee);
     }
 
-    public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId)
+    public async Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(
+        Guid bmrId,
+        TestStage? stage,
+        Guid? productionActivityStepId
+    )
     {
-        var formAssignee = await context
+        var query = context
             .FormAssignees.AsSplitQuery()
             .Include(fa => fa.Form)
                 .ThenInclude(f => f.Sections)
@@ -1354,7 +1369,16 @@ public class FormRepository(
             .Include(fa => fa.FieldAssignees)
                 .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
-            .FirstOrDefaultAsync(fa => fa.BatchManufacturingRecordId == bmrId);
+            .Where(fa => fa.BatchManufacturingRecordId == bmrId);
+
+        if (stage.HasValue)
+            query = query.Where(fa => fa.Stage == stage.Value);
+        if (productionActivityStepId.HasValue)
+            query = query.Where(fa => fa.ProductionActivityStepId == productionActivityStepId.Value);
+
+        var formAssignee = await query
+            .OrderByDescending(fa => fa.CreatedAt)
+            .FirstOrDefaultAsync();
 
         if (formAssignee == null)
             return FormErrors.NotFound(bmrId);
@@ -1428,10 +1452,11 @@ public class FormRepository(
     }
 
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(
-        Guid batchManufacturingRecordId
+        Guid batchManufacturingRecordId,
+        Guid? productionActivityStepId = null
     )
     {
-        var formResponse = await context
+        var query = context
             .FormResponses.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(fr => fr.CreatedBy)
@@ -1442,8 +1467,14 @@ public class FormRepository(
                     .ThenInclude(r => r.Options)
             .Include(r => r.FormField)
                 .ThenInclude(f => f.FormSection)
-            .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId)
-            .ToListAsync();
+            .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId);
+
+        if (productionActivityStepId.HasValue)
+            query = query.Where(fr =>
+                fr.Response.ProductionActivityStepId == productionActivityStepId.Value
+            );
+
+        var formResponse = await query.ToListAsync();
 
         return mapper.Map<List<FormResponseDto>>(
             formResponse,

@@ -11,4 +11,12 @@ public class CreateCustomerRequest
     [Required, Phone] public string Phone { get; set; }
 
     [Required] public string Address { get; set; }
+
+    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+    public decimal? CreditLimit { get; set; }
+    public Guid? TermsOfPaymentId { get; set; }
+    public CustomerType? Type { get; set; }
+    public Guid? CurrencyId { get; set; }
+    [StringLength(2000)] public string BillingAddress { get; set; }
+    [StringLength(2000)] public string ShippingAddress { get; set; }
 }

@@ -51,3 +51,13 @@ public class ReviewOosInvestigationRequest
 
     public string Comments { get; set; }
 }
+
+public class UpdateOosInvestigationRequest
+{
+    public string ProductOrMaterialName { get; set; }
+    public string BatchNumber { get; set; }
+    public string RootCauseAnalysis { get; set; }
+    public string CorrectiveActions { get; set; }
+    public string PreventiveActions { get; set; }
+    public string InvestigationDetails { get; set; }
+}

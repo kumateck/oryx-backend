@@ -17,6 +17,8 @@ public class SupplierDto : BaseDto
     public CurrencyDto Currency { get; set; }
     public SupplierType Type { get; set; }
     public SupplierStatus Status { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? RequalificationDueDate { get; set; }
     public List<SupplierManufacturerDto> AssociatedManufacturers { get; set; } = [];
 }
 
@@ -39,4 +41,6 @@ public class SupplierListDto : BaseDto
     public CurrencyDto Currency { get; set; }
     public SupplierType Type { get; set; }
     public SupplierStatus Status { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? RequalificationDueDate { get; set; }
 }

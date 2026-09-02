@@ -3011,6 +3011,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         batch.Status = BatchStatus.Retest;
         batch.RetestDate = DateTime.UtcNow;
+        batch.RetestReason = request.Reason;
         batch.UpdatedAt = DateTime.UtcNow;
         batch.LastUpdatedById = userId;
 
@@ -3028,6 +3029,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         batch.ExpiryDate = request.ExtendedExpiryDate;
+        batch.RetestNotes = request.Notes;
         batch.Status = BatchStatus.Available;
         batch.UpdatedAt = DateTime.UtcNow;
         batch.LastUpdatedById = userId;

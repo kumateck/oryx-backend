@@ -37,11 +37,51 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache,mode=max
-  deploy:
+  migrate:
     runs-on: ubuntu-latest
     needs: build
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install dotnet-ef
+        run: |
+          dotnet tool install -g dotnet-ef --version 8.0.10
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Restore
+        run: dotnet restore Oryx.sln
+
+      - name: Generate idempotent migration script
+        run: |
+          dotnet ef migrations script --idempotent \
+            --project INFRASTRUCTURE/INFRASTRUCTURE.csproj \
+            --startup-project API/API.csproj \
+            -o migration.sql
+
+      - name: Upload migration script
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-script
+          path: migration.sql
+          retention-days: 14
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, migrate]
+
+    steps:
+      - name: Download migration script
+        uses: actions/download-artifact@v4
+        with:
+          name: migration-script
+
       - name: Install SSH Client
         run: sudo apt-get install -y openssh-client
 
@@ -49,6 +89,21 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy migration script to server
+        run: |
+          scp -o StrictHostKeyChecking=no -P "${{ secrets.SSH_PORT }}" migration.sql \
+            "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}":/tmp/migration_${{ github.run_id }}.sql
+
+      - name: Apply database migration
+        run: |
+          ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+            set -e
+            echo "Applying pending migrations to entrancedb"
+            docker exec -i -e PGPASSWORD="${{ secrets.DB_PASSWORD }}" postgres_db \
+              psql -U "${{ secrets.DB_USERNAME }}" -d entrancedb -v ON_ERROR_STOP=1 < /tmp/migration_${{ github.run_id }}.sql
+            rm -f /tmp/migration_${{ github.run_id }}.sql
+          EOF
 
       - name: Deploy to Server
         env:

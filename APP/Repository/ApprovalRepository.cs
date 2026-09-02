@@ -926,8 +926,11 @@ public class ApprovalRepository(
                 if (response is null)
                     return Error.Validation("Response.NotFound", $"Response {modelId} not found.");
 
-                var responseApprovalStages = response
-                    .Approvals.Select(item => new ResponsibleApprovalStage
+                var currentResponseApprovals = ResponseApprovalRoundManager.Current(
+                    response.Approvals
+                );
+                var responseApprovalStages = currentResponseApprovals
+                    .Select(item => new ResponsibleApprovalStage
                     {
                         RoleId = item.RoleId,
                         UserId = item.UserId,
@@ -956,8 +959,8 @@ public class ApprovalRepository(
                 }
 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = response.Approvals.First(stage =>
-                    stage.Status != ApprovalStatus.Approved
+                var stageToApproveRe = currentResponseApprovals.First(stage =>
+                    stage.Status == ApprovalStatus.Pending
                     && stage.Order == responseApprovingStage.Order
                 );
 
@@ -968,14 +971,16 @@ public class ApprovalRepository(
                 //context.ResponseApprovals.Update(stageToApproveRe);
 
                 // Optionally mark a leave request as fully approved
-                var allRequiredReApproved = response
-                    .Approvals.Where(s => s.Required)
+                var allRequiredReApproved = currentResponseApprovals
+                    .Where(s => s.Required)
                     .All(s => s.Status == ApprovalStatus.Approved);
 
                 if (allRequiredReApproved)
                 {
                     response.Approved = true;
+                    response.Rejected = false;
                     context.Responses.Update(response);
+                    BatchManufacturingRecord productBatchToApprove = null;
 
                     if (response.MaterialBatchId.HasValue)
                     {
@@ -1029,8 +1034,7 @@ public class ApprovalRepository(
                                 "Response.BmrNotFound",
                                 $"Response bmr in {response.MaterialBatchId} not found."
                             );
-                        bmr.Status = BatchManufacturingStatus.Approved;
-                        context.BatchManufacturingRecords.Update(bmr);
+                        productBatchToApprove = bmr;
                     }
 
                     if (response.ProductionActivityStepId.HasValue)
@@ -1060,13 +1064,29 @@ public class ApprovalRepository(
                         atr.Status = AnalyticalTestStatus.Released;
                         context.ProductionActivitySteps.Update(productionActivityStep);
                         context.AnalyticalTestRequests.Update(atr);
+
+                        var hasUnreleasedStage = await context.AnalyticalTestRequests.AnyAsync(a =>
+                            a.BatchManufacturingRecordId == response.BatchManufacturingRecordId
+                            && a.Id != atr.Id
+                            && a.Status != AnalyticalTestStatus.Released
+                        );
+                        if (productBatchToApprove is not null && !hasUnreleasedStage)
+                        {
+                            productBatchToApprove.Status = BatchManufacturingStatus.Approved;
+                            context.BatchManufacturingRecords.Update(productBatchToApprove);
+                        }
+                    }
+                    else if (productBatchToApprove is not null)
+                    {
+                        productBatchToApprove.Status = BatchManufacturingStatus.Approved;
+                        context.BatchManufacturingRecords.Update(productBatchToApprove);
                     }
                 }
                 await context.SaveChangesAsync();
 
                 //activate next pending stages
-                var nextResponseStage = response
-                    .Approvals.Where(s =>
+                var nextResponseStage = currentResponseApprovals
+                    .Where(s =>
                         s.Status == ApprovalStatus.Pending && s.ActivatedAt == null
                     )
                     .OrderBy(s => s.Order)
@@ -1075,8 +1095,8 @@ public class ApprovalRepository(
                 if (nextResponseStage.Count != 0)
                 {
                     // Get the current approval stages after the approval
-                    var updatedApprovalStages = response
-                        .Approvals.Select(item => new ResponsibleApprovalStage
+                    var updatedApprovalStages = currentResponseApprovals
+                        .Select(item => new ResponsibleApprovalStage
                         {
                             RoleId = item.RoleId,
                             UserId = item.UserId,
@@ -1098,7 +1118,7 @@ public class ApprovalRepository(
 
                     foreach (var stageToActivate in newlyActiveStages)
                     {
-                        var actualStage = response.Approvals.First(ra =>
+                        var actualStage = currentResponseApprovals.First(ra =>
                             ra.Status != ApprovalStatus.Approved
                             && (
                                 ra.UserId == stageToActivate.UserId
@@ -2304,8 +2324,11 @@ public class ApprovalRepository(
                 if (response is null)
                     return Error.Validation("Response.NotFound", $"Response {modelId} not found.");
 
-                var responseApprovalStages = response
-                    .Approvals.Select(item => new ResponsibleApprovalStage
+                var currentResponseApprovals = ResponseApprovalRoundManager.Current(
+                    response.Approvals
+                );
+                var responseApprovalStages = currentResponseApprovals
+                    .Select(item => new ResponsibleApprovalStage
                     {
                         RoleId = item.RoleId,
                         UserId = item.UserId,
@@ -2334,18 +2357,17 @@ public class ApprovalRepository(
                 }
 
                 // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = response.Approvals.First(stage =>
-                    (stage.UserId == responseApprovingStage.UserId && stage.UserId == userId)
-                    || (
-                        stage.RoleId == responseApprovingStage.RoleId
-                        && responseApprovingStage.RoleId.HasValue
-                        && roleIds.Contains(responseApprovingStage.RoleId.Value)
-                    )
+                var stageToApproveRe = currentResponseApprovals.First(stage =>
+                    stage.Status == ApprovalStatus.Pending
+                    && stage.Order == responseApprovingStage.Order
                 );
 
                 stageToApproveRe.Status = ApprovalStatus.Rejected;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
                 stageToApproveRe.Comments = comments;
+                stageToApproveRe.ApprovedById = userId;
+                response.Approved = false;
+                response.Rejected = true;
                 await AddApprovalLogs(
                     new CreateApprovalLog
                     {
@@ -3023,8 +3045,11 @@ public class ApprovalRepository(
                 .ThenInclude(po => po.Department)
             .Where(bs =>
                 bs.Approvals.Any(a =>
+                    a.ApprovalRound == bs.Approvals.Max(item => item.ApprovalRound)
+                    &&
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3042,6 +3067,7 @@ public class ApprovalRepository(
                     RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
                     MaterialBatchId = bs.MaterialBatchId,
                     BatchManufacturingRecordId = bs.BatchManufacturingRecordId,
+                    ProductionActivityStepId = bs.ProductionActivityStepId,
                     ApprovalLogs = GetApprovalLogs(bs.Id),
                 }
             );
@@ -3274,7 +3300,15 @@ public class ApprovalRepository(
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.FinishedGoodsTransferNoteApprovals);
         await Collect(context.ProductionExtraPackingApprovals);
-        await Collect(context.ResponseApprovals);
+        await Collect(
+            context.ResponseApprovals.Where(a =>
+                a.ActivatedAt.HasValue
+                && a.ApprovalRound
+                    == context.ResponseApprovals
+                        .Where(item => item.ResponseId == a.ResponseId)
+                        .Max(item => item.ApprovalRound)
+            )
+        );
 
         var finalUserIds = new HashSet<Guid>(userIdsFromStages);
 
@@ -3427,6 +3461,7 @@ public class ApprovalRepository(
                     RequestedBy = mapper.Map<UserDto>(response.CreatedBy),
                     MaterialBatchId = response.MaterialBatchId,
                     BatchManufacturingRecordId = response.BatchManufacturingRecordId,
+                    ProductionActivityStepId = response.ProductionActivityStepId,
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
@@ -4094,28 +4129,7 @@ public class ApprovalRepository(
         Approval approval
     )
     {
-        var exists = await context.ResponseApprovals.AnyAsync(a =>
-            a.ResponseId == responseId && a.ApprovalId == approval.Id
-        );
-        if (exists)
-            return;
-
-        var approvals = stages
-            .Select(stage => new ResponseApproval
-            {
-                Required = stage.Required,
-                Order = stage.Order,
-                ResponseId = responseId,
-                CreatedAt = DateTime.UtcNow,
-                ApprovalId = approval.Id,
-                UserId = stage.UserId,
-                RoleId = stage.RoleId,
-                ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null,
-            })
-            .ToList();
-
-        await context.ResponseApprovals.AddRangeAsync(approvals);
-        await context.SaveChangesAsync();
+        await ResponseApprovalRoundManager.StartAsync(context, responseId, stages, approval);
     }
 
     private async Task CreateProductionOrderApprovals(
@@ -5042,6 +5056,11 @@ public class ApprovalRepository(
             var responseApprovals = await context
                 .ResponseApprovals.Where(a =>
                     a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
+                    && a.ApprovalRound
+                        == context.ResponseApprovals
+                            .Where(item => item.ResponseId == a.ResponseId)
+                            .Max(item => item.ApprovalRound)
                 )
                 .ToListAsync();
             foreach (var a in responseApprovals)

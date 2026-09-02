@@ -9,6 +9,8 @@ namespace DOMAIN.Entities.Procurement.Suppliers;
 
 public class Supplier : BaseEntity
 {
+    // Vendor belongs to the parallel store-procurement subsystem. Consolidating
+    // Vendor and Supplier is a deliberate future migration, not an SRM side effect.
     [StringLength(100)] public string Name { get; set; }
     [StringLength(100)] public string Email { get; set; }
     [StringLength(1000)] public string Address { get; set; }
@@ -20,7 +22,14 @@ public class Supplier : BaseEntity
     public Currency Currency { get; set; }
     public SupplierType Type { get; set; }
     public SupplierStatus Status { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? RequalificationDueDate { get; set; }
     public List<SupplierManufacturer> AssociatedManufacturers { get; set; } = [];
+    public List<SupplierCertification> Certifications { get; set; } = [];
+    public List<SupplierContact> Contacts { get; set; } = [];
+    public List<SupplierBankDetail> BankDetails { get; set; } = [];
+    public List<SupplierPricingAgreement> PricingAgreements { get; set; } = [];
+    public List<SupplierPerformanceRecord> PerformanceRecords { get; set; } = [];
 }
 
 public enum SupplierType
@@ -48,4 +57,3 @@ public class SupplierManufacturer : BaseEntity
     public UnitOfMeasure UoM { get; set; }
     public bool Default { get; set; }
 }
-

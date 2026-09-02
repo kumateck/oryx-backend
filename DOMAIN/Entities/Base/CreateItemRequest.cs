@@ -9,4 +9,6 @@ public class CreateItemRequest
     public string Type { get; set; } // e.g., Machine, Labor, etc.
     public bool IsAvailable { get; set; }
     public MaterialKind? MaterialKind { get; set; }
+    [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue)]
+    public int? DueDays { get; set; }
 }

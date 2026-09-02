@@ -61,6 +61,7 @@ public class ApprovalEntity
     public DateTime CreatedAt { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
     public UserDto RequestedBy { get; set; }
 }
 
@@ -95,4 +96,3 @@ public class ApprovalActionLog
     [StringLength(1000)] public string Comments { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
-

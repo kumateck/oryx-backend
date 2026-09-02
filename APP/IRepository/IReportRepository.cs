@@ -186,7 +186,9 @@ public interface IReportRepository
         Guid? warehouseId = null, Guid? supplierId = null, Guid? departmentId = null);
     
 
-    // Production Dashboard KPI Widgets (KPI 6 - 12)
+    // Production Dashboard KPI Widgets (KPI 3 - 12)
+    Task<Result<List<BmrReleaseRateDto>>> GetBmrReleaseRate(ProductionKpiFilter filter);
+    Task<Result<List<YieldPerformanceDto>>> GetYieldPerformance(ProductionKpiFilter filter);
     Task<Result<List<ScheduleAdherenceDto>>> GetScheduleAdherence(ProductionKpiFilter filter);
     Task<Result<List<ProductionOutputVolumeDto>>> GetProductionOutputVolume(ProductionKpiFilter filter);
     Task<Result<List<AtrTestingBacklogDto>>> GetAtrTestingBacklog(ProductionKpiFilter filter);

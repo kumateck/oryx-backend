@@ -992,6 +992,30 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// KPI 3 - BMR Release Rate.
+    /// </summary>
+    [HttpGet("kpi/bmr-release-rate")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<BmrReleaseRateDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetBmrReleaseRate([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetBmrReleaseRate(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// KPI 4 - Yield Performance.
+    /// </summary>
+    [HttpGet("kpi/yield-performance")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<YieldPerformanceDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IResult> GetYieldPerformance([FromQuery] ProductionKpiFilter filter)
+    {
+        var result = await repository.GetYieldPerformance(filter);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// KPI 6 - Schedule Adherence (On-Time Completion Rate).
     /// </summary>
     [HttpGet("kpi/schedule-adherence")]

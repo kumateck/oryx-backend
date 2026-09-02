@@ -6,6 +6,8 @@ namespace DOMAIN.Entities.Reports.FinishedGoodsTransferNotes
         public int TotalCustomers { get; set; }
         public ProductionOrderKpiDto ProductionOrders { get; set; }
         public FgtnKpiDto FinishedGoodsTransferNotes { get; set; }
+        public List<FgtnInventoryQuantityDto> InventorySummary { get; set; } = [];
+        public FgtnDispatchPipelineDto DispatchPipeline { get; set; } = new();
     }
 
     public class ProductCountKpiDto
@@ -28,6 +30,20 @@ namespace DOMAIN.Entities.Reports.FinishedGoodsTransferNotes
         public int PendingTransferNote { get; set; }
         public int AcceptedTransferNote { get; set; }
         public int TotalFgtnTransferNotes { get; set; }
+    }
+
+    public class FgtnInventoryQuantityDto
+    {
+        public string Uom { get; set; }
+        public decimal AvailableQuantity { get; set; }
+        public int BatchCount { get; set; }
+    }
+
+    public class FgtnDispatchPipelineDto
+    {
+        public int AwaitingArrival { get; set; }
+        public int Arrived { get; set; }
+        public int Total { get; set; }
     }
 
     public class DashboardFilterDto

@@ -239,6 +239,7 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
         }
 
         test.Status = AnalyticalTestStatus.Testing;
+        test.IsRetest = true;
         test.LastUpdatedById = userId;
         test.UpdatedAt = DateTime.UtcNow;
 

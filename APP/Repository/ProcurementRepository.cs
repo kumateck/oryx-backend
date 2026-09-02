@@ -9,6 +9,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -243,7 +244,8 @@ public class ProcurementRepository(
     public async Task<Result> UpdateSupplierStatus(
         Guid supplierId,
         SupplierStatus status,
-        Guid userId
+        Guid userId,
+        int requalificationIntervalDays = 365
     )
     {
         var supplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Id == supplierId);
@@ -258,6 +260,14 @@ public class ProcurementRepository(
 
         if (status == SupplierStatus.Approved)
         {
+            if (requalificationIntervalDays <= 0)
+                return Error.Validation(
+                    "Supplier.RequalificationInterval",
+                    "Requalification interval must be greater than zero"
+                );
+            supplier.ApprovedAt = DateTime.UtcNow;
+            supplier.RequalificationDueDate = supplier.ApprovedAt.Value
+                .AddDays(requalificationIntervalDays);
             var manufacturerIds = context
                 .SupplierManufacturers.Where(sm => sm.SupplierId == supplierId)
                 .Select(sm => sm.ManufacturerId);
@@ -1003,6 +1013,11 @@ public class ProcurementRepository(
     {
         var invoice = mapper.Map<PurchaseOrderInvoice>(request);
         invoice.CreatedById = userId;
+        var terms = await context.PurchaseOrders
+            .Where(order => order.Id == request.PurchaseOrderId)
+            .Select(order => order.TermsOfPayment.DueDays)
+            .FirstOrDefaultAsync();
+        invoice.DueDate = terms.HasValue ? DateTime.UtcNow.Date.AddDays(terms.Value) : null;
         await context.PurchaseOrderInvoices.AddAsync(invoice);
         await context.SaveChangesAsync();
 
@@ -1020,9 +1035,23 @@ public class ProcurementRepository(
                 .ThenInclude(c => c.Currency)
             .FirstOrDefaultAsync(poi => poi.Id == invoiceId);
 
-        return invoice is null
-            ? Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found")
-            : mapper.Map<PurchaseOrderInvoiceDto>(invoice);
+        if (invoice is null)
+            return Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found");
+
+        var dto = mapper.Map<PurchaseOrderInvoiceDto>(invoice);
+        dto.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.PurchaseOrderInvoice,
+            invoice.Id,
+            invoice.Charges.Where(charge => charge.CurrencyId.HasValue).Select(charge =>
+                new PaymentBalanceQuery.Total(
+                    charge.CurrencyId!.Value,
+                    charge.Currency.Name,
+                    charge.Currency.Symbol,
+                    charge.Amount
+                ))
+        );
+        return dto;
     }
 
     public async Task<
@@ -1113,6 +1142,14 @@ public class ProcurementRepository(
 
         var billingSheet = mapper.Map<BillingSheet>(request);
         billingSheet.CreatedById = userId;
+        var dueDays = await context.ShipmentInvoiceItems
+            .Where(item => item.ShipmentInvoiceId == request.InvoiceId)
+            .Select(item => item.PurchaseOrder.TermsOfPayment.DueDays)
+            .Distinct()
+            .ToListAsync();
+        billingSheet.DueDate = dueDays.Count == 1 && dueDays[0].HasValue
+            ? request.ExpectedArrivalDate.Date.AddDays(dueDays[0]!.Value)
+            : null;
         await context.BillingSheets.AddAsync(billingSheet);
         await context.SaveChangesAsync();
 
@@ -1157,6 +1194,19 @@ public class ProcurementRepository(
 
         await ApplyShipmentInvoiceItemPricing(result.Invoice?.Items ?? []);
 
+        result.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.BillingSheet,
+            billingSheet.Id,
+            billingSheet.Charges.Where(charge => charge.CurrencyId.HasValue).Select(charge =>
+                new PaymentBalanceQuery.Total(
+                    charge.CurrencyId!.Value,
+                    charge.Currency.Name,
+                    charge.Currency.Symbol,
+                    charge.Amount
+                ))
+        );
+
         return result;
     }
 
@@ -1198,6 +1248,19 @@ public class ProcurementRepository(
         // on ShipmentInvoiceItems; this fills the gap for legacy rows so the print/pay
         // charges screens are never computing a total against an unpriced line.
         await ApplyShipmentInvoiceItemPricing(result.Invoice?.Items ?? []);
+
+        result.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.BillingSheet,
+            billingSheet.Id,
+            billingSheet.Charges.Where(charge => charge.CurrencyId.HasValue).Select(charge =>
+                new PaymentBalanceQuery.Total(
+                    charge.CurrencyId!.Value,
+                    charge.Currency.Name,
+                    charge.Currency.Symbol,
+                    charge.Amount
+                ))
+        );
 
         return result;
     }
@@ -1763,6 +1826,9 @@ public class ProcurementRepository(
         shipmentInvoice.CreatedById = userId;
         await context.ShipmentInvoices.AddAsync(shipmentInvoice);
 
+        var invoiceDueDays = new HashSet<int?>();
+        var invoiceCurrencyIds = new HashSet<Guid?>();
+
         foreach (var item in request.Items)
         {
             var purchaseOrder = await context
@@ -1772,6 +1838,9 @@ public class ProcurementRepository(
 
             if (purchaseOrder is null)
                 return Error.NotFound("PurchaseOrder.NotFound", "Purchase Order not found");
+
+            await context.Entry(purchaseOrder).Reference(order => order.TermsOfPayment).LoadAsync();
+            invoiceDueDays.Add(purchaseOrder.TermsOfPayment?.DueDays);
 
             var purchaseOrderItem = purchaseOrder.Items.FirstOrDefault(it =>
                 it.MaterialId == item.MaterialId
@@ -1794,7 +1863,9 @@ public class ProcurementRepository(
             {
                 invoiceItem.Price = purchaseOrderItem.Price;
                 invoiceItem.PriceUoM = purchaseOrderItem.PriceUoM;
+                invoiceItem.CurrencyId = purchaseOrderItem.CurrencyId;
             }
+            invoiceCurrencyIds.Add(purchaseOrderItem.CurrencyId);
 
             purchaseOrderItem.QuantityInvoiced += item.ReceivedQuantity;
 
@@ -1816,6 +1887,13 @@ public class ProcurementRepository(
 
             context.PurchaseOrders.Update(purchaseOrder);
         }
+
+        shipmentInvoice.DueDate = invoiceDueDays.Count == 1 && invoiceDueDays.Single().HasValue
+            ? DateTime.UtcNow.Date.AddDays(invoiceDueDays.Single()!.Value)
+            : null;
+        shipmentInvoice.CurrencyId = invoiceCurrencyIds.Count == 1
+            ? invoiceCurrencyIds.Single()
+            : null;
 
         await context.SaveChangesAsync();
         return shipmentInvoice.Id;
@@ -1916,6 +1994,7 @@ public class ProcurementRepository(
     {
         var shipmentInvoice = await context
             .ShipmentInvoices.AsSplitQuery()
+            .Include(si => si.Currency)
             .Include(si => si.Items)
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
@@ -1933,6 +2012,24 @@ public class ProcurementRepository(
 
         var result = mapper.Map<ShipmentInvoiceDto>(shipmentInvoice);
         await ApplyShipmentInvoiceItemPricing(result.Items);
+
+        if (shipmentInvoice.CurrencyId.HasValue)
+        {
+            var balances = await PaymentBalanceQuery.GetAsync(
+                context,
+                PayableType.ShipmentInvoice,
+                shipmentInvoice.Id,
+                [new PaymentBalanceQuery.Total(
+                    shipmentInvoice.CurrencyId.Value,
+                    shipmentInvoice.Currency?.Name,
+                    shipmentInvoice.Currency?.Symbol,
+                    shipmentInvoice.TotalCost
+                )]
+            );
+            var balance = balances.Single();
+            result.AmountPaid = balance.AmountPaid;
+            result.OutstandingBalance = balance.OutstandingBalance;
+        }
 
         return result;
     }

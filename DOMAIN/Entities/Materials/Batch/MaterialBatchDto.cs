@@ -81,6 +81,8 @@ public class MaterialBatchListDto : IGrnEnrichedDto
     public MaterialBatchChecklistDto Checklist { get; set; }
     public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
     public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public DateTime? ReturnDate { get; set; }
+    public bool IsReturn => ReturnDate.HasValue;
     public string IssueNumber { get; set; }
     public string SupplierName { get; set; }
     public string ManufacturerName { get; set; }
