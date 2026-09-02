@@ -47,6 +47,10 @@ public class AnalyticalTestRequest : BaseEntity
     public DateTime? IssuedAt { get; set; }
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
+
+    // True once a retest has been requested, so a subsequent Testing status can be
+    // told apart from the initial test pass (AnalyticalTestStatus has no distinct Retest value).
+    public bool IsRetest { get; set; }
 }
 
 public class AnalyticalTestRequestAssignee : BaseEntity
@@ -79,6 +83,7 @@ public enum AnalyticalTestStatus
     TestTaken = 4,
     Released = 5,
     Assigned = 6,
+    Rejected = 7,
 }
 
 public enum State

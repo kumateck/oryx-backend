@@ -133,7 +133,13 @@ public class PurchaseOrderItemDto
     public string PriceUoM { get; set; }
     public CollectionItemDto Currency { get; set; }
     public List<SupplierManufacturerDto> Manufacturers { get; set; } = [];
-    public decimal Cost => Price * (Quantity - QuantityInvoiced);
+    // Price is quoted per PriceUoM while Quantity is in Uom, so the two must be
+    // reconciled before multiplying: 5 mg at 0.1 per kg is 0.0000005, not 0.5. Falls back
+    // to the raw product only when the units cannot be reconciled at all, which is the
+    // behaviour this replaced - Cost is a plain decimal and cannot express "unknown".
+    public decimal Cost =>
+        UomConverter.LineValue(Price, Quantity - QuantityInvoiced, Uom?.Symbol, PriceUoM)
+        ?? Price * (Quantity - QuantityInvoiced);
     public bool CanReassignSupplier { get; set; }
     public decimal QuantityInvoiced { get; set; }
 }

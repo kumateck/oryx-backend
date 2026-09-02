@@ -737,6 +737,8 @@ public class OryxMapper : Profile
         #region Currency
 
         CreateMap<Currency, CurrencyDto>();
+        CreateMap<ExchangeRate, ExchangeRateDto>();
+        CreateMap<TermsOfPayment, TermsOfPaymentDto>();
 
         #endregion
 
@@ -822,21 +824,12 @@ public class OryxMapper : Profile
                 dest => dest.IsUsed,
                 opt => opt.MapFrom<ShipmentInvoiceListStatusResolver>()
             );
-        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
-            .ForMember(
-                dest => dest.Price,
-                opt =>
-                    opt.MapFrom(src =>
-                        src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price
-                    )
-            )
-            .ForMember(
-                dest => dest.PriceUoM,
-                opt =>
-                    opt.MapFrom(src =>
-                        src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).PriceUoM
-                    )
-            );
+        // Price and PriceUoM are stored on the invoice line itself, frozen at issue.
+        // They used to be resolved live via
+        // src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId), which threw
+        // whenever a read path forgot to eager-load PurchaseOrder.Items, and picked
+        // arbitrarily when a purchase order had two lines for the same material.
+        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>();
 
         CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();
         CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();
@@ -898,6 +891,10 @@ public class OryxMapper : Profile
             );
         CreateMap<FormResponse, FormResponseDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>())
+            .ForMember(
+                dest => dest.ProductionActivityStepId,
+                opt => opt.MapFrom(src => src.Response.ProductionActivityStepId)
+            )
             .ForMember(dest => dest.CheckedBy, opt => opt.MapFrom(src => src.Response.CheckedBy))
             .ForMember(dest => dest.CheckedAt, opt => opt.MapFrom(src => src.Response.CheckedAt))
             .ForMember(
@@ -906,7 +903,7 @@ public class OryxMapper : Profile
             )
             .ForMember(
                 dest => dest.Complies,
-                opt => opt.MapFrom(src => src.FormField.FormSection.Complies)
+                opt => opt.MapFrom(src => src.Complies ?? src.FormField.FormSection.Complies)
             );
         CreateMap<CreateFormResponseRequest, FormResponse>();
         CreateMap<FormAssignee, FormAssigneeDto>();
@@ -1374,7 +1371,9 @@ public class OryxMapper : Profile
         #region Invoice
 
         CreateMap<CreateInvoice, Invoice>();
+        CreateMap<CreateInvoiceAmount, InvoiceAmount>();
         CreateMap<Invoice, InvoiceDto>();
+        CreateMap<InvoiceAmount, InvoiceAmountDto>();
 
         #endregion
 

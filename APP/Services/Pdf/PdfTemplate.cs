@@ -4,11 +4,27 @@ using APP.Utils;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using SHARED;
 
 namespace APP.Services.Pdf;
 
 public static class PdfTemplate
 {
+    /// <summary>
+    /// Two decimals for ordinary amounts, but a genuinely small value must not be
+    /// rounded away to "0.00" on a document a supplier will read - keep enough
+    /// significant digits for it to stay legible.
+    /// </summary>
+    private static string FormatAmount(decimal amount)
+    {
+        if (amount != 0 && Math.Abs(amount) < 0.01m)
+        {
+            return amount.ToString("0.########");
+        }
+
+        return Math.Round(amount, 2).ToString("0.00");
+    }
+
     public static string QuotationRequestTemplate(SupplierQuotationRequest quotation)
     {
         var content = new StringBuilder();
@@ -596,14 +612,29 @@ public static class PdfTemplate
         {
             var symbol = item.UoM?.Symbol ?? "";
             var (scaledValue, scaledSymbol) = UnitNormalizer.GetBestScaled(item.Quantity, symbol);
+            var currencySymbol = purchaseOrder.Supplier?.Currency?.Symbol;
+
+            // The price is quoted per PriceUoM, not per the line's own UoM, so the total
+            // has to reconcile the two before multiplying. This document goes to the
+            // supplier; a raw Price * Quantity misstates it by whatever factor separates
+            // the units.
+            var lineTotal = UomConverter.LineValue(item.Price, item.Quantity, symbol, item.PriceUoM);
+
+            var priceLabel = string.IsNullOrWhiteSpace(item.PriceUoM)
+                ? $"{currencySymbol}{FormatAmount(item.Price)}"
+                : $"{currencySymbol}{FormatAmount(item.Price)} / {item.PriceUoM}";
+
+            var totalLabel = lineTotal.HasValue
+                ? $"{currencySymbol}{FormatAmount(lineTotal.Value)}"
+                : "-";
 
             content.AppendLine($@"
             <tr>
               <td>{item.Material.Name}</td>
               <td>{scaledSymbol}</td>
               <td>{scaledValue}</td>
-              <td>{purchaseOrder.Supplier?.Currency?.Symbol}{item.Price}</td>
-              <td>{purchaseOrder.Supplier?.Currency?.Symbol}{Math.Round(item.Price * item.Quantity, 2)}</td>
+              <td>{priceLabel}</td>
+              <td>{totalLabel}</td>
             </tr>");
         }
 

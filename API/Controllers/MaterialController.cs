@@ -376,6 +376,19 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves active procurement pipeline quantities for a material.
+    /// Quantities already allocated to warehouse shelves are excluded.
+    /// </summary>
+    [HttpGet("{materialId}/stock/pipeline")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialPipelineStockDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialPipelineStock(Guid materialId)
+    {
+        var result = await repository.GetMaterialPipelineStock(materialId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves the stock levels across all warehouses for a specific material.
     /// </summary>
     /// <param name="materialId"> The id of the material</param>

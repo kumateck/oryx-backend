@@ -163,6 +163,12 @@ var defaultDbConnectionString =
 
 builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(defaultDbConnectionString));
 
+// Refuse to persist a price without the unit it was quoted in. Off by default so the
+// guard can be enabled only once fix_missing_price_uom.sql has repaired legacy rows.
+ApplicationDbContext.EnforcePriceUoM = builder.Configuration.GetValue<bool>(
+    "Procurement:EnforcePriceUoM"
+);
+
 builder
     .Services.AddIdentityCore<User>(options =>
     {
@@ -229,7 +235,12 @@ builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 var app = builder.Build();
 
-app.SeedData();
+// Database changes are a controlled deployment step. Keeping this opt-in prevents
+// application startup and EF design-time commands from mutating a production database.
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    app.SeedData();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) { }

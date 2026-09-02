@@ -396,6 +396,44 @@ public class RequisitionRepository(
 
         var result = new List<MaterialAlternativeBatchesDto>();
 
+        // Fetch alternative shelf batches for every requested material in a single
+        // round trip instead of once per item - the per-item query joins 4 levels
+        // deep (shelf -> rack -> location -> warehouse) and was the dominant cost
+        // of this endpoint. minExpiryDate varies per item, so it's applied in-memory
+        // below rather than in this shared query.
+        var requestedMaterialIds = requisition.Items.Select(i => i.MaterialId).Distinct().ToList();
+        var candidateShelfBatchesByMaterial = (
+            await context
+                .ShelfMaterialBatches.IgnoreQueryFilters()
+                .AsSplitQuery()
+                .Include(smb => smb.MaterialBatch)
+                    .ThenInclude(b => b.UoM)
+                .Include(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+                .Where(smb =>
+                    requestedMaterialIds.Contains(smb.MaterialBatch.MaterialId)
+                    && smb.Quantity > 0
+                    && !smb.DeletedAt.HasValue
+                    && smb.MaterialBatch.Status == BatchStatus.Available
+                    && (
+                        smb.MaterialBatch.ExpiryDate == null
+                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
+                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                    )
+                    && !departmentWarehouseIds.Contains(
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
+                    )
+                )
+                .ToListAsync()
+        )
+            .GroupBy(smb => smb.MaterialBatch.MaterialId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         foreach (var item in requisition.Items)
         {
             var materialAlternative = new MaterialAlternativeBatchesDto
@@ -450,41 +488,17 @@ public class RequisitionRepository(
             // (prioritized soonest-first via the OrderBy below) so they get
             // consumed before they're wasted, not batches that already can't
             // be used.
-            var query = context
-                .ShelfMaterialBatches.IgnoreQueryFilters()
-                .AsSplitQuery()
-                .Include(smb => smb.MaterialBatch)
-                    .ThenInclude(b => b.UoM)
-                .Include(smb => smb.WarehouseLocationShelf)
-                    .ThenInclude(s => s.WarehouseLocationRack)
-                        .ThenInclude(r => r.WarehouseLocation)
-                            .ThenInclude(l => l.Warehouse)
+            var candidateShelfBatches = candidateShelfBatchesByMaterial.GetValueOrDefault(
+                item.MaterialId,
+                []
+            );
+
+            var alternativeShelfBatches = candidateShelfBatches
                 .Where(smb =>
-                    smb.MaterialBatch.MaterialId == item.MaterialId
-                    && smb.Quantity > 0
-                    && !smb.DeletedAt.HasValue
-                    && smb.MaterialBatch.Status == BatchStatus.Available
-                    && (
-                        smb.MaterialBatch.ExpiryDate == null
-                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
-                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
-                    )
-                    && !departmentWarehouseIds.Contains(
-                        smb.WarehouseLocationShelf
-                            .WarehouseLocationRack
-                            .WarehouseLocation
-                            .WarehouseId
-                    )
-                );
-
-            if (minExpiryDate.HasValue)
-            {
-                query = query.Where(smb => smb.MaterialBatch.ExpiryDate < minExpiryDate.Value);
-            }
-
-            var alternativeShelfBatches = await query
+                    !minExpiryDate.HasValue || smb.MaterialBatch.ExpiryDate < minExpiryDate.Value
+                )
                 .OrderBy(smb => smb.MaterialBatch.ExpiryDate)
-                .ToListAsync();
+                .ToList();
 
             materialAlternative.AlternativeBatches = alternativeShelfBatches
                 .Select(smb => new AlternativeBatchDto
@@ -576,17 +590,35 @@ public class RequisitionRepository(
                 "No production warehouse is associated with department who made stock requisition"
             );
 
+        // Cache each warehouse's bin card history in memory instead of re-querying it
+        // (with a 4-column IgnoreQueryFilters scan) for every item that shares that
+        // warehouse - there are only ever 2 possible warehouses here (raw/packing).
+        // Newly-issued entries are appended to the cache below (see historicalBincards.Add)
+        // so later items still see earlier items' balances within this same run, exactly
+        // as the previous per-item re-fetch did.
+        var bincardCacheByWarehouse = new Dictionary<Guid, List<BinCardInformation>>();
+
+        async Task<List<BinCardInformation>> GetOrLoadHistoricalBincards(Guid warehouseId)
+        {
+            if (bincardCacheByWarehouse.TryGetValue(warehouseId, out var cached))
+                return cached;
+
+            var loaded = await context
+                .BinCardInformation.AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(binCardInformation => binCardInformation.MaterialBatch)
+                .Where(b => b.WarehouseId == warehouseId)
+                .ToListAsync();
+            bincardCacheByWarehouse[warehouseId] = loaded;
+            return loaded;
+        }
+
         foreach (var item in stockRequisition.Items)
         {
             var appropriateWarehouse =
                 item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            var historicalBincards = await context
-                .BinCardInformation.AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(binCardInformation => binCardInformation.MaterialBatch)
-                .Where(b => b.WarehouseId == appropriateWarehouse.Id)
-                .ToListAsync();
+            var historicalBincards = await GetOrLoadHistoricalBincards(appropriateWarehouse.Id);
 
             if (stockRequisition.ProductionScheduleProductId == null)
                 return Error.Validation(
@@ -672,8 +704,6 @@ public class RequisitionRepository(
 
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
 
-                await context.SaveChangesAsync();
-
                 var history = historicalBincards
                     .Where(b =>
                         b.MaterialBatch.MaterialId == materialBatch.MaterialId
@@ -699,6 +729,7 @@ public class RequisitionRepository(
                 var binCardEvent = new BinCardInformation
                 {
                     MaterialBatchId = materialBatch.Id,
+                    MaterialBatch = materialBatch,
                     Description = appropriateWarehouse.Name,
                     WayBill = "N/A",
                     ArNumber = arNumber ?? "N/A",
@@ -713,6 +744,10 @@ public class RequisitionRepository(
                 };
 
                 await context.BinCardInformation.AddAsync(binCardEvent);
+                // Keep the in-memory cache in sync so a later item sharing this
+                // warehouse still sees this issuance in its balance calculation,
+                // matching the old per-item re-fetch behaviour without the round trip.
+                historicalBincards.Add(binCardEvent);
                 // ✅ Mark individual item as completed
                 item.Status = RequestStatus.Completed;
             }
@@ -1412,11 +1447,20 @@ public class RequisitionRepository(
                 .ThenInclude(item => item.Material)
             .Include(sr => sr.Items)
                 .ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(sr =>
-                sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue
-            );
+            .Where(sr => sr.SupplierId == supplierId)
+            .OrderBy(sr => sr.SentQuotationRequestAt.HasValue)
+            .ThenByDescending(sr => sr.CreatedAt)
+            .FirstOrDefaultAsync();
 
-        return query != null ? mapper.Map<SupplierQuotationRequest>(query) : null;
+        if (query is null)
+        {
+            return Error.NotFound(
+                "Supplier.QuotationRequest.NotFound",
+                "No quotation request was found for the specified supplier."
+            );
+        }
+
+        return mapper.Map<SupplierQuotationRequest>(query);
     }
 
     public async Task<Result> SendQuotationToSupplier(Guid supplierId)
@@ -1540,18 +1584,26 @@ public class RequisitionRepository(
 
     public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId)
     {
-        return mapper.Map<SupplierQuotationDto>(
-            await context
-                .SupplierQuotations.AsSplitQuery()
-                .Include(s => s.Items)
-                    .ThenInclude(s => s.Material)
-                .Include(s => s.Items)
-                    .ThenInclude(s => s.UoM)
-                .Include(sr => sr.Supplier)
-                    .ThenInclude(s => s.AssociatedManufacturers)
-                        .ThenInclude(m => m.Manufacturer)
-                .FirstOrDefaultAsync(s => s.Id == supplierQuotationId)
-        );
+        var supplierQuotation = await context
+            .SupplierQuotations.AsSplitQuery()
+            .Include(s => s.Items)
+                .ThenInclude(s => s.Material)
+            .Include(s => s.Items)
+                .ThenInclude(s => s.UoM)
+            .Include(sr => sr.Supplier)
+                .ThenInclude(s => s.AssociatedManufacturers)
+                    .ThenInclude(m => m.Manufacturer)
+            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
+
+        if (supplierQuotation is null)
+        {
+            return Error.NotFound(
+                "Supplier.Quotation.NotFound",
+                "No supplier quotation was found for the specified quotation."
+            );
+        }
+
+        return mapper.Map<SupplierQuotationDto>(supplierQuotation);
     }
 
     public async Task<Result> ReceiveQuotationFromSupplier(
@@ -1568,6 +1620,14 @@ public class RequisitionRepository(
             .Include(s => s.Supplier)
             .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
 
+        if (supplierQuotation is null)
+        {
+            return Error.NotFound(
+                "Supplier.Quotation.NotFound",
+                "No supplier quotation was found for the specified quotation."
+            );
+        }
+
         if (supplierQuotation.Items.Count == 0)
         {
             return Error.Validation(
@@ -1576,14 +1636,21 @@ public class RequisitionRepository(
             );
         }
 
+        var responseLookup = supplierQuotationResponse
+            .Where(s => s is not null)
+            .GroupBy(s => s.Id)
+            .ToDictionary(g => g.Key, g => g.Last());
+
         foreach (var item in supplierQuotation.Items)
         {
-            item.QuotedPrice = supplierQuotationResponse
-                .FirstOrDefault(s => s.Id == item.Id)
-                ?.Price;
-            item.PriceUoM = supplierQuotationResponse
-                .FirstOrDefault(s => s.Id == item.Id)
-                ?.PriceUoM;
+            // Only touch items actually present in the payload. Assigning
+            // unconditionally would wipe QuotedPrice and PriceUoM off every item a
+            // partial re-submit happens to omit.
+            if (!responseLookup.TryGetValue(item.Id, out var response))
+                continue;
+
+            item.QuotedPrice = response.Price;
+            item.PriceUoM = response.PriceUoM;
         }
 
         supplierQuotation.ReceivedQuotation = true;
@@ -1747,6 +1814,47 @@ public class RequisitionRepository(
             if (user is null)
                 return UserErrors.NotFound(userId);
 
+            // Resolve the awarded quotation line for every requested item BEFORE the
+            // purchase order is created. The quotation is the source of truth for both
+            // Price and PriceUoM; the client payload is not trusted, because a price
+            // stored without the unit it was quoted in cannot be interpreted downstream.
+            var awardedItems =
+                new List<(CreatePurchaseOrderItemRequest Request, SupplierQuotationItem Quotation)>();
+
+            foreach (var processSupplierQuote in quotation.Items)
+            {
+                var awardedQuotationItem =
+                    await context.SupplierQuotationItems.FirstOrDefaultAsync(s =>
+                        s.SupplierQuotation.SupplierId == quotation.SupplierId
+                        && s.MaterialId == processSupplierQuote.MaterialId
+                        && s.UoMId == processSupplierQuote.UomId
+                        && s.Status == SupplierQuotationItemStatus.NotProcessed
+                    );
+
+                if (awardedQuotationItem is null)
+                {
+                    return Error.Validation(
+                        "SupplierQuotation.Item",
+                        "No open quotation line was found for one of the selected materials."
+                    );
+                }
+
+                if (string.IsNullOrWhiteSpace(awardedQuotationItem.PriceUoM))
+                {
+                    return Error.Validation(
+                        "SupplierQuotation.PriceUoM",
+                        "The selected quotation has no price UoM. Capture the price UoM on"
+                            + " the quotation before awarding it."
+                    );
+                }
+
+                processSupplierQuote.Price =
+                    awardedQuotationItem.QuotedPrice ?? processSupplierQuote.Price;
+                processSupplierQuote.PriceUoM = awardedQuotationItem.PriceUoM;
+
+                awardedItems.Add((processSupplierQuote, awardedQuotationItem));
+            }
+
             var poId = (
                 await procurementRepository.CreatePurchaseOrder(
                     new CreatePurchaseOrderRequest
@@ -1762,25 +1870,20 @@ public class RequisitionRepository(
                 )
             ).Value;
 
-            foreach (var processSupplierQuote in quotation.Items)
+            foreach (var (processSupplierQuote, supplierQuotationItem) in awardedItems)
             {
                 //Process for the supplier
-                var supplierQuotationItem =
-                    await context.SupplierQuotationItems.FirstOrDefaultAsync(s =>
-                        s.SupplierQuotation.SupplierId == quotation.SupplierId
-                        && s.MaterialId == processSupplierQuote.MaterialId
-                        && s.Status == SupplierQuotationItemStatus.NotProcessed
-                    );
-
-                if (supplierQuotationItem != null)
-                {
-                    supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
-                    supplierQuotationItem.PurchaseOrderId = poId;
-                    context.SupplierQuotationItems.Update(supplierQuotationItem);
-                }
+                supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
+                supplierQuotationItem.PurchaseOrderId = poId;
+                context.SupplierQuotationItems.Update(supplierQuotationItem);
                 await context.SaveChangesAsync();
 
-                //Process for everyone else
+                // Process for everyone else. The losing quotes deliberately keep the
+                // winner's PurchaseOrderId: GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId
+                // (the reassign-supplier picker) looks them up by it. That means a PO id
+                // alone does NOT identify the awarded supplier, so every read path that
+                // resolves PriceUoM from quotations must also scope by the purchase
+                // order's own SupplierId and Status == Processed. See PriceUoMExtensions.
                 var supplierQuotationItems = await context
                     .SupplierQuotationItems.AsSplitQuery()
                     .Include(s => s.SupplierQuotation)

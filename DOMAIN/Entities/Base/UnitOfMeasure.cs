@@ -54,6 +54,7 @@ public class TermsOfPaymentDto : BaseDto
 {
     public string Name { get; set; }
     public string Description { get; set; }
+    public int? DueDays { get; set; }
 }
 
 public class DeliveryModeDto : BaseDto

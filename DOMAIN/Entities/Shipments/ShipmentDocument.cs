@@ -6,6 +6,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.Payments;
 
 namespace DOMAIN.Entities.Shipments;
 
@@ -60,6 +61,7 @@ public class ShipmentInvoice : BaseEntity
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? DueDate { get; set; }
 }
 
 public class ShipmentInvoiceItem : BaseEntity
@@ -79,6 +81,11 @@ public class ShipmentInvoiceItem : BaseEntity
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
     public bool Distributed { get; set; }
+    // Frozen at issue from the purchase order line. An invoice is a financial document:
+    // a later purchase-order revision must not retroactively rewrite the unit price it
+    // was raised on, and a price is meaningless without the UoM it was quoted in.
+    public decimal Price { get; set; }
+    [StringLength(100)] public string PriceUoM { get; set; }
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }

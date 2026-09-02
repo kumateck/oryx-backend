@@ -47,6 +47,7 @@ public class ResponseDetailDto : ResponseDto
 {
     public CollectionItemDto BatchManufacturingRecord { get; set; }
     public CollectionItemDto MaterialBatch { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
 }
@@ -54,6 +55,7 @@ public class ResponseDetailDto : ResponseDto
 public class FormResponseDto : WithAttachment
 {
     public Guid ResponseId { get; set; }
+    public Guid? ProductionActivityStepId { get; set; }
     public FormFieldDto FormField { get; set; }
     public string SectionName { get; set; }
     public bool Complies { get; set; }

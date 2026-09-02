@@ -44,6 +44,30 @@ public class UserController(IUserRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Retrieves users who hold at least one of the given permission keys, e.g. to
+    /// restrict a picker to users who are actually allowed to perform an action
+    /// (only QC-permissioned users can be assigned to run a test).
+    /// </summary>
+    [Authorize]
+    [HttpGet("by-permission")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
+    public async Task<IResult> GetUsersByPermissions(
+        [FromQuery(Name = "permissionKey")] List<string> permissionKey,
+        [FromQuery(Name = "page")] int page = 1,
+        [FromQuery(Name = "pageSize")] int pageSize = 5,
+        [FromQuery(Name = "searchQuery")] string searchQuery = null)
+    {
+        // Clients may send this as repeated keys (?permissionKey=A&permissionKey=B)
+        // or as one comma-joined value (?permissionKey=A,B) - model binding only
+        // splits the former, so split any comma-joined entries here too.
+        var keys = permissionKey
+            .SelectMany(k => k.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToList();
+        var response = await repo.GetUsersByPermissions(keys, page, pageSize, searchQuery);
+        return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
+    }
+
     [Authorize]
     [HttpGet("authenticated")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserWithRoleDto))]

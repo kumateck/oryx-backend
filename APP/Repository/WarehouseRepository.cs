@@ -803,22 +803,28 @@ public class WarehouseRepository(
         MaterialKind? kind = null
     )
     {
+        // List rows only render shelf, rack, location, and warehouse metadata. Ignoring the
+        // model-wide auto-includes prevents this read from expanding every warehouse location,
+        // shelf batch, material batch, event, reservation, and checklist for each page row.
         var query = context
-            .WarehouseLocationShelves.AsSplitQuery()
+            .WarehouseLocationShelves.AsNoTracking()
+            .IgnoreAutoIncludes()
             .Include(s => s.WarehouseLocationRack)
                 .ThenInclude(s => s.WarehouseLocation)
                     .ThenInclude(s => s.Warehouse)
-            .Include(w => w.MaterialBatches)
-                .ThenInclude(smb => smb.MaterialBatch)
-                    .ThenInclude(mb => mb.Material)
-            .Include(w => w.MaterialBatches)
-                .ThenInclude(smb => smb.MaterialBatch)
-                    .ThenInclude(mb => mb.Checklist)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
         {
-            query = query.WhereSearch(searchQuery, s => s.Name, s => s.Description);
+            query = query.WhereSearch(
+                searchQuery,
+                s => s.Code,
+                s => s.Name,
+                s => s.Description,
+                s => s.WarehouseLocationRack.Name,
+                s => s.WarehouseLocationRack.WarehouseLocation.Name,
+                s => s.WarehouseLocationRack.WarehouseLocation.Warehouse.Name
+            );
         }
 
         if (kind.HasValue)

@@ -10,7 +10,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{Version:apiVersion}/customers")]
 [Authorize]
-public class CustomerController(ICustomerRepository repository) : ControllerBase
+public partial class CustomerController(ICustomerRepository repository) : ControllerBase
 {
 
     /// <summary>
@@ -76,4 +76,7 @@ public class CustomerController(ICustomerRepository repository) : ControllerBase
         var result = await repository.DeleteCustomer(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    private Guid? CurrentUserId()
+        => HttpContext.Items["Sub"] is string value && Guid.TryParse(value, out var id) ? id : null;
 }

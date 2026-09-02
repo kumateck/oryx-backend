@@ -96,6 +96,7 @@ public interface IMaterialRepository
         Guid userId
     );
     Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId);
+    Task<Result<List<MaterialPipelineStockDto>>> GetMaterialPipelineStock(Guid materialId);
     Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind);
     Result<List<BatchLocation>> BatchesNeededToBeConsumed(
         Guid materialId,

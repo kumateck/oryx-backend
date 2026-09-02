@@ -1077,6 +1077,11 @@ public class ReportRepository(
             );
         }
 
+        if (filter.MaterialKind.HasValue)
+        {
+            materials = materials.Where(m => m.Kind == filter.MaterialKind.Value);
+        }
+
         return new QaDashboardDto
         {
             NumberOfBmrRequests = bmrRequests.Count(),
@@ -1218,6 +1223,17 @@ public class ReportRepository(
             );
             materialStp = materialStp.Where(lr => lr.MaterialId == materialId);
             rawMaterialBatchTest = rawMaterialBatchTest.Where(lr => lr.MaterialId == materialId);
+        }
+
+        if (filter.MaterialKind.HasValue)
+        {
+            materialStp = materialStp.Where(ms => ms.Material.Kind == filter.MaterialKind.Value);
+            materialAnalyticalRawData = materialAnalyticalRawData.Where(m =>
+                m.MaterialStandardTestProcedure.Material.Kind == filter.MaterialKind.Value
+            );
+            rawMaterialBatchTest = rawMaterialBatchTest.Where(rm =>
+                rm.Material.Kind == filter.MaterialKind.Value
+            );
         }
         return new QcDashboardDto
         {
@@ -2370,6 +2386,7 @@ public class ReportRepository(
         var fgtnQuery = context
             .FinishedGoodsTransferNotes
             .Include(f => f.Approvals)
+            .Include(f => f.UoM)
             .Include(f => f.ProductPacking)
                 .ThenInclude(pp => pp.Product)
             .Include(f => f.BatchManufacturingRecord)
@@ -2435,6 +2452,51 @@ public class ReportRepository(
 
         var totalFgtn = pendingFgtn + acceptedFgtn;
 
+        var inventorySummary = await fgtnQuery
+            .Where(f => f.IsApproved && f.TotalQuantity - f.AllocatedQuantity > 0)
+            .GroupBy(f => f.UoM == null ? "Unspecified" : f.UoM.Symbol)
+            .Select(g => new FgtnInventoryQuantityDto
+            {
+                Uom = g.Key,
+                AvailableQuantity = g.Sum(f => f.TotalQuantity - f.AllocatedQuantity),
+                BatchCount = g.Select(f => f.BatchManufacturingRecordId).Distinct().Count(),
+            })
+            .OrderBy(x => x.Uom)
+            .ToListAsync();
+
+        var dispatchQuery = context
+            .DistributedFinishedProducts.IgnoreQueryFilters()
+            .Where(d => d.DeletedAt == null);
+
+        if (filter.DepartmentId.HasValue)
+            dispatchQuery = dispatchQuery.Where(d =>
+                d.Product != null && d.Product.DepartmentId == filter.DepartmentId.Value
+            );
+
+        if (filter.ProductId.HasValue)
+            dispatchQuery = dispatchQuery.Where(d => d.ProductId == filter.ProductId.Value);
+
+        if (filter.MaterialId.HasValue)
+            dispatchQuery = dispatchQuery.Where(d =>
+                d.Product != null
+                && d.Product.BillOfMaterials.Any(bom =>
+                    bom.BillOfMaterialId == filter.MaterialId.Value
+                )
+            );
+
+        if (startDate.HasValue)
+            dispatchQuery = dispatchQuery.Where(d => d.CreatedAt >= startDate.Value);
+
+        if (endDate.HasValue)
+            dispatchQuery = dispatchQuery.Where(d => d.CreatedAt <= endDate.Value);
+
+        var awaitingArrival = await dispatchQuery.CountAsync(d =>
+            d.Status == DistributedFinishedProductStatus.Distributed
+        );
+        var arrived = await dispatchQuery.CountAsync(d =>
+            d.Status == DistributedFinishedProductStatus.Arrived
+        );
+
         var dashboardKpi = new DashboardKpiReportDto
         {
             ProductCount = new ProductCountKpiDto
@@ -2456,6 +2518,13 @@ public class ReportRepository(
                 PendingTransferNote = pendingFgtn,
                 AcceptedTransferNote = acceptedFgtn,
                 TotalFgtnTransferNotes = totalFgtn,
+            },
+            InventorySummary = inventorySummary,
+            DispatchPipeline = new FgtnDispatchPipelineDto
+            {
+                AwaitingArrival = awaitingArrival,
+                Arrived = arrived,
+                Total = awaitingArrival + arrived,
             },
         };
 
@@ -2866,6 +2935,7 @@ public class ReportRepository(
                 poi.Price,
                 poi.UoMId,
                 poi.CurrencyId,
+                poi.PriceUoM,
             })
             .ToListAsync();
         var materialIds = purchaseOrderItems.Select(poi => poi.MaterialId).Distinct().ToList();
@@ -2929,6 +2999,7 @@ public class ReportRepository(
                         UomName = uomLookup.GetValueOrDefault(poi.UoMId),
 
                         UnitPrice = poi.Price,
+                        PriceUoM = poi.PriceUoM,
                         CurrencySymbol =
                             (
                                 poi.CurrencyId
@@ -3055,6 +3126,7 @@ public class ReportRepository(
                 poi.UoMId,
                 poi.CurrencyId,
                 poi.QuantityInvoiced,
+                poi.PriceUoM,
             })
             .ToListAsync();
 
@@ -3136,6 +3208,7 @@ public class ReportRepository(
                         ReceivedUom = uomLookup.GetValueOrDefault(poi.UoMId),
 
                         UnitCost = poi.Price,
+                        PriceUoM = poi.PriceUoM,
                         CurrencySymbol =
                             (poi.CurrencyId ?? supplier?.CurrencyId) is { } currencyId
                             && currencyLookup.TryGetValue(currencyId, out var cSymbol)
@@ -6743,8 +6816,152 @@ public class ReportRepository(
     }
 
     // ---------------------------------------------------------------------
-    // Production Dashboard KPI Widgets (KPI 6 - 12)
+    // Production Dashboard KPI Widgets (KPI 3 - 12)
     // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// KPI 3 - BMR Release Rate. The report specification names approved
+    /// records "Issued"; intermediate QC/testing states remain pending.
+    /// </summary>
+    public async Task<Result<List<BmrReleaseRateDto>>> GetBmrReleaseRate(
+        ProductionKpiFilter filter
+    )
+    {
+        var query = context
+            .BatchManufacturingRecords.IgnoreQueryFilters()
+            .Where(b =>
+                b.DeletedAt == null
+                && b.ProductionScheduleProduct != null
+                && b.ProductionScheduleProduct.Product != null
+            );
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(b =>
+                b.ProductionScheduleProduct.Product.DepartmentId == filter.DepartmentId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(b => b.ManufacturingDate >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(b => b.ManufacturingDate < end);
+        }
+
+        var rows = await query
+            .Select(b => new
+            {
+                b.ProductionScheduleProduct.Product.DepartmentId,
+                Department = b.ProductionScheduleProduct.Product.Department.Name,
+                b.Status,
+            })
+            .ToListAsync();
+
+        var result = rows.GroupBy(row => new { row.DepartmentId, row.Department })
+            .Select(group =>
+            {
+                var total = group.Count();
+                var issued = group.Count(row => row.Status == BatchManufacturingStatus.Approved);
+                var rejected = group.Count(row => row.Status == BatchManufacturingStatus.Rejected);
+                return new BmrReleaseRateDto
+                {
+                    DepartmentId = group.Key.DepartmentId,
+                    Department = group.Key.Department,
+                    TotalBmrs = total,
+                    Pending = total - issued - rejected,
+                    Issued = issued,
+                    Rejected = rejected,
+                    ReleaseRatePercentage = total == 0
+                        ? 0
+                        : Math.Round((decimal)issued / total * 100, 2),
+                };
+            })
+            .OrderBy(row => row.Department)
+            .ToList();
+
+        return Result.Success(result);
+    }
+
+    /// <summary>
+    /// KPI 4 - Yield Performance. Expected yield comes from the selected
+    /// product packing per batch; actual quantity and gain/loss come from the
+    /// completed final-packing record.
+    /// </summary>
+    public async Task<Result<List<YieldPerformanceDto>>> GetYieldPerformance(
+        ProductionKpiFilter filter
+    )
+    {
+        var query = context
+            .FinalPackings.IgnoreQueryFilters()
+            .Where(fp =>
+                fp.DeletedAt == null
+                && fp.ProductionScheduleProduct != null
+                && fp.ProductionScheduleProduct.Product != null
+                && fp.ProductPacking != null
+            );
+
+        if (filter.DepartmentId.HasValue)
+            query = query.Where(fp =>
+                fp.ProductionScheduleProduct.Product.DepartmentId == filter.DepartmentId.Value
+            );
+
+        if (filter.StartDate.HasValue)
+            query = query.Where(fp => fp.CreatedAt >= filter.StartDate.Value);
+
+        if (filter.EndDate.HasValue)
+        {
+            var end = filter.EndDate.Value.AddDays(1);
+            query = query.Where(fp => fp.CreatedAt < end);
+        }
+
+        var rows = await query
+            .Select(fp => new
+            {
+                fp.ProductionScheduleProductId,
+                fp.ProductionScheduleProduct.ProductId,
+                Product = fp.ProductionScheduleProduct.Product.Name,
+                fp.ProductionScheduleProduct.Product.DepartmentId,
+                Department = fp.ProductionScheduleProduct.Product.Department.Name,
+                ExpectedYield = fp.ProductPacking.ExpectedYield,
+                fp.TotalQuantityPacked,
+                fp.TotalGainOrLoss,
+            })
+            .ToListAsync();
+
+        var result = rows.GroupBy(row => new
+            {
+                row.ProductId,
+                row.Product,
+                row.DepartmentId,
+                row.Department,
+            })
+            .Select(group =>
+            {
+                var expected = group.Sum(row => row.ExpectedYield);
+                var actual = group.Sum(row => row.TotalQuantityPacked);
+                return new YieldPerformanceDto
+                {
+                    ProductId = group.Key.ProductId,
+                    Product = group.Key.Product,
+                    DepartmentId = group.Key.DepartmentId,
+                    Department = group.Key.Department,
+                    BatchCount = group.Select(row => row.ProductionScheduleProductId)
+                        .Distinct()
+                        .Count(),
+                    ExpectedYield = expected,
+                    ActualQuantityPacked = actual,
+                    TotalGainOrLoss = group.Sum(row => row.TotalGainOrLoss),
+                    VariancePercentage = expected == 0
+                        ? 0
+                        : Math.Round((actual - expected) / expected * 100, 2),
+                };
+            })
+            .OrderBy(row => row.Product)
+            .ToList();
+
+        return Result.Success(result);
+    }
 
     /// <summary>
     /// KPI 6 - Schedule Adherence (On-Time Completion Rate). Compares the

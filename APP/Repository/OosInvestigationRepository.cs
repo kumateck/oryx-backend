@@ -45,6 +45,31 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
         return investigation.Id;
     }
 
+    public async Task<Result> UpdateOosInvestigation(Guid investigationId, UpdateOosInvestigationRequest request, Guid userId)
+    {
+        var investigation = await context.OosInvestigations.FirstOrDefaultAsync(o => o.Id == investigationId);
+        if (investigation == null)
+            return Error.NotFound("OosInvestigation.NotFound", "OOS investigation not found.");
+
+        if (investigation.Status != OosInvestigationStatus.Initiated)
+            return Error.Validation(
+                "OosInvestigation.NotEditable",
+                "Only an investigation that has not yet been submitted to QA can be edited."
+            );
+
+        investigation.ProductOrMaterialName = request.ProductOrMaterialName;
+        investigation.BatchNumber = request.BatchNumber;
+        investigation.RootCauseAnalysis = request.RootCauseAnalysis;
+        investigation.CorrectiveActions = request.CorrectiveActions;
+        investigation.PreventiveActions = request.PreventiveActions;
+        investigation.InvestigationDetails = request.InvestigationDetails;
+        investigation.LastUpdatedById = userId;
+
+        context.OosInvestigations.Update(investigation);
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> SubmitToQa(Guid investigationId, Guid userId)
     {
         var investigation = await context.OosInvestigations.FirstOrDefaultAsync(o => o.Id == investigationId);
@@ -99,6 +124,16 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
         else
         {
             investigation.Status = OosInvestigationStatus.PermanentlyRejected;
+
+            if (investigation.AnalyticalTestRequestId.HasValue)
+            {
+                var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a => a.Id == investigation.AnalyticalTestRequestId.Value);
+                if (atr != null)
+                {
+                    atr.Status = AnalyticalTestStatus.Rejected;
+                    context.AnalyticalTestRequests.Update(atr);
+                }
+            }
 
             if (investigation.MaterialBatchId.HasValue)
             {

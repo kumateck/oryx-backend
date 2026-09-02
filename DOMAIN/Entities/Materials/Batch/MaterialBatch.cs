@@ -48,6 +48,10 @@ public class MaterialBatch : BaseEntity
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    [StringLength(2000)]
+    public string RetestReason { get; set; }
+    [StringLength(2000)]
+    public string RetestNotes { get; set; }
     public List<Sr> SampleWeights { get; set; } = [];
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];

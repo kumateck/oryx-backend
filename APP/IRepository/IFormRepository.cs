@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Users;
@@ -54,7 +55,8 @@ public interface IFormRepository
     );
     Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
     Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(
-        Guid batchManufacturingRecordId
+        Guid batchManufacturingRecordId,
+        Guid? productionActivityStepId = null
     );
 
     //  Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialSpecification(
@@ -102,8 +104,16 @@ public interface IFormRepository
     Task<Result> SubmitFormAssignee(CreateFormAssigneeRequest request, Guid userId);
 
     Task<Result<FormAssigneeDto>> GetFormAssignee(Guid formAssigneeId);
-    Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(Guid materialBatchId);
-    Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(Guid bmrId);
+    Task<Result<FormAssigneeDto>> GetFormAssigneeByBatch(
+        Guid materialBatchId,
+        TestStage? stage,
+        Guid? productionActivityStepId
+    );
+    Task<Result<FormAssigneeDto>> GetFormAssigneeByBmr(
+        Guid bmrId,
+        TestStage? stage,
+        Guid? productionActivityStepId
+    );
 
     Task<Result<IEnumerable<UserDto>>> GetFormAssigneeUsers(Guid formId);
 

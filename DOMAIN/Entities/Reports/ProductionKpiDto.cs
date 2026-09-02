@@ -16,6 +16,37 @@ public class ProductionKpiFilter
 }
 
 /// <summary>
+/// KPI 3 - BMR Release Rate. Approved BMRs are reported as issued; every
+/// non-terminal testing/checking state remains pending.
+/// </summary>
+public class BmrReleaseRateDto
+{
+    public Guid? DepartmentId { get; set; }
+    public string Department { get; set; }
+    public int TotalBmrs { get; set; }
+    public int Pending { get; set; }
+    public int Issued { get; set; }
+    public int Rejected { get; set; }
+    public decimal ReleaseRatePercentage { get; set; }
+}
+
+/// <summary>
+/// KPI 4 - Yield Performance by product.
+/// </summary>
+public class YieldPerformanceDto
+{
+    public Guid ProductId { get; set; }
+    public string Product { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public string Department { get; set; }
+    public int BatchCount { get; set; }
+    public decimal ExpectedYield { get; set; }
+    public decimal ActualQuantityPacked { get; set; }
+    public decimal TotalGainOrLoss { get; set; }
+    public decimal VariancePercentage { get; set; }
+}
+
+/// <summary>
 /// KPI 6 - Schedule Adherence (On-Time Completion Rate).
 /// </summary>
 public class ScheduleAdherenceDto
