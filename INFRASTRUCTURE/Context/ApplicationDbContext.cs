@@ -718,16 +718,85 @@ public class ApplicationDbContext(
     #endregion
 
 
+    /// <summary>
+    /// When true, <see cref="SaveChanges()"/> refuses to persist a price without the
+    /// unit it was quoted in. Set once at startup from the
+    /// <c>Procurement:EnforcePriceUoM</c> setting so it can be switched off without a
+    /// redeploy if a legacy path trips it in production.
+    /// </summary>
+    public static bool EnforcePriceUoM { get; set; }
+
     public override int SaveChanges()
     {
         SaveEntity();
+        ValidatePriceUoM();
         return base.SaveChanges();
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         SaveEntity();
+        ValidatePriceUoM();
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// A stored price is uninterpretable without its PriceUoM: a quantity in grams
+    /// against a price per kilogram is wrong by a factor of 1000. Enforcing it here,
+    /// over a change tracker that is already being walked, makes the bad state
+    /// unreachable from any repository, mapper, or future feature rather than relying
+    /// on each write path to remember.
+    /// </summary>
+    private void ValidatePriceUoM()
+    {
+        if (!EnforcePriceUoM)
+            return;
+
+        foreach (
+            var entry in ChangeTracker
+                .Entries()
+                .Where(e => e.State is EntityState.Added or EntityState.Modified)
+        )
+        {
+            string entityName;
+            decimal price;
+            string priceUoM;
+
+            switch (entry.Entity)
+            {
+                case PurchaseOrderItem item:
+                    (entityName, price, priceUoM) = (
+                        nameof(PurchaseOrderItem),
+                        item.Price,
+                        item.PriceUoM
+                    );
+                    break;
+                case ShipmentInvoiceItem item:
+                    (entityName, price, priceUoM) = (
+                        nameof(ShipmentInvoiceItem),
+                        item.Price,
+                        item.PriceUoM
+                    );
+                    break;
+                case SupplierQuotationItem item:
+                    (entityName, price, priceUoM) = (
+                        nameof(SupplierQuotationItem),
+                        item.QuotedPrice ?? 0m,
+                        item.PriceUoM
+                    );
+                    break;
+                default:
+                    continue;
+            }
+
+            if (price > 0 && string.IsNullOrWhiteSpace(priceUoM))
+            {
+                throw new InvalidOperationException(
+                    $"{entityName} was saved with a price of {price} but no PriceUoM. "
+                        + "A price must always carry the unit it was quoted in."
+                );
+            }
+        }
     }
 
     private void SaveEntity()

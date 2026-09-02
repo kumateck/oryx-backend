@@ -47,6 +47,10 @@ public class CreatePurchaseOrderItemRequest
     public decimal Quantity { get; set; }
     [Range(0.0001, double.MaxValue, ErrorMessage = "Price must be greater than 0.0001")]
     public decimal Price { get; set; }
+    // The award flow derives this from the winning quotation, so callers coming through
+    // ProcessQuotationAndCreatePurchaseOrder never have to supply it. Anything creating
+    // a purchase order directly must, because a price with no unit cannot be read.
+    [Required(ErrorMessage = "Price UoM is required")]
     public string PriceUoM { get; set; }
 }
 

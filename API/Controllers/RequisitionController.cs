@@ -288,6 +288,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [HttpGet("source/supplier/{supplierId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationRequest))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItems(Guid supplierId)
     {
         var result = await repository.GetSuppliersWithSourceRequisitionItems(supplierId);
@@ -357,6 +358,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [HttpGet("source/supplier/{supplierQuotationId}/quotation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation(Guid supplierQuotationId)
     {
         var result = await repository.GetSupplierQuotation(supplierQuotationId);
@@ -373,6 +375,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ReceiveQuotationFromSupplier(
         [FromBody] List<SupplierQuotationResponseDto> supplierQuotationResponse,
         Guid supplierQuotationId)

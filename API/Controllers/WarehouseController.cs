@@ -425,8 +425,12 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     /// <summary>
-    /// Retrieves a paginated list of shelves in warehouse locations.
+    /// Retrieves a lean paginated list of shelves in warehouse locations.
     /// </summary>
+    /// <remarks>
+    /// Material batches are omitted from list rows. Use GET shelf/{shelfId} when batch details
+    /// are required.
+    /// </remarks>
     [HttpGet("shelf")]
     [Authorize]
     [ProducesResponseType(

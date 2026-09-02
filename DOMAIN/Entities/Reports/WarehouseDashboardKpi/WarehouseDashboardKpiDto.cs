@@ -89,6 +89,13 @@ public class MaterialMovementCountDto
     public int TotalMovements { get; set; }
 }
 
+public class WarehouseDataFreshnessDto
+{
+    public string Source { get; set; }
+    public int RecordCount { get; set; }
+    public DateTime? LastChangedAt { get; set; }
+}
+
 public enum ExpiryWindowFilter
 {
     Within30Days,
@@ -101,6 +108,8 @@ public class WarehouseKpiFilterDto
 {
     // Warehouse Filters
     public Guid? WarehouseId { get; set; }
+    public WarehouseType? WarehouseType { get; set; }
+    public Division? Division { get; set; }
 
     // Date Filters
     public DateFilter? DatePreset { get; set; }

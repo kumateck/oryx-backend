@@ -31,6 +31,8 @@ public class CreateShipmentInvoiceItem
     public decimal ExpectedQuantity { get; set; }
     public decimal ReceivedQuantity { get; set; }
     [StringLength(255)] public string Reason { get; set; }
+    public decimal Price { get; set; }
+    [StringLength(100)] public string PriceUoM { get; set; }
     public decimal TotalCost { get; set; }
 }
 

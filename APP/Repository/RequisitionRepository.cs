@@ -1412,11 +1412,20 @@ public class RequisitionRepository(
                 .ThenInclude(item => item.Material)
             .Include(sr => sr.Items)
                 .ThenInclude(item => item.UoM)
-            .FirstOrDefaultAsync(sr =>
-                sr.SupplierId == supplierId && !sr.SentQuotationRequestAt.HasValue
-            );
+            .Where(sr => sr.SupplierId == supplierId)
+            .OrderBy(sr => sr.SentQuotationRequestAt.HasValue)
+            .ThenByDescending(sr => sr.CreatedAt)
+            .FirstOrDefaultAsync();
 
-        return query != null ? mapper.Map<SupplierQuotationRequest>(query) : null;
+        if (query is null)
+        {
+            return Error.NotFound(
+                "Supplier.QuotationRequest.NotFound",
+                "No quotation request was found for the specified supplier."
+            );
+        }
+
+        return mapper.Map<SupplierQuotationRequest>(query);
     }
 
     public async Task<Result> SendQuotationToSupplier(Guid supplierId)
@@ -1540,18 +1549,26 @@ public class RequisitionRepository(
 
     public async Task<Result<SupplierQuotationDto>> GetSupplierQuotation(Guid supplierQuotationId)
     {
-        return mapper.Map<SupplierQuotationDto>(
-            await context
-                .SupplierQuotations.AsSplitQuery()
-                .Include(s => s.Items)
-                    .ThenInclude(s => s.Material)
-                .Include(s => s.Items)
-                    .ThenInclude(s => s.UoM)
-                .Include(sr => sr.Supplier)
-                    .ThenInclude(s => s.AssociatedManufacturers)
-                        .ThenInclude(m => m.Manufacturer)
-                .FirstOrDefaultAsync(s => s.Id == supplierQuotationId)
-        );
+        var supplierQuotation = await context
+            .SupplierQuotations.AsSplitQuery()
+            .Include(s => s.Items)
+                .ThenInclude(s => s.Material)
+            .Include(s => s.Items)
+                .ThenInclude(s => s.UoM)
+            .Include(sr => sr.Supplier)
+                .ThenInclude(s => s.AssociatedManufacturers)
+                    .ThenInclude(m => m.Manufacturer)
+            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
+
+        if (supplierQuotation is null)
+        {
+            return Error.NotFound(
+                "Supplier.Quotation.NotFound",
+                "No supplier quotation was found for the specified quotation."
+            );
+        }
+
+        return mapper.Map<SupplierQuotationDto>(supplierQuotation);
     }
 
     public async Task<Result> ReceiveQuotationFromSupplier(
@@ -1568,6 +1585,14 @@ public class RequisitionRepository(
             .Include(s => s.Supplier)
             .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
 
+        if (supplierQuotation is null)
+        {
+            return Error.NotFound(
+                "Supplier.Quotation.NotFound",
+                "No supplier quotation was found for the specified quotation."
+            );
+        }
+
         if (supplierQuotation.Items.Count == 0)
         {
             return Error.Validation(
@@ -1576,14 +1601,21 @@ public class RequisitionRepository(
             );
         }
 
+        var responseLookup = supplierQuotationResponse
+            .Where(s => s is not null)
+            .GroupBy(s => s.Id)
+            .ToDictionary(g => g.Key, g => g.Last());
+
         foreach (var item in supplierQuotation.Items)
         {
-            item.QuotedPrice = supplierQuotationResponse
-                .FirstOrDefault(s => s.Id == item.Id)
-                ?.Price;
-            item.PriceUoM = supplierQuotationResponse
-                .FirstOrDefault(s => s.Id == item.Id)
-                ?.PriceUoM;
+            // Only touch items actually present in the payload. Assigning
+            // unconditionally would wipe QuotedPrice and PriceUoM off every item a
+            // partial re-submit happens to omit.
+            if (!responseLookup.TryGetValue(item.Id, out var response))
+                continue;
+
+            item.QuotedPrice = response.Price;
+            item.PriceUoM = response.PriceUoM;
         }
 
         supplierQuotation.ReceivedQuotation = true;
@@ -1747,6 +1779,47 @@ public class RequisitionRepository(
             if (user is null)
                 return UserErrors.NotFound(userId);
 
+            // Resolve the awarded quotation line for every requested item BEFORE the
+            // purchase order is created. The quotation is the source of truth for both
+            // Price and PriceUoM; the client payload is not trusted, because a price
+            // stored without the unit it was quoted in cannot be interpreted downstream.
+            var awardedItems =
+                new List<(CreatePurchaseOrderItemRequest Request, SupplierQuotationItem Quotation)>();
+
+            foreach (var processSupplierQuote in quotation.Items)
+            {
+                var awardedQuotationItem =
+                    await context.SupplierQuotationItems.FirstOrDefaultAsync(s =>
+                        s.SupplierQuotation.SupplierId == quotation.SupplierId
+                        && s.MaterialId == processSupplierQuote.MaterialId
+                        && s.UoMId == processSupplierQuote.UomId
+                        && s.Status == SupplierQuotationItemStatus.NotProcessed
+                    );
+
+                if (awardedQuotationItem is null)
+                {
+                    return Error.Validation(
+                        "SupplierQuotation.Item",
+                        "No open quotation line was found for one of the selected materials."
+                    );
+                }
+
+                if (string.IsNullOrWhiteSpace(awardedQuotationItem.PriceUoM))
+                {
+                    return Error.Validation(
+                        "SupplierQuotation.PriceUoM",
+                        "The selected quotation has no price UoM. Capture the price UoM on"
+                            + " the quotation before awarding it."
+                    );
+                }
+
+                processSupplierQuote.Price =
+                    awardedQuotationItem.QuotedPrice ?? processSupplierQuote.Price;
+                processSupplierQuote.PriceUoM = awardedQuotationItem.PriceUoM;
+
+                awardedItems.Add((processSupplierQuote, awardedQuotationItem));
+            }
+
             var poId = (
                 await procurementRepository.CreatePurchaseOrder(
                     new CreatePurchaseOrderRequest
@@ -1762,25 +1835,20 @@ public class RequisitionRepository(
                 )
             ).Value;
 
-            foreach (var processSupplierQuote in quotation.Items)
+            foreach (var (processSupplierQuote, supplierQuotationItem) in awardedItems)
             {
                 //Process for the supplier
-                var supplierQuotationItem =
-                    await context.SupplierQuotationItems.FirstOrDefaultAsync(s =>
-                        s.SupplierQuotation.SupplierId == quotation.SupplierId
-                        && s.MaterialId == processSupplierQuote.MaterialId
-                        && s.Status == SupplierQuotationItemStatus.NotProcessed
-                    );
-
-                if (supplierQuotationItem != null)
-                {
-                    supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
-                    supplierQuotationItem.PurchaseOrderId = poId;
-                    context.SupplierQuotationItems.Update(supplierQuotationItem);
-                }
+                supplierQuotationItem.Status = SupplierQuotationItemStatus.Processed;
+                supplierQuotationItem.PurchaseOrderId = poId;
+                context.SupplierQuotationItems.Update(supplierQuotationItem);
                 await context.SaveChangesAsync();
 
-                //Process for everyone else
+                // Process for everyone else. The losing quotes deliberately keep the
+                // winner's PurchaseOrderId: GetPriceComparisonOfMaterialByPurchaseOrderIdAndMaterialId
+                // (the reassign-supplier picker) looks them up by it. That means a PO id
+                // alone does NOT identify the awarded supplier, so every read path that
+                // resolves PriceUoM from quotations must also scope by the purchase
+                // order's own SupplierId and Status == Processed. See PriceUoMExtensions.
                 var supplierQuotationItems = await context
                     .SupplierQuotationItems.AsSplitQuery()
                     .Include(s => s.SupplierQuotation)

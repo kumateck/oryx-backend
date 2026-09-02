@@ -163,6 +163,12 @@ var defaultDbConnectionString =
 
 builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(defaultDbConnectionString));
 
+// Refuse to persist a price without the unit it was quoted in. Off by default so the
+// guard can be enabled only once fix_missing_price_uom.sql has repaired legacy rows.
+ApplicationDbContext.EnforcePriceUoM = builder.Configuration.GetValue<bool>(
+    "Procurement:EnforcePriceUoM"
+);
+
 builder
     .Services.AddIdentityCore<User>(options =>
     {
