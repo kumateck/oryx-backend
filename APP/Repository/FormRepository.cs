@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Materials;
@@ -383,6 +384,16 @@ public class FormRepository(
         if (response is null && request.ResponseId.HasValue)
             return Error.Validation("Response", $"ResponseId {request.ResponseId} is invalid");
 
+        if (response is not null &&
+            (response.FormId != request.FormId
+             || response.MaterialBatchId != request.MaterialBatchId
+             || response.BatchManufacturingRecordId != request.BatchManufacturingRecordId
+             || response.ProductionActivityStepId != request.ProductionActivityStepId))
+            return Error.Conflict(
+                "Response.ContextMismatch",
+                "The response does not belong to the requested form, batch, and production step."
+            );
+
         if (response is null)
         {
             if (request.BatchManufacturingRecordId.HasValue)
@@ -434,12 +445,19 @@ public class FormRepository(
         var formField = await context
             .FormFields.AsSplitQuery()
             .Include(f => f.Question)
+            .Include(f => f.FormSection)
             .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
 
         if (formField is null)
             return Error.Validation(
                 "Response.FormField",
                 $"FormField not found {request.FormFieldId}"
+            );
+
+        if (formField.FormSection.FormId != request.FormId)
+            return Error.Validation(
+                "Response.FormMismatch",
+                "The submitted field does not belong to the response form."
             );
 
         // 🧩 VALIDATION: Check if user is allowed in this specific context
@@ -548,6 +566,16 @@ public class FormRepository(
         if (response == null)
             return Error.NotFound("Response.NotFound", "Response not found");
 
+        var hasForeignFields = await context.FormResponses.AnyAsync(item =>
+            item.ResponseId == response.Id
+            && item.FormField.FormSection.FormId != response.FormId
+        );
+        if (hasForeignFields)
+            return Error.Conflict(
+                "Response.FormMismatch",
+                "The response contains fields from another form and must be reconciled before submission."
+            );
+
         // Validate that all required fields are filled
         var formFields = await context
             .FormFields.Where(f => f.FormSection.FormId == response.FormId)
@@ -606,6 +634,7 @@ public class FormRepository(
 
             var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a =>
                 a.ProductionActivityStepId == response.ProductionActivityStepId
+                && a.BatchManufacturingRecordId == response.BatchManufacturingRecordId
             );
             if (atr == null)
                 return Error.NotFound("ATR", $"ATR not found {response.ProductionActivityStepId}");
@@ -639,6 +668,25 @@ public class FormRepository(
 
     public async Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId)
     {
+        var requestedFieldIds = request.FormResponses
+            .Select(item => item.FormFieldId)
+            .Distinct()
+            .ToList();
+        var requestedFields = await context.FormFields
+            .Where(item => requestedFieldIds.Contains(item.Id))
+            .Select(item => new { item.Id, item.FormSection.FormId })
+            .ToListAsync();
+        if (requestedFields.Count != requestedFieldIds.Count)
+            return Error.Validation(
+                "Response.FormField",
+                "One or more submitted form fields do not exist."
+            );
+        if (requestedFields.Any(item => item.FormId != request.FormId))
+            return Error.Validation(
+                "Response.FormMismatch",
+                "Every submitted field must belong to the response form."
+            );
+
         var newResponse = new Response
         {
             FormId = request.FormId,
@@ -654,6 +702,7 @@ public class FormRepository(
             var formField = await context
                 .FormFields.AsSplitQuery()
                 .Include(f => f.Question)
+                .Include(f => f.FormSection)
                 .FirstOrDefaultAsync(field => field.Id == response.FormFieldId);
 
             if (formField == null)
@@ -663,6 +712,12 @@ public class FormRepository(
                     $"FormField not found {response.FormFieldId}"
                 );
             }
+
+            if (formField.FormSection.FormId != request.FormId)
+                return Error.Validation(
+                    "Response.FormMismatch",
+                    "The submitted field does not belong to the response form."
+                );
 
             // 🧩 VALIDATION: Check if user is allowed in this specific context
             var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
@@ -743,6 +798,7 @@ public class FormRepository(
 
             var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a =>
                 a.ProductionActivityStepId == request.ProductionActivityStepId
+                && a.BatchManufacturingRecordId == request.BatchManufacturingRecordId
             );
             if (atr is null)
                 return Error.NotFound("ATR", $"ATR not found {request.ProductionActivityStepId}");
@@ -1164,6 +1220,26 @@ public class FormRepository(
         if (response == null)
             return FormErrors.NotFound(batchManufacturingRecordId);
 
+        var hasForeignFields = await context.FormResponses.AnyAsync(item =>
+            item.ResponseId == response.Id
+            && item.FormField.FormSection.FormId != response.FormId
+        );
+        if (hasForeignFields)
+            return Error.Conflict(
+                "Response.FormMismatch",
+                "The response contains fields from another form and cannot generate a COA."
+            );
+
+        var hasMatchingAtr = await context.AnalyticalTestRequests.AnyAsync(item =>
+            item.BatchManufacturingRecordId == batchManufacturingRecordId
+            && item.ProductionActivityStepId == productionActivityStepId
+        );
+        if (!hasMatchingAtr)
+            return Error.Conflict(
+                "Response.AtrContextMismatch",
+                "The response production step does not belong to this batch ATR."
+            );
+
         var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
             b.Id == response.BatchManufacturingRecordId
         );
@@ -1224,6 +1300,7 @@ public class FormRepository(
             .Include(fr => fr.CheckedBy)
             .Include(fr => fr.Form)
             .Include(fr => fr.CreatedBy)
+            .Include(fr => fr.Approvals)
             .Include(fr => fr.FormResponses)
                 .ThenInclude(r => r.FormField)
                     .ThenInclude(r => r.Question)
@@ -1233,7 +1310,10 @@ public class FormRepository(
         if (formResponse == null)
             return FormErrors.NotFound(formResponseId);
 
-        return mapper.Map<ResponseDetailDto>(formResponse);
+        var detail = mapper.Map<ResponseDetailDto>(formResponse);
+        detail.HasPendingApproval = ResponseApprovalRoundManager.Current(formResponse.Approvals)
+            .Any(item => item.Status == ApprovalStatus.Pending);
+        return detail;
     }
 
     public async Task<Result<IEnumerable<FormDto>>> GetFormWithResponseByMaterialBatch(

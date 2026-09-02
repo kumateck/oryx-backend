@@ -8,15 +8,8 @@ public static class SeedManager
     public static IHost SeedData(this IHost host)
     {
         using var scope = host.Services.CreateScope();
-        try
-        {
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            context.Database.Migrate();
-        }
-        catch (Exception)
-        {
-            // ignored
-        }
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
 
         try
         {

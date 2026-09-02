@@ -5,6 +5,7 @@
 - Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, maker-checker quotations, safe quotation-to-ProductionOrder conversion, and customer order metrics. The additive CRM migration has a controlled production runbook and remains unapplied.
 - Supplier relationship management: added pharmaceutical compliance certificates, multiple contacts and banking details, standing pricing agreements, configurable AVL requalification, computed supplier scorecards, and approved-payment spend analytics. The additive SRM migration has a controlled production runbook and is not applied automatically.
 - Cashflow foundation: added maker-checker payments, approved-payment balances, AP/AR aging, cashflow projections, effective-dated exchange rates, and nullable due-date snapshots. The production migration is additive and automatic startup migration is disabled; use the documented controlled rollout.
+- Product ATR response integrity: stage responses are scoped by BMR and production step, COA submission is single-round, and the uniqueness migration must be applied independently to every application database.
 - Material stock pipeline: `GET /api/v1/material/{materialId}/stock/pipeline` exposes active inbound material quantities from purchase requisition through sourcing, quotation, purchase order, shipment milestones, receiving, QC, and GRN. The read model reconciles each quantity into one stage, uses actual shipment received quantity, groups duplicate lines before subtraction, and excludes final shelf-distributed stock. Focused builder and EF-backed query tests cover partial deliveries, duplicate lines, and completed distribution.
 - Warehouse shelf-list performance: `GET /api/v1/warehouse/shelf` is now a no-tracking, auto-include-free list query that loads only shelf/rack/location/warehouse metadata. List rows intentionally omit material batches; `GET /api/v1/warehouse/shelf/{shelfId}` remains the full detail contract. Search now covers shelf code/name/description, rack, location, and warehouse. Repository coverage verifies the lean payload and code search.
 - Analytics/report integrity: implemented the staff gender-ratio report, corrected checklist user identity and logistics OpenAPI metadata, and removed anonymous access from supplier/vendor summary reports.
@@ -51,6 +52,8 @@ the changelog above live in [`docs/`](docs/):
   compliance and analytics rollout guidance.
 - [CRM production migration](docs/crm-production-migration.md) — additive customer,
   credit, quotation, and production-order rollout guidance.
+- [Product ATR response migration](docs/product-atr-response-migration.md) —
+  per-database preflight, migration, verification, and release order.
 
 ## Contributing
 
