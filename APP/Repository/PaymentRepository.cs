@@ -2,7 +2,6 @@ using System.Data;
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
-using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Payments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -74,21 +73,23 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
             PayableType = request.PayableType,
             PayableId = request.PayableId,
             Status = PaymentStatus.Pending,
-            Approvals = approval.ApprovalStages
-                .OrderBy(stage => stage.Order)
-                .Select(stage => new PaymentApproval
-                {
-                    Id = Guid.NewGuid(),
-                    ApprovalId = approval.Id,
-                    Required = stage.Required,
-                    Order = stage.Order,
-                    UserId = stage.UserId,
-                    RoleId = stage.RoleId,
-                    ActivatedAt = stage.Order == approval.ApprovalStages.Min(x => x.Order)
-                        ? DateTime.UtcNow
-                        : null,
-                })
-                .ToList(),
+            Approvals =
+            [
+                .. approval.ApprovalStages
+                    .OrderBy(stage => stage.Order)
+                    .Select(stage => new PaymentApproval
+                    {
+                        Id = Guid.NewGuid(),
+                        ApprovalId = approval.Id,
+                        Required = stage.Required,
+                        Order = stage.Order,
+                        UserId = stage.UserId,
+                        RoleId = stage.RoleId,
+                        ActivatedAt = stage.Order == approval.ApprovalStages.Min(x => x.Order)
+                            ? DateTime.UtcNow
+                            : null,
+                    })
+            ]
         };
 
         await context.Payments.AddAsync(payment);

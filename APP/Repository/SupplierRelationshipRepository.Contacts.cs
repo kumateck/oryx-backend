@@ -40,7 +40,6 @@ public partial class SupplierRelationshipRepository
         if (request.IsPrimary)
             await ClearPrimaryContact(supplierId, id);
         Apply(entity, request);
-        entity.LastUpdatedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -51,7 +50,8 @@ public partial class SupplierRelationshipRepository
             item.Id == id && item.SupplierId == supplierId);
         if (entity is null)
             return Error.NotFound("SupplierContact.NotFound", "Supplier contact not found.");
-        SoftDelete(entity, userId);
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.LastDeletedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }

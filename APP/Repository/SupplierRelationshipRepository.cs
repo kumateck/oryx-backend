@@ -24,10 +24,4 @@ public partial class SupplierRelationshipRepository(
         => end.Date < start.Date
             ? Error.Validation("Supplier.Period", "Period end cannot be before period start.")
             : Result.Success();
-
-    private static void SoftDelete(DOMAIN.Entities.Base.BaseEntity entity, Guid userId)
-    {
-        entity.DeletedAt = DateTime.UtcNow;
-        entity.LastDeletedById = userId;
-    }
 }

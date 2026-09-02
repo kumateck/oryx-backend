@@ -23,7 +23,8 @@ public partial class CustomerRepository
         if (request.IsPrimary) await ClearPrimaryContact(customerId, null, userId);
         var entity = new CustomerContact { CustomerId = customerId, CreatedById = userId };
         AssignContact(entity, request);
-        context.CustomerContacts.Add(entity);
+        
+        await context.CustomerContacts.AddAsync(entity);
         await context.SaveChangesAsync();
         return entity.Id;
     }
@@ -36,8 +37,7 @@ public partial class CustomerRepository
         if (entity is null) return Error.NotFound("CustomerContact.NotFound", "Customer contact not found.");
         if (request.IsPrimary) await ClearPrimaryContact(customerId, id, userId);
         AssignContact(entity, request);
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.LastUpdatedById = userId;
+       
         await context.SaveChangesAsync();
         return Result.Success();
     }

@@ -9,7 +9,6 @@ using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSampling;
-using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Users;

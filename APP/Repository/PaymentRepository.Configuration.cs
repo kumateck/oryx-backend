@@ -1,6 +1,5 @@
 using System.Data;
 using DOMAIN.Entities.Currencies;
-using DOMAIN.Entities.Payments;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -59,7 +58,7 @@ public partial class PaymentRepository
         return resolved.IsSuccess ? resolved.Value : resolved.Error;
     }
 
-    internal async Task<Result<ExchangeRateDto>> ResolveRate(Guid currencyId, DateTime asOf)
+    private async Task<Result<ExchangeRateDto>> ResolveRate(Guid currencyId, DateTime asOf)
     {
         var currency = await context.Currencies.AsNoTracking().FirstOrDefaultAsync(item => item.Id == currencyId);
         if (currency is null)
