@@ -26,6 +26,13 @@ Instructions for using the project.
 ## Docker Setup
 For instructions on how to set up and run the application using Docker, please refer to the [Docker Setup Instructions](DOCKER.md).
 
+## Documentation
+Design notes, roadmaps, and implementation write-ups that don't belong in
+the changelog above live in [`docs/`](docs/):
+- [Cashflow, SRM & CRM roadmap](docs/cashflow-srm-crm-roadmap.md) — gap
+  analysis and the Codex backend prompts for the three modules, in
+  implementation order (Cashflow → SRM → CRM).
+
 ## Contributing
 Guidelines for contributing to the project.
 
