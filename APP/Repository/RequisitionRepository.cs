@@ -532,19 +532,25 @@ public class RequisitionRepository(
     public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
     {
         var stockRequisition = await context
-            .Requisitions.AsSplitQuery()
-            .Include(r => r.Items)
+            .Requisitions.Include(r => r.Items)
                 .ThenInclude(requisitionItem => requisitionItem.Material)
             .Include(requisition => requisition.ProductionActivityStep)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
 
         if (stockRequisition is null)
             return RequisitionErrors.NotFound(stockRequisitionId);
 
+        if (stockRequisition.ProductionScheduleProductId is null)
+            return Error.Validation(
+                "Stock.Requisition",
+                "Stock requisition has no production schedule product associated, contact admin."
+            );
+
         var user = await context
-            .Users.AsSplitQuery()
-            .Include(u => u.Department)
+            .Users.Include(u => u.Department)
                 .ThenInclude(d => d.Warehouses)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user is null)
@@ -590,229 +596,304 @@ public class RequisitionRepository(
                 "No production warehouse is associated with department who made stock requisition"
             );
 
-        // Cache each warehouse's bin card history in memory instead of re-querying it
-        // (with a 4-column IgnoreQueryFilters scan) for every item that shares that
-        // warehouse - there are only ever 2 possible warehouses here (raw/packing).
-        // Newly-issued entries are appended to the cache below (see historicalBincards.Add)
-        // so later items still see earlier items' balances within this same run, exactly
-        // as the previous per-item re-fetch did.
-        var bincardCacheByWarehouse = new Dictionary<Guid, List<BinCardInformation>>();
+        // Pre-fetch all reserved quantities for all requisition items in a single query
+        var itemMaterialIds = stockRequisition.Items.Select(i => i.MaterialId).Distinct().ToList();
+        var reservedBatches = await context
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Material)
+            .Where(r =>
+                itemMaterialIds.Contains(r.MaterialBatch.MaterialId)
+                && r.WarehouseId == productionWarehouse.Id
+                && r.ProductionScheduleProductId
+                    == stockRequisition.ProductionScheduleProductId.Value
+                && r.DeletedAt == null
+            )
+            .AsSplitQuery()
+            .ToListAsync();
 
-        async Task<List<BinCardInformation>> GetOrLoadHistoricalBincards(Guid warehouseId)
-        {
-            if (bincardCacheByWarehouse.TryGetValue(warehouseId, out var cached))
-                return cached;
+        var reservedBatchesByMaterial = reservedBatches
+            .GroupBy(r => r.MaterialBatch.MaterialId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-            var loaded = await context
-                .BinCardInformation.AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(binCardInformation => binCardInformation.MaterialBatch)
-                .Where(b => b.WarehouseId == warehouseId)
-                .ToListAsync();
-            bincardCacheByWarehouse[warehouseId] = loaded;
-            return loaded;
-        }
-
+        // Validate that all requisition items have reserved quantities before starting mutations
         foreach (var item in stockRequisition.Items)
         {
-            var appropriateWarehouse =
-                item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
-
-            var historicalBincards = await GetOrLoadHistoricalBincards(appropriateWarehouse.Id);
-
-            if (stockRequisition.ProductionScheduleProductId == null)
-                return Error.Validation(
-                    "Stock.Requisition",
-                    "Stock requisition has no production schedule product associated, contact admin."
-                );
-            var batchesToConsume =
-                await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
-                    item.MaterialId,
-                    productionWarehouse.Id,
-                    stockRequisition.ProductionScheduleProductId.Value
-                );
-
-            if (batchesToConsume.Count == 0)
-                return Error.Validation(
-                    "Stock.Requisition",
-                    $"No reserved quantities to issue for {item.Material.Name}"
-                );
-
-            foreach (var batch in batchesToConsume)
+            if (
+                !reservedBatchesByMaterial.TryGetValue(item.MaterialId, out var batches)
+                || batches.Count == 0
+            )
             {
-                var materialBatch = await context
-                    .MaterialBatches.Include(m => m.Checklist)
-                        .ThenInclude(c => c.Supplier)
-                    .Include(m => m.Checklist)
-                        .ThenInclude(c => c.Manufacturer)
-                    .FirstOrDefaultAsync(m => m.Id == batch.MaterialBatch.Id);
-                if (materialBatch is null)
-                    continue;
-
-                materialBatch.QuantityAssigned = 0;
-                context.MaterialBatches.Update(materialBatch);
-
-                var shelfMaterialBatches = await context
-                    .ShelfMaterialBatches.IgnoreQueryFilters()
-                    .OrderBy(s => s.Quantity)
-                    .Where(sb =>
-                        sb.MaterialBatchId == batch.MaterialBatch.Id
-                        && sb.WarehouseLocationShelf
-                            .WarehouseLocationRack
-                            .WarehouseLocation
-                            .WarehouseId == appropriateWarehouse.Id
-                        && !sb.DeletedAt.HasValue
-                    )
-                    .ToListAsync();
-
-                var quantityToDeduct = batch.Quantity;
-
-                foreach (var shelfMaterialBatch in shelfMaterialBatches)
-                {
-                    if (quantityToDeduct <= 0)
-                        break;
-
-                    var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
-                    shelfMaterialBatch.Quantity -= deductAmount;
-                    quantityToDeduct -= deductAmount;
-
-                    if (shelfMaterialBatch.Quantity <= 0)
-                    {
-                        context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
-                    }
-                }
-
-                var movement = new MassMaterialBatchMovement
-                {
-                    BatchId = batch.MaterialBatch.Id,
-                    FromWarehouseId = appropriateWarehouse.Id,
-                    ToWarehouseId = productionWarehouse.Id,
-                    Quantity = batch.Quantity,
-                    MovedAt = DateTime.UtcNow,
-                    MovedById = userId,
-                };
-
-                await context.MassMaterialBatchMovements.AddAsync(movement);
-
-                var batchEvent = new MaterialBatchEvent
-                {
-                    BatchId = batch.MaterialBatch.Id,
-                    Type = EventType.Moved,
-                    Quantity = batch.Quantity,
-                    UserId = userId,
-                };
-
-                await context.MaterialBatchEvents.AddAsync(batchEvent);
-
-                var history = historicalBincards
-                    .Where(b =>
-                        b.MaterialBatch.MaterialId == materialBatch.MaterialId
-                        && b.WarehouseId == appropriateWarehouse.Id
-                    )
-                    .Select(b => new { b.QuantityReceived, b.QuantityIssued })
-                    .ToList();
-
-                var previousBalance =
-                    history.Sum(x => x.QuantityReceived) - history.Sum(x => x.QuantityIssued);
-
-                var currentBalance = previousBalance - batch.Quantity;
-
-                var arNumber = await context
-                    .MaterialSamplings.Where(s => s.MaterialBatchId == materialBatch.Id)
-                    .OrderByDescending(s => s.CreatedAt)
-                    .Select(s => s.ArNumber)
-                    .FirstOrDefaultAsync();
-
-                var supplier = materialBatch.Checklist?.Supplier?.Name;
-                var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
-
-                var binCardEvent = new BinCardInformation
-                {
-                    MaterialBatchId = materialBatch.Id,
-                    MaterialBatch = materialBatch,
-                    Description = appropriateWarehouse.Name,
-                    WayBill = "N/A",
-                    ArNumber = arNumber ?? "N/A",
-                    Supplier = supplier,
-                    Manufacturer = manufacturer,
-                    QuantityReceived = 0,
-                    QuantityIssued = batch.Quantity,
-                    BalanceQuantity = currentBalance,
-                    UoMId = materialBatch.UoMId,
-                    CreatedAt = DateTime.UtcNow,
-                    WarehouseId = appropriateWarehouse.Id,
-                };
-
-                await context.BinCardInformation.AddAsync(binCardEvent);
-                // Keep the in-memory cache in sync so a later item sharing this
-                // warehouse still sees this issuance in its balance calculation,
-                // matching the old per-item re-fetch behaviour without the round trip.
-                historicalBincards.Add(binCardEvent);
-                // ✅ Mark individual item as completed
-                item.Status = RequestStatus.Completed;
+                return Error.Validation(
+                    "Stock.Requisition",
+                    $"No reserved quantities to issue for {item.Material?.Name ?? "item"}"
+                );
             }
         }
 
-        // ✅ Update item statuses in the database
-        context.RequisitionItems.UpdateRange(stockRequisition.Items);
-        await context.SaveChangesAsync();
+        var allBatchIds = reservedBatches.Select(b => b.MaterialBatchId).Distinct().ToList();
 
-        // ✅ Check if all items in the requisition are completed
-        var allItemsCompleted = stockRequisition.Items.All(i =>
-            i.Status == RequestStatus.Completed
-        );
+        // Batch pre-fetch MaterialBatches, ShelfMaterialBatches, and latest MaterialSamplings
+        var materialBatchesMap = await context
+            .MaterialBatches.Include(m => m.Checklist)
+                .ThenInclude(c => c.Supplier)
+            .Include(m => m.Checklist)
+                .ThenInclude(c => c.Manufacturer)
+            .Where(m => allBatchIds.Contains(m.Id))
+            .AsSplitQuery()
+            .ToDictionaryAsync(m => m.Id);
 
-        if (allItemsCompleted)
-        {
-            stockRequisition.Status = RequestStatus.Completed;
-            context.Requisitions.Update(stockRequisition);
-        }
-
-        await context.SaveChangesAsync();
-
-        // ✅ Check if all items across all requisitions for the same `ProductionActivityStepId` are completed
-        if (stockRequisition.ProductionActivityStepId.HasValue)
-        {
-            var relatedRequisitions = await context
-                .Requisitions.Where(r =>
-                    r.ProductionActivityStepId == stockRequisition.ProductionActivityStepId
+        var shelfMaterialBatches = await context
+            .ShelfMaterialBatches.IgnoreQueryFilters()
+            .Include(sb => sb.WarehouseLocationShelf)
+                .ThenInclude(wls => wls.WarehouseLocationRack)
+                    .ThenInclude(wlr => wlr.WarehouseLocation)
+            .Where(sb =>
+                allBatchIds.Contains(sb.MaterialBatchId)
+                && !sb.DeletedAt.HasValue
+                && (
+                    sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                        == rawWarehouse.Id
+                    || sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
+                        == packingWarehouse.Id
                 )
-                .Include(r => r.Items)
+            )
+            .AsSplitQuery()
+            .OrderBy(s => s.Quantity)
+            .ToListAsync();
+
+        var shelfBatchesByBatchId = shelfMaterialBatches
+            .GroupBy(sb => sb.MaterialBatchId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var samplings = await context
+            .MaterialSamplings.Where(s => allBatchIds.Contains(s.MaterialBatchId))
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new { s.MaterialBatchId, s.ArNumber })
+            .ToListAsync();
+
+        var latestArNumberByBatchId = samplings
+            .GroupBy(s => s.MaterialBatchId)
+            .ToDictionary(g => g.Key, g => g.First().ArNumber);
+
+        // Pre-compute initial bin card balances via targeted queries per Material & Warehouse
+        var materialWarehousePairs = stockRequisition
+            .Items.Select(i =>
+                (
+                    MaterialId: i.MaterialId,
+                    WarehouseId: i.Material.Kind == MaterialKind.Raw
+                        ? rawWarehouse.Id
+                        : packingWarehouse.Id
+                )
+            )
+            .Distinct()
+            .ToList();
+
+        var runningBalances = new Dictionary<(Guid MaterialId, Guid WarehouseId), decimal>();
+        foreach (var pair in materialWarehousePairs)
+        {
+            var history = await context
+                .BinCardInformation.IgnoreQueryFilters()
+                .Where(b =>
+                    b.WarehouseId == pair.WarehouseId
+                    && b.MaterialBatch.MaterialId == pair.MaterialId
+                )
+                .Select(b => new { b.QuantityReceived, b.QuantityIssued })
+                .AsSplitQuery()
                 .ToListAsync();
 
-            var allRequisitionItemsCompleted = relatedRequisitions
-                .SelectMany(r => r.Items)
-                .All(i => i.Status == RequestStatus.Completed);
-
-            if (allRequisitionItemsCompleted)
-            {
-                var productionActivityStep =
-                    await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
-                        p.Id == stockRequisition.ProductionActivityStepId
-                    );
-
-                if (productionActivityStep is not null)
-                {
-                    productionActivityStep.Status = ProductionStatus.Completed;
-                    productionActivityStep.CompletedAt = DateTime.UtcNow;
-                    context.ProductionActivitySteps.Update(productionActivityStep);
-                    await context.ProductionActivityLogs.AddAsync(
-                        new ProductionActivityLog
-                        {
-                            ProductionActivityId = stockRequisition
-                                .ProductionActivityStep
-                                .ProductionActivityId,
-                            UserId = userId,
-                            Message = "Issued stock requisition.",
-                            Timestamp = DateTime.UtcNow,
-                        }
-                    );
-                    await context.SaveChangesAsync();
-                }
-            }
+            var initialBalance =
+                history.Sum(x => x.QuantityReceived) - history.Sum(x => x.QuantityIssued);
+            runningBalances[(pair.MaterialId, pair.WarehouseId)] = initialBalance;
         }
 
-        return Result.Success();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var movementsToAdd = new List<MassMaterialBatchMovement>();
+            var batchEventsToAdd = new List<MaterialBatchEvent>();
+            var binCardsToAdd = new List<BinCardInformation>();
+            var shelvesToRemove = new List<ShelfMaterialBatch>();
+            var now = DateTime.UtcNow;
+
+            foreach (var item in stockRequisition.Items)
+            {
+                var appropriateWarehouse =
+                    item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
+                var batchesToConsume = reservedBatchesByMaterial[item.MaterialId];
+
+                foreach (var batch in batchesToConsume)
+                {
+                    if (
+                        !materialBatchesMap.TryGetValue(
+                            batch.MaterialBatchId,
+                            out var materialBatch
+                        )
+                    )
+                        continue;
+
+                    materialBatch.QuantityAssigned = 0;
+
+                    if (shelfBatchesByBatchId.TryGetValue(batch.MaterialBatchId, out var shelfList))
+                    {
+                        var quantityToDeduct = batch.Quantity;
+                        foreach (
+                            var shelfMaterialBatch in shelfList.Where(sb =>
+                                sb.WarehouseLocationShelf
+                                    ?.WarehouseLocationRack
+                                    ?.WarehouseLocation
+                                    ?.WarehouseId == appropriateWarehouse.Id
+                            )
+                        )
+                        {
+                            if (quantityToDeduct <= 0)
+                                break;
+
+                            var deductAmount = Math.Min(
+                                shelfMaterialBatch.Quantity,
+                                quantityToDeduct
+                            );
+                            shelfMaterialBatch.Quantity -= deductAmount;
+                            quantityToDeduct -= deductAmount;
+
+                            if (shelfMaterialBatch.Quantity <= 0)
+                            {
+                                shelvesToRemove.Add(shelfMaterialBatch);
+                            }
+                        }
+                    }
+
+                    movementsToAdd.Add(
+                        new MassMaterialBatchMovement
+                        {
+                            BatchId = batch.MaterialBatchId,
+                            FromWarehouseId = appropriateWarehouse.Id,
+                            ToWarehouseId = productionWarehouse.Id,
+                            Quantity = batch.Quantity,
+                            MovedAt = now,
+                            MovedById = userId,
+                        }
+                    );
+
+                    batchEventsToAdd.Add(
+                        new MaterialBatchEvent
+                        {
+                            BatchId = batch.MaterialBatchId,
+                            Type = EventType.Moved,
+                            Quantity = batch.Quantity,
+                            UserId = userId,
+                        }
+                    );
+
+                    var balanceKey = (item.MaterialId, appropriateWarehouse.Id);
+                    var previousBalance = runningBalances[balanceKey];
+                    var currentBalance = previousBalance - batch.Quantity;
+                    runningBalances[balanceKey] = currentBalance;
+
+                    latestArNumberByBatchId.TryGetValue(materialBatch.Id, out var arNumber);
+                    var supplier = materialBatch.Checklist?.Supplier?.Name;
+                    var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
+
+                    binCardsToAdd.Add(
+                        new BinCardInformation
+                        {
+                            MaterialBatchId = materialBatch.Id,
+                            MaterialBatch = materialBatch,
+                            Description = appropriateWarehouse.Name,
+                            WayBill = "N/A",
+                            ArNumber = arNumber ?? "N/A",
+                            Supplier = supplier,
+                            Manufacturer = manufacturer,
+                            QuantityReceived = 0,
+                            QuantityIssued = batch.Quantity,
+                            BalanceQuantity = currentBalance,
+                            UoMId = materialBatch.UoMId,
+                            CreatedAt = now,
+                            WarehouseId = appropriateWarehouse.Id,
+                        }
+                    );
+
+                    item.Status = RequestStatus.Completed;
+                }
+            }
+
+            if (shelvesToRemove.Count > 0)
+            {
+                context.ShelfMaterialBatches.RemoveRange(shelvesToRemove);
+            }
+
+            if (movementsToAdd.Count > 0)
+            {
+                context.MassMaterialBatchMovements.AddRange(movementsToAdd);
+            }
+
+            if (batchEventsToAdd.Count > 0)
+            {
+                context.MaterialBatchEvents.AddRange(batchEventsToAdd);
+            }
+
+            if (binCardsToAdd.Count > 0)
+            {
+                context.BinCardInformation.AddRange(binCardsToAdd);
+            }
+
+            var allItemsCompleted = stockRequisition.Items.All(i =>
+                i.Status == RequestStatus.Completed
+            );
+
+            if (allItemsCompleted)
+            {
+                stockRequisition.Status = RequestStatus.Completed;
+            }
+
+            if (stockRequisition.ProductionActivityStepId.HasValue)
+            {
+                var anyOtherPendingItems = await context.RequisitionItems.AnyAsync(ri =>
+                    ri.Requisition.ProductionActivityStepId
+                        == stockRequisition.ProductionActivityStepId
+                    && ri.RequisitionId != stockRequisition.Id
+                    && ri.Status != RequestStatus.Completed
+                );
+
+                if (!anyOtherPendingItems && allItemsCompleted)
+                {
+                    var productionActivityStep =
+                        await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
+                            p.Id == stockRequisition.ProductionActivityStepId
+                        );
+
+                    if (productionActivityStep is not null)
+                    {
+                        productionActivityStep.Status = ProductionStatus.Completed;
+                        productionActivityStep.CompletedAt = now;
+                        if (stockRequisition.ProductionActivityStep is not null)
+                        {
+                            context.ProductionActivityLogs.Add(
+                                new ProductionActivityLog
+                                {
+                                    ProductionActivityId = stockRequisition
+                                        .ProductionActivityStep
+                                        .ProductionActivityId,
+                                    UserId = userId,
+                                    Message = "Issued stock requisition.",
+                                    Timestamp = now,
+                                }
+                            );
+                        }
+                    }
+                }
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Result.Success();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     private async Task<List<ShelfMaterialBatchDto>> GetShelvesOfBatch(
@@ -1819,17 +1900,20 @@ public class RequisitionRepository(
             // Price and PriceUoM; the client payload is not trusted, because a price
             // stored without the unit it was quoted in cannot be interpreted downstream.
             var awardedItems =
-                new List<(CreatePurchaseOrderItemRequest Request, SupplierQuotationItem Quotation)>();
+                new List<(
+                    CreatePurchaseOrderItemRequest Request,
+                    SupplierQuotationItem Quotation
+                )>();
 
             foreach (var processSupplierQuote in quotation.Items)
             {
-                var awardedQuotationItem =
-                    await context.SupplierQuotationItems.FirstOrDefaultAsync(s =>
+                var awardedQuotationItem = await context.SupplierQuotationItems.FirstOrDefaultAsync(
+                    s =>
                         s.SupplierQuotation.SupplierId == quotation.SupplierId
                         && s.MaterialId == processSupplierQuote.MaterialId
                         && s.UoMId == processSupplierQuote.UomId
                         && s.Status == SupplierQuotationItemStatus.NotProcessed
-                    );
+                );
 
                 if (awardedQuotationItem is null)
                 {
