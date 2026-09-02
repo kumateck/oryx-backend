@@ -50,6 +50,9 @@ public class ResponseDetailDto : ResponseDto
     public Guid? ProductionActivityStepId { get; set; }
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
+    public bool Approved { get; set; }
+    public bool Rejected { get; set; }
+    public bool HasPendingApproval { get; set; }
 }
 
 public class FormResponseDto : WithAttachment

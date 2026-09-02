@@ -402,6 +402,21 @@ public class RequisitionRepository(
         // of this endpoint. minExpiryDate varies per item, so it's applied in-memory
         // below rather than in this shared query.
         var requestedMaterialIds = requisition.Items.Select(i => i.MaterialId).Distinct().ToList();
+
+        // A shelf batch already committed to a pending swap shouldn't be offered
+        // again as an alternative for another swap - it's not actually free until
+        // that swap is approved or rejected.
+        var pendingSwapShelfBatchIds = (
+            await context
+                .SwapRequests.IgnoreQueryFilters()
+                .Where(s => s.Status == SwapRequestStatus.Pending)
+                .SelectMany(s =>
+                    s.FirstSwapShelfMaterialBatches.Select(b => b.ShelfMaterialBatchId)
+                        .Concat(s.SecondSwapShelfMaterialBatches.Select(b => b.ShelfMaterialBatchId))
+                )
+                .ToListAsync()
+        ).ToHashSet();
+
         var candidateShelfBatchesByMaterial = (
             await context
                 .ShelfMaterialBatches.IgnoreQueryFilters()
@@ -428,6 +443,7 @@ public class RequisitionRepository(
                             .WarehouseLocation
                             .WarehouseId
                     )
+                    && !pendingSwapShelfBatchIds.Contains(smb.Id)
                 )
                 .ToListAsync()
         )

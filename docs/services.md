@@ -1,5 +1,12 @@
 # Service contracts
 
+## Product ARD and COA responses
+
+`GET /api/v1/form/response` resolves a product response by the exact `batchManufacturingRecordId` and `productionActivityStepId`. Response detail includes `approved`, `rejected`, and `hasPendingApproval`.
+
+Draft and final form submission require every field to belong to the response form. Existing response updates must retain the original form, batch, and production-step context. Product COA generation verifies the BMR/step ATR pair and refuses mixed-form responses. A pending or completed approval round produces a conflict; generating a COA never silently starts a replacement approval round.
+
+
 ## Cashflow and payments
 
 All routes use the existing authenticated API version prefix. Mutating requests
