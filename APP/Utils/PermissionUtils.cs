@@ -43,6 +43,8 @@ public static class PermissionSubmodules
     public const string BillingSheet = "Billing Sheet";
     public const string Waybill = "Waybill";
     public const string AvailableStock = "Available Stock";
+    public const string Payments = "Payments";
+    public const string CashflowReports = "Cashflow Reports";
 
     // Warehouse
     public const string ReceivingArea = "Receiving Area";
@@ -72,6 +74,7 @@ public static class PermissionSubmodules
     // Quality Control
     public const string GoodsReceiptNote = "Goods Receipt Note (GRN)";
     public const string AnalyticalTestRequestProducts = "Analytical Test Request (Products)";
+    public const string Testing = "Testing";
     public const string MaterialStp = "Material STP";
     public const string MaterialSpecification = "Material Specification";
     public const string MaterialArd = "Material ARD";
@@ -253,6 +256,10 @@ public static class PermissionKeys
     public const string CanDeleteWaybill = "CanDeleteWaybill";
     public const string CanViewRawMaterialStock = "CanViewRawMaterialStock";
     public const string CanViewPackingMaterialStock = "CanViewPackingMaterialStock";
+    public const string CanViewPayments = "CanViewPayments";
+    public const string CanRecordPayment = "CanRecordPayment";
+    public const string CanApprovePayment = "CanApprovePayment";
+    public const string CanViewCashflowReports = "CanViewCashflowReports";
 
     // Warehouse
     public const string CanViewRawMaterialsItems = "CanViewRawMaterialsItems";
@@ -449,6 +456,12 @@ public static class PermissionKeys
     public const string CanCreateCustomer = "CanCreateCustomer";
     public const string CanEditCustomer = "CanEditCustomer";
     public const string CanDeleteCustomer = "CanDeleteCustomer";
+    public const string CanViewCustomerCreditStatus = "ViewCustomerCreditStatus";
+    public const string CanManageCustomerContracts = "ManageCustomerContracts";
+    public const string CanViewCustomerQuotations = "ViewCustomerQuotations";
+    public const string CanCreateCustomerQuotation = "CreateCustomerQuotation";
+    public const string CanApproveCustomerQuotation = "ApproveCustomerQuotation";
+    public const string CanConvertCustomerQuotation = "ConvertCustomerQuotation";
     public const string CanViewOrder = "CanViewOrder";
     public const string CanCreateOrders = "CanCreateOrders";
     public const string CanGeneratePackingList = "CanGeneratePackingList";
@@ -833,6 +846,11 @@ public static class PermissionKeys
     public const string CanCreateVendor = "CanCreateVendor";
     public const string CanUpdateVendorDetails = "CanUpdateVendorDetails";
     public const string CanDeleteVendor = "CanDeleteVendor";
+    public const string CanViewSupplierCertifications = "CanViewSupplierCertifications";
+    public const string CanManageSupplierCertifications = "CanManageSupplierCertifications";
+    public const string CanViewSupplierPerformance = "CanViewSupplierPerformance";
+    public const string CanManageSupplierContracts = "CanManageSupplierContracts";
+    public const string CanViewSupplierSpend = "CanViewSupplierSpend";
     public const string CanViewWarehouses = "CanViewWarehouses";
     public const string CanViewLocations = "CanViewLocations";
     public const string CanAddNewLocation = "CanAddNewLocation";
@@ -1293,6 +1311,26 @@ public static class PermissionUtils
             PermissionModules.Logistics,
             PermissionSubmodules.AvailableStock,
             PermissionKeys.CanViewPackingMaterialStock
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Payments,
+            PermissionKeys.CanViewPayments
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Payments,
+            PermissionKeys.CanRecordPayment
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.Payments,
+            PermissionKeys.CanApprovePayment
+        );
+        addPermission(
+            PermissionModules.Reports,
+            PermissionSubmodules.CashflowReports,
+            PermissionKeys.CanViewCashflowReports
         );
 
         // Warehouse
@@ -1762,7 +1800,7 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.QualityControl,
-            PermissionSubmodules.GoodsReceiptNote,
+            PermissionSubmodules.Testing,
             PermissionKeys.CanStartRawMaterialTest
         );
         addPermission(
@@ -1792,7 +1830,7 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.QualityControl,
-            PermissionSubmodules.GoodsReceiptNote,
+            PermissionSubmodules.Testing,
             PermissionKeys.CanStartPackagingMaterialTest
         );
         addPermission(
@@ -1832,7 +1870,7 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.QualityControl,
-            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionSubmodules.Testing,
             PermissionKeys.CanStartProductTest
         );
         addPermission(
@@ -2123,6 +2161,36 @@ public static class PermissionUtils
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.CustomerManagement,
             PermissionKeys.CanDeleteCustomer
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanViewCustomerCreditStatus
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanManageCustomerContracts
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanViewCustomerQuotations
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanCreateCustomerQuotation
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanApproveCustomerQuotation
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.CustomerManagement,
+            PermissionKeys.CanConvertCustomerQuotation
         );
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
@@ -3750,6 +3818,31 @@ public static class PermissionUtils
             PermissionModules.InventoryManagement,
             PermissionSubmodules.Suppliers,
             PermissionKeys.CanDeleteVendor
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanViewSupplierCertifications
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanManageSupplierCertifications
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanViewSupplierPerformance
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanManageSupplierContracts
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.Suppliers,
+            PermissionKeys.CanViewSupplierSpend
         );
         addPermission(
             PermissionModules.InventoryManagement,

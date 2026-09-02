@@ -235,7 +235,12 @@ builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 var app = builder.Build();
 
-app.SeedData();
+// Database changes are a controlled deployment step. Keeping this opt-in prevents
+// application startup and EF design-time commands from mutating a production database.
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    app.SeedData();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) { }

@@ -96,6 +96,7 @@ public class FormResponse : BaseEntity
 
     [StringLength(100000000)]
     public string Value { get; set; }
+    public bool? Complies { get; set; }
 }
 
 public class FormAssignee : BaseEntity
@@ -142,6 +143,8 @@ public class FormFieldAssigneeDto : BaseDto
 public class ResponseApproval : ResponsibleApprovalStage
 {
     public Guid Id { get; set; }
+
+    public int ApprovalRound { get; set; } = 1;
 
     public Guid ResponseId { get; set; }
 

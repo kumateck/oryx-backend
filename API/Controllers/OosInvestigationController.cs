@@ -28,6 +28,22 @@ public class OosInvestigationController(IOosInvestigationRepository repository) 
     }
 
     /// <summary>
+    /// Updates the investigation form fields while the investigation is still Initiated.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateOosInvestigation([FromRoute] Guid id, [FromBody] UpdateOosInvestigationRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateOosInvestigation(id, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Submits a completed OOS investigation to QA for review.
     /// </summary>
     [HttpPut("{id:guid}/submit")]

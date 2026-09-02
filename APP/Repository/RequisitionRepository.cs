@@ -396,6 +396,44 @@ public class RequisitionRepository(
 
         var result = new List<MaterialAlternativeBatchesDto>();
 
+        // Fetch alternative shelf batches for every requested material in a single
+        // round trip instead of once per item - the per-item query joins 4 levels
+        // deep (shelf -> rack -> location -> warehouse) and was the dominant cost
+        // of this endpoint. minExpiryDate varies per item, so it's applied in-memory
+        // below rather than in this shared query.
+        var requestedMaterialIds = requisition.Items.Select(i => i.MaterialId).Distinct().ToList();
+        var candidateShelfBatchesByMaterial = (
+            await context
+                .ShelfMaterialBatches.IgnoreQueryFilters()
+                .AsSplitQuery()
+                .Include(smb => smb.MaterialBatch)
+                    .ThenInclude(b => b.UoM)
+                .Include(smb => smb.WarehouseLocationShelf)
+                    .ThenInclude(s => s.WarehouseLocationRack)
+                        .ThenInclude(r => r.WarehouseLocation)
+                            .ThenInclude(l => l.Warehouse)
+                .Where(smb =>
+                    requestedMaterialIds.Contains(smb.MaterialBatch.MaterialId)
+                    && smb.Quantity > 0
+                    && !smb.DeletedAt.HasValue
+                    && smb.MaterialBatch.Status == BatchStatus.Available
+                    && (
+                        smb.MaterialBatch.ExpiryDate == null
+                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
+                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
+                    )
+                    && !departmentWarehouseIds.Contains(
+                        smb.WarehouseLocationShelf
+                            .WarehouseLocationRack
+                            .WarehouseLocation
+                            .WarehouseId
+                    )
+                )
+                .ToListAsync()
+        )
+            .GroupBy(smb => smb.MaterialBatch.MaterialId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         foreach (var item in requisition.Items)
         {
             var materialAlternative = new MaterialAlternativeBatchesDto
@@ -450,41 +488,17 @@ public class RequisitionRepository(
             // (prioritized soonest-first via the OrderBy below) so they get
             // consumed before they're wasted, not batches that already can't
             // be used.
-            var query = context
-                .ShelfMaterialBatches.IgnoreQueryFilters()
-                .AsSplitQuery()
-                .Include(smb => smb.MaterialBatch)
-                    .ThenInclude(b => b.UoM)
-                .Include(smb => smb.WarehouseLocationShelf)
-                    .ThenInclude(s => s.WarehouseLocationRack)
-                        .ThenInclude(r => r.WarehouseLocation)
-                            .ThenInclude(l => l.Warehouse)
+            var candidateShelfBatches = candidateShelfBatchesByMaterial.GetValueOrDefault(
+                item.MaterialId,
+                []
+            );
+
+            var alternativeShelfBatches = candidateShelfBatches
                 .Where(smb =>
-                    smb.MaterialBatch.MaterialId == item.MaterialId
-                    && smb.Quantity > 0
-                    && !smb.DeletedAt.HasValue
-                    && smb.MaterialBatch.Status == BatchStatus.Available
-                    && (
-                        smb.MaterialBatch.ExpiryDate == null
-                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
-                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
-                    )
-                    && !departmentWarehouseIds.Contains(
-                        smb.WarehouseLocationShelf
-                            .WarehouseLocationRack
-                            .WarehouseLocation
-                            .WarehouseId
-                    )
-                );
-
-            if (minExpiryDate.HasValue)
-            {
-                query = query.Where(smb => smb.MaterialBatch.ExpiryDate < minExpiryDate.Value);
-            }
-
-            var alternativeShelfBatches = await query
+                    !minExpiryDate.HasValue || smb.MaterialBatch.ExpiryDate < minExpiryDate.Value
+                )
                 .OrderBy(smb => smb.MaterialBatch.ExpiryDate)
-                .ToListAsync();
+                .ToList();
 
             materialAlternative.AlternativeBatches = alternativeShelfBatches
                 .Select(smb => new AlternativeBatchDto
@@ -576,17 +590,35 @@ public class RequisitionRepository(
                 "No production warehouse is associated with department who made stock requisition"
             );
 
+        // Cache each warehouse's bin card history in memory instead of re-querying it
+        // (with a 4-column IgnoreQueryFilters scan) for every item that shares that
+        // warehouse - there are only ever 2 possible warehouses here (raw/packing).
+        // Newly-issued entries are appended to the cache below (see historicalBincards.Add)
+        // so later items still see earlier items' balances within this same run, exactly
+        // as the previous per-item re-fetch did.
+        var bincardCacheByWarehouse = new Dictionary<Guid, List<BinCardInformation>>();
+
+        async Task<List<BinCardInformation>> GetOrLoadHistoricalBincards(Guid warehouseId)
+        {
+            if (bincardCacheByWarehouse.TryGetValue(warehouseId, out var cached))
+                return cached;
+
+            var loaded = await context
+                .BinCardInformation.AsSplitQuery()
+                .IgnoreQueryFilters()
+                .Include(binCardInformation => binCardInformation.MaterialBatch)
+                .Where(b => b.WarehouseId == warehouseId)
+                .ToListAsync();
+            bincardCacheByWarehouse[warehouseId] = loaded;
+            return loaded;
+        }
+
         foreach (var item in stockRequisition.Items)
         {
             var appropriateWarehouse =
                 item.Material.Kind == MaterialKind.Raw ? rawWarehouse : packingWarehouse;
 
-            var historicalBincards = await context
-                .BinCardInformation.AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(binCardInformation => binCardInformation.MaterialBatch)
-                .Where(b => b.WarehouseId == appropriateWarehouse.Id)
-                .ToListAsync();
+            var historicalBincards = await GetOrLoadHistoricalBincards(appropriateWarehouse.Id);
 
             if (stockRequisition.ProductionScheduleProductId == null)
                 return Error.Validation(
@@ -672,8 +704,6 @@ public class RequisitionRepository(
 
                 await context.MaterialBatchEvents.AddAsync(batchEvent);
 
-                await context.SaveChangesAsync();
-
                 var history = historicalBincards
                     .Where(b =>
                         b.MaterialBatch.MaterialId == materialBatch.MaterialId
@@ -699,6 +729,7 @@ public class RequisitionRepository(
                 var binCardEvent = new BinCardInformation
                 {
                     MaterialBatchId = materialBatch.Id,
+                    MaterialBatch = materialBatch,
                     Description = appropriateWarehouse.Name,
                     WayBill = "N/A",
                     ArNumber = arNumber ?? "N/A",
@@ -713,6 +744,10 @@ public class RequisitionRepository(
                 };
 
                 await context.BinCardInformation.AddAsync(binCardEvent);
+                // Keep the in-memory cache in sync so a later item sharing this
+                // warehouse still sees this issuance in its balance calculation,
+                // matching the old per-item re-fetch behaviour without the round trip.
+                historicalBincards.Add(binCardEvent);
                 // ✅ Mark individual item as completed
                 item.Status = RequestStatus.Completed;
             }

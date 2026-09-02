@@ -47,6 +47,7 @@ using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -298,6 +299,11 @@ public class ApplicationDbContext(
 
     public DbSet<Supplier> Suppliers { get; set; }
     public DbSet<SupplierManufacturer> SupplierManufacturers { get; set; }
+    public DbSet<SupplierCertification> SupplierCertifications { get; set; }
+    public DbSet<SupplierContact> SupplierContacts { get; set; }
+    public DbSet<SupplierBankDetail> SupplierBankDetails { get; set; }
+    public DbSet<SupplierPricingAgreement> SupplierPricingAgreements { get; set; }
+    public DbSet<SupplierPerformanceRecord> SupplierPerformanceRecords { get; set; }
     public DbSet<Manufacturer> Manufacturers { get; set; }
     public DbSet<ManufacturerMaterial> ManufacturerMaterials { get; set; }
 
@@ -325,6 +331,14 @@ public class ApplicationDbContext(
     #region Currency
 
     public DbSet<Currency> Currencies { get; set; }
+    public DbSet<ExchangeRate> ExchangeRates { get; set; }
+
+    #endregion
+
+    #region Payments
+
+    public DbSet<Payment> Payments { get; set; }
+    public DbSet<PaymentApproval> PaymentApprovals { get; set; }
 
     #endregion
 
@@ -557,6 +571,11 @@ public class ApplicationDbContext(
     #region Customers
 
     public DbSet<Customer> Customers { get; set; }
+    public DbSet<CustomerContact> CustomerContacts { get; set; }
+    public DbSet<CustomerPricingAgreement> CustomerPricingAgreements { get; set; }
+    public DbSet<CustomerQuotation> CustomerQuotations { get; set; }
+    public DbSet<CustomerQuotationItem> CustomerQuotationItems { get; set; }
+    public DbSet<CustomerQuotationApproval> CustomerQuotationApprovals { get; set; }
 
     #endregion
 
@@ -612,6 +631,7 @@ public class ApplicationDbContext(
     #region Invoice
 
     public DbSet<Invoice> Invoices { get; set; }
+    public DbSet<InvoiceAmount> InvoiceAmounts { get; set; }
 
     #endregion
 
@@ -1315,6 +1335,16 @@ public class ApplicationDbContext(
         modelBuilder
             .Entity<SupplierManufacturer>()
             .HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierCertification>()
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierContact>()
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierBankDetail>()
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierPricingAgreement>()
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
+        modelBuilder.Entity<SupplierPerformanceRecord>()
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<Manufacturer>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder.Entity<ManufacturerMaterial>().HasQueryFilter(a => !a.DeletedAt.HasValue);
 
@@ -1420,6 +1450,16 @@ public class ApplicationDbContext(
         #region Currency
 
         modelBuilder.Entity<Currency>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ExchangeRate>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+
+        #endregion
+
+        #region Payments
+
+        modelBuilder.Entity<Payment>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder
+            .Entity<PaymentApproval>()
+            .HasQueryFilter(a => !a.Payment.DeletedAt.HasValue);
 
         #endregion
 
@@ -1715,6 +1755,18 @@ public class ApplicationDbContext(
         #region Customers
 
         modelBuilder.Entity<Customer>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<CustomerContact>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Customer.DeletedAt.HasValue);
+        modelBuilder.Entity<CustomerPricingAgreement>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Customer.DeletedAt.HasValue);
+        modelBuilder.Entity<CustomerQuotation>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.Customer.DeletedAt.HasValue);
+        modelBuilder.Entity<CustomerQuotationItem>().HasQueryFilter(entity =>
+            !entity.DeletedAt.HasValue && !entity.CustomerQuotation.DeletedAt.HasValue);
+        modelBuilder.Entity<Invoice>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder
+            .Entity<InvoiceAmount>()
+            .HasQueryFilter(entity => !entity.DeletedAt.HasValue && !entity.Invoice.DeletedAt.HasValue);
 
         #endregion
 
@@ -1801,6 +1853,39 @@ public class ApplicationDbContext(
 
     private void ConfigureConstraints(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Customer>().HasOne(item => item.TermsOfPayment)
+            .WithMany().HasForeignKey(item => item.TermsOfPaymentId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Customer>().HasOne(item => item.Currency)
+            .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerContact>().HasOne(item => item.Customer)
+            .WithMany(item => item.Contacts).HasForeignKey(item => item.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.Customer)
+            .WithMany(item => item.PricingAgreements).HasForeignKey(item => item.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.Product)
+            .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.UoM)
+            .WithMany().HasForeignKey(item => item.UoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.Currency)
+            .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerQuotation>().HasOne(item => item.Customer)
+            .WithMany().HasForeignKey(item => item.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerQuotation>().HasOne(item => item.Currency)
+            .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ProductionOrder>().HasOne(item => item.SourceCustomerQuotation)
+            .WithOne().HasForeignKey<ProductionOrder>(item => item.SourceCustomerQuotationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CustomerContact>().HasIndex(item => item.CustomerId)
+            .IsUnique().HasFilter("\"DeletedAt\" IS NULL AND \"IsPrimary\" = TRUE");
+        modelBuilder.Entity<CustomerPricingAgreement>()
+            .HasIndex(item => new { item.CustomerId, item.ProductId, item.UoMId, item.EffectiveFrom });
+        modelBuilder.Entity<CustomerQuotation>().HasIndex(item => item.Code)
+            .IsUnique().HasFilter("\"DeletedAt\" IS NULL");
+        modelBuilder.Entity<ProductionOrder>().HasIndex(item => item.SourceCustomerQuotationId)
+            .IsUnique().HasFilter("\"SourceCustomerQuotationId\" IS NOT NULL");
+        modelBuilder.Entity<CustomerQuotationApproval>().HasIndex(item => new
+            { item.ApprovalId, item.CustomerQuotationId, item.Order, item.UserId, item.RoleId }).IsUnique();
+
         // Requisition Approvals
         modelBuilder
             .Entity<RequisitionApproval>()
@@ -1826,6 +1911,53 @@ public class ApplicationDbContext(
                 a.RoleId,
             })
             .IsUnique();
+
+        // Payment approvals and rate history are idempotent by workflow/rate date.
+        modelBuilder
+            .Entity<PaymentApproval>()
+            .HasIndex(a => new
+            {
+                a.ApprovalId,
+                a.PaymentId,
+                a.Order,
+                a.UserId,
+                a.RoleId,
+            })
+            .IsUnique();
+
+        modelBuilder
+            .Entity<ExchangeRate>()
+            .HasIndex(rate => new { rate.CurrencyId, rate.EffectiveDate })
+            .IsUnique();
+
+        modelBuilder
+            .Entity<Payment>()
+            .HasIndex(payment => new
+            {
+                payment.PayableType,
+                payment.PayableId,
+                payment.Reference,
+            })
+            .IsUnique();
+
+        modelBuilder
+            .Entity<InvoiceAmount>()
+            .HasIndex(amount => new { amount.InvoiceId, amount.CurrencyId })
+            .IsUnique();
+
+        modelBuilder.Entity<SupplierCertification>()
+            .HasIndex(item => new { item.SupplierId, item.CertificateNumber }).IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL");
+        modelBuilder.Entity<SupplierBankDetail>()
+            .HasIndex(item => new { item.SupplierId, item.AccountNumber, item.CurrencyId }).IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL");
+        modelBuilder.Entity<SupplierContact>().HasIndex(item => item.SupplierId).IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL AND \"IsPrimary\" = TRUE");
+        modelBuilder.Entity<SupplierPricingAgreement>()
+            .HasIndex(item => new { item.SupplierId, item.MaterialId, item.UoMId, item.EffectiveFrom });
+        modelBuilder.Entity<SupplierPerformanceRecord>()
+            .HasIndex(item => new { item.SupplierId, item.PeriodStart, item.PeriodEnd }).IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL");
 
         // Purchase Order Approvals
         modelBuilder
@@ -1873,6 +2005,7 @@ public class ApplicationDbContext(
             {
                 a.ApprovalId,
                 a.ResponseId,
+                a.ApprovalRound,
                 a.Order,
                 a.UserId,
                 a.RoleId,
@@ -1928,6 +2061,64 @@ public class ApplicationDbContext(
 
     private void ConfigureRelationships(ModelBuilder modelBuilder)
     {
+        #region Cashflow
+
+        modelBuilder.Entity<ExchangeRate>()
+            .HasOne(rate => rate.Currency)
+            .WithMany()
+            .HasForeignKey(rate => rate.CurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<InvoiceAmount>()
+            .HasOne(amount => amount.Currency)
+            .WithMany()
+            .HasForeignKey(amount => amount.CurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Payment>()
+            .HasOne(payment => payment.Currency)
+            .WithMany()
+            .HasForeignKey(payment => payment.CurrencyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Payment>()
+            .HasOne(payment => payment.RecordedBy)
+            .WithMany()
+            .HasForeignKey(payment => payment.RecordedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        #endregion
+
+        #region Supplier relationship management
+
+        modelBuilder.Entity<SupplierCertification>().HasOne(item => item.Supplier)
+            .WithMany(item => item.Certifications).HasForeignKey(item => item.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierCertification>().HasOne(item => item.Attachment)
+            .WithMany().HasForeignKey(item => item.AttachmentId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierContact>().HasOne(item => item.Supplier)
+            .WithMany(item => item.Contacts).HasForeignKey(item => item.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierBankDetail>().HasOne(item => item.Supplier)
+            .WithMany(item => item.BankDetails).HasForeignKey(item => item.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierBankDetail>().HasOne(item => item.Currency)
+            .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPricingAgreement>().HasOne(item => item.Supplier)
+            .WithMany(item => item.PricingAgreements).HasForeignKey(item => item.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPricingAgreement>().HasOne(item => item.Currency)
+            .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPricingAgreement>().HasOne(item => item.Material)
+            .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPricingAgreement>().HasOne(item => item.UoM)
+            .WithMany().HasForeignKey(item => item.UoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPerformanceRecord>().HasOne(item => item.Supplier)
+            .WithMany(item => item.PerformanceRecords).HasForeignKey(item => item.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        #endregion
+
         #region Employee
 
         modelBuilder.Entity<Employee>().OwnsOne(f => f.Mother);

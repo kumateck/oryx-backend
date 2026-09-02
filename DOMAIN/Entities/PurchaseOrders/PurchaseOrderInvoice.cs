@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Procurement.Manufacturers;
+using DOMAIN.Entities.Payments;
 using SHARED;
 
 namespace DOMAIN.Entities.PurchaseOrders;
@@ -13,6 +14,7 @@ public class PurchaseOrderInvoice : BaseEntity
     public PurchaseOrder PurchaseOrder { get; set; }
     public List<BatchItem> BatchItems { get; set; } = [];
     public List<PurchaseOrderCharge> Charges { get; set; } = [];
+    public DateTime? DueDate { get; set; }
 }
 
 public class BatchItem : BaseEntity
@@ -41,6 +43,8 @@ public class PurchaseOrderInvoiceDto : BaseDto
     public CollectionItemDto PurchaseOrder { get; set; }
     public List<BatchItemDto> BatchItems { get; set; } = [];
     public List<PurchaseOrderChargeDto> Charges { get; set; } = [];
+    public DateTime? DueDate { get; set; }
+    public List<PayableBalanceDto> Balances { get; set; } = [];
 }
 
 public class BatchItemDto

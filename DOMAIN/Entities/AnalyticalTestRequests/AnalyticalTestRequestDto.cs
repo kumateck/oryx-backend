@@ -37,4 +37,5 @@ public class AnalyticalTestRequestDto : BaseDto
     public string IssueNumber { get; set; }
     public DateTime? IssuedAt { get; set; }
     public UserDto IssuedBy { get; set; }
+    public bool IsRetest { get; set; }
 }

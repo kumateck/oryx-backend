@@ -222,7 +222,8 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         var result = await repository.UpdateSupplierStatus(
             supplierId,
             request.Status,
-            Guid.Parse(userId)
+            Guid.Parse(userId),
+            request.RequalificationIntervalDays
         );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

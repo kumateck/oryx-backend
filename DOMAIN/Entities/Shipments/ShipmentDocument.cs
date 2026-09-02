@@ -6,6 +6,7 @@ using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.Payments;
 
 namespace DOMAIN.Entities.Shipments;
 
@@ -60,6 +61,7 @@ public class ShipmentInvoice : BaseEntity
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? DueDate { get; set; }
 }
 
 public class ShipmentInvoiceItem : BaseEntity

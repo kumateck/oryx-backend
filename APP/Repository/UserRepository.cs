@@ -111,6 +111,38 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         );
     }
 
+    public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsersByPermissions(
+        List<string> permissionKeys, int page, int pageSize, string searchQuery)
+    {
+        var roleIds = await context.RoleClaims.IgnoreQueryFilters()
+            .Where(rc => permissionKeys.Contains(rc.ClaimValue))
+            .Select(rc => rc.RoleId)
+            .Distinct()
+            .ToListAsync();
+
+        var userIds = await context.UserRoles.IgnoreQueryFilters()
+            .Where(ur => roleIds.Contains(ur.RoleId))
+            .Select(ur => ur.UserId)
+            .Distinct()
+            .ToListAsync();
+
+        var query = context.Users.IgnoreQueryFilters()
+            .Where(u => userIds.Contains(u.Id))
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            query = query.WhereSearch(searchQuery, q => q.FirstName, q => q.LastName, q => q.Email);
+        }
+
+        return await PaginationHelper.GetPaginatedResultAsync(
+            query,
+            page,
+            pageSize,
+            mapper.Map<UserWithRoleDto>
+        );
+    }
+
     public async Task<Result<UserWithRoleDto>> GetUser(Guid userId)
     {
         var user = await context.Users
