@@ -33,16 +33,19 @@ public partial class PaymentRepository
             PayableId = payment.PayableId,
             Approved = payment.Approved,
             Status = payment.Status,
-            Approvals = payment.Approvals.OrderBy(stage => stage.Order).Select(stage =>
-                new PaymentApprovalDto
-                {
-                    Id = stage.Id,
-                    Order = stage.Order,
-                    Required = stage.Required,
-                    Status = stage.Status,
-                    ApprovalTime = stage.ApprovalTime,
-                    Comments = stage.Comments,
-                }).ToList(),
+            Approvals =
+            [
+                .. payment.Approvals.OrderBy(stage => stage.Order).Select(stage =>
+                    new PaymentApprovalDto
+                    {
+                        Id = stage.Id,
+                        Order = stage.Order,
+                        Required = stage.Required,
+                        Status = stage.Status,
+                        ApprovalTime = stage.ApprovalTime,
+                        Comments = stage.Comments,
+                    })
+            ]
         };
     }
 }

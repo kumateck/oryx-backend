@@ -13,7 +13,7 @@ internal static class ResponseApprovalRoundManager
         var list = approvals.ToList();
         if (list.Count == 0) return [];
         var round = list.Max(item => item.ApprovalRound);
-        return list.Where(item => item.ApprovalRound == round).ToList();
+        return [.. list.Where(item => item.ApprovalRound == round)];
     }
 
     internal static async Task<bool> StartAsync(
@@ -46,7 +46,7 @@ internal static class ResponseApprovalRoundManager
 
         response.Approved = false;
         response.Rejected = false;
-        context.ResponseApprovals.AddRange(rows);
+        await context.ResponseApprovals.AddRangeAsync(rows);
         await context.SaveChangesAsync();
         return true;
     }

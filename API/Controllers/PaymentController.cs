@@ -25,7 +25,7 @@ public class PaymentController(IPaymentRepository repository) : ControllerBase
     [HttpGet("{paymentId:guid}")]
     [Authorize(PermissionKeys.CanViewPayments)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaymentDto))]
-    public async Task<IResult> GetPayment(Guid paymentId)
+    public async Task<IResult> GetPayment([FromRoute] Guid paymentId)
     {
         var result = await repository.GetPayment(paymentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -34,7 +34,7 @@ public class PaymentController(IPaymentRepository repository) : ControllerBase
     [HttpPost("{paymentId:guid}/review")]
     [Authorize(PermissionKeys.CanApprovePayment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IResult> ReviewPayment(Guid paymentId, [FromBody] ReviewPaymentRequest request)
+    public async Task<IResult> ReviewPayment([FromRoute] Guid paymentId, [FromBody] ReviewPaymentRequest request)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
         var roleIds = HttpContext.Items["Roles"] as List<Guid> ?? [];
@@ -72,7 +72,7 @@ public class PaymentController(IPaymentRepository repository) : ControllerBase
     [HttpPut("base-currency/{currencyId:guid}")]
     [Authorize(PermissionKeys.CanRecordPayment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IResult> SetBaseCurrency(Guid currencyId)
+    public async Task<IResult> SetBaseCurrency([FromRoute] Guid currencyId)
     {
         var result = await repository.SetBaseCurrency(currencyId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -91,7 +91,7 @@ public class PaymentController(IPaymentRepository repository) : ControllerBase
     [HttpGet("exchange-rates/{currencyId:guid}")]
     [Authorize(PermissionKeys.CanViewCashflowReports)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExchangeRateDto))]
-    public async Task<IResult> GetExchangeRate(Guid currencyId, [FromQuery] DateTime asOf)
+    public async Task<IResult> GetExchangeRate([FromRoute] Guid currencyId, [FromQuery] DateTime asOf)
     {
         var result = await repository.GetExchangeRate(currencyId, asOf);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

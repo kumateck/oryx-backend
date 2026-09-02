@@ -15,12 +15,15 @@ internal static class ResponseApprovalSubmission
         var configurations = await context.Approvals.AsNoTracking()
             .Include(item => item.ApprovalStages)
             .Where(item => item.ItemType == nameof(Response)).Take(2).ToListAsync();
-        if (configurations.Count == 0)
-            return Error.Validation("Response.Approval",
-                "Approval configuration for response does not exist.");
-        if (configurations.Count > 1)
-            return Error.Conflict("Response.ApprovalAmbiguous",
-                "Multiple response approval configurations exist.");
+        switch (configurations.Count)
+        {
+            case 0:
+                return Error.Validation("Response.Approval",
+                    "Approval configuration for response does not exist.");
+            case > 1:
+                return Error.Conflict("Response.ApprovalAmbiguous",
+                    "Multiple response approval configurations exist.");
+        }
 
         var stages = configurations[0].ApprovalStages;
         if (stages.Count == 0)

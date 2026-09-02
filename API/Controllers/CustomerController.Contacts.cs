@@ -10,7 +10,7 @@ public partial class CustomerController
 {
     [HttpGet("{id:guid}/contacts")]
     [Authorize(PermissionKeys.CanManageCustomerContracts)]
-    public async Task<IResult> GetContacts(Guid id)
+    public async Task<IResult> GetContacts([FromRoute] Guid id)
     {
         var result = await repository.GetContacts(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -18,7 +18,7 @@ public partial class CustomerController
 
     [HttpPost("{id:guid}/contacts")]
     [Authorize(PermissionKeys.CanManageCustomerContracts)]
-    public async Task<IResult> CreateContact(Guid id, CustomerContactRequest request)
+    public async Task<IResult> CreateContact([FromRoute]Guid id, [FromBody] CustomerContactRequest request)
     {
         var userId = CurrentUserId();
         if (!userId.HasValue) return TypedResults.Unauthorized();
@@ -28,7 +28,7 @@ public partial class CustomerController
 
     [HttpPut("{id:guid}/contacts/{contactId:guid}")]
     [Authorize(PermissionKeys.CanManageCustomerContracts)]
-    public async Task<IResult> UpdateContact(Guid id, Guid contactId, CustomerContactRequest request)
+    public async Task<IResult> UpdateContact([FromRoute] Guid id, [FromRoute] Guid contactId, [FromBody] CustomerContactRequest request)
     {
         var userId = CurrentUserId();
         if (!userId.HasValue) return TypedResults.Unauthorized();
@@ -38,7 +38,7 @@ public partial class CustomerController
 
     [HttpDelete("{id:guid}/contacts/{contactId:guid}")]
     [Authorize(PermissionKeys.CanManageCustomerContracts)]
-    public async Task<IResult> DeleteContact(Guid id, Guid contactId)
+    public async Task<IResult> DeleteContact([FromRoute] Guid id, [FromRoute] Guid contactId)
     {
         var userId = CurrentUserId();
         if (!userId.HasValue) return TypedResults.Unauthorized();

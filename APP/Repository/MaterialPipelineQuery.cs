@@ -132,7 +132,7 @@ internal static class MaterialPipelineQuery
 
         return MaterialPipelineBuilder.Build(
             requisitions, sources, purchaseOrders, shipments, statuses,
-            receiving, quotedSources.ToHashSet(), departmentsByRequisition
+            receiving, [.. quotedSources], departmentsByRequisition
         );
     }
 }

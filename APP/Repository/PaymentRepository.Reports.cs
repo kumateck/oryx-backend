@@ -55,11 +55,24 @@ public partial class PaymentRepository
                 else
                 {
                     var days = (line.DueDate.Value.Date - date).Days;
-                    if (days <= 7) result.Next7Days += amount;
-                    else if (days <= 30) result.Days8To30 += amount;
-                    else if (days <= 60) result.Days31To60 += amount;
-                    else if (days <= 90) result.Days61To90 += amount;
-                    else result.Beyond90Days += amount;
+                    switch (days)
+                    {
+                        case <= 7:
+                            result.Next7Days += amount;
+                            break;
+                        case <= 30:
+                            result.Days8To30 += amount;
+                            break;
+                        case <= 60:
+                            result.Days31To60 += amount;
+                            break;
+                        case <= 90:
+                            result.Days61To90 += amount;
+                            break;
+                        default:
+                            result.Beyond90Days += amount;
+                            break;
+                    }
                 }
             }
             return result;
@@ -71,7 +84,7 @@ public partial class PaymentRepository
             BaseCurrencyName = baseCurrency.Name,
             ProjectedOutflows = await BuildDirection(ap.Lines),
             ProjectedInflows = await BuildDirection(ar.Lines),
-            DataQualityWarnings = warnings.Distinct().ToList(),
+            DataQualityWarnings = [.. warnings.Distinct()],
         };
     }
 
@@ -120,25 +133,27 @@ public partial class PaymentRepository
         {
             BaseCurrencyId = baseCurrency.Id,
             BaseCurrencyName = baseCurrency.Name,
-            DataQualityWarnings = warnings.Distinct().ToList(),
+            DataQualityWarnings = [.. warnings.Distinct()],
+            Parties =
+            [
+                .. converted
+                    .GroupBy(item => new { item.Raw.PartyId, item.Raw.PartyName })
+                    .Select(group =>
+                    {
+                        var party = new AgingPartyDto
+                        {
+                            PartyId = group.Key.PartyId,
+                            PartyName = group.Key.PartyName,
+                            Lines = group.Select(item => item.Line).ToList(),
+                            TotalOutstandingBase = group.Sum(item => item.Line.OutstandingBase),
+                        };
+                        foreach (var line in party.Lines)
+                            AddBucket(party.BucketsBase, line.Bucket, line.OutstandingBase);
+                        return party;
+                    })
+                    .OrderBy(item => item.PartyName)
+            ]
         };
-        report.Parties = converted
-            .GroupBy(item => new { item.Raw.PartyId, item.Raw.PartyName })
-            .Select(group =>
-            {
-                var party = new AgingPartyDto
-                {
-                    PartyId = group.Key.PartyId,
-                    PartyName = group.Key.PartyName,
-                    Lines = group.Select(item => item.Line).ToList(),
-                    TotalOutstandingBase = group.Sum(item => item.Line.OutstandingBase),
-                };
-                foreach (var line in party.Lines)
-                    AddBucket(party.BucketsBase, line.Bucket, line.OutstandingBase);
-                return party;
-            })
-            .OrderBy(item => item.PartyName)
-            .ToList();
         report.TotalOutstandingBase = report.Parties.Sum(item => item.TotalOutstandingBase);
         return report;
     }
@@ -147,11 +162,14 @@ public partial class PaymentRepository
     {
         if (!dueDate.HasValue) return AgingBucket.DueDateUnknown;
         var overdueDays = (asOf.Date - dueDate.Value.Date).Days;
-        if (overdueDays < 0) return AgingBucket.Current;
-        if (overdueDays <= 30) return AgingBucket.Days0To30;
-        if (overdueDays <= 60) return AgingBucket.Days31To60;
-        if (overdueDays <= 90) return AgingBucket.Days61To90;
-        return AgingBucket.DaysOver90;
+        return overdueDays switch
+        {
+            < 0 => AgingBucket.Current,
+            <= 30 => AgingBucket.Days0To30,
+            <= 60 => AgingBucket.Days31To60,
+            <= 90 => AgingBucket.Days61To90,
+            _ => AgingBucket.DaysOver90
+        };
     }
 
     private static void AddBucket(AgingBucketsDto buckets, AgingBucket bucket, decimal amount)

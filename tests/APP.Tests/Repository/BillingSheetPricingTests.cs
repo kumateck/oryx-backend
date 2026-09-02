@@ -8,7 +8,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.PurchaseOrders;
-using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Shipments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;

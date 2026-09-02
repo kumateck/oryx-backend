@@ -22,24 +22,29 @@ public partial class CustomerRepository
 
         var configurations = await context.Approvals.AsNoTracking().Include(item => item.ApprovalStages)
             .Where(item => item.ItemType == nameof(CustomerQuotation)).Take(2).ToListAsync();
-        if (configurations.Count == 0)
-            return Error.Validation("CustomerQuotation.ApprovalMissing", "Configure quotation approval stages before sending.");
-        if (configurations.Count > 1)
-            return Error.Conflict("CustomerQuotation.ApprovalAmbiguous", "Multiple quotation approval configurations exist.");
+        switch (configurations.Count)
+        {
+            case 0:
+                return Error.Validation("CustomerQuotation.ApprovalMissing", "Configure quotation approval stages before sending.");
+            case > 1:
+                return Error.Conflict("CustomerQuotation.ApprovalAmbiguous", "Multiple quotation approval configurations exist.");
+        }
+
         var configuration = configurations[0];
         var stages = configuration.ApprovalStages.OrderBy(item => item.Order).ToList();
         if (stages.Count == 0)
             return Error.Validation("CustomerQuotation.ApprovalMissing", "Quotation approval has no stages.");
 
-        quotation.Approvals = stages.Select((stage, index) => new CustomerQuotationApproval
-        {
-            CustomerQuotationId = quotation.Id, ApprovalId = configuration.Id,
-            Order = stage.Order, Required = stage.Required, UserId = stage.UserId, RoleId = stage.RoleId,
-            ActivatedAt = index == 0 ? DateTime.UtcNow : null, CreatedAt = DateTime.UtcNow,
-        }).ToList();
+        quotation.Approvals =
+        [
+            .. stages.Select((stage, index) => new CustomerQuotationApproval
+            {
+                CustomerQuotationId = quotation.Id, ApprovalId = configuration.Id,
+                Order = stage.Order, Required = stage.Required, UserId = stage.UserId, RoleId = stage.RoleId,
+                ActivatedAt = index == 0 ? DateTime.UtcNow : null, CreatedAt = DateTime.UtcNow,
+            })
+        ];
         quotation.Status = CustomerQuotationStatus.Sent;
-        quotation.UpdatedAt = DateTime.UtcNow;
-        quotation.LastUpdatedById = userId;
         await context.SaveChangesAsync();
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();

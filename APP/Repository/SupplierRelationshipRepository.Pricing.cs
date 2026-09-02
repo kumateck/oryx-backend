@@ -39,7 +39,6 @@ public partial class SupplierRelationshipRepository
         var validation = await ValidatePricing(supplierId, id, request);
         if (!validation.IsSuccess) return validation;
         Apply(entity, request);
-        entity.LastUpdatedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -50,7 +49,8 @@ public partial class SupplierRelationshipRepository
             item.Id == id && item.SupplierId == supplierId);
         if (entity is null)
             return Error.NotFound("SupplierPricingAgreement.NotFound", "Pricing agreement not found.");
-        SoftDelete(entity, userId);
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.LastDeletedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -63,17 +63,19 @@ public partial class SupplierRelationshipRepository
                 && item.EffectiveFrom.Date <= asOf.Date
                 && (!item.EffectiveTo.HasValue || item.EffectiveTo.Value.Date >= asOf.Date))
             .OrderByDescending(item => item.EffectiveFrom).Take(2).ToListAsync();
-        if (matches.Count == 0)
-            return Error.NotFound("SupplierPricingAgreement.NotFound", "No active pricing agreement was found.");
-        if (matches.Count > 1)
+        switch (matches.Count)
         {
-            logger.LogError(
-                "Ambiguous supplier pricing agreements for supplier {SupplierId}, material {MaterialId}, UoM {UoMId} at {AsOf}",
-                supplierId, materialId, uomId, asOf);
-            return Error.Conflict(
-                "SupplierPricingAgreement.Ambiguous", "Multiple active pricing agreements require correction.");
+            case 0:
+                return Error.NotFound("SupplierPricingAgreement.NotFound", "No active pricing agreement was found.");
+            case > 1:
+                logger.LogError(
+                    "Ambiguous supplier pricing agreements for supplier {SupplierId}, material {MaterialId}, UoM {UoMId} at {AsOf}",
+                    supplierId, materialId, uomId, asOf);
+                return Error.Conflict(
+                    "SupplierPricingAgreement.Ambiguous", "Multiple active pricing agreements require correction.");
+            default:
+                return ToPricingDto(matches[0]);
         }
-        return ToPricingDto(matches[0]);
     }
 
     private async Task<Result> ValidatePricing(

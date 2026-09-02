@@ -1,4 +1,5 @@
 using APP.Utils;
+using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -45,10 +46,16 @@ public partial class CustomerRepository
             if (!price.HasValue)
             {
                 var active = await GetPricingMatches(customerId, requestItem.ProductId, requestItem.UoMId, DateTime.UtcNow);
-                if (active.Count > 1) return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
-                if (active.Count == 1 && active[0].CurrencyId != customer.CurrencyId)
-                    return Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency.");
-                price = active.Count == 1 ? active[0].AgreedPrice : products[requestItem.ProductId].Price;
+                switch (active.Count)
+                {
+                    case > 1:
+                        return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
+                    case 1 when active[0].CurrencyId != customer.CurrencyId:
+                        return Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency.");
+                    default:
+                        price = active.Count == 1 ? active[0].AgreedPrice : products[requestItem.ProductId].Price;
+                        break;
+                }
             }
             if (price < 0) return Error.Validation("CustomerQuotation.Price", "Unit price cannot be negative.");
             quotation.Items.Add(new CustomerQuotationItem
@@ -58,7 +65,7 @@ public partial class CustomerRepository
                 DiscountPercent = requestItem.DiscountPercent, CreatedById = userId,
             });
         }
-        context.CustomerQuotations.Add(quotation);
+        await context.CustomerQuotations.AddAsync(quotation);
         await context.SaveChangesAsync();
         return quotation.Id;
     }
@@ -98,22 +105,28 @@ public partial class CustomerRepository
     {
         Id = item.Id, CreatedAt = item.CreatedAt, CustomerId = item.CustomerId,
         CustomerName = item.Customer?.Name, Code = item.Code,
-        Currency = item.Currency is null ? null : new() { Id = item.Currency.Id, Name = item.Currency.Name, Symbol = item.Currency.Symbol },
+        Currency = item.Currency is null ? null : new CurrencyDto { Id = item.Currency.Id, Name = item.Currency.Name, Symbol = item.Currency.Symbol },
         Status = item.ValidUntil < asOf && item.Status is CustomerQuotationStatus.Draft or CustomerQuotationStatus.Sent
             ? CustomerQuotationStatus.Expired : item.Status,
         ValidUntil = item.ValidUntil, Approved = item.Approved,
-        Items = item.Items.Select(line => new CustomerQuotationItemDto
-        {
-            Id = line.Id, CreatedAt = line.CreatedAt, ProductId = line.ProductId,
-            ProductName = line.Product?.Name, Quantity = line.Quantity, UoMId = line.UoMId,
-            UoMName = line.UoM?.Name, UnitPrice = line.UnitPrice,
-            DiscountPercent = line.DiscountPercent, TotalValue = line.TotalValue,
-        }).ToList(),
+        Items =
+        [
+            .. item.Items.Select(line => new CustomerQuotationItemDto
+            {
+                Id = line.Id, CreatedAt = line.CreatedAt, ProductId = line.ProductId,
+                ProductName = line.Product?.Name, Quantity = line.Quantity, UoMId = line.UoMId,
+                UoMName = line.UoM?.Name, UnitPrice = line.UnitPrice,
+                DiscountPercent = line.DiscountPercent, TotalValue = line.TotalValue,
+            })
+        ],
         TotalValue = item.Items.Sum(line => line.TotalValue),
-        Approvals = item.Approvals.OrderBy(stage => stage.Order).Select(stage => new CustomerQuotationApprovalDto
-        {
-            Id = stage.Id, Order = stage.Order, Required = stage.Required, Status = stage.Status,
-            ApprovalTime = stage.ApprovalTime, Comments = stage.Comments,
-        }).ToList(),
+        Approvals =
+        [
+            .. item.Approvals.OrderBy(stage => stage.Order).Select(stage => new CustomerQuotationApprovalDto
+            {
+                Id = stage.Id, Order = stage.Order, Required = stage.Required, Status = stage.Status,
+                ApprovalTime = stage.ApprovalTime, Comments = stage.Comments,
+            })
+        ]
     };
 }

@@ -31,27 +31,29 @@ internal static class PaymentBalanceQuery
             .Select(group => new { CurrencyId = group.Key, Amount = group.Sum(x => x.Amount) })
             .ToDictionaryAsync(x => x.CurrencyId, x => x.Amount);
 
-        return totals
-            .GroupBy(total => new
-            {
-                total.CurrencyId,
-                total.CurrencyName,
-                total.CurrencySymbol,
-            })
-            .Select(group =>
-            {
-                var documentTotal = group.Sum(x => x.Amount);
-                var amountPaid = paidByCurrency.GetValueOrDefault(group.Key.CurrencyId);
-                return new PayableBalanceDto
+        return
+        [
+            .. totals
+                .GroupBy(total => new
                 {
-                    CurrencyId = group.Key.CurrencyId,
-                    CurrencyName = group.Key.CurrencyName,
-                    CurrencySymbol = group.Key.CurrencySymbol,
-                    DocumentTotal = documentTotal,
-                    AmountPaid = amountPaid,
-                    OutstandingBalance = Math.Max(0m, documentTotal - amountPaid),
-                };
-            })
-            .ToList();
+                    total.CurrencyId,
+                    total.CurrencyName,
+                    total.CurrencySymbol,
+                })
+                .Select(group =>
+                {
+                    var documentTotal = group.Sum(x => x.Amount);
+                    var amountPaid = paidByCurrency.GetValueOrDefault(group.Key.CurrencyId);
+                    return new PayableBalanceDto
+                    {
+                        CurrencyId = group.Key.CurrencyId,
+                        CurrencyName = group.Key.CurrencyName,
+                        CurrencySymbol = group.Key.CurrencySymbol,
+                        DocumentTotal = documentTotal,
+                        AmountPaid = amountPaid,
+                        OutstandingBalance = Math.Max(0m, documentTotal - amountPaid),
+                    };
+                })
+        ];
     }
 }

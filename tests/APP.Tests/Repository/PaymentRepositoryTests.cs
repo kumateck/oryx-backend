@@ -1,6 +1,5 @@
 using APP.Repository;
 using AutoMapper;
-using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.Procurement.Suppliers;

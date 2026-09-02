@@ -47,7 +47,6 @@ public partial class SupplierRelationshipRepository
                 && item.CurrencyId == request.CurrencyId))
             return Error.Conflict("SupplierBankDetail.Duplicate", "This account is already registered.");
         Apply(entity, request);
-        entity.LastUpdatedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -58,7 +57,9 @@ public partial class SupplierRelationshipRepository
             item.Id == id && item.SupplierId == supplierId);
         if (entity is null)
             return Error.NotFound("SupplierBankDetail.NotFound", "Supplier bank detail not found.");
-        SoftDelete(entity, userId);
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.LastDeletedById = userId;
+        
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -83,6 +84,6 @@ public partial class SupplierRelationshipRepository
         {
             Id = item.Currency.Id, Name = item.Currency.Name, Symbol = item.Currency.Symbol,
             Description = item.Currency.Description, IsBaseCurrency = item.Currency.IsBaseCurrency,
-        },
+        }
     };
 }
