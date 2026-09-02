@@ -13,43 +13,43 @@ public partial class SupplierController
     public async Task<IResult> GetRequalificationDue(
         [FromQuery] int withinDays = 30, [FromQuery] DateTime? asOf = null)
     {
-        var result = await _repository.GetRequalificationDue(withinDays, asOf);
+        var result = await repository.GetRequalificationDue(withinDays, asOf);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPost("{supplierId:guid}/performance/compute")]
     [Authorize(PermissionKeys.CanViewSupplierPerformance)]
     public async Task<IResult> ComputePerformance(
-        Guid supplierId, [FromBody] ComputeSupplierPerformanceRequest request)
+        [FromRoute] Guid supplierId, [FromBody] ComputeSupplierPerformanceRequest request)
     {
-        var result = await _repository.ComputePerformance(supplierId, request);
+        var result = await repository.ComputePerformance(supplierId, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPost("{supplierId:guid}/performance")]
     [Authorize(PermissionKeys.CanViewSupplierPerformance)]
     public async Task<IResult> PersistPerformance(
-        Guid supplierId, [FromBody] ComputeSupplierPerformanceRequest request)
+        [FromRoute] Guid supplierId, [FromBody] ComputeSupplierPerformanceRequest request)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.PersistPerformance(supplierId, request, userId);
+        var result = await repository.PersistPerformance(supplierId, request, userId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpGet("{supplierId:guid}/performance")]
     [Authorize(PermissionKeys.CanViewSupplierPerformance)]
-    public async Task<IResult> GetPerformanceRecords(Guid supplierId)
+    public async Task<IResult> GetPerformanceRecords([FromRoute] Guid supplierId)
     {
-        var result = await _repository.GetPerformanceRecords(supplierId);
+        var result = await repository.GetPerformanceRecords(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpGet("{supplierId:guid}/spend-summary")]
     [Authorize(PermissionKeys.CanViewSupplierSpend)]
     public async Task<IResult> GetSpendSummary(
-        Guid supplierId, [FromQuery] DateTime from, [FromQuery] DateTime to)
+        [FromRoute] Guid supplierId, [FromQuery] DateTime from, [FromQuery] DateTime to)
     {
-        var result = await _repository.GetSpendSummary(supplierId, from, to);
+        var result = await repository.GetSpendSummary(supplierId, from, to);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

@@ -117,21 +117,23 @@ public partial class PaymentRepository
         currencyId, currencyName ?? "Unknown", total, paid.GetValueOrDefault((type, id, currencyId))));
 
     private static List<RawLine> Collapse(IEnumerable<RawLine> lines)
-        => lines.GroupBy(line => new
-            {
-                line.PayableType,
-                line.PayableId,
-                line.DocumentCode,
-                line.DueDate,
-                line.PartyId,
-                line.PartyName,
-                line.CurrencyId,
-                line.CurrencyName,
-            })
-            .Select(group => new RawLine(group.Key.PayableType, group.Key.PayableId, group.Key.DocumentCode,
-                group.Key.DueDate, group.Key.PartyId, group.Key.PartyName, group.Key.CurrencyId,
-                group.Key.CurrencyName, group.Sum(x => x.DocumentTotal), group.Max(x => x.AmountPaid)))
-            .ToList();
+        =>
+        [
+            .. lines.GroupBy(line => new
+                {
+                    line.PayableType,
+                    line.PayableId,
+                    line.DocumentCode,
+                    line.DueDate,
+                    line.PartyId,
+                    line.PartyName,
+                    line.CurrencyId,
+                    line.CurrencyName,
+                })
+                .Select(group => new RawLine(group.Key.PayableType, group.Key.PayableId, group.Key.DocumentCode,
+                    group.Key.DueDate, group.Key.PartyId, group.Key.PartyName, group.Key.CurrencyId,
+                    group.Key.CurrencyName, group.Sum(x => x.DocumentTotal), group.Max(x => x.AmountPaid)))
+        ];
 
     private async Task<Currency> GetBaseCurrency()
         => await context.Currencies.AsNoTracking().SingleOrDefaultAsync(item => item.IsBaseCurrency);

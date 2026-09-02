@@ -3,7 +3,6 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Procurement.Suppliers;
-using DOMAIN.Entities.Payments;
 using SHARED;
 
 namespace DOMAIN.Entities.Shipments;

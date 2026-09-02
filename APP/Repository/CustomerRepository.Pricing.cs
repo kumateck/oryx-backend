@@ -21,7 +21,7 @@ public partial class CustomerRepository
         if (!validation.IsSuccess) return validation.Error;
         var entity = new CustomerPricingAgreement { CustomerId = customerId, CreatedById = userId };
         AssignPricing(entity, request);
-        context.CustomerPricingAgreements.Add(entity);
+        await context.CustomerPricingAgreements.AddAsync(entity);
         await context.SaveChangesAsync();
         return entity.Id;
     }
@@ -35,8 +35,7 @@ public partial class CustomerRepository
         var validation = await ValidatePricing(customerId, request, id);
         if (!validation.IsSuccess) return validation.Error;
         AssignPricing(entity, request);
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.LastUpdatedById = userId;
+    
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -58,9 +57,12 @@ public partial class CustomerRepository
         var matches = await PricingQuery(customerId).Where(item => item.ProductId == productId
             && item.UoMId == uomId && item.EffectiveFrom <= asOf
             && (!item.EffectiveTo.HasValue || item.EffectiveTo.Value >= asOf)).Take(2).ToListAsync();
-        if (matches.Count == 0) return Error.NotFound("CustomerPricing.NotFound", "No active pricing agreement found.");
-        if (matches.Count > 1) return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
-        return MapPricing(matches[0]);
+        return matches.Count switch
+        {
+            0 => Error.NotFound("CustomerPricing.NotFound", "No active pricing agreement found."),
+            > 1 => Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match."),
+            _ => MapPricing(matches[0])
+        };
     }
 
     private async Task<Result> ValidatePricing(

@@ -67,20 +67,9 @@ public partial class CustomerRepository(ApplicationDbContext context, IMapper ma
 
         var references = await ValidateCustomerReferences(request, customer.CurrencyId, customer.CreditLimit);
         if (!references.IsSuccess) return references.Error;
-
-        var existingCreditLimit = customer.CreditLimit;
-        var existingTerms = customer.TermsOfPaymentId;
-        var existingType = customer.Type;
-        var existingCurrency = customer.CurrencyId;
-        var existingBillingAddress = customer.BillingAddress;
-        var existingShippingAddress = customer.ShippingAddress;
+        
         mapper.Map(request, customer);
-        customer.CreditLimit = request.CreditLimit ?? existingCreditLimit;
-        customer.TermsOfPaymentId = request.TermsOfPaymentId ?? existingTerms;
-        customer.Type = request.Type ?? existingType;
-        customer.CurrencyId = request.CurrencyId ?? existingCurrency;
-        customer.BillingAddress = request.BillingAddress ?? existingBillingAddress;
-        customer.ShippingAddress = request.ShippingAddress ?? existingShippingAddress;
+
         customer.BillingAddress ??= request.Address;
         customer.ShippingAddress ??= request.Address;
         context.Customers.Update(customer);

@@ -10,9 +10,9 @@ public partial class SupplierController
 {
     [HttpGet("{supplierId:guid}/certifications")]
     [Authorize(PermissionKeys.CanViewSupplierCertifications)]
-    public async Task<IResult> GetCertifications(Guid supplierId)
+    public async Task<IResult> GetCertifications([FromRoute] Guid supplierId)
     {
-        var result = await _repository.GetCertifications(supplierId);
+        var result = await repository.GetCertifications(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -21,36 +21,36 @@ public partial class SupplierController
     public async Task<IResult> GetExpiringCertifications(
         [FromQuery] int withinDays = 30, [FromQuery] DateTime? asOf = null)
     {
-        var result = await _repository.GetExpiringCertifications(withinDays, asOf);
+        var result = await repository.GetExpiringCertifications(withinDays, asOf);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPost("{supplierId:guid}/certifications")]
     [Authorize(PermissionKeys.CanManageSupplierCertifications)]
     public async Task<IResult> CreateCertification(
-        Guid supplierId, [FromBody] SupplierCertificationRequest request)
+        [FromRoute] Guid supplierId, [FromBody] SupplierCertificationRequest request)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.CreateCertification(supplierId, request, userId);
+        var result = await repository.CreateCertification(supplierId, request, userId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPut("{supplierId:guid}/certifications/{id:guid}")]
     [Authorize(PermissionKeys.CanManageSupplierCertifications)]
     public async Task<IResult> UpdateCertification(
-        Guid supplierId, Guid id, [FromBody] SupplierCertificationRequest request)
+        [FromRoute] Guid supplierId, [FromRoute] Guid id, [FromBody] SupplierCertificationRequest request)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.UpdateCertification(supplierId, id, request, userId);
+        var result = await repository.UpdateCertification(supplierId, id, request, userId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     [HttpDelete("{supplierId:guid}/certifications/{id:guid}")]
     [Authorize(PermissionKeys.CanManageSupplierCertifications)]
-    public async Task<IResult> DeleteCertification(Guid supplierId, Guid id)
+    public async Task<IResult> DeleteCertification([FromRoute] Guid supplierId, [FromRoute] Guid id)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.DeleteCertification(supplierId, id, userId);
+        var result = await repository.DeleteCertification(supplierId, id, userId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
