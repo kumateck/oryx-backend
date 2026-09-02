@@ -15,23 +15,30 @@
 - Supplier quotation detail and receipt endpoints now return `404 Supplier.Quotation.NotFound` for a genuinely missing quotation instead of producing `Error.NullValue` or a null-reference response. The controller contract and repository regression coverage include this behavior.
 
 ## Introduction
+
 Brief introduction about your project.
 
 ## Features
+
 List of features.
 
 ## Installation
+
 Instructions for installing and running the project.
 
 ## Usage
+
 Instructions for using the project.
 
 ## Docker Setup
+
 For instructions on how to set up and run the application using Docker, please refer to the [Docker Setup Instructions](DOCKER.md).
 
 ## Documentation
+
 Design notes, roadmaps, and implementation write-ups that don't belong in
 the changelog above live in [`docs/`](docs/):
+
 - [Cashflow, SRM & CRM roadmap](docs/cashflow-srm-crm-roadmap.md) — gap
   analysis and the Codex backend prompts for the three modules, in
   implementation order (Cashflow → SRM → CRM).
@@ -46,7 +53,9 @@ the changelog above live in [`docs/`](docs/):
   credit, quotation, and production-order rollout guidance.
 
 ## Contributing
+
 Guidelines for contributing to the project.
 
 ## License
+
 Details about the project's license.
