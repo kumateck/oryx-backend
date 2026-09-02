@@ -127,6 +127,9 @@ public interface IReportRepository
     Task<Result<IEnumerable<MaterialMovementCountDto>>> GetMaterialMovementCount(
         WarehouseKpiFilterDto filter, Guid? departmentId);
 
+    Task<Result<IEnumerable<WarehouseDataFreshnessDto>>> GetWarehouseKpiFreshness(
+        WarehouseKpiFilterDto filter, Guid? departmentId);
+
     Task<Result<List<MaterialsStockSummaryDto>>> GetMaterialsStockSummary(
         Guid? departmentId = null, MaterialKind? materialKind = null, Guid? materialId = null);
 

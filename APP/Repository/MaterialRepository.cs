@@ -1306,6 +1306,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Guid userId
     )
     {
+        if (request.MovedShelfBatchMaterials is not { Count: > 0 })
+            return Error.Validation(
+                "MaterialBatch.Move.Empty",
+                "At least one target shelf and quantity is required."
+            );
+
+        if (request.MovedShelfBatchMaterials.Any(batch => batch.Quantity <= 0))
+            return Error.Validation(
+                "MaterialBatch.Move.Quantity",
+                "Moved quantities must be greater than zero."
+            );
+
         var shelfMaterialBatch = await context
             .ShelfMaterialBatches.AsSplitQuery()
             .Include(shelfMaterialBatch => shelfMaterialBatch.MaterialBatch)
@@ -1324,6 +1336,17 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
         }
+
+        var sourceUomId = shelfMaterialBatch.UoMId ?? shelfMaterialBatch.MaterialBatch.UoMId;
+        if (
+            request.MovedShelfBatchMaterials.Any(batch =>
+                batch.UomId.HasValue && batch.UomId.Value != sourceUomId
+            )
+        )
+            return Error.Validation(
+                "MaterialBatch.Move.UomMismatch",
+                "A shelf movement must retain the source batch unit of measure."
+            );
 
         foreach (var movedBatch in request.MovedShelfBatchMaterials)
         {
@@ -1370,7 +1393,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                         );
                     if (existingShelfMaterialBatch != null)
                     {
-                        existingShelfMaterialBatch.Quantity += shelfMaterialBatch.Quantity;
+                        existingShelfMaterialBatch.Quantity += movedBatch.Quantity;
                     }
                     else
                     {
@@ -1380,7 +1403,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                                 WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
                                 MaterialBatchId = shelfMaterialBatch.MaterialBatchId,
                                 Quantity = movedBatch.Quantity,
-                                UoMId = movedBatch.UomId,
+                                UoMId = sourceUomId,
                                 Note = movedBatch.Note,
                                 CreatedAt = DateTime.UtcNow,
                             }
@@ -2796,6 +2819,16 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         warehouseStockList = warehouseStockList.OrderByDescending(w => w.StockQuantity).ToList();
         return Result.Success(warehouseStockList);
+    }
+
+    public async Task<Result<List<MaterialPipelineStockDto>>> GetMaterialPipelineStock(
+        Guid materialId
+    )
+    {
+        if (!await context.Materials.AsNoTracking().AnyAsync(material => material.Id == materialId))
+            return MaterialErrors.NotFound(materialId);
+
+        return Result.Success(await MaterialPipelineQuery.GetAsync(context, materialId));
     }
 
     public async Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind)

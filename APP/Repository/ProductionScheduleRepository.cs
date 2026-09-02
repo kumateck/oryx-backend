@@ -4601,6 +4601,7 @@ public class ProductionScheduleRepository(
             {
                 Product = mapper.Map<ProductListDto>(p.Product),
                 UnitPrice = p.Product.Price,
+                PriceUoM = p.Product.PriceUoM,
                 BatchSize = productionSchedules.Sum(productScheduleProduct =>
                     productScheduleProduct.BatchSize == BatchSize.Full
                         ? productScheduleProduct.Product.FullBatchSize
@@ -4672,6 +4673,7 @@ public class ProductionScheduleRepository(
                 {
                     BatchNumber = p.BatchNumber,
                     UnitPrice = unitPrice,
+                    PriceUoM = p.Product.PriceUoM,
                     PackageStyle = p.Product.PackageStyle,
                     ExpectedQuantity = expectedQty,
                     ActualQuantity = actualQty,

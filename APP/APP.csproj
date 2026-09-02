@@ -26,6 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="APP.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="libwkhtmltox.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
