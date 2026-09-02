@@ -822,21 +822,12 @@ public class OryxMapper : Profile
                 dest => dest.IsUsed,
                 opt => opt.MapFrom<ShipmentInvoiceListStatusResolver>()
             );
-        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>()
-            .ForMember(
-                dest => dest.Price,
-                opt =>
-                    opt.MapFrom(src =>
-                        src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).Price
-                    )
-            )
-            .ForMember(
-                dest => dest.PriceUoM,
-                opt =>
-                    opt.MapFrom(src =>
-                        src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId).PriceUoM
-                    )
-            );
+        // Price and PriceUoM are stored on the invoice line itself, frozen at issue.
+        // They used to be resolved live via
+        // src.PurchaseOrder.Items.First(i => i.MaterialId == src.MaterialId), which threw
+        // whenever a read path forgot to eager-load PurchaseOrder.Items, and picked
+        // arbitrarily when a purchase order had two lines for the same material.
+        CreateMap<ShipmentInvoiceItem, ShipmentInvoiceItemDto>();
 
         CreateMap<CreateShipmentDiscrepancy, ShipmentDiscrepancy>();
         CreateMap<CreateShipmentDiscrepancyItem, ShipmentDiscrepancyItem>();
