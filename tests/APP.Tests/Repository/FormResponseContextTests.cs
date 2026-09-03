@@ -18,6 +18,77 @@ file class FormResponseContextCurrentUser : ICurrentUserService
 public class FormResponseContextTests
 {
     [Fact]
+    public async Task DraftResponses_AreReusedWithinStepAndSeparatedAcrossSteps()
+    {
+        await using var context = CreateContext();
+        var form = CreateForm("Product test");
+        var secondQuestion = new Question { Id = Guid.NewGuid(), Label = "Second result" };
+        var secondField = new FormField
+        {
+            Id = Guid.NewGuid(),
+            FormSectionId = form.Section.Id,
+            FormSection = form.Section,
+            QuestionId = secondQuestion.Id,
+            Question = secondQuestion,
+        };
+        var batchId = Guid.NewGuid();
+        var firstStepId = Guid.NewGuid();
+        var secondStepId = Guid.NewGuid();
+        context.AddRange(form.Form, form.Section, form.Field, secondField);
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context);
+        var userId = Guid.NewGuid();
+
+        var first = await repository.SaveFormResponseDraft(
+            new SaveResponseDraftRequest
+            {
+                FormId = form.Form.Id,
+                FormFieldId = form.Field.Id,
+                Value = "stage one, first answer",
+                BatchManufacturingRecordId = batchId,
+                ProductionActivityStepId = firstStepId,
+            }, userId);
+        var subsequent = await repository.SaveFormResponseDraft(
+            new SaveResponseDraftRequest
+            {
+                ResponseId = first.Value,
+                FormId = form.Form.Id,
+                FormFieldId = secondField.Id,
+                Value = "stage one, second answer",
+                BatchManufacturingRecordId = batchId,
+                ProductionActivityStepId = firstStepId,
+            }, userId);
+        var nextStage = await repository.SaveFormResponseDraft(
+            new SaveResponseDraftRequest
+            {
+                FormId = form.Form.Id,
+                FormFieldId = form.Field.Id,
+                Value = "stage two, first answer",
+                BatchManufacturingRecordId = batchId,
+                ProductionActivityStepId = secondStepId,
+            }, userId);
+        var firstLookup = await repository.GetResponseId(new GetResponseIdRequest
+        {
+            BatchManufacturingRecordId = batchId,
+            ProductionActivityStepId = firstStepId,
+        });
+        var secondLookup = await repository.GetResponseId(new GetResponseIdRequest
+        {
+            BatchManufacturingRecordId = batchId,
+            ProductionActivityStepId = secondStepId,
+        });
+
+        Assert.True(first.IsSuccess);
+        Assert.True(subsequent.IsSuccess);
+        Assert.True(nextStage.IsSuccess);
+        Assert.Equal(first.Value, subsequent.Value);
+        Assert.NotEqual(first.Value, nextStage.Value);
+        Assert.Equal(first.Value, firstLookup.Value);
+        Assert.Equal(nextStage.Value, secondLookup.Value);
+        Assert.Equal(2, await context.Responses.CountAsync());
+    }
+
+    [Fact]
     public async Task SaveDraft_RejectsFieldFromAnotherStageForm()
     {
         await using var context = CreateContext();
@@ -27,7 +98,9 @@ public class FormResponseContextTests
         var stepId = Guid.NewGuid();
         var response = new Response
         {
-            Id = Guid.NewGuid(), FormId = first.Form.Id, Form = first.Form,
+            Id = Guid.NewGuid(),
+            FormId = first.Form.Id,
+            Form = first.Form,
             BatchManufacturingRecordId = batchId,
             ProductionActivityStepId = stepId,
         };
@@ -47,7 +120,7 @@ public class FormResponseContextTests
             }, Guid.NewGuid());
 
         Assert.False(result.IsSuccess);
-        Assert.Equal("Response.FormMismatch", result.Error.Code);
+        Assert.Contains(result.Errors, error => error.Code == "Response.FormMismatch");
         Assert.Empty(context.FormResponses);
     }
 
@@ -59,7 +132,9 @@ public class FormResponseContextTests
         var batchId = Guid.NewGuid();
         var response = new Response
         {
-            Id = Guid.NewGuid(), FormId = form.Form.Id, Form = form.Form,
+            Id = Guid.NewGuid(),
+            FormId = form.Form.Id,
+            Form = form.Form,
             BatchManufacturingRecordId = batchId,
             ProductionActivityStepId = Guid.NewGuid(),
         };
@@ -78,7 +153,7 @@ public class FormResponseContextTests
             }, Guid.NewGuid());
 
         Assert.False(result.IsSuccess);
-        Assert.Equal("Response.ContextMismatch", result.Error.Code);
+        Assert.Contains(result.Errors, error => error.Code == "Response.ContextMismatch");
         Assert.Empty(context.FormResponses);
     }
 
@@ -123,13 +198,19 @@ public class FormResponseContextTests
         var form = new Form { Id = Guid.NewGuid(), Name = name };
         var section = new FormSection
         {
-            Id = Guid.NewGuid(), FormId = form.Id, Form = form, Name = name,
+            Id = Guid.NewGuid(),
+            FormId = form.Id,
+            Form = form,
+            Name = name,
         };
         var question = new Question { Id = Guid.NewGuid(), Label = "Result" };
         var field = new FormField
         {
-            Id = Guid.NewGuid(), FormSectionId = section.Id,
-            FormSection = section, QuestionId = question.Id, Question = question,
+            Id = Guid.NewGuid(),
+            FormSectionId = section.Id,
+            FormSection = section,
+            QuestionId = question.Id,
+            Question = question,
         };
         return (form, section, field);
     }

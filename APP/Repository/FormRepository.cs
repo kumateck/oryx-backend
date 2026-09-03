@@ -375,7 +375,7 @@ public class FormRepository(
         return formAssignee?.Id;
     }
 
-    public async Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId)
+    public async Task<Result<Guid>> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId)
     {
         var response = await context
             .Responses.Include(r => r.FormResponses)

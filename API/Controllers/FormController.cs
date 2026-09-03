@@ -312,7 +312,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns the ResponseId if successful, or a failure result.</returns>
     [HttpPost("responses/draft")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request)
@@ -322,7 +322,7 @@ public class FormController(IFormRepository repository) : ControllerBase
             return TypedResults.Unauthorized();
 
         var result = await repository.SaveFormResponseDraft(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
