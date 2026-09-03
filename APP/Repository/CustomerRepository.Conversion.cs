@@ -43,6 +43,9 @@ public partial class CustomerRepository
         quotation.LastUpdatedById = userId;
         await context.ProductionOrders.AddAsync(order);
         await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(ProductionOrder), order.Id);
+
         if (transaction is not null) await transaction.CommitAsync();
         return order.Id;
     }

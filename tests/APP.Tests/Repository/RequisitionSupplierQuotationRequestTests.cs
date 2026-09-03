@@ -41,7 +41,8 @@ public class RequisitionSupplierQuotationRequestTests
             null!,
             null!,
             null!,
-            null!
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
         );
 
     [Fact]

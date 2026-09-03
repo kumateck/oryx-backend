@@ -850,7 +850,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetResponseId(GetResponseIdRequest request)
+    public async Task<IResult> GetResponseId([FromQuery] GetResponseIdRequest request)
     {
         var result = await repository.GetResponseId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -865,7 +865,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormAssigneeId(GetResponseIdRequest request)
+    public async Task<IResult> GetFormAssigneeId([FromQuery] GetResponseIdRequest request)
     {
         var result = await repository.GetFormAssigneeId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

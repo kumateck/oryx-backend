@@ -2635,20 +2635,54 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         Guid productionScheduleProductId
     )
     {
+        var reservedQuantities = await context
+            .MaterialBatchReservedQuantities.AsSplitQuery()
+            .IgnoreQueryFilters()
+            // MaterialBatch auto-includes its own ShelfMaterialBatches collection
+            // (see ConfigureAutoIncludes); loading it here is both unused and,
+            // combined with AsSplitQuery, expensive. Explicit includes below cover
+            // everything this method actually needs.
+            .IgnoreAutoIncludes()
+            .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Material)
+            .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.UoM)
+            .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.IssuedBy)
+            // MaterialBatchListDto's SupplierName/ManufacturerName resolvers read
+            // source.Checklist directly - without this, mapping falls back to a
+            // synchronous per-row database query for every reserved batch.
+            .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Checklist)
+                    .ThenInclude(c => c.Supplier)
+            .Include(r => r.MaterialBatch)
+                .ThenInclude(b => b.Checklist)
+                    .ThenInclude(c => c.Manufacturer)
+            .Include(b => b.WarehouseLocationShelf)
+            .Where(r =>
+                r.MaterialBatch.MaterialId == materialId
+                && r.WarehouseId == warehouseId
+                && r.ProductionScheduleProductId == productionScheduleProductId
+                && r.DeletedAt == null
+            )
+            .ToListAsync();
+
+        // Same reason as the Checklist includes above: the ArNumber/SampledBy/
+        // SampledOn/SampleQuantity resolvers each hit MaterialSamplings on their
+        // own unless a pre-batched list is handed through via mapper Items.
+        var reservedMaterialBatchIds = reservedQuantities
+            .Select(r => r.MaterialBatchId)
+            .Distinct()
+            .ToList();
+        var samplings = await context
+            .MaterialSamplings.IgnoreQueryFilters()
+            .Include(s => s.CreatedBy)
+            .Where(s => reservedMaterialBatchIds.Contains(s.MaterialBatchId))
+            .ToListAsync();
+
         return mapper.Map<List<MaterialBatchReservedQuantityDto>>(
-            await context
-                .MaterialBatchReservedQuantities.AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(r => r.MaterialBatch)
-                    .ThenInclude(b => b.Material)
-                .Include(b => b.WarehouseLocationShelf)
-                .Where(r =>
-                    r.MaterialBatch.MaterialId == materialId
-                    && r.WarehouseId == warehouseId
-                    && r.ProductionScheduleProductId == productionScheduleProductId
-                    && r.DeletedAt == null
-                )
-                .ToListAsync()
+            reservedQuantities,
+            opts => opts.Items["Samplings"] = samplings
         );
     }
 

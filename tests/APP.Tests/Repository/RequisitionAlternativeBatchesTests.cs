@@ -190,7 +190,8 @@ public class RequisitionAlternativeBatchesTests
             null!,
             new MaterialRepository(context, mapper),
             null!,
-            null!
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
         );
 
         var result = await repository.GetAlternativeBatchesForStockRequisition(
@@ -275,7 +276,8 @@ public class RequisitionAlternativeBatchesTests
             null!,
             new MaterialRepository(context, mapper),
             null!,
-            null!
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
         );
 
         var result = await repository.GetAlternativeBatchesForStockRequisition(
@@ -354,7 +356,8 @@ public class RequisitionAlternativeBatchesTests
             null!,
             new MaterialRepository(context, mapper),
             null!,
-            null!
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
         );
 
         var result = await repository.GetAlternativeBatchesForStockRequisition(

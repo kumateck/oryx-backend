@@ -11,7 +11,12 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class StaffRequisitionRepository(ApplicationDbContext context, IMapper mapper, IBackgroundWorkerService backgroundWorkerService) : IStaffRequisitionRepository
+public class StaffRequisitionRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IBackgroundWorkerService backgroundWorkerService,
+    IApprovalRepository approvalRepository
+) : IStaffRequisitionRepository
 {
     public async Task<Result<Guid>> CreateStaffRequisition(CreateStaffRequisitionRequest request, Guid userId)
     {
@@ -38,6 +43,11 @@ public class StaffRequisitionRepository(ApplicationDbContext context, IMapper ma
         await context.StaffRequisitions.AddAsync(staffRequisition);
 
         await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(
+            nameof(StaffRequisition),
+            staffRequisition.Id
+        );
 
         backgroundWorkerService.EnqueueNotification("Staff requisition created", NotificationType.StaffRequest);
 

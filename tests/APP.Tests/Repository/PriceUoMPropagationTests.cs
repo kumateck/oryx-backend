@@ -50,7 +50,18 @@ public class PriceUoMPropagationTests
     }
 
     private static RequisitionRepository CreateRequisitionRepository(ApplicationDbContext context) =>
-        new(context, CreateMapper(context), null!, null!, null!, null!, null!, null!, null!);
+        new(
+            context,
+            CreateMapper(context),
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
+        );
 
     // ------------------------------------------------------------------
     // Cross-supplier contamination
