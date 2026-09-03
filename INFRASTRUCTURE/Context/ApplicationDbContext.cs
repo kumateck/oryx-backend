@@ -48,6 +48,8 @@ using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Organizations;
 using DOMAIN.Entities.OvertimeRequests;
 using DOMAIN.Entities.Payments;
+using DOMAIN.Entities.Payroll;
+using DOMAIN.Entities.Performance;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -470,6 +472,33 @@ public class ApplicationDbContext(
 
     public DbSet<OvertimeRequest> OvertimeRequests { get; set; }
     public DbSet<OvertimeRequestApproval> OvertimeRequestApprovals { get; set; }
+
+    #endregion
+
+    #region Payroll
+
+    public DbSet<EmployeeCompensation> EmployeeCompensations { get; set; }
+    public DbSet<CompensationAllowance> CompensationAllowances { get; set; }
+    public DbSet<PayGrade> PayGrades { get; set; }
+    public DbSet<PayeTaxBand> PayeTaxBands { get; set; }
+    public DbSet<SsnitRate> SsnitRates { get; set; }
+    public DbSet<PayrollDeduction> PayrollDeductions { get; set; }
+    public DbSet<PayrollAddition> PayrollAdditions { get; set; }
+    public DbSet<EmployeeTaxRelief> EmployeeTaxReliefs { get; set; }
+    public DbSet<PayrollRun> PayrollRuns { get; set; }
+    public DbSet<PayrollRunApproval> PayrollRunApprovals { get; set; }
+    public DbSet<Payslip> Payslips { get; set; }
+    public DbSet<PayslipLineItem> PayslipLineItems { get; set; }
+
+    #endregion
+
+    #region Performance
+
+    public DbSet<PerformanceCycle> PerformanceCycles { get; set; }
+    public DbSet<Goal> Goals { get; set; }
+    public DbSet<PerformanceReview> PerformanceReviews { get; set; }
+    public DbSet<GoalRating> GoalRatings { get; set; }
+    public DbSet<PerformanceReviewApproval> PerformanceReviewApprovals { get; set; }
 
     #endregion
 

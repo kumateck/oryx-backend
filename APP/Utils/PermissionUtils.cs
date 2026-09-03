@@ -138,6 +138,12 @@ public static class PermissionSubmodules
     public const string AttendanceReportUpload = "Attendance Report Upload";
     public const string ShiftScheduleReportUpload = "Shift Schedule Report Upload";
     public const string OvertimeManagement = "Overtime Management";
+    public const string EmployeeCompensation = "Employee Compensation";
+    public const string PayrollConfiguration = "Payroll Configuration";
+    public const string PayrollManagement = "Payroll Management";
+    public const string PerformanceCycleManagement = "Performance Cycle Management";
+    public const string GoalManagement = "Goal Management";
+    public const string PerformanceReviewManagement = "Performance Review Management";
 
     // IT SUPPORT
     public const string UserManagement = "Manage User Directory";
@@ -730,6 +736,29 @@ public static class PermissionKeys
     public const string CanCreateOvertimeManagement = "CanCreateOvertimeManagement";
     public const string CanEditOvertimeManagement = "CanEditOvertimeManagement";
     public const string CanDeleteOvertimeManagement = "CanDeleteOvertimeManagement";
+    public const string CanViewCompensation = "CanViewCompensation";
+    public const string CanManageCompensation = "CanManageCompensation";
+    public const string CanViewPayrollConfiguration = "CanViewPayrollConfiguration";
+    public const string CanManagePayrollConfiguration = "CanManagePayrollConfiguration";
+    public const string CanViewPayrollRuns = "CanViewPayrollRuns";
+    public const string CanCreatePayrollRun = "CanCreatePayrollRun";
+    public const string CanApprovePayrollRun = "CanApprovePayrollRun";
+    public const string CanCancelPayrollRun = "CanCancelPayrollRun";
+    public const string CanViewPayslip = "CanViewPayslip";
+    public const string CanViewOwnPayslip = "CanViewOwnPayslip";
+    public const string CanExportBankAdvice = "CanExportBankAdvice";
+    public const string CanExportPayrollRegister = "CanExportPayrollRegister";
+    public const string CanViewPerformanceCycles = "CanViewPerformanceCycles";
+    public const string CanManagePerformanceCycles = "CanManagePerformanceCycles";
+    public const string CanViewOwnGoals = "CanViewOwnGoals";
+    public const string CanViewTeamGoals = "CanViewTeamGoals";
+    public const string CanCreateGoal = "CanCreateGoal";
+    public const string CanEditGoal = "CanEditGoal";
+    public const string CanDeleteGoal = "CanDeleteGoal";
+    public const string CanViewPerformanceReviews = "CanViewPerformanceReviews";
+    public const string CanSubmitSelfAssessment = "CanSubmitSelfAssessment";
+    public const string CanSubmitManagerReview = "CanSubmitManagerReview";
+    public const string CanApprovePerformanceReview = "CanApprovePerformanceReview";
 
     // IT SUPPORT
     public const string CanViewActiveUser = "CanViewActiveUser";
@@ -3217,6 +3246,121 @@ public static class PermissionUtils
             PermissionModules.HumanResources,
             PermissionSubmodules.OvertimeManagement,
             PermissionKeys.CanDeleteOvertimeManagement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeCompensation,
+            PermissionKeys.CanViewCompensation
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeCompensation,
+            PermissionKeys.CanManageCompensation
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollConfiguration,
+            PermissionKeys.CanViewPayrollConfiguration
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollConfiguration,
+            PermissionKeys.CanManagePayrollConfiguration
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanViewPayrollRuns
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanCreatePayrollRun
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanApprovePayrollRun
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanCancelPayrollRun
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanViewPayslip
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanViewOwnPayslip
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanExportBankAdvice
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PayrollManagement,
+            PermissionKeys.CanExportPayrollRegister
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PerformanceCycleManagement,
+            PermissionKeys.CanViewPerformanceCycles
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PerformanceCycleManagement,
+            PermissionKeys.CanManagePerformanceCycles
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.GoalManagement,
+            PermissionKeys.CanViewOwnGoals
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.GoalManagement,
+            PermissionKeys.CanViewTeamGoals
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.GoalManagement,
+            PermissionKeys.CanCreateGoal
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.GoalManagement,
+            PermissionKeys.CanEditGoal
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.GoalManagement,
+            PermissionKeys.CanDeleteGoal
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PerformanceReviewManagement,
+            PermissionKeys.CanViewPerformanceReviews
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PerformanceReviewManagement,
+            PermissionKeys.CanSubmitSelfAssessment
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PerformanceReviewManagement,
+            PermissionKeys.CanSubmitManagerReview
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.PerformanceReviewManagement,
+            PermissionKeys.CanApprovePerformanceReview
         );
 
         // IT Support
