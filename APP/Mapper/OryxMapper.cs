@@ -48,6 +48,8 @@ using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
 using DOMAIN.Entities.Memos;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Payroll;
+using DOMAIN.Entities.Performance;
 using DOMAIN.Entities.Persons;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
@@ -1097,6 +1099,92 @@ public class OryxMapper : Profile
         CreateMap<LeaveRequestDto, LeaveRequest>();
         CreateMap<LeaveRequest, LeaveRequestDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+        #endregion
+
+        #region Payroll
+
+        CreateMap<CreateCompensationAllowanceRequest, CompensationAllowance>();
+        CreateMap<CompensationAllowance, CompensationAllowanceDto>();
+        CreateMap<CreateEmployeeCompensationRequest, EmployeeCompensation>()
+            .ForMember(dest => dest.Allowances, opt => opt.MapFrom(src => src.Allowances));
+        CreateMap<EmployeeCompensation, EmployeeCompensationDto>()
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null))
+            .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.StaffNumber : null))
+            .ForMember(dest => dest.PayGradeName, opt => opt.MapFrom(src => src.PayGrade != null ? src.PayGrade.Name : null))
+            .ForMember(dest => dest.TotalAllowances, opt => opt.MapFrom(src => src.Allowances.Sum(a => a.Amount)));
+
+        CreateMap<CreatePayGradeRequest, PayGrade>();
+        CreateMap<PayGrade, PayGradeDto>();
+
+        CreateMap<CreatePayeTaxBandRequest, PayeTaxBand>();
+        CreateMap<PayeTaxBand, PayeTaxBandDto>();
+
+        CreateMap<CreateSsnitRateRequest, SsnitRate>();
+        CreateMap<SsnitRate, SsnitRateDto>();
+
+        CreateMap<CreatePayrollDeductionRequest, PayrollDeduction>();
+        CreateMap<PayrollDeduction, PayrollDeductionDto>()
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null));
+
+        CreateMap<CreatePayrollRunRequest, PayrollRun>();
+        CreateMap<PayrollRun, PayrollRunDto>()
+            .ForMember(dest => dest.EmployeeCount, opt => opt.MapFrom(src => src.Payslips.Count))
+            .ForMember(dest => dest.TotalGrossPay, opt => opt.MapFrom(src => src.Payslips.Sum(p => p.GrossPay)))
+            .ForMember(dest => dest.TotalNetPay, opt => opt.MapFrom(src => src.Payslips.Sum(p => p.NetPay)))
+            .ForMember(dest => dest.TotalPayeTax, opt => opt.MapFrom(src => src.Payslips.Sum(p => p.PayeTax)))
+            .ForMember(dest => dest.TotalSsnitEmployeeContribution, opt => opt.MapFrom(src => src.Payslips.Sum(p => p.SsnitEmployeeContribution)))
+            .ForMember(dest => dest.TotalSsnitEmployerContribution, opt => opt.MapFrom(src => src.Payslips.Sum(p => p.SsnitEmployerContribution)));
+
+        CreateMap<CreateEmployeeTaxReliefRequest, EmployeeTaxRelief>();
+        CreateMap<EmployeeTaxRelief, EmployeeTaxReliefDto>()
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null));
+
+        CreateMap<CreatePayrollAdditionRequest, PayrollAddition>();
+        CreateMap<PayrollAddition, PayrollAdditionDto>()
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null));
+
+        CreateMap<PayslipLineItem, PayslipLineItemDto>();
+        CreateMap<Payslip, PayslipDto>()
+            .ForMember(dest => dest.PeriodStart, opt => opt.MapFrom(src => src.PayrollRun.PeriodStart))
+            .ForMember(dest => dest.PeriodEnd, opt => opt.MapFrom(src => src.PayrollRun.PeriodEnd))
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null))
+            .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.StaffNumber : null))
+            .ForMember(dest => dest.Department,
+                opt => opt.MapFrom(src => src.Employee != null && src.Employee.Department != null ? src.Employee.Department.Name : null))
+            .ForMember(dest => dest.Designation,
+                opt => opt.MapFrom(src => src.Employee != null && src.Employee.Designation != null ? src.Employee.Designation.Name : null));
+
+        #endregion
+
+        #region Performance
+
+        CreateMap<CreatePerformanceCycleRequest, PerformanceCycle>();
+        CreateMap<PerformanceCycle, PerformanceCycleDto>()
+            .ForMember(dest => dest.GoalCount, opt => opt.MapFrom(src => src.Goals.Count))
+            .ForMember(dest => dest.ReviewCount, opt => opt.MapFrom(src => src.Reviews.Count));
+
+        CreateMap<CreateGoalRequest, Goal>();
+        CreateMap<UpdateGoalRequest, Goal>();
+        CreateMap<Goal, GoalDto>()
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null))
+            .ForMember(dest => dest.CycleName, opt => opt.MapFrom(src => src.Cycle != null ? src.Cycle.Name : null));
+
+        CreateMap<CreatePerformanceReviewRequest, PerformanceReview>();
+        CreateMap<GoalRating, GoalRatingDto>()
+            .ForMember(dest => dest.GoalTitle, opt => opt.MapFrom(src => src.Goal != null ? src.Goal.Title : null));
+        CreateMap<PerformanceReview, PerformanceReviewDto>()
+            .ForMember(dest => dest.EmployeeName,
+                opt => opt.MapFrom(src => src.Employee != null ? $"{src.Employee.FirstName} {src.Employee.LastName}" : null))
+            .ForMember(dest => dest.CycleName, opt => opt.MapFrom(src => src.Cycle != null ? src.Cycle.Name : null))
+            .ForMember(dest => dest.ReviewerName,
+                opt => opt.MapFrom(src => src.Reviewer != null ? $"{src.Reviewer.FirstName} {src.Reviewer.LastName}" : null));
+
         #endregion
 
         #region Shift Types

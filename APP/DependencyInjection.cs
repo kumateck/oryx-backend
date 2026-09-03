@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using APP.Claims;
 using APP.IRepository;
 using APP.Repository;
+using APP.Services;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Message;
@@ -114,6 +115,9 @@ public static class DependencyInjection
         services.AddScoped<IOosInvestigationRepository, OosInvestigationRepository>();
         services.AddScoped<IQualityAuditRepository, QualityAuditRepository>();
         services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
+        services.AddScoped<IPayrollCalculationService, PayrollCalculationService>();
+        services.AddScoped<IPayrollRepository, PayrollRepository>();
+        services.AddScoped<IPerformanceRepository, PerformanceRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
