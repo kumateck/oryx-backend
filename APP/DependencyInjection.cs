@@ -112,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IProductAnalyticalRawDataRepository, ProductAnalyticalRawDataRepository>();
         services.AddScoped<IAnalyticalTestRequestRepository, AnalyticalTestRequestRepository>();
         services.AddScoped<IOosInvestigationRepository, OosInvestigationRepository>();
+        services.AddScoped<IQualityAuditRepository, QualityAuditRepository>();
         services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();

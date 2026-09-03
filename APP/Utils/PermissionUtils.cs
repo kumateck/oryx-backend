@@ -20,6 +20,7 @@ public static class PermissionModules
     public const string InventoryManagement = "Inventory Management";
     public const string OrganizationalStructure = "Organizational Structure";
     public const string Reports = "Reports";
+    public const string Audit = "Audit";
 }
 
 public static class PermissionSubmodules
@@ -88,6 +89,9 @@ public static class PermissionSubmodules
     public const string PendingApprovals = "Pending Approvals";
     public const string Verification = "Verification";
     public const string TransferApprovalRights = "Transfer Approval Rights";
+
+    // Audit
+    public const string QualityAudits = "Quality Audits";
 
     // Finished Goods Warehouse
     public const string CustomerManagement = "Customer Management";
@@ -451,6 +455,14 @@ public static class PermissionKeys
     public const string CanApprovePendingApproval = "CanApprovePendingApproval";
     public const string CanRejectPendingApproval = "CanRejectPendingApproval";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
+
+    // Audit
+    public const string CanViewQualityAudits = "CanViewQualityAudits";
+    public const string CanCreateQualityAudit = "CanCreateQualityAudit";
+    public const string CanConductQualityAudit = "CanConductQualityAudit";
+    public const string CanRaiseCorrectiveAction = "CanRaiseCorrectiveAction";
+    public const string CanReviewCorrectiveAction = "CanReviewCorrectiveAction";
+    public const string CanCloseQualityAudit = "CanCloseQualityAudit";
 
     // Finished Goods Warehouse
     public const string CanViewCustomers = "CanViewCustomers";
@@ -4135,6 +4147,38 @@ public static class PermissionUtils
             PermissionModules.Reports,
             PermissionSubmodules.Reports,
             PermissionKeys.CanViewFgtnReport
+        );
+
+        // Audit
+        addPermission(
+            PermissionModules.Audit,
+            PermissionSubmodules.QualityAudits,
+            PermissionKeys.CanViewQualityAudits
+        );
+        addPermission(
+            PermissionModules.Audit,
+            PermissionSubmodules.QualityAudits,
+            PermissionKeys.CanCreateQualityAudit
+        );
+        addPermission(
+            PermissionModules.Audit,
+            PermissionSubmodules.QualityAudits,
+            PermissionKeys.CanConductQualityAudit
+        );
+        addPermission(
+            PermissionModules.Audit,
+            PermissionSubmodules.QualityAudits,
+            PermissionKeys.CanRaiseCorrectiveAction
+        );
+        addPermission(
+            PermissionModules.Audit,
+            PermissionSubmodules.QualityAudits,
+            PermissionKeys.CanReviewCorrectiveAction
+        );
+        addPermission(
+            PermissionModules.Audit,
+            PermissionSubmodules.QualityAudits,
+            PermissionKeys.CanCloseQualityAudit
         );
 
         return permissions;

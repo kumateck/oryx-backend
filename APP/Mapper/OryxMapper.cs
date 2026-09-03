@@ -60,6 +60,7 @@ using DOMAIN.Entities.ProductionSchedules.StockTransfers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers.Request;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.QualityAudits;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.ProductsSampling;
@@ -1221,6 +1222,37 @@ public class OryxMapper : Profile
 
         CreateMap<DOMAIN.Entities.OosInvestigations.InitiateOosInvestigationRequest, DOMAIN.Entities.OosInvestigations.OosInvestigation>();
         CreateMap<DOMAIN.Entities.OosInvestigations.OosInvestigation, DOMAIN.Entities.OosInvestigations.OosInvestigationDto>();
+
+        #endregion
+
+        #region Quality Audits
+
+        CreateMap<CreateQualityAuditRequest, QualityAudit>();
+        CreateMap<QualityAudit, QualityAuditDto>()
+            .ForMember(dest => dest.TeamMembers, opt => opt.Ignore())
+            .ForMember(dest => dest.Attachments, opt => opt.Ignore());
+
+        CreateMap<RecordChecklistResponseRequest, AuditChecklistResponse>();
+        CreateMap<AuditChecklistResponse, AuditChecklistResponseDto>()
+            .ForMember(
+                dest => dest.SectionName,
+                opt => opt.MapFrom(src => src.TemplateItem != null ? src.TemplateItem.SectionName : null)
+            )
+            .ForMember(
+                dest => dest.QuestionText,
+                opt => opt.MapFrom(src => src.TemplateItem != null ? src.TemplateItem.QuestionText : null)
+            )
+            .ForMember(dest => dest.Attachments, opt => opt.Ignore());
+
+        CreateMap<RaiseFindingRequest, AuditFinding>();
+        CreateMap<AuditFinding, AuditFindingDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.Ignore());
+
+        CreateMap<RaiseCorrectiveActionRequest, AuditCorrectiveAction>();
+        CreateMap<AuditCorrectiveAction, AuditCorrectiveActionDto>();
+
+        CreateMap<AuditChecklistTemplate, AuditChecklistTemplateDto>();
+        CreateMap<AuditChecklistTemplateItem, AuditChecklistTemplateItemDto>();
 
         #endregion
 
