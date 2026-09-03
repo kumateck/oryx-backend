@@ -259,7 +259,8 @@ public static class MenuConfig
                 new(PermissionSubmodules.UserManagement, [PermissionKeys.CanViewActiveUser, PermissionKeys.CanCreateUser, PermissionKeys.CanEditUser, PermissionKeys.CanBlockUser], route: "/it/user-management", order: 1),
                 new(PermissionSubmodules.AuditTrail, [PermissionKeys.CanViewAuditTrail], route: "/it/audit-trail", order: 2),
                 new(PermissionSubmodules.ManageRoles, [PermissionKeys.CanViewRoles, PermissionKeys.CanCreateRole, PermissionKeys.CanEditRole, PermissionKeys.CanDeleteRole], route: "/it/manage-roles", order: 3),
-                new(PermissionSubmodules.ManagePermissions, [PermissionKeys.CanViewPermissions, PermissionKeys.CanUpdateExistingPermission, PermissionKeys.CanResetPermission], route: "/it/manage-permissions", order: 4)
+                new(PermissionSubmodules.ManagePermissions, [PermissionKeys.CanViewPermissions, PermissionKeys.CanUpdateExistingPermission, PermissionKeys.CanResetPermission], route: "/it/manage-permissions", order: 4),
+                new(PermissionSubmodules.SupportTickets, [PermissionKeys.CanCreateTicket, PermissionKeys.CanViewAllTickets], route: "/it/support-tickets", order: 5)
             ]
         ),
 
