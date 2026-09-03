@@ -89,6 +89,22 @@ public class FormResponseContextTests
     }
 
     [Fact]
+    public async Task GetResponseId_ReturnsSuccessfulNullWhenStepHasNoDraft()
+    {
+        await using var context = CreateContext();
+
+        var result = await CreateRepository(context).GetResponseId(
+            new GetResponseIdRequest
+            {
+                BatchManufacturingRecordId = Guid.NewGuid(),
+                ProductionActivityStepId = Guid.NewGuid(),
+            });
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
     public async Task SaveDraft_RejectsFieldFromAnotherStageForm()
     {
         await using var context = CreateContext();

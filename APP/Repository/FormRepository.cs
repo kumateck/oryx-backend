@@ -361,7 +361,7 @@ public class FormRepository(
             && r.ProductionActivityStepId == request.ProductionActivityStepId
         );
 
-        return response?.Id;
+        return Result.Success<Guid?>(response?.Id);
     }
 
     public async Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request)
