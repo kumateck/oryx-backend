@@ -20,17 +20,11 @@ internal static class ResponseApprovalSubmission
         var configurations = await context.Approvals.AsNoTracking()
             .Include(item => item.ApprovalStages)
             .Where(item => item.ItemType == nameof(Response)).Take(2).ToListAsync();
-        if (configurations.Count == 0)
-            return Error.Validation("Response.Approval",
-                "Approval configuration for response does not exist.");
         if (configurations.Count > 1)
             return Error.Conflict("Response.ApprovalAmbiguous",
                 "Multiple response approval configurations exist.");
 
-        var stages = configurations[0].ApprovalStages;
-        if (stages.Count == 0)
-            return Error.Validation("Response.ApprovalStages",
-                "Response approval must have at least one stage.");
+        var stages = configurations.SingleOrDefault()?.ApprovalStages ?? [];
         if (stages.Any(item => !item.UserId.HasValue && !item.RoleId.HasValue))
             return Error.Validation("Response.ApprovalAssignment",
                 "Every response approval stage must be assigned to a user or role.");

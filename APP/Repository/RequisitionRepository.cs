@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Pdf;
+using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
@@ -35,7 +36,8 @@ public class RequisitionRepository(
     IConfigurationRepository configurationRepository,
     IMaterialRepository materialRepository,
     IApprovalRepository approvalRepository,
-    IBackgroundWorkerService backgroundWorkerService
+    IBackgroundWorkerService backgroundWorkerService,
+    IProductionActivityStepEventPublisher stepEventPublisher
 ) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
@@ -417,36 +419,70 @@ public class RequisitionRepository(
                 .ToListAsync()
         ).ToHashSet();
 
-        var candidateShelfBatchesByMaterial = (
-            await context
-                .ShelfMaterialBatches.IgnoreQueryFilters()
-                .AsSplitQuery()
-                .Include(smb => smb.MaterialBatch)
-                    .ThenInclude(b => b.UoM)
-                .Include(smb => smb.WarehouseLocationShelf)
-                    .ThenInclude(s => s.WarehouseLocationRack)
-                        .ThenInclude(r => r.WarehouseLocation)
-                            .ThenInclude(l => l.Warehouse)
-                .Where(smb =>
-                    requestedMaterialIds.Contains(smb.MaterialBatch.MaterialId)
-                    && smb.Quantity > 0
-                    && !smb.DeletedAt.HasValue
-                    && smb.MaterialBatch.Status == BatchStatus.Available
-                    && (
-                        smb.MaterialBatch.ExpiryDate == null
-                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
-                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
-                    )
-                    && !departmentWarehouseIds.Contains(
-                        smb.WarehouseLocationShelf
-                            .WarehouseLocationRack
-                            .WarehouseLocation
-                            .WarehouseId
-                    )
-                    && !pendingSwapShelfBatchIds.Contains(smb.Id)
+        var allCandidateShelfBatches = await context
+            .ShelfMaterialBatches.IgnoreQueryFilters()
+            // MaterialBatch auto-includes its own ShelfMaterialBatches collection
+            // (see ConfigureAutoIncludes) - since this query's root IS
+            // ShelfMaterialBatches, that auto-include is circular: every row's
+            // MaterialBatch pulls the whole shelf-batch collection it belongs to
+            // straight back in, which AsSplitQuery then has to split repeatedly.
+            // None of that is needed here, so it's turned off in favor of the
+            // explicit includes below.
+            .IgnoreAutoIncludes()
+            .AsSplitQuery()
+            .Include(smb => smb.MaterialBatch)
+                .ThenInclude(b => b.UoM)
+            .Include(smb => smb.MaterialBatch)
+                .ThenInclude(b => b.IssuedBy)
+            // The MaterialBatchListDto mapping resolves SupplierName/ManufacturerName
+            // via source.Checklist - without eager-loading it here, every mapped
+            // batch falls back to its own synchronous per-row database query.
+            .Include(smb => smb.MaterialBatch)
+                .ThenInclude(b => b.Checklist)
+                    .ThenInclude(c => c.Supplier)
+            .Include(smb => smb.MaterialBatch)
+                .ThenInclude(b => b.Checklist)
+                    .ThenInclude(c => c.Manufacturer)
+            .Include(smb => smb.WarehouseLocationShelf)
+                .ThenInclude(s => s.WarehouseLocationRack)
+                    .ThenInclude(r => r.WarehouseLocation)
+                        .ThenInclude(l => l.Warehouse)
+            .Where(smb =>
+                requestedMaterialIds.Contains(smb.MaterialBatch.MaterialId)
+                && smb.Quantity > 0
+                && !smb.DeletedAt.HasValue
+                && smb.MaterialBatch.Status == BatchStatus.Available
+                && (
+                    smb.MaterialBatch.ExpiryDate == null
+                    || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
+                    || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
                 )
-                .ToListAsync()
-        )
+                && !departmentWarehouseIds.Contains(
+                    smb.WarehouseLocationShelf
+                        .WarehouseLocationRack
+                        .WarehouseLocation
+                        .WarehouseId
+                )
+                && !pendingSwapShelfBatchIds.Contains(smb.Id)
+            )
+            .ToListAsync();
+
+        // Same reason as the Checklist includes above: MaterialBatchArNumberResolver,
+        // MaterialBatchSampledByResolver, MaterialBatchSampledOnResolver, and
+        // MaterialBatchSampleQuantityResolver each hit MaterialSamplings on their own
+        // unless a pre-batched list is handed through via mapper Items - this is the
+        // same "Samplings" convention WarehouseRepository uses for the same reason.
+        var candidateMaterialBatchIds = allCandidateShelfBatches
+            .Select(smb => smb.MaterialBatchId)
+            .Distinct()
+            .ToList();
+        var samplings = await context
+            .MaterialSamplings.IgnoreQueryFilters()
+            .Include(s => s.CreatedBy)
+            .Where(s => candidateMaterialBatchIds.Contains(s.MaterialBatchId))
+            .ToListAsync();
+
+        var candidateShelfBatchesByMaterial = allCandidateShelfBatches
             .GroupBy(smb => smb.MaterialBatch.MaterialId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -519,7 +555,10 @@ public class RequisitionRepository(
             materialAlternative.AlternativeBatches = alternativeShelfBatches
                 .Select(smb => new AlternativeBatchDto
                 {
-                    Batch = mapper.Map<MaterialBatchListDto>(smb.MaterialBatch),
+                    Batch = mapper.Map<MaterialBatchListDto>(
+                        smb.MaterialBatch,
+                        opts => opts.Items["Samplings"] = samplings
+                    ),
                     QuantityAvailable = smb.Quantity,
                     Warehouse = mapper.Map<CollectionItemDto>(
                         smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse
@@ -824,6 +863,12 @@ public class RequisitionRepository(
                         }
                     );
                     await context.SaveChangesAsync();
+
+                    await stepEventPublisher.PublishStatusChanged(
+                        productionActivityStep.Id,
+                        ProductionStatus.Completed,
+                        userId
+                    );
                 }
             }
         }
@@ -1209,6 +1254,13 @@ public class RequisitionRepository(
         context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
 
         await context.SaveChangesAsync();
+
+        await stepEventPublisher.PublishStatusChanged(
+            requisition.ProductionActivityStep.Id,
+            ProductionStatus.Completed,
+            userId
+        );
+
         return Result.Success();
     }
 

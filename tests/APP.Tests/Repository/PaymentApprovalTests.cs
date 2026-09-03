@@ -81,6 +81,90 @@ public class PaymentApprovalTests
         Assert.Equal(70m, balance.OutstandingBalance);
     }
 
+    [Fact]
+    public async Task RecordPayment_AutoApproves_WhenNoWorkflowConfigured()
+    {
+        // Regression: RecordPayment used to hard-block with "Payment.ApprovalWorkflowMissing"
+        // whenever no Payment approval workflow existed - meaning nobody could ever
+        // record a payment until an admin configured one. It must auto-approve instead.
+        await using var context = CreateContext();
+        var currencyId = Guid.NewGuid();
+        var payableId = Guid.NewGuid();
+        context.AddRange(
+            new Currency { Id = currencyId, Name = "US Dollar", Symbol = "$" },
+            new BillingSheet
+            {
+                Id = payableId, Code = "BS-AUTO", InvoiceId = Guid.NewGuid(),
+                SupplierId = null,
+                Charges = [new BillingSheetCharge { Id = Guid.NewGuid(), CurrencyId = currencyId, Amount = 100m }],
+            }
+        );
+        await context.SaveChangesAsync();
+        var repository = new PaymentRepository(context, CreateMapper());
+
+        var result = await repository.RecordPayment(
+            new RecordPaymentRequest
+            {
+                Amount = 40m, CurrencyId = currencyId, PaymentDate = DateTime.UtcNow,
+                Method = PaymentMethod.BankTransfer, Reference = "BANK-AUTO",
+                PayableType = PayableType.BillingSheet, PayableId = payableId,
+            },
+            Guid.NewGuid()
+        );
+
+        Assert.True(result.IsSuccess);
+        var payment = await context.Payments.FindAsync(result.Value);
+        Assert.True(payment!.Approved);
+        Assert.Equal(PaymentStatus.Approved, payment.Status);
+        Assert.Empty(payment.Approvals);
+        Assert.Single(context.ApprovalActionLogs);
+    }
+
+    [Fact]
+    public async Task RecordPayment_CreatesConfiguredPendingApproval_WhenWorkflowExists()
+    {
+        await using var context = CreateContext();
+        var currencyId = Guid.NewGuid();
+        var payableId = Guid.NewGuid();
+        var approverId = Guid.NewGuid();
+        var approval = new Approval { Id = Guid.NewGuid(), ItemType = nameof(Payment), ApprovalStages = [] };
+        approval.ApprovalStages.Add(new ApprovalStage
+        {
+            Id = Guid.NewGuid(), ApprovalId = approval.Id, Approval = approval,
+            Order = 1, Required = true, UserId = approverId,
+        });
+        context.AddRange(
+            approval,
+            new Currency { Id = currencyId, Name = "US Dollar", Symbol = "$" },
+            new BillingSheet
+            {
+                Id = payableId, Code = "BS-CONFIGURED", InvoiceId = Guid.NewGuid(),
+                SupplierId = null,
+                Charges = [new BillingSheetCharge { Id = Guid.NewGuid(), CurrencyId = currencyId, Amount = 100m }],
+            }
+        );
+        await context.SaveChangesAsync();
+        var repository = new PaymentRepository(context, CreateMapper());
+
+        var result = await repository.RecordPayment(
+            new RecordPaymentRequest
+            {
+                Amount = 25m, CurrencyId = currencyId, PaymentDate = DateTime.UtcNow,
+                Method = PaymentMethod.Cash, Reference = "BANK-CONFIGURED",
+                PayableType = PayableType.BillingSheet, PayableId = payableId,
+            },
+            Guid.NewGuid()
+        );
+
+        Assert.True(result.IsSuccess);
+        var payment = await context.Payments.FindAsync(result.Value);
+        Assert.False(payment!.Approved);
+        Assert.Equal(PaymentStatus.Pending, payment.Status);
+        var stage = Assert.Single(payment.Approvals);
+        Assert.Equal(approverId, stage.UserId);
+        Assert.Empty(context.ApprovalActionLogs);
+    }
+
     private static Payment CreatePayment(
         Guid currencyId,
         Guid payableId,
