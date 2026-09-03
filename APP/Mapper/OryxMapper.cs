@@ -84,6 +84,7 @@ using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.Thresholds;
+using DOMAIN.Entities.Tickets;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
@@ -737,6 +738,8 @@ public class OryxMapper : Profile
         #region Currency
 
         CreateMap<Currency, CurrencyDto>();
+        CreateMap<ExchangeRate, ExchangeRateDto>();
+        CreateMap<TermsOfPayment, TermsOfPaymentDto>();
 
         #endregion
 
@@ -889,6 +892,10 @@ public class OryxMapper : Profile
             );
         CreateMap<FormResponse, FormResponseDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>())
+            .ForMember(
+                dest => dest.ProductionActivityStepId,
+                opt => opt.MapFrom(src => src.Response.ProductionActivityStepId)
+            )
             .ForMember(dest => dest.CheckedBy, opt => opt.MapFrom(src => src.Response.CheckedBy))
             .ForMember(dest => dest.CheckedAt, opt => opt.MapFrom(src => src.Response.CheckedAt))
             .ForMember(
@@ -897,7 +904,7 @@ public class OryxMapper : Profile
             )
             .ForMember(
                 dest => dest.Complies,
-                opt => opt.MapFrom(src => src.FormField.FormSection.Complies)
+                opt => opt.MapFrom(src => src.Complies ?? src.FormField.FormSection.Complies)
             );
         CreateMap<CreateFormResponseRequest, FormResponse>();
         CreateMap<FormAssignee, FormAssigneeDto>();
@@ -1365,7 +1372,9 @@ public class OryxMapper : Profile
         #region Invoice
 
         CreateMap<CreateInvoice, Invoice>();
+        CreateMap<CreateInvoiceAmount, InvoiceAmount>();
         CreateMap<Invoice, InvoiceDto>();
+        CreateMap<InvoiceAmount, InvoiceAmountDto>();
 
         #endregion
 
@@ -1445,6 +1454,15 @@ public class OryxMapper : Profile
             .ForAllMembers(opts => opts.Condition((_, dest, srcMember) => srcMember != null));
         CreateMap<JobRequest, JobRequestDto>();
         CreateMap<JobRequest, JobRequestReducedDto>();
+
+        #region IT Support Tickets
+
+        CreateMap<CreateTicketRequest, Ticket>();
+        CreateMap<Ticket, TicketDto>()
+            .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
+        CreateMap<TicketActivity, TicketActivityDto>();
+
+        #endregion
 
         // Job Execution
         CreateMap<JobExecution, JobExecutionDto>();

@@ -4,6 +4,7 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Charges;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.Users;
@@ -22,6 +23,7 @@ public class BillingSheet : BaseEntity, IRequireApproval
     public DateTime FreeTimeExpiryDate { get; set; }
     [StringLength(100)] public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
+    public DateTime? DueDate { get; set; }
     public BillingSheetStatus Status { get; set; }
 
     //container information
@@ -49,6 +51,7 @@ public class BillingSheetCharge
     public Guid? LastUpdatedById { get; set; }
     public User LastUpdatedBy { get; set; }
     public DateTime? LastUpdatedOn { get; set; }
+    public List<Payment> Payments { get; set; } = [];
 }
 
 public class BillingSheetApproval : ResponsibleApprovalStage
@@ -79,6 +82,9 @@ public class BillingSheetDto : WithAttachment
     public DateTime FreeTimeExpiryDate { get; set; }
     public string FreeTimeDuration { get; set; }
     public DateTime DemurrageStartDate { get; set; }
+    public DateTime? DueDate { get; set; }
+    public bool Approved { get; set; }
+    public List<PayableBalanceDto> Balances { get; set; } = [];
     public List<BillingSheetChargeDto> Charges { get; set; } = [];
     //container information
     public string ContainerNumber { get; set; }
@@ -94,4 +100,5 @@ public class BillingSheetChargeDto
     public CurrencyDto Currency { get; set; }
     public decimal Amount { get; set; }
     public bool Paid { get; set; }
+    public PaymentStatus? PaymentStatus { get; set; }
 }

@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using Microsoft.AspNetCore.Authorization;
@@ -311,7 +312,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <returns>Returns the ResponseId if successful, or a failure result.</returns>
     [HttpPost("responses/draft")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request)
@@ -321,7 +322,7 @@ public class FormController(IFormRepository repository) : ControllerBase
             return TypedResults.Unauthorized();
 
         var result = await repository.SaveFormResponseDraft(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
@@ -605,14 +606,21 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Gets form response by batch manufacturing record ID.
     /// </summary>
     /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing record.</param>
+    /// <param name="productionActivityStepId">Optional production stage step filter.</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("responses/bmr/{batchManufacturingRecordId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormResponseByBmr(Guid batchManufacturingRecordId)
+    public async Task<IResult> GetFormResponseByBmr(
+        Guid batchManufacturingRecordId,
+        [FromQuery] Guid? productionActivityStepId = null
+    )
     {
-        var result = await repository.GetFormResponseByBmr(batchManufacturingRecordId);
+        var result = await repository.GetFormResponseByBmr(
+            batchManufacturingRecordId,
+            productionActivityStepId
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -789,15 +797,25 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Retrieves a Form Assignee associated with a specific Material Batch.
     /// </summary>
     /// <param name="materialBatchId">The unique identifier of the Material Batch.</param>
+    /// <param name="stage">Optional test stage to disambiguate assignments when a batch has more than one.</param>
+    /// <param name="productionActivityStepId">Optional production activity step to disambiguate assignments.</param>
     /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
     [HttpGet("assignees/material-batch/{materialBatchId:guid}")]
     [Authorize]
     [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormAssigneeByBatch(Guid materialBatchId)
+    public async Task<IResult> GetFormAssigneeByBatch(
+        Guid materialBatchId,
+        [FromQuery] TestStage? stage,
+        [FromQuery] Guid? productionActivityStepId
+    )
     {
-        var result = await repository.GetFormAssigneeByBatch(materialBatchId);
+        var result = await repository.GetFormAssigneeByBatch(
+            materialBatchId,
+            stage,
+            productionActivityStepId
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -805,15 +823,21 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Retrieves a Form Assignee associated with a specific Batch Manufacturing Record (BMR).
     /// </summary>
     /// <param name="bmrId">The unique identifier of the Batch Manufacturing Record.</param>
+    /// <param name="stage">Optional test stage to disambiguate assignments when a BMR has more than one.</param>
+    /// <param name="productionActivityStepId">Optional production activity step to disambiguate assignments.</param>
     /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
     [HttpGet("assignees/bmr/{bmrId:guid}")]
     [Authorize]
     [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormAssigneeByBmr(Guid bmrId)
+    public async Task<IResult> GetFormAssigneeByBmr(
+        Guid bmrId,
+        [FromQuery] TestStage? stage,
+        [FromQuery] Guid? productionActivityStepId
+    )
     {
-        var result = await repository.GetFormAssigneeByBmr(bmrId);
+        var result = await repository.GetFormAssigneeByBmr(bmrId, stage, productionActivityStepId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -826,7 +850,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetResponseId(GetResponseIdRequest request)
+    public async Task<IResult> GetResponseId([FromQuery] GetResponseIdRequest request)
     {
         var result = await repository.GetResponseId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -841,7 +865,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetFormAssigneeId(GetResponseIdRequest request)
+    public async Task<IResult> GetFormAssigneeId([FromQuery] GetResponseIdRequest request)
     {
         var result = await repository.GetFormAssigneeId(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

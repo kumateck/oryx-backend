@@ -60,6 +60,7 @@ public class ShipmentInvoice : BaseEntity
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? DueDate { get; set; }
 }
 
 public class ShipmentInvoiceItem : BaseEntity

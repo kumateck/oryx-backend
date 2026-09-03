@@ -7,6 +7,7 @@ using APP.Services.Email;
 using APP.Services.Message;
 using APP.Services.NotificationService;
 using APP.Services.Pdf;
+using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
@@ -57,6 +58,17 @@ public static class DependencyInjection
                         r.Immediate(5);
                     });
                 });
+                // No .NET consumer is attached to this queue - it exists purely so
+                // RabbitMQ provisions the exchange the frontend's server.mjs binds to
+                // for live production-board updates, same as push_notification_queue.
+                cfg.ReceiveEndpoint("production_activity_board_queue", e =>
+                {
+                    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+                    e.UseMessageRetry(r =>
+                    {
+                        r.Immediate(5);
+                    });
+                });
                 cfg.ConfigureEndpoints(context);
             });
         });
@@ -77,6 +89,8 @@ public static class DependencyInjection
         services.AddScoped<IRequisitionRepository, RequisitionRepository>();
         services.AddScoped<IApprovalRepository, ApprovalRepository>();
         services.AddScoped<IProcurementRepository, ProcurementRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<ISupplierRelationshipRepository, SupplierRelationshipRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
@@ -102,6 +116,7 @@ public static class DependencyInjection
         services.AddScoped<IAttendanceRepository, AttendanceRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAlertRepository, AlertRepository>();
         services.AddScoped<IProductSamplingRepository, ProductSamplingRepository>();
         services.AddScoped<IMaterialSamplingRepository, MaterialSamplingRepository>();
@@ -120,6 +135,7 @@ public static class DependencyInjection
         services.AddScoped<IDamagedStocksRepository, DamagedStocksRepository>();
         services.AddScoped<IRecoverableItemReportRepository, RecoverableItemReportRepository>();
         services.AddScoped<IJobRequestRepository, JobRequestRepository>();
+        services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IJobExecutionRepository, JobExecutionRepository>();
         services.AddScoped<IJobOrderRepository, JobOrderRepository>();
         services.AddScoped<IServiceQuotationRepository, ServiceQuotationRepository>();
@@ -140,6 +156,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IProductionActivityStepEventPublisher, ProductionActivityStepEventPublisher>();
         //services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
         services.AddHostedService<ServiceExpiryService>();

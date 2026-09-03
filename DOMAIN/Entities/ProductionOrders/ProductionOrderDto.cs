@@ -15,7 +15,9 @@ public class ProductionOrderDto : BaseDto
     public decimal TotalValue { get; set; }
     public ProductionOrderStatus Status { get; set; }
     public bool Approved { get; set; }
+    public DateTime? PromisedDeliveryDate { get; set; }
     public DateTime? DeliveredAt { get; set; }
+    public Guid? SourceCustomerQuotationId { get; set; }
 }
 
 public class ProductionOrderListDto : BaseDto
@@ -25,7 +27,9 @@ public class ProductionOrderListDto : BaseDto
     public decimal TotalValue { get; set; }
     public ProductionOrderStatus Status { get; set; }
     public bool Approved { get; set; }
+    public DateTime? PromisedDeliveryDate { get; set; }
     public DateTime? DeliveredAt { get; set; }
+    public Guid? SourceCustomerQuotationId { get; set; }
 }
 
 public class ProductionOrderDetailDto : ProductionOrderDto
@@ -38,6 +42,9 @@ public class ProductionOrderProductsDto
     public ProductListDto Product { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
+    public Guid? UoMId { get; set; }
+    public decimal? UnitPrice { get; set; }
+    public decimal DiscountPercent { get; set; }
     public decimal TotalVolume { get; set; }
     public decimal TotalBatches { get; set; }
     public decimal TotalValue { get; set; }

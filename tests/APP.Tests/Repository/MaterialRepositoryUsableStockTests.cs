@@ -1,6 +1,5 @@
 using APP.Repository;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED.Services.Identity;

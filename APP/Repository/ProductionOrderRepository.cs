@@ -2,7 +2,9 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Invoices;
+using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProformaInvoices;
 using INFRASTRUCTURE.Context;
@@ -11,7 +13,10 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionOrderRepository(ApplicationDbContext context, IMapper mapper)
+public class ProductionOrderRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IApprovalRepository approvalRepository)
     : IProductionOrderRepository
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
@@ -302,14 +307,48 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result<Guid>> CreateInvoice(CreateInvoice request)
     {
-        var proformaExists = await context.ProformaInvoices.AnyAsync(p =>
-            p.Id == request.ProformaInvoiceId
-        );
-        if (!proformaExists)
+        var proforma = await context.ProformaInvoices
+            .Include(p => p.Products)
+                .ThenInclude(p => p.Product)
+            .FirstOrDefaultAsync(p => p.Id == request.ProformaInvoiceId);
+        if (proforma is null)
             return Error.NotFound("ProformaInvoice.NotFound", "Proforma Invoice not found");
+
+        if (request.Amounts.Any(amount => amount.Amount <= 0))
+            return Error.Validation("Invoice.Amount", "Invoice amounts must be greater than zero");
+        if (request.Amounts.Select(amount => amount.CurrencyId).Distinct().Count() != request.Amounts.Count)
+            return Error.Validation("Invoice.Currency", "Invoice currencies must be unique");
+        if (request.Amounts.Count > 0)
+        {
+            var currencyIds = request.Amounts.Select(amount => amount.CurrencyId).ToList();
+            if (await context.Currencies.CountAsync(currency => currencyIds.Contains(currency.Id)) != currencyIds.Count)
+                return Error.NotFound("Invoice.Currency", "One or more invoice currencies were not found");
+        }
+
+        TermsOfPayment terms = null;
+        if (request.TermsOfPaymentId.HasValue)
+        {
+            terms = await context.TermsOfPayments.FirstOrDefaultAsync(item => item.Id == request.TermsOfPaymentId);
+            if (terms is null)
+                return Error.NotFound("Invoice.TermsOfPayment", "Terms of payment not found");
+        }
 
         var invoice = mapper.Map<Invoice>(request);
         invoice.Status = InvoiceStatus.Pending;
+        invoice.DueDate = terms?.DueDays is { } dueDays
+            ? DateTime.UtcNow.Date.AddDays(dueDays)
+            : null;
+
+        // Existing clients do not yet submit financial snapshots. Once a base currency
+        // is configured, freeze the current product prices at invoice creation so later
+        // product-price edits cannot rewrite historical receivables.
+        if (invoice.Amounts.Count == 0)
+        {
+            var baseCurrency = await context.Currencies.FirstOrDefaultAsync(currency => currency.IsBaseCurrency);
+            var total = proforma.Products.Sum(item => item.Quantity * item.Product.Price);
+            if (baseCurrency is not null && total > 0)
+                invoice.Amounts.Add(new InvoiceAmount { CurrencyId = baseCurrency.Id, Amount = total });
+        }
 
         await context.Invoices.AddAsync(invoice);
         await context.SaveChangesAsync();
@@ -329,6 +368,9 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
             .Include(i => i.ProformaInvoice.Products)
                 .ThenInclude(p => p.Product)
             .Include(i => i.Customer)
+            .Include(i => i.TermsOfPayment)
+            .Include(i => i.Amounts)
+                .ThenInclude(amount => amount.Currency)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -357,11 +399,28 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
                 .ThenInclude(p => p.AllocateProductionOrder)
             .Include(i => i.ProformaInvoice.Products)
                 .ThenInclude(p => p.Product)
+            .Include(i => i.Customer)
+            .Include(i => i.TermsOfPayment)
+            .Include(i => i.Amounts)
+                .ThenInclude(amount => amount.Currency)
             .FirstOrDefaultAsync(i => i.Id == id);
 
-        return invoice is null
-            ? Error.NotFound("Invoice.NotFound", "Invoice not found")
-            : mapper.Map<InvoiceDto>(invoice);
+        if (invoice is null)
+            return Error.NotFound("Invoice.NotFound", "Invoice not found");
+
+        var dto = mapper.Map<InvoiceDto>(invoice);
+        dto.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.CustomerInvoice,
+            invoice.Id,
+            invoice.Amounts.Select(amount => new PaymentBalanceQuery.Total(
+                amount.CurrencyId,
+                amount.Currency.Name,
+                amount.Currency.Symbol,
+                amount.Amount
+            ))
+        );
+        return dto;
     }
 
     public async Task<Result> UpdateInvoice(Guid id, CreateInvoice request)
@@ -372,6 +431,16 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
 
         invoice.CustomerId = request.CustomerId;
         invoice.ProformaInvoiceId = request.ProformaInvoiceId;
+        invoice.TermsOfPaymentId = request.TermsOfPaymentId;
+        if (request.TermsOfPaymentId.HasValue)
+        {
+            var terms = await context.TermsOfPayments.FirstOrDefaultAsync(item => item.Id == request.TermsOfPaymentId);
+            if (terms is null)
+                return Error.NotFound("Invoice.TermsOfPayment", "Terms of payment not found");
+            invoice.DueDate = terms.DueDays is { } dueDays
+                ? invoice.CreatedAt.Date.AddDays(dueDays)
+                : null;
+        }
 
         context.Invoices.Update(invoice);
         await context.SaveChangesAsync();
@@ -742,6 +811,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         }
 
         await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(
+            nameof(AllocateProductionOrder),
+            allocationEntity.Id
+        );
 
         return allocationEntity.Id;
     }

@@ -32,6 +32,9 @@ public class ShipmentInvoiceDto : BaseDto
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? DueDate { get; set; }
+    public decimal AmountPaid { get; set; }
+    public decimal OutstandingBalance { get; set; }
     public bool IsUsed { get; set; }
 }
 
@@ -43,6 +46,9 @@ public class ShipmentInvoiceListDto : BaseDto
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? DueDate { get; set; }
+    public decimal AmountPaid { get; set; }
+    public decimal OutstandingBalance { get; set; }
     public bool IsUsed { get; set; }
 }
 

@@ -1,7 +1,11 @@
+using System.Text.RegularExpressions;
+
 namespace APP.Utils;
 
 public static class SpecificationReferenceHelper
 {
+    private static readonly Regex TrailingYearPattern = new(@"\s+\d{4}$", RegexOptions.Compiled);
+
     public static string FormatReference(string reference)
     {
         if (string.IsNullOrWhiteSpace(reference))
@@ -15,11 +19,12 @@ public static class SpecificationReferenceHelper
         }
 
         var currentYear = DateTime.UtcNow.Year.ToString();
-        if (trimmed.EndsWith(currentYear))
+        var withoutTrailingYear = TrailingYearPattern.Replace(trimmed, "").TrimEnd();
+        if (withoutTrailingYear.Length == 0)
         {
-            return trimmed;
+            withoutTrailingYear = trimmed;
         }
 
-        return $"{trimmed} {currentYear}";
+        return $"{withoutTrailingYear} {currentYear}";
     }
 }

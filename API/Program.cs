@@ -235,7 +235,12 @@ builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 var app = builder.Build();
 
-app.SeedData();
+// Database changes are a controlled deployment step. Keeping this opt-in prevents
+// application startup and EF design-time commands from mutating a production database.
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    app.SeedData();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) { }
@@ -271,14 +276,15 @@ app.UseMiddleware<HolidayBlockingMiddleware>();
 
 app.UseRouting();
 
+// CORS must run before authentication and authorization so browser preflight
+// requests are answered without being challenged by the fallback auth policy.
+app.UseCors("default");
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.UseStaticFiles();
-
-//use CORS
-app.UseCors("default");
 
 app.UseMiddleware<JwtMiddleware>();
 

@@ -18,7 +18,10 @@ public class ProductionOrder : BaseEntity, IRequireApproval
     public ProductionOrderStatus Status { get; set; }
     public List<ProductionOrderApprovals> Approvals { get; set; } = [];
     public bool Approved { get; set; }
+    public DateTime? PromisedDeliveryDate { get; set; }
     public DateTime? DeliveredAt { get; set; }
+    public Guid? SourceCustomerQuotationId { get; set; }
+    public CustomerQuotation SourceCustomerQuotation { get; set; }
 }
 
 public enum ProductionOrderStatus
@@ -44,11 +47,16 @@ public class ProductionOrderProducts
     public Product Product { get; set; }
     public int TotalOrderQuantity { get; set; }
     public decimal VolumePerPiece { get; set; }
+    public Guid? UoMId { get; set; }
+    public UnitOfMeasure UoM { get; set; }
+    public decimal? UnitPrice { get; set; }
+    public decimal DiscountPercent { get; set; }
     public decimal TotalVolume => TotalOrderQuantity * VolumePerPiece;
     public decimal TotalBatches => Product?.FullBatchSize > 0
         ? TotalVolume / Product.FullBatchSize
         : 0;
-    public decimal TotalValue => TotalOrderQuantity * (Product?.Price ?? 0);
+    public decimal TotalValue => TotalOrderQuantity * (UnitPrice ?? Product?.Price ?? 0)
+                                 * (1 - DiscountPercent / 100m);
     public bool Fulfilled { get; set; }
     public List<ProductionOrderProductQuantity> FulfilledQuantities { get; set; } = [];
     public decimal RemainingQuantity => TotalOrderQuantity

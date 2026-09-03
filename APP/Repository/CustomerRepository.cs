@@ -9,7 +9,11 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : ICustomerRepository
+public partial class CustomerRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IApprovalRepository approvalRepository
+) : ICustomerRepository
 {
     public async Task<Result<Guid>> CreateCustomer(CreateCustomerRequest request)
     {
@@ -19,7 +23,12 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
 
         if (existingCustomer) return Error.Validation("Customer.Exists", "Customer already exists");
 
+        var references = await ValidateCustomerReferences(request);
+        if (!references.IsSuccess) return references.Error;
+
         var customer = mapper.Map<Customer>(request);
+        customer.BillingAddress ??= request.Address;
+        customer.ShippingAddress ??= request.Address;
         await context.Customers.AddAsync(customer);
 
         await context.SaveChangesAsync();
@@ -31,6 +40,8 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var query = context.Customers
             .Include(c => c.CreatedBy)
+            .Include(c => c.TermsOfPayment)
+            .Include(c => c.Currency)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))
@@ -45,6 +56,8 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var customer = await context.Customers
             .Include(c => c.CreatedBy)
+            .Include(c => c.TermsOfPayment)
+            .Include(c => c.Currency)
             .FirstOrDefaultAsync(c => c.Id == customerId);
         return customer is null ?
             Error.NotFound("Customer.NotFound", "Customer not found") :
@@ -56,10 +69,48 @@ public class CustomerRepository(ApplicationDbContext context, IMapper mapper) : 
         var customer = await context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
         if (customer == null) return Error.NotFound("Customer.NotFound", "Customer not found");
 
+        var references = await ValidateCustomerReferences(request, customer.CurrencyId, customer.CreditLimit);
+        if (!references.IsSuccess) return references.Error;
+
+        var existingCreditLimit = customer.CreditLimit;
+        var existingTermsOfPaymentId = customer.TermsOfPaymentId;
+        var existingType = customer.Type;
+        var existingCurrencyId = customer.CurrencyId;
+        var existingBillingAddress = customer.BillingAddress;
+        var existingShippingAddress = customer.ShippingAddress;
+
         mapper.Map(request, customer);
+
+        if (!request.CreditLimitProvided) customer.CreditLimit = existingCreditLimit;
+        if (!request.TermsOfPaymentIdProvided) customer.TermsOfPaymentId = existingTermsOfPaymentId;
+        if (!request.TypeProvided) customer.Type = existingType;
+        if (!request.CurrencyIdProvided) customer.CurrencyId = existingCurrencyId;
+        if (!request.BillingAddressProvided) customer.BillingAddress = existingBillingAddress;
+        if (!request.ShippingAddressProvided) customer.ShippingAddress = existingShippingAddress;
+
+        customer.BillingAddress ??= request.Address;
+        customer.ShippingAddress ??= request.Address;
         context.Customers.Update(customer);
 
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    private async Task<Result> ValidateCustomerReferences(
+        CreateCustomerRequest request, Guid? existingCurrencyId = null, decimal? existingCreditLimit = null)
+    {
+        if (request.CreditLimit < 0)
+            return Error.Validation("Customer.CreditLimit", "Credit limit cannot be negative.");
+        if (request.TermsOfPaymentId.HasValue && !await context.TermsOfPayments
+                .AnyAsync(item => item.Id == request.TermsOfPaymentId.Value))
+            return Error.NotFound("TermsOfPayment.NotFound", "Terms of payment not found.");
+        if (request.CurrencyId.HasValue && !await context.Currencies
+                .AnyAsync(item => item.Id == request.CurrencyId.Value))
+            return Error.NotFound("Currency.NotFound", "Currency not found.");
+        var effectiveCreditLimit = request.CreditLimitProvided ? request.CreditLimit : existingCreditLimit;
+        var effectiveCurrencyId = request.CurrencyIdProvided ? request.CurrencyId : existingCurrencyId;
+        if (effectiveCreditLimit.HasValue && !effectiveCurrencyId.HasValue)
+            return Error.Validation("Customer.CurrencyRequired", "A preferred currency is required when setting a credit limit.");
         return Result.Success();
     }
 

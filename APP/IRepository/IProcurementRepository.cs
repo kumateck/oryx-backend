@@ -67,7 +67,8 @@ public interface IProcurementRepository
     Task<Result> UpdateBillingSheet(UpdateBillingSheetRequest request, Guid billingSheetId, Guid userId);
     Task<Result> AddChargesToBillingSheet(List<CreateBillingSheetCharge> request, Guid billingSheetId,
         Guid userId);
-    Task<Result> MarkBillingSheetChargeAsPaid(MarkBillingSheetCharge request, Guid userId);
+    Task<Result<MarkBillingSheetChargePaymentsResponse>> MarkBillingSheetChargeAsPaid(
+        MarkBillingSheetChargePaymentsRequest request, Guid userId);
     Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
 
     //************* Shipment Document ************
@@ -113,7 +114,8 @@ public interface IProcurementRepository
     Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId, Guid departmentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
-    Task<Result> UpdateSupplierStatus(Guid supplierId, SupplierStatus status, Guid userId);
+    Task<Result> UpdateSupplierStatus(
+        Guid supplierId, SupplierStatus status, Guid userId, int requalificationIntervalDays = 365);
     Task<List<Guid>> GetDepartmentIdsFromPurchaseOrder(Guid purchaseOrderId);
     Task<Result> DistributeMaterialToWarehouse(List<DistributeMaterialRequest> request);
     Task<Result<Paginateable<IEnumerable<DistributeMaterialDto>>>> GetDistributeMaterials(int page,

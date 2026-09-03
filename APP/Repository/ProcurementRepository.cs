@@ -9,6 +9,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Notifications;
+using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -32,7 +33,8 @@ public class ProcurementRepository(
     IEmailService emailService,
     IPdfService pdfService,
     IApprovalRepository approvalRepository,
-    IBackgroundWorkerService backgroundWorkerService
+    IBackgroundWorkerService backgroundWorkerService,
+    IPaymentRepository paymentRepository
 ) : IProcurementRepository
 {
     // ************* CRUD for Manufacturer *************
@@ -243,7 +245,8 @@ public class ProcurementRepository(
     public async Task<Result> UpdateSupplierStatus(
         Guid supplierId,
         SupplierStatus status,
-        Guid userId
+        Guid userId,
+        int requalificationIntervalDays = 365
     )
     {
         var supplier = await context.Suppliers.FirstOrDefaultAsync(s => s.Id == supplierId);
@@ -258,6 +261,14 @@ public class ProcurementRepository(
 
         if (status == SupplierStatus.Approved)
         {
+            if (requalificationIntervalDays <= 0)
+                return Error.Validation(
+                    "Supplier.RequalificationInterval",
+                    "Requalification interval must be greater than zero"
+                );
+            supplier.ApprovedAt = DateTime.UtcNow;
+            supplier.RequalificationDueDate = supplier.ApprovedAt.Value
+                .AddDays(requalificationIntervalDays);
             var manufacturerIds = context
                 .SupplierManufacturers.Where(sm => sm.SupplierId == supplierId)
                 .Select(sm => sm.ManufacturerId);
@@ -1003,6 +1014,11 @@ public class ProcurementRepository(
     {
         var invoice = mapper.Map<PurchaseOrderInvoice>(request);
         invoice.CreatedById = userId;
+        var terms = await context.PurchaseOrders
+            .Where(order => order.Id == request.PurchaseOrderId)
+            .Select(order => order.TermsOfPayment.DueDays)
+            .FirstOrDefaultAsync();
+        invoice.DueDate = terms.HasValue ? DateTime.UtcNow.Date.AddDays(terms.Value) : null;
         await context.PurchaseOrderInvoices.AddAsync(invoice);
         await context.SaveChangesAsync();
 
@@ -1020,9 +1036,23 @@ public class ProcurementRepository(
                 .ThenInclude(c => c.Currency)
             .FirstOrDefaultAsync(poi => poi.Id == invoiceId);
 
-        return invoice is null
-            ? Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found")
-            : mapper.Map<PurchaseOrderInvoiceDto>(invoice);
+        if (invoice is null)
+            return Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found");
+
+        var dto = mapper.Map<PurchaseOrderInvoiceDto>(invoice);
+        dto.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.PurchaseOrderInvoice,
+            invoice.Id,
+            invoice.Charges.Where(charge => charge.CurrencyId.HasValue).Select(charge =>
+                new PaymentBalanceQuery.Total(
+                    charge.CurrencyId!.Value,
+                    charge.Currency.Name,
+                    charge.Currency.Symbol,
+                    charge.Amount
+                ))
+        );
+        return dto;
     }
 
     public async Task<
@@ -1113,6 +1143,14 @@ public class ProcurementRepository(
 
         var billingSheet = mapper.Map<BillingSheet>(request);
         billingSheet.CreatedById = userId;
+        var dueDays = await context.ShipmentInvoiceItems
+            .Where(item => item.ShipmentInvoiceId == request.InvoiceId)
+            .Select(item => item.PurchaseOrder.TermsOfPayment.DueDays)
+            .Distinct()
+            .ToListAsync();
+        billingSheet.DueDate = dueDays.Count == 1 && dueDays[0].HasValue
+            ? request.ExpectedArrivalDate.Date.AddDays(dueDays[0]!.Value)
+            : null;
         await context.BillingSheets.AddAsync(billingSheet);
         await context.SaveChangesAsync();
 
@@ -1157,6 +1195,20 @@ public class ProcurementRepository(
 
         await ApplyShipmentInvoiceItemPricing(result.Invoice?.Items ?? []);
 
+        result.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.BillingSheet,
+            billingSheet.Id,
+            billingSheet.Charges.Where(charge => charge.CurrencyId.HasValue).Select(charge =>
+                new PaymentBalanceQuery.Total(
+                    charge.CurrencyId!.Value,
+                    charge.Currency.Name,
+                    charge.Currency.Symbol,
+                    charge.Amount
+                ))
+        );
+        await ApplyBillingSheetChargePaymentStatuses(result);
+
         return result;
     }
 
@@ -1198,6 +1250,20 @@ public class ProcurementRepository(
         // on ShipmentInvoiceItems; this fills the gap for legacy rows so the print/pay
         // charges screens are never computing a total against an unpriced line.
         await ApplyShipmentInvoiceItemPricing(result.Invoice?.Items ?? []);
+
+        result.Balances = await PaymentBalanceQuery.GetAsync(
+            context,
+            PayableType.BillingSheet,
+            billingSheet.Id,
+            billingSheet.Charges.Where(charge => charge.CurrencyId.HasValue).Select(charge =>
+                new PaymentBalanceQuery.Total(
+                    charge.CurrencyId!.Value,
+                    charge.Currency.Name,
+                    charge.Currency.Symbol,
+                    charge.Amount
+                ))
+        );
+        await ApplyBillingSheetChargePaymentStatuses(result);
 
         return result;
     }
@@ -1310,31 +1376,123 @@ public class ProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result> MarkBillingSheetChargeAsPaid(
-        MarkBillingSheetCharge request,
+    public async Task<Result<MarkBillingSheetChargePaymentsResponse>> MarkBillingSheetChargeAsPaid(
+        MarkBillingSheetChargePaymentsRequest request,
         Guid userId
     )
     {
+        if (request.Charges.Count == 0)
+            return Error.Validation("Charge.Required", "Select at least one billing-sheet charge.");
+        if (request.PaymentDate == default)
+            return Error.Validation("Payment.Date", "Payment date is required.");
+        if (!Enum.IsDefined(request.Method))
+            return Error.Validation("Payment.Method", "Select a valid payment method.");
+
+        var chargeIds = request.Charges.Select(item => item.BillingSheetChargeId).ToList();
+        if (chargeIds.Any(id => id == Guid.Empty) || chargeIds.Distinct().Count() != chargeIds.Count)
+            return Error.Validation("Charge.Duplicate", "Each selected charge must be included exactly once.");
+
+        var references = request.Charges.Select(item => item.Reference?.Trim()).ToList();
+        if (references.Any(string.IsNullOrWhiteSpace))
+            return Error.Validation("Payment.Reference", "A payment reference is required for every charge.");
+        if (references.Distinct(StringComparer.OrdinalIgnoreCase).Count() != references.Count)
+            return Error.Validation("Payment.Duplicate", "Each charge payment needs a unique reference.");
+
+        await using var transaction = context.Database.IsRelational()
+            && context.Database.CurrentTransaction is null
+            ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
+
         var existingCharges = await context
-            .BillingSheetCharges.Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
+            .BillingSheetCharges.Where(bs => chargeIds.Contains(bs.Id))
             .ToListAsync();
 
-        if (existingCharges.Count == 0)
+        if (existingCharges.Count != chargeIds.Count)
         {
-            return Error.NotFound("Charge.NotFound", "Billing sheet charge not found");
+            return Error.NotFound("Charge.NotFound", "One or more billing-sheet charges were not found.");
         }
-
-        await context
-            .BillingSheetCharges.Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
-            .ExecuteUpdateAsync(setters =>
-                setters
-                    .SetProperty(e => e.Paid, true)
-                    .SetProperty(p => p.LastUpdatedById, userId)
-                    .SetProperty(p => p.LastUpdatedOn, DateTime.UtcNow)
+        if (existingCharges.Select(charge => charge.BillingSheetId).Distinct().Count() != 1)
+            return Error.Validation("Charge.BillingSheet", "All charges must belong to the same billing sheet.");
+        if (existingCharges.Any(charge => charge.Paid))
+            return Error.Conflict("Charge.AlreadyPaid", "One or more charges already have a payment record.");
+        if (existingCharges.Any(charge => !charge.CurrencyId.HasValue))
+            return Error.Validation("Charge.Currency", "Every selected charge must have a currency.");
+        if (existingCharges.Any(charge => charge.Amount <= 0))
+            return Error.Validation("Charge.Amount", "Every selected charge must have an amount greater than zero.");
+        if (await context.Payments.AnyAsync(payment =>
+                payment.BillingSheetChargeId.HasValue
+                && chargeIds.Contains(payment.BillingSheetChargeId.Value)
+                && payment.Status != PaymentStatus.Rejected))
+            return Error.Conflict(
+                "Charge.PaymentExists",
+                "One or more charges already have a pending or approved payment record."
             );
 
+        foreach (var item in request.Charges)
+        {
+            var charge = existingCharges.Single(c => c.Id == item.BillingSheetChargeId);
+
+            var recordResult = await paymentRepository.RecordPayment(
+                new RecordPaymentRequest
+                {
+                    Amount = charge.Amount,
+                    CurrencyId = charge.CurrencyId.Value,
+                    PaymentDate = request.PaymentDate,
+                    Method = request.Method,
+                    Reference = item.Reference,
+                    Notes = item.Notes,
+                    PayableType = PayableType.BillingSheet,
+                    PayableId = charge.BillingSheetId,
+                },
+                userId
+            );
+
+            if (!recordResult.IsSuccess)
+                return recordResult.Error;
+
+            var payment = await context.Payments.FindAsync(recordResult.Value);
+            if (payment is null)
+                return Error.Failure("Payment.NotFound", "The recorded payment could not be reloaded.");
+            payment.BillingSheetChargeId = charge.Id;
+            if (payment.Approved)
+            {
+                charge.Paid = true;
+                charge.LastUpdatedById = userId;
+                charge.LastUpdatedOn = DateTime.UtcNow;
+            }
+        }
+
         await context.SaveChangesAsync();
-        return Result.Success();
+        if (transaction is not null)
+            await transaction.CommitAsync();
+
+        return new MarkBillingSheetChargePaymentsResponse
+        {
+            PaidChargeIds = existingCharges.Where(charge => charge.Paid).Select(charge => charge.Id).ToList(),
+            PendingChargeIds = existingCharges.Where(charge => !charge.Paid).Select(charge => charge.Id).ToList(),
+        };
+    }
+
+    private async Task ApplyBillingSheetChargePaymentStatuses(BillingSheetDto billingSheet)
+    {
+        var chargeIds = billingSheet.Charges.Select(charge => charge.Id).ToList();
+        if (chargeIds.Count == 0)
+            return;
+
+        var statuses = await context.Payments.AsNoTracking()
+            .Where(payment =>
+                payment.BillingSheetChargeId.HasValue
+                && chargeIds.Contains(payment.BillingSheetChargeId.Value))
+            .OrderByDescending(payment => payment.CreatedAt)
+            .Select(payment => new
+            {
+                ChargeId = payment.BillingSheetChargeId!.Value,
+                payment.Status,
+            })
+            .ToListAsync();
+
+        foreach (var charge in billingSheet.Charges)
+            charge.PaymentStatus = statuses.FirstOrDefault(item => item.ChargeId == charge.Id)?.Status;
     }
 
     public async Task<Result<Guid>> CreateShipmentDocument(
@@ -1763,6 +1921,9 @@ public class ProcurementRepository(
         shipmentInvoice.CreatedById = userId;
         await context.ShipmentInvoices.AddAsync(shipmentInvoice);
 
+        var invoiceDueDays = new HashSet<int?>();
+        var invoiceCurrencyIds = new HashSet<Guid?>();
+
         foreach (var item in request.Items)
         {
             var purchaseOrder = await context
@@ -1772,6 +1933,9 @@ public class ProcurementRepository(
 
             if (purchaseOrder is null)
                 return Error.NotFound("PurchaseOrder.NotFound", "Purchase Order not found");
+
+            await context.Entry(purchaseOrder).Reference(order => order.TermsOfPayment).LoadAsync();
+            invoiceDueDays.Add(purchaseOrder.TermsOfPayment?.DueDays);
 
             var purchaseOrderItem = purchaseOrder.Items.FirstOrDefault(it =>
                 it.MaterialId == item.MaterialId
@@ -1794,7 +1958,9 @@ public class ProcurementRepository(
             {
                 invoiceItem.Price = purchaseOrderItem.Price;
                 invoiceItem.PriceUoM = purchaseOrderItem.PriceUoM;
+                invoiceItem.CurrencyId = purchaseOrderItem.CurrencyId;
             }
+            invoiceCurrencyIds.Add(purchaseOrderItem.CurrencyId);
 
             purchaseOrderItem.QuantityInvoiced += item.ReceivedQuantity;
 
@@ -1816,6 +1982,13 @@ public class ProcurementRepository(
 
             context.PurchaseOrders.Update(purchaseOrder);
         }
+
+        shipmentInvoice.DueDate = invoiceDueDays.Count == 1 && invoiceDueDays.Single().HasValue
+            ? DateTime.UtcNow.Date.AddDays(invoiceDueDays.Single()!.Value)
+            : null;
+        shipmentInvoice.CurrencyId = invoiceCurrencyIds.Count == 1
+            ? invoiceCurrencyIds.Single()
+            : null;
 
         await context.SaveChangesAsync();
         return shipmentInvoice.Id;
@@ -1916,6 +2089,7 @@ public class ProcurementRepository(
     {
         var shipmentInvoice = await context
             .ShipmentInvoices.AsSplitQuery()
+            .Include(si => si.Currency)
             .Include(si => si.Items)
                 .ThenInclude(item => item.Material)
             .Include(si => si.Items)
@@ -1933,6 +2107,24 @@ public class ProcurementRepository(
 
         var result = mapper.Map<ShipmentInvoiceDto>(shipmentInvoice);
         await ApplyShipmentInvoiceItemPricing(result.Items);
+
+        if (shipmentInvoice.CurrencyId.HasValue)
+        {
+            var balances = await PaymentBalanceQuery.GetAsync(
+                context,
+                PayableType.ShipmentInvoice,
+                shipmentInvoice.Id,
+                [new PaymentBalanceQuery.Total(
+                    shipmentInvoice.CurrencyId.Value,
+                    shipmentInvoice.Currency?.Name,
+                    shipmentInvoice.Currency?.Symbol,
+                    shipmentInvoice.TotalCost
+                )]
+            );
+            var balance = balances.Single();
+            result.AmountPaid = balance.AmountPaid;
+            result.OutstandingBalance = balance.OutstandingBalance;
+        }
 
         return result;
     }
