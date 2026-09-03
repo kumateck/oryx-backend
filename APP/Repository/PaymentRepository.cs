@@ -53,11 +53,12 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
             .Approvals.AsNoTracking()
             .Include(item => item.ApprovalStages)
             .FirstOrDefaultAsync(item => item.ItemType == nameof(Payment));
-        if (approval is null || approval.ApprovalStages.Count == 0)
-            return Error.Validation(
-                "Payment.ApprovalWorkflowMissing",
-                "Configure at least one Payment approval stage before recording payments."
-            );
+        var configuredStages = approval?.ApprovalStages.OrderBy(stage => stage.Order).ToList() ?? [];
+        // A missing/empty Payment approval workflow must not block recording a
+        // payment entirely - that would mean nobody can record any payment until
+        // an admin configures one. Auto-approve instead, same as every other
+        // approval document with no configured workflow.
+        var isAutoApproved = approval is null || configuredStages.Count == 0;
 
         var payment = new Payment
         {
@@ -72,27 +73,41 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
             CreatedById = userId,
             PayableType = request.PayableType,
             PayableId = request.PayableId,
-            Status = PaymentStatus.Pending,
-            Approvals =
-            [
-                .. approval.ApprovalStages
-                    .OrderBy(stage => stage.Order)
+            Status = isAutoApproved ? PaymentStatus.Approved : PaymentStatus.Pending,
+            Approved = isAutoApproved,
+            Approvals = isAutoApproved
+                ? []
+                : configuredStages
                     .Select(stage => new PaymentApproval
                     {
                         Id = Guid.NewGuid(),
-                        ApprovalId = approval.Id,
+                        ApprovalId = approval!.Id,
                         Required = stage.Required,
                         Order = stage.Order,
                         UserId = stage.UserId,
                         RoleId = stage.RoleId,
-                        ActivatedAt = stage.Order == approval.ApprovalStages.Min(x => x.Order)
+                        ActivatedAt = stage.Order == configuredStages.Min(x => x.Order)
                             ? DateTime.UtcNow
                             : null,
                     })
-            ]
+                    .ToList(),
         };
 
         await context.Payments.AddAsync(payment);
+
+        if (isAutoApproved)
+        {
+            var reason = approval is null
+                ? "System auto-approved because no Payment approval workflow is configured."
+                : "System auto-approved because the Payment approval workflow has no stages.";
+            await context.ApprovalActionLogs.AddAsync(new ApprovalActionLog
+            {
+                ModelId = payment.Id,
+                Status = ApprovalStatus.Approved,
+                Comments = reason,
+            });
+        }
+
         try
         {
             await context.SaveChangesAsync();

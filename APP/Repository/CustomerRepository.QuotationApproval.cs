@@ -22,18 +22,33 @@ public partial class CustomerRepository
 
         var configurations = await context.Approvals.AsNoTracking().Include(item => item.ApprovalStages)
             .Where(item => item.ItemType == nameof(CustomerQuotation)).Take(2).ToListAsync();
-        switch (configurations.Count)
-        {
-            case 0:
-                return Error.Validation("CustomerQuotation.ApprovalMissing", "Configure quotation approval stages before sending.");
-            case > 1:
-                return Error.Conflict("CustomerQuotation.ApprovalAmbiguous", "Multiple quotation approval configurations exist.");
-        }
+        if (configurations.Count > 1)
+            return Error.Conflict("CustomerQuotation.ApprovalAmbiguous", "Multiple quotation approval configurations exist.");
+        var configuration = configurations.Count == 1 ? configurations[0] : null;
+        var stages = configuration?.ApprovalStages.OrderBy(item => item.Order).ToList() ?? [];
 
-        var configuration = configurations[0];
-        var stages = configuration.ApprovalStages.OrderBy(item => item.Order).ToList();
-        if (stages.Count == 0)
-            return Error.Validation("CustomerQuotation.ApprovalMissing", "Quotation approval has no stages.");
+        // A missing/empty approval workflow must not block sending a quotation -
+        // that would mean nobody can send any quotation until an admin configures
+        // one. Auto-approve straight through instead, same as every other
+        // approval document with no configured workflow.
+        if (configuration is null || stages.Count == 0)
+        {
+            quotation.Status = CustomerQuotationStatus.Accepted;
+            quotation.Approved = true;
+            quotation.UpdatedAt = DateTime.UtcNow;
+            quotation.LastUpdatedById = userId;
+            context.ApprovalActionLogs.Add(new ApprovalActionLog
+            {
+                ModelId = quotation.Id,
+                Status = ApprovalStatus.Approved,
+                Comments = configuration is null
+                    ? "System auto-approved because no CustomerQuotation approval workflow is configured."
+                    : "System auto-approved because the CustomerQuotation approval workflow has no stages.",
+            });
+            await context.SaveChangesAsync();
+            if (transaction is not null) await transaction.CommitAsync();
+            return Result.Success();
+        }
 
         quotation.Approvals =
         [
@@ -45,6 +60,8 @@ public partial class CustomerRepository
             })
         ];
         quotation.Status = CustomerQuotationStatus.Sent;
+        quotation.UpdatedAt = DateTime.UtcNow;
+        quotation.LastUpdatedById = userId;
         await context.SaveChangesAsync();
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();

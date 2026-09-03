@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
+using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
@@ -31,7 +32,8 @@ public class ProductionScheduleRepository(
     UserManager<User> userManager,
     IMaterialRepository materialRepository,
     IBackgroundWorkerService backgroundWorkerService,
-    IApprovalRepository approvalRepository
+    IApprovalRepository approvalRepository,
+    IProductionActivityStepEventPublisher stepEventPublisher
 ) : IProductionScheduleRepository
 {
     public async Task<Result<Guid>> CreateProductionSchedule(
@@ -867,6 +869,12 @@ public class ProductionScheduleRepository(
                     }
                 }
 
+                await stepEventPublisher.PublishStatusChanged(
+                    activityStep.Id,
+                    ProductionStatus.Completed,
+                    userId
+                );
+
                 break;
         }
 
@@ -920,6 +928,12 @@ public class ProductionScheduleRepository(
                     productionSchedule.Status = ProductionStatus.Completed;
                     context.ProductionSchedules.Update(productionSchedule);
                     await context.SaveChangesAsync();
+
+                    await stepEventPublisher.PublishStatusChanged(
+                        activityStep.Id,
+                        ProductionStatus.Completed,
+                        userId
+                    );
                 }
             }
         }
@@ -2330,7 +2344,8 @@ public class ProductionScheduleRepository(
         bool isFulfilled =
             transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity == bmr.BatchQuantity;
 
-        if (!request.IsPartial || isFulfilled)
+        var stepJustCompleted = !request.IsPartial || isFulfilled;
+        if (stepJustCompleted)
         {
             productionActivityStep.CompletedAt = DateTime.UtcNow;
             productionActivityStep.Status = ProductionStatus.Completed;
@@ -2338,6 +2353,15 @@ public class ProductionScheduleRepository(
         }
 
         await context.SaveChangesAsync();
+
+        if (stepJustCompleted)
+        {
+            await stepEventPublisher.PublishStatusChanged(
+                productionActivityStep.Id,
+                ProductionStatus.Completed,
+                userId
+            );
+        }
 
         if (isFulfilled)
         {
@@ -2961,6 +2985,11 @@ public class ProductionScheduleRepository(
             "Batch manufacturing issued",
             NotificationType.BmrBprApproved
         );
+        await stepEventPublisher.PublishStatusChanged(
+            batchRecord.ProductionActivityStepId,
+            ProductionStatus.Completed,
+            userId
+        );
 
         return Result.Success();
     }
@@ -3083,6 +3112,11 @@ public class ProductionScheduleRepository(
         backgroundWorkerService.EnqueueNotification(
             "Batch packaging issued",
             NotificationType.BmrBprApproved
+        );
+        await stepEventPublisher.PublishStatusChanged(
+            batchRecord.ProductionActivityStepId,
+            ProductionStatus.Completed,
+            userId
         );
 
         return Result.Success();
@@ -3672,6 +3706,12 @@ public class ProductionScheduleRepository(
             activityStep.CompletedAt = DateTime.UtcNow;
             context.ProductionActivitySteps.Update(activityStep);
             await context.SaveChangesAsync();
+
+            await stepEventPublisher.PublishStatusChanged(
+                activityStep.Id,
+                ProductionStatus.Completed,
+                null
+            );
         }
 
         return finalPacking.Id;

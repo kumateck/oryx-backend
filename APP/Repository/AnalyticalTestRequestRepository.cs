@@ -1,5 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
@@ -12,8 +13,11 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapper mapper)
-    : IAnalyticalTestRequestRepository
+public class AnalyticalTestRequestRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IProductionActivityStepEventPublisher stepEventPublisher
+) : IAnalyticalTestRequestRepository
 {
     public async Task<Result<Guid>> CreateAnalyticalTestRequest(CreateAnalyticalTestRequest request)
     {
@@ -187,6 +191,16 @@ public class AnalyticalTestRequestRepository(ApplicationDbContext context, IMapp
 
         context.AnalyticalTestRequests.Update(test);
         await context.SaveChangesAsync();
+
+        if (request.Status == AnalyticalTestStatus.Released)
+        {
+            await stepEventPublisher.PublishStatusChanged(
+                test.ProductionActivityStepId,
+                ProductionStatus.Completed,
+                userId
+            );
+        }
+
         return Result.Success();
     }
 

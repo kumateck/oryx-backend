@@ -7,6 +7,7 @@ using APP.Services.Email;
 using APP.Services.Message;
 using APP.Services.NotificationService;
 using APP.Services.Pdf;
+using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Services.Storage;
 using APP.Services.Token;
 using DinkToPdf;
@@ -50,6 +51,17 @@ public static class DependencyInjection
                 });
 
                 cfg.ReceiveEndpoint("push_notification_queue", e =>
+                {
+                    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+                    e.UseMessageRetry(r =>
+                    {
+                        r.Immediate(5);
+                    });
+                });
+                // No .NET consumer is attached to this queue - it exists purely so
+                // RabbitMQ provisions the exchange the frontend's server.mjs binds to
+                // for live production-board updates, same as push_notification_queue.
+                cfg.ReceiveEndpoint("production_activity_board_queue", e =>
                 {
                     e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
                     e.UseMessageRetry(r =>
@@ -142,6 +154,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IProductionActivityStepEventPublisher, ProductionActivityStepEventPublisher>();
         //services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
         services.AddHostedService<ServiceExpiryService>();

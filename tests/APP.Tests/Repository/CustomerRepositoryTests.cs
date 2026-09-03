@@ -1,5 +1,6 @@
 using APP.Repository;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
@@ -35,6 +36,66 @@ public class CustomerRepositoryTests
         Assert.True(result.IsSuccess);
         Assert.Equal(expectedOutstanding, result.Value.OutstandingInPreferredCurrency);
         Assert.Equal(expectedAvailable, result.Value.AvailableCredit);
+    }
+
+    [Fact]
+    public async Task SendQuotation_AutoApproves_WhenNoWorkflowConfigured()
+    {
+        // Regression: SendQuotation used to hard-block with "CustomerQuotation.ApprovalMissing"
+        // whenever no approval workflow existed - meaning nobody could ever send a
+        // quotation until an admin configured one. It must auto-approve instead.
+        await using var context = CreateContext();
+        var customer = new Customer { Id = Guid.NewGuid(), Name = "Hospital" };
+        var quotation = new CustomerQuotation
+        {
+            Id = Guid.NewGuid(), CustomerId = customer.Id, Code = "Q-AUTO",
+            CurrencyId = Guid.NewGuid(), Status = CustomerQuotationStatus.Draft,
+            ValidUntil = DateTime.UtcNow.AddDays(10),
+        };
+        context.AddRange(customer, quotation);
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).SendQuotation(quotation.Id, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(CustomerQuotationStatus.Accepted, quotation.Status);
+        Assert.True(quotation.Approved);
+        Assert.Empty(quotation.Approvals);
+        Assert.Single(context.ApprovalActionLogs);
+    }
+
+    [Fact]
+    public async Task SendQuotation_CreatesConfiguredPendingApproval_WhenWorkflowExists()
+    {
+        await using var context = CreateContext();
+        var approverId = Guid.NewGuid();
+        var customer = new Customer { Id = Guid.NewGuid(), Name = "Hospital" };
+        var quotation = new CustomerQuotation
+        {
+            Id = Guid.NewGuid(), CustomerId = customer.Id, Code = "Q-CONFIGURED",
+            CurrencyId = Guid.NewGuid(), Status = CustomerQuotationStatus.Draft,
+            ValidUntil = DateTime.UtcNow.AddDays(10),
+        };
+        var approval = new Approval
+        {
+            Id = Guid.NewGuid(), ItemType = nameof(CustomerQuotation), ApprovalStages = [],
+        };
+        approval.ApprovalStages.Add(new ApprovalStage
+        {
+            Id = Guid.NewGuid(), ApprovalId = approval.Id, Approval = approval,
+            Order = 1, Required = true, UserId = approverId,
+        });
+        context.AddRange(customer, quotation, approval);
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).SendQuotation(quotation.Id, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(CustomerQuotationStatus.Sent, quotation.Status);
+        Assert.False(quotation.Approved);
+        var stage = Assert.Single(quotation.Approvals);
+        Assert.Equal(approverId, stage.UserId);
+        Assert.Empty(context.ApprovalActionLogs);
     }
 
     [Fact]
@@ -174,7 +235,16 @@ public class CustomerRepositoryTests
     {
         var config = new MapperConfiguration(
             cfg => cfg.CreateMap<CreateCustomerRequest, Customer>(), NullLoggerFactory.Instance);
-        return new CustomerRepository(context, config.CreateMapper());
+        var approvalRepository = new ApprovalRepository(
+            context,
+            null!,
+            null!,
+            null!,
+            NullLogger<ApprovalRepository>.Instance,
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
+        );
+        return new CustomerRepository(context, config.CreateMapper(), approvalRepository);
     }
 
     private static ApplicationDbContext CreateContext()

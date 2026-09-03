@@ -13,7 +13,10 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionOrderRepository(ApplicationDbContext context, IMapper mapper)
+public class ProductionOrderRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IApprovalRepository approvalRepository)
     : IProductionOrderRepository
 {
     public async Task<Result<Guid>> CreateProductionOrder(CreateProductionOrderRequest request)
@@ -808,6 +811,11 @@ public class ProductionOrderRepository(ApplicationDbContext context, IMapper map
         }
 
         await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(
+            nameof(AllocateProductionOrder),
+            allocationEntity.Id
+        );
 
         return allocationEntity.Id;
     }

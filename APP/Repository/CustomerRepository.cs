@@ -9,7 +9,11 @@ using SHARED;
 
 namespace APP.Repository;
 
-public partial class CustomerRepository(ApplicationDbContext context, IMapper mapper) : ICustomerRepository
+public partial class CustomerRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IApprovalRepository approvalRepository
+) : ICustomerRepository
 {
     public async Task<Result<Guid>> CreateCustomer(CreateCustomerRequest request)
     {

@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Pdf;
+using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
@@ -35,7 +36,8 @@ public class RequisitionRepository(
     IConfigurationRepository configurationRepository,
     IMaterialRepository materialRepository,
     IApprovalRepository approvalRepository,
-    IBackgroundWorkerService backgroundWorkerService
+    IBackgroundWorkerService backgroundWorkerService,
+    IProductionActivityStepEventPublisher stepEventPublisher
 ) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
@@ -862,6 +864,7 @@ public class RequisitionRepository(
                 stockRequisition.Status = RequestStatus.Completed;
             }
 
+            Guid? completedStepId = null;
             if (stockRequisition.ProductionActivityStepId.HasValue)
             {
                 var anyOtherPendingItems = await context.RequisitionItems.AnyAsync(ri =>
@@ -882,6 +885,7 @@ public class RequisitionRepository(
                     {
                         productionActivityStep.Status = ProductionStatus.Completed;
                         productionActivityStep.CompletedAt = now;
+                        completedStepId = productionActivityStep.Id;
                         if (stockRequisition.ProductionActivityStep is not null)
                         {
                             context.ProductionActivityLogs.Add(
@@ -902,6 +906,15 @@ public class RequisitionRepository(
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            if (completedStepId.HasValue)
+            {
+                await stepEventPublisher.PublishStatusChanged(
+                    completedStepId.Value,
+                    ProductionStatus.Completed,
+                    userId
+                );
+            }
 
             return Result.Success();
         }

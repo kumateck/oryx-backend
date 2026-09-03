@@ -60,6 +60,52 @@ public class ResponseApprovalSubmissionTests
         Assert.True(result.IsSuccess);
     }
 
+    [Fact]
+    public async Task ValidateAsync_AllowsSubmission_WhenWorkflowIsMissing()
+    {
+        await using var context = CreateContext();
+        var form = new Form { Id = Guid.NewGuid(), Name = "Finished product" };
+        var response = new Response
+        {
+            Id = Guid.NewGuid(),
+            FormId = form.Id,
+            Form = form,
+        };
+        context.AddRange(form, response);
+        await context.SaveChangesAsync();
+
+        var result = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AllowsSubmission_WhenWorkflowHasNoStages()
+    {
+        await using var context = CreateContext();
+        var form = new Form { Id = Guid.NewGuid(), Name = "Finished product" };
+        var response = new Response
+        {
+            Id = Guid.NewGuid(),
+            FormId = form.Id,
+            Form = form,
+        };
+        context.AddRange(
+            form,
+            response,
+            new Approval
+            {
+                Id = Guid.NewGuid(),
+                ItemType = nameof(Response),
+                ApprovalStages = [],
+            });
+        await context.SaveChangesAsync();
+
+        var result = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
+
+        Assert.True(result.IsSuccess);
+    }
+
     private static Response SeedConfiguredResponse(
         ApplicationDbContext context,
         bool approved,
