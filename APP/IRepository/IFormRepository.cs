@@ -28,7 +28,7 @@ public interface IFormRepository
     Task<Result> DeleteForm(Guid formId, Guid userId);
     Task<Result<Guid?>> GetResponseId(GetResponseIdRequest request);
     Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request);
-    Task<Result> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId);
+    Task<Result<Guid>> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId);
     Task<Result> SubmitFormResponseFinal(Guid responseId);
     Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId);
     Task<Result> SubmitFormSectionValue(
