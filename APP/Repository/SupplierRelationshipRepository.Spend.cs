@@ -49,7 +49,7 @@ public partial class SupplierRelationshipRepository
         var lines = new List<SpendLine>();
         foreach (var payment in payments)
         {
-            decimal? rate = payment.CurrencyId == baseCurrency?.Id ? 1m : rates
+            var rate = payment.CurrencyId == baseCurrency?.Id ? 1m : rates
                 .FirstOrDefault(item => item.CurrencyId == payment.CurrencyId
                     && item.EffectiveDate <= payment.PaymentDate)?.RateToBase;
             if (!rate.HasValue)
@@ -59,18 +59,24 @@ public partial class SupplierRelationshipRepository
                 payment.Currency.Name, payment.Amount, rate.HasValue ? payment.Amount * rate : null));
         }
 
-        report.Months = lines.GroupBy(item => new DateTime(item.Date.Year, item.Date.Month, 1))
-            .OrderBy(group => group.Key).Select(group => new SupplierMonthlySpendDto
-            {
-                Month = group.Key, TotalBase = group.Sum(item => item.BaseAmount ?? 0m),
-                OriginalCurrencies = group.GroupBy(item => new { item.CurrencyId, item.CurrencyName })
-                    .Select(currency => new SupplierCurrencySpendDto
-                    {
-                        CurrencyId = currency.Key.CurrencyId,
-                        CurrencyName = currency.Key.CurrencyName,
-                        Amount = currency.Sum(item => item.Amount),
-                    }).ToList(),
-            }).ToList();
+        report.Months =
+        [
+            .. lines.GroupBy(item => new DateTime(item.Date.Year, item.Date.Month, 1))
+                .OrderBy(group => group.Key).Select(group => new SupplierMonthlySpendDto
+                {
+                    Month = group.Key, TotalBase = group.Sum(item => item.BaseAmount ?? 0m),
+                    OriginalCurrencies =
+                    [
+                        .. group.GroupBy(item => new { item.CurrencyId, item.CurrencyName })
+                            .Select(currency => new SupplierCurrencySpendDto
+                            {
+                                CurrencyId = currency.Key.CurrencyId,
+                                CurrencyName = currency.Key.CurrencyName,
+                                Amount = currency.Sum(item => item.Amount),
+                            })
+                    ],
+                })
+        ];
         report.TotalBase = report.Months.Sum(item => item.TotalBase);
         report.DataQualityWarnings = report.DataQualityWarnings.Distinct().ToList();
         return report;

@@ -2,7 +2,6 @@ using System.Data;
 using APP.IRepository;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
-using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Payments;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;

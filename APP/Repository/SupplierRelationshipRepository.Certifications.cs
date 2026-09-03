@@ -54,7 +54,6 @@ public partial class SupplierRelationshipRepository
                 && item.SupplierId == supplierId && item.CertificateNumber == request.CertificateNumber))
             return Error.Conflict("SupplierCertification.Duplicate", "Certificate number already exists for this supplier.");
         Apply(entity, request);
-        entity.LastUpdatedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -65,7 +64,8 @@ public partial class SupplierRelationshipRepository
             item.Id == id && item.SupplierId == supplierId);
         if (entity is null)
             return Error.NotFound("SupplierCertification.NotFound", "Supplier certification not found.");
-        SoftDelete(entity, userId);
+        entity.DeletedAt = DateTime.UtcNow;
+        entity.LastDeletedById = userId;
         await context.SaveChangesAsync();
         return Result.Success();
     }

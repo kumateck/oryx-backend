@@ -50,12 +50,15 @@ public partial class CustomerRepository
             return Result.Success();
         }
 
-        quotation.Approvals = stages.Select((stage, index) => new CustomerQuotationApproval
-        {
-            CustomerQuotationId = quotation.Id, ApprovalId = configuration.Id,
-            Order = stage.Order, Required = stage.Required, UserId = stage.UserId, RoleId = stage.RoleId,
-            ActivatedAt = index == 0 ? DateTime.UtcNow : null, CreatedAt = DateTime.UtcNow,
-        }).ToList();
+        quotation.Approvals =
+        [
+            .. stages.Select((stage, index) => new CustomerQuotationApproval
+            {
+                CustomerQuotationId = quotation.Id, ApprovalId = configuration.Id,
+                Order = stage.Order, Required = stage.Required, UserId = stage.UserId, RoleId = stage.RoleId,
+                ActivatedAt = index == 0 ? DateTime.UtcNow : null, CreatedAt = DateTime.UtcNow,
+            })
+        ];
         quotation.Status = CustomerQuotationStatus.Sent;
         quotation.UpdatedAt = DateTime.UtcNow;
         quotation.LastUpdatedById = userId;

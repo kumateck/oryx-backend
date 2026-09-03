@@ -27,18 +27,21 @@ public partial class CustomerRepository
             CustomerId = quotation.CustomerId, Code = $"PO-{quotation.Code}",
             Status = ProductionOrderStatus.Pending, SourceCustomerQuotationId = quotation.Id,
             CreatedById = userId,
-            Products = quotation.Items.Select(item => new ProductionOrderProducts
-            {
-                ProductId = item.ProductId, TotalOrderQuantity = item.Quantity,
-                VolumePerPiece = item.Product.BaseQuantity > 0 ? item.Product.BaseQuantity : 1m,
-                UoMId = item.UoMId, UnitPrice = item.UnitPrice,
-                DiscountPercent = item.DiscountPercent,
-            }).ToList(),
+            Products =
+            [
+                .. quotation.Items.Select(item => new ProductionOrderProducts
+                {
+                    ProductId = item.ProductId, TotalOrderQuantity = item.Quantity,
+                    VolumePerPiece = item.Product.BaseQuantity > 0 ? item.Product.BaseQuantity : 1m,
+                    UoMId = item.UoMId, UnitPrice = item.UnitPrice,
+                    DiscountPercent = item.DiscountPercent,
+                })
+            ],
         };
         quotation.Status = CustomerQuotationStatus.ConvertedToOrder;
         quotation.UpdatedAt = DateTime.UtcNow;
         quotation.LastUpdatedById = userId;
-        context.ProductionOrders.Add(order);
+        await context.ProductionOrders.AddAsync(order);
         await context.SaveChangesAsync();
 
         await approvalRepository.CreateInitialApprovalsAsync(nameof(ProductionOrder), order.Id);

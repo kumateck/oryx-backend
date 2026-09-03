@@ -78,7 +78,7 @@ public partial class SupplierRelationshipRepository
             OnTimeDeliveryRate = onTimeRate, QualityRejectRate = rejectRate,
             Score = decimal.Clamp(onTimeRate * request.OnTimeDeliveryWeight
                 + (100m - rejectRate) * request.QualityWeight, 0m, 100m),
-            DataQualityWarnings = warnings,
+            DataQualityWarnings = warnings
         };
     }
 

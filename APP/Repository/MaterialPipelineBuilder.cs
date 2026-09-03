@@ -112,11 +112,13 @@ internal static class MaterialPipelineBuilder
                 );
             }));
 
-        return result.Where(item => item.Quantity > 0)
-            .OrderByDescending(item => item.Stage)
-            .ThenBy(item => item.ExpectedAvailabilityDate)
-            .ThenBy(item => item.Reference)
-            .ToList();
+        return
+        [
+            .. result.Where(item => item.Quantity > 0)
+                .OrderByDescending(item => item.Stage)
+                .ThenBy(item => item.ExpectedAvailabilityDate)
+                .ThenBy(item => item.Reference)
+        ];
     }
 
     private static List<string> DepartmentsFor(
@@ -138,12 +140,14 @@ internal static class MaterialPipelineBuilder
     private static List<string> DepartmentNamesFor(
         IEnumerable<Guid> requisitionIds,
         Dictionary<Guid, string> departmentsByRequisition
-    ) => requisitionIds
-        .Select(requisitionId => departmentsByRequisition.GetValueOrDefault(requisitionId))
-        .Where(name => !string.IsNullOrEmpty(name))
-        .Distinct()
-        .OrderBy(name => name)
-        .ToList();
+    ) =>
+    [
+        .. requisitionIds
+            .Select(departmentsByRequisition.GetValueOrDefault)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Distinct()
+            .OrderBy(name => name)
+    ];
 
     private static ProcurementSource? RouteFor(
         PipelinePurchaseOrderLine item,

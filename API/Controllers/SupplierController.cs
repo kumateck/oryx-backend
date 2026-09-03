@@ -7,8 +7,6 @@ namespace API.Controllers;
 [ApiController]
 public partial class SupplierController(ISupplierRelationshipRepository repository) : ControllerBase
 {
-    private readonly ISupplierRelationshipRepository _repository = repository;
-
     private bool TryGetUserId(out Guid userId)
         => Guid.TryParse(HttpContext.Items["Sub"] as string, out userId);
 }

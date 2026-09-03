@@ -10,37 +10,37 @@ public partial class SupplierController
 {
     [HttpGet("{supplierId:guid}/contacts")]
     [Authorize(PermissionKeys.CanManageSupplierContracts)]
-    public async Task<IResult> GetContacts(Guid supplierId)
+    public async Task<IResult> GetContacts([FromRoute] Guid supplierId)
     {
-        var result = await _repository.GetContacts(supplierId);
+        var result = await repository.GetContacts(supplierId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPost("{supplierId:guid}/contacts")]
     [Authorize(PermissionKeys.CanManageSupplierContracts)]
-    public async Task<IResult> CreateContact(Guid supplierId, [FromBody] SupplierContactRequest request)
+    public async Task<IResult> CreateContact([FromRoute] Guid supplierId, [FromBody] SupplierContactRequest request)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.CreateContact(supplierId, request, userId);
+        var result = await repository.CreateContact(supplierId, request, userId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     [HttpPut("{supplierId:guid}/contacts/{id:guid}")]
     [Authorize(PermissionKeys.CanManageSupplierContracts)]
     public async Task<IResult> UpdateContact(
-        Guid supplierId, Guid id, [FromBody] SupplierContactRequest request)
+        [FromRoute] Guid supplierId, [FromRoute] Guid id, [FromBody] SupplierContactRequest request)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.UpdateContact(supplierId, id, request, userId);
+        var result = await repository.UpdateContact(supplierId, id, request, userId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
     [HttpDelete("{supplierId:guid}/contacts/{id:guid}")]
     [Authorize(PermissionKeys.CanManageSupplierContracts)]
-    public async Task<IResult> DeleteContact(Guid supplierId, Guid id)
+    public async Task<IResult> DeleteContact([FromRoute] Guid supplierId, [FromRoute] Guid id)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
-        var result = await _repository.DeleteContact(supplierId, id, userId);
+        var result = await repository.DeleteContact(supplierId, id, userId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }
