@@ -2,7 +2,9 @@
 
 ## Product ARD and COA responses
 
-`GET /api/v1/form/response` resolves a product response by the exact `batchManufacturingRecordId` and `productionActivityStepId`. Response detail includes `approved`, `rejected`, and `hasPendingApproval`.
+`GET /api/v1/form/response` resolves a product response by the exact `batchManufacturingRecordId` and `productionActivityStepId`. A pair with no response returns `200` with `null`; it is not a validation failure. Response detail includes `approved`, `rejected`, and `hasPendingApproval`.
+
+`POST /api/v1/form/responses/draft` creates the response container on the first field save and returns its ID. Subsequent fields submit that ID and must retain the same form, BMR, and production-step context. A different step under the same BMR creates a different response container.
 
 Draft and final form submission require every field to belong to the response form. Existing response updates must retain the original form, batch, and production-step context. Product COA generation verifies the BMR/step ATR pair and refuses mixed-form responses. A pending or completed approval round produces a conflict; generating a COA never silently starts a replacement approval round.
 
