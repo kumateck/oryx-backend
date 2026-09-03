@@ -3,6 +3,7 @@ using APP.Extensions;
 using APP.Utils;
 using DOMAIN.Entities.Items.Requisitions;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.QualityAudits;
 using DOMAIN.Entities.Requisitions;
 using SHARED;
 
@@ -648,6 +649,156 @@ public static class PdfTemplate
                 </div>
               </body>
             </html>");
+
+        return content.ToString();
+    }
+
+    public static string QualityAuditReportTemplate(QualityAuditDto audit)
+    {
+        var content = new StringBuilder();
+
+        content.AppendLine($@"
+          <!DOCTYPE html>
+          <html lang=""en"">
+            <head>
+              <meta charset=""UTF-8"" />
+              <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+              <title>Quality Audit Report</title>
+              <style>
+                .page-body {{
+                  font-family: Arial, sans-serif;
+                  margin: 0;
+                  padding: 0;
+                  background-color: #ffffff;
+                  color: #333;
+                }}
+                .container {{
+                  max-width: 900px;
+                  margin: 40px auto;
+                  background: #ffffff;
+                }}
+                .title {{
+                  text-align: center;
+                  margin: 10px 0 30px;
+                }}
+                .title h1 {{
+                  font-size: 22px;
+                  margin: 0;
+                  color: #0070c0;
+                }}
+                .meta {{
+                  font-size: 13px;
+                  line-height: 1.7;
+                  color: #444;
+                  margin-bottom: 20px;
+                }}
+                .content h2 {{
+                  font-size: 16px;
+                  color: #333;
+                  margin: 24px 0 8px;
+                }}
+                .table {{
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 8px;
+                }}
+                .table th, .table td {{
+                  text-align: left;
+                  padding: 8px;
+                  font-size: 12px;
+                  border-bottom: 1px solid #e5e7eb;
+                }}
+                .table th {{
+                  background-color: #0070c0;
+                  color: white;
+                }}
+                .table tr:nth-child(even) {{
+                  background-color: #f3f4f6;
+                }}
+                .footer {{
+                  text-align: center;
+                  font-size: 11px;
+                  color: #777;
+                  margin-top: 40px;
+                }}
+              </style>
+            </head>
+            <body class=""page-body"">
+              <div class=""container"">
+                <div class=""title"">
+                  <h1>Quality Audit Report - {audit.AuditNumber}</h1>
+                </div>
+                <div class=""meta"">
+                  <p><strong>Title:</strong> {audit.Title}</p>
+                  <p><strong>Type:</strong> {audit.Type} &nbsp; <strong>Focus:</strong> {audit.FocusArea} &nbsp; <strong>Status:</strong> {audit.Status}</p>
+                  <p><strong>Scope:</strong> {audit.Scope}</p>
+                  <p><strong>Scheduled:</strong> {audit.ScheduledStartDate:d} - {audit.ScheduledEndDate:d}</p>
+                  <p><strong>Lead Auditor:</strong> {audit.LeadAuditor?.FirstName} {audit.LeadAuditor?.LastName}</p>
+                </div>
+
+                <div class=""content"">
+                  <h2>Checklist Responses</h2>
+                  <table class=""table"">
+                    <thead>
+                      <tr>
+                        <th>Question</th>
+                        <th>Response</th>
+                        <th>Comments</th>
+                      </tr>
+                    </thead>
+                    <tbody>");
+
+        foreach (var response in audit.ChecklistResponses)
+        {
+            var question = response.QuestionText ?? response.AdHocQuestionText;
+            content.AppendLine($@"
+                      <tr>
+                        <td>{question}</td>
+                        <td>{response.ResponseStatus}</td>
+                        <td>{response.Comments}</td>
+                      </tr>");
+        }
+
+        content.AppendLine($@"
+                    </tbody>
+                  </table>
+
+                  <h2>Findings</h2>
+                  <table class=""table"">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>CAPA Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>");
+
+        foreach (var finding in audit.Findings)
+        {
+            content.AppendLine($@"
+                      <tr>
+                        <td>{finding.Title}</td>
+                        <td>{finding.Severity}</td>
+                        <td>{finding.Status}</td>
+                        <td>{(finding.CorrectiveAction != null ? finding.CorrectiveAction.Status.ToString() : "N/A")}</td>
+                      </tr>");
+        }
+
+        content.AppendLine($@"
+                    </tbody>
+                  </table>
+
+                  <h2>Closing</h2>
+                  <p>{audit.ClosingMeetingNotes}</p>
+                </div>
+                <div class=""footer"">
+                  <p>&copy; {DateTime.UtcNow.Year} Entrance Pharmaceuticals &amp; Research Centre</p>
+                </div>
+              </div>
+            </body>
+          </html>");
 
         return content.ToString();
     }
