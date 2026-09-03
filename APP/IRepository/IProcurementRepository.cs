@@ -67,7 +67,8 @@ public interface IProcurementRepository
     Task<Result> UpdateBillingSheet(UpdateBillingSheetRequest request, Guid billingSheetId, Guid userId);
     Task<Result> AddChargesToBillingSheet(List<CreateBillingSheetCharge> request, Guid billingSheetId,
         Guid userId);
-    Task<Result> MarkBillingSheetChargeAsPaid(MarkBillingSheetCharge request, Guid userId);
+    Task<Result<MarkBillingSheetChargePaymentsResponse>> MarkBillingSheetChargeAsPaid(
+        MarkBillingSheetChargePaymentsRequest request, Guid userId);
     Task<Result> DeleteBillingSheet(Guid billingSheetId, Guid userId);
 
     //************* Shipment Document ************

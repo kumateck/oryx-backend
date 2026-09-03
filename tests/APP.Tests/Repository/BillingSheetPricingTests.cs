@@ -51,7 +51,15 @@ public class BillingSheetPricingTests
     }
 
     private static ProcurementRepository CreateRepository(ApplicationDbContext context) =>
-        new(context, CreateMapper(context), null!, null!, null!, null!);
+        new(
+            context,
+            CreateMapper(context),
+            null!,
+            null!,
+            null!,
+            null!,
+            new PaymentRepository(context, CreateMapper(context))
+        );
 
     private static async Task<(Guid InvoiceId, Guid BillingSheetId)> SeedLegacyBillingSheet(
         ApplicationDbContext context

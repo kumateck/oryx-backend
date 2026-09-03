@@ -2,6 +2,7 @@
 
 ## Recent Updates
 
+- Billing-sheet charge payments: the Pay Charges action now records auditable `Payment` rows instead of directly flipping a boolean. Charge batches are validated and committed atomically, require `CanRecordPayment`, preserve configured maker-checker approval, and mark a charge paid only after its payment is approved. Migration `20260903121205_LinkBillingSheetChargePayments` adds the nullable payment-to-charge traceability link.
 - Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, maker-checker quotations, safe quotation-to-ProductionOrder conversion, and customer order metrics. The additive CRM migration has a controlled production runbook and remains unapplied.
 - Supplier relationship management: added pharmaceutical compliance certificates, multiple contacts and banking details, standing pricing agreements, configurable AVL requalification, computed supplier scorecards, and approved-payment spend analytics. The additive SRM migration has a controlled production runbook and is not applied automatically.
 - Cashflow foundation: added maker-checker payments, approved-payment balances, AP/AR aging, cashflow projections, effective-dated exchange rates, and nullable due-date snapshots. The production migration is additive and automatic startup migration is disabled; use the documented controlled rollout.
@@ -59,6 +60,10 @@ the changelog above live in [`docs/`](docs/):
   credit, quotation, and production-order rollout guidance.
 - [Product ATR response migration](docs/product-atr-response-migration.md) —
   per-database preflight, migration, verification, and release order.
+
+Documentation updated for the billing-sheet payment task: `README.md`,
+`docs/services.md`, `docs/workflows.md`, and
+`docs/cashflow-production-migration.md`.
 
 ## Contributing
 

@@ -14,6 +14,7 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
     public async Task<Result<Guid>> RecordPayment(RecordPaymentRequest request, Guid userId)
     {
         await using var transaction = context.Database.IsRelational()
+            && context.Database.CurrentTransaction is null
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable)
             : null;
 
@@ -186,6 +187,18 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
             {
                 payment.Approved = true;
                 payment.Status = PaymentStatus.Approved;
+                if (payment.BillingSheetChargeId.HasValue)
+                {
+                    var charge = await context.BillingSheetCharges.FindAsync(
+                        payment.BillingSheetChargeId.Value
+                    );
+                    if (charge is not null)
+                    {
+                        charge.Paid = true;
+                        charge.LastUpdatedById = userId;
+                        charge.LastUpdatedOn = DateTime.UtcNow;
+                    }
+                }
             }
             else
             {

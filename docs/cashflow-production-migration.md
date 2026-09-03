@@ -1,6 +1,7 @@
 # Cashflow production migration
 
-Migration: `20260902065334_AddCashflowPayments`
+Migrations: `20260902065334_AddCashflowPayments` and
+`20260903121205_LinkBillingSheetChargePayments`
 
 This is an expand-only migration. It adds nullable columns to existing tables,
 adds `Currencies.IsBaseCurrency` with default `false`, and creates
@@ -8,13 +9,17 @@ adds `Currencies.IsBaseCurrency` with default `false`, and creates
 not rename or drop production data. Legacy backfills only update null targets
 when their source is unambiguous.
 
+The later link migration is also expand-only. It adds nullable
+`Payments.BillingSheetChargeId`, its index, and a restricted foreign key to
+`BillingSheetCharges`. Existing payments and charges remain unchanged.
+
 ## Required rollout
 
 1. Take and verify a restorable production backup. Record row counts for
    `Currencies`, `TermsOfPayments`, `BillingSheets`, `ShipmentInvoices`,
    `PurchaseOrderInvoices`, and `Invoices`.
 2. Generate an idempotent SQL script from the currently deployed migration to
-   `20260902065334_AddCashflowPayments`. Review it and execute it first against a
+   `20260903121205_LinkBillingSheetChargePayments`. Review it and execute it first against a
    recent production clone. Do not use application startup to migrate.
 3. On the clone, run the validation queries below and exercise payment creation,
    approval, balance, and all three reports. Review every data-quality warning.
@@ -30,7 +35,7 @@ Example script generation (replace the starting migration if production differs)
 ```sh
 dotnet ef migrations script \
   20260901130504_AddPriceAndPriceUoMToShipmentInvoiceItem \
-  20260902065334_AddCashflowPayments \
+  20260903121205_LinkBillingSheetChargePayments \
   --idempotent --project INFRASTRUCTURE --startup-project API
 ```
 
@@ -45,6 +50,9 @@ SELECT count(*) AS currencies,
 FROM "Currencies";
 
 SELECT count(*) AS payments FROM "Payments";
+SELECT count(*) FILTER (WHERE "BillingSheetChargeId" IS NOT NULL)
+       AS linked_billing_sheet_charge_payments
+FROM "Payments";
 SELECT count(*) AS payment_approvals FROM "PaymentApprovals";
 SELECT count(*) AS exchange_rates FROM "ExchangeRates";
 SELECT count(*) AS invoice_amounts FROM "InvoiceAmounts";
