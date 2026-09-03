@@ -19,9 +19,9 @@ public partial class CustomerController
     [HttpGet("{id:guid}/pricing-agreements/active")]
     [Authorize(PermissionKeys.CanManageCustomerContracts)]
     public async Task<IResult> GetActivePricingAgreement(
-        [FromRoute] Guid id, [FromQuery] Guid productId, [FromQuery] Guid uomId, [FromQuery] DateTime asOf)
+        [FromRoute] Guid id, [FromQuery] Guid productId, [FromQuery] Guid productPackingId, [FromQuery] DateTime asOf)
     {
-        var result = await repository.GetActivePricingAgreement(id, productId, uomId, asOf);
+        var result = await repository.GetActivePricingAgreement(id, productId, productPackingId, asOf);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -27,8 +27,8 @@ public class CustomerQuotationItem : BaseEntity
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
     public int Quantity { get; set; }
-    public Guid UoMId { get; set; }
-    public UnitOfMeasure UoM { get; set; }
+    public Guid ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal DiscountPercent { get; set; }
     public decimal TotalValue => Quantity * UnitPrice * (1 - DiscountPercent / 100m);

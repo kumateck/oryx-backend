@@ -98,6 +98,9 @@ Cashflow payments only. Outstanding amounts remain grouped by original currency,
 then convert through the latest effective rate into the customer's preferred
 currency. Missing required rates return an error instead of an assumed value.
 Null credit limit means unlimited; available credit may be negative.
+Legacy customer updates that omit CRM fields preserve the stored credit profile.
+An explicit `null` credit limit opts the customer into unlimited credit; currency
+remains required whenever the effective credit limit is non-null.
 
 `IsWithinCreditLimit` and the credit-status endpoint are advisory. They are not
 wired into existing ProductionOrder creation, so this release does not silently
