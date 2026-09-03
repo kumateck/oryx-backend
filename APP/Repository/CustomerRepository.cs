@@ -71,8 +71,22 @@ public partial class CustomerRepository(
 
         var references = await ValidateCustomerReferences(request, customer.CurrencyId, customer.CreditLimit);
         if (!references.IsSuccess) return references.Error;
-        
+
+        var existingCreditLimit = customer.CreditLimit;
+        var existingTermsOfPaymentId = customer.TermsOfPaymentId;
+        var existingType = customer.Type;
+        var existingCurrencyId = customer.CurrencyId;
+        var existingBillingAddress = customer.BillingAddress;
+        var existingShippingAddress = customer.ShippingAddress;
+
         mapper.Map(request, customer);
+
+        if (!request.CreditLimitProvided) customer.CreditLimit = existingCreditLimit;
+        if (!request.TermsOfPaymentIdProvided) customer.TermsOfPaymentId = existingTermsOfPaymentId;
+        if (!request.TypeProvided) customer.Type = existingType;
+        if (!request.CurrencyIdProvided) customer.CurrencyId = existingCurrencyId;
+        if (!request.BillingAddressProvided) customer.BillingAddress = existingBillingAddress;
+        if (!request.ShippingAddressProvided) customer.ShippingAddress = existingShippingAddress;
 
         customer.BillingAddress ??= request.Address;
         customer.ShippingAddress ??= request.Address;
@@ -93,8 +107,9 @@ public partial class CustomerRepository(
         if (request.CurrencyId.HasValue && !await context.Currencies
                 .AnyAsync(item => item.Id == request.CurrencyId.Value))
             return Error.NotFound("Currency.NotFound", "Currency not found.");
-        if ((request.CreditLimit ?? existingCreditLimit).HasValue
-            && !(request.CurrencyId ?? existingCurrencyId).HasValue)
+        var effectiveCreditLimit = request.CreditLimitProvided ? request.CreditLimit : existingCreditLimit;
+        var effectiveCurrencyId = request.CurrencyIdProvided ? request.CurrencyId : existingCurrencyId;
+        if (effectiveCreditLimit.HasValue && !effectiveCurrencyId.HasValue)
             return Error.Validation("Customer.CurrencyRequired", "A preferred currency is required when setting a credit limit.");
         return Result.Success();
     }
