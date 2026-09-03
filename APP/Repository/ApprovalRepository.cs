@@ -12,6 +12,8 @@ using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Payroll;
+using DOMAIN.Entities.Performance;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
@@ -794,6 +796,246 @@ public class ApprovalRepository(
                         Comments = comments,
                         Status = ApprovalStatus.Approved,
                         ModelId = leaveRequest.Id,
+                    }
+                );
+                return Result.Success();
+
+            case nameof(PayrollRun):
+                var payrollRun = await context
+                    .PayrollRuns.Include(pr => pr.Approvals)
+                    .FirstOrDefaultAsync(pr => pr.Id == modelId);
+
+                if (payrollRun is null)
+                    return Error.Validation(
+                        "PayrollRun.NotFound",
+                        $"Payroll run {modelId} not found."
+                    );
+
+                var payrollRunApprovalStages = payrollRun
+                    .Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments,
+                    })
+                    .ToList();
+
+                var payrollRunCurrentApprovals = GetCurrentApprovalStage(
+                    payrollRunApprovalStages,
+                    userId,
+                    roleIds[0]
+                );
+
+                var payrollRunApprovingStage = payrollRunCurrentApprovals.FirstOrDefault();
+
+                if (payrollRunApprovingStage == null)
+                {
+                    return Error.Validation(
+                        "Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time."
+                    );
+                }
+
+                var stageToApprovePr = payrollRun.Approvals.First(stage =>
+                    stage.Status != ApprovalStatus.Approved
+                    && stage.Order == payrollRunApprovingStage.Order
+                );
+
+                stageToApprovePr.Status = ApprovalStatus.Approved;
+                stageToApprovePr.ApprovalTime = DateTime.UtcNow;
+                stageToApprovePr.Comments = comments;
+                stageToApprovePr.ApprovedById = userId;
+
+                var allRequiredPrApproved = payrollRun
+                    .Approvals.Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+
+                if (allRequiredPrApproved)
+                {
+                    payrollRun.Approved = true;
+                    payrollRun.Status = PayrollRunStatus.Approved;
+                    context.PayrollRuns.Update(payrollRun);
+                }
+                await context.SaveChangesAsync();
+
+                var nextPayrollRunStages = payrollRun
+                    .Approvals.Where(s =>
+                        s.Status == ApprovalStatus.Pending && s.ActivatedAt == null
+                    )
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextPayrollRunStages.Count != 0)
+                {
+                    var updatedApprovalStages = payrollRun
+                        .Approvals.Select(item => new ResponsibleApprovalStage
+                        {
+                            RoleId = item.RoleId,
+                            UserId = item.UserId,
+                            Order = item.Order,
+                            Status = item.Status,
+                            Required = item.Required,
+                            ApprovalTime = item.ApprovalTime,
+                            Comments = item.Comments,
+                        })
+                        .ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(
+                            updatedApprovalStages,
+                            userId,
+                            roleIds[0]
+                        )
+                        .Where(s => !s.ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var stageToActivate in newlyActiveStages)
+                    {
+                        var actualStage = payrollRun.Approvals.First(ra =>
+                            ra.Status != ApprovalStatus.Approved
+                            && (
+                                ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue
+                                || (
+                                    ra.RoleId == stageToActivate.RoleId
+                                    && stageToActivate.RoleId.HasValue
+                                )
+                            )
+                        );
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.PayrollRunApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(
+                    new CreateApprovalLog
+                    {
+                        UserId = userId,
+                        Comments = comments,
+                        Status = ApprovalStatus.Approved,
+                        ModelId = payrollRun.Id,
+                    }
+                );
+                return Result.Success();
+
+            case nameof(PerformanceReview):
+                var performanceReview = await context
+                    .PerformanceReviews.Include(pr => pr.Approvals)
+                    .FirstOrDefaultAsync(pr => pr.Id == modelId);
+
+                if (performanceReview is null)
+                    return Error.Validation(
+                        "PerformanceReview.NotFound",
+                        $"Performance review {modelId} not found."
+                    );
+
+                var performanceReviewApprovalStages = performanceReview
+                    .Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments,
+                    })
+                    .ToList();
+
+                var performanceReviewCurrentApprovals = GetCurrentApprovalStage(
+                    performanceReviewApprovalStages,
+                    userId,
+                    roleIds[0]
+                );
+
+                var performanceReviewApprovingStage = performanceReviewCurrentApprovals.FirstOrDefault();
+
+                if (performanceReviewApprovingStage == null)
+                {
+                    return Error.Validation(
+                        "Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time."
+                    );
+                }
+
+                var stageToApprovePrf = performanceReview.Approvals.First(stage =>
+                    stage.Status != ApprovalStatus.Approved
+                    && stage.Order == performanceReviewApprovingStage.Order
+                );
+
+                stageToApprovePrf.Status = ApprovalStatus.Approved;
+                stageToApprovePrf.ApprovalTime = DateTime.UtcNow;
+                stageToApprovePrf.Comments = comments;
+                stageToApprovePrf.ApprovedById = userId;
+
+                var allRequiredPrfApproved = performanceReview
+                    .Approvals.Where(s => s.Required)
+                    .All(s => s.Status == ApprovalStatus.Approved);
+
+                if (allRequiredPrfApproved)
+                {
+                    performanceReview.Approved = true;
+                    performanceReview.Status = PerformanceReviewStatus.Completed;
+                    context.PerformanceReviews.Update(performanceReview);
+                }
+                await context.SaveChangesAsync();
+
+                var nextPerformanceReviewStages = performanceReview
+                    .Approvals.Where(s =>
+                        s.Status == ApprovalStatus.Pending && s.ActivatedAt == null
+                    )
+                    .OrderBy(s => s.Order)
+                    .ToList();
+
+                if (nextPerformanceReviewStages.Count != 0)
+                {
+                    var updatedApprovalStages = performanceReview
+                        .Approvals.Select(item => new ResponsibleApprovalStage
+                        {
+                            RoleId = item.RoleId,
+                            UserId = item.UserId,
+                            Order = item.Order,
+                            Status = item.Status,
+                            Required = item.Required,
+                            ApprovalTime = item.ApprovalTime,
+                            Comments = item.Comments,
+                        })
+                        .ToList();
+
+                    var newlyActiveStages = GetCurrentApprovalStage(
+                            updatedApprovalStages,
+                            userId,
+                            roleIds[0]
+                        )
+                        .Where(s => !s.ActivatedAt.HasValue)
+                        .ToList();
+
+                    foreach (var stageToActivate in newlyActiveStages)
+                    {
+                        var actualStage = performanceReview.Approvals.First(ra =>
+                            ra.Status != ApprovalStatus.Approved
+                            && (
+                                ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue
+                                || (
+                                    ra.RoleId == stageToActivate.RoleId
+                                    && stageToActivate.RoleId.HasValue
+                                )
+                            )
+                        );
+                        actualStage.ActivatedAt = DateTime.UtcNow;
+                        context.PerformanceReviewApprovals.Update(actualStage);
+                    }
+                }
+                await context.SaveChangesAsync();
+                await AddApprovalLogs(
+                    new CreateApprovalLog
+                    {
+                        UserId = userId,
+                        Comments = comments,
+                        Status = ApprovalStatus.Approved,
+                        ModelId = performanceReview.Id,
                     }
                 );
                 return Result.Success();
@@ -2166,6 +2408,148 @@ public class ApprovalRepository(
                 break;
             }
 
+            case nameof(PayrollRun):
+            {
+                var payrollRun = await context
+                    .PayrollRuns.Include(pr => pr.Approvals)
+                    .FirstOrDefaultAsync(pr => pr.Id == modelId);
+
+                if (payrollRun is null)
+                    return Error.Validation(
+                        "PayrollRun.NotFound",
+                        $"Payroll run {modelId} not found."
+                    );
+
+                var payrollRunApprovalStages = payrollRun
+                    .Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments,
+                    })
+                    .ToList();
+
+                var payrollRunCurrentApprovals = GetCurrentApprovalStage(
+                    payrollRunApprovalStages,
+                    userId,
+                    roleIds[0]
+                );
+
+                var payrollRunApprovingStage = payrollRunCurrentApprovals.FirstOrDefault();
+
+                if (payrollRunApprovingStage == null)
+                {
+                    return Error.Validation(
+                        "Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time."
+                    );
+                }
+
+                var stageToApprovePr = payrollRun.Approvals.First(stage =>
+                    (stage.UserId == payrollRunApprovingStage.UserId && stage.UserId == userId)
+                    || (
+                        stage.RoleId == payrollRunApprovingStage.RoleId
+                        && payrollRunApprovingStage.RoleId.HasValue
+                        && roleIds.Contains(payrollRunApprovingStage.RoleId.Value)
+                    )
+                );
+
+                stageToApprovePr.Status = ApprovalStatus.Rejected;
+                stageToApprovePr.ApprovalTime = DateTime.UtcNow;
+                stageToApprovePr.Comments = comments;
+
+                payrollRun.Status = PayrollRunStatus.Draft;
+                context.PayrollRuns.Update(payrollRun);
+
+                await AddApprovalLogs(
+                    new CreateApprovalLog
+                    {
+                        UserId = userId,
+                        Comments = comments,
+                        Status = ApprovalStatus.Rejected,
+                        ModelId = payrollRun.Id,
+                    }
+                );
+                await context.SaveChangesAsync();
+
+                break;
+            }
+
+            case nameof(PerformanceReview):
+            {
+                var performanceReview = await context
+                    .PerformanceReviews.Include(pr => pr.Approvals)
+                    .FirstOrDefaultAsync(pr => pr.Id == modelId);
+
+                if (performanceReview is null)
+                    return Error.Validation(
+                        "PerformanceReview.NotFound",
+                        $"Performance review {modelId} not found."
+                    );
+
+                var performanceReviewApprovalStages = performanceReview
+                    .Approvals.Select(item => new ResponsibleApprovalStage
+                    {
+                        RoleId = item.RoleId,
+                        UserId = item.UserId,
+                        Order = item.Order,
+                        Status = item.Status,
+                        Required = item.Required,
+                        ApprovalTime = item.ApprovalTime,
+                        Comments = item.Comments,
+                    })
+                    .ToList();
+
+                var performanceReviewCurrentApprovals = GetCurrentApprovalStage(
+                    performanceReviewApprovalStages,
+                    userId,
+                    roleIds[0]
+                );
+
+                var performanceReviewApprovingStage = performanceReviewCurrentApprovals.FirstOrDefault();
+
+                if (performanceReviewApprovingStage == null)
+                {
+                    return Error.Validation(
+                        "Approval.Unauthorized",
+                        "You are not authorized to approve this resource at this time."
+                    );
+                }
+
+                var stageToApprovePrf = performanceReview.Approvals.First(stage =>
+                    (stage.UserId == performanceReviewApprovingStage.UserId && stage.UserId == userId)
+                    || (
+                        stage.RoleId == performanceReviewApprovingStage.RoleId
+                        && performanceReviewApprovingStage.RoleId.HasValue
+                        && roleIds.Contains(performanceReviewApprovingStage.RoleId.Value)
+                    )
+                );
+
+                stageToApprovePrf.Status = ApprovalStatus.Rejected;
+                stageToApprovePrf.ApprovalTime = DateTime.UtcNow;
+                stageToApprovePrf.Comments = comments;
+
+                performanceReview.Status = PerformanceReviewStatus.ManagerReview;
+                context.PerformanceReviews.Update(performanceReview);
+
+                await AddApprovalLogs(
+                    new CreateApprovalLog
+                    {
+                        UserId = userId,
+                        Comments = comments,
+                        Status = ApprovalStatus.Rejected,
+                        ModelId = performanceReview.Id,
+                    }
+                );
+                await context.SaveChangesAsync();
+
+                break;
+            }
+
             case nameof(OvertimeRequest):
                 var overtimeRequest = await context
                     .OvertimeRequests.Include(lr => lr.Approvals)
@@ -2962,6 +3346,66 @@ public class ApprovalRepository(
             );
         }
 
+        var payrollRuns = await context
+            .PayrollRuns.AsSplitQuery()
+            .Include(bs => bs.Approvals)
+            .Include(po => po.CreatedBy)
+                .ThenInclude(po => po.Department)
+            .Where(bs =>
+                bs.Approvals.Any(a =>
+                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                    && a.Status != ApprovalStatus.Approved
+                )
+            )
+            .ToListAsync();
+
+        foreach (var bs in payrollRuns)
+        {
+            entitiesRequiringApproval.Add(
+                new ApprovalEntity
+                {
+                    ModelType = nameof(PayrollRun),
+                    Id = bs.Id,
+                    Code = "",
+                    Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                    CreatedAt = bs.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(bs.Id),
+                }
+            );
+        }
+
+        var performanceReviews = await context
+            .PerformanceReviews.AsSplitQuery()
+            .Include(bs => bs.Approvals)
+            .Include(po => po.CreatedBy)
+                .ThenInclude(po => po.Department)
+            .Include(a => a.Employee)
+                .ThenInclude(a => a.Department)
+            .Where(bs =>
+                bs.Approvals.Any(a =>
+                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                    && a.Status != ApprovalStatus.Approved
+                )
+            )
+            .ToListAsync();
+
+        foreach (var bs in performanceReviews)
+        {
+            entitiesRequiringApproval.Add(
+                new ApprovalEntity
+                {
+                    ModelType = nameof(PerformanceReview),
+                    Id = bs.Id,
+                    Code = "",
+                    Department = mapper.Map<DepartmentDto>(bs.Employee?.Department),
+                    CreatedAt = bs.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(bs.Id),
+                }
+            );
+        }
+
         var responses = await context
             .Responses.AsSplitQuery()
             .Include(bs => bs.Approvals)
@@ -3393,6 +3837,46 @@ public class ApprovalRepository(
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
+            case nameof(PayrollRun):
+                var payrollRun = await context
+                    .PayrollRuns.AsSplitQuery()
+                    .Include(l => l.CreatedBy)
+                        .ThenInclude(u => u.Department)
+                    .Include(l => l.Approvals)
+                        .ThenInclude(a => a.ApprovedBy)
+                    .FirstOrDefaultAsync(l => l.Id == modelId);
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = modelId,
+                    Code = "",
+                    CreatedAt = payrollRun.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(payrollRun.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(payrollRun.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
+            case nameof(PerformanceReview):
+                var performanceReview = await context
+                    .PerformanceReviews.AsSplitQuery()
+                    .Include(l => l.CreatedBy)
+                        .ThenInclude(u => u.Department)
+                    .Include(l => l.Employee)
+                        .ThenInclude(e => e.Department)
+                    .Include(l => l.Approvals)
+                        .ThenInclude(a => a.ApprovedBy)
+                    .FirstOrDefaultAsync(l => l.Id == modelId);
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = modelId,
+                    Code = "",
+                    CreatedAt = performanceReview.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(performanceReview.Employee?.Department),
+                    RequestedBy = mapper.Map<UserDto>(performanceReview.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
             case nameof(Response):
                 var response = await context
                     .Responses.AsSplitQuery()
@@ -3664,6 +4148,12 @@ public class ApprovalRepository(
             case nameof(OvertimeRequest):
                 await CreateOvertimeRequestApprovals(modelId, stages, approval);
                 break;
+            case nameof(PayrollRun):
+                await CreatePayrollRunApprovals(modelId, stages, approval);
+                break;
+            case nameof(PerformanceReview):
+                await CreatePerformanceReviewApprovals(modelId, stages, approval);
+                break;
             case nameof(Response):
                 await CreateResponseApprovals(modelId, stages, approval);
                 break;
@@ -3819,6 +4309,66 @@ public class ApprovalRepository(
             .ToList();
 
         await context.LeaveRequestApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task CreatePayrollRunApprovals(
+        Guid payrollRunId,
+        List<ApprovalStage> stages,
+        Approval approval
+    )
+    {
+        var exists = await context.PayrollRunApprovals.AnyAsync(a =>
+            a.PayrollRunId == payrollRunId && a.ApprovalId == approval.Id
+        );
+        if (exists)
+            return;
+
+        var approvals = stages
+            .Select(stage => new PayrollRunApproval
+            {
+                Required = stage.Required,
+                Order = stage.Order,
+                PayrollRunId = payrollRunId,
+                CreatedAt = DateTime.UtcNow,
+                ApprovalId = approval.Id,
+                UserId = stage.UserId,
+                RoleId = stage.RoleId,
+                ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null,
+            })
+            .ToList();
+
+        await context.PayrollRunApprovals.AddRangeAsync(approvals);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task CreatePerformanceReviewApprovals(
+        Guid performanceReviewId,
+        List<ApprovalStage> stages,
+        Approval approval
+    )
+    {
+        var exists = await context.PerformanceReviewApprovals.AnyAsync(a =>
+            a.PerformanceReviewId == performanceReviewId && a.ApprovalId == approval.Id
+        );
+        if (exists)
+            return;
+
+        var approvals = stages
+            .Select(stage => new PerformanceReviewApproval
+            {
+                Required = stage.Required,
+                Order = stage.Order,
+                PerformanceReviewId = performanceReviewId,
+                CreatedAt = DateTime.UtcNow,
+                ApprovalId = approval.Id,
+                UserId = stage.UserId,
+                RoleId = stage.RoleId,
+                ActivatedAt = stage.Order == 1 ? DateTime.UtcNow : null,
+            })
+            .ToList();
+
+        await context.PerformanceReviewApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
 
