@@ -16,9 +16,10 @@ Migration `20260902215903_AddUniqueProductResponseStep` is part of the applicati
 1. A user with `CanRecordPayment` records a positive payment against one
    supported payable. The backend verifies the payable, currency, reference,
    and remaining approved-payment-adjusted balance.
-2. The payment starts as `Pending`; recording it does not reduce the operational
-   balance or any cashflow report.
-3. Approval stages are copied from the configured approval workflow. A reviewer
+2. When approval stages are configured, the payment starts as `Pending` and
+   recording it does not reduce the operational balance or any cashflow report.
+   With no configured stages, the existing audited auto-approval policy applies.
+3. Configured approval stages are copied from the workflow. A reviewer
    must be the assigned user or hold the assigned role, cannot review their own
    payment, and can act only on the active stage in order.
 4. Final approval re-checks the outstanding balance before setting `Approved`.
@@ -33,6 +34,22 @@ requests cannot silently create an overpayment or multiple base currencies.
 
 Payment rows are not updateable or deleteable through the API. Corrections must
 use a future auditable reversal workflow rather than rewriting history.
+
+### Billing-sheet charge payment entry
+
+1. Pay Charges requires `CanRecordPayment`, payment date and method, and a
+   unique reference for every selected charge.
+2. The server records one full `Payment` per charge with
+   `PayableType.BillingSheet`, the parent billing-sheet ID, and a nullable
+   traceability link to the exact charge. A serializable outer transaction
+   makes a multi-charge submission all-or-nothing.
+3. With no configured payment workflow, each payment follows the existing
+   audited auto-approval policy and its charge is marked paid immediately.
+4. With configured stages, the payment remains pending and the charge remains
+   unpaid. Final approval updates the charge's paid cache and audit metadata;
+   rejection leaves it available for a new, separately referenced payment.
+5. Shipment progression continues to check the charge's paid flag, so a
+   pending or rejected payment cannot satisfy the clearance gate.
 
 ## Due dates and invoice snapshots
 

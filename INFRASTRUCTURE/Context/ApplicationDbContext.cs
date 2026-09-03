@@ -2111,6 +2111,12 @@ public class ApplicationDbContext(
             .HasForeignKey(payment => payment.RecordedById)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<Payment>()
+            .HasOne(payment => payment.BillingSheetCharge)
+            .WithMany(charge => charge.Payments)
+            .HasForeignKey(payment => payment.BillingSheetChargeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         #endregion
 
         #region Supplier relationship management

@@ -33,7 +33,8 @@ public class ProcurementRepository(
     IEmailService emailService,
     IPdfService pdfService,
     IApprovalRepository approvalRepository,
-    IBackgroundWorkerService backgroundWorkerService
+    IBackgroundWorkerService backgroundWorkerService,
+    IPaymentRepository paymentRepository
 ) : IProcurementRepository
 {
     // ************* CRUD for Manufacturer *************
@@ -1206,6 +1207,7 @@ public class ProcurementRepository(
                     charge.Amount
                 ))
         );
+        await ApplyBillingSheetChargePaymentStatuses(result);
 
         return result;
     }
@@ -1261,6 +1263,7 @@ public class ProcurementRepository(
                     charge.Amount
                 ))
         );
+        await ApplyBillingSheetChargePaymentStatuses(result);
 
         return result;
     }
@@ -1373,31 +1376,123 @@ public class ProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result> MarkBillingSheetChargeAsPaid(
-        MarkBillingSheetCharge request,
+    public async Task<Result<MarkBillingSheetChargePaymentsResponse>> MarkBillingSheetChargeAsPaid(
+        MarkBillingSheetChargePaymentsRequest request,
         Guid userId
     )
     {
+        if (request.Charges.Count == 0)
+            return Error.Validation("Charge.Required", "Select at least one billing-sheet charge.");
+        if (request.PaymentDate == default)
+            return Error.Validation("Payment.Date", "Payment date is required.");
+        if (!Enum.IsDefined(request.Method))
+            return Error.Validation("Payment.Method", "Select a valid payment method.");
+
+        var chargeIds = request.Charges.Select(item => item.BillingSheetChargeId).ToList();
+        if (chargeIds.Any(id => id == Guid.Empty) || chargeIds.Distinct().Count() != chargeIds.Count)
+            return Error.Validation("Charge.Duplicate", "Each selected charge must be included exactly once.");
+
+        var references = request.Charges.Select(item => item.Reference?.Trim()).ToList();
+        if (references.Any(string.IsNullOrWhiteSpace))
+            return Error.Validation("Payment.Reference", "A payment reference is required for every charge.");
+        if (references.Distinct(StringComparer.OrdinalIgnoreCase).Count() != references.Count)
+            return Error.Validation("Payment.Duplicate", "Each charge payment needs a unique reference.");
+
+        await using var transaction = context.Database.IsRelational()
+            && context.Database.CurrentTransaction is null
+            ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
+
         var existingCharges = await context
-            .BillingSheetCharges.Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
+            .BillingSheetCharges.Where(bs => chargeIds.Contains(bs.Id))
             .ToListAsync();
 
-        if (existingCharges.Count == 0)
+        if (existingCharges.Count != chargeIds.Count)
         {
-            return Error.NotFound("Charge.NotFound", "Billing sheet charge not found");
+            return Error.NotFound("Charge.NotFound", "One or more billing-sheet charges were not found.");
         }
-
-        await context
-            .BillingSheetCharges.Where(bs => request.BillingSheetChargeIds.Contains(bs.Id))
-            .ExecuteUpdateAsync(setters =>
-                setters
-                    .SetProperty(e => e.Paid, true)
-                    .SetProperty(p => p.LastUpdatedById, userId)
-                    .SetProperty(p => p.LastUpdatedOn, DateTime.UtcNow)
+        if (existingCharges.Select(charge => charge.BillingSheetId).Distinct().Count() != 1)
+            return Error.Validation("Charge.BillingSheet", "All charges must belong to the same billing sheet.");
+        if (existingCharges.Any(charge => charge.Paid))
+            return Error.Conflict("Charge.AlreadyPaid", "One or more charges already have a payment record.");
+        if (existingCharges.Any(charge => !charge.CurrencyId.HasValue))
+            return Error.Validation("Charge.Currency", "Every selected charge must have a currency.");
+        if (existingCharges.Any(charge => charge.Amount <= 0))
+            return Error.Validation("Charge.Amount", "Every selected charge must have an amount greater than zero.");
+        if (await context.Payments.AnyAsync(payment =>
+                payment.BillingSheetChargeId.HasValue
+                && chargeIds.Contains(payment.BillingSheetChargeId.Value)
+                && payment.Status != PaymentStatus.Rejected))
+            return Error.Conflict(
+                "Charge.PaymentExists",
+                "One or more charges already have a pending or approved payment record."
             );
 
+        foreach (var item in request.Charges)
+        {
+            var charge = existingCharges.Single(c => c.Id == item.BillingSheetChargeId);
+
+            var recordResult = await paymentRepository.RecordPayment(
+                new RecordPaymentRequest
+                {
+                    Amount = charge.Amount,
+                    CurrencyId = charge.CurrencyId.Value,
+                    PaymentDate = request.PaymentDate,
+                    Method = request.Method,
+                    Reference = item.Reference,
+                    Notes = item.Notes,
+                    PayableType = PayableType.BillingSheet,
+                    PayableId = charge.BillingSheetId,
+                },
+                userId
+            );
+
+            if (!recordResult.IsSuccess)
+                return recordResult.Error;
+
+            var payment = await context.Payments.FindAsync(recordResult.Value);
+            if (payment is null)
+                return Error.Failure("Payment.NotFound", "The recorded payment could not be reloaded.");
+            payment.BillingSheetChargeId = charge.Id;
+            if (payment.Approved)
+            {
+                charge.Paid = true;
+                charge.LastUpdatedById = userId;
+                charge.LastUpdatedOn = DateTime.UtcNow;
+            }
+        }
+
         await context.SaveChangesAsync();
-        return Result.Success();
+        if (transaction is not null)
+            await transaction.CommitAsync();
+
+        return new MarkBillingSheetChargePaymentsResponse
+        {
+            PaidChargeIds = existingCharges.Where(charge => charge.Paid).Select(charge => charge.Id).ToList(),
+            PendingChargeIds = existingCharges.Where(charge => !charge.Paid).Select(charge => charge.Id).ToList(),
+        };
+    }
+
+    private async Task ApplyBillingSheetChargePaymentStatuses(BillingSheetDto billingSheet)
+    {
+        var chargeIds = billingSheet.Charges.Select(charge => charge.Id).ToList();
+        if (chargeIds.Count == 0)
+            return;
+
+        var statuses = await context.Payments.AsNoTracking()
+            .Where(payment =>
+                payment.BillingSheetChargeId.HasValue
+                && chargeIds.Contains(payment.BillingSheetChargeId.Value))
+            .OrderByDescending(payment => payment.CreatedAt)
+            .Select(payment => new
+            {
+                ChargeId = payment.BillingSheetChargeId!.Value,
+                payment.Status,
+            })
+            .ToListAsync();
+
+        foreach (var charge in billingSheet.Charges)
+            charge.PaymentStatus = statuses.FirstOrDefault(item => item.ChargeId == charge.Id)?.Status;
     }
 
     public async Task<Result<Guid>> CreateShipmentDocument(
