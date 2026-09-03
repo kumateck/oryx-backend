@@ -19,18 +19,19 @@ public partial class CustomerRepository
             return Error.Validation("CustomerQuotation.ValidUntil", "Quotation validity cannot be in the past.");
         if (request.Items.Count == 0)
             return Error.Validation("CustomerQuotation.Items", "At least one item is required.");
-        if (request.Items.GroupBy(item => new { item.ProductId, item.UoMId }).Any(group => group.Count() > 1))
-            return Error.Conflict("CustomerQuotation.DuplicateItem", "Product and unit combinations must be unique.");
+        if (request.Items.GroupBy(item => new { item.ProductId, item.ProductPackingId }).Any(group => group.Count() > 1))
+            return Error.Conflict("CustomerQuotation.DuplicateItem", "Product and packing combinations must be unique.");
         if (await context.CustomerQuotations.AnyAsync(item => item.Code == request.Code.Trim()))
             return Error.Conflict("CustomerQuotation.Code", "Quotation code already exists.");
 
         var productIds = request.Items.Select(item => item.ProductId).Distinct().ToList();
-        var uomIds = request.Items.Select(item => item.UoMId).Distinct().ToList();
-        var products = await context.Products.Where(item => productIds.Contains(item.Id))
+        var productPackingIds = request.Items.Select(item => item.ProductPackingId).Distinct().ToList();
+        var products = await context.Products.IgnoreQueryFilters()
+            .Where(item => productIds.Contains(item.Id) && !item.DeletedAt.HasValue)
             .ToDictionaryAsync(item => item.Id);
         if (products.Count != productIds.Count) return Error.NotFound("Product.NotFound", "One or more products were not found.");
-        if (await context.UnitOfMeasures.CountAsync(item => uomIds.Contains(item.Id)) != uomIds.Count)
-            return Error.NotFound("UoM.NotFound", "One or more units of measure were not found.");
+        if (await context.ProductPackings.CountAsync(item => productPackingIds.Contains(item.Id)) != productPackingIds.Count)
+            return Error.NotFound("ProductPacking.NotFound", "One or more packing styles were not found.");
 
         var quotation = new CustomerQuotation
         {
@@ -45,7 +46,7 @@ public partial class CustomerRepository
             var price = requestItem.UnitPrice;
             if (!price.HasValue)
             {
-                var active = await GetPricingMatches(customerId, requestItem.ProductId, requestItem.UoMId, DateTime.UtcNow);
+                var active = await GetPricingMatches(customerId, requestItem.ProductId, requestItem.ProductPackingId, DateTime.UtcNow);
                 switch (active.Count)
                 {
                     case > 1:
@@ -60,7 +61,7 @@ public partial class CustomerRepository
             if (price < 0) return Error.Validation("CustomerQuotation.Price", "Unit price cannot be negative.");
             quotation.Items.Add(new CustomerQuotationItem
             {
-                ProductId = requestItem.ProductId, UoMId = requestItem.UoMId,
+                ProductId = requestItem.ProductId, ProductPackingId = requestItem.ProductPackingId,
                 Quantity = requestItem.Quantity, UnitPrice = price.Value,
                 DiscountPercent = requestItem.DiscountPercent, CreatedById = userId,
             });
@@ -93,12 +94,12 @@ public partial class CustomerRepository
     private IQueryable<CustomerQuotation> QuotationQuery()
         => context.CustomerQuotations.AsNoTracking().AsSplitQuery().Include(item => item.Customer)
             .Include(item => item.Currency).Include(item => item.Items).ThenInclude(item => item.Product)
-            .Include(item => item.Items).ThenInclude(item => item.UoM).Include(item => item.Approvals);
+            .Include(item => item.Items).ThenInclude(item => item.ProductPacking).Include(item => item.Approvals);
 
     private Task<List<CustomerPricingAgreement>> GetPricingMatches(
-        Guid customerId, Guid productId, Guid uomId, DateTime asOf)
+        Guid customerId, Guid productId, Guid productPackingId, DateTime asOf)
         => context.CustomerPricingAgreements.AsNoTracking().Where(item => item.CustomerId == customerId
-            && item.ProductId == productId && item.UoMId == uomId && item.EffectiveFrom <= asOf
+            && item.ProductId == productId && item.ProductPackingId == productPackingId && item.EffectiveFrom <= asOf
             && (!item.EffectiveTo.HasValue || item.EffectiveTo.Value >= asOf)).Take(2).ToListAsync();
 
     private static CustomerQuotationDto MapQuotation(CustomerQuotation item, DateTime asOf) => new()
@@ -114,8 +115,8 @@ public partial class CustomerRepository
             .. item.Items.Select(line => new CustomerQuotationItemDto
             {
                 Id = line.Id, CreatedAt = line.CreatedAt, ProductId = line.ProductId,
-                ProductName = line.Product?.Name, Quantity = line.Quantity, UoMId = line.UoMId,
-                UoMName = line.UoM?.Name, UnitPrice = line.UnitPrice,
+                ProductName = line.Product?.Name, Quantity = line.Quantity, ProductPackingId = line.ProductPackingId,
+                ProductPackingName = line.ProductPacking?.Name, UnitPrice = line.UnitPrice,
                 DiscountPercent = line.DiscountPercent, TotalValue = line.TotalValue,
             })
         ],

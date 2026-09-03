@@ -52,10 +52,10 @@ public partial class CustomerRepository
     }
 
     public async Task<Result<CustomerPricingAgreementDto>> GetActivePricingAgreement(
-        Guid customerId, Guid productId, Guid uomId, DateTime asOf)
+        Guid customerId, Guid productId, Guid productPackingId, DateTime asOf)
     {
         var matches = await PricingQuery(customerId).Where(item => item.ProductId == productId
-            && item.UoMId == uomId && item.EffectiveFrom <= asOf
+            && item.ProductPackingId == productPackingId && item.EffectiveFrom <= asOf
             && (!item.EffectiveTo.HasValue || item.EffectiveTo.Value >= asOf)).Take(2).ToListAsync();
         return matches.Count switch
         {
@@ -72,14 +72,16 @@ public partial class CustomerRepository
         if (request.AgreedPrice <= 0) return Error.Validation("CustomerPricing.Price", "Agreed price must be positive.");
         if (request.EffectiveTo < request.EffectiveFrom)
             return Error.Validation("CustomerPricing.Dates", "Effective-to cannot precede effective-from.");
-        if (!await context.Products.AnyAsync(item => item.Id == request.ProductId))
+        if (!await context.Products.IgnoreQueryFilters().AnyAsync(item =>
+                item.Id == request.ProductId && !item.DeletedAt.HasValue))
             return Error.NotFound("Product.NotFound", "Product not found.");
-        if (!await context.UnitOfMeasures.AnyAsync(item => item.Id == request.UoMId))
-            return Error.NotFound("UoM.NotFound", "Unit of measure not found.");
+        if (!await context.ProductPackings.AnyAsync(item => item.Id == request.ProductPackingId))
+            return Error.NotFound("ProductPacking.NotFound", "Packing style not found.");
         if (!await context.Currencies.AnyAsync(item => item.Id == request.CurrencyId))
             return Error.NotFound("Currency.NotFound", "Currency not found.");
         var overlaps = await context.CustomerPricingAgreements.AnyAsync(item =>
-            item.CustomerId == customerId && item.ProductId == request.ProductId && item.UoMId == request.UoMId
+            item.CustomerId == customerId && item.ProductId == request.ProductId
+            && item.ProductPackingId == request.ProductPackingId
             && (!exceptId.HasValue || item.Id != exceptId.Value)
             && (!item.EffectiveTo.HasValue || item.EffectiveTo.Value >= request.EffectiveFrom)
             && (!request.EffectiveTo.HasValue || item.EffectiveFrom <= request.EffectiveTo.Value));
@@ -88,11 +90,13 @@ public partial class CustomerRepository
 
     private IQueryable<CustomerPricingAgreement> PricingQuery(Guid customerId)
         => context.CustomerPricingAgreements.AsNoTracking().Include(item => item.Product)
-            .Include(item => item.UoM).Include(item => item.Currency).Where(item => item.CustomerId == customerId);
+            .Include(item => item.ProductPacking).Include(item => item.Currency)
+            .Where(item => item.CustomerId == customerId);
 
     private static void AssignPricing(CustomerPricingAgreement item, CustomerPricingAgreementRequest request)
     {
-        item.ProductId = request.ProductId; item.UoMId = request.UoMId; item.AgreedPrice = request.AgreedPrice;
+        item.ProductId = request.ProductId; item.ProductPackingId = request.ProductPackingId;
+        item.AgreedPrice = request.AgreedPrice;
         item.CurrencyId = request.CurrencyId; item.EffectiveFrom = request.EffectiveFrom;
         item.EffectiveTo = request.EffectiveTo; item.Notes = request.Notes?.Trim();
     }
@@ -100,8 +104,9 @@ public partial class CustomerRepository
     private static CustomerPricingAgreementDto MapPricing(CustomerPricingAgreement item) => new()
     {
         Id = item.Id, CreatedAt = item.CreatedAt, CustomerId = item.CustomerId,
-        ProductId = item.ProductId, ProductName = item.Product?.Name, UoMId = item.UoMId,
-        UoMName = item.UoM?.Name, AgreedPrice = item.AgreedPrice, Currency = item.Currency is null ? null : new()
+        ProductId = item.ProductId, ProductName = item.Product?.Name, ProductPackingId = item.ProductPackingId,
+        ProductPackingName = item.ProductPacking?.Name, AgreedPrice = item.AgreedPrice,
+        Currency = item.Currency is null ? null : new()
         { Id = item.Currency.Id, Name = item.Currency.Name, Symbol = item.Currency.Symbol },
         EffectiveFrom = item.EffectiveFrom, EffectiveTo = item.EffectiveTo, Notes = item.Notes,
     };

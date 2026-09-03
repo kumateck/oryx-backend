@@ -33,7 +33,7 @@ public partial class CustomerRepository
                 {
                     ProductId = item.ProductId, TotalOrderQuantity = item.Quantity,
                     VolumePerPiece = item.Product.BaseQuantity > 0 ? item.Product.BaseQuantity : 1m,
-                    UoMId = item.UoMId, UnitPrice = item.UnitPrice,
+                    ProductPackingId = item.ProductPackingId, UnitPrice = item.UnitPrice,
                     DiscountPercent = item.DiscountPercent,
                 })
             ],

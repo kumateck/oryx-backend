@@ -95,7 +95,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         bool? isVerified = null
     )
     {
-        var query = context.Products.IgnoreQueryFilters().AsSplitQuery().AsQueryable();
+        var query = context.Products.IgnoreQueryFilters().AsSplitQuery()
+            .Where(p => !p.DeletedAt.HasValue).AsQueryable();
 
         if (isVerified.HasValue)
         {

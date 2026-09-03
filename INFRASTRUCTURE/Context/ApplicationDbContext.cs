@@ -1871,14 +1871,16 @@ public class ApplicationDbContext(
             .WithMany(item => item.PricingAgreements).HasForeignKey(item => item.CustomerId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.Product)
             .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.UoM)
-            .WithMany().HasForeignKey(item => item.UoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.ProductPacking)
+            .WithMany().HasForeignKey(item => item.ProductPackingId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CustomerPricingAgreement>().HasOne(item => item.Currency)
             .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CustomerQuotation>().HasOne(item => item.Customer)
             .WithMany().HasForeignKey(item => item.CustomerId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CustomerQuotation>().HasOne(item => item.Currency)
             .WithMany().HasForeignKey(item => item.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CustomerQuotationItem>().HasOne(item => item.ProductPacking)
+            .WithMany().HasForeignKey(item => item.ProductPackingId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<ProductionOrder>().HasOne(item => item.SourceCustomerQuotation)
             .WithOne().HasForeignKey<ProductionOrder>(item => item.SourceCustomerQuotationId)
             .OnDelete(DeleteBehavior.Restrict);
@@ -1886,7 +1888,7 @@ public class ApplicationDbContext(
         modelBuilder.Entity<CustomerContact>().HasIndex(item => item.CustomerId)
             .IsUnique().HasFilter("\"DeletedAt\" IS NULL AND \"IsPrimary\" = TRUE");
         modelBuilder.Entity<CustomerPricingAgreement>()
-            .HasIndex(item => new { item.CustomerId, item.ProductId, item.UoMId, item.EffectiveFrom });
+            .HasIndex(item => new { item.CustomerId, item.ProductId, item.ProductPackingId, item.EffectiveFrom });
         modelBuilder.Entity<CustomerQuotation>().HasIndex(item => item.Code)
             .IsUnique().HasFilter("\"DeletedAt\" IS NULL");
         modelBuilder.Entity<ProductionOrder>().HasIndex(item => item.SourceCustomerQuotationId)
