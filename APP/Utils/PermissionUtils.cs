@@ -140,6 +140,7 @@ public static class PermissionSubmodules
     public const string AuditTrail = "Audit Trail";
     public const string ManageRoles = "Manage Roles";
     public const string ManagePermissions = "Manage Permissions";
+    public const string SupportTickets = "Support Tickets";
 
     // Settings
     public const string GeneralSettings = "General Settings";
@@ -906,6 +907,13 @@ public static class PermissionKeys
     public const string CanViewStoreAndInventoryReport = "CanViewStoreAndInventoryReport";
     public const string CanViewProcurementReport = "CanViewProcurementReport";
     public const string CanViewFgtnReport = "CanViewFgtnReport";
+
+    // IT Support Tickets
+    public const string CanCreateTicket = "CanCreateTicket";
+    public const string CanViewAllTickets = "CanViewAllTickets";
+    public const string CanAssignTicket = "CanAssignTicket";
+    public const string CanCloseTicket = "CanCloseTicket";
+    public const string CanCommentOnTicket = "CanCommentOnTicket";
 }
 
 public static class PermissionUtils
@@ -3269,6 +3277,31 @@ public static class PermissionUtils
             PermissionModules.ItSupport,
             PermissionSubmodules.ManagePermissions,
             PermissionKeys.CanResetPermission
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.SupportTickets,
+            PermissionKeys.CanCreateTicket
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.SupportTickets,
+            PermissionKeys.CanViewAllTickets
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.SupportTickets,
+            PermissionKeys.CanAssignTicket
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.SupportTickets,
+            PermissionKeys.CanCloseTicket
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.SupportTickets,
+            PermissionKeys.CanCommentOnTicket
         );
 
         // Settings

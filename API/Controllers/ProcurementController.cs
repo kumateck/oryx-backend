@@ -765,16 +765,16 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     /// <summary>
-    /// Marks charges within a billing sheet
+    /// Records full payments for selected billing-sheet charges.
     /// </summary>
-    /// <returns>Returns success or failure.</returns>
+    /// <returns>Returns charge IDs grouped by approved and pending payment state.</returns>
     [HttpPut("billing-sheet/charge")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [Authorize(PermissionKeys.CanRecordPayment)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MarkBillingSheetChargePaymentsResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> MarkBillingSheetChargeAsPaid(
-        [FromBody] MarkBillingSheetCharge request
+        [FromBody] MarkBillingSheetChargePaymentsRequest request
     )
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -782,7 +782,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
             return TypedResults.Unauthorized();
 
         var result = await repository.MarkBillingSheetChargeAsPaid(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
