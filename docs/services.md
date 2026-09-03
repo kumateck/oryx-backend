@@ -94,6 +94,9 @@ Customer create/update accepts nullable `creditLimit`, `termsOfPaymentId`,
 numeric `type`, `currencyId`, `billingAddress`, and `shippingAddress`. Null
 credit limit means unlimited. A limited customer must have a preferred currency.
 Existing clients that omit new optional fields do not clear stored CRM values.
+The update contract distinguishes omission from an explicit JSON `null`: omitted
+CRM fields retain their stored values, while an explicit `null` clears a nullable
+field (with the existing currency/credit-limit consistency validation applied).
 
 Quotation item quantity must be positive, discount must be from 0 through 100,
 and an omitted unit price is only defaulted from an unambiguous active agreement

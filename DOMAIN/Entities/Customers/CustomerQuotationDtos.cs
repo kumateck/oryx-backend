@@ -16,7 +16,7 @@ public class CreateCustomerQuotationItemRequest
 {
     public Guid ProductId { get; set; }
     [Range(1, int.MaxValue)] public int Quantity { get; set; }
-    public Guid UoMId { get; set; }
+    public Guid ProductPackingId { get; set; }
     [Range(typeof(decimal), "0", "79228162514264337593543950335")]
     public decimal? UnitPrice { get; set; }
     [Range(typeof(decimal), "0", "100")] public decimal DiscountPercent { get; set; }
@@ -41,8 +41,8 @@ public class CustomerQuotationItemDto : BaseDto
     public Guid ProductId { get; set; }
     public string ProductName { get; set; }
     public int Quantity { get; set; }
-    public Guid UoMId { get; set; }
-    public string UoMName { get; set; }
+    public Guid ProductPackingId { get; set; }
+    public string ProductPackingName { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal DiscountPercent { get; set; }
     public decimal TotalValue { get; set; }

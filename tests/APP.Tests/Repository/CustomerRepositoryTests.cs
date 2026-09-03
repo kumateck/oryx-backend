@@ -11,6 +11,7 @@ using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using SHARED.Services.Identity;
+using System.Text.Json;
 using Xunit;
 
 namespace APP.Tests.Repository;
@@ -104,7 +105,7 @@ public class CustomerRepositoryTests
         await using var context = CreateContext();
         var customer = new Customer { Id = Guid.NewGuid(), Name = "Hospital" };
         var product = new Product { Id = Guid.NewGuid(), Name = "Tablets", BaseQuantity = 5m };
-        var uom = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Carton" };
+        var packing = new ProductPacking { Id = Guid.NewGuid(), ProductId = product.Id, Name = "Carton" };
         var quotation = new CustomerQuotation
         {
             Id = Guid.NewGuid(), CustomerId = customer.Id, Code = "Q-100",
@@ -115,11 +116,11 @@ public class CustomerRepositoryTests
                 new CustomerQuotationItem
                 {
                     Id = Guid.NewGuid(), ProductId = product.Id, Product = product,
-                    UoMId = uom.Id, Quantity = 2, UnitPrice = 100m, DiscountPercent = 10m,
+                    ProductPackingId = packing.Id, Quantity = 2, UnitPrice = 100m, DiscountPercent = 10m,
                 },
             ],
         };
-        context.AddRange(customer, product, uom, quotation);
+        context.AddRange(customer, product, packing, quotation);
         await context.SaveChangesAsync();
 
         var result = await CreateRepository(context).ConvertQuotationToProductionOrder(quotation.Id, Guid.NewGuid());
@@ -143,18 +144,18 @@ public class CustomerRepositoryTests
         context.AddRange(
             new Customer { Id = ids.CustomerId, Name = "Distributor" },
             new Product { Id = ids.ProductId, Name = "Capsules" },
-            new UnitOfMeasure { Id = ids.UomId, Name = "Case" },
+            new ProductPacking { Id = ids.ProductPackingId, ProductId = ids.ProductId, Name = "Case" },
             new Currency { Id = ids.CurrencyId, Name = "Cedi" },
             new CustomerPricingAgreement
             {
                 Id = Guid.NewGuid(), CustomerId = ids.CustomerId, ProductId = ids.ProductId,
-                UoMId = ids.UomId, CurrencyId = ids.CurrencyId, AgreedPrice = 25m,
+                ProductPackingId = ids.ProductPackingId, CurrencyId = ids.CurrencyId, AgreedPrice = 25m,
                 EffectiveFrom = AsOf.AddDays(-30), EffectiveTo = AsOf,
             });
         await context.SaveChangesAsync();
 
         var result = await CreateRepository(context)
-            .GetActivePricingAgreement(ids.CustomerId, ids.ProductId, ids.UomId, AsOf);
+            .GetActivePricingAgreement(ids.CustomerId, ids.ProductId, ids.ProductPackingId, AsOf);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(25m, result.Value.AgreedPrice);
@@ -202,6 +203,47 @@ public class CustomerRepositoryTests
         Assert.Equal(500m, customer.CreditLimit);
         Assert.Equal(currencyId, customer.CurrencyId);
         Assert.Equal("Accounts office", customer.BillingAddress);
+    }
+
+    [Fact]
+    public async Task Update_ExplicitNullClearsCreditFieldsButPreservesOmittedFields()
+    {
+        await using var context = CreateContext();
+        var currencyId = Guid.NewGuid();
+        var customer = new Customer
+        {
+            Id = Guid.NewGuid(), Name = "Original Hospital", Email = "old@example.com",
+            Phone = "+233200000000", Address = "Old address", CreditLimit = 500m,
+            CurrencyId = currencyId, BillingAddress = "Accounts office",
+        };
+        context.AddRange(new Currency { Id = currencyId, Name = "Cedi" }, customer);
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).UpdateCustomer(customer.Id, new CreateCustomerRequest
+        {
+            Name = "Updated Hospital", Email = "new@example.com", Phone = "+233200000001",
+            Address = "New address", CreditLimit = null, CurrencyId = null,
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(customer.CreditLimit);
+        Assert.Null(customer.CurrencyId);
+        Assert.Equal("Accounts office", customer.BillingAddress);
+    }
+
+    [Fact]
+    public void CustomerRequest_TracksOmittedAndExplicitNullCrmFields()
+    {
+        var omitted = JsonSerializer.Deserialize<CreateCustomerRequest>("{}");
+        var explicitNull = JsonSerializer.Deserialize<CreateCustomerRequest>(
+            """{"CreditLimit":null,"CurrencyId":null,"BillingAddress":null}""");
+
+        Assert.False(omitted!.CreditLimitProvided);
+        Assert.False(omitted.CurrencyIdProvided);
+        Assert.False(omitted.BillingAddressProvided);
+        Assert.True(explicitNull!.CreditLimitProvided);
+        Assert.True(explicitNull.CurrencyIdProvided);
+        Assert.True(explicitNull.BillingAddressProvided);
     }
 
     private static CustomerQuotation Quote(TestIds ids, string code, DateTime validUntil) => new()
@@ -258,7 +300,7 @@ public class CustomerRepositoryTests
     {
         public Guid CustomerId { get; init; } = Guid.NewGuid();
         public Guid ProductId { get; init; } = Guid.NewGuid();
-        public Guid UomId { get; init; } = Guid.NewGuid();
+        public Guid ProductPackingId { get; init; } = Guid.NewGuid();
         public Guid CurrencyId { get; init; } = Guid.NewGuid();
         public Guid InvoiceId { get; init; }
     }

@@ -26,7 +26,7 @@ public interface ICustomerRepository
     Task<Result> UpdatePricingAgreement(Guid customerId, Guid id, CustomerPricingAgreementRequest request, Guid userId);
     Task<Result> DeletePricingAgreement(Guid customerId, Guid id, Guid userId);
     Task<Result<CustomerPricingAgreementDto>> GetActivePricingAgreement(
-        Guid customerId, Guid productId, Guid uomId, DateTime asOf);
+        Guid customerId, Guid productId, Guid productPackingId, DateTime asOf);
 
     Task<Result<CustomerCreditStatusDto>> GetAvailableCredit(Guid customerId, decimal additionalOrderValue = 0);
     Task<Result<bool>> IsWithinCreditLimit(Guid customerId, decimal additionalOrderValue);

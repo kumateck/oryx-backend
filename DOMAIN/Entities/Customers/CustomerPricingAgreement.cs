@@ -11,8 +11,8 @@ public class CustomerPricingAgreement : BaseEntity
     public Customer Customer { get; set; }
     public Guid ProductId { get; set; }
     public Product Product { get; set; }
-    public Guid UoMId { get; set; }
-    public UnitOfMeasure UoM { get; set; }
+    public Guid ProductPackingId { get; set; }
+    public ProductPacking ProductPacking { get; set; }
     public decimal AgreedPrice { get; set; }
     public Guid CurrencyId { get; set; }
     public Currency Currency { get; set; }
@@ -24,7 +24,7 @@ public class CustomerPricingAgreement : BaseEntity
 public class CustomerPricingAgreementRequest
 {
     public Guid ProductId { get; set; }
-    public Guid UoMId { get; set; }
+    public Guid ProductPackingId { get; set; }
     [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
     public decimal AgreedPrice { get; set; }
     public Guid CurrencyId { get; set; }
@@ -38,8 +38,8 @@ public class CustomerPricingAgreementDto : BaseDto
     public Guid CustomerId { get; set; }
     public Guid ProductId { get; set; }
     public string ProductName { get; set; }
-    public Guid UoMId { get; set; }
-    public string UoMName { get; set; }
+    public Guid ProductPackingId { get; set; }
+    public string ProductPackingName { get; set; }
     public decimal AgreedPrice { get; set; }
     public CurrencyDto Currency { get; set; }
     public DateTime EffectiveFrom { get; set; }
