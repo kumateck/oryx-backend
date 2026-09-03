@@ -29,4 +29,8 @@ public enum NotificationType
     BmrBprRequested = 13,
     BmrBprApproved = 14,
     ExpiredMaterial = 15,
+    TicketCreated = 16,
+    TicketAssigned = 17,
+    TicketStatusChanged = 18,
+    TicketCommentAdded = 19,
 }

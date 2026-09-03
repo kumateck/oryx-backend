@@ -276,14 +276,15 @@ app.UseMiddleware<HolidayBlockingMiddleware>();
 
 app.UseRouting();
 
+// CORS must run before authentication and authorization so browser preflight
+// requests are answered without being challenged by the fallback auth policy.
+app.UseCors("default");
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.UseStaticFiles();
-
-//use CORS
-app.UseCors("default");
 
 app.UseMiddleware<JwtMiddleware>();
 

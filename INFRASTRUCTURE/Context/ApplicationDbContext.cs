@@ -78,6 +78,7 @@ using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockAdjustments;
 using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.Thresholds;
+using DOMAIN.Entities.Tickets;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.VendorQuotations;
@@ -701,6 +702,13 @@ public class ApplicationDbContext(
     public DbSet<ServiceProformaInvoiceItem> ServiceProformaInvoiceItems { get; set; }
     public DbSet<ServiceMemo> ServiceMemos { get; set; }
     public DbSet<ServiceMemoApproval> ServiceMemoApprovals { get; set; }
+
+    #endregion
+
+    #region IT Support Tickets
+
+    public DbSet<Ticket> Tickets { get; set; }
+    public DbSet<TicketActivity> TicketActivities { get; set; }
 
     #endregion
 
@@ -1844,6 +1852,12 @@ public class ApplicationDbContext(
 
         #endregion
 
+        #region IT Support Tickets
+
+        modelBuilder.Entity<Ticket>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+
+        #endregion
+
         #region Attendance Record Filter
 
         modelBuilder
@@ -2095,6 +2109,12 @@ public class ApplicationDbContext(
             .HasOne(payment => payment.RecordedBy)
             .WithMany()
             .HasForeignKey(payment => payment.RecordedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Payment>()
+            .HasOne(payment => payment.BillingSheetCharge)
+            .WithMany(charge => charge.Payments)
+            .HasForeignKey(payment => payment.BillingSheetChargeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         #endregion

@@ -51,6 +51,7 @@ public class BillingSheetCharge
     public Guid? LastUpdatedById { get; set; }
     public User LastUpdatedBy { get; set; }
     public DateTime? LastUpdatedOn { get; set; }
+    public List<Payment> Payments { get; set; } = [];
 }
 
 public class BillingSheetApproval : ResponsibleApprovalStage
@@ -99,4 +100,5 @@ public class BillingSheetChargeDto
     public CurrencyDto Currency { get; set; }
     public decimal Amount { get; set; }
     public bool Paid { get; set; }
+    public PaymentStatus? PaymentStatus { get; set; }
 }

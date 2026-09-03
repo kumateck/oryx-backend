@@ -16,7 +16,8 @@ are captured by the existing request audit middleware.
 
 | Method and route | Permission | Contract |
 | --- | --- | --- |
-| `POST /api/v1/payments` | `CanRecordPayment` | Records a pending payment and returns its ID. |
+| `POST /api/v1/payments` | `CanRecordPayment` | Records a payment and returns its ID; it is pending when approval stages exist and auto-approved when none are configured. |
+| `PUT /api/v1/procurement/billing-sheet/charge` | `CanRecordPayment` | Atomically records one full payment per selected billing-sheet charge; returns approved and pending charge IDs. |
 | `GET /api/v1/payments/{paymentId}` | `CanViewPayments` | Returns payment detail and approval stages. |
 | `POST /api/v1/payments/{paymentId}/review` | `CanApprovePayment` | Approves or rejects the caller's active approval stage. |
 | `GET /api/v1/payments/ap-aging?asOf=` | `CanViewCashflowReports` | Supplier aging, grouped by supplier and converted to base currency. |
@@ -35,6 +36,15 @@ exceed that currency's outstanding balance. Valid numeric enums are:
   `4` other.
 - `PayableType`: `0` billing sheet, `1` shipment invoice, `2` purchase-order
   invoice, `3` customer invoice.
+
+`MarkBillingSheetChargePaymentsRequest` requires a payment date, a valid
+payment method, and at least one charge entry. Every entry supplies a
+`billingSheetChargeId`, payable-scoped unique `reference`, and optional notes.
+All selected charges must exist on one billing sheet, be unpaid, have positive
+amounts and currencies, and have no pending or approved linked payment. The
+operation is all-or-nothing. Its response separates `paidChargeIds` from
+`pendingChargeIds`; a configured approval workflow keeps the charge unpaid
+until final payment approval.
 
 Reports require one base currency. Missing due dates, frozen customer-invoice
 amounts, supplier/customer associations, currencies, or effective exchange
@@ -102,3 +112,9 @@ Quotation item quantity must be positive, discount must be from 0 through 100,
 and an omitted unit price is only defaulted from an unambiguous active agreement
 or the current product price. The customer preferred currency is captured on the
 quotation so monetary values are never currency-less.
+
+## Cross-origin API access
+
+The API applies its global CORS policy after routing and before authentication
+and authorization. This ordering allows browser `OPTIONS` preflight requests to
+complete without weakening authorization on the requested endpoint.

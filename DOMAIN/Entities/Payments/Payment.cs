@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Currencies;
+using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Payments;
@@ -19,6 +20,8 @@ public class Payment : BaseEntity, IRequireApproval
     public User RecordedBy { get; set; }
     public PayableType PayableType { get; set; }
     public Guid PayableId { get; set; }
+    public Guid? BillingSheetChargeId { get; set; }
+    public BillingSheetCharge BillingSheetCharge { get; set; }
     public bool Approved { get; set; }
     public PaymentStatus Status { get; set; }
     public List<PaymentApproval> Approvals { get; set; } = [];
