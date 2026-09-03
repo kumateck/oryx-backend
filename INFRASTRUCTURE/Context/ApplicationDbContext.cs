@@ -550,6 +550,18 @@ public class ApplicationDbContext(
 
     #endregion
 
+    #region Quality Audits
+
+    public DbSet<DOMAIN.Entities.QualityAudits.QualityAudit> QualityAudits { get; set; }
+    public DbSet<DOMAIN.Entities.QualityAudits.QualityAuditTeamMember> QualityAuditTeamMembers { get; set; }
+    public DbSet<DOMAIN.Entities.QualityAudits.AuditChecklistTemplate> AuditChecklistTemplates { get; set; }
+    public DbSet<DOMAIN.Entities.QualityAudits.AuditChecklistTemplateItem> AuditChecklistTemplateItems { get; set; }
+    public DbSet<DOMAIN.Entities.QualityAudits.AuditChecklistResponse> AuditChecklistResponses { get; set; }
+    public DbSet<DOMAIN.Entities.QualityAudits.AuditFinding> AuditFindings { get; set; }
+    public DbSet<DOMAIN.Entities.QualityAudits.AuditCorrectiveAction> AuditCorrectiveActions { get; set; }
+
+    #endregion
+
     #region Sample Products
 
     public DbSet<ProductSampling> ProductSamplings { get; set; }
@@ -1875,6 +1887,21 @@ public class ApplicationDbContext(
 
     private void ConfigureConstraints(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.ProductionOrder)
+            .WithMany().HasForeignKey(item => item.ProductionOrderId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.Material)
+            .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.Product)
+            .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.Supplier)
+            .WithMany().HasForeignKey(item => item.SupplierId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.LeadAuditor)
+            .WithMany().HasForeignKey(item => item.LeadAuditorId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAuditTeamMember>().HasOne(item => item.User)
+            .WithMany().HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.QualityAudits.AuditCorrectiveAction>().HasOne(item => item.ResponsiblePerson)
+            .WithMany().HasForeignKey(item => item.ResponsiblePersonId).OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Customer>().HasOne(item => item.TermsOfPayment)
             .WithMany().HasForeignKey(item => item.TermsOfPaymentId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Customer>().HasOne(item => item.Currency)
