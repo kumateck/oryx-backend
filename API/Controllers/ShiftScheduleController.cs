@@ -17,6 +17,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Creates a new shift schedule.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShiftSchedule([FromBody] CreateShiftScheduleRequest request)
@@ -29,6 +30,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Assigns employees a shift schedule
     /// </summary>
     [HttpPost("assign")]
+    [Authorize(PermissionKeys.CanCreateShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AssignShiftToEmployee([FromBody] AssignShiftRequest request)
@@ -37,11 +39,12 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
-    
+
     /// <summary>
     /// Swap an employee shift assignment with another employee
     /// </summary>
     [HttpPost("swap")]
+    [Authorize(PermissionKeys.CanEditShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SwapShift([FromBody] SwapShiftRequest request)
@@ -49,11 +52,12 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
         var result = await repository.SwapShift(request);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
-    
+
     /// <summary>
     /// Returns a paginated list of shift schedules based on a search criteria.
     /// </summary>
     [HttpGet]
+    [Authorize(PermissionKeys.CanViewShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShiftScheduleDto>>))]
     public async Task<IResult> GetShiftSchedules([FromQuery] ScheduleStatus? status, [FromQuery] ScheduleFrequency? frequency, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
@@ -66,6 +70,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Returns a shift schedule by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(PermissionKeys.CanViewShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShiftScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftSchedule([FromRoute] Guid id)
@@ -78,6 +83,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Returns a shift schedule by its department ID.
     /// </summary>
     [HttpGet("department/{id:guid}")]
+    [Authorize(PermissionKeys.CanViewShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShiftScheduleDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftScheduleByDepartment([FromRoute] Guid id)
@@ -91,6 +97,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Returns the schedule for a specified date range
     /// </summary>
     [HttpGet("{scheduleId:guid}/view")]
+    [Authorize(PermissionKeys.CanViewShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShiftAssignmentDto>))]
     public async Task<IResult> GetShiftScheduleRangeView([FromRoute] Guid scheduleId, [FromQuery] DateTime startDate,
        [FromQuery] DateTime endDate)
@@ -103,6 +110,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Returns the schedule for a specified date
     /// </summary>
     [HttpGet("{scheduleId:guid}/day")]
+    [Authorize(PermissionKeys.CanViewShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShiftAssignmentDto>))]
     public async Task<IResult> GetShiftScheduleDayView([FromRoute] Guid scheduleId, [FromQuery] DateTime date)
     {
@@ -114,6 +122,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Updates the details of an existing shift schedule.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftScheduleDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -124,6 +133,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     }
 
     [HttpPut("{id:guid}/update-schedule")]
+    [Authorize(PermissionKeys.CanEditShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -137,6 +147,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// Deletes a specific shift schedule by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteShiftSchedule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteShiftSchedule([FromRoute] Guid id)
@@ -155,6 +166,7 @@ public class ShiftScheduleController(IShiftScheduleRepository repository) : Cont
     /// <param name="departmentId">The department the shift assignment is for</param>
     /// <param name="shiftId">The shift schedule</param>
     [HttpPost("assign/import")]
+    [Authorize(PermissionKeys.CanSubmitShiftScheduleReportUpload)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -34,7 +34,6 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// Reports a new IT support ticket
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = PermissionKeys.CanCreateTicket)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateTicket([FromBody] CreateTicketRequest request)
@@ -86,7 +85,10 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetTicket([FromRoute] Guid id)
     {
-        var result = await repository.GetTicket(id);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetTicket(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -198,7 +200,10 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetTicketActivity([FromRoute] Guid id)
     {
-        var result = await repository.GetTicketActivity(id);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetTicketActivity(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }

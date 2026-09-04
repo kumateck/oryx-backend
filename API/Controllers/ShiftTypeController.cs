@@ -16,6 +16,7 @@ public class ShiftTypeController(IShiftTypeRepository repository) : ControllerBa
     /// Creates a new shift type.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateShiftType)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShiftType([FromBody] CreateShiftTypeRequest shiftType)
@@ -28,6 +29,7 @@ public class ShiftTypeController(IShiftTypeRepository repository) : ControllerBa
     /// Retrieves a paginated list of shift types based on search criteria.
     /// </summary>
     [HttpGet]
+    [Authorize(PermissionKeys.CanViewShiftTypes)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ShiftTypeDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftTypes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
@@ -41,6 +43,7 @@ public class ShiftTypeController(IShiftTypeRepository repository) : ControllerBa
     /// Retrieves the details of a specific shift type by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(PermissionKeys.CanViewShiftTypes)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShiftTypeDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShiftType([FromRoute] Guid id)
@@ -53,6 +56,7 @@ public class ShiftTypeController(IShiftTypeRepository repository) : ControllerBa
     /// Updates the details of an existing shift type.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditShiftType)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ShiftTypeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -66,6 +70,7 @@ public class ShiftTypeController(IShiftTypeRepository repository) : ControllerBa
     /// Deletes a specific shift type by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteShiftType)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteShiftType([FromRoute] Guid id)
