@@ -1,8 +1,10 @@
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DOMAIN.Entities.Payroll;
 
+[Table("HrPayrollRuns")]
 public class PayrollRun : BaseEntity, IRequireApproval
 {
     public DateTime PeriodStart { get; set; }
