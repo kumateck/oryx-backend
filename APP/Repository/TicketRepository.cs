@@ -1,4 +1,3 @@
-using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -12,7 +11,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class TicketRepository(
+public partial class TicketRepository(
     ApplicationDbContext context,
     IMapper mapper,
     UserManager<User> userManager,
@@ -49,60 +48,6 @@ public class TicketRepository(
             NotificationType.TicketCreated, departmentId);
 
         return ticket.Id;
-    }
-
-    public async Task<Result<Paginateable<IEnumerable<TicketDto>>>> GetTickets(Guid currentUserId, int page,
-        int pageSize, string searchQuery = null, TicketStatus? status = null, TicketPriority? priority = null,
-        TicketCategory? category = null, Guid? assignedToId = null, Guid? reportedById = null)
-    {
-        var query = context.Tickets
-            .AsSplitQuery()
-            .Include(t => t.ReportedBy)
-            .Include(t => t.AssignedTo)
-            .Include(t => t.AssignedBy)
-            .Include(t => t.DoneBy)
-            .Include(t => t.ClosedBy)
-            .Include(t => t.Department)
-            .Include(t => t.Site)
-            .AsQueryable();
-
-        var canViewAll = await UserHasPermissionAsync(currentUserId, PermissionKeys.CanViewAllTickets);
-        if (!canViewAll)
-        {
-            query = query.Where(t => t.ReportedById == currentUserId || t.AssignedToId == currentUserId);
-        }
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, t => t.TicketNumber, t => t.Title, t => t.Description);
-        }
-
-        if (status.HasValue) query = query.Where(t => t.Status == status.Value);
-        if (priority.HasValue) query = query.Where(t => t.Priority == priority.Value);
-        if (category.HasValue) query = query.Where(t => t.Category == category.Value);
-        if (assignedToId.HasValue) query = query.Where(t => t.AssignedToId == assignedToId.Value);
-        if (reportedById.HasValue) query = query.Where(t => t.ReportedById == reportedById.Value);
-
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, MapTicket);
-    }
-
-    public async Task<Result<TicketDto>> GetTicket(Guid id)
-    {
-        var ticket = await context.Tickets
-            .AsSplitQuery()
-            .Include(t => t.ReportedBy)
-            .Include(t => t.AssignedTo)
-            .Include(t => t.AssignedBy)
-            .Include(t => t.DoneBy)
-            .Include(t => t.ClosedBy)
-            .Include(t => t.Department)
-            .Include(t => t.Site)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == id);
-
-        if (ticket is null) return Error.NotFound("Ticket.NotFound", $"Ticket with ID '{id}' not found");
-
-        return MapTicket(ticket);
     }
 
     public async Task<Result> AssignTicket(Guid id, Guid assignedToId, Guid assignedById)
@@ -267,20 +212,6 @@ public class TicketRepository(
         return activity.Id;
     }
 
-    public async Task<Result<IEnumerable<TicketActivityDto>>> GetTicketActivity(Guid id)
-    {
-        var ticketExists = await context.Tickets.AnyAsync(t => t.Id == id);
-        if (!ticketExists) return Error.NotFound("Ticket.NotFound", $"Ticket with ID '{id}' not found");
-
-        var activities = await context.TicketActivities
-            .Include(a => a.User)
-            .Where(a => a.TicketId == id)
-            .OrderBy(a => a.CreatedAt)
-            .ToListAsync();
-
-        return mapper.Map<List<TicketActivityDto>>(activities);
-    }
-
     private async Task<TicketActivity> LogActivity(Guid ticketId, Guid userId, TicketActivityType type,
         string note, TicketStatus? oldStatus, TicketStatus? newStatus)
     {
@@ -297,29 +228,6 @@ public class TicketRepository(
         await context.SaveChangesAsync();
         return activity;
     }
-
-    private async Task<bool> UserHasPermissionAsync(Guid userId, string permissionKey)
-    {
-        var roleIds = await context.UserRoles.IgnoreQueryFilters()
-            .Where(ur => ur.UserId == userId)
-            .Select(ur => ur.RoleId)
-            .ToListAsync();
-
-        var roleClaimIds = await context.RoleClaims.IgnoreQueryFilters()
-            .Where(rc => roleIds.Contains(rc.RoleId)
-                         && rc.ClaimType == AppConstants.Permission
-                         && rc.ClaimValue == permissionKey)
-            .Select(rc => rc.Id)
-            .ToListAsync();
-
-        if (roleClaimIds.Count == 0) return false;
-
-        return await context.PermissionTypes
-            .AnyAsync(pt => roleClaimIds.Contains(pt.RoleClaimId) && pt.Key == permissionKey);
-    }
-
-    private TicketDto MapTicket(Ticket ticket) =>
-        mapper.Map<TicketDto>(ticket, opts => opts.Items[AppConstants.ModelType] = nameof(Ticket));
 
     private static DateTime? ComputeDueDate(TicketPriority priority, DateTime from) => priority switch
     {

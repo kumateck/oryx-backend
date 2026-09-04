@@ -158,7 +158,6 @@ public static class PermissionSubmodules
     public const string Procedures = "Procedures";
     public const string Site = "Site";
     public const string CountryAddress = "Address";
-    public const string Schedules = "Schedules";
     public const string TermsOfPayment = "Terms of Payment";
     public const string DeliveryMode = "Delivery Mode";
     public const string Charges = "Charges";
@@ -187,6 +186,8 @@ public static class PermissionSubmodules
     public const string Holidays = "Holidays";
     public const string ShiftsType = "Shifts Type";
     public const string ShiftsSchedule = "Shifts Schedule";
+    public const string ShiftCategory = "Shift Category";
+    public const string WorkingHoursPolicy = "Working Hours Policy";
 
     // Reports
     public const string Reports = "Reports";
@@ -833,10 +834,6 @@ public static class PermissionKeys
     public const string CanCreateCountries = "CanCreateCountries";
     public const string CanEditCountries = "CanEditCountries";
     public const string CanDeleteCountries = "CanDeleteCountries";
-    public const string CanViewShiftSchedules = "CanViewShiftSchedules";
-    public const string CanCreateShiftSchedules = "CanCreateShiftSchedules";
-    public const string CanEditShiftSchedules = "CanEditShiftSchedules";
-    public const string CanDeleteShiftSchedules = "CanDeleteShiftSchedules";
     public const string CanViewPaymentTerms = "CanViewPaymentTerms";
     public const string CanCreatePaymentTerm = "CanCreatePaymentTerm";
     public const string CanEditPaymentTerm = "CanEditPaymentTerm";
@@ -939,6 +936,12 @@ public static class PermissionKeys
     public const string CanCreateShiftSchedule = "CanCreateShiftSchedule";
     public const string CanEditShiftSchedule = "CanEditShiftSchedule";
     public const string CanDeleteShiftSchedule = "CanDeleteShiftSchedule";
+    public const string CanViewShiftCategories = "CanViewShiftCategories";
+    public const string CanCreateShiftCategory = "CanCreateShiftCategory";
+    public const string CanEditShiftCategory = "CanEditShiftCategory";
+    public const string CanDeleteShiftCategory = "CanDeleteShiftCategory";
+    public const string CanViewWorkingHoursPolicy = "CanViewWorkingHoursPolicy";
+    public const string CanManageWorkingHoursPolicy = "CanManageWorkingHoursPolicy";
 
     // Reports
     public const string CanViewHumanResourcesReport = "CanViewHumanResourcesReport";
@@ -3743,26 +3746,6 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.Settings,
-            PermissionSubmodules.Schedules,
-            PermissionKeys.CanViewShiftSchedules
-        );
-        addPermission(
-            PermissionModules.Settings,
-            PermissionSubmodules.Schedules,
-            PermissionKeys.CanCreateShiftSchedules
-        );
-        addPermission(
-            PermissionModules.Settings,
-            PermissionSubmodules.Schedules,
-            PermissionKeys.CanEditShiftSchedules
-        );
-        addPermission(
-            PermissionModules.Settings,
-            PermissionSubmodules.Schedules,
-            PermissionKeys.CanDeleteShiftSchedules
-        );
-        addPermission(
-            PermissionModules.Settings,
             PermissionSubmodules.TermsOfPayment,
             PermissionKeys.CanViewPaymentTerms
         );
@@ -4254,6 +4237,36 @@ public static class PermissionUtils
             PermissionModules.OrganizationalStructure,
             PermissionSubmodules.ShiftsSchedule,
             PermissionKeys.CanDeleteShiftSchedule
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftCategory,
+            PermissionKeys.CanViewShiftCategories
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftCategory,
+            PermissionKeys.CanCreateShiftCategory
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftCategory,
+            PermissionKeys.CanEditShiftCategory
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.ShiftCategory,
+            PermissionKeys.CanDeleteShiftCategory
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.WorkingHoursPolicy,
+            PermissionKeys.CanViewWorkingHoursPolicy
+        );
+        addPermission(
+            PermissionModules.OrganizationalStructure,
+            PermissionSubmodules.WorkingHoursPolicy,
+            PermissionKeys.CanManageWorkingHoursPolicy
         );
 
         // Reports
