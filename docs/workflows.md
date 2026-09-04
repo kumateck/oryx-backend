@@ -1,5 +1,29 @@
 # Workflow behavior
 
+## Shift scheduling gap fixes and compliance (2026-09-04)
+
+1. `ShiftType.StartTime`/`EndTime` are a native `TimeOnly` column. The wire contract on `CreateShiftTypeRequest`/`ShiftTypeDto`/`MinimalShiftTypeDto` is unchanged (`string`, `"hh:mm tt"`); AutoMapper does the `TimeOnly <-> string` conversion at the boundary.
+2. `AssignEmployeesToShift`, `SwapShift`, and the Excel import all call the same `ShiftTimeHelper.HasOverlap(TimeOnly, TimeOnly, TimeOnly, TimeOnly)` — two shift-type ranges are compared as if both apply to the same calendar date (matching how every call site actually uses it: assignments being placed on one `ScheduleDate`). This correctly catches two overlapping overnight shifts (e.g. 20:00-04:00 vs 22:00-06:00) but does not detect a conflict that spans two different `ShiftAssignment` rows on adjacent calendar dates — a known, pre-existing limitation, not new behavior.
+3. Every `ShiftScheduleController`/`ShiftTypeController` action has an explicit `[Authorize(PermissionKeys.X)]` matched to its actual effect: Assign and the Excel import require the Create permission, Swap and Update require Edit, reads require View, Delete requires Delete.
+4. A successful `AssignEmployeesToShift`, `SwapShift`, or Excel-import row enqueues a `NotificationType.ShiftAssigned` notification via the existing `IBackgroundWorkerService.EnqueueNotification` — the enum value existed and was previously never fired.
+5. `ShiftCategoryController` (new) provides CRUD at `/api/v1/shift-category`, mirroring `ShiftTypeController`.
+6. A `WorkingHoursPolicy` row (`MaxHoursPerDay`, `MaxHoursPerWeek`, `MinDailyRestHours`, `MinWeeklyRestHours`, effective-dated) is looked up for the assignment date before `AssignEmployeesToShift`, `SwapShift`, or an Excel-import row commits. A breach of the weekly-hours cap or the minimum rest gap since the employee's nearest adjacent shift rejects the change with `Error.Validation("Employee.WorkingHoursPolicy", ...)` (Excel import instead adds the row to its existing per-row `skipped` list with a reason, never failing the whole upload). `WorkingHoursPolicySeeder` pre-seeds the Ghana Labour Act, 2003 (Act 651) baseline — 8h/day, 40h/week, 12h daily rest, 48h weekly rest — effective 2026-01-01. There is no update endpoint; a policy change adds a new effective-dated row, matching `PayeTaxBand`/`SsnitRate`.
+7. The duplicate plural permission-key set (`CanViewShiftSchedules` etc., `PermissionSubmodules.Schedules`) was removed; the singular set (`CanViewShiftSchedule`, `PermissionSubmodules.ShiftsSchedule`) is canonical and is what both the frontend nav guard and page guard now reference.
+
+## Personal IT issue reporting
+
+1. Every authenticated staff user can report an issue. The server supplies the
+   reporter and department from the authentication context and records the
+   initial activity entry.
+2. My IT Issues filters the paginated list by the authenticated reporter. Staff
+   can follow status, assignment, due date, and activity without access to the
+   IT team's all-ticket board.
+3. A reporter or assigned IT agent can read the ticket and its activity. Users
+   with `CanViewAllTickets` can read all tickets for triage. Other authenticated
+   users receive a not-found response for ticket details and activity.
+4. IT workflow permissions continue to control assignment, closure, and
+   commenting. The existing reporter-or-supervisor rule controls reopening.
+
 ## Product ATR release
 
 Each reached Intermediate, Bulk, or Finished test stage owns one response for its exact BMR and production step. COA generation starts the first approval round only. Pending, approved, rejected, and completed rounds cannot be regenerated through the COA endpoint; rejected results require an explicit audited revision capability.

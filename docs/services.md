@@ -1,5 +1,44 @@
 # Service contracts
 
+## Shift scheduling and working hours policy (2026-09-04)
+
+`ShiftCategoryController` (`/api/v1/shift-category`) and `WorkingHoursPolicyController`
+(`/api/v1/working-hours-policy`) are new; both follow the existing standard-CRUD
+controller/repository split (`ShiftCategoryRepository`, `WorkingHoursPolicyRepository`).
+`WorkingHoursPolicyController` exposes `POST`/`GET`/`DELETE` only — no `PUT` — because
+the policy is effective-dated: a change is a new row, not an edit of an existing one,
+the same contract shape as `PayeTaxBand`/`SsnitRate`.
+
+`ShiftType.StartTime`/`EndTime` are `TimeOnly` on the entity but stay `string`
+(`"hh:mm tt"`) on `CreateShiftTypeRequest`/`ShiftTypeDto`/`MinimalShiftTypeDto` —
+the wire contract is unchanged, so this is not a breaking change for any existing
+consumer of those DTOs.
+
+`POST /api/v1/shift-schedules/assign`, `POST /api/v1/shift-schedules/swap`, and the
+Excel-import endpoint can now return `Error.Validation("Employee.WorkingHoursPolicy", ...)`
+in addition to their existing overlap/leave-conflict validation errors; the Excel
+import instead adds the affected row to its existing per-row `skipped` response
+list with a reason, never failing the whole upload for one row's policy breach.
+
+## IT support tickets
+
+All ticket routes require authentication. `POST /api/v1/tickets` is available
+to every authenticated staff user and always records the authenticated user as
+the reporter; clients cannot report on behalf of another user. The legacy
+`CanCreateTicket` permission remains registered for role compatibility but is
+not required by this endpoint.
+
+`GET /api/v1/tickets` returns only tickets reported by or assigned to the
+caller unless the caller has `CanViewAllTickets`. The optional `reportedById`
+filter lets the My IT Issues page request only the caller's reported tickets,
+including when that caller can view all tickets. Ticket detail and activity
+endpoints return not found when the caller is neither reporter nor assignee and
+lacks `CanViewAllTickets`, preventing ticket-number enumeration.
+
+IT workflow permissions remain required for viewing every ticket, assigning,
+closing, and commenting. Reopening is limited to the reporter or a user with
+close permission.
+
 ## Product ARD and COA responses
 
 `GET /api/v1/form/response` resolves a product response by the exact `batchManufacturingRecordId` and `productionActivityStepId`. A pair with no response returns `200` with `null`; it is not a validation failure. Response detail includes `approved`, `rejected`, and `hasPendingApproval`.
