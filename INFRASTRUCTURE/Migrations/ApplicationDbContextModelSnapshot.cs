@@ -8266,7 +8266,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.ToTable("PayrollRuns");
+                    b.ToTable("HrPayrollRuns");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Payroll.PayrollRunApproval", b =>
