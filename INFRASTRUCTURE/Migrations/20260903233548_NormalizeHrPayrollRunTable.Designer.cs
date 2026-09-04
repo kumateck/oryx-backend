@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260903215221_AddHrPayrollAndPerformanceModules")]
-    partial class AddHrPayrollAndPerformanceModules
+    [Migration("20260903233548_NormalizeHrPayrollRunTable")]
+    partial class NormalizeHrPayrollRunTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

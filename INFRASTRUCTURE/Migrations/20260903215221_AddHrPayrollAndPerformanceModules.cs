@@ -219,7 +219,7 @@ namespace INFRASTRUCTURE.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "PayrollRuns",
+                name: "HrPayrollRuns",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -236,19 +236,19 @@ namespace INFRASTRUCTURE.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PayrollRuns", x => x.Id);
+                    table.PrimaryKey("PK_HrPayrollRuns", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_PayrollRuns_users_CreatedById",
+                        name: "FK_HrPayrollRuns_users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_PayrollRuns_users_LastDeletedById",
+                        name: "FK_HrPayrollRuns_users_LastDeletedById",
                         column: x => x.LastDeletedById,
                         principalTable: "users",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_PayrollRuns_users_LastUpdatedById",
+                        name: "FK_HrPayrollRuns_users_LastUpdatedById",
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
@@ -411,9 +411,9 @@ namespace INFRASTRUCTURE.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_PayrollRunApprovals_PayrollRuns_PayrollRunId",
+                        name: "FK_PayrollRunApprovals_HrPayrollRuns_PayrollRunId",
                         column: x => x.PayrollRunId,
-                        principalTable: "PayrollRuns",
+                        principalTable: "HrPayrollRuns",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -469,9 +469,9 @@ namespace INFRASTRUCTURE.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Payslips_PayrollRuns_PayrollRunId",
+                        name: "FK_Payslips_HrPayrollRuns_PayrollRunId",
                         column: x => x.PayrollRunId,
-                        principalTable: "PayrollRuns",
+                        principalTable: "HrPayrollRuns",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -998,18 +998,18 @@ namespace INFRASTRUCTURE.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PayrollRuns_CreatedById",
-                table: "PayrollRuns",
+                name: "IX_HrPayrollRuns_CreatedById",
+                table: "HrPayrollRuns",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PayrollRuns_LastDeletedById",
-                table: "PayrollRuns",
+                name: "IX_HrPayrollRuns_LastDeletedById",
+                table: "HrPayrollRuns",
                 column: "LastDeletedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PayrollRuns_LastUpdatedById",
-                table: "PayrollRuns",
+                name: "IX_HrPayrollRuns_LastUpdatedById",
+                table: "HrPayrollRuns",
                 column: "LastUpdatedById");
 
             migrationBuilder.CreateIndex(
@@ -1192,7 +1192,7 @@ namespace INFRASTRUCTURE.Migrations
                 name: "PayGrades");
 
             migrationBuilder.DropTable(
-                name: "PayrollRuns");
+                name: "HrPayrollRuns");
 
             migrationBuilder.DropTable(
                 name: "PerformanceCycles");

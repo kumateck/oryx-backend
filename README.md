@@ -2,6 +2,10 @@
 
 ## Recent Updates
 
+- HR payroll migration safety: the newer HR payroll workflow now persists to
+  `HrPayrollRuns`, preserving the unrelated legacy `PayrollRuns` table and its
+  payroll-company, period, and pay-group relationships. The production runbook
+  includes explicit collision preflight and post-migration verification.
 - Billing-sheet charge payments: the Pay Charges action now records auditable `Payment` rows instead of directly flipping a boolean. Charge batches are validated and committed atomically, require `CanRecordPayment`, preserve configured maker-checker approval, and mark a charge paid only after its payment is approved. Migration `20260903121205_LinkBillingSheetChargePayments` adds the nullable payment-to-charge traceability link.
 - Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, maker-checker quotations, safe quotation-to-ProductionOrder conversion, and customer order metrics. The additive CRM migration has a controlled production runbook and remains unapplied.
 - Supplier relationship management: added pharmaceutical compliance certificates, multiple contacts and banking details, standing pricing agreements, configurable AVL requalification, computed supplier scorecards, and approved-payment spend analytics. The additive SRM migration has a controlled production runbook and is not applied automatically.
@@ -60,10 +64,11 @@ the changelog above live in [`docs/`](docs/):
   credit, quotation, and production-order rollout guidance.
 - [Product ATR response migration](docs/product-atr-response-migration.md) —
   per-database preflight, migration, verification, and release order.
+- [HR payroll and performance migration](docs/hr-payroll-production-migration.md)
+  — preserves the legacy payroll schema while deploying the new HR workflow.
 
-Documentation updated for the billing-sheet payment task: `README.md`,
-`docs/services.md`, `docs/workflows.md`, and
-`docs/cashflow-production-migration.md`.
+Documentation updated for the HR payroll migration fix: `README.md` and
+`docs/hr-payroll-production-migration.md`.
 
 ## Contributing
 
