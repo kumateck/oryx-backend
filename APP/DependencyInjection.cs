@@ -103,6 +103,8 @@ public static class DependencyInjection
         services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
         services.AddScoped<IShiftTypeRepository, ShiftTypeRepository>();
         services.AddScoped<IShiftScheduleRepository, ShiftScheduleRepository>();
+        services.AddScoped<IShiftCategoryRepository, ShiftCategoryRepository>();
+        services.AddScoped<IWorkingHoursPolicyRepository, WorkingHoursPolicyRepository>();
         services.AddScoped<ICompanyWorkingDaysRepository, CompanyWorkingDaysRepository>();
         services.AddScoped<IHolidayRepository, HolidayRepository>();
         services.AddScoped<ICountryRepository, CountryRepository>();

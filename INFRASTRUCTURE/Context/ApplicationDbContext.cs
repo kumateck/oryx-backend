@@ -518,6 +518,7 @@ public class ApplicationDbContext(
     #region Shift Category
 
     public DbSet<ShiftCategory> ShiftCategories { get; set; }
+    public DbSet<WorkingHoursPolicy> WorkingHoursPolicies { get; set; }
 
     #endregion
 

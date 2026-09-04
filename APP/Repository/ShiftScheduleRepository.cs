@@ -1,10 +1,11 @@
-using System.Globalization;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Background;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.LeaveRequests;
+using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.ShiftAssignments;
 using DOMAIN.Entities.ShiftSchedules;
 using DOMAIN.Entities.ShiftTypes;
@@ -17,8 +18,11 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mapper)
-    : IShiftScheduleRepository
+public class ShiftScheduleRepository(
+    ApplicationDbContext context,
+    IMapper mapper,
+    IBackgroundWorkerService backgroundWorkerService
+) : IShiftScheduleRepository
 {
     public async Task<Result<Guid>> CreateShiftSchedule(CreateShiftScheduleRequest request)
     {
@@ -371,8 +375,9 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .Where(sa =>
                 sa.ShiftSchedules.ShiftTypes.Any(existing =>
                     shiftSchedule.ShiftTypes.Any(newShift =>
-                        ConvertTime(existing.StartTime) < ConvertTime(newShift.EndTime)
-                        && ConvertTime(existing.EndTime) > ConvertTime(newShift.StartTime)
+                        ShiftTimeHelper.HasOverlap(
+                            existing.StartTime, existing.EndTime,
+                            newShift.StartTime, newShift.EndTime)
                     )
                 )
             )
@@ -383,10 +388,38 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .Where(id => !leaveRequests.Contains(id) && !conflictingEmployees.Contains(id))
             .ToList();
 
+        var policy = await GetActiveWorkingHoursPolicy(startDate);
+        if (policy is not null && availableEmployees.Count > 0)
+        {
+            var surroundingAssignments = await context.ShiftAssignments
+                .Where(sa =>
+                    availableEmployees.Contains(sa.EmployeeId)
+                    && sa.ScheduleDate >= startDate.AddDays(-7)
+                    && sa.ScheduleDate <= endDate.AddDays(7))
+                .Include(sa => sa.ShiftType)
+                .ToListAsync();
+
+            availableEmployees = availableEmployees
+                .Where(id =>
+                {
+                    var employeeAssignments = surroundingAssignments
+                        .Where(a => a.EmployeeId == id)
+                        .ToList();
+
+                    for (var date = startDate; date <= endDate; date = date.AddDays(1))
+                    {
+                        if (HasWorkingHoursViolation(employeeAssignments, date, shiftType, policy))
+                            return false;
+                    }
+                    return true;
+                })
+                .ToList();
+        }
+
         if (availableEmployees.Count == 0)
             return Error.Validation(
                 "Employees.NotFound",
-                "No valid employees could be assigned due to leave or conflicts."
+                "No valid employees could be assigned due to leave, conflicts, or working-hours policy limits."
             );
 
         var assignments = new List<ShiftAssignment>();
@@ -413,7 +446,70 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         context.ShiftSchedules.Update(shiftSchedule);
         await context.SaveChangesAsync();
 
+        backgroundWorkerService.EnqueueNotification(
+            $"{availableEmployees.Count} employee(s) assigned to {shiftType.ShiftName} ({shiftCategory.Name}) on {shiftSchedule.ScheduleName}.",
+            NotificationType.ShiftAssigned,
+            shiftSchedule.DepartmentId);
+
         return Result.Success();
+    }
+
+    private async Task<WorkingHoursPolicy> GetActiveWorkingHoursPolicy(DateTime date) =>
+        await context.WorkingHoursPolicies
+            .Where(p => p.EffectiveFrom <= date && (p.EffectiveTo == null || p.EffectiveTo > date))
+            .OrderByDescending(p => p.EffectiveFrom)
+            .FirstOrDefaultAsync();
+
+    /// <summary>
+    /// Checks a candidate assignment against the Ghana Labour Act baseline: total scheduled
+    /// hours for the ISO week must not exceed MaxHoursPerWeek, and the gap to the nearest
+    /// adjacent shift (day before/same day/day after) must be at least MinDailyRestHours.
+    /// Continuous 48h weekly rest (Act 651 s.33) is not separately verified here - a future
+    /// pass could check for at least one full rest day in the week.
+    /// </summary>
+    private static bool HasWorkingHoursViolation(
+        List<ShiftAssignment> existingAssignments,
+        DateTime date,
+        ShiftType newShift,
+        WorkingHoursPolicy policy)
+    {
+        var weekStart = date.Date.AddDays(
+            -(((int)date.DayOfWeek + 6) % 7)); // Monday of the ISO week containing `date`
+        var weekEnd = weekStart.AddDays(6);
+
+        var newShiftHours = (decimal)ShiftTimeHelper.Duration(newShift.StartTime, newShift.EndTime).TotalHours;
+
+        var weekHours = existingAssignments
+            .Where(a => a.ShiftType != null && a.ScheduleDate >= weekStart && a.ScheduleDate <= weekEnd)
+            .Sum(a => (decimal)ShiftTimeHelper.Duration(a.ShiftType.StartTime, a.ShiftType.EndTime).TotalHours);
+
+        if (weekHours + newShiftHours > policy.MaxHoursPerWeek)
+            return true;
+
+        var newStart = date.Date + newShift.StartTime.ToTimeSpan();
+        var newEnd = newStart.Add(ShiftTimeHelper.Duration(newShift.StartTime, newShift.EndTime));
+        var minRest = TimeSpan.FromHours((double)policy.MinDailyRestHours);
+
+        var adjacent = existingAssignments.Where(a =>
+            a.ShiftType != null
+            && a.ScheduleDate >= date.AddDays(-1)
+            && a.ScheduleDate <= date.AddDays(1));
+
+        foreach (var other in adjacent)
+        {
+            var otherStart = other.ScheduleDate.Date + other.ShiftType.StartTime.ToTimeSpan();
+            var otherEnd = otherStart.Add(ShiftTimeHelper.Duration(other.ShiftType.StartTime, other.ShiftType.EndTime));
+
+            TimeSpan gap;
+            if (otherEnd <= newStart) gap = newStart - otherEnd;
+            else if (newEnd <= otherStart) gap = otherStart - newEnd;
+            else continue; // overlapping shifts are caught by the separate conflict check
+
+            if (gap < minRest)
+                return true;
+        }
+
+        return false;
     }
 
     public async Task<Result> SwapShift(SwapShiftRequest request)
@@ -467,8 +563,29 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .ToListAsync();
 
         var hasConflict = conflictingAssignments.Any(sa =>
-            ConvertTime(sa.ShiftType.StartTime) < ConvertTime(currentShiftType.EndTime) &&
-            ConvertTime(sa.ShiftType.EndTime) > ConvertTime(currentShiftType.StartTime));
+            ShiftTimeHelper.HasOverlap(
+                sa.ShiftType.StartTime, sa.ShiftType.EndTime,
+                currentShiftType.StartTime, currentShiftType.EndTime));
+
+        var policy = await GetActiveWorkingHoursPolicy(request.ScheduleDate.Date);
+        if (policy is not null)
+        {
+            var surroundingAssignments = await context.ShiftAssignments
+                .Where(sa =>
+                    sa.EmployeeId == request.NewEmployeeId
+                    && sa.Id != assignment.Id
+                    && sa.ScheduleDate >= request.ScheduleDate.Date.AddDays(-7)
+                    && sa.ScheduleDate <= request.ScheduleDate.Date.AddDays(7))
+                .Include(sa => sa.ShiftType)
+                .ToListAsync();
+
+            if (HasWorkingHoursViolation(surroundingAssignments, request.ScheduleDate.Date, currentShiftType, policy))
+            {
+                return Error.Validation(
+                    "Employee.WorkingHoursPolicy",
+                    "Replacement employee would breach the working-hours policy (weekly hours or daily rest).");
+            }
+        }
 
         if (hasConflict)
             return Error.Validation(
@@ -479,6 +596,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
         assignment.EmployeeId = request.NewEmployeeId;
 
         await context.SaveChangesAsync();
+
+        backgroundWorkerService.EnqueueNotification(
+            $"Shift assignment on {request.ScheduleDate:d} was swapped to a new employee.",
+            NotificationType.ShiftAssigned,
+            assignment.ShiftSchedules?.DepartmentId);
 
         return Result.Success();
     }
@@ -605,33 +727,21 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
             .Select(x => $"{x.EmployeeId}_{x.ScheduleDate:yyyyMMdd}_{x.ShiftScheduleId}")
             .ToHashSet();
 
+        var workingHoursPolicy = await GetActiveWorkingHoursPolicy(startDate);
+        var surroundingAssignments = workingHoursPolicy is null
+            ? []
+            : await context.ShiftAssignments
+                .Where(sa =>
+                    employeeIds.Contains(sa.EmployeeId)
+                    && sa.ScheduleDate >= startDate.AddDays(-7)
+                    && sa.ScheduleDate <= endDate.AddDays(7))
+                .Include(sa => sa.ShiftType)
+                .ToListAsync();
+
         var assignments = new List<ShiftAssignment>();
         var skipped = new List<string>();
 
         string GetCell(int row, string header) => worksheet.Cells[row, headers[header]].Text.Trim();
-
-        static TimeSpan ParseTime(string time)
-        {
-            return TimeSpan.Parse(time);
-        }
-
-        static bool HasTimeOverlap(
-            TimeSpan existingStart,
-            TimeSpan existingEnd,
-            TimeSpan currentStart,
-            TimeSpan currentEnd
-        )
-        {
-            // Handle overnight shifts
-
-            if (existingEnd <= existingStart)
-                existingEnd = existingEnd.Add(TimeSpan.FromDays(1));
-
-            if (currentEnd <= currentStart)
-                currentEnd = currentEnd.Add(TimeSpan.FromDays(1));
-
-            return existingStart < currentEnd && existingEnd > currentStart;
-        }
 
         await using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -693,12 +803,9 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                     sa.ShiftSchedules != null
                     && sa.ShiftSchedules.ShiftTypes.Any(existing =>
                         shiftSchedule.ShiftTypes.Any(current =>
-                            HasTimeOverlap(
-                                ParseTime(existing.StartTime),
-                                ParseTime(existing.EndTime),
-                                ParseTime(current.StartTime),
-                                ParseTime(current.EndTime)
-                            )
+                            ShiftTimeHelper.HasOverlap(
+                                existing.StartTime, existing.EndTime,
+                                current.StartTime, current.EndTime)
                         )
                     )
                 );
@@ -708,6 +815,32 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                     skipped.Add($"{staffIdStr} - Schedule conflict with existing assignment");
 
                     continue;
+                }
+
+                // WORKING HOURS POLICY CHECK
+
+                if (workingHoursPolicy is not null)
+                {
+                    var employeeSurrounding = surroundingAssignments
+                        .Where(a => a.EmployeeId == employee.Id)
+                        .ToList();
+
+                    var violatesPolicy = false;
+                    for (var date = startDate; date <= endDate; date = date.AddDays(1))
+                    {
+                        if (HasWorkingHoursViolation(employeeSurrounding, date, shiftType, workingHoursPolicy))
+                        {
+                            violatesPolicy = true;
+                            break;
+                        }
+                    }
+
+                    if (violatesPolicy)
+                    {
+                        skipped.Add($"{staffIdStr} - Would breach working-hours policy (weekly hours or daily rest)");
+
+                        continue;
+                    }
                 }
 
                 for (var date = startDate; date <= endDate; date = date.AddDays(1))
@@ -761,6 +894,11 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                 message += $" Skipped {skipped.Count} rows: " + $"{string.Join("; ", skipped)}";
             }
 
+            backgroundWorkerService.EnqueueNotification(
+                $"Shift schedule import for {department.Name}: {assignments.Count} assignments for {distinctEmployees} employees.",
+                NotificationType.ShiftAssigned,
+                departmentId);
+
             return Result.Success(message);
         }
         catch (Exception ex)
@@ -772,11 +910,6 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                 $"An error occurred while importing shift assignments: {ex}."
             );
         }
-    }
-
-    private static TimeOnly ConvertTime(string time)
-    {
-        return TimeOnly.ParseExact(time, "hh:mm tt", CultureInfo.InvariantCulture);
     }
 
     public async Task<Result> UpdateShiftSchedule(Guid id, CreateShiftScheduleRequest request)
@@ -875,8 +1008,9 @@ public class ShiftScheduleRepository(ApplicationDbContext context, IMapper mappe
                 .Where(sa =>
                     sa.ShiftSchedules.ShiftTypes.Any(existing =>
                         shiftSchedule.ShiftTypes.Any(newShift =>
-                            ConvertTime(existing.StartTime) < ConvertTime(newShift.EndTime)
-                            && ConvertTime(existing.EndTime) > ConvertTime(newShift.StartTime)
+                            ShiftTimeHelper.HasOverlap(
+                                existing.StartTime, existing.EndTime,
+                                newShift.StartTime, newShift.EndTime)
                         )
                     )
                 )

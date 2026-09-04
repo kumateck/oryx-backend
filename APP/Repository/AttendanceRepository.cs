@@ -300,18 +300,10 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 // 1. PRESENT EMPLOYEES
                 if (attendanceMap.TryGetValue(emp.StaffNumber, out var attendance))
                 {
-                    if (!shiftMap.TryGetValue(emp.Id, out var shift) || shift.ShiftType?.StartTime == null)
+                    if (!shiftMap.TryGetValue(emp.Id, out var shift) || shift.ShiftType == null)
                         continue;
 
-                    if (!DateTime.TryParseExact(
-                            shift.ShiftType.StartTime,
-                            "hh:mm tt",
-                            CultureInfo.InvariantCulture,
-                            DateTimeStyles.None,
-                            out var parsedShiftStart))
-                        continue;
-
-                    var shiftStart = parsedShiftStart.TimeOfDay;
+                    var shiftStart = shift.ShiftType.StartTime.ToTimeSpan();
 
                     if (isCasual) summary.CasualStaff++;
                     else summary.PermanentStaff++;

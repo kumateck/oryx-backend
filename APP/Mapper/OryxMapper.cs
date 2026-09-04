@@ -1,5 +1,6 @@
 using APP.Mapper.Resolvers;
 using APP.Mapper.Resolvers.MaterialBatch;
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Alerts;
@@ -1189,8 +1190,21 @@ public class OryxMapper : Profile
 
         #region Shift Types
 
-        CreateMap<CreateShiftTypeRequest, ShiftType>();
-        CreateMap<ShiftTypeDto, ShiftType>().ReverseMap();
+        CreateMap<CreateShiftTypeRequest, ShiftType>()
+            .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => ShiftTimeHelper.Parse(src.StartTime)))
+            .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => ShiftTimeHelper.Parse(src.EndTime)));
+        CreateMap<ShiftTypeDto, ShiftType>()
+            .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => ShiftTimeHelper.Parse(src.StartTime)))
+            .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => ShiftTimeHelper.Parse(src.EndTime)));
+        CreateMap<ShiftType, ShiftTypeDto>()
+            .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => ShiftTimeHelper.Format(src.StartTime)))
+            .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => ShiftTimeHelper.Format(src.EndTime)));
+
+        CreateMap<CreateShiftCategoryRequest, ShiftCategory>();
+        CreateMap<ShiftCategory, ShiftCategoryDto>();
+
+        CreateMap<CreateWorkingHoursPolicyRequest, WorkingHoursPolicy>();
+        CreateMap<WorkingHoursPolicy, WorkingHoursPolicyDto>();
 
         #endregion
 
