@@ -5,6 +5,7 @@ using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.RndTrialBatches;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.Requisitions;
@@ -24,6 +25,8 @@ public class Requisition : BaseEntity, IRequireApproval
     public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
+    public Guid? RndTrialBatchId { get; set; }
+    public RndTrialBatch RndTrialBatch { get; set; }
     public List<RequisitionApproval> Approvals { get; set; }
     public List<RequisitionItem> Items { get; set; }
     public bool Approved { get; set; }
@@ -63,5 +66,6 @@ public enum RequestStatus
 public enum RequisitionType
 {
     Stock,
-    Purchase
+    Purchase,
+    Trial
 }

@@ -65,6 +65,10 @@ public class FormResponseDto : WithAttachment
     public string Value { get; set; }
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
+    public bool FormulaGoverned { get; set; }
+    public bool FormulaResultFinalized { get; set; }
+    public Guid? FormulaExecutionId { get; set; }
+    public string FormulaDisplayResultsJson { get; set; }
 }
 
 public class FormReviewerDto : BaseDto

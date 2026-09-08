@@ -219,6 +219,51 @@ public class RequisitionRepository(
                 []
             );
         }
+        else if (request.RequisitionType == RequisitionType.Trial)
+        {
+            if (!request.RndTrialBatchId.HasValue)
+                return Error.Validation(
+                    "Trial.Requisition",
+                    "RndTrialBatchId cannot be null when creating trial requisitions"
+                );
+
+            var trialBatchExists = await context.RndTrialBatches.AnyAsync(b =>
+                b.Id == request.RndTrialBatchId.Value
+            );
+            if (!trialBatchExists)
+                return Error.NotFound("Trial.Requisition", "Trial batch not found");
+
+            var year = DateTime.UtcNow.ToString("yy");
+            var searchPattern = $"TRQ/{year}/";
+            var lastCode = await context
+                .Requisitions.IgnoreQueryFilters()
+                .Where(c => c.Code.StartsWith(searchPattern))
+                .OrderByDescending(c => c.Code)
+                .Select(c => c.Code)
+                .FirstOrDefaultAsync();
+
+            var nextCount = 1;
+            if (lastCode != null)
+            {
+                var lastPart = lastCode.Split('/').Last();
+                if (int.TryParse(lastPart, out var lastNumber))
+                    nextCount = lastNumber + 1;
+            }
+
+            var requisition = mapper.Map<Requisition>(request);
+            requisition.Code = $"TRQ/{year}/{nextCount:D4}";
+            requisition.RequestedById = userId;
+            requisition.DepartmentId = department.Id;
+            requisition.Items = mapper.Map<List<RequisitionItem>>(request.Items);
+
+            await context.Requisitions.AddAsync(requisition);
+            await context.SaveChangesAsync();
+
+            await approvalRepository.CreateInitialApprovalsAsync(
+                "TrialRequisition",
+                requisition.Id
+            );
+        }
         else
         {
             var requisition = mapper.Map<Requisition>(request);
@@ -246,6 +291,52 @@ public class RequisitionRepository(
             );
         }
         await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    public async Task<Result> IssueTrialRequisition(Guid requisitionId, Guid userId)
+    {
+        var requisition = await context
+            .Requisitions.AsSplitQuery()
+            .Include(r => r.Items)
+                .ThenInclude(i => i.Material)
+                    .ThenInclude(m => m.Batches)
+            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+
+        if (requisition is null)
+            return Error.NotFound("Trial.Requisition", "Requisition not found");
+
+        if (requisition.RequisitionType != RequisitionType.Trial)
+            return Error.Validation("Trial.Requisition", "This is not a trial requisition");
+
+        if (!requisition.Approved)
+            return Error.Validation("Trial.Requisition", "This requisition has not been approved yet");
+
+        var labWarehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
+            w.Name == "R&D Lab Warehouse"
+        );
+        if (labWarehouse is null)
+            return Error.NotFound("Trial.Requisition", "The R&D Lab warehouse has not been seeded");
+
+        foreach (var item in requisition.Items)
+        {
+            var consumeResult = await materialRepository.ConsumeMaterialAtLocation(
+                item.Material,
+                labWarehouse.Id,
+                item.Quantity,
+                userId
+            );
+            if (consumeResult.IsFailure)
+                return consumeResult;
+
+            item.QuantityReceived = item.Quantity;
+            item.Status = RequestStatus.Completed;
+        }
+
+        requisition.Status = RequestStatus.Completed;
+        context.Requisitions.Update(requisition);
+        await context.SaveChangesAsync();
+
         return Result.Success();
     }
 

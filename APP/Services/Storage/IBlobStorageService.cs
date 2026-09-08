@@ -8,6 +8,7 @@ public interface IBlobStorageService
     Task<Result> UploadBlobAsync(string bucketName, IFormFile file, string objectName, string previousObjectName = null);
     Result UploadBlob(string bucketName, IFormFile file, string objectName, string previousObjectName = null);
     Task<Result<(Stream Stream, string ContentType, string Name)>> GetBlobAsync(string bucketName, string objectName);
+    Task<Result<bool>> BlobExistsAsync(string bucketName, string objectName);
     Task<Result<(Stream Stream, string ContentType, string Name)>> GetBlobAsync(string bucketName,
         string modelId, string reference);
     Task<Result> UploadChunkAsync(string bucketName, IFormFile chunk, string objectName, int chunkIndex);

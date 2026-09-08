@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Products;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -46,17 +47,10 @@ public partial class CustomerRepository
             var price = requestItem.UnitPrice;
             if (!price.HasValue)
             {
-                var active = await GetPricingMatches(customerId, requestItem.ProductId, requestItem.ProductPackingId, DateTime.UtcNow);
-                switch (active.Count)
-                {
-                    case > 1:
-                        return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
-                    case 1 when active[0].CurrencyId != customer.CurrencyId:
-                        return Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency.");
-                    default:
-                        price = active.Count == 1 ? active[0].AgreedPrice : products[requestItem.ProductId].Price;
-                        break;
-                }
+                var resolved = await ResolveUnitPrice(
+                    customer, products[requestItem.ProductId], requestItem.ProductPackingId, DateTime.UtcNow);
+                if (resolved.IsFailure) return resolved.Error;
+                price = resolved.Value.UnitPrice;
             }
             if (price < 0) return Error.Validation("CustomerQuotation.Price", "Unit price cannot be negative.");
             quotation.Items.Add(new CustomerQuotationItem
@@ -69,6 +63,41 @@ public partial class CustomerRepository
         await context.CustomerQuotations.AddAsync(quotation);
         await context.SaveChangesAsync();
         return quotation.Id;
+    }
+
+    public async Task<Result<ResolvedQuotationPriceDto>> ResolveQuotationUnitPrice(
+        Guid customerId, Guid productId, Guid productPackingId, DateTime asOf)
+    {
+        var customer = await context.Customers.AsNoTracking().FirstOrDefaultAsync(item => item.Id == customerId);
+        if (customer is null) return Error.NotFound("Customer.NotFound", "Customer not found.");
+        if (!customer.CurrencyId.HasValue)
+            return Error.Validation("CustomerQuotation.CurrencyRequired", "Set the customer's preferred currency before quoting.");
+        var product = await context.Products.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(item => item.Id == productId && !item.DeletedAt.HasValue);
+        if (product is null) return Error.NotFound("Product.NotFound", "Product not found.");
+        if (!await context.ProductPackings.AnyAsync(item => item.Id == productPackingId))
+            return Error.NotFound("ProductPacking.NotFound", "Packing style not found.");
+        return await ResolveUnitPrice(customer, product, productPackingId, asOf);
+    }
+
+    /// <summary>
+    /// Same precedence <see cref="CreateQuotation"/> applies when a request omits a unit price:
+    /// the single active pricing agreement for this customer/product/packing, else the product's
+    /// list price. Kept as one method so the quotation-creation and price-preview paths can never
+    /// disagree on what "the resolved price" means.
+    /// </summary>
+    private async Task<Result<ResolvedQuotationPriceDto>> ResolveUnitPrice(
+        Customer customer, Product product, Guid productPackingId, DateTime asOf)
+    {
+        var active = await GetPricingMatches(customer.Id, product.Id, productPackingId, asOf);
+        return active.Count switch
+        {
+            > 1 => Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match."),
+            1 when active[0].CurrencyId != customer.CurrencyId =>
+                Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency."),
+            1 => new ResolvedQuotationPriceDto { UnitPrice = active[0].AgreedPrice, FromAgreement = true },
+            _ => new ResolvedQuotationPriceDto { UnitPrice = product.Price, FromAgreement = false },
+        };
     }
 
     public async Task<Result<CustomerQuotationDto>> GetQuotation(Guid quotationId, DateTime? asOf = null)

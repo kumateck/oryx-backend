@@ -6,6 +6,7 @@ public class CreateRequisitionRequest
     public RequisitionType RequisitionType { get; set; }
     public Guid? ProductionScheduleProductId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public Guid? RndTrialBatchId { get; set; }
     public string Comments { get; set; }
     public DateTime? ExpectedDelivery { get; set; }
     public List<CreateRequisitionItemRequest> Items { get; set; } = [];

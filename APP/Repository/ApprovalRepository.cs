@@ -12,6 +12,7 @@ using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Payments;
 using DOMAIN.Entities.Payroll;
 using DOMAIN.Entities.Performance;
 using DOMAIN.Entities.ProductionOrders;
@@ -20,6 +21,7 @@ using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.RndProjects;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockAdjustments;
@@ -159,7 +161,11 @@ public class ApprovalRepository(
             return await AllocateProductionOrderApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
-        if (modelType is "PurchaseRequisition" or "StockRequisition")
+        if (modelType == nameof(RndProject))
+            return await RndProjectApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+
+        if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
         {
             var requisition = await context
                 .Requisitions.AsSplitQuery()
@@ -170,10 +176,13 @@ public class ApprovalRepository(
             if (requisition is null)
                 return RequisitionErrors.NotFound(modelId);
 
-            var expectedType =
-                modelType == "PurchaseRequisition"
-                    ? RequisitionType.Purchase
-                    : RequisitionType.Stock;
+            var expectedType = modelType switch
+            {
+                "PurchaseRequisition" => RequisitionType.Purchase,
+                "StockRequisition" => RequisitionType.Stock,
+                "TrialRequisition" => RequisitionType.Trial,
+                _ => throw new NotSupportedException($"Unsupported requisition modelType '{modelType}'."),
+            };
 
             if (requisition.RequisitionType != expectedType)
             {
@@ -2116,7 +2125,11 @@ public class ApprovalRepository(
             return await AllocateProductionOrderApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
 
-        if (modelType is "PurchaseRequisition" or "StockRequisition")
+        if (modelType == nameof(RndProject))
+            return await RndProjectApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
+
+        if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
         {
             var requisition = await context
                 .Requisitions.Include(r => r.Approvals)
@@ -2125,10 +2138,13 @@ public class ApprovalRepository(
             if (requisition is null)
                 return RequisitionErrors.NotFound(modelId);
 
-            var expectedType =
-                modelType == "PurchaseRequisition"
-                    ? RequisitionType.Purchase
-                    : RequisitionType.Stock;
+            var expectedType = modelType switch
+            {
+                "PurchaseRequisition" => RequisitionType.Purchase,
+                "StockRequisition" => RequisitionType.Stock,
+                "TrialRequisition" => RequisitionType.Trial,
+                _ => throw new NotSupportedException($"Unsupported requisition modelType '{modelType}'."),
+            };
 
             if (requisition.RequisitionType != expectedType)
             {
@@ -3240,6 +3256,21 @@ public class ApprovalRepository(
                     }
                 );
             }
+            else if (r.RequisitionType == RequisitionType.Trial)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = "TrialRequisition",
+                        Id = r.Id,
+                        CreatedAt = r.CreatedAt,
+                        Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
+                        Code = r.Code,
+                        RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(r.Id),
+                    }
+                );
+            }
             else
             {
                 entitiesRequiringApproval.Add(
@@ -3647,6 +3678,51 @@ public class ApprovalRepository(
             });
         }
 
+        var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
+
+        foreach (var payment in payments)
+        {
+            entitiesRequiringApproval.Add(new ApprovalEntity
+            {
+                ModelType = nameof(Payment),
+                Id = payment.Id,
+                Code = payment.Reference,
+                Department = mapper.Map<DepartmentDto>(payment.RecordedBy?.Department),
+                CreatedAt = payment.CreatedAt,
+                RequestedBy = mapper.Map<UserDto>(payment.RecordedBy),
+                ApprovalLogs = GetApprovalLogs(payment.Id),
+            });
+        }
+
+        var rndProjects = await context
+            .RndProjects.AsSplitQuery()
+            .Include(item => item.Approvals)
+                .ThenInclude(stage => stage.ApprovedBy)
+            .Include(item => item.RequestedBy)
+                .ThenInclude(user => user.Department)
+            .Include(item => item.Department)
+            .Where(item =>
+                item.Approvals.Any(a =>
+                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                    && a.Status != ApprovalStatus.Approved
+                )
+            )
+            .ToListAsync();
+
+        foreach (var rndProject in rndProjects)
+        {
+            entitiesRequiringApproval.Add(new ApprovalEntity
+            {
+                ModelType = nameof(RndProject),
+                Id = rndProject.Id,
+                CreatedAt = rndProject.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(rndProject.Department),
+                Code = rndProject.Code,
+                RequestedBy = mapper.Map<UserDto>(rndProject.RequestedBy),
+                ApprovalLogs = GetApprovalLogs(rndProject.Id),
+            });
+        }
+
         if (!string.IsNullOrEmpty(modelType))
         {
             entitiesRequiringApproval = entitiesRequiringApproval
@@ -3692,8 +3768,10 @@ public class ApprovalRepository(
         await Collect(context.ProformaInvoiceApprovals);
         await Collect(context.ProductionOrderApprovals);
         await Collect(context.AllocateProductionOrderApprovals);
+        await Collect(context.RndProjectApprovals);
         await Collect(context.FinishedGoodsTransferNoteApprovals);
         await Collect(context.ProductionExtraPackingApprovals);
+        await Collect(context.PaymentApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(
             context.ResponseApprovals.Where(a =>
                 a.ActivatedAt.HasValue
@@ -3742,7 +3820,7 @@ public class ApprovalRepository(
     {
         switch (modelType)
         {
-            case "PurchaseRequisition" or "StockRequisition":
+            case "PurchaseRequisition" or "StockRequisition" or "TrialRequisition":
                 var requisition = await context
                     .Requisitions.AsSplitQuery()
                     .Include(r => r.CreatedBy)
@@ -4043,6 +4121,26 @@ public class ApprovalRepository(
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
+            case nameof(RndProject):
+                var rndProject = await context.RndProjects
+                    .AsSplitQuery()
+                    .Include(item => item.Department)
+                    .Include(item => item.RequestedBy)
+                        .ThenInclude(user => user.Department)
+                    .Include(item => item.Approvals)
+                        .ThenInclude(stage => stage.ApprovedBy)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = modelId,
+                    Code = rndProject.Code,
+                    CreatedAt = rndProject.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(rndProject.Department),
+                    RequestedBy = mapper.Map<UserDto>(rndProject.RequestedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
             default:
                 throw new NotImplementedException(
                     $"Approval handling not implemented for model type: {modelType}"
@@ -4133,6 +4231,7 @@ public class ApprovalRepository(
             case "RawStockRequisition":
             case "PackageStockRequisition":
             case "PurchaseRequisition":
+            case "TrialRequisition":
             case "Requisition":
                 await CreateRequisitionApprovals(modelId, stages, approval);
                 break;
@@ -4184,6 +4283,9 @@ public class ApprovalRepository(
                 break;
             case nameof(ProductionOrder):
                 await CreateProductionOrderApprovals(modelId, stages, approval);
+                break;
+            case nameof(RndProject):
+                await RndProjectApprovalHandler.CreateAsync(context, modelId, stages, approval);
                 break;
             default:
                 throw new NotSupportedException(

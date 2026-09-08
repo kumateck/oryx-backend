@@ -8,6 +8,8 @@ public interface IPaymentRepository
 {
     Task<Result<Guid>> RecordPayment(RecordPaymentRequest request, Guid userId);
     Task<Result<PaymentDto>> GetPayment(Guid paymentId);
+    Task<Result<PaymentListDto>> GetPayments(PaymentListRequest request);
+    Task<Result<CashflowCurrencyDto>> GetCurrencyConfiguration(DateTime? asOf = null);
     Task<Result> ReviewPayment(
         Guid paymentId,
         ReviewPaymentRequest request,

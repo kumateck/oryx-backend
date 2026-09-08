@@ -32,6 +32,8 @@ public interface ICustomerRepository
     Task<Result<bool>> IsWithinCreditLimit(Guid customerId, decimal additionalOrderValue);
 
     Task<Result<Guid>> CreateQuotation(Guid customerId, CreateCustomerQuotationRequest request, Guid userId);
+    Task<Result<ResolvedQuotationPriceDto>> ResolveQuotationUnitPrice(
+        Guid customerId, Guid productId, Guid productPackingId, DateTime asOf);
     Task<Result<CustomerQuotationDto>> GetQuotation(Guid quotationId, DateTime? asOf = null);
     Task<Result<Paginateable<IEnumerable<CustomerQuotationDto>>>> GetActiveQuotations(
         Guid customerId, int page, int pageSize, DateTime? asOf = null);

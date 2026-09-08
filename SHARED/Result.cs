@@ -54,7 +54,7 @@ public class Result
     
     public static Result<TValue> Failure<TValue>(Error error)
     {
-        return new Result<TValue>(default, false, [error]);
+        return new Result<TValue>(default, false, error);
     }
 
     public static Result<TValue> Failure<TValue>(List<Error> errors) => new(default, false, errors);

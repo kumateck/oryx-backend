@@ -416,4 +416,29 @@ public class AnalyticalTestRequestRepository(
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
+    public async Task<Result<List<QcEquipmentDto>>> GetQcEquipmentsWithCalibrationDue(
+        int withinDays,
+        DateTime? asOf = null
+    )
+    {
+        if (withinDays < 0)
+            return Error.Validation("QcEquipment.Days", "Within-days must be zero or greater.");
+
+        var start = (asOf ?? DateTime.UtcNow).Date;
+        var end = start.AddDays(withinDays);
+
+        var equipment = await context
+            .QcEquipments.AsSplitQuery()
+            .Include(e => e.QcEquipmentCategory)
+            .Where(e =>
+                e.CalibrationDueDate.HasValue
+                && e.CalibrationDueDate.Value.Date >= start
+                && e.CalibrationDueDate.Value.Date <= end
+            )
+            .OrderBy(e => e.CalibrationDueDate)
+            .ToListAsync();
+
+        return mapper.Map<List<QcEquipmentDto>>(equipment);
+    }
 }

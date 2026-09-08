@@ -86,3 +86,6 @@ entrance_env
 
 # AI agent instructions
 AGENTS.md
+
+# Local docker dev DB (generated from entrancedb.sql)
+entrancedb.local.sql

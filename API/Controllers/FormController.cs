@@ -331,14 +331,16 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="responseId">The unique identifier of the Response being finalized.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("responses/finalize/{responseId:guid}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanExecuteFormulaResponse)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> SubmitFormResponseFinal(Guid responseId)
     {
-        var result = await repository.SubmitFormResponseFinal(responseId);
+        var userId = HttpContext.Items["Sub"] as string;
+        if (!Guid.TryParse(userId, out var actorId)) return TypedResults.Unauthorized();
+        var result = await repository.SubmitFormResponseFinal(responseId, actorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -348,7 +350,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The CreateResponseRequest object containing response data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("responses")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanExecuteFormulaResponse)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SubmitFormResponse([FromBody] CreateResponseRequest request)

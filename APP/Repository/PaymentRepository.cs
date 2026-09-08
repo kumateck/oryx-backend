@@ -173,6 +173,14 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
         current.ApprovedById = userId;
         current.Comments = request.Comments;
 
+        await context.ApprovalActionLogs.AddAsync(new ApprovalActionLog
+        {
+            ModelId = payment.Id,
+            UserId = userId,
+            Status = request.Status,
+            Comments = request.Comments,
+        });
+
         if (request.Status == ApprovalStatus.Rejected)
         {
             payment.Status = PaymentStatus.Rejected;

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products.Equipments;
@@ -72,6 +73,8 @@ public class Response : BaseEntity, IRequireApproval
 {
     public Guid FormId { get; set; }
     public Form Form { get; set; }
+    public Guid? FormRevisionId { get; set; }
+    public FormRevision FormRevision { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? MaterialBatchId { get; set; }
@@ -93,6 +96,8 @@ public class FormResponse : BaseEntity
     public Response Response { get; set; }
     public Guid FormFieldId { get; set; }
     public FormField FormField { get; set; }
+    public Guid? FormFieldRevisionId { get; set; }
+    public FormFieldRevision FormFieldRevision { get; set; }
 
     [StringLength(100000000)]
     public string Value { get; set; }
@@ -152,6 +157,8 @@ public class ResponseApproval : ResponsibleApprovalStage
     public Guid ApprovalId { get; set; }
 
     public Approval Approval { get; set; }
+    public Guid? FormulaSubmissionSetId { get; set; }
+    public ResponseFormulaSubmissionSet FormulaSubmissionSet { get; set; }
 }
 
 public class FormReviewer
