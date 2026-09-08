@@ -76,7 +76,7 @@ public class ProductionOrderProductQuantity
 }
 
 
-public class AllocateProductionOrder : BaseEntity
+public class AllocateProductionOrder : BaseEntity, IRequireApproval
 {
     public Guid ProductionOrderId { get; set; }
     public ProductionOrder ProductionOrder { get; set; }

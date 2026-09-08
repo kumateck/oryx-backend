@@ -156,14 +156,14 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }
 
     /// <summary>
-    /// Issues a Stock Requisition.
+    /// Deprecated legacy approval route. Always rejects requests so approval
+    /// cannot bypass the configured approval workflow.
     /// </summary>
-    /// <param name="request">The ApproveRequisitionRequest object.</param>
-    /// <param name="requisitionId">The ID of the Stock Requisition being issued.</param>
-    /// <returns>Returns a success or failure result.</returns>
+    /// <param name="request">Legacy request body retained for contract compatibility.</param>
+    /// <param name="requisitionId">The ID of the requisition.</param>
+    /// <returns>A validation problem directing callers to the approval workflow.</returns>
     [HttpPost("{requisitionId}/issue")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveRequisition([FromBody] ApproveRequisitionRequest request, Guid requisitionId)
     {

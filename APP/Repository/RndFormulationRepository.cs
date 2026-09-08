@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -68,9 +69,13 @@ public class RndFormulationRepository(ApplicationDbContext context, IMapper mapp
         Guid userId
     )
     {
-        var projectExists = await context.RndProjects.AnyAsync(p => p.Id == rndProjectId);
-        if (!projectExists)
+        var project = await context.RndProjects.FirstOrDefaultAsync(p => p.Id == rndProjectId);
+        if (project is null)
             return Error.NotFound("RndFormulation.ProjectNotFound", "R&D project not found.");
+
+        var approvalGate = project.EnsureApprovedForProgression("R&D project");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
 
         var itemsResult = await BuildItems(request.Items);
         if (itemsResult.IsFailure)
@@ -99,6 +104,14 @@ public class RndFormulationRepository(ApplicationDbContext context, IMapper mapp
         var previous = await context.RndFormulations.FirstOrDefaultAsync(f => f.Id == previousFormulationId);
         if (previous is null)
             return Error.NotFound("RndFormulation.NotFound", "Formulation not found.");
+
+        var project = await context.RndProjects.FirstOrDefaultAsync(p => p.Id == previous.RndProjectId);
+        if (project is null)
+            return Error.NotFound("RndFormulation.ProjectNotFound", "R&D project not found.");
+
+        var approvalGate = project.EnsureApprovedForProgression("R&D project");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
 
         var itemsResult = await BuildItems(request.Items);
         if (itemsResult.IsFailure)

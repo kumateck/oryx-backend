@@ -60,6 +60,11 @@ The implemented authoring/runtime sequence is:
 5. A new Response selects the approved template revision. Evaluation snapshots its executable
    definition and bindings, resolves stored response inputs server-side, and appends execution
    evidence. Recalculation never overwrites an older execution.
+   During the compatibility window, a form containing only preserved legacy JSON formulas may
+   still create an unversioned response and save ordinary fields. The presence of a formula linked
+   to the governed definition model, or any governed placement history for the form, instead
+   requires an approved form revision for the response as a whole. This preserves the immutable
+   placement/snapshot boundary and prevents retirement from reopening legacy execution.
 6. Final submission appends a fresh authoritative execution for every placement and creates an
    immutable submission set. Any missing, invalid, provisional, stale, or unverified result blocks
    submission; later approval references the same set.
@@ -298,3 +303,12 @@ orders exist the rate is null rather than a fabricated zero.
 8. A replacement formula/template becomes effective only while atomically retiring the prior
    Approved revision. Both changes are audited, and filtered unique indexes are the concurrency
    backstop against multiple effective revisions.
+
+## Global approval progression gate (2026-09-08)
+
+1. Each configurable approval document implements the shared approval contract and starts with `Approved=false` when one or more configured stages exist.
+2. The active responsible stage appears in My Pending for its assigned user or role. Until every required stage is authorized, downstream repository operations fail before mutation.
+3. Guards cover procurement sends and payments, requisition sourcing/issue, inventory adjustments and transfers, production allocation/dispatch/delivery, shipment distribution, job execution, and R&D status/formulation/trial work.
+4. Missing or zero-stage configurations auto-approve and record the system decision; this is the only non-manual authorization path and includes payroll runs.
+5. Final approval is performed by `ApprovalRepository`, which enforces responsible-user/role assignment and records approval actions. Domain-specific or legacy endpoints cannot grant approval directly.
+6. Stock issue uses `Requisition.ApprovalRequired` and checks before all warehouse and inventory work; other shared guards return `Approval.Required`.

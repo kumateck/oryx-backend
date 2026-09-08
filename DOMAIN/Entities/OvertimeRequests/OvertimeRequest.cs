@@ -5,7 +5,7 @@ using DOMAIN.Entities.Employees;
 
 namespace DOMAIN.Entities.OvertimeRequests;
 
-public class OvertimeRequest : BaseEntity
+public class OvertimeRequest : BaseEntity, IRequireApproval
 {
     public string Code { get; set; }
     public List<Employee> Employees { get; set; }
