@@ -29,7 +29,7 @@ public interface IFormRepository
     Task<Result<Guid?>> GetResponseId(GetResponseIdRequest request);
     Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request);
     Task<Result<Guid>> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId);
-    Task<Result> SubmitFormResponseFinal(Guid responseId);
+    Task<Result> SubmitFormResponseFinal(Guid responseId, Guid userId);
     Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId);
     Task<Result> SubmitFormSectionValue(
         List<SubmitFormSectionValue> requests,

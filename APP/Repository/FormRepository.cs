@@ -2,6 +2,7 @@ using System.Data;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using APP.Services.Formulas;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
@@ -21,7 +22,8 @@ public class FormRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IFileRepository fileRepository,
-    IApprovalRepository approvalRepository
+    IApprovalRepository approvalRepository,
+    IFormulaSubmissionService formulaSubmissionService
 ) : IFormRepository
 {
     public async Task<Result<Guid>> CreateForm(CreateFormRequest request)
@@ -394,8 +396,22 @@ public class FormRepository(
                 "The response does not belong to the requested form, batch, and production step."
             );
 
+        if (response is not null &&
+            (response.CheckedAt.HasValue || response.Approved || response.Rejected ||
+             response.FormRevisionId.HasValue &&
+             await context.ResponseFormulaSubmissionSets.AnyAsync(item =>
+                 item.ResponseId == response.Id)))
+            return Error.Conflict(
+                "Response.Finalized",
+                "A finalized or reviewed response is immutable. Start an audited revision."
+            );
+
         if (response is null)
         {
+            var revisionSelection = await FormRevisionSelection.ForNewResponseAsync(
+                context, request.FormId);
+            if (revisionSelection.IsFailure) return revisionSelection.Errors;
+            var formRevisionId = revisionSelection.Value;
             if (request.BatchManufacturingRecordId.HasValue)
             {
                 var existingBmrResponse = await context.Responses.FirstOrDefaultAsync(r =>
@@ -436,6 +452,7 @@ public class FormRepository(
                 MaterialBatchId = request.MaterialBatchId,
                 BatchManufacturingRecordId = request.BatchManufacturingRecordId,
                 ProductionActivityStepId = request.ProductionActivityStepId,
+                FormRevisionId = formRevisionId,
                 CreatedById = userId,
                 FormResponses = [],
             };
@@ -453,6 +470,13 @@ public class FormRepository(
                 "Response.FormField",
                 $"FormField not found {request.FormFieldId}"
             );
+
+        var formFieldRevisionId = await FormRevisionSelection.FieldIdAsync(
+            context, response.FormRevisionId, formField.Id);
+        if (response.FormRevisionId.HasValue && !formFieldRevisionId.HasValue)
+            return Error.Conflict(
+                "Response.FormRevisionMismatch",
+                "The field is not part of the approved form revision.");
 
         if (formField.FormSection.FormId != request.FormId)
             return Error.Validation(
@@ -487,6 +511,7 @@ public class FormRepository(
                 formResponse = new FormResponse
                 {
                     FormFieldId = formField.Id,
+                    FormFieldRevisionId = formFieldRevisionId,
                     Value = "form response attachment.",
                 };
                 response.FormResponses.Add(formResponse);
@@ -513,12 +538,18 @@ public class FormRepository(
             if (existingFormResponse != null)
             {
                 existingFormResponse.Value = request.Value;
+                existingFormResponse.FormFieldRevisionId ??= formFieldRevisionId;
                 context.FormResponses.Update(existingFormResponse);
             }
             else
             {
                 response.FormResponses.Add(
-                    new FormResponse { FormFieldId = formField.Id, Value = request.Value }
+                    new FormResponse
+                    {
+                        FormFieldId = formField.Id,
+                        FormFieldRevisionId = formFieldRevisionId,
+                        Value = request.Value
+                    }
                 );
             }
         }
@@ -557,8 +588,11 @@ public class FormRepository(
         return Result.Success(response.Id);
     }
 
-    public async Task<Result> SubmitFormResponseFinal(Guid responseId)
+    public async Task<Result> SubmitFormResponseFinal(Guid responseId, Guid userId)
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable)
+            : null;
         var response = await context
             .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == responseId);
@@ -577,22 +611,22 @@ public class FormRepository(
             );
 
         // Validate that all required fields are filled
-        var formFields = await context
-            .FormFields.Where(f => f.FormSection.FormId == response.FormId)
-            .ToListAsync();
-
-        var missingFields = formFields
-            .Where(f => f.Required && response.FormResponses.All(r => r.FormFieldId != f.Id))
-            .ToList();
+        var missingFields = await FormRevisionSelection.MissingRequiredFieldsAsync(
+            context, response);
 
         if (missingFields.Count != 0)
         {
-            var missingList = string.Join(", ", missingFields.Select(f => f.Id));
+            var missingList = string.Join(", ", missingFields);
             return Error.Validation(
                 "Response.MissingFields",
                 $"Missing required fields: {missingList}"
             );
         }
+
+        var formulaSubmission = await formulaSubmissionService.FinalizeAsync(
+            response.Id, userId);
+        if (formulaSubmission.IsFailure)
+            return formulaSubmission.Errors;
 
         // Perform final entity updates
         if (response.BatchManufacturingRecordId.HasValue || response.MaterialBatchId.HasValue)
@@ -663,11 +697,15 @@ public class FormRepository(
         }
 
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success("Form successfully submitted and finalized.");
     }
 
     public async Task<Result> SubmitFormResponse(CreateResponseRequest request, Guid userId)
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable)
+            : null;
         var requestedFieldIds = request.FormResponses
             .Select(item => item.FormFieldId)
             .Distinct()
@@ -687,12 +725,17 @@ public class FormRepository(
                 "Every submitted field must belong to the response form."
             );
 
+        var revisionSelection = await FormRevisionSelection.ForNewResponseAsync(
+            context, request.FormId);
+        if (revisionSelection.IsFailure) return revisionSelection.Errors;
+        var effectiveFormRevisionId = revisionSelection.Value;
         var newResponse = new Response
         {
             FormId = request.FormId,
             MaterialBatchId = request.MaterialBatchId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             ProductionActivityStepId = request.ProductionActivityStepId,
+            FormRevisionId = effectiveFormRevisionId,
             FormResponses = [],
             CreatedById = userId,
         };
@@ -719,6 +762,13 @@ public class FormRepository(
                     "The submitted field does not belong to the response form."
                 );
 
+            var formFieldRevisionId = await FormRevisionSelection.FieldIdAsync(
+                context, newResponse.FormRevisionId, formField.Id);
+            if (newResponse.FormRevisionId.HasValue && !formFieldRevisionId.HasValue)
+                return Error.Conflict(
+                    "Response.FormRevisionMismatch",
+                    "The field is not part of the approved form revision.");
+
             // 🧩 VALIDATION: Check if user is allowed in this specific context
             var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
                 a.FormFieldId == formField.Id
@@ -742,6 +792,7 @@ public class FormRepository(
                 {
                     Id = Guid.NewGuid(),
                     FormFieldId = formField.Id,
+                    FormFieldRevisionId = formFieldRevisionId,
                     Value = "form response attachment.",
                 };
                 newResponse.FormResponses.Add(formResponse);
@@ -759,11 +810,19 @@ public class FormRepository(
             }
             else
             {
-                newResponse.FormResponses.Add(mapper.Map<FormResponse>(response));
+                var mappedResponse = mapper.Map<FormResponse>(response);
+                mappedResponse.FormFieldRevisionId = formFieldRevisionId;
+                newResponse.FormResponses.Add(mappedResponse);
             }
         }
 
         await context.Responses.AddAsync(newResponse);
+        await context.SaveChangesAsync();
+
+        var formulaSubmission = await formulaSubmissionService.FinalizeAsync(
+            newResponse.Id, userId);
+        if (formulaSubmission.IsFailure)
+            return formulaSubmission.Errors;
 
         if (request.BatchManufacturingRecordId.HasValue || request.MaterialBatchId.HasValue)
         {
@@ -838,6 +897,7 @@ public class FormRepository(
         }
 
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 
@@ -1311,6 +1371,8 @@ public class FormRepository(
             return FormErrors.NotFound(formResponseId);
 
         var detail = mapper.Map<ResponseDetailDto>(formResponse);
+        await FormulaResultProjectionService.AttachAsync(
+            context, formResponse.FormResponses, detail.FormResponses);
         detail.HasPendingApproval = ResponseApprovalRoundManager.Current(formResponse.Approvals)
             .Any(item => item.Status == ApprovalStatus.Pending);
         return detail;
@@ -1525,10 +1587,12 @@ public class FormRepository(
             .Where(fr => fr.Response.MaterialBatchId == materialBatchId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(
+        var result = mapper.Map<List<FormResponseDto>>(
             formResponse,
             opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        return result;
     }
 
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(
@@ -1556,10 +1620,12 @@ public class FormRepository(
 
         var formResponse = await query.ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(
+        var result = mapper.Map<List<FormResponseDto>>(
             formResponse,
             opt => opt.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        return result;
     }
 
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialSpecification(
@@ -1587,10 +1653,12 @@ public class FormRepository(
             .Where(fr => fr.ResponseId == materialSpec.ResponseId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(
+        var result = mapper.Map<List<FormResponseDto>>(
             formResponse,
             opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        return result;
     }
 
     public async Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByProductSpecification(
@@ -1617,10 +1685,12 @@ public class FormRepository(
             .Where(fr => fr.ResponseId == productSpec.ResponseId)
             .ToListAsync();
 
-        return mapper.Map<List<FormResponseDto>>(
+        var result = mapper.Map<List<FormResponseDto>>(
             formResponse,
             opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        return result;
     }
 
     public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)
