@@ -6,7 +6,7 @@ using SHARED;
 
 namespace APP.Services.Storage;
 
-public class BlobStorageService : IBlobStorageService
+public partial class BlobStorageService : IBlobStorageService
 {
     private readonly string _accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY");
     private readonly string _secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY");
@@ -132,37 +132,6 @@ public class BlobStorageService : IBlobStorageService
         catch (Exception)
         {
             return Error.Failure("Download.Failure", "Unable to download image");
-        }
-    }
-
-    public async Task<Result<bool>> BlobExistsAsync(string bucketName, string objectName)
-    {
-        if (!int.TryParse(_port, out var port))
-            return Result.Failure<bool>(StorageErrors.PortNotFound(nameof(port)));
-
-        var minioClient = new MinioClient()
-            .WithEndpoint(_endpoint, port)
-            .WithCredentials(_accessKey, _secretKey)
-            .Build();
-
-        try
-        {
-            await minioClient.StatObjectAsync(
-                new StatObjectArgs().WithBucket(bucketName).WithObject(objectName)
-            );
-            return Result.Success(true);
-        }
-        catch (ObjectNotFoundException)
-        {
-            return Result.Success(false);
-        }
-        catch (BucketNotFoundException)
-        {
-            return Result.Success(false);
-        }
-        catch (Exception e)
-        {
-            return Result.Failure<bool>(StorageErrors.SaveFileFailure(e.Message));
         }
     }
 

@@ -83,21 +83,20 @@ public partial class CustomerRepository
     /// <summary>
     /// Same precedence <see cref="CreateQuotation"/> applies when a request omits a unit price:
     /// the single active pricing agreement for this customer/product/packing, else the product's
-    /// list price. Kept as one method so the quotation-creation and price-preview paths can never
-    /// disagree on what "the resolved price" means.
+    /// list price. Backed by <see cref="CustomerPricingResolver"/> so the quotation, production
+    /// order, and production schedule report paths can never disagree on what "the resolved
+    /// price" means.
     /// </summary>
     private async Task<Result<ResolvedQuotationPriceDto>> ResolveUnitPrice(
         Customer customer, Product product, Guid productPackingId, DateTime asOf)
     {
-        var active = await GetPricingMatches(customer.Id, product.Id, productPackingId, asOf);
-        return active.Count switch
-        {
-            > 1 => Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match."),
-            1 when active[0].CurrencyId != customer.CurrencyId =>
-                Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency."),
-            1 => new ResolvedQuotationPriceDto { UnitPrice = active[0].AgreedPrice, FromAgreement = true },
-            _ => new ResolvedQuotationPriceDto { UnitPrice = product.Price, FromAgreement = false },
-        };
+        var resolution = await CustomerPricingResolver.ResolveAsync(
+            context, customer.Id, product.Id, productPackingId, product.Price, asOf);
+        if (resolution.Ambiguous)
+            return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
+        if (resolution.FromAgreement && resolution.CurrencyId != customer.CurrencyId)
+            return Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency.");
+        return new ResolvedQuotationPriceDto { UnitPrice = resolution.UnitPrice, FromAgreement = resolution.FromAgreement };
     }
 
     public async Task<Result<CustomerQuotationDto>> GetQuotation(Guid quotationId, DateTime? asOf = null)
@@ -124,12 +123,6 @@ public partial class CustomerRepository
         => context.CustomerQuotations.AsNoTracking().AsSplitQuery().Include(item => item.Customer)
             .Include(item => item.Currency).Include(item => item.Items).ThenInclude(item => item.Product)
             .Include(item => item.Items).ThenInclude(item => item.ProductPacking).Include(item => item.Approvals);
-
-    private Task<List<CustomerPricingAgreement>> GetPricingMatches(
-        Guid customerId, Guid productId, Guid productPackingId, DateTime asOf)
-        => context.CustomerPricingAgreements.AsNoTracking().Where(item => item.CustomerId == customerId
-            && item.ProductId == productId && item.ProductPackingId == productPackingId && item.EffectiveFrom <= asOf
-            && (!item.EffectiveTo.HasValue || item.EffectiveTo.Value >= asOf)).Take(2).ToListAsync();
 
     private static CustomerQuotationDto MapQuotation(CustomerQuotation item, DateTime asOf) => new()
     {
