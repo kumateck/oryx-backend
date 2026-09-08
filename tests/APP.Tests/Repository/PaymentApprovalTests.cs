@@ -79,6 +79,10 @@ public class PaymentApprovalTests
         Assert.Equal(PaymentStatus.Approved, payment.Status);
         Assert.Equal(30m, balance.AmountPaid);
         Assert.Equal(70m, balance.OutstandingBalance);
+        var action = Assert.Single(context.ApprovalActionLogs);
+        Assert.Equal(payment.Id, action.ModelId);
+        Assert.Equal(approverId, action.UserId);
+        Assert.Equal(ApprovalStatus.Approved, action.Status);
     }
 
     [Fact]
