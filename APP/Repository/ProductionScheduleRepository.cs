@@ -2590,6 +2590,12 @@ public class ProductionScheduleRepository(
         if (transferNote == null)
             return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
 
+        var approvalGate = transferNote.EnsureApprovedForProgression(
+            "Finished goods transfer note"
+        );
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
         transferNote.Notes = request.Notes;
@@ -4393,6 +4399,12 @@ public class ProductionScheduleRepository(
 
         if (productionExtraPacking is null)
             return Error.NotFound("ProductionExtraPacking", "ProductionExtraPacking not found");
+
+        var approvalGate = productionExtraPacking.EnsureApprovedForProgression(
+            "Production extra material requisition"
+        );
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         var department = productionExtraPacking.ProductionScheduleProduct.Product.Department;
 

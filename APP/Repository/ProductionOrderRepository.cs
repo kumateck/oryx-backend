@@ -193,6 +193,12 @@ public class ProductionOrderRepository(
             );
         }
 
+        var allocationApprovalGate = productionOrder.EnsureApprovedForProgression(
+            "Production allocation"
+        );
+        if (allocationApprovalGate.IsFailure)
+            return allocationApprovalGate.Error;
+
         var invoice = new ProformaInvoice
         {
             Code = request.Code,
@@ -346,6 +352,10 @@ public class ProductionOrderRepository(
             .FirstOrDefaultAsync(p => p.Id == request.ProformaInvoiceId);
         if (proforma is null)
             return Error.NotFound("ProformaInvoice.NotFound", "Proforma Invoice not found");
+
+        var proformaApprovalGate = proforma.EnsureApprovedForProgression("Proforma invoice");
+        if (proformaApprovalGate.IsFailure)
+            return proformaApprovalGate.Error;
 
         if (request.Amounts.Any(amount => amount.Amount <= 0))
             return Error.Validation("Invoice.Amount", "Invoice amounts must be greater than zero");
@@ -507,6 +517,10 @@ public class ProductionOrderRepository(
         if (productionOrder == null)
             return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
 
+        var approvalGate = productionOrder.EnsureApprovedForProgression("Production order");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         foreach (var product in request.Products)
         {
             var allocationProduct = productionOrder.Products.FirstOrDefault(p =>
@@ -551,6 +565,11 @@ public class ProductionOrderRepository(
                         "ProductionOrder.FinishedGoodsTransferNoteNotFound",
                         $"Finished goods transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} not found."
                     );
+
+                var transferApprovalGate = finishedGoodsTransferNote
+                    .EnsureApprovedForProgression("Finished goods transfer note");
+                if (transferApprovalGate.IsFailure)
+                    return transferApprovalGate;
 
                 if (finishedGoodsTransferNote.RemainingQuantity == 0)
                     return Error.Validation(
@@ -625,6 +644,10 @@ public class ProductionOrderRepository(
         if (productionOrder == null)
             return Error.NotFound("Product.Order", "Product order not found");
 
+        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         productionOrder.LoadedAt = DateTime.UtcNow;
         productionOrder.Status = AllocateProductionOrderStatus.Loaded;
         context.AllocateProductionOrders.Update(productionOrder);
@@ -642,6 +665,10 @@ public class ProductionOrderRepository(
         );
         if (productionOrder == null)
             return Error.NotFound("Product.Order", "Product order not found");
+
+        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         if (await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
             return Error.Validation(
@@ -719,6 +746,10 @@ public class ProductionOrderRepository(
         if (productionOrder == null)
             return Error.NotFound("Product.Order", "Product order not found");
 
+        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         var waybill = await context.ProductionOrderWaybills.FirstOrDefaultAsync(p =>
             p.AllocateProductionOrderId == productionOrder.Id
         );
@@ -741,6 +772,10 @@ public class ProductionOrderRepository(
         );
         if (productionOrder == null)
             return Error.NotFound("Product.Order", "Product order not found");
+
+        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         productionOrder.DeliveredAt = DateTime.UtcNow;
         productionOrder.Status = AllocateProductionOrderStatus.Delivered;
@@ -935,6 +970,10 @@ public class ProductionOrderRepository(
         if (productionOrder is null)
             return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
 
+        var approvalGate = productionOrder.EnsureApprovedForProgression("Production order");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         // Quick lookup of products on this order
         var orderProductsById = productionOrder.Products.ToDictionary(
             p => $"{p.ProductId},{p.ProductPackingId}",
@@ -973,6 +1012,12 @@ public class ProductionOrderRepository(
             var noteId = kv.Key;
             var totalRequestedFromNote = kv.Value;
             var note = notesById[noteId];
+
+            var transferApprovalGate = note.EnsureApprovedForProgression(
+                "Finished goods transfer note"
+            );
+            if (transferApprovalGate.IsFailure)
+                return transferApprovalGate;
 
             if (totalRequestedFromNote <= 0)
                 return Error.Validation(
