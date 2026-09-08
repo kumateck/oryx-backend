@@ -11,4 +11,9 @@ public static class RequisitionErrors
         Error.NotFound("Requisition.NoPendingApprovals", $"The requisition has no pending approvals.");
     public static Error PendingApprovals =>
         Error.NotFound("Requisition.PendingApprovals", $"The requisition has pending approvals.");
+    public static Error ApprovalRequired =>
+        Error.Validation(
+            "Requisition.ApprovalRequired",
+            "The requisition must be fully approved before stock can be issued."
+        );
 }

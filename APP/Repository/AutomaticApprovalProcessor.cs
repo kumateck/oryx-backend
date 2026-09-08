@@ -6,6 +6,7 @@ using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Payroll;
 using DOMAIN.Entities.Performance;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
@@ -79,6 +80,14 @@ internal static class AutomaticApprovalProcessor
                 overtimeRequest.Approved = true;
                 overtimeRequest.Status = OvertimeStatus.Approved;
                 overtimeRequest.ApprovalStatus = ApprovalStatus.Approved;
+                break;
+
+            case nameof(PayrollRun):
+                var payrollRun = await context.PayrollRuns
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(payrollRun, modelType, modelId);
+                payrollRun.Approved = true;
+                payrollRun.Status = PayrollRunStatus.Approved;
                 break;
 
             case nameof(Response):
