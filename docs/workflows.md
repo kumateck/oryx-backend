@@ -298,3 +298,12 @@ orders exist the rate is null rather than a fabricated zero.
 8. A replacement formula/template becomes effective only while atomically retiring the prior
    Approved revision. Both changes are audited, and filtered unique indexes are the concurrency
    backstop against multiple effective revisions.
+
+## Global approval progression gate (2026-09-08)
+
+1. Each configurable approval document implements the shared approval contract and starts with `Approved=false` when one or more configured stages exist.
+2. The active responsible stage appears in My Pending for its assigned user or role. Until every required stage is authorized, downstream repository operations fail before mutation.
+3. Guards cover procurement sends and payments, requisition sourcing/issue, inventory adjustments and transfers, production allocation/dispatch/delivery, shipment distribution, job execution, and R&D status/formulation/trial work.
+4. Missing or zero-stage configurations auto-approve and record the system decision; this is the only non-manual authorization path and includes payroll runs.
+5. Final approval is performed by `ApprovalRepository`, which enforces responsible-user/role assignment and records approval actions. Domain-specific or legacy endpoints cannot grant approval directly.
+6. Stock issue uses `Requisition.ApprovalRequired` and checks before all warehouse and inventory work; other shared guards return `Approval.Required`.

@@ -131,6 +131,12 @@ Documentation updated for the formula persistence foundation, controlled definit
 and operator workflow: `README.md`, `docs/services.md`, `docs/workflows.md`,
 `docs/formula-v1-persistence-foundation.md`, and `docs/formula-migration-operator-tool.md`.
 
+## Global approval progression enforcement (2026-09-08)
+
+All configurable approval documents now share a fail-closed progression contract. Procurement, requisition, inventory, production, logistics, maintenance, and R&D operations recheck persisted approval before downstream mutation; configured documents remain locked until the assigned user or role completes every required stage. Missing or zero-stage configurations use the existing audited automatic-approval policy, now including payroll runs. The legacy requisition approval route cannot set approval state outside the central approval service. Regression tests cover the shared contract, automatic approval, pending rejection, and bypass attempts.
+
+Documentation updated for this task: `README.md`, `docs/services.md`, and `docs/workflows.md`.
+
 ## Contributing
 
 Guidelines for contributing to the project.
