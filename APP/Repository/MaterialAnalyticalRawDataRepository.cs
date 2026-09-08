@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.MaterialARD;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -20,12 +21,19 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         CreateMaterialAnalyticalRawDataRequest request
     )
     {
-        var form = await context.Forms.AnyAsync(f => f.Id == request.FormId);
+        var form = await context
+            .Forms.Include(item => item.Sections)
+                .ThenInclude(section => section.Fields)
+            .FirstOrDefaultAsync(item => item.Id == request.FormId);
 
-        if (!form)
+        if (form == null)
         {
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
+
+        var formValidation = FormValidator.ValidateForUse(form);
+        if (formValidation.IsFailure)
+            return formValidation.Errors;
 
         var stpNumber = await context.MaterialStandardTestProcedures.AnyAsync(mstp =>
             mstp.Id == request.StpId && mstp.MaterialId == request.MaterialId

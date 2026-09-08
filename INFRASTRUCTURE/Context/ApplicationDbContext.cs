@@ -950,7 +950,8 @@ public class ApplicationDbContext(
     }
 
     public bool ShouldNotFilterProducts =>
-        currentUserService.DepartmentType == nameof(DepartmentType.NonProduction);
+        currentUserService.DepartmentType == nameof(DepartmentType.NonProduction)
+        || currentUserService.DepartmentType == nameof(DepartmentType.RnD);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

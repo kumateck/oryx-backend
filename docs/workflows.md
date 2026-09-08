@@ -1,5 +1,13 @@
 # Workflow behavior
 
+## Collaborative template drafting and ARD creation (2026-09-08)
+
+1. A template author may save a named test with zero questions as an incomplete draft.
+2. Another authorized editor may add questions later through the incremental form-field endpoint.
+3. Product and material ARD creation validate every active test in the selected template.
+4. If any test has zero active questions, creation returns `Form.Question` before the ARD is
+   persisted. This keeps incomplete drafting state out of regulated execution records.
+
 ## STP document lifecycle (2026-09-07)
 
 1. A saved material/product STP receives a blank or uploaded `.docx` Draft.

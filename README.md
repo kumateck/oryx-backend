@@ -2,6 +2,9 @@
 
 ## Recent Updates
 
+- Collaborative template drafting (2026-09-08): forms may persist tests before questions are
+  available. Product and material ARD creation remains fail-closed and returns `Form.Question` if
+  any selected-template test has no question. See `docs/services.md` and `docs/workflows.md`.
 - Formula response compatibility (2026-09-08): creating a response now requires an approved form
   revision only when the form contains a formula linked to the governed definition model. Preserved
   legacy formula JSON no longer blocks Short Answer or other ordinary fields in mixed legacy forms;

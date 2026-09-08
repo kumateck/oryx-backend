@@ -1,5 +1,14 @@
 # Service contracts
 
+## Template drafting and ARD readiness boundary (2026-09-08)
+
+- `POST /api/v1/form` permits a form section/test whose `fields` collection is empty so template
+  authors can divide test and question entry across authorized editors.
+- Product and material ARD creation load the selected form with its active sections and fields and
+  apply operational readiness validation before checking the STP or writing the ARD.
+- An absent form returns `Form.Invalid`; a form with no sections returns `Form.Section`; any active
+  section with no active field returns `Form.Question`. No ARD row is written on these failures.
+
 ## Controlled STP document boundary (2026-09-07)
 
 - `/api/v1/stp-documents` accepts only existing `MaterialStandardTestProcedure` and

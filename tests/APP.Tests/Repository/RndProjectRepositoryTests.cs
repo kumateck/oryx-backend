@@ -62,7 +62,7 @@ public class RndProjectRepositoryTests
             Id = Guid.NewGuid(),
             Code = "RND",
             Name = "Research & Development",
-            Type = DepartmentType.NonProduction,
+            Type = DepartmentType.RnD,
         };
         context.Departments.Add(department);
         await context.SaveChangesAsync();
