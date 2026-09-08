@@ -138,6 +138,24 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }
 
     /// <summary>
+    /// Issues an approved trial requisition, consuming material FEFO from the
+    /// R&amp;D Lab warehouse for the linked trial batch.
+    /// </summary>
+    [HttpPost("issue-trial-requisition/{requisitionId:guid}")]
+    [Authorize(PermissionKeys.CanIssueTrialRequisition)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> IssueTrialRequisition([FromRoute] Guid requisitionId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.IssueTrialRequisition(requisitionId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Issues a Stock Requisition.
     /// </summary>
     /// <param name="request">The ApproveRequisitionRequest object.</param>
