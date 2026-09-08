@@ -41,6 +41,23 @@ public partial class StpDocumentRepository
         return Result.Success<(Stream, string, string)>((stream, WordMimeType, version.FileName));
     }
 
+    private async Task<Result> EnsureVersionBlobAvailable(Guid versionId)
+    {
+        var storageKey = await context.StpDocumentVersions
+            .Where(version => version.Id == versionId)
+            .Select(version => version.StorageKey)
+            .FirstOrDefaultAsync();
+        if (storageKey == null)
+            return Result.Failure(StpDocumentErrors.VersionNotFound(versionId));
+
+        var exists = await blobStorageService.BlobExistsAsync(BucketName, storageKey);
+        if (exists.IsFailure)
+            return Result.Failure(exists.Error);
+        return exists.Value
+            ? Result.Success()
+            : Result.Failure(StpDocumentErrors.StoredFileUnavailable);
+    }
+
     private async Task<Result> ValidateOwner(string ownerType, Guid ownerId)
     {
         bool exists;

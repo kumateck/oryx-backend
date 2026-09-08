@@ -15,6 +15,11 @@
 - Editor-session creation verifies the selected version exists in object storage before acquiring
   a Draft lock. Missing objects fail with `StpDocument.StoredFileUnavailable` and are recovered
   only through the governed replacement-version workflow.
+- Submit, review, and approval endpoints recheck the same object before recording their transition
+  or e-signature, preventing unavailable evidence from becoming reviewed or effective.
+- Uploading content whose SHA-256 matches the current Draft is an idempotent success. The service
+  returns the existing document without writing another version; Approved revisions are excluded
+  because beginning a governed replacement remains a deliberate, reasoned action.
 - A save callback is acknowledged only after the Word package is stored and its immutable version
   row is committed. Invalid actors, untrusted URLs, oversized payloads, and storage failures return
   a retry response; the service never reports a failed controlled-document save as successful.
@@ -42,7 +47,8 @@
   non-finite, or over-scale cell invalidates the governed statistic rather than being discarded.
 - The production API overlay declares the internal calculation service and waits for its health
   check. Deployment requires `FORMULA_SERVICE_IMAGE`, `FORMULA_SERVICE_ENGINE_BUILD_HASH`, and
-  `FORMULA_SERVICE_AUTH_SECRET_FILE_HOST`; the primary compose requires `AUTOMAPPER_LICENSE_KEY`.
+  `FORMULA_SERVICE_AUTH_SECRET_FILE_HOST`; AutoMapper is pinned to the open-source 14.0.0 release
+  and does not require `AUTOMAPPER_LICENSE_KEY`.
   Secrets are mounted as files and are never committed or returned by runtime endpoints.
 
 ## Formula v1 governed runtime boundary (2026-09-05)

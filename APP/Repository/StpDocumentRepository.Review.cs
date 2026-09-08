@@ -36,6 +36,10 @@ public partial class StpDocumentRepository
         if (doc.CurrentDraftVersionId == null)
             return Result.Failure<StpDocumentDto>(StpDocumentErrors.NoDraftVersion);
 
+        var fileAvailable = await EnsureVersionBlobAvailable(doc.CurrentDraftVersionId.Value);
+        if (fileAvailable.IsFailure)
+            return Result.Failure<StpDocumentDto>(fileAvailable.Error);
+
         var lockIsActive = doc.LockedById.HasValue
             && doc.LockedAt.HasValue
             && DateTime.UtcNow - doc.LockedAt.Value <= LockTtl;
@@ -73,6 +77,9 @@ public partial class StpDocumentRepository
             return Result.Failure<StpDocumentDto>(StpDocumentErrors.NoDraftVersion);
 
         var version = await context.StpDocumentVersions.FirstAsync(item => item.Id == doc.CurrentDraftVersionId);
+        var fileAvailable = await EnsureVersionBlobAvailable(version.Id);
+        if (fileAvailable.IsFailure)
+            return Result.Failure<StpDocumentDto>(fileAvailable.Error);
         if (!StpDocumentWorkflowPolicy.HasIndependentReviewer(version.CreatedById, userId))
             return Result.Failure<StpDocumentDto>(StpDocumentErrors.SegregationOfDuties);
 

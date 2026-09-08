@@ -46,6 +46,9 @@ public partial class StpDocumentRepository
         var version = await context.StpDocumentVersions
             .Include(item => item.Signatures)
             .FirstAsync(item => item.Id == doc.CurrentDraftVersionId.Value);
+        var fileAvailable = await EnsureVersionBlobAvailable(version.Id);
+        if (fileAvailable.IsFailure)
+            return Result.Failure<StpDocumentDto>(fileAvailable.Error);
         var reviewSignature = version.Signatures
             .Where(item => item.Action == StpDocumentSignatureAction.Reviewed)
             .OrderByDescending(item => item.CreatedAt)

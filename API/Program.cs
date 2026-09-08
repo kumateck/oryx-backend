@@ -147,15 +147,9 @@ builder.Services.AddRateLimiter(options =>
 });
 
 //add automapper
-var autoMapperLicense = Environment.GetEnvironmentVariable("AUTOMAPPER_LICENSE_KEY");
-if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(autoMapperLicense))
-    throw new InvalidOperationException(
-        "AUTOMAPPER_LICENSE_KEY is required outside Development.");
 builder.Services.AddAutoMapper(
     cfg =>
     {
-        if (!string.IsNullOrWhiteSpace(autoMapperLicense))
-            cfg.LicenseKey = autoMapperLicense;
         cfg.Internal().MaxExecutionPlanDepth = 32;
     },
     typeof(OryxMapper)

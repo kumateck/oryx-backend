@@ -35,9 +35,38 @@ public class ProductionOrderRepository(
         }
 
         var productionOrder = mapper.Map<ProductionOrder>(request);
+        var pricing = await ResolveProductPrices(productionOrder.CustomerId, productionOrder.Products);
+        if (pricing.IsFailure) return pricing.Error;
+
         await context.AddAsync(productionOrder);
         await context.SaveChangesAsync();
         return productionOrder.Id;
+    }
+
+    /// <summary>
+    /// Prices each line with the customer's active pricing agreement for that product/packing,
+    /// falling back to the product's list price -- the same precedence customer quotations use,
+    /// via <see cref="CustomerPricingResolver"/>, so a production order created directly never
+    /// disagrees with one converted from a quotation.
+    /// </summary>
+    private async Task<Result> ResolveProductPrices(Guid customerId, List<ProductionOrderProducts> products)
+    {
+        var productIds = products.Select(item => item.ProductId).Distinct().ToList();
+        var prices = await context.Products.IgnoreQueryFilters()
+            .Where(item => productIds.Contains(item.Id))
+            .ToDictionaryAsync(item => item.Id, item => item.Price);
+
+        foreach (var item in products)
+        {
+            if (!prices.TryGetValue(item.ProductId, out var defaultPrice))
+                return Error.NotFound("Product.NotFound", "One or more products were not found.");
+            var resolution = await CustomerPricingResolver.ResolveAsync(
+                context, customerId, item.ProductId, item.ProductPackingId, defaultPrice, DateTime.UtcNow);
+            if (resolution.Ambiguous)
+                return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
+            item.UnitPrice = resolution.UnitPrice;
+        }
+        return Result.Success();
     }
 
     public async Task<Result<Paginateable<IEnumerable<ProductionOrderDto>>>> GetProductionOrders(
@@ -124,6 +153,10 @@ public class ProductionOrderRepository(
 
         productionOrder.Products = mapper.Map<List<ProductionOrderProducts>>(request.Products);
         mapper.Map(request, productionOrder);
+
+        var pricing = await ResolveProductPrices(productionOrder.CustomerId, productionOrder.Products);
+        if (pricing.IsFailure) return pricing.Error;
+
         context.ProductionOrders.Update(productionOrder);
         await context.SaveChangesAsync();
         return Result.Success();

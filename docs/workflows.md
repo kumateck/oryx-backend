@@ -12,6 +12,9 @@
    while review is active, so review cannot be silently cancelled.
 6. Revisions of Approved documents require a reason and do not replace the effective version until
    the new Draft completes the same controlled lifecycle.
+7. A retry of the identical current Draft file returns the existing document and creates no extra
+   version. This makes partial multi-owner upload recovery safe without weakening append-only
+   history or suppressing deliberate Approved-document revisions.
 
 All reads, downloads, editor sessions, and state-changing calls enforce the matching product or
 material STP permission at the API boundary. Uploaded files must open as real `.docx` packages;
@@ -23,6 +26,8 @@ downloads its bound document through ONLYOFFICE, and confirms the callback route
 an HTTP-only Document Server health response is not sufficient evidence of integration readiness.
 The API checks object availability before it takes a Draft lock, so an orphaned version returns an
 actionable storage error instead of launching an editor that can only report “Download failed.”
+Submission, review, and approval repeat the same check so missing controlled evidence cannot cross
+a regulated lifecycle boundary through either the application UI or a direct API call.
 
 ## Formula dependency execution and migration rehearsal (2026-09-07)
 

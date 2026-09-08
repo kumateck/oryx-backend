@@ -8,7 +8,8 @@
   and permission-scoped downloads/editing, document-bound editor tokens, trusted callback origins,
   retry-safe save callbacks, validated Word packages, database evidence constraints, and an
   end-to-end deployment check that verifies shared JWT configuration, object availability, plus
-  API reachability from the document-server network.
+  API reachability from the document-server network. Retrying the same file against the current
+  Draft is idempotent, preventing duplicate immutable versions after partial multi-owner uploads.
   See `docs/services.md` and `docs/workflows.md`.
 - Production formula source integration (2026-09-07): form-scoped variables now resolve from
   same-response scalar fields, table-column statistics, or authoritative upstream formula results.
@@ -17,8 +18,9 @@
   fail closed. Table statistics use deterministic decimal arithmetic and reject invalid cells
   without silently changing the sample. The deployment overlay
   now starts the released calculation image, waits for its health check, shares a Docker secret,
-  and requires the exact engine digest. The primary production compose also requires the AutoMapper
-  license at configuration time. All 305 backend tests pass, including 94 formula-focused tests.
+  and requires the exact engine digest. AutoMapper remains on the open-source 14.0.0 release;
+  production does not require an AutoMapper license key. All 348 backend tests pass, including
+  94 formula-focused tests.
   Replacement formula/template approvals now run serializably, append supersession evidence, and
   are protected by filtered unique indexes so only one revision can be effective at a time.
 - Formula migration rehearsal (2026-09-07): a disposable clone
