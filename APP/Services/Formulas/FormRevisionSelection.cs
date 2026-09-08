@@ -12,10 +12,20 @@ internal static class FormRevisionSelection
         CancellationToken cancellationToken = default)
     {
         var revisionId = await EffectiveIdAsync(context, formId, cancellationToken);
-        if (!revisionId.HasValue && await context.FormFields.AsNoTracking().AnyAsync(field =>
+        if (!revisionId.HasValue)
+        {
+            var hasGovernedQuestion = await context.FormFields.AsNoTracking().AnyAsync(field =>
                 field.FormSection.FormId == formId &&
-                field.Question.Type == QuestionType.Formula, cancellationToken))
-            return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
+                field.Question.Type == QuestionType.Formula &&
+                context.QuestionFormulaDefinitions.Any(link =>
+                    link.QuestionId == field.QuestionId), cancellationToken);
+            var hasGovernedPlacement = await context.FormFieldFormulaConfigurations
+                .AsNoTracking().AnyAsync(configuration =>
+                    configuration.FormFieldRevision.FormRevision.FormId == formId,
+                    cancellationToken);
+            if (hasGovernedQuestion || hasGovernedPlacement)
+                return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
+        }
         return Result.Success(revisionId);
     }
 

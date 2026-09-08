@@ -60,6 +60,11 @@ The implemented authoring/runtime sequence is:
 5. A new Response selects the approved template revision. Evaluation snapshots its executable
    definition and bindings, resolves stored response inputs server-side, and appends execution
    evidence. Recalculation never overwrites an older execution.
+   During the compatibility window, a form containing only preserved legacy JSON formulas may
+   still create an unversioned response and save ordinary fields. The presence of a formula linked
+   to the governed definition model, or any governed placement history for the form, instead
+   requires an approved form revision for the response as a whole. This preserves the immutable
+   placement/snapshot boundary and prevents retirement from reopening legacy execution.
 6. Final submission appends a fresh authoritative execution for every placement and creates an
    immutable submission set. Any missing, invalid, provisional, stale, or unverified result blocks
    submission; later approval references the same set.

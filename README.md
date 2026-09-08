@@ -2,6 +2,10 @@
 
 ## Recent Updates
 
+- Formula response compatibility (2026-09-08): creating a response now requires an approved form
+  revision only when the form contains a formula linked to the governed definition model. Preserved
+  legacy formula JSON no longer blocks Short Answer or other ordinary fields in mixed legacy forms;
+  governed formula placements remain fail-closed until their form revision is approved.
 - Governed STP documents (2026-09-07): material/product STPs now support versioned
   ONLYOFFICE `.docx` content with Draft → In Review → Reviewed → Approved controls,
   distinct author/reviewer/approver identities, password-confirmed signatures, authenticated
