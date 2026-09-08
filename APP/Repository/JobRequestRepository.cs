@@ -246,6 +246,10 @@ public class JobRequestRepository(ApplicationDbContext context,
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", "Job request not found");
 
+        var approvalGate = jobRequest.EnsureApprovedForProgression("Job request");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
+
         var employee = await context.Employees.AnyAsync(e => e.Id == request.AssignedToEmployeeId);
         if (!employee) return Error.Validation("Employee.Invalid", "Invalid employee");
 
@@ -283,6 +287,10 @@ public class JobRequestRepository(ApplicationDbContext context,
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{id}' not found");
+
+        var approvalGate = jobRequest.EnsureApprovedForProgression("Job request");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         // Validate status value is within enum range
         if (!Enum.IsDefined(typeof(JobRequestStatus), status))
@@ -339,6 +347,10 @@ public class JobRequestRepository(ApplicationDbContext context,
 
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{request.JobRequestId}' not found");
+
+        var approvalGate = jobRequest.EnsureApprovedForProgression("Job request");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         // Verify job request is assigned internally
         if (jobRequest.HandlingType != JobHandlingType.Internal)

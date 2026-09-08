@@ -2,6 +2,10 @@
 
 ## Recent Updates
 
+- Formula response compatibility (2026-09-08): creating a response now requires an approved form
+  revision only when the form contains a formula linked to the governed definition model. Preserved
+  legacy formula JSON no longer blocks Short Answer or other ordinary fields in mixed legacy forms;
+  governed formula placements remain fail-closed until their form revision is approved.
 - Governed STP documents (2026-09-07): material/product STPs now support versioned
   ONLYOFFICE `.docx` content with Draft → In Review → Reviewed → Approved controls,
   distinct author/reviewer/approver identities, password-confirmed signatures, authenticated
@@ -130,6 +134,12 @@ the changelog above live in [`docs/`](docs/):
 Documentation updated for the formula persistence foundation, controlled definition importer,
 and operator workflow: `README.md`, `docs/services.md`, `docs/workflows.md`,
 `docs/formula-v1-persistence-foundation.md`, and `docs/formula-migration-operator-tool.md`.
+
+## Global approval progression enforcement (2026-09-08)
+
+All configurable approval documents now share a fail-closed progression contract. Procurement, requisition, inventory, production, logistics, maintenance, and R&D operations recheck persisted approval before downstream mutation; configured documents remain locked until the assigned user or role completes every required stage. Missing or zero-stage configurations use the existing audited automatic-approval policy, now including payroll runs. The legacy requisition approval route cannot set approval state outside the central approval service. Regression tests cover the shared contract, automatic approval, pending rejection, and bypass attempts.
+
+Documentation updated for this task: `README.md`, `docs/services.md`, and `docs/workflows.md`.
 
 ## Contributing
 

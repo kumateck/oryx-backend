@@ -107,6 +107,10 @@ public class RndProjectRepository(
         if (project is null)
             return Error.NotFound("RndProject.NotFound", "R&D project not found.");
 
+        var approvalGate = project.EnsureApprovedForProgression("R&D project");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
+
         if (project.Status is RndProjectStatus.Completed or RndProjectStatus.Cancelled)
             return Error.Validation(
                 "RndProject.InvalidStatus",

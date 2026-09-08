@@ -51,6 +51,7 @@ public class RndFormulationRepositoryTests
             DepartmentId = Guid.NewGuid(),
             RequestedById = Guid.NewGuid(),
             Status = RndProjectStatus.InDevelopment,
+            Approved = true,
         };
         var material = new Material { Id = Guid.NewGuid() };
         context.AddRange(project, material);
@@ -87,6 +88,23 @@ public class RndFormulationRepositoryTests
         var formulation = await context.RndFormulations.SingleAsync(f => f.Id == result.Value);
         Assert.Equal(1, formulation.Version);
         Assert.Equal(RndFormulationStatus.Draft, formulation.Status);
+    }
+
+    [Fact]
+    public async Task CreateFormulation_rejects_pending_project()
+    {
+        await using var context = CreateContext();
+        var (projectId, materialId) = await SeedProjectAndMaterial(context);
+        var project = await context.RndProjects.FindAsync(projectId);
+        project!.Approved = false;
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context)
+            .CreateFormulation(projectId, BuildRequest(materialId), Guid.NewGuid());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Approval.Required", result.Error.Code);
+        Assert.Empty(context.RndFormulations);
     }
 
     [Fact]

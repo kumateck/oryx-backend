@@ -66,6 +66,11 @@ The formula v1 boundary now includes authenticated application services and HTTP
   client-supplied result as authoritative.
 - Existing final response submission now creates a hash-bound formula submission set before the
   business status transition. Response approval rounds bind to that set.
+- `POST /api/v1/form/responses/draft` preserves mixed legacy-form compatibility: an approved form
+  revision is required only when a formula question is linked through
+  `QuestionFormulaDefinitions` or the form has governed placement history. A legacy JSON formula
+  alone does not make unrelated scalar fields depend on a governed configuration; governed and
+  retired placements remain fail-closed.
 - Form-response reads attach `FormulaGoverned`, `FormulaResultFinalized`, `FormulaExecutionId`, and
   `FormulaDisplayResultsJson`. A finalized projection is selected from the latest immutable
   submission set; a pre-submission projection may use the latest valid authoritative execution.
@@ -281,3 +286,11 @@ quotation so monetary values are never currency-less.
 The API applies its global CORS policy after routing and before authentication
 and authorization. This ordering allows browser `OPTIONS` preflight requests to
 complete without weakening authorization on the requested endpoint.
+
+## Approval progression contract (2026-09-08)
+
+- All configurable document entities implement `IRequireApproval`; downstream repositories call the shared fail-closed guard before business or inventory mutation.
+- The guard covers requisition issue/sourcing, purchase-order and proforma sends, billing-sheet payment, shipment distribution, production order/allocation/loading/delivery, transfer-note acceptance, extra-material issue, stock-adjustment application, job execution, and R&D project/formulation/trial progression.
+- An unapproved document returns `Approval.Required` without mutation. Stock issue retains the domain-specific `Requisition.ApprovalRequired` code and checks before warehouses, stock, reservations, bin cards, or movement records are resolved.
+- Missing or zero-stage configurations set the same approval flag through an audited automatic decision; payroll runs are included in that path.
+- `POST /api/v1/requisition/{requisitionId}/issue` is retained for contract compatibility but returns `Requisition.ApprovalWorkflowRequired`. Only `POST /api/v1/approval/approve/{modelType}/{modelId}` may authorize a configured stage, subject to assigned-user/role checks.
