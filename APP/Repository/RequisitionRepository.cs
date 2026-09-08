@@ -309,8 +309,9 @@ public class RequisitionRepository(
         if (requisition.RequisitionType != RequisitionType.Trial)
             return Error.Validation("Trial.Requisition", "This is not a trial requisition");
 
-        if (!requisition.Approved)
-            return Error.Validation("Trial.Requisition", "This requisition has not been approved yet");
+        var approvalGate = requisition.EnsureApprovedForProgression("Trial requisition");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         var labWarehouse = await context.Warehouses.FirstOrDefaultAsync(w =>
             w.Name == "R&D Lab Warehouse"
@@ -649,6 +650,19 @@ public class RequisitionRepository(
 
         if (stockRequisition is null)
             return RequisitionErrors.NotFound(stockRequisitionId);
+
+        if (stockRequisition.RequisitionType != RequisitionType.Stock)
+            return Error.Validation(
+                "Stock.RequisitionType",
+                "Only stock requisitions can be issued through this operation."
+            );
+
+        var approvalGate = stockRequisition.EnsureApprovedForProgression(
+            "Stock requisition",
+            RequisitionErrors.ApprovalRequired.Code
+        );
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         if (stockRequisition.ProductionScheduleProductId is null)
             return Error.Validation(
@@ -1361,40 +1375,14 @@ public class RequisitionRepository(
         List<Guid> roleIds
     )
     {
-        // Get the requisition and its approvals
-        var requisition = await context
-            .Requisitions.Include(r => r.Approvals)
-            .Include(requisition => requisition.ProductionActivityStep)
-            .Include(requisition => requisition.RequestedBy)
-                .ThenInclude(r => r.Department)
-                    .ThenInclude(d => d.Warehouses)
-            .Include(requisition => requisition.Items)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(r => r.Id == requisitionId);
-
-        if (requisition == null)
-        {
+        var exists = await context.Requisitions.AsNoTracking().AnyAsync(r => r.Id == requisitionId);
+        if (!exists)
             return RequisitionErrors.NotFound(requisitionId);
-        }
 
-        if (
-            !requisition.ProductionActivityStepId.HasValue
-            || requisition.RequisitionType == RequisitionType.Purchase
-        )
-        {
-            return Error.Validation(
-                "Requisition.Approve",
-                "You cant approve a purchase requisition"
-            );
-        }
-
-        requisition.Approved = true;
-        requisition.ProductionActivityStep.Status = ProductionStatus.Completed;
-        requisition.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
-        context.ProductionActivitySteps.Update(requisition.ProductionActivityStep);
-
-        await context.SaveChangesAsync();
-        return Result.Success();
+        return Error.Validation(
+            "Requisition.ApprovalWorkflowRequired",
+            "Requisitions can only be approved through the configured approval workflow."
+        );
     }
 
     // ************* CRUD for SourceRequisition *************
@@ -1412,6 +1400,10 @@ public class RequisitionRepository(
 
         if (requisition is null)
             return RequisitionErrors.NotFound(request.RequisitionId);
+
+        var approvalGate = requisition.EnsureApprovedForProgression("Purchase requisition");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         var supplierGroupedItems = request
             .Items.SelectMany(item => item.Suppliers.Select(supplier => new { item, supplier }))
