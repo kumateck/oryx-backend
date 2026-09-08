@@ -16,6 +16,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
     /// Creates a QC Equipment item.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateQcEquipment)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateQcEquipment([FromBody] CreateQcEquipment request)
@@ -31,6 +32,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
     /// Retrieves a paginated list of QC Equipment.
     /// </summary>
     [HttpGet]
+    [Authorize(PermissionKeys.CanViewQcEquipment)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QcEquipmentDto>>))]
     public async Task<IResult> GetQcEquipments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -42,6 +44,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
     /// Retrieves all QC Equipment items.
     /// </summary>
     [HttpGet("all")]
+    [Authorize(PermissionKeys.CanViewQcEquipment)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<QcEquipmentDto>))]
     public async Task<IResult> GetAllQcEquipments()
     {
@@ -53,6 +56,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
     /// Retrieves a QC Equipment item by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(PermissionKeys.CanViewQcEquipment)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QcEquipmentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetQcEquipment([FromRoute] Guid id)
@@ -65,6 +69,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
     /// Updates a QC Equipment item.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditQcEquipmentDetails)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -81,6 +86,7 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
     /// Deletes a QC Equipment item.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteQcEquipment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteQcEquipment([FromRoute] Guid id)
@@ -90,5 +96,17 @@ public class QcEquipmentController(IAnalyticalTestRequestRepository repository) 
 
         var result = await repository.DeleteQcEquipment(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Retrieves QC Equipment items whose calibration is due within the given number of days.
+    /// </summary>
+    [HttpGet("calibration-due")]
+    [Authorize(PermissionKeys.CanViewQcEquipmentCalibration)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<QcEquipmentDto>))]
+    public async Task<IResult> GetQcEquipmentsWithCalibrationDue([FromQuery] int withinDays = 30)
+    {
+        var result = await repository.GetQcEquipmentsWithCalibrationDue(withinDays);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
