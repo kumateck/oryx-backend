@@ -174,10 +174,40 @@ public class InventoryProcurementRepository(
 
                 await context.SaveChangesAsync();
 
-                var sendResult = await SendQuotationToVendor(sourceRequisition.VendorId);
+                var vendorQuotation = await context.VendorQuotations
+                    .Include(vq => vq.Items)
+                    .FirstOrDefaultAsync(vq => vq.SourceInventoryRequisitionId == sourceRequisition.Id);
 
-                if (!sendResult.IsSuccess)
-                    return sendResult;
+                if (vendorQuotation == null)
+                {
+                    vendorQuotation = new VendorQuotation
+                    {
+                        VendorId = vendorId,
+                        SourceInventoryRequisitionId = sourceRequisition.Id,
+                        Items = vendorGroup.Select(x => new VendorQuotationItem
+                        {
+                            ItemId = x.i.ItemId,
+                            UoMId = x.i.UoMId,
+                            Quantity = x.i.Quantity
+                        }).ToList()
+                    };
+
+                    await context.VendorQuotations.AddAsync(vendorQuotation);
+                }
+                else
+                {
+                    foreach (var gi in vendorGroup)
+                    {
+                        vendorQuotation.Items.Add(new VendorQuotationItem
+                        {
+                            ItemId = gi.i.ItemId,
+                            UoMId = gi.i.UoMId,
+                            Quantity = gi.i.Quantity
+                        });
+                    }
+                }
+
+                await context.SaveChangesAsync();
             }
 
             requisition.Status = InventoryPurchaseRequisitionStatus.Complete;
@@ -478,19 +508,27 @@ public class InventoryProcurementRepository(
         sourceRequisition.SentQuotationRequestAt = DateTime.UtcNow;
         context.SourceInventoryRequisitions.Update(sourceRequisition);
 
-        var vendorQuotation = new VendorQuotation
-        {
-            VendorId = sourceRequisition.VendorId,
-            SourceInventoryRequisitionId = sourceRequisition.Id,
-            Items = sourceRequisition.Items.Select(i => new VendorQuotationItem
-            {
-                ItemId = i.ItemId,
-                UoMId = i.UoMId,
-                Quantity = i.Quantity
-            }).ToList()
-        };
+        var vendorQuotation = await context.VendorQuotations
+            .Include(vq => vq.Items)
+            .FirstOrDefaultAsync(vq => vq.SourceInventoryRequisitionId == sourceRequisition.Id);
 
-        await context.VendorQuotations.AddAsync(vendorQuotation);
+        if (vendorQuotation is null)
+        {
+            vendorQuotation = new VendorQuotation
+            {
+                VendorId = sourceRequisition.VendorId,
+                SourceInventoryRequisitionId = sourceRequisition.Id,
+                Items = sourceRequisition.Items.Select(i => new VendorQuotationItem
+                {
+                    ItemId = i.ItemId,
+                    UoMId = i.UoMId,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
+
+            await context.VendorQuotations.AddAsync(vendorQuotation);
+        }
+
         await context.SaveChangesAsync();
 
         return Result.Success();
@@ -532,7 +570,7 @@ public class InventoryProcurementRepository(
 
         foreach (var item in items)
         {
-            if (!responseLookup.TryGetValue(item.ItemId, out var response))
+            if (!responseLookup.TryGetValue(item.Id, out var response))
             {
                 return Error.Validation(
                     "Vendor.Quotation.MissingItem",
