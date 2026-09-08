@@ -21,6 +21,7 @@ public static class PermissionModules
     public const string OrganizationalStructure = "Organizational Structure";
     public const string Reports = "Reports";
     public const string Audit = "Audit";
+    public const string ResearchAndDevelopment = "Research & Development";
 }
 
 public static class PermissionSubmodules
@@ -92,6 +93,11 @@ public static class PermissionSubmodules
 
     // Audit
     public const string QualityAudits = "Quality Audits";
+
+    // Research & Development
+    public const string RndProjects = "R&D Projects";
+    public const string RndFormulations = "R&D Formulations";
+    public const string RndTrialBatches = "R&D Trial Batches";
 
     // Finished Goods Warehouse
     public const string CustomerManagement = "Customer Management";
@@ -178,6 +184,7 @@ public static class PermissionSubmodules
     public const string Shelves = "Shelves";
     public const string Equipment = "Equipment";
     public const string QcEquipment = "QC Equipment";
+    public const string InstrumentCalibration = "Instrument Calibration";
     public const string UnitOfMeasure = "Unit of Measure";
 
     // Organizational Structure
@@ -470,6 +477,25 @@ public static class PermissionKeys
     public const string CanRaiseCorrectiveAction = "CanRaiseCorrectiveAction";
     public const string CanReviewCorrectiveAction = "CanReviewCorrectiveAction";
     public const string CanCloseQualityAudit = "CanCloseQualityAudit";
+
+    // Research & Development
+    // Note: approving/rejecting an RndProject goes through the generic
+    // ApprovalController (POST /approval/approve|reject/RndProject/{id}), which -
+    // like every other approval-gated module in this codebase - authorizes purely
+    // by approval-stage UserId/RoleId assignment rather than a permission key, so
+    // no CanApproveRndProject key exists here (it would have nowhere to be applied).
+    public const string CanViewRndProjects = "CanViewRndProjects";
+    public const string CanCreateRndProject = "CanCreateRndProject";
+    public const string CanEditRndProject = "CanEditRndProject";
+    public const string CanUpdateRndProjectStatus = "CanUpdateRndProjectStatus";
+    public const string CanDeleteRndProject = "CanDeleteRndProject";
+    public const string CanViewRndFormulations = "CanViewRndFormulations";
+    public const string CanCreateRndFormulation = "CanCreateRndFormulation";
+    public const string CanEditRndFormulation = "CanEditRndFormulation";
+    public const string CanViewRndTrialBatches = "CanViewRndTrialBatches";
+    public const string CanCreateRndTrialBatch = "CanCreateRndTrialBatch";
+    public const string CanEditRndTrialBatch = "CanEditRndTrialBatch";
+    public const string CanIssueTrialRequisition = "CanIssueTrialRequisition";
 
     // Finished Goods Warehouse
     public const string CanViewCustomers = "CanViewCustomers";
@@ -858,6 +884,12 @@ public static class PermissionKeys
     public const string CanCreateQuestions = "CanCreateQuestions";
     public const string CanEditQuestions = "CanEditQuestions";
     public const string CanDeleteQuestions = "CanDeleteQuestions";
+    public const string CanApplyFormulaMigration = "CanApplyFormulaMigration";
+    public const string CanReviewFormulaRevision = "CanReviewFormulaRevision";
+    public const string CanApproveFormulaRevision = "CanApproveFormulaRevision";
+    public const string CanExecuteFormulaResponse = "CanExecuteFormulaResponse";
+    public const string CanReviewFormRevision = "CanReviewFormRevision";
+    public const string CanApproveFormRevision = "CanApproveFormRevision";
     public const string CanViewTemplate = "CanViewTemplate";
     public const string CanCreateTemplate = "CanCreateTemplate";
     public const string CanEditTemplate = "CanEditTemplate";
@@ -911,6 +943,10 @@ public static class PermissionKeys
     public const string CanCreateQcEquipment = "CanCreateQcEquipment";
     public const string CanEditQcEquipmentDetails = "CanEditQcEquipmentDetails";
     public const string CanDeleteQcEquipment = "CanDeleteQcEquipment";
+    public const string CanViewQcEquipmentCalibration = "CanViewQcEquipmentCalibration";
+    public const string CanUpdateQcEquipmentCalibration = "CanUpdateQcEquipmentCalibration";
+    public const string CanViewInstrumentCalibration = "CanViewInstrumentCalibration";
+    public const string CanUpdateInstrumentCalibration = "CanUpdateInstrumentCalibration";
     public const string CanViewUnitOfMeasure = "CanViewUnitOfMeasure";
     public const string CanCreateUnitOfMeasure = "CanCreateUnitOfMeasure";
     public const string CanEditUnitOfMeasure = "CanEditUnitOfMeasure";
@@ -3867,6 +3903,36 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Settings,
             PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanApplyFormulaMigration
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanReviewFormulaRevision
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanApproveFormulaRevision
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.Testing,
+            PermissionKeys.CanExecuteFormulaResponse
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanReviewFormRevision
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanApproveFormRevision
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
             PermissionKeys.CanViewTemplate
         );
         addPermission(
@@ -4123,6 +4189,26 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.InventoryManagement,
+            PermissionSubmodules.QcEquipment,
+            PermissionKeys.CanViewQcEquipmentCalibration
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
+            PermissionSubmodules.QcEquipment,
+            PermissionKeys.CanUpdateQcEquipmentCalibration
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.InstrumentCalibration,
+            PermissionKeys.CanViewInstrumentCalibration
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.InstrumentCalibration,
+            PermissionKeys.CanUpdateInstrumentCalibration
+        );
+        addPermission(
+            PermissionModules.InventoryManagement,
             PermissionSubmodules.UnitOfMeasure,
             PermissionKeys.CanViewUnitOfMeasure
         );
@@ -4336,6 +4422,68 @@ public static class PermissionUtils
             PermissionModules.Audit,
             PermissionSubmodules.QualityAudits,
             PermissionKeys.CanCloseQualityAudit
+        );
+
+        // Research & Development
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndProjects,
+            PermissionKeys.CanViewRndProjects
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndProjects,
+            PermissionKeys.CanCreateRndProject
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndProjects,
+            PermissionKeys.CanEditRndProject
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndProjects,
+            PermissionKeys.CanUpdateRndProjectStatus
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndProjects,
+            PermissionKeys.CanDeleteRndProject
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndFormulations,
+            PermissionKeys.CanViewRndFormulations
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndFormulations,
+            PermissionKeys.CanCreateRndFormulation
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndFormulations,
+            PermissionKeys.CanEditRndFormulation
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTrialBatches,
+            PermissionKeys.CanViewRndTrialBatches
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTrialBatches,
+            PermissionKeys.CanCreateRndTrialBatch
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTrialBatches,
+            PermissionKeys.CanEditRndTrialBatch
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTrialBatches,
+            PermissionKeys.CanIssueTrialRequisition
         );
 
         return permissions;

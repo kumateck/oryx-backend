@@ -5,11 +5,14 @@ using APP.Repository;
 using APP.Services;
 using APP.Services.Background;
 using APP.Services.Email;
+using APP.Services.Formulas;
 using APP.Services.Message;
 using APP.Services.NotificationService;
+using APP.Services.OnlyOffice;
 using APP.Services.Pdf;
 using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Services.Storage;
+using APP.Services.StpDocuments;
 using APP.Services.Token;
 using DinkToPdf;
 using DinkToPdf.Contracts;
@@ -116,6 +119,10 @@ public static class DependencyInjection
         services.AddScoped<IAnalyticalTestRequestRepository, AnalyticalTestRequestRepository>();
         services.AddScoped<IOosInvestigationRepository, OosInvestigationRepository>();
         services.AddScoped<IQualityAuditRepository, QualityAuditRepository>();
+        services.AddScoped<IInstrumentRepository, InstrumentRepository>();
+        services.AddScoped<IRndProjectRepository, RndProjectRepository>();
+        services.AddScoped<IRndFormulationRepository, RndFormulationRepository>();
+        services.AddScoped<IRndTrialBatchRepository, RndTrialBatchRepository>();
         services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
         services.AddScoped<IPayrollCalculationService, PayrollCalculationService>();
         services.AddScoped<IPayrollRepository, PayrollRepository>();
@@ -151,7 +158,27 @@ public static class DependencyInjection
         services.AddScoped<IVerificationRepository, VerificationRepository>();
         services.AddScoped<IItemGrnRepository, ItemGrnRepository>();
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
-
+        services.AddScoped<IStpDocumentRepository, StpDocumentRepository>();
+        services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
+        services.AddSingleton(_ => OnlyOfficeSettings.Load());
+        services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();
+        services.AddScoped<IFormulaMigrationInventoryService, FormulaMigrationInventoryService>();
+        services.AddScoped<IFormulaMigrationEvidenceService, FormulaMigrationEvidenceService>();
+        services.AddScoped<IFormulaMigrationApplyService, FormulaMigrationApplyService>();
+        services.AddScoped<IFormulaDefinitionService, FormulaDefinitionService>();
+        services.AddScoped<IFormulaResponseRuntimeService, FormulaResponseRuntimeService>();
+        services.AddScoped<IFormulaSubmissionService, FormulaSubmissionService>();
+        services.AddScoped<IFormRevisionService, FormRevisionService>();
+        services.AddSingleton(_ => FormulaCalculationSettings.Load());
+        services.AddTransient<FormulaCalculationClientAuthHandler>();
+        services.AddHttpClient<IFormulaCalculationClient, FormulaCalculationClient>((provider, client) =>
+            {
+                var settings = provider.GetRequiredService<FormulaCalculationSettings>();
+                client.BaseAddress = settings.BaseUri;
+                client.Timeout = settings.Timeout;
+            })
+            .AddHttpMessageHandler<FormulaCalculationClientAuthHandler>();
+        services.AddHttpClient();
 
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IJwtService, JwtService>();

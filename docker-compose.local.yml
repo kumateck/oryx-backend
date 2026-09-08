@@ -1,0 +1,26 @@
+# Local-only Postgres instance seeded from the entrancedb.sql dump, so the
+# backend can be pointed at a disposable local copy of entrancedb instead of
+# the shared remote database at 164.90.142.68. Not used by deploy.Dockerfile
+# or docker-compose.yml (production).
+services:
+  entrancedb:
+    image: postgres:18-alpine
+    container_name: oryx_local_entrancedb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: entrance@10
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - oryx_local_entrancedb_data:/var/lib/postgresql
+      - ./entrancedb.local.sql:/docker-entrypoint-initdb.d/01-entrancedb.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  oryx_local_entrancedb_data:
