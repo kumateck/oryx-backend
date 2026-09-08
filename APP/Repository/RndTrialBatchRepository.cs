@@ -1,3 +1,4 @@
+using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -16,6 +17,14 @@ public class RndTrialBatchRepository(ApplicationDbContext context, IMapper mappe
         Guid userId
     )
     {
+        var project = await context.RndProjects.FirstOrDefaultAsync(p => p.Id == rndProjectId);
+        if (project is null)
+            return Error.NotFound("RndTrialBatch.ProjectNotFound", "R&D project not found.");
+
+        var approvalGate = project.EnsureApprovedForProgression("R&D project");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
+
         var formulation = await context.RndFormulations.FirstOrDefaultAsync(f =>
             f.Id == request.RndFormulationId
         );
@@ -47,9 +56,15 @@ public class RndTrialBatchRepository(ApplicationDbContext context, IMapper mappe
 
     public async Task<Result> UpdateStatus(Guid id, UpdateRndTrialBatchStatusRequest request, Guid userId)
     {
-        var trialBatch = await context.RndTrialBatches.FirstOrDefaultAsync(b => b.Id == id);
+        var trialBatch = await context
+            .RndTrialBatches.Include(b => b.RndProject)
+            .FirstOrDefaultAsync(b => b.Id == id);
         if (trialBatch is null)
             return Error.NotFound("RndTrialBatch.NotFound", "Trial batch not found.");
+
+        var approvalGate = trialBatch.RndProject.EnsureApprovedForProgression("R&D project");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
 
         if (trialBatch.Status is RndTrialBatchStatus.Completed or RndTrialBatchStatus.Aborted)
             return Error.Validation(

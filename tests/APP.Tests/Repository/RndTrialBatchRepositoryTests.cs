@@ -53,6 +53,7 @@ public class RndTrialBatchRepositoryTests
             DepartmentId = Guid.NewGuid(),
             RequestedById = Guid.NewGuid(),
             Status = RndProjectStatus.InDevelopment,
+            Approved = true,
         };
         var projectB = new RndProject
         {
@@ -62,6 +63,7 @@ public class RndTrialBatchRepositoryTests
             DepartmentId = Guid.NewGuid(),
             RequestedById = Guid.NewGuid(),
             Status = RndProjectStatus.InDevelopment,
+            Approved = true,
         };
         var formulationA = new RndFormulation
         {
@@ -89,6 +91,25 @@ public class RndTrialBatchRepositoryTests
         );
 
         Assert.True(result.IsFailure);
+    }
+
+    [Fact]
+    public async Task CreateTrialBatch_rejects_pending_project()
+    {
+        await using var context = CreateContext();
+        var (project, formulation, _) = await SeedTwoProjects(context);
+        project.Approved = false;
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).CreateTrialBatch(
+            project.Id,
+            new CreateRndTrialBatchRequest { RndFormulationId = formulation.Id, BatchSize = 1 },
+            Guid.NewGuid()
+        );
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Approval.Required", result.Error.Code);
+        Assert.Empty(context.RndTrialBatches);
     }
 
     [Fact]
