@@ -28,7 +28,6 @@ services:
       - ONLYOFFICE_PUBLIC_URL=${ONLYOFFICE_PUBLIC_URL}
       - ONLYOFFICE_INTERNAL_URL=http://onlyoffice_documentserver
       - API_INTERNAL_BASE_URL=http://oryx_api:5001
-      - AUTOMAPPER_LICENSE_KEY=${AUTOMAPPER_LICENSE_KEY:?Set the production AutoMapper license key}
     volumes:
       - ./https:/https:ro
     networks:

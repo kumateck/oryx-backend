@@ -4635,12 +4635,13 @@ public class ProductionScheduleRepository(
         }
 
         var productionSchedules = await query.ToListAsync();
+        var pricingAgreements = await LoadPricingAgreements(productionSchedules);
 
         var groupedData = productionSchedules
             .Select(p => new ProductionScheduleReportDto
             {
                 Product = mapper.Map<ProductListDto>(p.Product),
-                UnitPrice = p.Product.Price,
+                UnitPrice = ResolveScheduleUnitPrice(p, pricingAgreements),
                 PriceUoM = p.Product.PriceUoM,
                 BatchSize = productionSchedules.Sum(productScheduleProduct =>
                     productScheduleProduct.BatchSize == BatchSize.Full
@@ -4694,11 +4695,12 @@ public class ProductionScheduleRepository(
         }
 
         var productionSchedules = await query.ToListAsync();
+        var pricingAgreements = await LoadPricingAgreements(productionSchedules);
 
         var report = productionSchedules
             .Select(p =>
             {
-                var unitPrice = p.Product.Price;
+                var unitPrice = ResolveScheduleUnitPrice(p, pricingAgreements);
                 var expectedQty =
                     p.BatchSize == BatchSize.Full
                         ? p.Product.FullBatchSize
@@ -4722,6 +4724,60 @@ public class ProductionScheduleRepository(
             .ToList();
 
         return report;
+    }
+
+    /// <summary>
+    /// Bulk-fetches the pricing agreements that could apply to this batch of schedule rows, so
+    /// <see cref="ResolveScheduleUnitPrice"/> can price every row without a query each.
+    /// </summary>
+    private async Task<List<DOMAIN.Entities.Customers.CustomerPricingAgreement>> LoadPricingAgreements(
+        List<ProductionScheduleProduct> items
+    )
+    {
+        var withMarket = items
+            .Where(item => item.MarketTypeId.HasValue && item.ProductPackingId.HasValue)
+            .ToList();
+        if (withMarket.Count == 0) return [];
+
+        var customerIds = withMarket.Select(item => item.MarketTypeId!.Value).Distinct().ToList();
+        var productIds = withMarket.Select(item => item.ProductId).Distinct().ToList();
+        var packingIds = withMarket
+            .Select(item => item.ProductPackingId!.Value)
+            .Distinct()
+            .ToList();
+
+        return await context
+            .CustomerPricingAgreements.AsNoTracking()
+            .Where(item =>
+                customerIds.Contains(item.CustomerId)
+                && productIds.Contains(item.ProductId)
+                && packingIds.Contains(item.ProductPackingId)
+            )
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Prices a schedule row with the market/customer's active pricing agreement as of the
+    /// scheduled production date, else the product's list price -- via
+    /// <see cref="CustomerPricingResolver"/> so this can never disagree with quotation or
+    /// production order pricing.
+    /// </summary>
+    private static decimal ResolveScheduleUnitPrice(
+        ProductionScheduleProduct item,
+        List<DOMAIN.Entities.Customers.CustomerPricingAgreement> pricingAgreements
+    )
+    {
+        if (!item.MarketTypeId.HasValue || !item.ProductPackingId.HasValue)
+            return item.Product.Price;
+
+        var matches = CustomerPricingResolver.ActiveMatches(
+            pricingAgreements,
+            item.MarketTypeId.Value,
+            item.ProductId,
+            item.ProductPackingId.Value,
+            item.ProductionSchedule.ScheduledStartTime
+        );
+        return CustomerPricingResolver.Resolve(matches, item.Product.Price).UnitPrice;
     }
 
     public async Task<Result<List<ForecastMaterialDto>>> ForecastProductionScheduleProduct(
