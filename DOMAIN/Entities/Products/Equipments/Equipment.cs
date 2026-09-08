@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using SHARED;
@@ -48,6 +49,10 @@ public class CreateQcEquipment
     public string Make { get; set; }
     [StringLength(10000, ErrorMessage = "Field must be less than 1000 characters")]
     public string Model { get; set; }
+    public DateTime? CalibrationDueDate { get; set; }
+    public DateTime? LastCalibratedAt { get; set; }
+    public Guid? CalibrationCertificateAttachmentId { get; set; }
+    public QcEquipmentQualificationStatus QualificationStatus { get; set; }
 }
 
 public class QcEquipment : BaseEntity
@@ -59,6 +64,19 @@ public class QcEquipment : BaseEntity
     [StringLength(10000)] public string SerialNumber { get; set; }
     [StringLength(10000)] public string Make { get; set; }
     [StringLength(10000)] public string Model { get; set; }
+    public DateTime? CalibrationDueDate { get; set; }
+    public DateTime? LastCalibratedAt { get; set; }
+    public Guid? CalibrationCertificateAttachmentId { get; set; }
+    public Attachment CalibrationCertificateAttachment { get; set; }
+    public QcEquipmentQualificationStatus QualificationStatus { get; set; }
+}
+
+public enum QcEquipmentQualificationStatus
+{
+    Qualified = 0,
+    DueForCalibration = 1,
+    Overdue = 2,
+    OutOfService = 3,
 }
 
 public class CreateQcEquipmentCategory
@@ -85,4 +103,8 @@ public class QcEquipmentDto : BaseDto
     public string SerialNumber { get; set; }
     public string Make { get; set; }
     public string Model { get; set; }
+    public DateTime? CalibrationDueDate { get; set; }
+    public DateTime? LastCalibratedAt { get; set; }
+    public Guid? CalibrationCertificateAttachmentId { get; set; }
+    public QcEquipmentQualificationStatus QualificationStatus { get; set; }
 }

@@ -1,5 +1,123 @@
 # Service contracts
 
+## Controlled STP document boundary (2026-09-07)
+
+- `/api/v1/stp-documents` accepts only existing `MaterialStandardTestProcedure` and
+  `ProductStandardTestProcedure` owners and persists immutable, SHA-256-addressed versions.
+- Draft submission, independent review, independent approval, rejection, and approved-document
+  revision are explicit endpoints; approval cannot bypass a reviewer signature.
+- User downloads require bearer authentication. ONLYOFFICE file/callback routes use independent,
+  expiring tokens bound to the document/version, and callback downloads must share the configured
+  `ONLYOFFICE_INTERNAL_URL` origin and remain within the 25 MB limit.
+- Product and material document reads/writes are checked server-side against their existing STP
+  view/edit permissions. A signed-in user without the relevant domain permission cannot acquire
+  an editor lock, stream a version, or invoke a lifecycle transition directly through the API.
+- Editor-session creation verifies the selected version exists in object storage before acquiring
+  a Draft lock. Missing objects fail with `StpDocument.StoredFileUnavailable` and are recovered
+  only through the governed replacement-version workflow.
+- A save callback is acknowledged only after the Word package is stored and its immutable version
+  row is committed. Invalid actors, untrusted URLs, oversized payloads, and storage failures return
+  a retry response; the service never reports a failed controlled-document save as successful.
+- Runtime settings: `ONLYOFFICE_JWT_SECRET`, `ONLYOFFICE_PUBLIC_URL`,
+  `ONLYOFFICE_INTERNAL_URL`, and `API_INTERNAL_BASE_URL`.
+- The API and Document Server must receive the same effective JWT secret, and
+  `API_INTERNAL_BASE_URL` must be reachable from the Document Server network. Deployment
+  health checks must verify an actual signed editor session and file fetch, not only the
+  Document Server `/healthcheck` endpoint.
+
+## Formula dependency and deployment boundary (2026-09-07)
+
+- `QuestionValue`, `QuestionTableColumnStat`, and `FormulaResult` bindings resolve only against the
+  same response and approved form revision. Formula-result resolution requires the latest valid
+  authoritative upstream execution and re-resolves its current inputs to reject stale evidence.
+- Submission sorts snapshot execution by the declared formula-result dependency graph. Unknown
+  nodes, self-dependencies, and cycles return a controlled configuration failure before business
+  status mutation.
+- A formula-result source is accepted only when its percent-decoded
+  `placement/{placement}/result/{result}` reference equals its single declared dependency. The
+  same parser drives topological ordering and value resolution, preventing split-brain source
+  identity. Malformed encoding or disagreement fails closed.
+- Cross-question table statistics use deterministic decimal arithmetic, including decimal
+  square-root for standard deviation and midpoint-away-from-zero rounding. One malformed,
+  non-finite, or over-scale cell invalidates the governed statistic rather than being discarded.
+- The production API overlay declares the internal calculation service and waits for its health
+  check. Deployment requires `FORMULA_SERVICE_IMAGE`, `FORMULA_SERVICE_ENGINE_BUILD_HASH`, and
+  `FORMULA_SERVICE_AUTH_SECRET_FILE_HOST`; the primary compose requires `AUTOMAPPER_LICENSE_KEY`.
+  Secrets are mounted as files and are never committed or returned by runtime endpoints.
+
+## Formula v1 governed runtime boundary (2026-09-05)
+
+The formula v1 boundary now includes authenticated application services and HTTP endpoints:
+
+- `POST|PUT /api/v1/formula-questions` saves the legacy-compatible Question and its governed
+  formula draft in one serializable transaction.
+- `/api/v1/formula-definitions/**` exposes revision reads, validation, review, and approval.
+- `/api/v1/form-revisions/**` captures immutable template field snapshots and formula placement
+  configurations. Drafts may be incomplete and refreshed; submit-for-review requires one verified
+  approved formula revision for every formula field and an acyclic dependency graph.
+- `/api/v1/formula-runtime/responses/**` creates immutable response snapshots and requests
+  authoritative evaluation from values already stored for that response. It never trusts a
+  client-supplied result as authoritative.
+- Existing final response submission now creates a hash-bound formula submission set before the
+  business status transition. Response approval rounds bind to that set.
+- Form-response reads attach `FormulaGoverned`, `FormulaResultFinalized`, `FormulaExecutionId`, and
+  `FormulaDisplayResultsJson`. A finalized projection is selected from the latest immutable
+  submission set; a pre-submission projection may use the latest valid authoritative execution.
+  The backend never exposes a client-computed value as authoritative.
+
+Formula and template review/approval retain separate permission keys and three-person segregation
+of duties. The calculation service and runtime cutover remain disabled by default; enabling them
+requires deployed migrations, service authentication, an approved numeric policy/corpus, and
+approved formula/template revisions.
+
+Replacement approvals run in serializable transactions, retire the prior effective revision, and
+append a `Superseded` audit row. Migration
+`20260907163852_EnforceSingleEffectiveFormulaAndFormRevision` adds filtered unique indexes for one
+non-deleted Approved revision per formula definition and per form. A uniqueness or serialization
+race returns a controlled conflict instead of creating ambiguous effective content.
+
+The API deployment overlay is `docker-compose.formula.yml`. It mounts the same Docker secret used
+by the calculation service, uses the service-only `sail` network address, and leaves
+`FORMULA_RUNTIME_ENABLED=false` unless a controlled release explicitly enables it.
+
+## Formula v1 persistence boundary (2026-09-05)
+
+No new HTTP endpoint is enabled in this increment. Existing question, template, response,
+ARD, print, COA, and approval contracts continue to use the legacy behavior.
+
+The backend now has an additive persistence model for future formula-definition revisions,
+versioned template placements, immutable response snapshots, append-only execution attempts,
+authoritative submission sets, preserved legacy source artifacts/key mappings, and migration
+reconciliation evidence. The three links added to existing response entities are nullable, so
+existing clients and rows remain compatible.
+
+Future formula endpoints must write through application services that enforce authorization,
+separation of author/reviewer/approver duties, idempotency, canonical hashes, and the approved
+numeric-policy version. Direct CRUD over formula revisions, snapshots, executions, submission
+sets, legacy evidence, or reconciliation records is not an acceptable API contract.
+
+The internal `IFormulaMigrationInventoryService` exposes `DryRunAsync`; it returns hashed,
+deterministic inventory and readiness controls and performs no writes. The separate authenticated
+`IFormulaMigrationEvidenceService` can atomically record that report in the new append-only legacy
+artifact, migration-item, and reconciliation tables. It never changes legacy formula or response
+rows. `IFormulaMigrationApplyService` accepts a hash-verified canonical manifest plus the digest
+and location of its external signed approval report, rechecks the live source fingerprint and
+approved dry-run ledger, enforces active three-person separation of duties,
+and atomically imports approved canonical definitions/revisions, question links, key mappings,
+status audits, and reconciliation evidence. It is idempotent for the identical signed release and
+fails closed on any provenance or identity conflict.
+
+None of these services is exposed through HTTP. `TOOLS/FormulaMigration` is the sole operator
+entry point in this increment. Its offline commands seal and validate a canonical package; its
+database commands require the expected database name and server endpoint, and its write commands derive the actor
+from a signed, non-expired environment-matched application JWT and require the dedicated
+`CanApplyFormulaMigration` permission plus an exact fingerprint/manifest confirmation token.
+Connection strings are accepted only through `ORYX_FORMULA_DB_CONNECTION`. It does not
+migrate form placements, response snapshots, executions, or switch runtime readers to formula v1.
+
+See `docs/formula-v1-persistence-foundation.md` for deployment and integrity requirements and
+`docs/formula-migration-operator-tool.md` for the controlled command workflow.
+
 ## Shift scheduling and working hours policy (2026-09-04)
 
 `ShiftCategoryController` (`/api/v1/shift-category`) and `WorkingHoursPolicyController`

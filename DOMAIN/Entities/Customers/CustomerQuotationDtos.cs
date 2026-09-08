@@ -22,6 +22,12 @@ public class CreateCustomerQuotationItemRequest
     [Range(typeof(decimal), "0", "100")] public decimal DiscountPercent { get; set; }
 }
 
+public class ResolvedQuotationPriceDto
+{
+    public decimal UnitPrice { get; set; }
+    public bool FromAgreement { get; set; }
+}
+
 public class CustomerQuotationDto : BaseDto
 {
     public Guid CustomerId { get; set; }

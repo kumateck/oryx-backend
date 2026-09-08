@@ -112,6 +112,7 @@ public class ProcurementRepository(
                 .SupplierManufacturers.AsSplitQuery()
                 .Include(m => m.Manufacturer)
                 .Include(m => m.Material)
+                .Include(m => m.UoM)
                 .Where(m => m.MaterialId == materialId && m.SupplierId == supplierId)
                 .ToListAsync()
         );
@@ -126,6 +127,7 @@ public class ProcurementRepository(
                 .SupplierManufacturers.AsSplitQuery()
                 .Include(m => m.Manufacturer)
                 .Include(m => m.Material)
+                .Include(m => m.UoM)
                 .Where(m => m.SupplierId == supplierId)
                 .ToListAsync()
         );

@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Procurement.Suppliers;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -14,7 +15,9 @@ public partial class SupplierRelationshipRepository
             .Where(item => item.SupplierId == supplierId)
             .OrderBy(item => item.ExpiryDate)
             .ToListAsync();
-        return items.Select(ToCertificationDto).ToList();
+        var attachmentsByCertificationId = await LoadCertificationAttachments(
+            items.Select(item => item.Id).ToList());
+        return items.Select(item => ToCertificationDto(item, attachmentsByCertificationId)).ToList();
     }
 
     public async Task<Result<Guid>> CreateCertification(
@@ -24,9 +27,6 @@ public partial class SupplierRelationshipRepository
         if (!supplier.IsSuccess) return supplier.Error;
         var validation = ValidateCertification(request);
         if (!validation.IsSuccess) return validation.Error;
-        if (request.AttachmentId.HasValue
-            && !await context.Attachments.AnyAsync(item => item.Id == request.AttachmentId))
-            return Error.NotFound("Attachment.NotFound", "Certificate attachment not found.");
         if (await context.SupplierCertifications.AnyAsync(item =>
                 item.SupplierId == supplierId && item.CertificateNumber == request.CertificateNumber))
             return Error.Conflict("SupplierCertification.Duplicate", "Certificate number already exists for this supplier.");
@@ -47,9 +47,6 @@ public partial class SupplierRelationshipRepository
             return Error.NotFound("SupplierCertification.NotFound", "Supplier certification not found.");
         var validation = ValidateCertification(request);
         if (!validation.IsSuccess) return validation;
-        if (request.AttachmentId.HasValue
-            && !await context.Attachments.AnyAsync(item => item.Id == request.AttachmentId))
-            return Error.NotFound("Attachment.NotFound", "Certificate attachment not found.");
         if (await context.SupplierCertifications.AnyAsync(item => item.Id != id
                 && item.SupplierId == supplierId && item.CertificateNumber == request.CertificateNumber))
             return Error.Conflict("SupplierCertification.Duplicate", "Certificate number already exists for this supplier.");
@@ -81,7 +78,9 @@ public partial class SupplierRelationshipRepository
             .Where(item => item.ExpiryDate.Date >= start && item.ExpiryDate.Date <= end)
             .OrderBy(item => item.ExpiryDate)
             .ToListAsync();
-        return items.Select(ToCertificationDto).ToList();
+        var attachmentsByCertificationId = await LoadCertificationAttachments(
+            items.Select(item => item.Id).ToList());
+        return items.Select(item => ToCertificationDto(item, attachmentsByCertificationId)).ToList();
     }
 
     private static Result ValidateCertification(SupplierCertificationRequest request)
@@ -96,14 +95,39 @@ public partial class SupplierRelationshipRepository
         entity.IssuingBody = request.IssuingBody.Trim();
         entity.IssueDate = request.IssueDate;
         entity.ExpiryDate = request.ExpiryDate;
-        entity.AttachmentId = request.AttachmentId;
     }
 
-    private static SupplierCertificationDto ToCertificationDto(SupplierCertification item) => new()
+    /// <summary>
+    /// Certificate files are uploaded through the generic (modelType, modelId) file endpoint
+    /// keyed by the certification's own id - the same convention every other attachment-bearing
+    /// entity uses (see AttachmentsResolver) - rather than the standalone AttachmentId FK this
+    /// entity used to declare, which nothing could ever populate from the UI.
+    /// </summary>
+    private async Task<Dictionary<Guid, List<AttachmentDto>>> LoadCertificationAttachments(
+        List<Guid> certificationIds)
+    {
+        var modelType = nameof(SupplierCertification);
+        var attachments = await context.Attachments.AsNoTracking()
+            .Where(item => item.ModelType == modelType && certificationIds.Contains(item.ModelId))
+            .ToListAsync();
+        return attachments.GroupBy(item => item.ModelId).ToDictionary(
+            group => group.Key,
+            group => group.Select(attachment => new AttachmentDto
+            {
+                Id = attachment.Id,
+                Name = attachment.Name,
+                Reference = attachment.Reference,
+                Link = $"/api/v1/file/{modelType.ToLower()}/{attachment.ModelId}/{attachment.Reference}",
+            }).ToList());
+    }
+
+    private static SupplierCertificationDto ToCertificationDto(
+        SupplierCertification item, Dictionary<Guid, List<AttachmentDto>> attachmentsByCertificationId) => new()
     {
         Id = item.Id, CreatedAt = item.CreatedAt, SupplierId = item.SupplierId,
         SupplierName = item.Supplier.Name, CertificationType = item.CertificationType,
         CertificateNumber = item.CertificateNumber, IssuingBody = item.IssuingBody,
-        IssueDate = item.IssueDate, ExpiryDate = item.ExpiryDate, AttachmentId = item.AttachmentId,
+        IssueDate = item.IssueDate, ExpiryDate = item.ExpiryDate,
+        Attachments = attachmentsByCertificationId.GetValueOrDefault(item.Id, []),
     };
 }

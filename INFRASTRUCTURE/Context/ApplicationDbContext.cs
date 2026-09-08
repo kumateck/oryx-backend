@@ -3,6 +3,7 @@ using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.StpDocuments;
 using DOMAIN.Entities.AttendanceRecords;
 using DOMAIN.Entities.Auth;
 using DOMAIN.Entities.Base;
@@ -21,6 +22,7 @@ using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
+using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.Holidays;
 using DOMAIN.Entities.Instruments;
@@ -331,6 +333,16 @@ public class ApplicationDbContext(
 
     #endregion
 
+    #region StpDocument
+
+    public DbSet<StpDocument> StpDocuments { get; set; }
+
+    public DbSet<StpDocumentVersion> StpDocumentVersions { get; set; }
+
+    public DbSet<StpDocumentSignature> StpDocumentSignatures { get; set; }
+
+    #endregion
+
     #region Currency
 
     public DbSet<Currency> Currencies { get; set; }
@@ -381,6 +393,24 @@ public class ApplicationDbContext(
     public DbSet<FormAssignee> FormAssignees => Set<FormAssignee>();
     public DbSet<FormFieldAssignee> FormFieldAssignees => Set<FormFieldAssignee>();
     public DbSet<ResponseApproval> ResponseApprovals { get; set; }
+
+    public DbSet<FormulaDefinition> FormulaDefinitions { get; set; }
+    public DbSet<QuestionFormulaDefinition> QuestionFormulaDefinitions { get; set; }
+    public DbSet<FormulaRevision> FormulaRevisions { get; set; }
+    public DbSet<FormulaRevisionAudit> FormulaRevisionAudits { get; set; }
+    public DbSet<LegacyFormulaArtifact> LegacyFormulaArtifacts { get; set; }
+    public DbSet<LegacyKeyMapping> LegacyKeyMappings { get; set; }
+    public DbSet<FormRevision> FormRevisions { get; set; }
+    public DbSet<FormRevisionAudit> FormRevisionAudits { get; set; }
+    public DbSet<FormFieldRevision> FormFieldRevisions { get; set; }
+    public DbSet<FormFieldFormulaConfiguration> FormFieldFormulaConfigurations { get; set; }
+    public DbSet<ResponseFormulaSnapshot> ResponseFormulaSnapshots { get; set; }
+    public DbSet<FormulaExecution> FormulaExecutions { get; set; }
+    public DbSet<ResponseFormulaSubmissionSet> ResponseFormulaSubmissionSets { get; set; }
+    public DbSet<ResponseFormulaSubmissionExecution> ResponseFormulaSubmissionExecutions { get; set; }
+    public DbSet<FormulaMigrationRun> FormulaMigrationRuns { get; set; }
+    public DbSet<FormulaMigrationItem> FormulaMigrationItems { get; set; }
+    public DbSet<FormulaReconciliationResult> FormulaReconciliationResults { get; set; }
 
     #endregion
 
@@ -592,6 +622,17 @@ public class ApplicationDbContext(
 
     #endregion
 
+    #region Research & Development
+
+    public DbSet<DOMAIN.Entities.RndProjects.RndProject> RndProjects { get; set; }
+    public DbSet<DOMAIN.Entities.RndProjects.RndProjectApprovals> RndProjectApprovals { get; set; }
+    public DbSet<DOMAIN.Entities.RndFormulations.RndFormulation> RndFormulations { get; set; }
+    public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationItem> RndFormulationItems { get; set; }
+    public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationItemSubstitute> RndFormulationItemSubstitutes { get; set; }
+    public DbSet<DOMAIN.Entities.RndTrialBatches.RndTrialBatch> RndTrialBatches { get; set; }
+
+    #endregion
+
     #region Sample Products
 
     public DbSet<ProductSampling> ProductSamplings { get; set; }
@@ -798,6 +839,7 @@ public class ApplicationDbContext(
 
     public override int SaveChanges()
     {
+        FormulaChangeGuard.Validate(ChangeTracker);
         SaveEntity();
         ValidatePriceUoM();
         return base.SaveChanges();
@@ -805,6 +847,7 @@ public class ApplicationDbContext(
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        FormulaChangeGuard.Validate(ChangeTracker);
         SaveEntity();
         ValidatePriceUoM();
         return await base.SaveChangesAsync(cancellationToken);
@@ -1497,6 +1540,69 @@ public class ApplicationDbContext(
 
         #endregion
 
+        #region StpDocument
+
+        modelBuilder.Entity<StpDocument>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<StpDocumentVersion>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<StpDocumentSignature>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+
+        modelBuilder
+            .Entity<StpDocument>()
+            .HasMany(d => d.Versions)
+            .WithOne(v => v.StpDocument)
+            .HasForeignKey(v => v.StpDocumentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder
+            .Entity<StpDocument>()
+            .HasOne(d => d.CurrentDraftVersion)
+            .WithMany()
+            .HasForeignKey(d => d.CurrentDraftVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder
+            .Entity<StpDocument>()
+            .HasOne(d => d.EffectiveVersion)
+            .WithMany()
+            .HasForeignKey(d => d.EffectiveVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder
+            .Entity<StpDocumentVersion>()
+            .HasMany(v => v.Signatures)
+            .WithOne(s => s.StpDocumentVersion)
+            .HasForeignKey(s => s.StpDocumentVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<StpDocument>().HasIndex(d => new { d.OwnerType, d.OwnerId }).IsUnique();
+        modelBuilder.Entity<StpDocument>().Property(d => d.OwnerType).IsRequired().HasMaxLength(64);
+        modelBuilder
+            .Entity<StpDocumentVersion>()
+            .HasIndex(version => new { version.StpDocumentId, version.VersionNumber })
+            .IsUnique();
+        modelBuilder.Entity<StpDocumentVersion>().Property(v => v.StorageKey).IsRequired().HasMaxLength(512);
+        modelBuilder.Entity<StpDocumentVersion>().Property(v => v.FileName).IsRequired().HasMaxLength(255);
+        modelBuilder.Entity<StpDocumentVersion>().Property(v => v.Sha256).IsRequired().HasMaxLength(64);
+        modelBuilder.Entity<StpDocumentSignature>().Property(s => s.Meaning).IsRequired().HasMaxLength(500);
+        modelBuilder.Entity<StpDocument>().ToTable(table =>
+        {
+            table.HasCheckConstraint(
+                "CK_StpDocuments_OwnerType",
+                "\"OwnerType\" IN ('MaterialStandardTestProcedure', 'ProductStandardTestProcedure')"
+            );
+            table.HasCheckConstraint("CK_StpDocuments_Status", "\"Status\" IN (0, 1, 2, 3)");
+        });
+        modelBuilder.Entity<StpDocumentVersion>().ToTable(table =>
+        {
+            table.HasCheckConstraint("CK_StpDocumentVersions_Source", "\"Source\" IN (0, 1, 2, 3)");
+            table.HasCheckConstraint("CK_StpDocumentVersions_VersionNumber", "\"VersionNumber\" > 0");
+            table.HasCheckConstraint("CK_StpDocumentVersions_Size", "\"Size\" > 0");
+        });
+        modelBuilder.Entity<StpDocumentSignature>().ToTable(table =>
+            table.HasCheckConstraint("CK_StpDocumentSignatures_Action", "\"Action\" IN (0, 1, 2)"));
+
+        #endregion
+
         #region Currency
 
         modelBuilder.Entity<Currency>().HasQueryFilter(a => !a.DeletedAt.HasValue);
@@ -1647,6 +1753,9 @@ public class ApplicationDbContext(
             );
 
         modelBuilder.Entity<QcEquipment>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<QcEquipment>().HasOne(item => item.CalibrationCertificateAttachment)
+            .WithMany().HasForeignKey(item => item.CalibrationCertificateAttachmentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         #endregion
 
@@ -1837,6 +1946,9 @@ public class ApplicationDbContext(
         #region Instruments
 
         modelBuilder.Entity<Instrument>().HasQueryFilter(entity => !entity.DeletedAt.HasValue);
+        modelBuilder.Entity<Instrument>().HasOne(item => item.CalibrationCertificateAttachment)
+            .WithMany().HasForeignKey(item => item.CalibrationCertificateAttachmentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         #endregion
 
@@ -1931,6 +2043,38 @@ public class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.QualityAudits.AuditCorrectiveAction>().HasOne(item => item.ResponsiblePerson)
             .WithMany().HasForeignKey(item => item.ResponsiblePersonId).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Department)
+            .WithMany().HasForeignKey(item => item.DepartmentId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.RequestedBy)
+            .WithMany().HasForeignKey(item => item.RequestedById).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Product)
+            .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.QtppForm)
+            .WithMany().HasForeignKey(item => item.QtppFormId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Attachment)
+            .WithMany().HasForeignKey(item => item.AttachmentId).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DOMAIN.Entities.RndFormulations.RndFormulationItem>().HasOne(item => item.Material)
+            .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndFormulations.RndFormulationItem>().HasOne(item => item.MaterialType)
+            .WithMany().HasForeignKey(item => item.MaterialTypeId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndFormulations.RndFormulationItem>().HasOne(item => item.BaseUoM)
+            .WithMany().HasForeignKey(item => item.BaseUoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndFormulations.RndFormulationItemSubstitute>().HasOne(item => item.SubstituteMaterial)
+            .WithMany().HasForeignKey(item => item.SubstituteMaterialId).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DOMAIN.Entities.RndTrialBatches.RndTrialBatch>().HasOne(item => item.RndFormulation)
+            .WithMany().HasForeignKey(item => item.RndFormulationId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTrialBatches.RndTrialBatch>().HasOne(item => item.BatchSizeUoM)
+            .WithMany().HasForeignKey(item => item.BatchSizeUoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTrialBatches.RndTrialBatch>().HasOne(item => item.PerformedBy)
+            .WithMany().HasForeignKey(item => item.PerformedById).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTrialBatches.RndTrialBatch>().HasOne(item => item.ProtocolForm)
+            .WithMany().HasForeignKey(item => item.ProtocolFormId).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Requisition>().HasOne(item => item.RndTrialBatch)
+            .WithMany().HasForeignKey(item => item.RndTrialBatchId).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Customer>().HasOne(item => item.TermsOfPayment)
             .WithMany().HasForeignKey(item => item.TermsOfPaymentId).OnDelete(DeleteBehavior.Restrict);
@@ -2100,6 +2244,19 @@ public class ApplicationDbContext(
             {
                 a.ApprovalId,
                 a.ProductionOrderId,
+                a.Order,
+                a.UserId,
+                a.RoleId,
+            })
+            .IsUnique();
+
+        // RndProject Approvals
+        modelBuilder
+            .Entity<DOMAIN.Entities.RndProjects.RndProjectApprovals>()
+            .HasIndex(a => new
+            {
+                a.ApprovalId,
+                a.RndProjectId,
                 a.Order,
                 a.UserId,
                 a.RoleId,

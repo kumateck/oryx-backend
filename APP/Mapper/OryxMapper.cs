@@ -74,6 +74,9 @@ using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
+using DOMAIN.Entities.RndFormulations;
+using DOMAIN.Entities.RndProjects;
+using DOMAIN.Entities.RndTrialBatches;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.ServiceProviders;
@@ -87,6 +90,7 @@ using DOMAIN.Entities.Siblings;
 using DOMAIN.Entities.Sites;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockEntries;
+using DOMAIN.Entities.StpDocuments;
 using DOMAIN.Entities.Thresholds;
 using DOMAIN.Entities.Tickets;
 using DOMAIN.Entities.UniformityOfWeights;
@@ -196,6 +200,7 @@ public class OryxMapper : Profile
         CreateMap<ProductState, CollectionItemDto>();
         CreateMap<MarketType, CollectionItemDto>();
         CreateMap<Instrument, CollectionItemDto>();
+        CreateMap<Instrument, InstrumentDto>();
         CreateMap<InventoryPurchaseRequisition, CollectionItemDto>();
         CreateMap<MarketRequisition, CollectionItemDto>();
         CreateMap<Vendor, CollectionItemDto>();
@@ -1358,6 +1363,20 @@ public class OryxMapper : Profile
 
         #endregion
 
+        #region Research & Development
+
+        CreateMap<CreateRndProjectRequest, RndProject>();
+        CreateMap<UpdateRndProjectRequest, RndProject>();
+        CreateMap<RndProject, RndProjectDto>();
+
+        CreateMap<RndFormulation, RndFormulationDto>()
+            .ForMember(dest => dest.Items, opt => opt.Ignore());
+
+        CreateMap<CreateRndTrialBatchRequest, RndTrialBatch>();
+        CreateMap<RndTrialBatch, RndTrialBatchDto>();
+
+        #endregion
+
         #region Alerts
 
         CreateMap<CreateAlertRequest, Alert>();
@@ -1741,6 +1760,31 @@ public class OryxMapper : Profile
         #region Site
 
         CreateMap<Site, SiteDto>();
+
+        #endregion
+
+        #region STP Document
+
+        CreateMap<StpDocument, StpDocumentDto>()
+            .ForMember(dest => dest.Versions, opt => opt.Ignore())
+            .ForMember(
+                dest => dest.LockedByName,
+                opt => opt.MapFrom(src => src.LockedBy != null ? $"{src.LockedBy.FirstName} {src.LockedBy.LastName}" : null)
+            );
+
+        CreateMap<StpDocumentVersion, StpDocumentVersionDto>()
+            .ForMember(dest => dest.IsSuperseded, opt => opt.Ignore())
+            .ForMember(dest => dest.IsEffective, opt => opt.Ignore())
+            .ForMember(
+                dest => dest.CreatedByName,
+                opt => opt.MapFrom(src => src.CreatedBy != null ? $"{src.CreatedBy.FirstName} {src.CreatedBy.LastName}" : null)
+            );
+
+        CreateMap<StpDocumentSignature, StpDocumentSignatureDto>()
+            .ForMember(
+                dest => dest.CreatedByName,
+                opt => opt.MapFrom(src => src.CreatedBy != null ? $"{src.CreatedBy.FirstName} {src.CreatedBy.LastName}" : null)
+            );
 
         #endregion
     }

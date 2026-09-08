@@ -35,6 +35,20 @@ public partial class CustomerController
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Previews the unit price a draft quotation item would resolve to if its price is left
+    /// unset - the active pricing agreement for this customer/product/packing, else the
+    /// product's list price. Read-only; never writes an agreement or quotation.
+    /// </summary>
+    [HttpGet("{id:guid}/quotations/resolve-price")]
+    [Authorize(PermissionKeys.CanCreateCustomerQuotation)]
+    public async Task<IResult> ResolveQuotationUnitPrice(
+        [FromRoute] Guid id, [FromQuery] Guid productId, [FromQuery] Guid productPackingId)
+    {
+        var result = await repository.ResolveQuotationUnitPrice(id, productId, productPackingId, DateTime.UtcNow);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpPost("quotations/{quotationId:guid}/send")]
     [Authorize(PermissionKeys.CanCreateCustomerQuotation)]
     public async Task<IResult> SendQuotation([FromRoute] Guid quotationId)
