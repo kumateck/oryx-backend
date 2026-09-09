@@ -270,9 +270,11 @@ Customer, Invoice, ProformaInvoice, and ProductionOrder contracts.
 | `GET/POST/PUT/DELETE /{customerId}/contacts` | `ManageCustomerContracts` | Manages multiple contacts with at most one active primary contact. |
 | `GET/POST/PUT/DELETE /{customerId}/pricing-agreements` | `ManageCustomerContracts` | Manages standing product/UoM prices and resolves the inclusive active window. |
 | `GET /{customerId}/quotations` | `ViewCustomerQuotations` | Returns non-expired, non-rejected, unconverted quotations with pagination. |
+| `GET /{customerId}/quotations/convertible` | `ViewCustomerQuotations` | Returns approved, unexpired quotations that have no ProductionOrder link. |
+| `GET /{customerId}/quotations/resolve-price` | `CreateCustomerQuotation` | Resolves an active agreement price or the product list-price fallback for a product/packing selection. |
 | `POST /{customerId}/quotations` | `CreateCustomerQuotation` | Creates a draft, defaulting omitted prices from an active agreement or existing product price. |
-| `POST /quotations/{id}/send` | `CreateCustomerQuotation` | Freezes the draft for review and instantiates configured approval stages. |
-| `POST /quotations/{id}/approval` | `ApproveCustomerQuotation` | Approves or rejects the caller's active maker-checker stage. |
+| `POST /quotations/{id}/send` | `CreateCustomerQuotation` | Freezes the draft and registers its configured stages with the central approval workflow. |
+| `POST /approval/approve\|reject/CustomerQuotation/{id}` | central approval permissions plus stage assignment | Reviews the active quotation stage from My Approvals and records the audit action. |
 | `POST /quotations/{id}/convert` | `ConvertCustomerQuotation` | Atomically creates one linked ProductionOrder from an accepted quotation. |
 | `GET /{customerId}/order-history` | `CanViewCustomers` | Returns paginated ProductionOrder history, negotiated value, and delivery dates. |
 | `GET /{customerId}/summary` | `ViewCustomerCreditStatus` | Returns lifetime order metrics, comparable-order on-time rate, and current outstanding balance. |
@@ -287,8 +289,13 @@ field (with the existing currency/credit-limit consistency validation applied).
 
 Quotation item quantity must be positive, discount must be from 0 through 100,
 and an omitted unit price is only defaulted from an unambiguous active agreement
-or the current product price. The customer preferred currency is captured on the
-quotation so monetary values are never currency-less.
+or the current product price. The customer preferred currency is captured when
+configured. Otherwise, every line must have one active pricing agreement and
+their common agreement currency is captured on the quotation; mixed or missing
+agreement currencies are rejected so monetary values are never currency-less.
+Quotation item responses expose `packPerShipper`, `shippers`, and `loose` as
+deterministic packing previews. Conversion recomputes and persists the same split
+from the approved quotation and referenced packing style.
 
 ## Cross-origin API access
 

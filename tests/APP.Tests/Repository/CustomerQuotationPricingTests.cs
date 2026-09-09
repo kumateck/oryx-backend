@@ -37,6 +37,67 @@ public class CustomerQuotationPricingTests
     }
 
     [Fact]
+    public async Task ResolveQuotationUnitPrice_UsesAgreement_WhenCustomerHasNoPreferredCurrency()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context, listPrice: 10m);
+        context.Customers.Local.Single().CurrencyId = null;
+        context.CustomerPricingAgreements.Add(new CustomerPricingAgreement
+        {
+            Id = Guid.NewGuid(), CustomerId = ids.CustomerId, ProductId = ids.ProductId,
+            ProductPackingId = ids.ProductPackingId, AgreedPrice = 42m, CurrencyId = ids.CurrencyId,
+            EffectiveFrom = AsOf.AddDays(-1), EffectiveTo = AsOf.AddDays(1),
+        });
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context)
+            .ResolveQuotationUnitPrice(ids.CustomerId, ids.ProductId, ids.ProductPackingId, AsOf);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(42m, result.Value.UnitPrice);
+        Assert.True(result.Value.FromAgreement);
+    }
+
+    [Fact]
+    public async Task CreateQuotation_InfersCurrencyFromActivePricingAgreement()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context, listPrice: 10m);
+        context.Customers.Local.Single().CurrencyId = null;
+        context.CustomerPricingAgreements.Add(new CustomerPricingAgreement
+        {
+            Id = Guid.NewGuid(), CustomerId = ids.CustomerId, ProductId = ids.ProductId,
+            ProductPackingId = ids.ProductPackingId, AgreedPrice = 42m, CurrencyId = ids.CurrencyId,
+            EffectiveFrom = DateTime.UtcNow.AddDays(-1), EffectiveTo = DateTime.UtcNow.AddDays(1),
+        });
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).CreateQuotation(
+            ids.CustomerId,
+            new CreateCustomerQuotationRequest
+            {
+                Code = "Q-AGREEMENT-CURRENCY",
+                ValidUntil = DateTime.UtcNow.AddDays(7),
+                Items =
+                [
+                    new CreateCustomerQuotationItemRequest
+                    {
+                        ProductId = ids.ProductId,
+                        ProductPackingId = ids.ProductPackingId,
+                        Quantity = 165,
+                    },
+                ],
+            },
+            Guid.NewGuid());
+
+        Assert.True(result.IsSuccess);
+        var quotation = await context.CustomerQuotations.Include(item => item.Items)
+            .SingleAsync(item => item.Id == result.Value);
+        Assert.Equal(ids.CurrencyId, quotation.CurrencyId);
+        Assert.Equal(42m, quotation.Items.Single().UnitPrice);
+    }
+
+    [Fact]
     public async Task ResolveQuotationUnitPrice_FallsBackToListPrice_WhenNoAgreementIsActive()
     {
         await using var context = CreateContext();
@@ -126,7 +187,7 @@ public class CustomerQuotationPricingTests
     private static CustomerRepository CreateRepository(ApplicationDbContext context)
     {
         var config = new MapperConfiguration(
-            cfg => cfg.CreateMap<CreateCustomerRequest, Customer>(), NullLoggerFactory.Instance);
+            cfg => cfg.CreateMap<CreateCustomerRequest, Customer>());
         var approvalRepository = new ApprovalRepository(
             context, null!, null!, null!,
             NullLogger<ApprovalRepository>.Instance, null!,

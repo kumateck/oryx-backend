@@ -263,11 +263,15 @@ change the current sales-commitment process.
 
 ## Customer quotation maker-checker
 
-1. A quotation starts as `Draft` with a captured customer currency and one or
-   more product/UoM lines. Standing prices are inclusive at both date boundaries
-   and only provide defaults; an explicit quotation price may override.
-2. Sending a valid, unexpired draft copies configured `CustomerQuotation`
-   approval stages and activates the first stage.
+1. A quotation starts as `Draft` with a captured currency and one or more
+   product/UoM lines. The preferred customer currency is used when configured;
+   otherwise the currency is inferred only when every line has one active
+   agreement in the same currency. Standing prices are inclusive at both date
+   boundaries and only provide defaults; an explicit quotation price may
+   override.
+2. Sending a valid, unexpired draft delegates stage creation to the central
+   approval system. The active stage appears in the assigned user's **My
+   Approvals** queue and is reviewed through the generic approval endpoints.
 3. The creator cannot approve it. Only the assigned user or assigned-role member
    can act on the active stage. Every action retains reviewer, time, decision,
    and comments.
@@ -275,9 +279,13 @@ change the current sales-commitment process.
    `Accepted`. Approval transitions use serializable transactions.
 5. Expiry is derived when reading a past-due draft or sent quotation; the backend
    does not silently rewrite stored status.
-6. Conversion accepts one unexpired, approved quotation and atomically creates
-   one ProductionOrder. Negotiated price, discount, quantity, and UoM are copied,
-   and the source is marked `ConvertedToOrder`.
+6. The convertible-quotation read model returns only accepted, approved,
+   unexpired quotations without an existing order link. It is the source for the
+   Production Orders page's customer → quotation picker.
+7. Conversion accepts one of those quotations and atomically creates one
+   ProductionOrder. Negotiated price, discount, total quantity, packing style,
+   and the derived full-shipper/loose split are copied, and the source is marked
+   `ConvertedToOrder`.
 
 The resulting ProductionOrder remains in its existing pending fulfillment and
 approval flow. Existing orders keep nullable negotiated-price fields and retain

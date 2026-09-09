@@ -17,6 +17,14 @@ public partial class CustomerController
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [HttpGet("{id:guid}/quotations/convertible")]
+    [Authorize(PermissionKeys.CanViewCustomerQuotations)]
+    public async Task<IResult> GetConvertibleQuotations([FromRoute] Guid id)
+    {
+        var result = await repository.GetConvertibleQuotations(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpGet("quotations/{quotationId:guid}")]
     [Authorize(PermissionKeys.CanViewCustomerQuotations)]
     public async Task<IResult> GetQuotation([FromRoute] Guid quotationId)
@@ -56,16 +64,6 @@ public partial class CustomerController
         var userId = CurrentUserId();
         if (!userId.HasValue) return TypedResults.Unauthorized();
         var result = await repository.SendQuotation(quotationId, userId.Value);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
-
-    [HttpPost("quotations/{quotationId:guid}/approval")]
-    [Authorize(PermissionKeys.CanApproveCustomerQuotation)]
-    public async Task<IResult> ApproveQuotation([FromRoute] Guid quotationId, [FromBody] CustomerQuotationApprovalRequest request)
-    {
-        var userId = CurrentUserId();
-        if (!userId.HasValue) return TypedResults.Unauthorized();
-        var result = await repository.ApproveQuotation(quotationId, request, userId.Value);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
