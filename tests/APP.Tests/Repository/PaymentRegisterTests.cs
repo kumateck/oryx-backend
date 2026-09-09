@@ -76,7 +76,7 @@ public class PaymentRegisterTests
         new RegisterCurrentUser());
 
     private static PaymentRepository CreateRepository(ApplicationDbContext context) => new(context,
-        new MapperConfiguration(cfg => cfg.CreateMap<Currency, CurrencyDto>(), NullLoggerFactory.Instance).CreateMapper());
+        new MapperConfiguration(cfg => cfg.CreateMap<Currency, CurrencyDto>()).CreateMapper());
 
     private sealed class RegisterCurrentUser : ICurrentUserService
     {

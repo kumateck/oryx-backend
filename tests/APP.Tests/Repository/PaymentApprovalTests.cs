@@ -200,7 +200,7 @@ public class PaymentApprovalTests
     private static IMapper CreateMapper()
     {
         var config = new MapperConfiguration(
-            cfg => cfg.CreateMap<Currency, CurrencyDto>(), NullLoggerFactory.Instance);
+            cfg => cfg.CreateMap<Currency, CurrencyDto>());
         return config.CreateMapper();
     }
 }

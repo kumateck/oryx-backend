@@ -6,6 +6,7 @@ using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.JobRequests;
@@ -159,6 +160,10 @@ public class ApprovalRepository(
     {
         if (modelType == nameof(AllocateProductionOrder))
             return await AllocateProductionOrderApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+
+        if (modelType == nameof(CustomerQuotation))
+            return await CustomerQuotationApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
         if (modelType == nameof(RndProject))
@@ -2125,6 +2130,10 @@ public class ApprovalRepository(
             return await AllocateProductionOrderApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == nameof(CustomerQuotation))
+            return await CustomerQuotationApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
+
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
@@ -3678,6 +3687,33 @@ public class ApprovalRepository(
             });
         }
 
+        var customerQuotations = await context.CustomerQuotations
+            .AsSplitQuery()
+            .Include(item => item.Approvals)
+            .Include(item => item.CreatedBy)
+                .ThenInclude(user => user.Department)
+            .Where(item => item.Status == CustomerQuotationStatus.Sent
+                && item.Approvals.Any(stage =>
+                    stage.ActivatedAt.HasValue
+                    && stage.Status == ApprovalStatus.Pending
+                    && (stage.UserId == userId
+                        || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+            .ToListAsync();
+
+        foreach (var quotation in customerQuotations)
+        {
+            entitiesRequiringApproval.Add(new ApprovalEntity
+            {
+                ModelType = nameof(CustomerQuotation),
+                Id = quotation.Id,
+                Code = quotation.Code,
+                Department = mapper.Map<DepartmentDto>(quotation.CreatedBy?.Department),
+                CreatedAt = quotation.CreatedAt,
+                RequestedBy = mapper.Map<UserDto>(quotation.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(quotation.Id),
+            });
+        }
+
         var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
 
         foreach (var payment in payments)
@@ -3767,6 +3803,7 @@ public class ApprovalRepository(
         await Collect(context.ServiceMemoApprovals);
         await Collect(context.ProformaInvoiceApprovals);
         await Collect(context.ProductionOrderApprovals);
+        await Collect(context.CustomerQuotationApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.RndProjectApprovals);
         await Collect(context.FinishedGoodsTransferNoteApprovals);
@@ -4141,6 +4178,27 @@ public class ApprovalRepository(
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
+            case nameof(CustomerQuotation):
+                var quotation = await context.CustomerQuotations
+                    .AsSplitQuery()
+                    .Include(item => item.CreatedBy)
+                        .ThenInclude(user => user.Department)
+                    .Include(item => item.Approvals)
+                        .ThenInclude(stage => stage.ApprovedBy)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (quotation is null)
+                    return Error.NotFound("CustomerQuotation.NotFound", "Quotation not found.");
+                return new ApprovalEntity
+                {
+                    ModelType = modelType,
+                    Id = quotation.Id,
+                    Code = quotation.Code,
+                    CreatedAt = quotation.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(quotation.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(quotation.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
             default:
                 throw new NotImplementedException(
                     $"Approval handling not implemented for model type: {modelType}"
@@ -4283,6 +4341,10 @@ public class ApprovalRepository(
                 break;
             case nameof(ProductionOrder):
                 await CreateProductionOrderApprovals(modelId, stages, approval);
+                break;
+            case nameof(CustomerQuotation):
+                await CustomerQuotationApprovalHandler.CreateAsync(
+                    context, modelId, stages, approval);
                 break;
             case nameof(RndProject):
                 await RndProjectApprovalHandler.CreateAsync(context, modelId, stages, approval);
@@ -5434,6 +5496,15 @@ public class ApprovalRepository(
                 )
                 .ToListAsync();
             foreach (var a in productionOrderApprovals)
+                a.UserId = request.ToUserId;
+
+            // Customer Quotations
+            var customerQuotationApprovals = await context
+                .CustomerQuotationApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in customerQuotationApprovals)
                 a.UserId = request.ToUserId;
 
             // Allocate Production Orders

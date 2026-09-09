@@ -27,9 +27,15 @@ public class ResearchAndDevelopmentDepartmentSeeder : ISeeder
                 Code = "RND",
                 Name = "Research & Development",
                 Description = "Research and development / new product development function.",
-                Type = DepartmentType.NonProduction,
+                Type = DepartmentType.RnD,
             };
             dbContext.Departments.Add(department);
+        }
+        else if (department.Type != DepartmentType.RnD)
+        {
+            // Backfill: this department was seeded before DepartmentType.RnD existed.
+            department.Type = DepartmentType.RnD;
+            dbContext.Departments.Update(department);
         }
 
         if (!dbContext.Warehouses.IgnoreQueryFilters().Any(w => w.Name == "R&D Lab Warehouse"))

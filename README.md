@@ -2,6 +2,9 @@
 
 ## Recent Updates
 
+- Collaborative template drafting (2026-09-08): forms may persist tests before questions are
+  available. Product and material ARD creation remains fail-closed and returns `Form.Question` if
+  any selected-template test has no question. See `docs/services.md` and `docs/workflows.md`.
 - Formula response compatibility (2026-09-08): creating a response now requires an approved form
   revision only when the form contains a formula linked to the governed definition model. Preserved
   legacy formula JSON no longer blocks Short Answer or other ordinary fields in mixed legacy forms;
@@ -67,7 +70,7 @@
   payroll-company, period, and pay-group relationships. The production runbook
   includes explicit collision preflight and post-migration verification.
 - Billing-sheet charge payments: the Pay Charges action now records auditable `Payment` rows instead of directly flipping a boolean. Charge batches are validated and committed atomically, require `CanRecordPayment`, preserve configured maker-checker approval, and mark a charge paid only after its payment is approved. Migration `20260903121205_LinkBillingSheetChargePayments` adds the nullable payment-to-charge traceability link.
-- Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, maker-checker quotations, safe quotation-to-ProductionOrder conversion, and customer order metrics. The additive CRM migration has a controlled production runbook and remains unapplied.
+- Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, central My Approvals-backed customer quotations, agreed-price and packing previews, and safe approved-quotation-to-ProductionOrder conversion with preserved shipper/loose quantities. The additive CRM migration has a controlled production runbook and remains unapplied.
 - Supplier relationship management: added pharmaceutical compliance certificates, multiple contacts and banking details, standing pricing agreements, configurable AVL requalification, computed supplier scorecards, and approved-payment spend analytics. The additive SRM migration has a controlled production runbook and is not applied automatically.
 - Cashflow foundation: added maker-checker payments, approved-payment balances, AP/AR aging, cashflow projections, effective-dated exchange rates, and nullable due-date snapshots. The production migration is additive and automatic startup migration is disabled; use the documented controlled rollout.
 - Product ATR response integrity: stage responses are scoped by BMR and production step, COA submission is single-round, and the uniqueness migration must be applied independently to every application database.

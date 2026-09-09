@@ -37,8 +37,9 @@ public interface ICustomerRepository
     Task<Result<CustomerQuotationDto>> GetQuotation(Guid quotationId, DateTime? asOf = null);
     Task<Result<Paginateable<IEnumerable<CustomerQuotationDto>>>> GetActiveQuotations(
         Guid customerId, int page, int pageSize, DateTime? asOf = null);
+    Task<Result<List<CustomerQuotationDto>>> GetConvertibleQuotations(
+        Guid customerId, DateTime? asOf = null);
     Task<Result> SendQuotation(Guid quotationId, Guid userId);
-    Task<Result> ApproveQuotation(Guid quotationId, CustomerQuotationApprovalRequest request, Guid userId);
     Task<Result<Guid>> ConvertQuotationToProductionOrder(Guid quotationId, Guid userId);
 
     Task<Result<Paginateable<IEnumerable<CustomerOrderHistoryDto>>>> GetOrderHistory(

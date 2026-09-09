@@ -30,13 +30,14 @@ file class NoCurrentUserService : ICurrentUserService
 
 // Warehouse rows carry a per-department visibility filter (ApplicationDbContext's
 // ShouldNotFilterProducts) that only bypasses department-scoping for callers whose
-// own department is NonProduction - which is exactly what an R&D staff member (or
-// anyone else in a NonProduction department) issuing a trial requisition would be.
+// own department is NonProduction or RnD - an R&D staff member issuing a trial
+// requisition carries DepartmentType.RnD specifically, so they can draw material
+// from any warehouse, not just one owned by their own department.
 file class NonProductionCurrentUserService : ICurrentUserService
 {
     public Guid? UserId => null;
     public Guid? DepartmentId => null;
-    public string DepartmentType => nameof(SHARED.DepartmentType.NonProduction);
+    public string DepartmentType => nameof(SHARED.DepartmentType.RnD);
 }
 
 public class RequisitionTrialTests
@@ -100,7 +101,7 @@ public class RequisitionTrialTests
             Id = Guid.NewGuid(),
             Code = "RND",
             Name = "Research & Development",
-            Type = DepartmentType.NonProduction,
+            Type = DepartmentType.RnD,
         };
         var project = new RndProject
         {
