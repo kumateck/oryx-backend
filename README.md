@@ -108,6 +108,9 @@ Instructions for using the project.
 
 For instructions on how to set up and run the application using Docker, please refer to the [Docker Setup Instructions](DOCKER.md).
 
+The production Docker restore layer copies every project manifest referenced by
+`Oryx.sln`, including `TOOLS/FormulaMigration`, before running `dotnet restore`.
+
 ## Documentation
 
 Design notes, roadmaps, and implementation write-ups that don't belong in
