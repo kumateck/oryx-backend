@@ -118,7 +118,7 @@ public class ProductionOrderPricingTests
         {
             cfg.CreateMap<CreateProductionOrderRequest, ProductionOrder>();
             cfg.CreateMap<CreateProductionOrderProduct, ProductionOrderProducts>();
-        }, NullLoggerFactory.Instance);
+        });
         return new ProductionOrderRepository(context, config.CreateMapper(), null!);
     }
 
