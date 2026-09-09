@@ -1,0 +1,57 @@
+services:
+  app:
+    depends_on:
+      formula-calculation:
+        condition: service_healthy
+    environment:
+      - FORMULA_RUNTIME_ENABLED=${FORMULA_RUNTIME_ENABLED:-false}
+      - FORMULA_SERVICE_BASE_URL=http://formula-calculation:3101/
+      - FORMULA_SERVICE_AUTH_SECRET_FILE=/run/secrets/formula-service-token
+      - FORMULA_SERVICE_CLIENT_TIMEOUT_MS=${FORMULA_SERVICE_CLIENT_TIMEOUT_MS:-2500}
+    secrets:
+      - formula-service-token
+
+  formula-calculation:
+    image: ${FORMULA_SERVICE_IMAGE:?Set the released formula service image}
+    environment:
+      FORMULA_V2_INTERNAL_SERVICE_ENABLED: ${FORMULA_RUNTIME_ENABLED:-false}
+      FORMULA_SERVICE_HOST: "0.0.0.0"
+      FORMULA_SERVICE_PORT: "3101"
+      FORMULA_SERVICE_AUTH_SECRET_FILE: /run/secrets/formula-service-token
+      FORMULA_SERVICE_ENGINE_BUILD_HASH: ${FORMULA_SERVICE_ENGINE_BUILD_HASH:?Set the released engine SHA-256 digest}
+      FORMULA_SERVICE_NUMERIC_POLICY_VERSION: ${FORMULA_SERVICE_NUMERIC_POLICY_VERSION:-oryx-decimal-v1-half-up}
+      FORMULA_SERVICE_MAX_REQUEST_BYTES: "262144"
+      FORMULA_SERVICE_CONCURRENCY: "2"
+      FORMULA_SERVICE_DEADLINE_MS: "2000"
+      FORMULA_SERVICE_CACHE_ENTRIES: "256"
+    secrets:
+      - formula-service-token
+    networks:
+      - sail
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1.0
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3101/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+secrets:
+  formula-service-token:
+    file: ${FORMULA_SERVICE_AUTH_SECRET_FILE_HOST:?Set an absolute host path to the formula workload secret}

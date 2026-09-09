@@ -1,16 +1,20 @@
 using APP.Services.ProductionActivityStepEventPublisher;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.OvertimeRequests;
+using DOMAIN.Entities.Payroll;
+using DOMAIN.Entities.Performance;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
+using DOMAIN.Entities.RndProjects;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockAdjustments;
@@ -34,6 +38,7 @@ internal static class AutomaticApprovalProcessor
             case "RawStockRequisition":
             case "PackageStockRequisition":
             case "PurchaseRequisition":
+            case "TrialRequisition":
             case "Requisition":
                 var requisition = await context.Requisitions
                     .Include(item => item.Items)
@@ -76,6 +81,14 @@ internal static class AutomaticApprovalProcessor
                 overtimeRequest.Approved = true;
                 overtimeRequest.Status = OvertimeStatus.Approved;
                 overtimeRequest.ApprovalStatus = ApprovalStatus.Approved;
+                break;
+
+            case nameof(PayrollRun):
+                var payrollRun = await context.PayrollRuns
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(payrollRun, modelType, modelId);
+                payrollRun.Approved = true;
+                payrollRun.Status = PayrollRunStatus.Approved;
                 break;
 
             case nameof(Response):
@@ -137,6 +150,22 @@ internal static class AutomaticApprovalProcessor
                 productionOrder.Approved = true;
                 break;
 
+            case nameof(CustomerQuotation):
+                var quotation = await context.CustomerQuotations
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(quotation, modelType, modelId);
+                quotation.Approved = true;
+                quotation.Status = CustomerQuotationStatus.Accepted;
+                break;
+
+            case nameof(RndProject):
+                var rndProject = await context.RndProjects
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(rndProject, modelType, modelId);
+                rndProject.Approved = true;
+                rndProject.Status = RndProjectStatus.InDevelopment;
+                break;
+
             case nameof(JobRequest):
                 var job = await context.JobRequests
                     .SingleOrDefaultAsync(item => item.Id == modelId);
@@ -164,6 +193,14 @@ internal static class AutomaticApprovalProcessor
                     .SingleOrDefaultAsync(item => item.Id == modelId);
                 EnsureFound(adjustment, modelType, modelId);
                 adjustment.Approved = true;
+                break;
+
+            case nameof(PerformanceReview):
+                var performanceReview = await context.PerformanceReviews
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(performanceReview, modelType, modelId);
+                performanceReview.Approved = true;
+                performanceReview.Status = PerformanceReviewStatus.Completed;
                 break;
 
             default:

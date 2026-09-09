@@ -337,6 +337,10 @@ public class StockAdjustmentRepository(
         if (adjustment == null)
             return Error.NotFound("StockAdjustment.NotFound", "Stock adjustment not found.");
 
+        var approvalGate = adjustment.EnsureApprovedForProgression("Stock adjustment");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         await using var transaction = await context.Database.BeginTransactionAsync();
 
         try

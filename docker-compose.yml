@@ -24,11 +24,29 @@ services:
       - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_USERNAME=${SMTP_USERNAME}
+      - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
+      - ONLYOFFICE_PUBLIC_URL=${ONLYOFFICE_PUBLIC_URL}
+      - ONLYOFFICE_INTERNAL_URL=http://onlyoffice_documentserver
+      - API_INTERNAL_BASE_URL=http://oryx_api:5001
     volumes:
       - ./https:/https:ro
     networks:
       - sail
     container_name: oryx_api
+
+  onlyoffice_documentserver:
+    image: ${ONLYOFFICE_IMAGE:-onlyoffice/documentserver@sha256:3ab6ebc7c605e5a32b7ae3ff19daed4925090245acc8100ce2230bd766c88212}
+    restart: always
+    container_name: onlyoffice_documentserver
+    ports:
+      - "8082:80"
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
+      - JWT_HEADER=Authorization
+      - JWT_IN_BODY=true
+    networks:
+      - sail
 
 networks:
   sail:

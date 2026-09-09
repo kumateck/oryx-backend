@@ -33,4 +33,5 @@ public interface IAnalyticalTestRequestRepository
     Task<Result<List<QcEquipmentDto>>> GetQcEquipments();
     Task<Result> UpdateQcEquipment(CreateQcEquipment request, Guid equipmentId, Guid userId);
     Task<Result> DeleteQcEquipment(Guid id, Guid userId);
+    Task<Result<List<QcEquipmentDto>>> GetQcEquipmentsWithCalibrationDue(int withinDays, DateTime? asOf = null);
 }

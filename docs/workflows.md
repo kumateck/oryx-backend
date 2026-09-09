@@ -1,5 +1,119 @@
 # Workflow behavior
 
+## Collaborative template drafting and ARD creation (2026-09-08)
+
+1. A template author may save a named test with zero questions as an incomplete draft.
+2. Another authorized editor may add questions later through the incremental form-field endpoint.
+3. Product and material ARD creation validate every active test in the selected template.
+4. If any test has zero active questions, creation returns `Form.Question` before the ARD is
+   persisted. This keeps incomplete drafting state out of regulated execution records.
+
+## STP document lifecycle (2026-09-07)
+
+1. A saved material/product STP receives a blank or uploaded `.docx` Draft.
+2. The editor stores changed content as a new version with its hash and actor; an active edit lock
+   blocks submission until the final save callback completes. The callback actor must be the user
+   holding that lock, and failed persistence is retried instead of silently acknowledged.
+3. Draft moves to In Review. A different user password-signs the review, producing Reviewed.
+4. A third user password-signs approval; only that transition makes the version effective.
+5. Rejection from In Review/Reviewed returns to Draft with signature evidence. Upload is prohibited
+   while review is active, so review cannot be silently cancelled.
+6. Revisions of Approved documents require a reason and do not replace the effective version until
+   the new Draft completes the same controlled lifecycle.
+7. A retry of the identical current Draft file returns the existing document and creates no extra
+   version. This makes partial multi-owner upload recovery safe without weakening append-only
+   history or suppressing deliberate Approved-document revisions.
+
+All reads, downloads, editor sessions, and state-changing calls enforce the matching product or
+material STP permission at the API boundary. Uploaded files must open as real `.docx` packages;
+extension checks or ZIP magic bytes alone are insufficient.
+
+Editor startup requires the same effective JWT secret in the API and ONLYOFFICE runtime and a
+container-reachable `API_INTERNAL_BASE_URL`. Release verification opens a signed editor session,
+downloads its bound document through ONLYOFFICE, and confirms the callback route is reachable;
+an HTTP-only Document Server health response is not sufficient evidence of integration readiness.
+The API checks object availability before it takes a Draft lock, so an orphaned version returns an
+actionable storage error instead of launching an editor that can only report “Download failed.”
+Submission, review, and approval repeat the same check so missing controlled evidence cannot cross
+a regulated lifecycle boundary through either the application UI or a direct API call.
+
+## Formula dependency execution and migration rehearsal (2026-09-07)
+
+1. A response formula snapshot freezes typed source bindings from its approved form revision.
+2. The input resolver reads same-response source evidence. Table statistics are calculated under
+   the frozen table precision; formula-result sources must be authoritative and current by input
+   hash.
+3. Submission orders all formula snapshots topologically, appends executions, and only then creates
+   the immutable submission set. A graph error or unavailable calculation service blocks the
+   transition without partial regulated status changes.
+4. Schema deployment was rehearsed on a disposable clone by rollback, forward migration, and
+   repeated forward migration. Legacy formula question/option counts and their evidence digest were
+   unchanged. The clone is retained for inspection; this rehearsal does not authorize legacy
+   corrective migration or fabricate scientific approval.
+
+## Formula v1 persistence lifecycle (2026-09-05)
+
+The implemented authoring/runtime sequence is:
+
+1. Save a formula Question and `FormulaRevision` draft atomically. The existing option payload is
+   retained for compatibility and migration evidence.
+2. Validate, submit, review, and approve the formula revision. Author, reviewer, and approver must
+   be distinct active users with the required permissions.
+3. Edit the template, create or refresh a `FormRevision` draft, and bind each formula field to an
+   approved formula revision. Incomplete drafts are allowed; review submission is fail-closed until
+   all formula fields are configured, hashes verify through the authoritative service, and the
+   cross-formula graph is acyclic.
+4. Review and approve the template revision using separate author/reviewer/approver identities.
+   Approval retires the prior approved revision with audit evidence.
+5. A new Response selects the approved template revision. Evaluation snapshots its executable
+   definition and bindings, resolves stored response inputs server-side, and appends execution
+   evidence. Recalculation never overwrites an older execution.
+   During the compatibility window, a form containing only preserved legacy JSON formulas may
+   still create an unversioned response and save ordinary fields. The presence of a formula linked
+   to the governed definition model, or any governed placement history for the form, instead
+   requires an approved form revision for the response as a whole. This preserves the immutable
+   placement/snapshot boundary and prevents retirement from reopening legacy execution.
+6. Final submission appends a fresh authoritative execution for every placement and creates an
+   immutable submission set. Any missing, invalid, provisional, stale, or unverified result blocks
+   submission; later approval references the same set.
+
+Print and COA views consume stored results only and must not invoke a calculation engine.
+
+1. Formula drafts may be edited. Entering review freezes executable content and evidence;
+   every later status change requires a matching append-only audit row in the same transaction.
+2. Approved formula revisions are referenced by versioned template placements. A response
+   eventually captures an immutable snapshot per placement; later rebases or historical
+   corrections add an approved snapshot generation and never replace the original.
+3. Each evaluation adds a `FormulaExecution`. Recalculation links to a prior execution instead
+   of updating it. Only valid authoritative final-submission executions may enter the immutable
+   response submission set used by approval.
+4. Legacy formula payloads are not altered by the schema migration. Migration tooling must
+   preserve source evidence and classify each item as exact, normalized, corrective, or
+   unrecoverable before creating new revisions.
+5. This increment supplies persistence, database guards, dry-run inventory, immutable dry-run
+   evidence recording, and a controller-free controlled definition importer. Until placement
+   migration, the authoritative evaluator, and feature flags are enabled,
+   existing ARD calculation/finalization behavior remains unchanged.
+6. The internal migration inventory dry run hashes source payloads, validates one decision per
+   artifact, and creates deterministic proposed IDs. An authenticated internal recorder may store
+   that report and exact source evidence in the new append-only ledger; it never changes a legacy
+   row. A fingerprint mismatch, missing approval, unknown decision, or active unrecoverable
+   placement keeps Apply readiness false.
+7. Apply requires the exact signed manifest, a completed reconciled dry run, unchanged live source,
+   active importer/reviewer/approver accounts, and three-person separation of duties. Corrective
+   items require individual approval; exact/normalized items may use batch approval. The importer
+   adds approved revisions and audit evidence in one serializable transaction, never changing the
+   legacy option payload. An identical signed replay is idempotent; a conflicting replay stops.
+8. The controller-free operator tool separates non-writing `seal`, `validate`, and `dry-run`
+   commands from `record-dry-run` and `apply`. Write commands authenticate a non-expired,
+   environment-matched application token, require `CanApplyFormulaMigration`, confirm the exact
+   target database name and server endpoint, and require an exact source-fingerprint or manifest-hash token. The
+   signed approval report file is rehashed before Apply.
+
+The controlled deployment and rollback boundary are documented in
+`docs/formula-v1-persistence-foundation.md`; operator execution is documented in
+`docs/formula-migration-operator-tool.md`.
+
 ## Shift scheduling gap fixes and compliance (2026-09-04)
 
 1. `ShiftType.StartTime`/`EndTime` are a native `TimeOnly` column. The wire contract on `CreateShiftTypeRequest`/`ShiftTypeDto`/`MinimalShiftTypeDto` is unchanged (`string`, `"hh:mm tt"`); AutoMapper does the `TimeOnly <-> string` conversion at the boundary.
@@ -149,11 +263,15 @@ change the current sales-commitment process.
 
 ## Customer quotation maker-checker
 
-1. A quotation starts as `Draft` with a captured customer currency and one or
-   more product/UoM lines. Standing prices are inclusive at both date boundaries
-   and only provide defaults; an explicit quotation price may override.
-2. Sending a valid, unexpired draft copies configured `CustomerQuotation`
-   approval stages and activates the first stage.
+1. A quotation starts as `Draft` with a captured currency and one or more
+   product/UoM lines. The preferred customer currency is used when configured;
+   otherwise the currency is inferred only when every line has one active
+   agreement in the same currency. Standing prices are inclusive at both date
+   boundaries and only provide defaults; an explicit quotation price may
+   override.
+2. Sending a valid, unexpired draft delegates stage creation to the central
+   approval system. The active stage appears in the assigned user's **My
+   Approvals** queue and is reviewed through the generic approval endpoints.
 3. The creator cannot approve it. Only the assigned user or assigned-role member
    can act on the active stage. Every action retains reviewer, time, decision,
    and comments.
@@ -161,9 +279,13 @@ change the current sales-commitment process.
    `Accepted`. Approval transitions use serializable transactions.
 5. Expiry is derived when reading a past-due draft or sent quotation; the backend
    does not silently rewrite stored status.
-6. Conversion accepts one unexpired, approved quotation and atomically creates
-   one ProductionOrder. Negotiated price, discount, quantity, and UoM are copied,
-   and the source is marked `ConvertedToOrder`.
+6. The convertible-quotation read model returns only accepted, approved,
+   unexpired quotations without an existing order link. It is the source for the
+   Production Orders page's customer → quotation picker.
+7. Conversion accepts one of those quotations and atomically creates one
+   ProductionOrder. Negotiated price, discount, total quantity, packing style,
+   and the derived full-shipper/loose split are copied, and the source is marked
+   `ConvertedToOrder`.
 
 The resulting ProductionOrder remains in its existing pending fulfillment and
 approval flow. Existing orders keep nullable negotiated-price fields and retain
@@ -178,3 +300,31 @@ the same customer/product/UoM, and ambiguous legacy data returns a conflict.
 Order history reads the existing ProductionOrder flow. On-time rate includes
 only orders with both promised and actual delivery dates; when no comparable
 orders exist the rate is null rather than a fabricated zero.
+## Governed formula response finalization (2026-09-06)
+
+1. A versioned response resolves stored inputs only against its approved form-revision snapshot.
+2. Final submission performs authoritative evaluation, rechecks input fingerprints, writes an
+   immutable submission set, and updates the business status inside one serializable transaction.
+3. Once that set exists, draft mutation returns `Response.Finalized`; correction must create an
+   audited revision rather than alter the submitted record.
+4. Approval rounds bind to the latest submission set. Form-response reads project the linked
+   stored result so print and COA do not recalculate historical evidence.
+5. Unversioned legacy responses remain compatible. A governed field with absent evidence fails
+   closed and cannot be represented as an authoritative result.
+6. Before ordering or resolving formula-result dependencies, the backend verifies that the
+   encoded source reference and declared graph edge identify the same placement and result.
+   Disagreement stops the submission before any business status mutation.
+7. Table statistics retain every governed observation and calculate with decimal arithmetic.
+   Invalid or excessive-scale cells stop evaluation instead of being silently excluded.
+8. A replacement formula/template becomes effective only while atomically retiring the prior
+   Approved revision. Both changes are audited, and filtered unique indexes are the concurrency
+   backstop against multiple effective revisions.
+
+## Global approval progression gate (2026-09-08)
+
+1. Each configurable approval document implements the shared approval contract and starts with `Approved=false` when one or more configured stages exist.
+2. The active responsible stage appears in My Pending for its assigned user or role. Until every required stage is authorized, downstream repository operations fail before mutation.
+3. Guards cover procurement sends and payments, requisition sourcing/issue, inventory adjustments and transfers, production allocation/dispatch/delivery, shipment distribution, job execution, and R&D status/formulation/trial work.
+4. Missing or zero-stage configurations auto-approve and record the system decision; this is the only non-manual authorization path and includes payroll runs.
+5. Final approval is performed by `ApprovalRepository`, which enforces responsible-user/role assignment and records approval actions. Domain-specific or legacy endpoints cannot grant approval directly.
+6. Stock issue uses `Requisition.ApprovalRequired` and checks before all warehouse and inventory work; other shared guards return `Approval.Required`.

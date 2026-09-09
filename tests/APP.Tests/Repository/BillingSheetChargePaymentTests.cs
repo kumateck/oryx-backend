@@ -95,6 +95,26 @@ public class BillingSheetChargePaymentTests
     }
 
     [Fact]
+    public async Task MarkChargeAsPaid_RejectsPendingBillingSheet()
+    {
+        await using var context = CreateContext();
+        var seeded = await SeedBillingSheet(context, 45m);
+        var billingSheet = await context.BillingSheets.FindAsync(seeded.BillingSheetId);
+        billingSheet!.Approved = false;
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).MarkBillingSheetChargeAsPaid(
+            CreateRequest((seeded.ChargeIds[0], "BANK-BLOCKED")),
+            Guid.NewGuid()
+        );
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Approval.Required", result.Error.Code);
+        Assert.Empty(context.Payments);
+        Assert.False((await context.BillingSheetCharges.FindAsync(seeded.ChargeIds[0]))!.Paid);
+    }
+
+    [Fact]
     public async Task MarkChargeAsPaid_RejectsBatchWhenAnyChargeIsMissing()
     {
         await using var context = CreateContext();
@@ -159,6 +179,7 @@ public class BillingSheetChargePaymentTests
             Id = billingSheetId,
             Code = "BS-PAYMENT",
             InvoiceId = Guid.NewGuid(),
+            Approved = true,
             Charges =
             [
                 .. amounts.Select((amount, index) => new BillingSheetCharge

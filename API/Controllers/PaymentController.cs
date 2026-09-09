@@ -12,6 +12,24 @@ namespace API.Controllers;
 [ApiController]
 public class PaymentController(IPaymentRepository repository) : ControllerBase
 {
+    [HttpGet]
+    [Authorize(PermissionKeys.CanViewPayments)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaymentListDto))]
+    public async Task<IResult> GetPayments([FromQuery] PaymentListRequest request)
+    {
+        var result = await repository.GetPayments(request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("currency-configuration")]
+    [Authorize(PermissionKeys.CanViewCashflowReports)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CashflowCurrencyDto))]
+    public async Task<IResult> GetCurrencyConfiguration([FromQuery] DateTime? asOf = null)
+    {
+        var result = await repository.GetCurrencyConfiguration(asOf);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpPost]
     [Authorize(PermissionKeys.CanRecordPayment)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
@@ -26,6 +44,15 @@ public class PaymentController(IPaymentRepository repository) : ControllerBase
     [Authorize(PermissionKeys.CanViewPayments)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaymentDto))]
     public async Task<IResult> GetPayment([FromRoute] Guid paymentId)
+    {
+        var result = await repository.GetPayment(paymentId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("{paymentId:guid}/approval-details")]
+    [Authorize(PermissionKeys.CanApprovePayment)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaymentDto))]
+    public async Task<IResult> GetPaymentApprovalDetails([FromRoute] Guid paymentId)
     {
         var result = await repository.GetPayment(paymentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

@@ -17,6 +17,14 @@ public partial class CustomerController
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [HttpGet("{id:guid}/quotations/convertible")]
+    [Authorize(PermissionKeys.CanViewCustomerQuotations)]
+    public async Task<IResult> GetConvertibleQuotations([FromRoute] Guid id)
+    {
+        var result = await repository.GetConvertibleQuotations(id);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpGet("quotations/{quotationId:guid}")]
     [Authorize(PermissionKeys.CanViewCustomerQuotations)]
     public async Task<IResult> GetQuotation([FromRoute] Guid quotationId)
@@ -35,6 +43,20 @@ public partial class CustomerController
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Previews the unit price a draft quotation item would resolve to if its price is left
+    /// unset - the active pricing agreement for this customer/product/packing, else the
+    /// product's list price. Read-only; never writes an agreement or quotation.
+    /// </summary>
+    [HttpGet("{id:guid}/quotations/resolve-price")]
+    [Authorize(PermissionKeys.CanCreateCustomerQuotation)]
+    public async Task<IResult> ResolveQuotationUnitPrice(
+        [FromRoute] Guid id, [FromQuery] Guid productId, [FromQuery] Guid productPackingId)
+    {
+        var result = await repository.ResolveQuotationUnitPrice(id, productId, productPackingId, DateTime.UtcNow);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpPost("quotations/{quotationId:guid}/send")]
     [Authorize(PermissionKeys.CanCreateCustomerQuotation)]
     public async Task<IResult> SendQuotation([FromRoute] Guid quotationId)
@@ -42,16 +64,6 @@ public partial class CustomerController
         var userId = CurrentUserId();
         if (!userId.HasValue) return TypedResults.Unauthorized();
         var result = await repository.SendQuotation(quotationId, userId.Value);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
-
-    [HttpPost("quotations/{quotationId:guid}/approval")]
-    [Authorize(PermissionKeys.CanApproveCustomerQuotation)]
-    public async Task<IResult> ApproveQuotation([FromRoute] Guid quotationId, [FromBody] CustomerQuotationApprovalRequest request)
-    {
-        var userId = CurrentUserId();
-        if (!userId.HasValue) return TypedResults.Unauthorized();
-        var result = await repository.ApproveQuotation(quotationId, request, userId.Value);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

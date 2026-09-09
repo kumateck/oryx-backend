@@ -112,6 +112,7 @@ public class ProcurementRepository(
                 .SupplierManufacturers.AsSplitQuery()
                 .Include(m => m.Manufacturer)
                 .Include(m => m.Material)
+                .Include(m => m.UoM)
                 .Where(m => m.MaterialId == materialId && m.SupplierId == supplierId)
                 .ToListAsync()
         );
@@ -126,6 +127,7 @@ public class ProcurementRepository(
                 .SupplierManufacturers.AsSplitQuery()
                 .Include(m => m.Manufacturer)
                 .Include(m => m.Material)
+                .Include(m => m.UoM)
                 .Where(m => m.SupplierId == supplierId)
                 .ToListAsync()
         );
@@ -936,6 +938,11 @@ public class ProcurementRepository(
 
         if (purchaseOrder is null)
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+
+        var approvalGate = purchaseOrder.EnsureApprovedForProgression("Purchase order");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
         purchaseOrder.Status = PurchaseOrderStatus.Completed;
         context.PurchaseOrders.Update(purchaseOrder);
@@ -977,6 +984,10 @@ public class ProcurementRepository(
 
         if (purchaseOrder is null)
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
+
+        var approvalGate = purchaseOrder.EnsureApprovedForProgression("Purchase order");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
         var fileContent = pdfService.GeneratePdfFromHtml(
@@ -1413,6 +1424,13 @@ public class ProcurementRepository(
         }
         if (existingCharges.Select(charge => charge.BillingSheetId).Distinct().Count() != 1)
             return Error.Validation("Charge.BillingSheet", "All charges must belong to the same billing sheet.");
+
+        var billingSheetId = existingCharges[0].BillingSheetId;
+        var billingSheet = await context.BillingSheets.FirstAsync(sheet => sheet.Id == billingSheetId);
+        var approvalGate = billingSheet.EnsureApprovedForProgression("Billing sheet");
+        if (approvalGate.IsFailure)
+            return approvalGate.Error;
+
         if (existingCharges.Any(charge => charge.Paid))
             return Error.Conflict("Charge.AlreadyPaid", "One or more charges already have a payment record.");
         if (existingCharges.Any(charge => !charge.CurrencyId.HasValue))
@@ -3051,6 +3069,10 @@ public class ProcurementRepository(
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
 
+        var approvalGate = shipmentDocument.EnsureApprovedForProgression("Shipment document");
+        if (approvalGate.IsFailure)
+            return approvalGate;
+
         var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
         if (department is null)
             return Error.NotFound("Department.NotFound", "Department not found");
@@ -3314,6 +3336,10 @@ public class ProcurementRepository(
         {
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
+
+        var approvalGate = shipmentDocument.EnsureApprovedForProgression("Shipment document");
+        if (approvalGate.IsFailure)
+            return approvalGate;
 
         var materialDistributionResult = await GetMaterialDistribution(
             shipmentDocumentId,

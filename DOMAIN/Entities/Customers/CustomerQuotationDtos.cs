@@ -22,6 +22,12 @@ public class CreateCustomerQuotationItemRequest
     [Range(typeof(decimal), "0", "100")] public decimal DiscountPercent { get; set; }
 }
 
+public class ResolvedQuotationPriceDto
+{
+    public decimal UnitPrice { get; set; }
+    public bool FromAgreement { get; set; }
+}
+
 public class CustomerQuotationDto : BaseDto
 {
     public Guid CustomerId { get; set; }
@@ -41,6 +47,9 @@ public class CustomerQuotationItemDto : BaseDto
     public Guid ProductId { get; set; }
     public string ProductName { get; set; }
     public int Quantity { get; set; }
+    public int PackPerShipper { get; set; }
+    public int Shippers { get; set; }
+    public int Loose { get; set; }
     public Guid ProductPackingId { get; set; }
     public string ProductPackingName { get; set; }
     public decimal UnitPrice { get; set; }
@@ -56,12 +65,6 @@ public class CustomerQuotationApprovalDto
     public ApprovalStatus Status { get; set; }
     public DateTime? ApprovalTime { get; set; }
     public string Comments { get; set; }
-}
-
-public class CustomerQuotationApprovalRequest
-{
-    public ApprovalStatus Status { get; set; }
-    [StringLength(1000)] public string Comments { get; set; }
 }
 
 public class ResolvedCustomerPriceDto

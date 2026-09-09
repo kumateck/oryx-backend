@@ -1,6 +1,7 @@
 using APP.Repository;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
+using DOMAIN.Entities.Formulas;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED.Services.Identity;
@@ -209,6 +210,40 @@ public class FormResponseContextTests
         Assert.Empty(context.FormResponses);
     }
 
+    [Fact]
+    public async Task SaveDraft_RejectsVersionedResponseAfterFormulaFinalization()
+    {
+        await using var context = CreateContext();
+        var form = CreateForm("Finalized formula form");
+        var actorId = Guid.NewGuid();
+        var response = new Response
+        {
+            Id = Guid.NewGuid(), FormId = form.Form.Id, Form = form.Form,
+            FormRevisionId = Guid.NewGuid(), CreatedById = actorId
+        };
+        context.AddRange(form.Form, form.Section, form.Field, response);
+        context.ResponseFormulaSubmissionSets.Add(new ResponseFormulaSubmissionSet
+        {
+            Id = Guid.NewGuid(), ResponseId = response.Id, Response = response,
+            Sequence = 1, SetHash = new string('a', 64),
+            InputAggregateHash = new string('b', 64),
+            ConfigurationAggregateHash = new string('c', 64),
+            SubmittedById = actorId, SubmittedAt = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).SaveFormResponseDraft(
+            new SaveResponseDraftRequest
+            {
+                ResponseId = response.Id, FormId = form.Form.Id,
+                FormFieldId = form.Field.Id, Value = "must not change"
+            }, actorId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Errors, error => error.Code == "Response.Finalized");
+        Assert.Empty(context.FormResponses);
+    }
+
     private static (Form Form, FormSection Section, FormField Field) CreateForm(string name)
     {
         var form = new Form { Id = Guid.NewGuid(), Name = name };
@@ -232,7 +267,7 @@ public class FormResponseContextTests
     }
 
     private static FormRepository CreateRepository(ApplicationDbContext context) =>
-        new(context, null!, null!, null!);
+        new(context, null!, null!, null!, null!);
 
     private static ApplicationDbContext CreateContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()

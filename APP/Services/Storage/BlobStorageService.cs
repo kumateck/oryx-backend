@@ -6,7 +6,7 @@ using SHARED;
 
 namespace APP.Services.Storage;
 
-public class BlobStorageService : IBlobStorageService
+public partial class BlobStorageService : IBlobStorageService
 {
     private readonly string _accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY");
     private readonly string _secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY");

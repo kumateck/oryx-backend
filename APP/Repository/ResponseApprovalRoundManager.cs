@@ -29,6 +29,14 @@ internal static class ResponseApprovalRoundManager
 
         var response = await context.Responses.FirstOrDefaultAsync(item => item.Id == responseId)
             ?? throw new InvalidOperationException($"Response {responseId} was not found.");
+        var submissionSetId = await context.ResponseFormulaSubmissionSets.AsNoTracking()
+            .Where(item => item.ResponseId == responseId)
+            .OrderByDescending(item => item.Sequence)
+            .Select(item => (Guid?)item.Id)
+            .FirstOrDefaultAsync();
+        if (response.FormRevisionId.HasValue && !submissionSetId.HasValue)
+            throw new InvalidOperationException(
+                "A versioned response requires authoritative formula submission evidence.");
         var round = existing.Count == 0 ? 1 : existing.Max(item => item.ApprovalRound) + 1;
         var firstOrder = stages.Min(item => item.Order);
         var rows = stages.Select(stage => new ResponseApproval
@@ -41,6 +49,7 @@ internal static class ResponseApprovalRoundManager
             UserId = stage.UserId,
             RoleId = stage.RoleId,
             ActivatedAt = stage.Order == firstOrder ? DateTime.UtcNow : null,
+            FormulaSubmissionSetId = submissionSetId,
             CreatedAt = DateTime.UtcNow,
         }).ToList();
 

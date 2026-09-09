@@ -141,7 +141,7 @@ public class PaymentRepositoryTests
 
     private static IMapper CreateMapper()
     {
-        var config = new MapperConfiguration(cfg => cfg.CreateMap<Currency, CurrencyDto>(), NullLoggerFactory.Instance);
+        var config = new MapperConfiguration(cfg => cfg.CreateMap<Currency, CurrencyDto>());
         return config.CreateMapper();
     }
 

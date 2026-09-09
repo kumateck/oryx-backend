@@ -33,7 +33,6 @@ public class SupplierCertificationRequest
     [Required, StringLength(255)] public string IssuingBody { get; set; }
     public DateTime IssueDate { get; set; }
     public DateTime ExpiryDate { get; set; }
-    public Guid? AttachmentId { get; set; }
 }
 
 public class SupplierCertificationDto : BaseDto
@@ -45,5 +44,5 @@ public class SupplierCertificationDto : BaseDto
     public string IssuingBody { get; set; }
     public DateTime IssueDate { get; set; }
     public DateTime ExpiryDate { get; set; }
-    public Guid? AttachmentId { get; set; }
+    public List<AttachmentDto> Attachments { get; set; } = [];
 }

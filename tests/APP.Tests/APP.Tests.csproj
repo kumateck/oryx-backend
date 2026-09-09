@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\DOMAIN\DOMAIN.csproj" />
     <ProjectReference Include="..\..\INFRASTRUCTURE\INFRASTRUCTURE.csproj" />
     <ProjectReference Include="..\..\SHARED\SHARED.csproj" />
+    <ProjectReference Include="..\..\TOOLS\FormulaMigration\FormulaMigration.csproj" />
   </ItemGroup>
 
 </Project>

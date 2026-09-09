@@ -2,6 +2,62 @@
 
 ## Recent Updates
 
+- Collaborative template drafting (2026-09-08): forms may persist tests before questions are
+  available. Product and material ARD creation remains fail-closed and returns `Form.Question` if
+  any selected-template test has no question. See `docs/services.md` and `docs/workflows.md`.
+- Formula response compatibility (2026-09-08): creating a response now requires an approved form
+  revision only when the form contains a formula linked to the governed definition model. Preserved
+  legacy formula JSON no longer blocks Short Answer or other ordinary fields in mixed legacy forms;
+  governed formula placements remain fail-closed until their form revision is approved.
+- Governed STP documents (2026-09-07): material/product STPs now support versioned
+  ONLYOFFICE `.docx` content with Draft → In Review → Reviewed → Approved controls,
+  distinct author/reviewer/approver identities, password-confirmed signatures, authenticated
+  and permission-scoped downloads/editing, document-bound editor tokens, trusted callback origins,
+  retry-safe save callbacks, validated Word packages, database evidence constraints, and an
+  end-to-end deployment check that verifies shared JWT configuration, object availability, plus
+  API reachability from the document-server network. Retrying the same file against the current
+  Draft is idempotent, preventing duplicate immutable versions after partial multi-owner uploads.
+  See `docs/services.md` and `docs/workflows.md`.
+- Production formula source integration (2026-09-07): form-scoped variables now resolve from
+  same-response scalar fields, table-column statistics, or authoritative upstream formula results.
+  Upstream formulas are evaluated in deterministic topological order; unknown/self/cyclic sources,
+  incompatible or stale result evidence, reference/dependency disagreement, and input-hash drift
+  fail closed. Table statistics use deterministic decimal arithmetic and reject invalid cells
+  without silently changing the sample. The deployment overlay
+  now starts the released calculation image, waits for its health check, shares a Docker secret,
+  and requires the exact engine digest. AutoMapper remains on the open-source 14.0.0 release;
+  production does not require an AutoMapper license key. All 348 backend tests pass, including
+  94 formula-focused tests.
+  Replacement formula/template approvals now run serializably, append supersession evidence, and
+  are protected by filtered unique indexes so only one revision can be effective at a time.
+- Formula migration rehearsal (2026-09-07): a disposable clone
+  `oryx_formula_rehearsal_20260907` was rolled back across the formula migration chain, migrated
+  forward, and migrated forward again. All 93 formula questions and 118 formula options retained
+  the same `ac647c9ae8d8c6eba2583010cd914116` evidence digest; the second forward run was a no-op.
+- Governed formula runtime hardening (2026-09-06): response reads now project stored
+  authoritative formula display results, final submission runs inside a serializable transaction,
+  and versioned drafts become immutable after their submission set exists. Print/COA clients can
+  distinguish governed/finalized evidence without recalculation. `docker-compose.formula.yml`
+  securely connects the API to the internal calculation service and remains disabled by default.
+- The additive schema was applied to the reachable local PostgreSQL `entrancedb` only after a
+  custom-format backup. Post-migration verification retained 97 active legacy formula questions
+  and 156 option rows; no formula data migration or runtime enablement was performed.
+
+- Formula v1 governed integration: additive revision, placement, immutable response-snapshot,
+  append-only execution/submission, legacy-evidence, and migration-reconciliation tables are
+  defined with EF and PostgreSQL integrity guards. Controller-free services now compute a source
+  fingerprint, validate an approval manifest, assign deterministic migration IDs, and optionally
+  record an authenticated immutable dry-run ledger without changing legacy rows. A controlled,
+  controller-free Apply service can import only hash-verified, externally approved canonical definitions and audit
+  evidence after rechecking source drift, reconciliation, active identities, and three-person
+  separation of duties. A controller-free operator CLI now seals and validates review packages,
+  exports read-only dry runs, and gates evidence recording/Apply behind a validated application
+  token, dedicated permission, database-name check, and exact confirmation token. No legacy formula is rewritten, no placement is migrated, and no formula
+  API/runtime cutover is enabled; see
+  `docs/formula-v1-persistence-foundation.md`. Authenticated definition, template-revision,
+  response-snapshot/evaluation, and finalization services are implemented with runtime flags off
+  by default. The migration chain passed apply, rollback, reapply, trigger inspection, and model-
+  drift checks on a disposable local `entrancedb` clone.
 - Shift Scheduling gap fixes and Ghana Labour Act compliance: `ShiftType.StartTime`/`EndTime` moved from `string` to a native `TimeOnly` column (migration rewritten with explicit raw-SQL `to_timestamp(...)::time` conversion since the default EF scaffold cannot implicitly cast `"06:00 AM"`-style text to `time`), backing one shared, overnight-aware overlap helper (`APP/Utils/ShiftTimeHelper`) that replaced three separately-implemented, inconsistent comparisons in `AssignEmployeesToShift`, `SwapShift`, and the Excel import (one of which could throw on `TimeSpan.Parse` of an AM/PM string). Added the missing `ShiftCategoryController` (standard CRUD), explicit per-action `[Authorize]` on `ShiftScheduleController`/`ShiftTypeController`, and wired the previously-unused `NotificationType.ShiftAssigned` to fire on assign/swap/import. A duplicated permission-key set (singular vs. plural shift-schedule keys, which had let the frontend's nav guard and page guard disagree) was consolidated to one canonical set. New: an effective-dated `WorkingHoursPolicy` entity, seeded with the Labour Act, 2003 (Act 651) baseline (8h/day, 40h/week, 12h daily rest, 48h weekly rest), is checked at assign/swap/import time via `/api/v1/working-hours-policy`.
 - Documentation updated for this task: `README.md`, `docs/services.md`, `docs/workflows.md`; the frontend's `README.md`, `docs/services.md`, `docs/workflows.md`, and in-app user manual were also updated.
 - Personal IT issue reporting: every authenticated staff user can create an IT
@@ -14,7 +70,7 @@
   payroll-company, period, and pay-group relationships. The production runbook
   includes explicit collision preflight and post-migration verification.
 - Billing-sheet charge payments: the Pay Charges action now records auditable `Payment` rows instead of directly flipping a boolean. Charge batches are validated and committed atomically, require `CanRecordPayment`, preserve configured maker-checker approval, and mark a charge paid only after its payment is approved. Migration `20260903121205_LinkBillingSheetChargePayments` adds the nullable payment-to-charge traceability link.
-- Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, maker-checker quotations, safe quotation-to-ProductionOrder conversion, and customer order metrics. The additive CRM migration has a controlled production runbook and remains unapplied.
+- Customer relationship management: added preferred currency and terms, advisory credit control backed by approved invoice payments, multiple contacts, standing prices, central My Approvals-backed customer quotations, agreed-price and packing previews, and safe approved-quotation-to-ProductionOrder conversion with preserved shipper/loose quantities. The additive CRM migration has a controlled production runbook and remains unapplied.
 - Supplier relationship management: added pharmaceutical compliance certificates, multiple contacts and banking details, standing pricing agreements, configurable AVL requalification, computed supplier scorecards, and approved-payment spend analytics. The additive SRM migration has a controlled production runbook and is not applied automatically.
 - Cashflow foundation: added maker-checker payments, approved-payment balances, AP/AR aging, cashflow projections, effective-dated exchange rates, and nullable due-date snapshots. The production migration is additive and automatic startup migration is disabled; use the documented controlled rollout.
 - Product ATR response integrity: stage responses are scoped by BMR and production step, COA submission is single-round, and the uniqueness migration must be applied independently to every application database.
@@ -73,9 +129,20 @@ the changelog above live in [`docs/`](docs/):
   per-database preflight, migration, verification, and release order.
 - [HR payroll and performance migration](docs/hr-payroll-production-migration.md)
   — preserves the legacy payroll schema while deploying the new HR workflow.
+- [Formula v1 persistence foundation](docs/formula-v1-persistence-foundation.md)
+  — additive schema, integrity rules, verification evidence, rollout gates, and rollback boundary.
+- [Formula migration operator tool](docs/formula-migration-operator-tool.md)
+  — package sealing, offline verification, authenticated execution, and no-go controls.
 
-Documentation updated for the HR payroll migration fix: `README.md` and
-`docs/hr-payroll-production-migration.md`.
+Documentation updated for the formula persistence foundation, controlled definition importer,
+and operator workflow: `README.md`, `docs/services.md`, `docs/workflows.md`,
+`docs/formula-v1-persistence-foundation.md`, and `docs/formula-migration-operator-tool.md`.
+
+## Global approval progression enforcement (2026-09-08)
+
+All configurable approval documents now share a fail-closed progression contract. Procurement, requisition, inventory, production, logistics, maintenance, and R&D operations recheck persisted approval before downstream mutation; configured documents remain locked until the assigned user or role completes every required stage. Missing or zero-stage configurations use the existing audited automatic-approval policy, now including payroll runs. The legacy requisition approval route cannot set approval state outside the central approval service. Regression tests cover the shared contract, automatic approval, pending rejection, and bypass attempts.
+
+Documentation updated for this task: `README.md`, `docs/services.md`, and `docs/workflows.md`.
 
 ## Contributing
 

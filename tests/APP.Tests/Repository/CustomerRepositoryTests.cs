@@ -100,12 +100,52 @@ public class CustomerRepositoryTests
     }
 
     [Fact]
+    public async Task CentralApproval_AcceptsConfiguredCustomerQuotation()
+    {
+        await using var context = CreateContext();
+        var makerId = Guid.NewGuid();
+        var approverId = Guid.NewGuid();
+        var customer = new Customer { Id = Guid.NewGuid(), Name = "Hospital" };
+        var quotation = new CustomerQuotation
+        {
+            Id = Guid.NewGuid(), CustomerId = customer.Id, Code = "Q-CENTRAL",
+            CurrencyId = Guid.NewGuid(), Status = CustomerQuotationStatus.Draft,
+            ValidUntil = DateTime.UtcNow.AddDays(10), CreatedById = makerId,
+        };
+        var approval = new Approval
+        {
+            Id = Guid.NewGuid(), ItemType = nameof(CustomerQuotation), ApprovalStages = [],
+        };
+        approval.ApprovalStages.Add(new ApprovalStage
+        {
+            Id = Guid.NewGuid(), ApprovalId = approval.Id, Approval = approval,
+            Order = 1, Required = true, UserId = approverId,
+        });
+        context.AddRange(customer, quotation, approval);
+        await context.SaveChangesAsync();
+
+        var sendResult = await CreateRepository(context).SendQuotation(quotation.Id, makerId);
+        var approvalResult = await CreateApprovalRepository(context).ApproveItem(
+            nameof(CustomerQuotation), quotation.Id, approverId, [], "Commercial terms accepted");
+
+        Assert.True(sendResult.IsSuccess);
+        Assert.True(approvalResult.IsSuccess);
+        Assert.Equal(CustomerQuotationStatus.Accepted, quotation.Status);
+        Assert.True(quotation.Approved);
+        Assert.Equal(ApprovalStatus.Approved, Assert.Single(quotation.Approvals).Status);
+        Assert.Single(context.ApprovalActionLogs);
+    }
+
+    [Fact]
     public async Task Conversion_CarriesNegotiatedPriceAndDiscount()
     {
         await using var context = CreateContext();
         var customer = new Customer { Id = Guid.NewGuid(), Name = "Hospital" };
         var product = new Product { Id = Guid.NewGuid(), Name = "Tablets", BaseQuantity = 5m };
-        var packing = new ProductPacking { Id = Guid.NewGuid(), ProductId = product.Id, Name = "Carton" };
+        var packing = new ProductPacking
+        {
+            Id = Guid.NewGuid(), ProductId = product.Id, Name = "Carton", PackPerShipper = 80,
+        };
         var quotation = new CustomerQuotation
         {
             Id = Guid.NewGuid(), CustomerId = customer.Id, Code = "Q-100",
@@ -116,7 +156,7 @@ public class CustomerRepositoryTests
                 new CustomerQuotationItem
                 {
                     Id = Guid.NewGuid(), ProductId = product.Id, Product = product,
-                    ProductPackingId = packing.Id, Quantity = 2, UnitPrice = 100m, DiscountPercent = 10m,
+                    ProductPackingId = packing.Id, Quantity = 165, UnitPrice = 100m, DiscountPercent = 10m,
                 },
             ],
         };
@@ -131,7 +171,9 @@ public class CustomerRepositoryTests
         var line = Assert.Single(order.Products);
         Assert.Equal(100m, line.UnitPrice);
         Assert.Equal(10m, line.DiscountPercent);
-        Assert.Equal(180m, line.TotalValue);
+        Assert.Equal(14850m, line.TotalValue);
+        Assert.Equal(2m, line.Shippers);
+        Assert.Equal(5m, line.Loose);
         Assert.Equal(quotation.Id, order.SourceCustomerQuotationId);
         Assert.Equal(CustomerQuotationStatus.ConvertedToOrder, quotation.Status);
     }
@@ -276,7 +318,7 @@ public class CustomerRepositoryTests
     private static CustomerRepository CreateRepository(ApplicationDbContext context)
     {
         var config = new MapperConfiguration(
-            cfg => cfg.CreateMap<CreateCustomerRequest, Customer>(), NullLoggerFactory.Instance);
+            cfg => cfg.CreateMap<CreateCustomerRequest, Customer>());
         var approvalRepository = new ApprovalRepository(
             context,
             null!,
@@ -288,6 +330,17 @@ public class CustomerRepositoryTests
         );
         return new CustomerRepository(context, config.CreateMapper(), approvalRepository);
     }
+
+    private static ApprovalRepository CreateApprovalRepository(ApplicationDbContext context)
+        => new(
+            context,
+            null!,
+            null!,
+            null!,
+            NullLogger<ApprovalRepository>.Instance,
+            null!,
+            new NoOpProductionActivityStepEventPublisher()
+        );
 
     private static ApplicationDbContext CreateContext()
     {
