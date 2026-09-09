@@ -14,8 +14,6 @@ public partial class CustomerRepository
     {
         var customer = await context.Customers.AsNoTracking().FirstOrDefaultAsync(item => item.Id == customerId);
         if (customer is null) return Error.NotFound("Customer.NotFound", "Customer not found.");
-        if (!customer.CurrencyId.HasValue)
-            return Error.Validation("CustomerQuotation.CurrencyRequired", "Set the customer's preferred currency before quoting.");
         if (request.ValidUntil < DateTime.UtcNow)
             return Error.Validation("CustomerQuotation.ValidUntil", "Quotation validity cannot be in the past.");
         if (request.Items.Count == 0)
@@ -34,9 +32,13 @@ public partial class CustomerRepository
         if (await context.ProductPackings.CountAsync(item => productPackingIds.Contains(item.Id)) != productPackingIds.Count)
             return Error.NotFound("ProductPacking.NotFound", "One or more packing styles were not found.");
 
+        var priceDate = DateTime.UtcNow;
+        var currency = await ResolveQuotationCurrency(customer, request.Items, priceDate);
+        if (currency.IsFailure) return currency.Error;
+
         var quotation = new CustomerQuotation
         {
-            CustomerId = customerId, CurrencyId = customer.CurrencyId.Value,
+            CustomerId = customerId, CurrencyId = currency.Value,
             Code = request.Code.Trim(), Status = CustomerQuotationStatus.Draft,
             ValidUntil = request.ValidUntil, CreatedById = userId,
         };
@@ -48,7 +50,7 @@ public partial class CustomerRepository
             if (!price.HasValue)
             {
                 var resolved = await ResolveUnitPrice(
-                    customer, products[requestItem.ProductId], requestItem.ProductPackingId, DateTime.UtcNow);
+                    customer, products[requestItem.ProductId], requestItem.ProductPackingId, priceDate);
                 if (resolved.IsFailure) return resolved.Error;
                 price = resolved.Value.UnitPrice;
             }
@@ -70,8 +72,6 @@ public partial class CustomerRepository
     {
         var customer = await context.Customers.AsNoTracking().FirstOrDefaultAsync(item => item.Id == customerId);
         if (customer is null) return Error.NotFound("Customer.NotFound", "Customer not found.");
-        if (!customer.CurrencyId.HasValue)
-            return Error.Validation("CustomerQuotation.CurrencyRequired", "Set the customer's preferred currency before quoting.");
         var product = await context.Products.IgnoreQueryFilters()
             .FirstOrDefaultAsync(item => item.Id == productId && !item.DeletedAt.HasValue);
         if (product is null) return Error.NotFound("Product.NotFound", "Product not found.");
@@ -94,8 +94,13 @@ public partial class CustomerRepository
             context, customer.Id, product.Id, productPackingId, product.Price, asOf);
         if (resolution.Ambiguous)
             return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
-        if (resolution.FromAgreement && resolution.CurrencyId != customer.CurrencyId)
+        if (resolution.FromAgreement && customer.CurrencyId.HasValue
+            && resolution.CurrencyId != customer.CurrencyId)
             return Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency.");
+        if (!resolution.FromAgreement && !customer.CurrencyId.HasValue)
+            return Error.Validation(
+                "CustomerQuotation.CurrencyRequired",
+                "Set the customer's preferred currency or create an active pricing agreement for this product and packing.");
         return new ResolvedQuotationPriceDto { UnitPrice = resolution.UnitPrice, FromAgreement = resolution.FromAgreement };
     }
 
@@ -119,6 +124,24 @@ public partial class CustomerRepository
             item => MapQuotation(item, date));
     }
 
+    public async Task<Result<List<CustomerQuotationDto>>> GetConvertibleQuotations(
+        Guid customerId, DateTime? asOf = null)
+    {
+        if (!await CustomerExists(customerId))
+            return Error.NotFound("Customer.NotFound", "Customer not found.");
+        var date = asOf ?? DateTime.UtcNow;
+        var quotations = await QuotationQuery()
+            .Where(item => item.CustomerId == customerId
+                && item.Status == CustomerQuotationStatus.Accepted
+                && item.Approved
+                && item.ValidUntil >= date
+                && !context.ProductionOrders.Any(order =>
+                    order.SourceCustomerQuotationId == item.Id))
+            .OrderByDescending(item => item.CreatedAt)
+            .ToListAsync();
+        return quotations.Select(item => MapQuotation(item, date)).ToList();
+    }
+
     private IQueryable<CustomerQuotation> QuotationQuery()
         => context.CustomerQuotations.AsNoTracking().AsSplitQuery().Include(item => item.Customer)
             .Include(item => item.Currency).Include(item => item.Items).ThenInclude(item => item.Product)
@@ -139,6 +162,11 @@ public partial class CustomerRepository
                 Id = line.Id, CreatedAt = line.CreatedAt, ProductId = line.ProductId,
                 ProductName = line.Product?.Name, Quantity = line.Quantity, ProductPackingId = line.ProductPackingId,
                 ProductPackingName = line.ProductPacking?.Name, UnitPrice = line.UnitPrice,
+                PackPerShipper = line.ProductPacking?.PackPerShipper ?? 0,
+                Shippers = line.ProductPacking != null && line.ProductPacking.PackPerShipper > 0
+                    ? line.Quantity / line.ProductPacking.PackPerShipper : 0,
+                Loose = line.ProductPacking != null && line.ProductPacking.PackPerShipper > 0
+                    ? line.Quantity % line.ProductPacking.PackPerShipper : line.Quantity,
                 DiscountPercent = line.DiscountPercent, TotalValue = line.TotalValue,
             })
         ],

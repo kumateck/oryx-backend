@@ -1,6 +1,7 @@
 using APP.Services.ProductionActivityStepEventPublisher;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
@@ -147,6 +148,14 @@ internal static class AutomaticApprovalProcessor
                     .SingleOrDefaultAsync(item => item.Id == modelId);
                 EnsureFound(productionOrder, modelType, modelId);
                 productionOrder.Approved = true;
+                break;
+
+            case nameof(CustomerQuotation):
+                var quotation = await context.CustomerQuotations
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(quotation, modelType, modelId);
+                quotation.Approved = true;
+                quotation.Status = CustomerQuotationStatus.Accepted;
                 break;
 
             case nameof(RndProject):

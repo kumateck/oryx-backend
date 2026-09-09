@@ -15,8 +15,6 @@ public class RndProjectRepository(
     IApprovalRepository approvalRepository
 ) : IRndProjectRepository
 {
-    private const string DepartmentName = "Research & Development";
-
     private static Result<RndProject> ValidateStatus(RndProject project, params RndProjectStatus[] allowed)
     {
         if (!allowed.Contains(project.Status))
@@ -48,11 +46,11 @@ public class RndProjectRepository(
         if (validation.IsFailure)
             return Result.Failure<Guid>(validation.Errors);
 
-        var department = await context.Departments.FirstOrDefaultAsync(d => d.Name == DepartmentName);
+        var department = await context.Departments.FirstOrDefaultAsync(d => d.Type == DepartmentType.RnD);
         if (department is null)
             return Error.NotFound(
                 "RndProject.DepartmentNotFound",
-                "The Research & Development department has not been seeded."
+                "No department of type R&D has been seeded."
             );
 
         var year = DateTime.UtcNow.Year;

@@ -12,8 +12,10 @@ public partial class CustomerRepository
     {
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
-        var quotation = await context.CustomerQuotations.Include(item => item.Items)
-            .ThenInclude(item => item.Product).FirstOrDefaultAsync(item => item.Id == quotationId);
+        var quotation = await context.CustomerQuotations
+            .Include(item => item.Items).ThenInclude(item => item.Product)
+            .Include(item => item.Items).ThenInclude(item => item.ProductPacking)
+            .FirstOrDefaultAsync(item => item.Id == quotationId);
         if (quotation is null) return Error.NotFound("CustomerQuotation.NotFound", "Quotation not found.");
         if (quotation.Status != CustomerQuotationStatus.Accepted || !quotation.Approved)
             return Error.Conflict("CustomerQuotation.Status", "Only an accepted, approved quotation can be converted.");
@@ -29,12 +31,18 @@ public partial class CustomerRepository
             CreatedById = userId,
             Products =
             [
-                .. quotation.Items.Select(item => new ProductionOrderProducts
+                .. quotation.Items.Select(item =>
                 {
-                    ProductId = item.ProductId, TotalOrderQuantity = item.Quantity,
-                    VolumePerPiece = item.Product.BaseQuantity > 0 ? item.Product.BaseQuantity : 1m,
-                    ProductPackingId = item.ProductPackingId, UnitPrice = item.UnitPrice,
-                    DiscountPercent = item.DiscountPercent,
+                    var perShipper = item.ProductPacking?.PackPerShipper ?? 0;
+                    return new ProductionOrderProducts
+                    {
+                        ProductId = item.ProductId, TotalOrderQuantity = item.Quantity,
+                        VolumePerPiece = item.Product.BaseQuantity > 0 ? item.Product.BaseQuantity : 1m,
+                        ProductPackingId = item.ProductPackingId, UnitPrice = item.UnitPrice,
+                        DiscountPercent = item.DiscountPercent,
+                        Shippers = perShipper > 0 ? item.Quantity / perShipper : 0,
+                        Loose = perShipper > 0 ? item.Quantity % perShipper : item.Quantity,
+                    };
                 })
             ],
         };

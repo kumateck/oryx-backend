@@ -6,32 +6,22 @@ public static class FormValidator
 {
     public static Result Validate(Form form)
     {
-        var errors = new List<Error>();
-
-        // Validate if form has sections
         if (form.Sections == null || form.Sections.Count == 0)
-        {
-            errors.Add(FormErrors.SectionMissing());
-        }
-        else
-        {
-            // Validate each section
-            foreach (var section in form.Sections)
-            {
-                if (section.Fields == null || section.Fields.Count == 0)
-                {
-                    errors.Add(FormErrors.SectionWithoutQuestions(section.Name));
-                }
-                // else
-                // {
-                //     // Validate each question in the section
-                //     foreach (var question in section.Fields)
-                //     {
-                //         ValidateQuestionOptions(question.Question, errors);
-                //     }
-                // }
-            }
-        }
+            return Result.Failure(FormErrors.SectionMissing());
+
+        return Result.Success();
+    }
+
+    public static Result ValidateForUse(Form form)
+    {
+        var draftValidation = Validate(form);
+        if (draftValidation.IsFailure)
+            return draftValidation;
+
+        var errors = form.Sections
+            .Where(section => section.Fields == null || section.Fields.Count == 0)
+            .Select(section => FormErrors.SectionWithoutQuestions(section.Name))
+            .ToList();
 
         return errors.Count != 0 ? Result.Failure(errors) : Result.Success();
     }
