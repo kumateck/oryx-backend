@@ -21,6 +21,7 @@ COPY DOMAIN/*.csproj ./DOMAIN/
 COPY INFRASTRUCTURE/*.csproj ./INFRASTRUCTURE/
 COPY SHARED/*.csproj ./SHARED/
 COPY tests/APP.Tests/*.csproj ./tests/APP.Tests/
+COPY TOOLS/FormulaMigration/*.csproj ./TOOLS/FormulaMigration/
 
 # Restore dependencies (this layer will be cached if project files don't change)
 RUN dotnet restore
