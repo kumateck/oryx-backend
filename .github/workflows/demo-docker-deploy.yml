@@ -119,9 +119,39 @@ jobs:
             echo "Logging in to Docker Hub"
             echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
 
-            echo "Verifying the governed calculation service"
-            test -s /opt/oryx/secrets/formula-service-token
-            test "\$(docker inspect --format='{{.State.Health.Status}}' formula-calculation)" = healthy
+            echo "Ensuring 'sail' network exists"
+            docker network inspect sail >/dev/null 2>&1 || docker network create sail
+
+            echo "Waiting for the governed calculation service"
+            formula_ready=false
+            for attempt in \$(seq 1 24); do
+              formula_status="\$(docker inspect --format='{{.State.Health.Status}}' formula-calculation 2>/dev/null || echo missing)"
+              formula_secret_source="\$(docker inspect --format='{{range .Mounts}}{{if eq .Destination "/run/secrets"}}{{if eq .Type "volume"}}{{.Name}}{{else}}{{.Source}}{{end}}{{end}}{{end}}' formula-calculation 2>/dev/null || true)"
+              if [ "\$formula_status" = healthy ] && docker exec formula-calculation /bin/sh -c 'test -s /run/secrets/formula-service-token' >/dev/null 2>&1; then
+                formula_ready=true
+                break
+              fi
+              if [ "\$attempt" -lt 24 ]; then
+                sleep 5
+              fi
+            done
+            if [ "\$formula_ready" != true ]; then
+              echo "Governed calculation service was not healthy after 120 seconds."
+              echo "Expected container: formula-calculation; observed status: \$formula_status"
+              docker ps -a --filter name=^/formula-calculation\$ || true
+              docker logs --tail 80 formula-calculation 2>/dev/null || true
+              exit 1
+            fi
+            if [ -z "\$formula_secret_source" ]; then
+              # Older formula containers mounted the token as a host file rather than
+              # the shared directory. Keep that deployment format usable during rollout.
+              if [ -s /opt/oryx/secrets/formula-service-token ]; then
+                formula_secret_source=/opt/oryx/secrets/formula-service-token
+              else
+                echo "The healthy calculation service does not expose its formula-service token mount."
+                exit 1
+              fi
+            fi
 
             echo "Pulling the immutable API image"
             docker pull "${DOCKER_IMAGE_NAME}:${{ github.sha }}"
@@ -131,9 +161,6 @@ jobs:
               docker stop "${CONTAINER_NAME}"
               docker rm "${CONTAINER_NAME}"
             fi
-
-            echo "Ensuring 'sail' network exists"
-            docker network inspect sail >/dev/null 2>&1 || docker network create sail
 
             echo "Running the new Docker container"
             docker run -d --init --restart always --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" \
@@ -159,7 +186,7 @@ jobs:
             --env FORMULA_SERVICE_BASE_URL=http://formula-calculation:3101/ \
             --env FORMULA_SERVICE_AUTH_SECRET_FILE=/run/secrets/formula-service-token \
             --env FORMULA_SERVICE_CLIENT_TIMEOUT_MS=2500 \
-            --volume /opt/oryx/secrets/formula-service-token:/run/secrets/formula-service-token:ro \
+            --volume "\$formula_secret_source:/run/secrets:ro" \
             "${DOCKER_IMAGE_NAME}:${{ github.sha }}"
 
             sleep 5
