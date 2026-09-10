@@ -70,6 +70,9 @@ public sealed class FormulaDefinitionServiceTests
         var created = await service.CreateDraftAsync(
             question.Id, request, authorId, Guid.NewGuid());
         Assert.True(created.IsSuccess);
+        Assert.Equal("{\"type\":\"Universal\",\"expression\":\":x+1\"}",
+            created.Value.AuthoringPayload);
+        Assert.Equal(64, created.Value.AuthoringPayloadHash?.Length);
         Assert.Single(await context.QuestionOptions.Where(item => item.QuestionId == question.Id)
             .ToListAsync());
 
@@ -208,6 +211,7 @@ public sealed class FormulaDefinitionServiceTests
             "oryx:formula-definition:v1", definition.RootElement.GetRawText(), 1_048_576);
         return new FormulaRevisionDraftRequest(hash, "oryx-formula-v1",
             "oryx-decimal-v1-approved", "Simple", definition.RootElement.Clone(),
-            tests.RootElement.Clone());
+            tests.RootElement.Clone(),
+            "{\"type\":\"Universal\",\"expression\":\":x+1\"}");
     }
 }

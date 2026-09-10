@@ -630,6 +630,11 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationItem> RndFormulationItems { get; set; }
     public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationItemSubstitute> RndFormulationItemSubstitutes { get; set; }
     public DbSet<DOMAIN.Entities.RndTrialBatches.RndTrialBatch> RndTrialBatches { get; set; }
+    public DbSet<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod> RndAnalyticalMethods { get; set; }
+    public DbSet<DOMAIN.Entities.RndStabilityStudies.RndStabilityChamber> RndStabilityChambers { get; set; }
+    public DbSet<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy> RndStabilityStudies { get; set; }
+    public DbSet<DOMAIN.Entities.RndStabilityStudies.RndStabilityPullPoint> RndStabilityPullPoints { get; set; }
+    public DbSet<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer> RndTechnologyTransfers { get; set; }
 
     #endregion
 
@@ -2076,6 +2081,31 @@ public class ApplicationDbContext(
 
         modelBuilder.Entity<Requisition>().HasOne(item => item.RndTrialBatch)
             .WithMany().HasForeignKey(item => item.RndTrialBatchId).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.Material)
+            .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.Product)
+            .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.ValidationProtocolForm)
+            .WithMany().HasForeignKey(item => item.ValidationProtocolFormId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.ValidatedBy)
+            .WithMany().HasForeignKey(item => item.ValidatedById).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy>().HasOne(item => item.RndTrialBatch)
+            .WithMany().HasForeignKey(item => item.RndTrialBatchId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy>().HasOne(item => item.RndStabilityChamber)
+            .WithMany().HasForeignKey(item => item.RndStabilityChamberId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy>().HasOne(item => item.ProtocolForm)
+            .WithMany().HasForeignKey(item => item.ProtocolFormId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndStabilityStudies.RndStabilityPullPoint>().HasOne(item => item.PulledBy)
+            .WithMany().HasForeignKey(item => item.PulledById).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer>().HasOne(item => item.RndFormulation)
+            .WithMany().HasForeignKey(item => item.RndFormulationId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer>().HasOne(item => item.GapAnalysisForm)
+            .WithMany().HasForeignKey(item => item.GapAnalysisFormId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer>().HasOne(item => item.CompletedBy)
+            .WithMany().HasForeignKey(item => item.CompletedById).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Customer>().HasOne(item => item.TermsOfPayment)
             .WithMany().HasForeignKey(item => item.TermsOfPaymentId).OnDelete(DeleteBehavior.Restrict);

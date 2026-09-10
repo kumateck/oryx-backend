@@ -80,6 +80,8 @@ internal static class FormulaChangeGuard
         [
             nameof(FormulaRevision.DefinitionJson),
             nameof(FormulaRevision.TestCasesJson),
+            nameof(FormulaRevision.AuthoringPayloadJson),
+            nameof(FormulaRevision.AuthoringPayloadHash),
             nameof(FormulaRevision.DefinitionHash),
             nameof(FormulaRevision.ReleaseEvidenceHash),
             nameof(FormulaRevision.FormulaLanguageVersion),
