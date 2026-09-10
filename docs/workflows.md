@@ -328,3 +328,25 @@ orders exist the rate is null rather than a fabricated zero.
 4. Missing or zero-stage configurations auto-approve and record the system decision; this is the only non-manual authorization path and includes payroll runs.
 5. Final approval is performed by `ApprovalRepository`, which enforces responsible-user/role assignment and records approval actions. Domain-specific or legacy endpoints cannot grant approval directly.
 6. Stock issue uses `Requisition.ApprovalRequired` and checks before all warehouse and inventory work; other shared guards return `Approval.Required`.
+
+## Formula Draft to effective revision (2026-09-10)
+
+1. A governed create/save transaction writes question metadata plus a Draft revision and preserves
+   all legacy option rows. The Draft holds a canonical definition, test corpus, exact authoring
+   payload, and independent hashes.
+2. Save requests an authoritative validation after commit and returns the outcomes for immediate
+   display. Unavailable validation never makes a Draft effective.
+3. Submit for review reruns the calculation suite and accepts only an exact definition-hash match
+   with all required case categories passing.
+4. A different reviewer records review and a third actor approves. Approval atomically retires the
+   preceding Approved revision and records both audit transitions.
+5. Generic question APIs reject formula writes. Existing active forms continue using their legacy
+   payload or existing approved snapshot until a controlled form-revision publication selects the
+   replacement; completed response evidence is never rewritten.
+6. Release order is formula worker, additive database migration, backend API, then frontend. The
+   backend deployment refuses to start formula runtime unless the internal worker is healthy and
+   the shared mounted secret exists.
+7. Release regression tests use relative agreement validity windows; a historical wall-clock date
+   must not make otherwise valid customer-pricing workflow tests fail after that date passes.
+8. Every deployment workflow generates migrations with `dotnet-ef` 9.0.3, matching the EF Core
+   runtime packages; the pipeline does not use an older major-version migration tool.
