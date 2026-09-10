@@ -43,7 +43,10 @@ public interface IFormRepository
     );
     Task<Result<ResponseDetailDto>> GetFormResponse(Guid formResponseId);
 
-    Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId);
+    Task<Result<Guid>> CreateQuestion(
+        CreateQuestionRequest request,
+        Guid userId,
+        bool allowGovernedFormula = false);
     Task<Result<QuestionDto>> GetQuestion(Guid questionId);
     Task<Result<Paginateable<IEnumerable<QuestionDto>>>> GetQuestions(QuestionFilter filter);
     Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId);

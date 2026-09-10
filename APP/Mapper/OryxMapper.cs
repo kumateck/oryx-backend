@@ -74,8 +74,11 @@ using DOMAIN.Entities.PurchaseOrders.Request;
 using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
+using DOMAIN.Entities.RndAnalyticalMethods;
 using DOMAIN.Entities.RndFormulations;
 using DOMAIN.Entities.RndProjects;
+using DOMAIN.Entities.RndStabilityStudies;
+using DOMAIN.Entities.RndTechnologyTransfers;
 using DOMAIN.Entities.RndTrialBatches;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Routes;
@@ -1374,6 +1377,12 @@ public class OryxMapper : Profile
 
         CreateMap<CreateRndTrialBatchRequest, RndTrialBatch>();
         CreateMap<RndTrialBatch, RndTrialBatchDto>();
+
+        CreateMap<RndAnalyticalMethod, RndAnalyticalMethodDto>();
+
+        CreateMap<RndStabilityChamber, RndStabilityChamberDto>();
+
+        CreateMap<RndTechnologyTransfer, RndTechnologyTransferDto>();
 
         #endregion
 

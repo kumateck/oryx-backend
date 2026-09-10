@@ -151,6 +151,7 @@ builder.Services.AddAutoMapper(
     cfg =>
     {
         cfg.Internal().MaxExecutionPlanDepth = 32;
+        cfg.Internal().ForAllMaps((_, map) => map.MaxDepth(32));
     },
     typeof(OryxMapper)
 );

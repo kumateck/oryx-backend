@@ -13,7 +13,7 @@ namespace APP.Tests.Repository;
 
 public class ProductionOrderPricingTests
 {
-    private static readonly DateTime Now = new(2026, 9, 8, 12, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime Now = DateTime.UtcNow;
 
     [Fact]
     public async Task CreateProductionOrder_UsesAgreedPrice_WhenOneAgreementIsActive()
