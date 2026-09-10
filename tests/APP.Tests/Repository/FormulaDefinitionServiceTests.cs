@@ -138,7 +138,7 @@ public sealed class FormulaDefinitionServiceTests
             created.Value.Id, request, authorId, Guid.NewGuid());
 
         Assert.True(updated.IsFailure);
-        Assert.Equal("FormulaDefinition.Conflict", Assert.Single(updated.Errors).Code);
+        Assert.Equal("FormulaDefinition.RevisionInReview", Assert.Single(updated.Errors).Code);
     }
 
     [Fact]
