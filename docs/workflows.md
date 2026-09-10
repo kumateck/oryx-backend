@@ -39,6 +39,12 @@ a regulated lifecycle boundary through either the application UI or a direct API
 
 ## Formula dependency execution and migration rehearsal (2026-09-07)
 
+The demo deployment workflows run independently. The API deploy therefore waits for the
+`formula-calculation` service rather than checking it once and racing the frontend deployment.
+It verifies the service health and token mount for up to 120 seconds, then reuses the service's
+Docker secret volume when starting the API. If the service is still unavailable, the deploy fails
+with its status and recent logs before stopping the existing API container.
+
 1. A response formula snapshot freezes typed source bindings from its approved form revision.
 2. The input resolver reads same-response source evidence. Table statistics are calculated under
    the frozen table precision; formula-result sources must be authoritative and current by input

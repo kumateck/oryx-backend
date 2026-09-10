@@ -106,6 +106,12 @@ The API deployment overlay is `docker-compose.formula.yml`. It mounts the same D
 by the calculation service, uses the service-only `sail` network address, and leaves
 `FORMULA_RUNTIME_ENABLED=false` unless a controlled release explicitly enables it.
 
+The demo GitHub Actions deployment is coordinated across repositories: it waits up to 120 seconds
+for the `formula-calculation` container to become healthy, verifies that the container exposes a
+non-empty `formula-service-token`, and mounts the same Docker volume (or legacy bind source) into
+the API. A timeout fails with the observed container status and recent service logs instead of
+silently starting an API that cannot evaluate governed formulas.
+
 ## Formula v1 persistence boundary (2026-09-05)
 
 No new HTTP endpoint is enabled in this increment. Existing question, template, response,
