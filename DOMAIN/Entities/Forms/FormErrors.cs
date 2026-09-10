@@ -25,6 +25,10 @@ public static class FormErrors
     public static Error InvalidQuestionType(string questionType) =>
         Error.Validation("FormResponse.InvalidQuestionType", $"The question type '{questionType}' is invalid.");
 
+    public static readonly Error FormulaGovernanceRequired = Error.Conflict(
+        "Form.Question.FormulaGovernanceRequired",
+        "Formula questions must be created or edited through the governed formula workflow.");
+
     public static Error EmptyTextResponse(string questionLabel) =>
         Error.Validation("FormResponse.Text", $"The response for question '{questionLabel}' cannot be empty.");
 

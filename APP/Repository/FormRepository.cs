@@ -1693,8 +1693,14 @@ public class FormRepository(
         return result;
     }
 
-    public async Task<Result<Guid>> CreateQuestion(CreateQuestionRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateQuestion(
+        CreateQuestionRequest request,
+        Guid userId,
+        bool allowGovernedFormula = false)
     {
+        if (request.Type == QuestionType.Formula && !allowGovernedFormula)
+            return FormErrors.FormulaGovernanceRequired;
+
         var question = mapper.Map<Question>(request);
         question.CreatedById = userId;
 
@@ -1760,6 +1766,9 @@ public class FormRepository(
 
         if (question == null)
             return FormErrors.NotFound(id);
+
+        if (question.Type == QuestionType.Formula || request.Type == QuestionType.Formula)
+            return FormErrors.FormulaGovernanceRequired;
 
         context.QuestionOptions.RemoveRange(question.Options);
         mapper.Map(request, question);

@@ -12,10 +12,48 @@ namespace API.Controllers;
 public sealed class FormulaDefinitionController(
     IFormulaDefinitionService definitions) : ControllerBase
 {
+    [HttpGet("review-queue")]
+    [Authorize(PermissionKeys.CanViewReviewFormulaRevision)]
+    public async Task<IResult> GetReviewQueue(
+        CancellationToken cancellationToken)
+    {
+        var result = await definitions.GetReviewQueueAsync(cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("approval-queue")]
+    [Authorize(PermissionKeys.CanViewApproveFormulaRevision)]
+    public async Task<IResult> GetApprovalQueue(
+        CancellationToken cancellationToken)
+    {
+        var result = await definitions.GetApprovalQueueAsync(cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpGet("questions/{questionId:guid}/revisions")]
     [Authorize(PermissionKeys.CanViewQuestions)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> GetQuestionRevisions(
+        Guid questionId,
+        CancellationToken cancellationToken)
+    {
+        var result = await definitions.GetByQuestionAsync(questionId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("questions/{questionId:guid}/review-revisions")]
+    [Authorize(PermissionKeys.CanViewReviewFormulaRevision)]
+    public async Task<IResult> GetReviewRevisions(
+        Guid questionId,
+        CancellationToken cancellationToken)
+    {
+        var result = await definitions.GetByQuestionAsync(questionId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("questions/{questionId:guid}/approval-revisions")]
+    [Authorize(PermissionKeys.CanViewApproveFormulaRevision)]
+    public async Task<IResult> GetApprovalRevisions(
         Guid questionId,
         CancellationToken cancellationToken)
     {

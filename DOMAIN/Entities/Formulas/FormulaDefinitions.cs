@@ -27,6 +27,8 @@ public class FormulaRevision : BaseEntity
     public int Revision { get; set; }
     public string DefinitionJson { get; set; }
     public string TestCasesJson { get; set; }
+    public string AuthoringPayloadJson { get; set; }
+    public string AuthoringPayloadHash { get; set; }
     public string DefinitionHash { get; set; }
     public string ReleaseEvidenceHash { get; set; }
     public string FormulaLanguageVersion { get; set; }

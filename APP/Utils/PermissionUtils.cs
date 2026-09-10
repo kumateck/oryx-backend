@@ -98,6 +98,9 @@ public static class PermissionSubmodules
     public const string RndProjects = "R&D Projects";
     public const string RndFormulations = "R&D Formulations";
     public const string RndTrialBatches = "R&D Trial Batches";
+    public const string RndAnalyticalMethods = "R&D Analytical Methods";
+    public const string RndStabilityStudies = "R&D Stability Studies";
+    public const string RndTechnologyTransfers = "R&D Technology Transfers";
 
     // Finished Goods Warehouse
     public const string CustomerManagement = "Customer Management";
@@ -496,6 +499,17 @@ public static class PermissionKeys
     public const string CanCreateRndTrialBatch = "CanCreateRndTrialBatch";
     public const string CanEditRndTrialBatch = "CanEditRndTrialBatch";
     public const string CanIssueTrialRequisition = "CanIssueTrialRequisition";
+    public const string CanViewRndAnalyticalMethods = "CanViewRndAnalyticalMethods";
+    public const string CanCreateRndAnalyticalMethod = "CanCreateRndAnalyticalMethod";
+    public const string CanEditRndAnalyticalMethod = "CanEditRndAnalyticalMethod";
+    public const string CanViewRndStabilityStudies = "CanViewRndStabilityStudies";
+    public const string CanCreateRndStabilityStudy = "CanCreateRndStabilityStudy";
+    public const string CanEditRndStabilityStudy = "CanEditRndStabilityStudy";
+    public const string CanManageRndStabilityChambers = "CanManageRndStabilityChambers";
+    public const string CanViewRndTechnologyTransfers = "CanViewRndTechnologyTransfers";
+    public const string CanCreateRndTechnologyTransfer = "CanCreateRndTechnologyTransfer";
+    public const string CanEditRndTechnologyTransfer = "CanEditRndTechnologyTransfer";
+    public const string CanPromoteRndTechnologyTransfer = "CanPromoteRndTechnologyTransfer";
 
     // Finished Goods Warehouse
     public const string CanViewCustomers = "CanViewCustomers";
@@ -885,7 +899,9 @@ public static class PermissionKeys
     public const string CanEditQuestions = "CanEditQuestions";
     public const string CanDeleteQuestions = "CanDeleteQuestions";
     public const string CanApplyFormulaMigration = "CanApplyFormulaMigration";
+    public const string CanViewReviewFormulaRevision = "CanViewReviewFormulaRevision";
     public const string CanReviewFormulaRevision = "CanReviewFormulaRevision";
+    public const string CanViewApproveFormulaRevision = "CanViewApproveFormulaRevision";
     public const string CanApproveFormulaRevision = "CanApproveFormulaRevision";
     public const string CanExecuteFormulaResponse = "CanExecuteFormulaResponse";
     public const string CanReviewFormRevision = "CanReviewFormRevision";
@@ -3908,7 +3924,17 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Settings,
             PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanViewReviewFormulaRevision
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
             PermissionKeys.CanReviewFormulaRevision
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanViewApproveFormulaRevision
         );
         addPermission(
             PermissionModules.Settings,
@@ -4484,6 +4510,61 @@ public static class PermissionUtils
             PermissionModules.ResearchAndDevelopment,
             PermissionSubmodules.RndTrialBatches,
             PermissionKeys.CanIssueTrialRequisition
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndAnalyticalMethods,
+            PermissionKeys.CanViewRndAnalyticalMethods
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndAnalyticalMethods,
+            PermissionKeys.CanCreateRndAnalyticalMethod
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndAnalyticalMethods,
+            PermissionKeys.CanEditRndAnalyticalMethod
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndStabilityStudies,
+            PermissionKeys.CanViewRndStabilityStudies
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndStabilityStudies,
+            PermissionKeys.CanCreateRndStabilityStudy
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndStabilityStudies,
+            PermissionKeys.CanEditRndStabilityStudy
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndStabilityStudies,
+            PermissionKeys.CanManageRndStabilityChambers
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTechnologyTransfers,
+            PermissionKeys.CanViewRndTechnologyTransfers
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTechnologyTransfers,
+            PermissionKeys.CanCreateRndTechnologyTransfer
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTechnologyTransfers,
+            PermissionKeys.CanEditRndTechnologyTransfer
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndTechnologyTransfers,
+            PermissionKeys.CanPromoteRndTechnologyTransfer
         );
 
         return permissions;

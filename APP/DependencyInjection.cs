@@ -123,6 +123,10 @@ public static class DependencyInjection
         services.AddScoped<IRndProjectRepository, RndProjectRepository>();
         services.AddScoped<IRndFormulationRepository, RndFormulationRepository>();
         services.AddScoped<IRndTrialBatchRepository, RndTrialBatchRepository>();
+        services.AddScoped<IRndAnalyticalMethodRepository, RndAnalyticalMethodRepository>();
+        services.AddScoped<IRndStabilityStudyRepository, RndStabilityStudyRepository>();
+        services.AddScoped<IRndTechnologyTransferRepository, RndTechnologyTransferRepository>();
+        services.AddScoped<IRndDevelopmentReportRepository, RndDevelopmentReportRepository>();
         services.AddScoped<IStaffRequisitionRepository, StaffRequisitionRepository>();
         services.AddScoped<IPayrollCalculationService, PayrollCalculationService>();
         services.AddScoped<IPayrollRepository, PayrollRepository>();
