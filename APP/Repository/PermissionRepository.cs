@@ -56,7 +56,7 @@ public class PermissionRepository(
 
     public async Task<Result<List<PermissionModuleDto>>> GetAllPermissionForUser(Guid userId)
     {
-        var cacheKey = $"Permission_Cache_{userId}";
+        var cacheKey = $"Permission_Cache_V2_{userId}";
 
         try
         {
@@ -121,7 +121,7 @@ public class PermissionRepository(
 
     public async Task<List<PermissionModuleDto>> GetPermissionByRole(Guid roleId)
     {
-        var cacheKey = $"Permission_Cache_{roleId}";
+        var cacheKey = $"Permission_Cache_V2_{roleId}";
 
         try
         {
@@ -146,16 +146,10 @@ public class PermissionRepository(
             )
             .ToListAsync();
 
-        var roleClaimValues = roleClaims.Select(r => r.ClaimValue);
-
         var roleClaimIds = roleClaims.Select(r => r.Id);
 
         // Get all available permissions from PermissionUtils
         var allPermissions = PermissionUtils.GeneratePermissions().ToList();
-
-        var filteredPermissions = allPermissions.Where(permission =>
-            roleClaimValues.Contains(permission.Key)
-        );
 
         // Fetch all required PermissionTypes in a single query
         var permissionTypesLookup = await context
@@ -164,7 +158,10 @@ public class PermissionRepository(
             .ToDictionaryAsync(g => g.Key, g => g.Select(pt => pt.Type).ToList());
 
         // Group permissions by section and map to PermissionSectionDto structure
-        var response = filteredPermissions
+        // Return the complete permission catalog for the role editor. Permissions
+        // that are not yet attached to the role are represented with no access
+        // types, allowing administrators to grant newly introduced permissions.
+        var response = allPermissions
             .GroupBy(permission => permission.Module)
             .Select(g => new PermissionModuleDto
             {
@@ -276,13 +273,13 @@ public class PermissionRepository(
             }
         }
 
-        await redisCache.KeyDeleteAsync($"Permission_Cache_{roleId}");
+        await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{roleId}");
         // Clear the cache for users in the role
         var usersInRole = await userManager.GetUsersInRoleAsync(role.Name ?? "");
         foreach (var user in usersInRole)
         {
             cache.Remove($"UserId_{user.Id}_Permissions");
-            await redisCache.KeyDeleteAsync($"Permission_Cache_{user.Id}");
+            await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{user.Id}");
         }
 
         await context.SaveChangesAsync();

@@ -90,6 +90,12 @@ of duties. The calculation service and runtime cutover remain disabled by defaul
 requires deployed migrations, service authentication, an approved numeric policy/corpus, and
 approved formula/template revisions.
 
+The role-permission read endpoint returns the complete generated permission catalog, including
+newly introduced permissions with an empty access-type list. This allows administrators to grant
+new view permissions (such as `CanViewReviewFormulaRevision` and
+`CanViewApproveFormulaRevision`) without a manual role-claim backfill. Permission responses use a
+versioned cache key so older filtered catalogs cannot hide newly registered permissions.
+
 Replacement approvals run in serializable transactions, retire the prior effective revision, and
 append a `Superseded` audit row. Migration
 `20260907163852_EnforceSingleEffectiveFormulaAndFormRevision` adds filtered unique indexes for one
