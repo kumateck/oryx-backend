@@ -159,6 +159,21 @@ Backend verification at implementation time:
 - Formula-focused tests after adding package sealing and the operator boundary: 36 passed.
 - `dotnet ef migrations has-pending-model-changes ...`: no model drift.
 
+## Formula question revision edit locking
+
+Quality Assurance queue endpoints expose the governed review lifecycle without granting editor access:
+
+- `GET /api/v1/formula-definitions/review-queue` lists `InReview` revisions with no recorded reviewer and requires `CanViewReviewFormulaRevision`.
+- `GET /api/v1/formula-definitions/approval-queue` lists `InReview` revisions with a recorded reviewer and requires `CanViewApproveFormulaRevision`.
+- The corresponding detail reads use the same view permissions; `CanReviewFormulaRevision` and `CanApproveFormulaRevision` are action permissions only.
+
+The frontend QC detail pages load the immutable revision and invoke only the existing validated transition endpoints, preserving the revision hash and audit trail.
+
+Formula question updates reject an existing `InReview` revision with the explicit
+`FormulaDefinition.RevisionInReview` conflict. Draft content remains editable; reviewed,
+approved, and retired revisions are not mutated in place. A correction must proceed through
+the controlled new-draft workflow so the reviewed revision remains auditable.
+
 ## Rollback boundary
 
 The Apply-provenance migration may be rolled back independently before canonical definitions are

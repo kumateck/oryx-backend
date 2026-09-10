@@ -23,6 +23,8 @@ internal static class FormulaDefinitionMapping
             revision.FormulaLanguageVersion,
             revision.NumericPolicyVersion,
             presentationPreset,
+            revision.AuthoringPayloadJson,
+            revision.AuthoringPayloadHash,
             (int)revision.Status,
             revision.Status.ToString(),
             definition.RootElement.Clone(),

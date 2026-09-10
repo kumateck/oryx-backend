@@ -147,6 +147,17 @@ All configurable approval documents now share a fail-closed progression contract
 
 Documentation updated for this task: `README.md`, `docs/services.md`, and `docs/workflows.md`.
 
+## Governed formula authoring completion (2026-09-10)
+
+Formula authoring isolates mutable Draft payloads from legacy `QuestionOption` data, rejects
+generic API bypasses, persists payload hashes through an additive migration, and keeps server
+validation plus maker-checker approval as the only path to an effective revision. The demo deploy
+enables the API client only after the isolated formula worker is healthy. Documentation updated:
+`README.md`, `docs/services.md`, and `docs/workflows.md`.
+
+The API also enforces a global AutoMapper runtime object-graph depth of 32 as the documented
+recursion/availability mitigation for the advisory reported against the retained 14.x package.
+
 ## Contributing
 
 Guidelines for contributing to the project.

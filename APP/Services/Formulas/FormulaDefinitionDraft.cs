@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using DOMAIN.Entities.Formulas;
 
 #nullable enable
@@ -9,8 +11,15 @@ internal static class FormulaDefinitionDraft
 {
     private const int DefinitionBytes = 1_048_576;
     private const int TestCaseBytes = 2_097_152;
+    private const int AuthoringPayloadBytes = 2_097_152;
 
-    public static (string Definition, string Tests)? Normalize(
+    internal sealed record NormalizedDraft(
+        string Definition,
+        string Tests,
+        string AuthoringPayload,
+        string AuthoringPayloadHash);
+
+    public static NormalizedDraft? Normalize(
         FormulaRevisionDraftRequest request)
     {
         if (!IsHash(request.DefinitionHash) ||
@@ -19,11 +28,16 @@ internal static class FormulaDefinitionDraft
             string.IsNullOrWhiteSpace(request.PresentationPreset)) return null;
         try
         {
-            return (
+            var authoringPayload = request.AuthoringPayload ?? request.Definition.GetRawText();
+            if (string.IsNullOrWhiteSpace(authoringPayload) ||
+                Encoding.UTF8.GetByteCount(authoringPayload) > AuthoringPayloadBytes) return null;
+            return new NormalizedDraft(
                 FormulaCanonicalJson.Canonicalize(
                     request.Definition.GetRawText(), DefinitionBytes),
                 FormulaCanonicalJson.Canonicalize(
-                    request.TestCases.GetRawText(), TestCaseBytes));
+                    request.TestCases.GetRawText(), TestCaseBytes),
+                authoringPayload,
+                HashAuthoringPayload(authoringPayload));
         }
         catch (Exception error) when (error is ArgumentException or JsonException)
         {
@@ -33,7 +47,7 @@ internal static class FormulaDefinitionDraft
 
     public static FormulaRevision Build(
         FormulaDefinition definition,
-        (string Definition, string Tests) normalized,
+        NormalizedDraft normalized,
         FormulaRevisionDraftRequest request,
         Guid actorId)
     {
@@ -53,12 +67,14 @@ internal static class FormulaDefinitionDraft
 
     public static void Apply(
         FormulaRevision revision,
-        (string Definition, string Tests) normalized,
+        NormalizedDraft normalized,
         FormulaRevisionDraftRequest request,
         Guid actorId)
     {
         revision.DefinitionJson = normalized.Definition;
         revision.TestCasesJson = normalized.Tests;
+        revision.AuthoringPayloadJson = normalized.AuthoringPayload;
+        revision.AuthoringPayloadHash = normalized.AuthoringPayloadHash;
         revision.DefinitionHash = request.DefinitionHash;
         revision.FormulaLanguageVersion = request.FormulaLanguageVersion;
         revision.NumericPolicyVersion = request.NumericPolicyVersion;
@@ -120,4 +136,11 @@ internal static class FormulaDefinitionDraft
 
     private static bool IsHash(string? value) => value?.Length == 64 &&
         value.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f');
+
+    private static string HashAuthoringPayload(string payload)
+    {
+        var bytes = Encoding.UTF8.GetBytes(
+            $"oryx:formula-authoring-payload:v1\n{payload}");
+        return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+    }
 }

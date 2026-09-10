@@ -310,3 +310,22 @@ complete without weakening authorization on the requested endpoint.
 - An unapproved document returns `Approval.Required` without mutation. Stock issue retains the domain-specific `Requisition.ApprovalRequired` code and checks before warehouses, stock, reservations, bin cards, or movement records are resolved.
 - Missing or zero-stage configurations set the same approval flag through an audited automatic decision; payroll runs are included in that path.
 - `POST /api/v1/requisition/{requisitionId}/issue` is retained for contract compatibility but returns `Requisition.ApprovalWorkflowRequired`. Only `POST /api/v1/approval/approve/{modelType}/{modelId}` may authorize a configured stage, subject to assigned-user/role checks.
+
+## Governed formula question boundary (2026-09-10)
+
+- `POST /api/v1/formula-questions` and `PUT /api/v1/formula-questions/{questionId}` are the only
+  authoring endpoints for formula questions. The generic question repository rejects formula
+  creates, edits, and attempts to change an existing formula into another type with
+  `Form.Question.FormulaGovernanceRequired`.
+- A save changes question metadata and a Draft revision only. It does not delete, recreate, or
+  overwrite the existing `QuestionOption`, so active legacy forms retain their prior executable data.
+- `FormulaRevision.AuthoringPayloadJson` and `AuthoringPayloadHash` preserve the exact editable
+  representation separately from the canonical executable definition. Existing rows remain valid
+  with both fields null and use the preserved legacy option only as an edit-screen compatibility
+  fallback; the first governed save creates populated evidence.
+- Validation remains server-authoritative. Draft persistence may succeed while the calculation
+  service is unavailable, but submit-for-review revalidates and fails closed. Only Approved formula
+  revisions may participate in an approved form revision.
+- The API applies a global AutoMapper object-graph `MaxDepth(32)` in addition to its execution-plan
+  depth limit. This is the runtime recursion mitigation for CVE-2026-32933 while the project remains
+  on the open-source 14.x dependency line; package-audit warnings remain visible in CI.

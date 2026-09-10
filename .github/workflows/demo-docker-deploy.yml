@@ -34,7 +34,9 @@ jobs:
           context: .
           push: true
           file: demo.Dockerfile
-          tags: ${{ env.DOCKER_IMAGE_NAME }}:latest
+          tags: |
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.DOCKER_IMAGE_NAME }}:latest
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:cache,mode=max
   migrate:
@@ -52,7 +54,7 @@ jobs:
 
       - name: Install dotnet-ef
         run: |
-          dotnet tool install -g dotnet-ef --version 8.0.10
+          dotnet tool install -g dotnet-ef --version 9.0.3
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Restore
@@ -113,11 +115,16 @@ jobs:
           CONTAINER_PORT: ${{ env.CONTAINER_PORT }}
         run: |
           ssh -o StrictHostKeyChecking=no "${{ secrets.SSH_USERNAME }}"@"${{ secrets.SSH_HOST }}" -p "${{ secrets.SSH_PORT }}" << EOF
+            set -e
             echo "Logging in to Docker Hub"
             echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
 
-            echo "Pulling the latest Docker image: ${DOCKER_IMAGE_NAME}:latest"
-            docker pull "${DOCKER_IMAGE_NAME}:latest"
+            echo "Verifying the governed calculation service"
+            test -s /opt/oryx/secrets/formula-service-token
+            test "\$(docker inspect --format='{{.State.Health.Status}}' formula-calculation)" = healthy
+
+            echo "Pulling the immutable API image"
+            docker pull "${DOCKER_IMAGE_NAME}:${{ github.sha }}"
 
             echo "Stopping and removing the existing container if it exists"
             if [ \$(docker ps -a | grep "${CONTAINER_NAME}" | wc -l) -gt 0 ]; then
@@ -128,11 +135,8 @@ jobs:
             echo "Ensuring 'sail' network exists"
             docker network inspect sail >/dev/null 2>&1 || docker network create sail
 
-            echo "Pruning unused Docker images"
-            docker image prune -a -f
-
             echo "Running the new Docker container"
-            docker run -d --restart always --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" \
+            docker run -d --init --restart always --net sail -p "${HOST_PORT}:${CONTAINER_PORT}" --name "${CONTAINER_NAME}" \
             --env DB_USERNAME=${{ secrets.DB_USERNAME }} \
             --env DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
             --env ACCESS_KEY=${{ secrets.ACCESS_KEY }} \
@@ -151,5 +155,13 @@ jobs:
             --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
             --env SMTP_HOST=${{ secrets.SMTP_HOST }} \
             --env SMTP_PORT=${{ secrets.SMTP_PORT }} \
-            "${DOCKER_IMAGE_NAME}:latest"
+            --env FORMULA_RUNTIME_ENABLED=true \
+            --env FORMULA_SERVICE_BASE_URL=http://formula-calculation:3101/ \
+            --env FORMULA_SERVICE_AUTH_SECRET_FILE=/run/secrets/formula-service-token \
+            --env FORMULA_SERVICE_CLIENT_TIMEOUT_MS=2500 \
+            --volume /opt/oryx/secrets/formula-service-token:/run/secrets/formula-service-token:ro \
+            "${DOCKER_IMAGE_NAME}:${{ github.sha }}"
+
+            sleep 5
+            test "\$(docker inspect --format='{{.State.Running}}' "${CONTAINER_NAME}")" = true
           EOF

@@ -10,7 +10,7 @@ using SHARED;
 
 namespace APP.Services.Formulas;
 
-public sealed class FormulaDefinitionService(
+public sealed partial class FormulaDefinitionService(
     ApplicationDbContext context,
     IFormulaCalculationClient calculationClient) : IFormulaDefinitionService
 {
@@ -63,7 +63,7 @@ public sealed class FormulaDefinitionService(
         }
 
         var revision = FormulaDefinitionDraft.Build(
-            definition, normalized.Value, request, actorId);
+            definition, normalized, request, actorId);
         context.FormulaRevisions.Add(revision);
         context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
             revision, null, FormulaRevisionStatus.Draft, "DraftCreated",
@@ -82,8 +82,10 @@ public sealed class FormulaDefinitionService(
         var revision = await LoadRevisionAsync(revisionId, cancellationToken);
         if (revision is null) return FormulaDefinitionErrors.NotFound;
         if (revision.Status != FormulaRevisionStatus.Draft)
-            return FormulaDefinitionErrors.Conflict;
-        FormulaDefinitionDraft.Apply(revision, normalized.Value, request, actorId);
+            return revision.Status == FormulaRevisionStatus.InReview
+                ? FormulaDefinitionErrors.RevisionInReview
+                : FormulaDefinitionErrors.RevisionNotEditable;
+        FormulaDefinitionDraft.Apply(revision, normalized, request, actorId);
         revision.FormulaDefinition.PresentationPreset = request.PresentationPreset.Trim();
         context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
             revision, FormulaRevisionStatus.Draft, FormulaRevisionStatus.Draft,
