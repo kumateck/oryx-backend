@@ -34,7 +34,8 @@ public sealed class FormulaQuestionController(
             ? await context.Database.BeginTransactionAsync(
                 IsolationLevel.Serializable, cancellationToken)
             : null;
-        var question = await forms.CreateQuestion(request.Question, actorId);
+        var question = await forms.CreateQuestion(
+            request.Question, actorId, allowGovernedFormula: true);
         if (question.IsFailure) return question.ToProblemDetails();
         var revision = await definitions.CreateDraftAsync(
             question.Value, request.Formula, actorId, correlationId, cancellationToken);
@@ -63,14 +64,16 @@ public sealed class FormulaQuestionController(
             .SelectMany(item => item.FormulaDefinition.Revisions)
             .OrderByDescending(item => item.Revision).ToListAsync(cancellationToken);
         if (revisions.Any(item => item.Status == FormulaRevisionStatus.InReview))
-            return SHARED.Result.Failure(FormulaDefinitionErrors.Conflict).ToProblemDetails();
+            return SHARED.Result.Failure(FormulaDefinitionErrors.RevisionInReview)
+                .ToProblemDetails();
         var draft = revisions.SingleOrDefault(item => item.Status == FormulaRevisionStatus.Draft);
 
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(
                 IsolationLevel.Serializable, cancellationToken)
             : null;
-        var question = await forms.UpdateQuestion(request.Question, questionId, actorId);
+        var question = await FormulaQuestionDraftPersistence.UpdateMetadataAsync(
+            context, request.Question, questionId, actorId, cancellationToken);
         if (question.IsFailure) return question.ToProblemDetails();
         var revision = draft is null
             ? await definitions.CreateDraftAsync(

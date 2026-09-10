@@ -47,6 +47,8 @@ public class FormulaRevisionConfiguration : IEntityTypeConfiguration<FormulaRevi
         });
         builder.Property(item => item.DefinitionJson).HasColumnType("jsonb").IsRequired();
         builder.Property(item => item.TestCasesJson).HasColumnType("jsonb").IsRequired();
+        builder.Property(item => item.AuthoringPayloadJson).HasColumnType("text");
+        builder.Property(item => item.AuthoringPayloadHash).HasMaxLength(64);
         builder.Property(item => item.DefinitionHash).HasMaxLength(64).IsRequired();
         builder.Property(item => item.ReleaseEvidenceHash).HasMaxLength(64).IsRequired();
         builder.Property(item => item.FormulaLanguageVersion).HasMaxLength(64).IsRequired();
@@ -63,6 +65,7 @@ public class FormulaRevisionConfiguration : IEntityTypeConfiguration<FormulaRevi
             table.HasCheckConstraint("CK_FormulaRevision_Status", "\"Status\" BETWEEN 0 AND 3");
             table.HasCheckConstraint("CK_FormulaRevision_DefinitionHash", "\"DefinitionHash\" ~ '^[a-f0-9]{64}$'");
             table.HasCheckConstraint("CK_FormulaRevision_EvidenceHash", "\"ReleaseEvidenceHash\" ~ '^[a-f0-9]{64}$'");
+            table.HasCheckConstraint("CK_FormulaRevision_AuthoringPayload", "(\"AuthoringPayloadJson\" IS NULL AND \"AuthoringPayloadHash\" IS NULL) OR (\"AuthoringPayloadJson\" IS NOT NULL AND octet_length(\"AuthoringPayloadJson\") BETWEEN 1 AND 2097152 AND \"AuthoringPayloadHash\" ~ '^[a-f0-9]{64}$')");
         });
     }
 }
