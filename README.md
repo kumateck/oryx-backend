@@ -136,6 +136,12 @@ the changelog above live in [`docs/`](docs/):
   — additive schema, integrity rules, verification evidence, rollout gates, and rollback boundary.
 - [Formula migration operator tool](docs/formula-migration-operator-tool.md)
   — package sealing, offline verification, authenticated execution, and no-go controls.
+- [Materials ready for checklist report](docs/materials-ready-for-checklist-report.md)
+  — QC/production department scope, lean API contract, and rollout verification.
+
+Documentation updated for the checklist-report endpoint: `README.md`,
+`docs/services.md`, `docs/workflows.md`, and
+`docs/materials-ready-for-checklist-report.md`.
 
 Documentation updated for the formula persistence foundation, controlled definition importer,
 and operator workflow: `README.md`, `docs/services.md`, `docs/workflows.md`,

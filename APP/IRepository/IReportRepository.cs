@@ -44,7 +44,11 @@ public interface IReportRepository
     Task<Result<WarehouseReportDto>> GetWarehouseReport(ReportFilter filter, Guid departmentId);
     Task<Result<List<MaterialBatchReservedQuantityReportDto>>> GetReservedMaterialBatchesForDepartment(
         ReportFilter filter, Guid departmentId);
-    Task<Result<IEnumerable<DistributedRequisitionMaterialDto>>> GetMaterialsReadyForChecklist(ReportFilter filter, Guid userId);
+    Task<Result<IReadOnlyList<MaterialReadyForChecklistDto>>> GetMaterialsReadyForChecklist(
+        MaterialsReadyForChecklistFilter filter,
+        Guid userId,
+        CancellationToken cancellationToken = default
+    );
     Task<Result<List<MaterialBatchDto>>> GetMaterialsReadyForAssignment(ReportFilter filter,
         Guid departmentId);
     Task<Result<LogisticsReportDto>> GetLogisticsReport(ReportFilter filter);

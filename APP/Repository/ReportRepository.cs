@@ -43,7 +43,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ReportRepository(
+public partial class ReportRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IMaterialRepository materialRepository,
@@ -1450,72 +1450,6 @@ public class ReportRepository(
                 Quantity = item.Quantity,
             })
             .ToListAsync();
-    }
-
-    public async Task<
-        Result<IEnumerable<DistributedRequisitionMaterialDto>>
-    > GetMaterialsReadyForChecklist(ReportFilter filter, Guid userId)
-    {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null)
-            return UserErrors.NotFound(userId);
-
-        var warehouses = await context
-            .Warehouses.Where(w => w.DepartmentId == user.DepartmentId)
-            .ToListAsync();
-
-        var rawMaterialWarehouse = warehouses.FirstOrDefault(w =>
-            w.Type == WarehouseType.RawMaterialStorage
-        );
-
-        if (rawMaterialWarehouse is null)
-            return Error.NotFound(
-                "Warehouse.Raw",
-                "This user has no raw material configured for his department"
-            );
-
-        var packageMaterialWarehouse = warehouses.FirstOrDefault(w =>
-            w.Type == WarehouseType.PackagedStorage
-        );
-
-        if (packageMaterialWarehouse is null)
-            return Error.NotFound(
-                "Warehouse.Package",
-                "This user has no packaging material configured for his department"
-            );
-
-        var query = context
-            .DistributedRequisitionMaterials.Include(drm => drm.ShipmentInvoice)
-            .Include(drm => drm.Material)
-            .Include(drm => drm.WarehouseArrivalLocation)
-            .Include(drm => drm.MaterialItemDistributions)
-            .Include(sr => sr.CheckLists)
-                .ThenInclude(cl => cl.MaterialBatches)
-            .Where(drm => drm.Status == DistributedRequisitionMaterialStatus.Pending)
-            .AsQueryable();
-
-        query =
-            filter.MaterialKind == MaterialKind.Raw
-                ? query.Where(q =>
-                    q.WarehouseArrivalLocation.WarehouseId == rawMaterialWarehouse.Id
-                )
-                : query.Where(q =>
-                    q.WarehouseArrivalLocation.WarehouseId == packageMaterialWarehouse.Id
-                );
-
-        if (filter.StartDate.HasValue)
-        {
-            var start = filter.StartDate.Value;
-            query = query.Where(r => r.CreatedAt >= start);
-        }
-
-        if (filter.EndDate.HasValue)
-        {
-            var end = filter.EndDate.Value.AddDays(1);
-            query = query.Where(r => r.CreatedAt < end);
-        }
-
-        return mapper.Map<List<DistributedRequisitionMaterialDto>>(await query.ToListAsync());
     }
 
     public async Task<Result<List<MaterialBatchDto>>> GetMaterialsReadyForAssignment(
