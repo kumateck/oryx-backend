@@ -136,6 +136,12 @@ the changelog above live in [`docs/`](docs/):
   — additive schema, integrity rules, verification evidence, rollout gates, and rollback boundary.
 - [Formula migration operator tool](docs/formula-migration-operator-tool.md)
   — package sealing, offline verification, authenticated execution, and no-go controls.
+- [Materials ready for checklist report](docs/materials-ready-for-checklist-report.md)
+  — QC/production department scope, lean API contract, and rollout verification.
+
+Documentation updated for the checklist-report endpoint: `README.md`,
+`docs/services.md`, `docs/workflows.md`, and
+`docs/materials-ready-for-checklist-report.md`.
 
 Documentation updated for the formula persistence foundation, controlled definition importer,
 and operator workflow: `README.md`, `docs/services.md`, `docs/workflows.md`,
@@ -154,6 +160,13 @@ generic API bypasses, persists payload hashes through an additive migration, and
 validation plus maker-checker approval as the only path to an effective revision. The demo deploy
 enables the API client only after the isolated formula worker is healthy. Documentation updated:
 `README.md`, `docs/services.md`, and `docs/workflows.md`.
+
+## Demo deployment coordination (2026-09-10)
+
+The demo API deployment waits up to two minutes for the independently deployed governed
+calculation service, verifies its health and token mount, and reuses that service's Docker secret
+volume. This removes the frontend/backend workflow race that could otherwise fail deployment
+before the API container starts.
 
 The API also enforces a global AutoMapper runtime object-graph depth of 32 as the documented
 recursion/availability mitigation for the advisory reported against the retained 14.x package.

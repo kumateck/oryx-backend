@@ -39,6 +39,12 @@ a regulated lifecycle boundary through either the application UI or a direct API
 
 ## Formula dependency execution and migration rehearsal (2026-09-07)
 
+The demo deployment workflows run independently. The API deploy therefore waits for the
+`formula-calculation` service rather than checking it once and racing the frontend deployment.
+It verifies the service health and token mount for up to 120 seconds, then reuses the service's
+Docker secret volume when starting the API. If the service is still unavailable, the deploy fails
+with its status and recent logs before stopping the existing API container.
+
 1. A response formula snapshot freezes typed source bindings from its approved form revision.
 2. The input resolver reads same-response source evidence. Table statistics are calculated under
    the frozen table precision; formula-result sources must be authoritative and current by input
@@ -350,3 +356,12 @@ orders exist the rate is null rather than a fabricated zero.
    must not make otherwise valid customer-pricing workflow tests fail after that date passes.
 8. Every deployment workflow generates migrations with `dotnet-ef` 9.0.3, matching the EF Core
    runtime packages; the pipeline does not use an older major-version migration tool.
+## QC checklist report scope (2026-09-14)
+
+1. Resolve the authenticated user's persisted department and department type.
+2. Restrict a production user to that production department, regardless of client UI.
+3. For a non-production or R&D user, use all production departments by default or the
+   selected active production department.
+4. Apply optional material-kind and inclusive timestamp filters to pending receipts.
+5. Return an empty report when no receipt matches; warehouse configuration is not an
+   error for consolidated QC reporting.
