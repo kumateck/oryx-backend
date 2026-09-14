@@ -356,3 +356,12 @@ orders exist the rate is null rather than a fabricated zero.
    must not make otherwise valid customer-pricing workflow tests fail after that date passes.
 8. Every deployment workflow generates migrations with `dotnet-ef` 9.0.3, matching the EF Core
    runtime packages; the pipeline does not use an older major-version migration tool.
+## QC checklist report scope (2026-09-14)
+
+1. Resolve the authenticated user's persisted department and department type.
+2. Restrict a production user to that production department, regardless of client UI.
+3. For a non-production or R&D user, use all production departments by default or the
+   selected active production department.
+4. Apply optional material-kind and inclusive timestamp filters to pending receipts.
+5. Return an empty report when no receipt matches; warehouse configuration is not an
+   error for consolidated QC reporting.

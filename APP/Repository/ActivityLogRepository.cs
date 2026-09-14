@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -5,6 +6,7 @@ using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SortDirection = SHARED.SortDirection;
 
@@ -47,6 +49,20 @@ public class ActivityLogRepository(MongoDbContext context, IMapper mapper, Appli
 
         if (filter.EndDate.HasValue)
             filterDefinition &= Builders<ActivityLog>.Filter.Lte(log => log.CreatedAt, filter.EndDate.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
+        {
+            var pattern = new BsonRegularExpression(Regex.Escape(filter.SearchQuery), "i");
+            filterDefinition &= Builders<ActivityLog>.Filter.Or(
+                Builders<ActivityLog>.Filter.Regex(log => log.Action, pattern),
+                Builders<ActivityLog>.Filter.Regex(log => log.Module, pattern),
+                Builders<ActivityLog>.Filter.Regex(log => log.SubModule, pattern),
+                Builders<ActivityLog>.Filter.Regex(log => log.Url, pattern),
+                Builders<ActivityLog>.Filter.Regex(log => log.User.FirstName, pattern),
+                Builders<ActivityLog>.Filter.Regex(log => log.User.LastName, pattern),
+                Builders<ActivityLog>.Filter.Regex(log => log.User.Email, pattern)
+            );
+        }
 
         // Get total count before pagination
         var totalRecords = await _activityLogs.CountDocumentsAsync(filterDefinition);
