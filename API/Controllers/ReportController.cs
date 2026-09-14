@@ -208,21 +208,30 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     /// <summary>
-    /// Gets a list of materials ready for checklist for a specific user.
+    /// Gets pending materials ready for QC checklist review.
+    /// Production users are restricted to their own department. Non-production users
+    /// receive a consolidated report unless a production department is selected.
     /// </summary>
     [HttpGet("materials-ready-for-checklist")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(IEnumerable<DistributedRequisitionMaterialDto>)
+        Type = typeof(IReadOnlyList<MaterialReadyForChecklistDto>)
     )]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialsReadyForChecklist([FromQuery] ReportFilter filter)
+    public async Task<IResult> GetMaterialsReadyForChecklist(
+        [FromQuery] MaterialsReadyForChecklistFilter filter
+    )
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.GetMaterialsReadyForChecklist(filter, Guid.Parse(userId));
+        var result = await repository.GetMaterialsReadyForChecklist(
+            filter,
+            Guid.Parse(userId),
+            HttpContext.RequestAborted
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

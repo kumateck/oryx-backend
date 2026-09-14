@@ -341,3 +341,11 @@ complete without weakening authorization on the requested endpoint.
 - The API applies a global AutoMapper object-graph `MaxDepth(32)` in addition to its execution-plan
   depth limit. This is the runtime recursion mitigation for CVE-2026-32933 while the project remains
   on the open-source 14.x dependency line; package-audit warnings remain visible in CI.
+## QC materials-ready-for-checklist report (2026-09-14)
+
+`GET /api/v1/report/materials-ready-for-checklist` now accepts optional
+`departmentId`, `materialKind`, `startDate`, and `endDate`. Production callers are
+server-scoped to their own department; non-production and R&D callers default to all
+production departments and may select one active production department. The response
+is a lean `MaterialReadyForChecklistDto[]` projection rather than a full distributed
+material entity graph. See [the report contract](materials-ready-for-checklist-report.md).
