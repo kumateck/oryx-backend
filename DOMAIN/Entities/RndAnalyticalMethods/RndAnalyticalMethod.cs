@@ -25,6 +25,10 @@ public class RndAnalyticalMethod : BaseEntity
     public DateTime? ValidatedAt { get; set; }
     public Guid? ValidatedById { get; set; }
     public User ValidatedBy { get; set; }
+    public Guid? TransferredStpId { get; set; }
+    public DateTime? TransferredAt { get; set; }
+    public Guid? TransferredById { get; set; }
+    public User TransferredBy { get; set; }
 }
 
 public enum RndAnalyticalMethodStatus
@@ -32,6 +36,7 @@ public enum RndAnalyticalMethodStatus
     Draft = 0,
     UnderValidation = 1,
     Validated = 2,
+    Transferred = 3,
 }
 
 public class RndAnalyticalMethodDto : BaseDto
@@ -45,6 +50,9 @@ public class RndAnalyticalMethodDto : BaseDto
     public Guid? ValidationProtocolFormId { get; set; }
     public DateTime? ValidatedAt { get; set; }
     public UserDto ValidatedBy { get; set; }
+    public Guid? TransferredStpId { get; set; }
+    public DateTime? TransferredAt { get; set; }
+    public UserDto TransferredBy { get; set; }
 }
 
 public class CreateRndAnalyticalMethodRequest
@@ -59,4 +67,10 @@ public class CreateRndAnalyticalMethodRequest
 public class UpdateRndAnalyticalMethodStatusRequest
 {
     public RndAnalyticalMethodStatus Status { get; set; }
+}
+
+public class TransferRndAnalyticalMethodRequest
+{
+    [Required, StringLength(255)] public string StpNumber { get; set; }
+    [StringLength(4000)] public string Description { get; set; }
 }

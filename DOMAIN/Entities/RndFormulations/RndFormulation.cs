@@ -1,18 +1,30 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.RndProjects;
 using SHARED;
 
 namespace DOMAIN.Entities.RndFormulations;
 
-public class RndFormulation : BaseEntity
+public class RndFormulation : BaseEntity, IRequireApproval
 {
     public Guid RndProjectId { get; set; }
     public RndProject RndProject { get; set; }
     public int Version { get; set; }
     public RndFormulationStatus Status { get; set; }
     public List<RndFormulationItem> Items { get; set; } = [];
+    public bool Approved { get; set; }
+    public List<RndFormulationApprovals> Approvals { get; set; } = [];
+}
+
+public class RndFormulationApprovals : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid RndFormulationId { get; set; }
+    public RndFormulation RndFormulation { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 public enum RndFormulationStatus
@@ -57,6 +69,13 @@ public class RndFormulationDto : BaseDto
     public int Version { get; set; }
     public RndFormulationStatus Status { get; set; }
     public List<RndFormulationItemDto> Items { get; set; } = [];
+    public bool Approved { get; set; }
+}
+
+public class RndFormulationReviewDto
+{
+    public RndFormulationDto Formulation { get; set; }
+    public RndProjectDto Project { get; set; }
 }
 
 public class RndFormulationItemDto : BaseDto

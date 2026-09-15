@@ -16,4 +16,9 @@ public interface IRndFormulationRepository
         int page,
         int pageSize
     );
+    Task<Result<Paginateable<IEnumerable<RndFormulationReviewDto>>>> GetReviewQueue(
+        int page,
+        int pageSize
+    );
+    Task<Result<RndFormulationReviewDto>> GetReviewItem(Guid formulationId);
 }
