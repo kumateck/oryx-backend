@@ -2,6 +2,25 @@
 
 ## Recent Updates
 
+- Full Procedures Phase-0 backend proof (2026-09-15): an isolated .NET graph/run
+  transition model and six focused tests cover version/content pinning, QC waits,
+  parallel joins, IPC due time, abort, optimistic versioning, retry and serialized
+  restart. A separate disposable PostgreSQL spike proves transactional state,
+  audit and outbox rollback, fresh-connection recovery, competing writers and
+  local effect-receipt deduplication. A test-only leased outbox worker retries
+  after a forced post-effect failure using a fake idempotent adapter. A separate
+  test worker is killed at three points around the fake effect/receipt, and a
+  new process resumes after lease expiry; all 15 focused tests pass with a
+  disposable PostgreSQL URL. Neither spike is registered in an API or live
+  batch path. Database restart, durable timer and real-effect recovery,
+  real outbox delivery, QC authority and material effects remain unproved; see
+  `docs/full-procedures-phase-0-backend.md`.
+  A separate action-contract issue snapshot now pins exact action/interpreter
+  versions and blocks unknown versions. One shared no-database focused run
+  passed 13 tests and skipped eight PostgreSQL tests; a later combined database
+  run could not build during unrelated concurrent Routine QC edits. Re-run it
+  when that build is stable. No new Procedure API or live batch path was added.
+
 - Collaborative template drafting (2026-09-08): forms may persist tests before questions are
   available. Product and material ARD creation remains fail-closed and returns `Form.Question` if
   any selected-template test has no question. See `docs/services.md` and `docs/workflows.md`.

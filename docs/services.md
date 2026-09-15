@@ -1,5 +1,25 @@
 # Service contracts
 
+## Full Procedures Phase-0 service boundary (2026-09-15)
+
+`APP.Services.FullProcedures.ProcedureRuntimeSpike` is a side-effect-free proof,
+not a DI-registered service or endpoint. It checks graph/content pinning and
+transition eligibility but does not validate actor authority, approved QC
+receipts, BMR/BPR releases or inventory effects. No API contract has changed.
+`ProcedureSqlSpikeStore` and `ProcedureSqlOutboxSpike` are likewise unregistered
+and refuse any database name other than `oryx_procedure_spike_test`. Their
+disposable PostgreSQL proof writes
+state/audit/outbox atomically and deduplicates local effect receipts. A leased
+retry test uses a fake idempotent adapter and proves one fake effect after a
+forced post-effect failure. A separate test-only worker is killed before or
+after its fake effect/local receipt, then a new process reclaims the event;
+neither sends real outbox events or executes domain effects. See
+`full-procedures-phase-0-backend.md` for the remaining runtime decision.
+`ProcedureActionContractSpike` is also unregistered: it snapshots exact action
+contract content and interpreter versions at prototype issue, then blocks an
+unknown/missing version at interpretation. Its hash is not approval evidence,
+and it does not authenticate an actor, select BMR/BPR masters or perform effects.
+
 ## Template drafting and ARD readiness boundary (2026-09-08)
 
 - `POST /api/v1/form` permits a form section/test whose `fields` collection is empty so template

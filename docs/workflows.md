@@ -1,5 +1,25 @@
 # Workflow behavior
 
+## Full Procedures Phase-0 backend semantics (2026-09-15)
+
+The isolated `APP/Services/FullProcedures/ProcedureRuntimeSpike.cs` proves graph
+transition gates in tests only. It does not change existing Route activity status,
+approval, QC, inventory or dispatch workflows. Its QC receipt is not verified,
+JSON restore is not durable recovery, and Abort has no disposition/closeout
+adapter. See `full-procedures-phase-0-backend.md` before connecting any live flow.
+The disposable PostgreSQL spike proves rollback and retry of state/audit/outbox
+without changing any existing approval, stock or release workflow. A test-only
+leased outbox worker survives a simulated failure after a fake idempotent
+adapter effect: two attempts produce one fake effect. A separate test worker is
+also killed at three windows around the fake effect and local receipt; a new
+process resumes the lease-expired event while restoring the committed run. It
+has no production dispatcher or
+real domain adapter; this cannot prevent duplicate physical work.
+The isolated action-contract proof retains issue-time action content rather than
+consulting newer catalog drafts. An unsupported runtime/action version yields a
+blocked code; it does not silently substitute another version or change any
+existing operator workflow.
+
 ## Collaborative template drafting and ARD creation (2026-09-08)
 
 1. A template author may save a named test with zero questions as an incomplete draft.
