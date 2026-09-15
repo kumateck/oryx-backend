@@ -15,6 +15,8 @@ using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.RndProjects;
+using DOMAIN.Entities.RndFormulations;
+using DOMAIN.Entities.RndTechnologyTransfers;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockAdjustments;
@@ -164,6 +166,24 @@ internal static class AutomaticApprovalProcessor
                 EnsureFound(rndProject, modelType, modelId);
                 rndProject.Approved = true;
                 rndProject.Status = RndProjectStatus.InDevelopment;
+                break;
+
+            case nameof(RndFormulation):
+                var formulation = await context.RndFormulations
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(formulation, modelType, modelId);
+                formulation.Approved = true;
+                formulation.Status = RndFormulationStatus.Approved;
+                break;
+
+            case nameof(RndTechnologyTransfer):
+                var rndTransfer = await context.RndTechnologyTransfers
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(rndTransfer, modelType, modelId);
+                rndTransfer.Approved = true;
+                rndTransfer.Status = RndTechnologyTransferStatus.ProtocolApproved;
+                rndTransfer.ProtocolApprovedAt = DateTime.UtcNow;
+                rndTransfer.ProtocolApprovalComments = reason;
                 break;
 
             case nameof(JobRequest):

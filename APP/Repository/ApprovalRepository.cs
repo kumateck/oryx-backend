@@ -23,6 +23,8 @@ using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.RndProjects;
+using DOMAIN.Entities.RndFormulations;
+using DOMAIN.Entities.RndTechnologyTransfers;
 using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockAdjustments;
@@ -168,6 +170,12 @@ public class ApprovalRepository(
 
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+        if (modelType == nameof(RndFormulation))
+            return await RndFormulationApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+        if (modelType == nameof(RndTechnologyTransfer))
+            return await RndTechnologyTransferApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
         if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
@@ -2137,6 +2145,12 @@ public class ApprovalRepository(
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
+        if (modelType == nameof(RndFormulation))
+            return await RndFormulationApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
+        if (modelType == nameof(RndTechnologyTransfer))
+            return await RndTechnologyTransferApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
 
         if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
         {
@@ -3759,6 +3773,41 @@ public class ApprovalRepository(
             });
         }
 
+        var rndFormulations = await context.RndFormulations.AsSplitQuery()
+            .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
+            .Include(item => item.RndProject).ThenInclude(project => project.Department)
+            .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
+            .Where(item => item.Status == RndFormulationStatus.InReview && item.Approvals.Any(stage =>
+                stage.ActivatedAt.HasValue && stage.Status == ApprovalStatus.Pending
+                && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+            .ToListAsync();
+        entitiesRequiringApproval.AddRange(rndFormulations.Select(item => new ApprovalEntity
+        {
+            ModelType = nameof(RndFormulation), Id = item.Id,
+            Code = $"{item.RndProject.Code} · V{item.Version}", CreatedAt = item.CreatedAt,
+            Department = mapper.Map<DepartmentDto>(item.RndProject.Department),
+            RequestedBy = mapper.Map<UserDto>(item.RndProject.RequestedBy),
+            ApprovalLogs = GetApprovalLogs(item.Id),
+        }));
+
+        var rndTransfers = await context.RndTechnologyTransfers.AsSplitQuery()
+            .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
+            .Include(item => item.RndProject).ThenInclude(project => project.Department)
+            .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
+            .Where(item => item.Status == RndTechnologyTransferStatus.ProtocolInReview
+                && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
+                    && stage.Status == ApprovalStatus.Pending
+                    && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+            .ToListAsync();
+        entitiesRequiringApproval.AddRange(rndTransfers.Select(item => new ApprovalEntity
+        {
+            ModelType = nameof(RndTechnologyTransfer), Id = item.Id,
+            Code = $"{item.RndProject.Code} · Transfer", CreatedAt = item.CreatedAt,
+            Department = mapper.Map<DepartmentDto>(item.RndProject.Department),
+            RequestedBy = mapper.Map<UserDto>(item.RndProject.RequestedBy),
+            ApprovalLogs = GetApprovalLogs(item.Id),
+        }));
+
         if (!string.IsNullOrEmpty(modelType))
         {
             entitiesRequiringApproval = entitiesRequiringApproval
@@ -3806,6 +3855,8 @@ public class ApprovalRepository(
         await Collect(context.CustomerQuotationApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.RndProjectApprovals);
+        await Collect(context.RndFormulationApprovals.Where(stage => stage.ActivatedAt.HasValue));
+        await Collect(context.RndTechnologyTransferApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.FinishedGoodsTransferNoteApprovals);
         await Collect(context.ProductionExtraPackingApprovals);
         await Collect(context.PaymentApprovals.Where(stage => stage.ActivatedAt.HasValue));
@@ -4167,6 +4218,8 @@ public class ApprovalRepository(
                     .Include(item => item.Approvals)
                         .ThenInclude(stage => stage.ApprovedBy)
                     .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (rndProject is null)
+                    return Error.NotFound("RndProject.NotFound", "R&D project not found.");
                 return new ApprovalEntity
                 {
                     ModelType = modelType,
@@ -4175,6 +4228,40 @@ public class ApprovalRepository(
                     CreatedAt = rndProject.CreatedAt,
                     Department = mapper.Map<DepartmentDto>(rndProject.Department),
                     RequestedBy = mapper.Map<UserDto>(rndProject.RequestedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
+            case nameof(RndFormulation):
+                var rndFormulation = await context.RndFormulations
+                    .Include(item => item.RndProject).ThenInclude(project => project.Department)
+                    .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (rndFormulation is null)
+                    return Error.NotFound("RndFormulation.NotFound", "Formulation not found.");
+                return new ApprovalEntity
+                {
+                    ModelType = modelType, Id = modelId,
+                    Code = $"{rndFormulation.RndProject.Code} · V{rndFormulation.Version}",
+                    CreatedAt = rndFormulation.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(rndFormulation.RndProject.Department),
+                    RequestedBy = mapper.Map<UserDto>(rndFormulation.RndProject.RequestedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
+            case nameof(RndTechnologyTransfer):
+                var rndTransfer = await context.RndTechnologyTransfers
+                    .Include(item => item.RndProject).ThenInclude(project => project.Department)
+                    .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (rndTransfer is null)
+                    return Error.NotFound("RndTechnologyTransfer.NotFound", "Technology transfer not found.");
+                return new ApprovalEntity
+                {
+                    ModelType = modelType, Id = modelId,
+                    Code = $"{rndTransfer.RndProject.Code} · Transfer",
+                    CreatedAt = rndTransfer.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(rndTransfer.RndProject.Department),
+                    RequestedBy = mapper.Map<UserDto>(rndTransfer.RndProject.RequestedBy),
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
@@ -4348,6 +4435,12 @@ public class ApprovalRepository(
                 break;
             case nameof(RndProject):
                 await RndProjectApprovalHandler.CreateAsync(context, modelId, stages, approval);
+                break;
+            case nameof(RndFormulation):
+                await RndFormulationApprovalHandler.CreateAsync(context, modelId, stages, approval);
+                break;
+            case nameof(RndTechnologyTransfer):
+                await RndTechnologyTransferApprovalHandler.CreateAsync(context, modelId, stages, approval);
                 break;
             default:
                 throw new NotSupportedException(
