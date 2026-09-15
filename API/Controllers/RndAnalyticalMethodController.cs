@@ -71,6 +71,24 @@ public class RndAnalyticalMethodController(IRndAnalyticalMethodRepository reposi
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
+    /// <summary>Transfers a validated method into a traceable production STP.</summary>
+    [HttpPost("{methodId:guid}/transfer")]
+    [Authorize(PermissionKeys.CanTransferRndAnalyticalMethod)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> TransferToStp(
+        [FromRoute] Guid methodId,
+        [FromBody] TransferRndAnalyticalMethodRequest request
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId is null) return TypedResults.Unauthorized();
+
+        var result = await repository.TransferToStp(methodId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Retrieves an analytical method by its ID.
     /// </summary>

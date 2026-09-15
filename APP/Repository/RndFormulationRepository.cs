@@ -86,6 +86,7 @@ public class RndFormulationRepository(ApplicationDbContext context, IMapper mapp
             RndProjectId = rndProjectId,
             Version = 1,
             Status = RndFormulationStatus.Draft,
+            Approved = false,
             Items = itemsResult.Value,
             CreatedById = userId,
         };
@@ -122,6 +123,7 @@ public class RndFormulationRepository(ApplicationDbContext context, IMapper mapp
             RndProjectId = previous.RndProjectId,
             Version = previous.Version + 1,
             Status = RndFormulationStatus.Draft,
+            Approved = false,
             Items = itemsResult.Value,
             CreatedById = userId,
         };
@@ -170,7 +172,6 @@ public class RndFormulationRepository(ApplicationDbContext context, IMapper mapp
         var validTransition = (formulation.Status, status) switch
         {
             (RndFormulationStatus.Draft, RndFormulationStatus.InReview) => true,
-            (RndFormulationStatus.InReview, RndFormulationStatus.Approved) => true,
             (RndFormulationStatus.InReview, RndFormulationStatus.Draft) => true,
             _ => false,
         };
@@ -245,4 +246,12 @@ public class RndFormulationRepository(ApplicationDbContext context, IMapper mapp
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, MapFormulation);
     }
+
+    public Task<Result<Paginateable<IEnumerable<RndFormulationReviewDto>>>> GetReviewQueue(
+        int page,
+        int pageSize
+    ) => RndFormulationReviewQueue.Get(context, mapper, page, pageSize);
+
+    public Task<Result<RndFormulationReviewDto>> GetReviewItem(Guid formulationId) =>
+        RndFormulationReviewQueue.GetItem(context, mapper, formulationId);
 }

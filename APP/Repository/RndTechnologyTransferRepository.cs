@@ -61,6 +61,7 @@ public class RndTechnologyTransferRepository(
             RndFormulationId = request.RndFormulationId,
             GapAnalysisFormId = request.GapAnalysisFormId,
             Status = RndTechnologyTransferStatus.DueDiligence,
+            Approved = false,
             CreatedById = userId,
         };
 
@@ -78,8 +79,9 @@ public class RndTechnologyTransferRepository(
         var validTransition = (transfer.Status, request.Status) switch
         {
             (RndTechnologyTransferStatus.DueDiligence, RndTechnologyTransferStatus.GapAnalysis) => true,
-            (RndTechnologyTransferStatus.GapAnalysis, RndTechnologyTransferStatus.ProtocolApproved) => true,
             (RndTechnologyTransferStatus.GapAnalysis, RndTechnologyTransferStatus.DueDiligence) => true,
+            (RndTechnologyTransferStatus.GapAnalysis, RndTechnologyTransferStatus.ProtocolInReview) => true,
+            (RndTechnologyTransferStatus.ProtocolApproved, RndTechnologyTransferStatus.ExecutionInProgress) => true,
             _ => false,
         };
 
@@ -92,6 +94,11 @@ public class RndTechnologyTransferRepository(
 
         transfer.Status = request.Status;
         transfer.LastUpdatedById = userId;
+        if (request.Status == RndTechnologyTransferStatus.ExecutionInProgress)
+        {
+            transfer.ExecutionStartedAt = DateTime.UtcNow;
+            transfer.ExecutionStartedById = userId;
+        }
 
         context.RndTechnologyTransfers.Update(transfer);
         await context.SaveChangesAsync();
@@ -106,10 +113,10 @@ public class RndTechnologyTransferRepository(
         if (transfer is null)
             return Error.NotFound("RndTechnologyTransfer.NotFound", "Technology transfer not found.");
 
-        if (transfer.Status != RndTechnologyTransferStatus.ProtocolApproved)
+        if (transfer.Status != RndTechnologyTransferStatus.ExecutionInProgress)
             return Error.Validation(
                 "RndTechnologyTransfer.InvalidStatus",
-                "The transfer protocol must be Approved before promoting to production."
+                "Transfer execution must be started before promoting to production."
             );
 
         if (!transfer.RndProject.ProductId.HasValue)
@@ -171,7 +178,10 @@ public class RndTechnologyTransferRepository(
     }
 
     private IQueryable<RndTechnologyTransfer> TransferDetailQuery() =>
-        context.RndTechnologyTransfers.Include(t => t.CompletedBy);
+        context.RndTechnologyTransfers
+            .Include(t => t.CompletedBy)
+            .Include(t => t.ProtocolApprovedBy)
+            .Include(t => t.ExecutionStartedBy);
 
     public async Task<Result<RndTechnologyTransferDto>> GetTransfer(Guid id)
     {

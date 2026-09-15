@@ -627,6 +627,7 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.RndProjects.RndProject> RndProjects { get; set; }
     public DbSet<DOMAIN.Entities.RndProjects.RndProjectApprovals> RndProjectApprovals { get; set; }
     public DbSet<DOMAIN.Entities.RndFormulations.RndFormulation> RndFormulations { get; set; }
+    public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationApprovals> RndFormulationApprovals { get; set; }
     public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationItem> RndFormulationItems { get; set; }
     public DbSet<DOMAIN.Entities.RndFormulations.RndFormulationItemSubstitute> RndFormulationItemSubstitutes { get; set; }
     public DbSet<DOMAIN.Entities.RndTrialBatches.RndTrialBatch> RndTrialBatches { get; set; }
@@ -635,6 +636,7 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy> RndStabilityStudies { get; set; }
     public DbSet<DOMAIN.Entities.RndStabilityStudies.RndStabilityPullPoint> RndStabilityPullPoints { get; set; }
     public DbSet<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer> RndTechnologyTransfers { get; set; }
+    public DbSet<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransferApprovals> RndTechnologyTransferApprovals { get; set; }
 
     #endregion
 
@@ -2090,6 +2092,8 @@ public class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.ValidationProtocolFormId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.ValidatedBy)
             .WithMany().HasForeignKey(item => item.ValidatedById).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.TransferredBy)
+            .WithMany().HasForeignKey(item => item.TransferredById).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy>().HasOne(item => item.RndTrialBatch)
             .WithMany().HasForeignKey(item => item.RndTrialBatchId).OnDelete(DeleteBehavior.Restrict);
@@ -2106,6 +2110,10 @@ public class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.GapAnalysisFormId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer>().HasOne(item => item.CompletedBy)
             .WithMany().HasForeignKey(item => item.CompletedById).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer>().HasOne(item => item.ProtocolApprovedBy)
+            .WithMany().HasForeignKey(item => item.ProtocolApprovedById).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer>().HasOne(item => item.ExecutionStartedBy)
+            .WithMany().HasForeignKey(item => item.ExecutionStartedById).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Customer>().HasOne(item => item.TermsOfPayment)
             .WithMany().HasForeignKey(item => item.TermsOfPaymentId).OnDelete(DeleteBehavior.Restrict);
@@ -2288,6 +2296,30 @@ public class ApplicationDbContext(
             {
                 a.ApprovalId,
                 a.RndProjectId,
+                a.Order,
+                a.UserId,
+                a.RoleId,
+            })
+            .IsUnique();
+
+        modelBuilder
+            .Entity<DOMAIN.Entities.RndFormulations.RndFormulationApprovals>()
+            .HasIndex(a => new
+            {
+                a.ApprovalId,
+                a.RndFormulationId,
+                a.Order,
+                a.UserId,
+                a.RoleId,
+            })
+            .IsUnique();
+
+        modelBuilder
+            .Entity<DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransferApprovals>()
+            .HasIndex(a => new
+            {
+                a.ApprovalId,
+                a.RndTechnologyTransferId,
                 a.Order,
                 a.UserId,
                 a.RoleId,

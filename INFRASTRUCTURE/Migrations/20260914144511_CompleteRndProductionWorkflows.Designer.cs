@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914144511_CompleteRndProductionWorkflows")]
+    partial class CompleteRndProductionWorkflows
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -14936,9 +14939,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -14977,68 +14977,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("RndProjectId");
 
                     b.ToTable("RndFormulations");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.RndFormulations.RndFormulationApprovals", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ApprovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("RndFormulationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApprovedById");
-
-                    b.HasIndex("RndFormulationId");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("ApprovalId", "RndFormulationId", "Order", "UserId", "RoleId")
-                        .IsUnique();
-
-                    b.ToTable("RndFormulationApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.RndFormulations.RndFormulationItem", b =>
@@ -15494,9 +15432,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("BillOfMaterialId")
                         .HasColumnType("uuid");
 
@@ -15573,68 +15508,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("RndProjectId");
 
                     b.ToTable("RndTechnologyTransfers");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransferApprovals", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ApprovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("RndTechnologyTransferId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApprovedById");
-
-                    b.HasIndex("RndTechnologyTransferId");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("ApprovalId", "RndTechnologyTransferId", "Order", "UserId", "RoleId")
-                        .IsUnique();
-
-                    b.ToTable("RndTechnologyTransferApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.RndTrialBatches.RndTrialBatch", b =>
@@ -28323,43 +28196,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RndProject");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.RndFormulations.RndFormulationApprovals", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById");
-
-                    b.HasOne("DOMAIN.Entities.RndFormulations.RndFormulation", "RndFormulation")
-                        .WithMany("Approvals")
-                        .HasForeignKey("RndFormulationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
-
-                    b.Navigation("ApprovedBy");
-
-                    b.Navigation("RndFormulation");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.RndFormulations.RndFormulationItem", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "BaseUoM")
@@ -28715,43 +28551,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RndFormulation");
 
                     b.Navigation("RndProject");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransferApprovals", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById");
-
-                    b.HasOne("DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer", "RndTechnologyTransfer")
-                        .WithMany("Approvals")
-                        .HasForeignKey("RndTechnologyTransferId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
-
-                    b.Navigation("ApprovedBy");
-
-                    b.Navigation("RndTechnologyTransfer");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.RndTrialBatches.RndTrialBatch", b =>
@@ -31402,8 +31201,6 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.RndFormulations.RndFormulation", b =>
                 {
-                    b.Navigation("Approvals");
-
                     b.Navigation("Items");
                 });
 
@@ -31420,11 +31217,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy", b =>
                 {
                     b.Navigation("PullPoints");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransfer", b =>
-                {
-                    b.Navigation("Approvals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Routes.Route", b =>
