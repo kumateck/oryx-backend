@@ -3,6 +3,8 @@ using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.RndAnalyticalMethods;
+using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.ProductStandardTestProcedures;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -156,12 +158,76 @@ public class RndAnalyticalMethodRepository(ApplicationDbContext context, IMapper
         return Result.Success();
     }
 
+    public async Task<Result<Guid>> TransferToStp(
+        Guid id,
+        TransferRndAnalyticalMethodRequest request,
+        Guid userId
+    )
+    {
+        var method = await context.RndAnalyticalMethods.FirstOrDefaultAsync(m => m.Id == id);
+        if (method is null)
+            return Error.NotFound("RndAnalyticalMethod.NotFound", "Analytical method not found.");
+        if (method.Status != RndAnalyticalMethodStatus.Validated)
+            return Error.Validation("RndAnalyticalMethod.NotValidated", "Only a validated method can be transferred.");
+        if (method.ValidatedById == userId)
+            return Error.Validation("RndAnalyticalMethod.SeparationOfDuties", "The validator cannot transfer the same method.");
+
+        var stpNumber = request.StpNumber?.Trim();
+        if (string.IsNullOrWhiteSpace(stpNumber))
+            return Error.Validation("RndAnalyticalMethod.StpNumberRequired", "An STP number is required.");
+
+        Guid stpId;
+        if (method.MaterialId.HasValue)
+        {
+            var exists = await context.MaterialStandardTestProcedures.AnyAsync(stp =>
+                stp.MaterialId == method.MaterialId.Value && stp.StpNumber == stpNumber);
+            if (exists)
+                return Error.Validation("RndAnalyticalMethod.StpExists", "This material already has the specified STP.");
+            var stp = new MaterialStandardTestProcedure
+            {
+                MaterialId = method.MaterialId.Value,
+                StpNumber = stpNumber,
+                Description = request.Description ?? method.Description,
+                CreatedById = userId,
+            };
+            context.MaterialStandardTestProcedures.Add(stp);
+            stpId = stp.Id;
+        }
+        else if (method.ProductId.HasValue)
+        {
+            var exists = await context.ProductStandardTestProcedures.AnyAsync(stp =>
+                stp.ProductId == method.ProductId.Value && stp.StpNumber == stpNumber);
+            if (exists)
+                return Error.Validation("RndAnalyticalMethod.StpExists", "This product already has the specified STP.");
+            var stp = new ProductStandardTestProcedure
+            {
+                ProductId = method.ProductId.Value,
+                StpNumber = stpNumber,
+                Description = request.Description ?? method.Description,
+                CreatedById = userId,
+            };
+            context.ProductStandardTestProcedures.Add(stp);
+            stpId = stp.Id;
+        }
+        else
+            return Error.Validation("RndAnalyticalMethod.Subject", "The method has no material or product subject.");
+
+        method.Status = RndAnalyticalMethodStatus.Transferred;
+        method.TransferredStpId = stpId;
+        method.TransferredAt = DateTime.UtcNow;
+        method.TransferredById = userId;
+        method.LastUpdatedById = userId;
+        await context.SaveChangesAsync();
+        return stpId;
+    }
+
     private IQueryable<RndAnalyticalMethod> MethodDetailQuery() =>
         context
             .RndAnalyticalMethods.AsSplitQuery()
             .Include(m => m.Material)
             .Include(m => m.Product)
-            .Include(m => m.ValidatedBy);
+            .Include(m => m.ValidatedBy)
+            .Include(m => m.TransferredBy);
 
     public async Task<Result<RndAnalyticalMethodDto>> GetMethod(Guid id)
     {

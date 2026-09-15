@@ -502,6 +502,7 @@ public static class PermissionKeys
     public const string CanViewRndAnalyticalMethods = "CanViewRndAnalyticalMethods";
     public const string CanCreateRndAnalyticalMethod = "CanCreateRndAnalyticalMethod";
     public const string CanEditRndAnalyticalMethod = "CanEditRndAnalyticalMethod";
+    public const string CanTransferRndAnalyticalMethod = "CanTransferRndAnalyticalMethod";
     public const string CanViewRndStabilityStudies = "CanViewRndStabilityStudies";
     public const string CanCreateRndStabilityStudy = "CanCreateRndStabilityStudy";
     public const string CanEditRndStabilityStudy = "CanEditRndStabilityStudy";
@@ -4525,6 +4526,11 @@ public static class PermissionUtils
             PermissionModules.ResearchAndDevelopment,
             PermissionSubmodules.RndAnalyticalMethods,
             PermissionKeys.CanEditRndAnalyticalMethod
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndAnalyticalMethods,
+            PermissionKeys.CanTransferRndAnalyticalMethod
         );
         addPermission(
             PermissionModules.ResearchAndDevelopment,

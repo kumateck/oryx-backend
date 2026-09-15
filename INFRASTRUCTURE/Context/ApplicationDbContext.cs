@@ -2090,6 +2090,8 @@ public class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.ValidationProtocolFormId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.ValidatedBy)
             .WithMany().HasForeignKey(item => item.ValidatedById).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod>().HasOne(item => item.TransferredBy)
+            .WithMany().HasForeignKey(item => item.TransferredById).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<DOMAIN.Entities.RndStabilityStudies.RndStabilityStudy>().HasOne(item => item.RndTrialBatch)
             .WithMany().HasForeignKey(item => item.RndTrialBatchId).OnDelete(DeleteBehavior.Restrict);
