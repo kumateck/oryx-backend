@@ -10,7 +10,10 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/rnd/projects/{rndProjectId:guid}/formulations")]
 [Authorize]
-public class RndFormulationController(IRndFormulationRepository repository) : ControllerBase
+public class RndFormulationController(
+    IRndFormulationRepository repository,
+    IApprovalRepository approvalRepository
+) : ControllerBase
 {
     /// <summary>
     /// Creates the first version of a formulation for an R&amp;D project.
@@ -85,6 +88,8 @@ public class RndFormulationController(IRndFormulationRepository repository) : Co
         if (userId is null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdateStatus(formulationId, status, Guid.Parse(userId));
+        if (result.IsSuccess && status == RndFormulationStatus.InReview)
+            await approvalRepository.CreateInitialApprovalsAsync(nameof(RndFormulation), formulationId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

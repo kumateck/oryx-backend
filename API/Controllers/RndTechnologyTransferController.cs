@@ -10,7 +10,10 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/rnd/projects/{rndProjectId:guid}/technology-transfers")]
 [Authorize]
-public class RndTechnologyTransferController(IRndTechnologyTransferRepository repository) : ControllerBase
+public class RndTechnologyTransferController(
+    IRndTechnologyTransferRepository repository,
+    IApprovalRepository approvalRepository
+) : ControllerBase
 {
     /// <summary>
     /// Starts a new technology transfer for an approved formulation.
@@ -48,6 +51,8 @@ public class RndTechnologyTransferController(IRndTechnologyTransferRepository re
         if (userId is null) return TypedResults.Unauthorized();
 
         var result = await repository.UpdateStatus(transferId, request, Guid.Parse(userId));
+        if (result.IsSuccess && request.Status == RndTechnologyTransferStatus.ProtocolInReview)
+            await approvalRepository.CreateInitialApprovalsAsync(nameof(RndTechnologyTransfer), transferId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
