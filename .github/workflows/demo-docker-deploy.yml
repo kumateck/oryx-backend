@@ -182,6 +182,7 @@ jobs:
             --env RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }} \
             --env SMTP_HOST=${{ secrets.SMTP_HOST }} \
             --env SMTP_PORT=${{ secrets.SMTP_PORT }} \
+            --env SMTP_FROM=${{ secrets.SMTP_FROM }} \
             --env FORMULA_RUNTIME_ENABLED=true \
             --env FORMULA_SERVICE_BASE_URL=http://formula-calculation:3101/ \
             --env FORMULA_SERVICE_AUTH_SECRET_FILE=/run/secrets/formula-service-token \
