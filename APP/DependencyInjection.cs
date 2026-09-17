@@ -172,6 +172,8 @@ public static class DependencyInjection
         services.AddScoped<IStpDocxImportService, StpDocxImportService>();
         services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
         services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
+        services.AddScoped<ISpecificationRepository, SpecificationRepository>();
+        services.AddScoped<ISamplingPointGroupRepository, SamplingPointGroupRepository>();
         services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());

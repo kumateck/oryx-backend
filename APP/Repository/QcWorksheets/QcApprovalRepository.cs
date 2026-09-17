@@ -64,6 +64,12 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
             .Distinct()
             .ToList();
 
+        var specificationIds = actionable
+            .Where(item => item.EntityType == QcApprovalEntityTypes.Specification)
+            .Select(item => item.EntityId)
+            .Distinct()
+            .ToList();
+
         var stps = await context.QcStandardTestProcedures
             .Include(item => item.CreatedBy)
             .Where(item => stpIds.Contains(item.Id))
@@ -72,6 +78,11 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
         var templates = await context.QcWorksheetTemplates
             .Include(item => item.CreatedBy)
             .Where(item => templateIds.Contains(item.Id))
+            .ToListAsync();
+
+        var specifications = await context.QcSpecifications
+            .Include(item => item.CreatedBy)
+            .Where(item => specificationIds.Contains(item.Id))
             .ToListAsync();
 
         var results = new List<QcPendingApprovalDto>();
@@ -115,6 +126,25 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
                         Order = stage.Order,
                         ApprovalRound = stage.ApprovalRound,
                         ResourcePath = $"qc/worksheets/templates/{template.Id}"
+                    });
+                    break;
+
+                case QcApprovalEntityTypes.Specification:
+                    var specification = specifications.FirstOrDefault(item => item.Id == stage.EntityId);
+                    if (specification is null) continue;
+                    results.Add(new QcPendingApprovalDto
+                    {
+                        EntityType = stage.EntityType,
+                        EntityId = specification.Id,
+                        Code = specification.Code,
+                        Name = specification.Name,
+                        Version = specification.Version,
+                        Status = specification.Status,
+                        CreatedAt = specification.CreatedAt,
+                        CreatedBy = mapper.Map<UserDto>(specification.CreatedBy),
+                        Order = stage.Order,
+                        ApprovalRound = stage.ApprovalRound,
+                        ResourcePath = $"qc/worksheets/specifications/{specification.Id}"
                     });
                     break;
             }
