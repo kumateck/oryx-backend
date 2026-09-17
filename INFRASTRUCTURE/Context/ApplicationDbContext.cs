@@ -820,6 +820,21 @@ public class ApplicationDbContext(
 
     #endregion
 
+    #region QcWorksheets
+
+    // Rebuilt QC module (additive). Coexists with, and does not touch, the live
+    // Material/Product/Packaging QC tables. Mapped by
+    // INFRASTRUCTURE/EntityConfigurations/QcWorksheets/.
+    public DbSet<DOMAIN.Entities.QcWorksheets.QcApproval> QcApprovals { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.StandardTestProcedure> QcStandardTestProcedures { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.StpStep> QcStpSteps { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetTemplate> QcWorksheetTemplates { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetSection> QcWorksheetSections { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetField> QcWorksheetFields { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldRevision> QcWorksheetFieldRevisions { get; set; }
+
+    #endregion
+
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {

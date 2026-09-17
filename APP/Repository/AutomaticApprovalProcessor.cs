@@ -13,6 +13,7 @@ using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.RndProjects;
 using DOMAIN.Entities.RndFormulations;
@@ -222,6 +223,16 @@ internal static class AutomaticApprovalProcessor
                 performanceReview.Approved = true;
                 performanceReview.Status = PerformanceReviewStatus.Completed;
                 break;
+
+            case QcWorksheetModelTypes.StandardTestProcedure:
+            case QcWorksheetModelTypes.WorksheetTemplate:
+                // Defence in depth. QC is gated earlier, in CreateInitialApprovalsAsync, so
+                // this should be unreachable; if it is ever reached, failing is the only
+                // acceptable outcome. A QC controlled document may never be approved
+                // without an identified approver and a re-authenticated signature.
+                throw new InvalidOperationException(
+                    $"Automatic approval is not permitted for QC model type '{modelType}'. "
+                    + "QC documents require an explicit, re-authenticated approval.");
 
             default:
                 throw new NotSupportedException(

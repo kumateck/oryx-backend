@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using APP.Claims;
 using APP.IRepository;
 using APP.Repository;
+using APP.Repository.QcWorksheets;
 using APP.Services;
+using APP.Services.QcWorksheets;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
@@ -163,6 +165,14 @@ public static class DependencyInjection
         services.AddScoped<IItemGrnRepository, ItemGrnRepository>();
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IStpDocumentRepository, StpDocumentRepository>();
+
+        // Rebuilt QC module (additive; coexists with the live Material/Product/Packaging QC path).
+        services.AddScoped<IQcReauthContext, QcReauthContext>();
+        services.AddScoped<IQcSignatureService, QcSignatureService>();
+        services.AddScoped<IStpDocxImportService, StpDocxImportService>();
+        services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
+        services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
+        services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
         services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();

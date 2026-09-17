@@ -4573,6 +4573,7 @@ public static class PermissionUtils
             PermissionKeys.CanPromoteRndTechnologyTransfer
         );
 
+        permissions.AddRange(QcWorksheetPermissionCatalog.Generate());
         return permissions;
     }
 }
