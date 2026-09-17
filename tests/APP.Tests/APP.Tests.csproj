@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\INFRASTRUCTURE\INFRASTRUCTURE.csproj" />
     <ProjectReference Include="..\..\SHARED\SHARED.csproj" />
     <ProjectReference Include="..\..\TOOLS\FormulaMigration\FormulaMigration.csproj" />
+    <ProjectReference Include="..\ProcedureSpikeWorker\ProcedureSpikeWorker.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>
