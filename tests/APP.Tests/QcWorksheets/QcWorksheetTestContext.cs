@@ -5,6 +5,8 @@ using APP.Repository.QcWorksheets;
 using APP.Services.QcWorksheets;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Products.Equipments;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -67,6 +69,8 @@ internal sealed class QcWorksheetTestContext : IDisposable
     internal WorksheetTemplateRepository Templates { get; }
     internal SpecificationRepository Specifications { get; }
     internal SamplingPointGroupRepository SamplingPointGroups { get; }
+    internal TestRequestRepository TestRequests { get; }
+    internal WorksheetInstanceRepository WorksheetInstances { get; }
     internal QcApprovalRepository Approvals { get; }
 
     internal User Approver { get; private set; }
@@ -105,6 +109,11 @@ internal sealed class QcWorksheetTestContext : IDisposable
             Db, Mapper, SignatureService, Reauth, ApprovalRepository);
 
         SamplingPointGroups = new SamplingPointGroupRepository(Db, Mapper);
+
+        TestRequests = new TestRequestRepository(Db, Mapper);
+
+        WorksheetInstances = new WorksheetInstanceRepository(
+            Db, Mapper, SignatureService, ApprovalRepository);
 
         Approvals = new QcApprovalRepository(Db, Mapper);
     }
@@ -202,14 +211,141 @@ internal sealed class QcWorksheetTestContext : IDisposable
         return group;
     }
 
-    internal async Task<User> SeedUser()
+    /// <summary>
+    /// Inserts a worksheet template carrying fields of the given types, for the execution
+    /// tests, which need Instrument/Reagent/ReferencedResult fields rather than plain results.
+    /// </summary>
+    internal async Task<WorksheetTemplate> SeedTemplateWithFields(
+        string code,
+        WorksheetCategory category,
+        params WorksheetField[] fields)
+    {
+        var sectionId = Guid.NewGuid();
+
+        foreach (var field in fields)
+        {
+            field.Id = field.Id == Guid.Empty ? Guid.NewGuid() : field.Id;
+            field.WorksheetSectionId = sectionId;
+            field.CreatedAt = DateTime.UtcNow;
+            field.Label ??= field.FieldKey;
+        }
+
+        var template = new WorksheetTemplate
+        {
+            Id = Guid.NewGuid(),
+            Code = code,
+            Name = $"{code} worksheet",
+            Category = category,
+            Version = 1,
+            Status = QcDocumentStatus.Effective,
+            EffectiveDate = DateTime.UtcNow,
+            Approved = true,
+            CreatedAt = DateTime.UtcNow,
+            Sections =
+            [
+                new WorksheetSection
+                {
+                    Id = sectionId,
+                    Order = 1,
+                    Name = "Results",
+                    CreatedAt = DateTime.UtcNow,
+                    Fields = fields.ToList()
+                }
+            ]
+        };
+
+        Db.QcWorksheetTemplates.Add(template);
+        await Db.SaveChangesAsync();
+        return template;
+    }
+
+    /// <summary>
+    /// Inserts an Effective specification linked to the given templates, each link pinned to
+    /// the template row's own version — the same pin the Specification endpoints write.
+    /// </summary>
+    internal async Task<Specification> SeedEffectiveSpecification(
+        SpecificationAppliesTo appliesTo,
+        params (WorksheetTemplate Template, SpecificationAnalysisType AnalysisType)[] links)
+    {
+        var specification = new Specification
+        {
+            Id = Guid.NewGuid(),
+            Code = $"QCD/SPEC/{Guid.NewGuid().ToString()[..8]}",
+            Name = "Seeded specification",
+            AppliesTo = appliesTo,
+            Stage = appliesTo == SpecificationAppliesTo.Product ? SpecificationStage.Finished : null,
+            RetestPolicy = QcRetestPolicy.SameSample,
+            Version = 1,
+            Status = QcDocumentStatus.Effective,
+            EffectiveDate = DateTime.UtcNow,
+            Approved = true,
+            CreatedAt = DateTime.UtcNow,
+            WorksheetLinks = links
+                .Select(link => new SpecificationWorksheetLink
+                {
+                    Id = Guid.NewGuid(),
+                    WorksheetTemplateId = link.Template.Id,
+                    WorksheetTemplateVersion = link.Template.Version,
+                    AnalysisType = link.AnalysisType,
+                    CreatedAt = DateTime.UtcNow
+                })
+                .ToList()
+        };
+
+        Db.QcSpecifications.Add(specification);
+        await Db.SaveChangesAsync();
+        return specification;
+    }
+
+    /// <summary>
+    /// A row in the existing QC equipment register — read-only master data this module gates
+    /// against and never writes to.
+    /// </summary>
+    internal async Task<QcEquipment> SeedEquipment(string name, DateTime? calibrationDueDate)
+    {
+        var category = new QcEquipmentCategory
+        {
+            Id = Guid.NewGuid(),
+            Name = "Balances",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var equipment = new QcEquipment
+        {
+            Id = Guid.NewGuid(),
+            EquipmentId = name,
+            Name = name,
+            QcEquipmentCategoryId = category.Id,
+            CalibrationDueDate = calibrationDueDate,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.QcEquipmentCategories.Add(category);
+        Db.QcEquipments.Add(equipment);
+        await Db.SaveChangesAsync();
+        return equipment;
+    }
+
+    /// <summary>
+    /// A row in the existing reagent catalog. It carries no batch or expiry of its own, which
+    /// is exactly why a worksheet captures both per use.
+    /// </summary>
+    internal async Task<Reagent> SeedReagent(string name)
+    {
+        var reagent = new Reagent { Id = Guid.NewGuid(), Name = name, CreatedAt = DateTime.UtcNow };
+        Db.Reagents.Add(reagent);
+        await Db.SaveChangesAsync();
+        return reagent;
+    }
+
+    internal async Task<User> SeedUser(string userName = "qc.approver")
     {
         var user = new User
         {
             Id = Guid.NewGuid(),
-            UserName = "qc.approver",
-            NormalizedUserName = "QC.APPROVER",
-            Email = "qc.approver@example.test",
+            UserName = userName,
+            NormalizedUserName = userName.ToUpperInvariant(),
+            Email = $"{userName}@example.test",
             FirstName = "Qc",
             LastName = "Approver",
             CreatedAt = DateTime.UtcNow

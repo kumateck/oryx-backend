@@ -63,24 +63,43 @@ public class QcWorksheetCoexistenceTests
         // plus two keys for SamplingPointGroup, which is plain reference data: View splits off
         // from Manage because read access to reference data is a distinct concern from admin
         // rights over it, while Create/Edit/Delete stay fused under the single Manage key.
+        // Milestone 3 adds five operations keys and eleven test room keys — the execution
+        // transitions split Chemical from Microbial, since those analysts are staffed
+        // separately.
         Assert.Equal(
         [
             "CanApproveQcSpecification",
             "CanApproveQcStp",
             "CanApproveWorksheetTemplate",
+            "CanAssignQcTestRequest",
+            "CanAssignWorksheet",
             "CanCreateQcSpecification",
             "CanCreateQcStp",
+            "CanCreateScheduledQcTestRequest",
+            "CanCreateUnscheduledQcTestRequest",
             "CanCreateWorksheetTemplate",
             "CanEditQcSpecification",
             "CanEditQcStp",
             "CanEditWorksheetTemplate",
+            "CanEnterChemicalWorksheetResult",
+            "CanEnterMicrobialWorksheetResult",
             "CanImportQcStp",
             "CanManageSamplingPointGroups",
+            "CanReassignWorksheet",
+            "CanRecordQcSample",
+            "CanReturnWorksheetForCorrection",
+            "CanReviewChemicalWorksheet",
+            "CanReviewMicrobialWorksheet",
+            "CanStartChemicalWorksheet",
+            "CanStartMicrobialWorksheet",
+            "CanSubmitChemicalWorksheet",
+            "CanSubmitMicrobialWorksheet",
             "CanSupersedeQcSpecification",
             "CanSupersedeQcStp",
             "CanSupersedeWorksheetTemplate",
             "CanViewQcSpecifications",
             "CanViewQcStps",
+            "CanViewQcTestRequests",
             "CanViewSamplingPointGroups",
             "CanViewWorksheetTemplates"
         ], keys);
@@ -96,6 +115,10 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("QcStandardTestProcedure", QcWorksheetModelTypes.StandardTestProcedure);
         Assert.Equal("QcWorksheetTemplate", QcWorksheetModelTypes.WorksheetTemplate);
         Assert.Equal("QcSpecification", QcWorksheetModelTypes.Specification);
+        Assert.Equal("QcWorksheetInstance", QcWorksheetModelTypes.WorksheetInstance);
+
+        Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
+            QcWorksheetModelTypes.WorksheetInstance));
 
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.StandardTestProcedure));
@@ -111,7 +134,11 @@ public class QcWorksheetCoexistenceTests
                  {
                      "PurchaseRequisition", "StockRequisition", "PurchaseOrder", "Response",
                      "RndProject", "BillingSheet", "StandardTestProcedure", "WorksheetTemplate",
-                     "Specification", "MaterialSpecification", "ProductSpecification"
+                     "Specification", "MaterialSpecification", "ProductSpecification",
+
+                     // The live analytical request path must not be captured by the QC branch
+                     // either: it keeps running through its own approval dispatch.
+                     "AnalyticalTestRequest", "WorksheetInstance", "TestRequest"
                  })
         {
             Assert.False(QcWorksheetModelTypes.IsQcWorksheetModelType(other), other);
@@ -137,6 +164,10 @@ public class QcWorksheetCoexistenceTests
             QcApprovalEntityTypes.Specification,
             QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.Specification));
 
+        Assert.Equal(
+            QcApprovalEntityTypes.WorksheetInstance,
+            QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.WorksheetInstance));
+
         Assert.Null(QcApprovalEntityTypes.FromModelType("Response"));
 
         // The bare EntityType string is not itself a model type: only "QcSpecification" maps.
@@ -158,6 +189,42 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(SpecificationWorksheetLink).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(SpecificationCharacteristic).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(SamplingPointGroup).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(TestRequest).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(TestRequestSubject).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstance).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetFieldValue).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstanceReassignment).Namespace);
+    }
+
+    /// <summary>
+    /// Criterion 8 — the new round is a distinct type on a distinct table from the live
+    /// <c>AnalyticalTestRequest</c>, which keeps running untouched. A shared table name here
+    /// would silently repoint the existing <c>qc/analytical-raw-data</c> pages.
+    /// </summary>
+    [Fact]
+    public void Qc_test_request_is_a_separate_type_and_table_from_the_live_analytical_test_request()
+    {
+        var live = typeof(DOMAIN.Entities.Base.BaseEntity).Assembly
+            .GetTypes()
+            .FirstOrDefault(type => type.Name == "AnalyticalTestRequest");
+
+        // The live entity still exists — this milestone did not replace or rename it.
+        Assert.NotNull(live);
+        Assert.NotEqual(typeof(TestRequest), live);
+        Assert.NotEqual("DOMAIN.Entities.QcWorksheets", live.Namespace);
+
+        using var harness = new QcWorksheetTestContext();
+        var model = harness.Db.Model;
+
+        // The live entity maps by EF's default naming rather than an explicit ToTable, so its
+        // annotation is absent — which is itself the point: the new table is named explicitly
+        // and cannot collide with it.
+        var liveTable = model.FindEntityType(live)?.FindAnnotation("Relational:TableName")?.Value as string;
+        var qcTable = (string)model.FindEntityType(typeof(TestRequest))!
+            .FindAnnotation("Relational:TableName")!.Value!;
+
+        Assert.Equal("QcTestRequests", qcTable);
+        Assert.NotEqual(qcTable, liveTable);
     }
 
     /// <summary>
@@ -205,7 +272,9 @@ public class QcWorksheetCoexistenceTests
         foreach (var type in new[]
                  {
                      typeof(Specification), typeof(SpecificationWorksheetLink),
-                     typeof(SpecificationCharacteristic), typeof(SamplingPointGroup)
+                     typeof(SpecificationCharacteristic), typeof(SamplingPointGroup),
+                     typeof(TestRequest), typeof(TestRequestSubject), typeof(WorksheetInstance),
+                     typeof(WorksheetFieldValue), typeof(WorksheetInstanceReassignment)
                  })
         {
             Assert.StartsWith("Qc", TableNameOf(type), StringComparison.Ordinal);
@@ -214,5 +283,7 @@ public class QcWorksheetCoexistenceTests
         // And specifically not the live tables.
         Assert.Equal("QcSpecifications", TableNameOf(typeof(Specification)));
         Assert.Equal("QcSamplingPointGroups", TableNameOf(typeof(SamplingPointGroup)));
+        Assert.Equal("QcTestRequests", TableNameOf(typeof(TestRequest)));
+        Assert.Equal("QcWorksheetInstances", TableNameOf(typeof(WorksheetInstance)));
     }
 }
