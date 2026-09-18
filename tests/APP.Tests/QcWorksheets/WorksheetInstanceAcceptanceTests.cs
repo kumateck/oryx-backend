@@ -1,5 +1,6 @@
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -748,6 +749,214 @@ public class WorksheetInstanceAcceptanceTests
         // The round follows its worksheets without being moved by hand.
         var round = await harness.Db.QcTestRequests.SingleAsync();
         Assert.Equal(TestRequestStatus.UnderReview, round.Status);
+    }
+
+    /// <summary>
+    /// Segregation of duties — the analyst who entered and submitted the results cannot review
+    /// them, even holding review rights and giving the correct password. The refusal comes
+    /// before any signature is taken, so nothing is signed either.
+    /// </summary>
+    [Fact]
+    public async Task The_analyst_who_submitted_a_worksheet_cannot_review_it()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await harness.SeedTemplateWithFields(
+            "WS/EM/11", WorksheetCategory.Microbial, Field("viables", WorksheetFieldType.ColonyCount));
+
+        var (instanceId, analyst) = await StartedWorksheet(harness, template);
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        // The analyst gets a real password of their own, so the refusal cannot be mistaken for
+        // a failed re-authentication.
+        const string analystPassword = "Analyst-Password-1!";
+        analyst.PasswordHash = new PasswordHasher<User>().HashPassword(analyst, analystPassword);
+        await harness.Db.SaveChangesAsync();
+
+        await harness.WorksheetInstances.SaveValues(
+            instanceId,
+            new SaveWorksheetValuesRequest
+            {
+                FieldValues = [new WorksheetFieldValueEntry { FieldKey = "viables", Value = "7" }]
+            },
+            analyst.Id);
+
+        await harness.WorksheetInstances.Submit(instanceId, analyst.Id);
+
+        var selfReview = await harness.WorksheetInstances.Review(
+            instanceId,
+            new ReviewWorksheetInstanceRequest
+            {
+                Approve = true,
+                Password = analystPassword,
+                Comments = "Looks fine to me."
+            },
+            analyst.Id,
+            []);
+
+        Assert.False(selfReview.IsSuccess);
+        Assert.Equal("QcWorksheetInstance.CannotReviewOwnWork", selfReview.Error.Code);
+
+        // The worksheet is untouched: still submitted, still unapproved.
+        var instance = await harness.Db.QcWorksheetInstances.SingleAsync(item => item.Id == instanceId);
+        Assert.Equal(WorksheetInstanceStatus.Submitted, instance.Status);
+        Assert.False(instance.Approved);
+
+        // Nothing was signed — the stage row is still pending.
+        var stage = await harness.Db.QcApprovals
+            .SingleAsync(item => item.EntityType == QcApprovalEntityTypes.WorksheetInstance
+                && item.EntityId == instanceId);
+
+        Assert.Null(stage.ReauthConfirmedAt);
+
+        // An independent reviewer still gets through, so the refusal is about who did the work
+        // rather than about the worksheet being unreviewable.
+        var independent = await harness.WorksheetInstances.Review(
+            instanceId,
+            new ReviewWorksheetInstanceRequest
+            {
+                Approve = true,
+                Password = QcWorksheetTestContext.CorrectPassword,
+                Comments = "Reviewed by"
+            },
+            harness.Approver.Id,
+            []);
+
+        Assert.True(independent.IsSuccess, independent.Error?.Description);
+        Assert.Equal(WorksheetInstanceStatus.Reviewed, independent.Value.Status);
+    }
+
+    /// <summary>
+    /// Handing the worksheet on does not launder the reviewer's independence: a previous
+    /// assignee still held the work, and the reassignment log is what proves it.
+    /// </summary>
+    [Fact]
+    public async Task A_previous_assignee_cannot_review_the_worksheet_they_handed_on()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await harness.SeedTemplateWithFields(
+            "WS/EM/12", WorksheetCategory.Microbial, Field("viables", WorksheetFieldType.ColonyCount));
+
+        var (instanceId, analystA) = await StartedWorksheet(harness, template);
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        var analystB = await harness.SeedUser("analyst.b");
+
+        const string password = "Analyst-A-Password-1!";
+        analystA.PasswordHash = new PasswordHasher<User>().HashPassword(analystA, password);
+        await harness.Db.SaveChangesAsync();
+
+        await harness.WorksheetInstances.Reassign(
+            instanceId,
+            new ReassignWorksheetInstanceRequest { AssignedToId = analystB.Id, Reason = "Shift handover." },
+            Guid.NewGuid());
+
+        await harness.WorksheetInstances.SaveValues(
+            instanceId,
+            new SaveWorksheetValuesRequest
+            {
+                FieldValues = [new WorksheetFieldValueEntry { FieldKey = "viables", Value = "7" }]
+            },
+            analystB.Id);
+
+        await harness.WorksheetInstances.Submit(instanceId, analystB.Id);
+
+        var result = await harness.WorksheetInstances.Review(
+            instanceId,
+            new ReviewWorksheetInstanceRequest { Approve = true, Password = password },
+            analystA.Id,
+            []);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("QcWorksheetInstance.CannotReviewOwnWork", result.Error.Code);
+    }
+
+    /// <summary>
+    /// Every correction cycle is its own audit row — reason, who returned it, when, and the
+    /// review round it interrupted. A worksheet that goes round the loop twice keeps both rows:
+    /// the history is the record, not just the latest bounce.
+    /// </summary>
+    [Fact]
+    public async Task Every_correction_cycle_is_audited_and_the_history_is_retained()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await harness.SeedTemplateWithFields(
+            "WS/EM/13", WorksheetCategory.Microbial, Field("viables", WorksheetFieldType.ColonyCount));
+
+        var (instanceId, analyst) = await StartedWorksheet(harness, template);
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        var reviewer = harness.Approver;
+
+        async Task EnterAndSubmit(string value)
+        {
+            await harness.WorksheetInstances.SaveValues(
+                instanceId,
+                new SaveWorksheetValuesRequest
+                {
+                    FieldValues = [new WorksheetFieldValueEntry { FieldKey = "viables", Value = value }]
+                },
+                analyst.Id);
+
+            var submitted = await harness.WorksheetInstances.Submit(instanceId, analyst.Id);
+            Assert.True(submitted.IsSuccess, submitted.Error?.Description);
+        }
+
+        // Cycle one: the unsigned return-for-correction action.
+        await EnterAndSubmit("7");
+
+        var firstReturn = await harness.WorksheetInstances.ReturnForCorrection(
+            instanceId,
+            new ReturnWorksheetForCorrectionRequest { Reason = "Colony count needs a second read." },
+            reviewer.Id);
+
+        Assert.True(firstReturn.IsSuccess, firstReturn.Error?.Description);
+        Assert.Equal(WorksheetInstanceStatus.InProgress, firstReturn.Value.Status);
+
+        // Cycle two: the reviewer's signed decision to decline.
+        await EnterAndSubmit("8");
+
+        var secondReturn = await harness.WorksheetInstances.Review(
+            instanceId,
+            new ReviewWorksheetInstanceRequest
+            {
+                Approve = false,
+                Password = QcWorksheetTestContext.CorrectPassword,
+                Comments = "Incubation period is not recorded."
+            },
+            reviewer.Id,
+            []);
+
+        Assert.True(secondReturn.IsSuccess, secondReturn.Error?.Description);
+        Assert.Equal(WorksheetInstanceStatus.InProgress, secondReturn.Value.Status);
+
+        // Both cycles survive — the first was not overwritten by the second.
+        var returns = await harness.Db.QcWorksheetInstanceCorrectionReturns
+            .Where(item => item.WorksheetInstanceId == instanceId)
+            .OrderBy(item => item.ReturnedAt)
+            .ToListAsync();
+
+        Assert.Equal(2, returns.Count);
+
+        Assert.Equal("Colony count needs a second read.", returns[0].Reason);
+        Assert.Equal(reviewer.Id, returns[0].ReturnedById);
+        Assert.NotEqual(default, returns[0].ReturnedAt);
+
+        Assert.Equal("Incubation period is not recorded.", returns[1].Reason);
+        Assert.Equal(reviewer.Id, returns[1].ReturnedById);
+
+        // The declined review is a signature; the standalone action is not.
+        Assert.False(returns[0].Signed);
+        Assert.True(returns[1].Signed);
+
+        // Each return names the review round it interrupted, so the log reads against the
+        // signature trail.
+        Assert.True(returns[1].ApprovalRound >= returns[0].ApprovalRound);
+
+        // And the same history comes back on the worksheet's own detail read.
+        var detail = await harness.WorksheetInstances.GetWorksheetInstance(instanceId);
+        Assert.Equal(2, detail.Value.CorrectionReturns.Count);
+        Assert.Equal("Colony count needs a second read.", detail.Value.CorrectionReturns[0].Reason);
+        Assert.Equal("Incubation period is not recorded.", detail.Value.CorrectionReturns[1].Reason);
     }
 
     /// <summary>

@@ -146,9 +146,6 @@ namespace INFRASTRUCTURE.Migrations
                     RetestOfInstanceId = table.Column<Guid>(type: "uuid", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ReturnedForCorrectionReason = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    ReturnedForCorrectionAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ReturnedForCorrectionById = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -204,12 +201,6 @@ namespace INFRASTRUCTURE.Migrations
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_QcWorksheetInstances_users_ReturnedForCorrectionById",
-                        column: x => x.ReturnedForCorrectionById,
-                        principalTable: "users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -268,6 +259,56 @@ namespace INFRASTRUCTURE.Migrations
                         column: x => x.LastUpdatedById,
                         principalTable: "users",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "QcWorksheetInstanceCorrectionReturns",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorksheetInstanceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReturnedById = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReturnedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Reason = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    ApprovalRound = table.Column<int>(type: "integer", nullable: false),
+                    Signed = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    LastUpdatedById = table.Column<Guid>(type: "uuid", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastDeletedById = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_QcWorksheetInstanceCorrectionReturns", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_QcWorksheetInstanceCorrectionReturns_QcWorksheetInstances_W~",
+                        column: x => x.WorksheetInstanceId,
+                        principalTable: "QcWorksheetInstances",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_QcWorksheetInstanceCorrectionReturns_users_CreatedById",
+                        column: x => x.CreatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_QcWorksheetInstanceCorrectionReturns_users_LastDeletedById",
+                        column: x => x.LastDeletedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_QcWorksheetInstanceCorrectionReturns_users_LastUpdatedById",
+                        column: x => x.LastUpdatedById,
+                        principalTable: "users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_QcWorksheetInstanceCorrectionReturns_users_ReturnedById",
+                        column: x => x.ReturnedById,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -458,6 +499,31 @@ namespace INFRASTRUCTURE.Migrations
                 columns: new[] { "WorksheetInstanceId", "FieldKey" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_QcWorksheetInstanceCorrectionReturns_CreatedById",
+                table: "QcWorksheetInstanceCorrectionReturns",
+                column: "CreatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QcWorksheetInstanceCorrectionReturns_LastDeletedById",
+                table: "QcWorksheetInstanceCorrectionReturns",
+                column: "LastDeletedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QcWorksheetInstanceCorrectionReturns_LastUpdatedById",
+                table: "QcWorksheetInstanceCorrectionReturns",
+                column: "LastUpdatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QcWorksheetInstanceCorrectionReturns_ReturnedById",
+                table: "QcWorksheetInstanceCorrectionReturns",
+                column: "ReturnedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_QcWorksheetInstanceCorrectionReturns_WorksheetInstanceId_Re~",
+                table: "QcWorksheetInstanceCorrectionReturns",
+                columns: new[] { "WorksheetInstanceId", "ReturnedAt" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_QcWorksheetInstanceReassignments_CreatedById",
                 table: "QcWorksheetInstanceReassignments",
                 column: "CreatedById");
@@ -528,11 +594,6 @@ namespace INFRASTRUCTURE.Migrations
                 column: "RetestOfInstanceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_QcWorksheetInstances_ReturnedForCorrectionById",
-                table: "QcWorksheetInstances",
-                column: "ReturnedForCorrectionById");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_QcWorksheetInstances_Status",
                 table: "QcWorksheetInstances",
                 column: "Status");
@@ -558,6 +619,9 @@ namespace INFRASTRUCTURE.Migrations
         {
             migrationBuilder.DropTable(
                 name: "QcWorksheetFieldValues");
+
+            migrationBuilder.DropTable(
+                name: "QcWorksheetInstanceCorrectionReturns");
 
             migrationBuilder.DropTable(
                 name: "QcWorksheetInstanceReassignments");

@@ -194,6 +194,7 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstance).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetFieldValue).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstanceReassignment).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstanceCorrectionReturn).Namespace);
     }
 
     /// <summary>
@@ -274,7 +275,8 @@ public class QcWorksheetCoexistenceTests
                      typeof(Specification), typeof(SpecificationWorksheetLink),
                      typeof(SpecificationCharacteristic), typeof(SamplingPointGroup),
                      typeof(TestRequest), typeof(TestRequestSubject), typeof(WorksheetInstance),
-                     typeof(WorksheetFieldValue), typeof(WorksheetInstanceReassignment)
+                     typeof(WorksheetFieldValue), typeof(WorksheetInstanceReassignment),
+                     typeof(WorksheetInstanceCorrectionReturn)
                  })
         {
             Assert.StartsWith("Qc", TableNameOf(type), StringComparison.Ordinal);

@@ -14836,16 +14836,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("RetestOfInstanceId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ReturnedForCorrectionAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReturnedForCorrectionById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ReturnedForCorrectionReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -14876,8 +14866,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("RetestOfInstanceId");
 
-                    b.HasIndex("ReturnedForCorrectionById");
-
                     b.HasIndex("Status");
 
                     b.HasIndex("TestRequestSubjectId");
@@ -14891,6 +14879,65 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("WorksheetTemplateId", "WorksheetTemplateVersion");
 
                     b.ToTable("QcWorksheetInstances", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ApprovalRound")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("ReturnedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReturnedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Signed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ReturnedById");
+
+                    b.HasIndex("WorksheetInstanceId", "ReturnedAt");
+
+                    b.ToTable("QcWorksheetInstanceCorrectionReturns", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment", b =>
@@ -29245,11 +29292,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("RetestOfInstanceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReturnedForCorrectionBy")
-                        .WithMany()
-                        .HasForeignKey("ReturnedForCorrectionById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("DOMAIN.Entities.QcWorksheets.TestRequestSubject", "TestRequestSubject")
                         .WithMany("WorksheetInstances")
                         .HasForeignKey("TestRequestSubjectId")
@@ -29274,11 +29316,46 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("RetestOfInstance");
 
-                    b.Navigation("ReturnedForCorrectionBy");
-
                     b.Navigation("TestRequestSubject");
 
                     b.Navigation("WorksheetTemplate");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ReturnedBy")
+                        .WithMany()
+                        .HasForeignKey("ReturnedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "WorksheetInstance")
+                        .WithMany("CorrectionReturns")
+                        .HasForeignKey("WorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ReturnedBy");
+
+                    b.Navigation("WorksheetInstance");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment", b =>
@@ -33168,6 +33245,8 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstance", b =>
                 {
+                    b.Navigation("CorrectionReturns");
+
                     b.Navigation("FieldValues");
 
                     b.Navigation("Reassignments");

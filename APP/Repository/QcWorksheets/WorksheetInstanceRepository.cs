@@ -401,6 +401,11 @@ public class WorksheetInstanceRepository(
         if (!request.Approve && string.IsNullOrWhiteSpace(request.Comments))
             return Result.Failure<WorksheetInstanceDetailDto>(QcWorksheetErrors.ReviewCommentsRequired);
 
+        // Segregation of duties, checked before any signature is taken: whoever performed the
+        // work cannot sign it off, whatever their role allows.
+        if (await PerformedTheWork(instance, userId))
+            return Result.Failure<WorksheetInstanceDetailDto>(QcWorksheetErrors.CannotReviewOwnWork);
+
         // The QC re-authentication wrapper: verify the caller's own password, then call the
         // same ApproveItem/RejectItem the generic approval endpoint calls, which records the
         // QcApproval row with ReauthConfirmedAt set.
@@ -413,13 +418,12 @@ public class WorksheetInstanceRepository(
         if (!signed.IsSuccess)
             return Result.Failure<WorksheetInstanceDetailDto>(signed.Error);
 
-        // A declined review is a return for correction, so it lands in the same place the
-        // standalone endpoint would put it — the difference being that this one is signed.
+        // A declined review is a return for correction, so it is logged as one — the difference
+        // from the standalone action being that this cycle carries a signature.
         if (!request.Approve)
         {
-            instance.ReturnedForCorrectionReason = request.Comments?.Trim();
-            instance.ReturnedForCorrectionAt = DateTime.UtcNow;
-            instance.ReturnedForCorrectionById = userId;
+            await LogCorrectionReturn(instance, userId, request.Comments, signedDecision: true);
+
             instance.UpdatedAt = DateTime.UtcNow;
             instance.LastUpdatedById = userId;
             await context.SaveChangesAsync();
@@ -444,12 +448,11 @@ public class WorksheetInstanceRepository(
         if (string.IsNullOrWhiteSpace(request.Reason))
             return Result.Failure<WorksheetInstanceDetailDto>(QcWorksheetErrors.ReviewCommentsRequired);
 
+        await LogCorrectionReturn(instance, userId, request.Reason, signedDecision: false);
+
         instance.Status = WorksheetInstanceStatus.InProgress;
         instance.Approved = false;
         instance.SubmittedAt = null;
-        instance.ReturnedForCorrectionReason = request.Reason.Trim();
-        instance.ReturnedForCorrectionAt = DateTime.UtcNow;
-        instance.ReturnedForCorrectionById = userId;
         instance.UpdatedAt = DateTime.UtcNow;
         instance.LastUpdatedById = userId;
 
@@ -461,9 +464,67 @@ public class WorksheetInstanceRepository(
         return await GetWorksheetInstance(id);
     }
 
+    /// <summary>
+    /// Records one correction cycle. A row per cycle, never an overwrite: a worksheet can go
+    /// round the loop more than once and each return is part of the record.
+    /// </summary>
+    private async Task LogCorrectionReturn(
+        WorksheetInstance instance, Guid userId, string reason, bool signedDecision)
+    {
+        // The review round this return interrupted, so the log can be read against the
+        // signature trail. Zero when the worksheet has no approval round yet.
+        var approvalRound = await context.QcApprovals
+            .Where(item => item.EntityType == QcApprovalEntityTypes.WorksheetInstance
+                && item.EntityId == instance.Id)
+            .Select(item => (int?)item.ApprovalRound)
+            .MaxAsync() ?? 0;
+
+        context.QcWorksheetInstanceCorrectionReturns.Add(new WorksheetInstanceCorrectionReturn
+        {
+            Id = Guid.NewGuid(),
+            WorksheetInstanceId = instance.Id,
+            ReturnedById = userId,
+            ReturnedAt = DateTime.UtcNow,
+            Reason = reason?.Trim(),
+            ApprovalRound = approvalRound,
+            Signed = signedDecision,
+            CreatedAt = DateTime.UtcNow,
+            CreatedById = userId
+        });
+    }
+
     // -----------------------------------------------------------------------
-    // Assignment enforcement
+    // Assignment enforcement and segregation of duties
     // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Whether this user performed the work, and therefore may not review it.
+    /// <para>
+    /// Three ways to have performed it, all of which count: being the current assignee, having
+    /// entered any value on the worksheet, and having held it earlier — a previous assignee is
+    /// recoverable from the reassignment log, so handing a worksheet on does not launder the
+    /// reviewer's independence.
+    /// </para>
+    /// <para>
+    /// Enforced here rather than left to approval-chain configuration on purpose: a chain that
+    /// happens to list the analyst as an approver would otherwise let them sign their own work,
+    /// and the second pair of eyes is the entire control.
+    /// </para>
+    /// </summary>
+    private async Task<bool> PerformedTheWork(WorksheetInstance instance, Guid userId)
+    {
+        if (instance.AssignedToId == userId)
+            return true;
+
+        if (await context.QcWorksheetFieldValues
+                .AnyAsync(value => value.WorksheetInstanceId == instance.Id
+                    && value.EnteredById == userId))
+            return true;
+
+        return await context.QcWorksheetInstanceReassignments
+            .AnyAsync(item => item.WorksheetInstanceId == instance.Id
+                && (item.FromUserId == userId || item.ToUserId == userId));
+    }
 
     /// <summary>
     /// The server-side half of assignment enforcement. Holding
@@ -1025,7 +1086,29 @@ public class WorksheetInstanceRepository(
             .OrderBy(item => item.ReassignedAt)
             .ToListAsync();
 
+        var correctionReturns = await context.QcWorksheetInstanceCorrectionReturns
+            .AsNoTracking()
+            .Include(item => item.ReturnedBy)
+            .Where(item => item.WorksheetInstanceId == instance.Id)
+            .OrderBy(item => item.ReturnedAt)
+            .ToListAsync();
+
         dto.Header = BuildHeader(instance, template, reassignments);
+
+        dto.CorrectionReturns = correctionReturns
+            .Select(item => new WorksheetInstanceCorrectionReturnDto
+            {
+                Id = item.Id,
+                WorksheetInstanceId = item.WorksheetInstanceId,
+                ReturnedById = item.ReturnedById,
+                ReturnedBy = item.ReturnedBy is null ? null : mapper.Map<UserDto>(item.ReturnedBy),
+                ReturnedAt = item.ReturnedAt,
+                Reason = item.Reason,
+                ApprovalRound = item.ApprovalRound,
+                Signed = item.Signed,
+                CreatedAt = item.CreatedAt
+            })
+            .ToList();
 
         dto.Reassignments = reassignments
             .Select(item => new WorksheetInstanceReassignmentDto

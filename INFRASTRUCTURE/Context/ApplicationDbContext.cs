@@ -853,6 +853,13 @@ public class ApplicationDbContext(
     /// </summary>
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment> QcWorksheetInstanceReassignments { get; set; }
 
+    /// <summary>
+    /// Every correction cycle a worksheet went through. A log rather than a summary, for the
+    /// same reason reassignments are: keeping only the latest return would discard the earlier
+    /// ones, and the history is the record.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn> QcWorksheetInstanceCorrectionReturns { get; set; }
+
     #endregion
 
     // #region TenantFilter

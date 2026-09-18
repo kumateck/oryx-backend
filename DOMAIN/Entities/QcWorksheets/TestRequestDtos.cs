@@ -226,6 +226,12 @@ public class WorksheetInstanceDetailDto : WorksheetInstanceSummaryDto
     public WorksheetInstanceHeaderDto Header { get; set; }
     public List<WorksheetInstanceSectionDto> Sections { get; set; } = [];
     public List<WorksheetInstanceReassignmentDto> Reassignments { get; set; } = [];
+
+    /// <summary>
+    /// Every correction cycle this worksheet went through, oldest first — not just the most
+    /// recent one.
+    /// </summary>
+    public List<WorksheetInstanceCorrectionReturnDto> CorrectionReturns { get; set; } = [];
 }
 
 public class WorksheetInstanceSectionDto
@@ -321,6 +327,28 @@ public class WorksheetInstanceReassignmentDto : BaseDto
     public UserDto ReassignedBy { get; set; }
     public DateTime ReassignedAt { get; set; }
     public string Reason { get; set; }
+}
+
+/// <summary>
+/// One correction cycle: who sent the worksheet back, when, why, and which review round it
+/// interrupted.
+/// </summary>
+public class WorksheetInstanceCorrectionReturnDto : BaseDto
+{
+    public Guid WorksheetInstanceId { get; set; }
+    public Guid ReturnedById { get; set; }
+    public UserDto ReturnedBy { get; set; }
+    public DateTime ReturnedAt { get; set; }
+    public string Reason { get; set; }
+
+    /// <summary>The QcApproval round in force when the worksheet was sent back.</summary>
+    public int ApprovalRound { get; set; }
+
+    /// <summary>
+    /// True when the return came through the reviewer's re-authenticated decision, false when
+    /// it came through the unsigned return-for-correction action.
+    /// </summary>
+    public bool Signed { get; set; }
 }
 
 /// <summary>

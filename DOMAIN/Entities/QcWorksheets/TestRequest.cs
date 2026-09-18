@@ -304,29 +304,15 @@ public class WorksheetInstance : BaseEntity, IRequireApproval
     /// </summary>
     public DateTime? SubmittedAt { get; set; }
 
-    /// <summary>
-    /// Why the worksheet was last sent back, together with
-    /// <see cref="ReturnedForCorrectionAt"/>/<see cref="ReturnedForCorrectionById"/>.
-    /// <para>
-    /// Also beyond the brief's property list, and for the same kind of reason as
-    /// <see cref="SubmittedAt"/>: <c>/return-for-correction</c> takes a mandatory reason but the
-    /// brief names no entity to keep it in, and a mandatory GxP reason that is accepted and then
-    /// discarded is worse than not asking for it. Only the most recent return is held here —
-    /// when the return comes through <c>/review</c> it is additionally recorded, signed, on its
-    /// own <see cref="QcApproval"/> round, which is where the full history lives.
-    /// </para>
-    /// </summary>
-    [StringLength(1000)] public string ReturnedForCorrectionReason { get; set; }
-
-    public DateTime? ReturnedForCorrectionAt { get; set; }
-
-    public Guid? ReturnedForCorrectionById { get; set; }
-
-    public User ReturnedForCorrectionBy { get; set; }
-
     public List<WorksheetFieldValue> FieldValues { get; set; } = [];
 
     public List<WorksheetInstanceReassignment> Reassignments { get; set; } = [];
+
+    /// <summary>
+    /// Every time this worksheet was sent back, oldest first. A worksheet can go round the
+    /// correction loop more than once, and each cycle is its own row.
+    /// </summary>
+    public List<WorksheetInstanceCorrectionReturn> CorrectionReturns { get; set; } = [];
 }
 
 /// <summary>
@@ -407,6 +393,51 @@ public class WorksheetInstanceReassignment : BaseEntity
     public DateTime ReassignedAt { get; set; }
 
     [StringLength(1000)] public string Reason { get; set; }
+}
+
+/// <summary>
+/// A plain audit record of a submitted worksheet being sent back to its analyst.
+/// <para>
+/// A first-class log rather than a "last return" field on the worksheet, and for the same
+/// reason <see cref="WorksheetInstanceReassignment"/> is one: a worksheet can go round the
+/// correction loop several times, and a mutable field would keep only the newest cycle while
+/// silently discarding the ones before it. Every cycle is retained here.
+/// </para>
+/// <para>
+/// Like a reassignment, this is not itself an electronic signature. When the return came
+/// through the reviewer's signed decision the signature lives on its own
+/// <see cref="QcApproval"/> round, and <see cref="ApprovalRound"/> is what ties this row to it.
+/// </para>
+/// </summary>
+public class WorksheetInstanceCorrectionReturn : BaseEntity
+{
+    public Guid WorksheetInstanceId { get; set; }
+
+    public WorksheetInstance WorksheetInstance { get; set; }
+
+    public Guid ReturnedById { get; set; }
+
+    public User ReturnedBy { get; set; }
+
+    public DateTime ReturnedAt { get; set; }
+
+    /// <summary>What the analyst has to act on. Mandatory, like a reason for change.</summary>
+    [StringLength(1000)] public string Reason { get; set; }
+
+    /// <summary>
+    /// The review round this return interrupted — the <see cref="QcApproval.ApprovalRound"/>
+    /// in force when it was sent back, so a return can be read against the signature trail it
+    /// belongs to. Zero when the worksheet had no approval round yet.
+    /// </summary>
+    public int ApprovalRound { get; set; }
+
+    /// <summary>
+    /// True when the return came through the reviewer's signed decision (a declined
+    /// <c>/review</c>, which records a re-authenticated <see cref="QcApproval"/> rejection);
+    /// false when it came through the unsigned <c>/return-for-correction</c> action, which
+    /// takes a reason but no credential.
+    /// </summary>
+    public bool Signed { get; set; }
 }
 
 /// <summary>

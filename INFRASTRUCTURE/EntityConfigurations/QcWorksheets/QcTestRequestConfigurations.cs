@@ -147,14 +147,6 @@ public class WorksheetInstanceConfiguration : IEntityTypeConfiguration<Worksheet
             .HasForeignKey(item => item.AssignedById)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Property(item => item.ReturnedForCorrectionReason).HasMaxLength(1000);
-
-        builder
-            .HasOne(item => item.ReturnedForCorrectionBy)
-            .WithMany()
-            .HasForeignKey(item => item.ReturnedForCorrectionById)
-            .OnDelete(DeleteBehavior.Restrict);
-
         // Self-referencing, written only by Milestone 4's retest flow. Restrict because the
         // original result must stay visible beside its retest, never replaced by it.
         builder
@@ -171,6 +163,12 @@ public class WorksheetInstanceConfiguration : IEntityTypeConfiguration<Worksheet
 
         builder
             .HasMany(item => item.Reassignments)
+            .WithOne(item => item.WorksheetInstance)
+            .HasForeignKey(item => item.WorksheetInstanceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasMany(item => item.CorrectionReturns)
             .WithOne(item => item.WorksheetInstance)
             .HasForeignKey(item => item.WorksheetInstanceId)
             .OnDelete(DeleteBehavior.Cascade);
@@ -242,6 +240,27 @@ public class WorksheetInstanceReassignmentConfiguration
             .HasOne(item => item.ReassignedBy)
             .WithMany()
             .HasForeignKey(item => item.ReassignedById)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class WorksheetInstanceCorrectionReturnConfiguration
+    : IEntityTypeConfiguration<WorksheetInstanceCorrectionReturn>
+{
+    public void Configure(EntityTypeBuilder<WorksheetInstanceCorrectionReturn> builder)
+    {
+        builder.ToTable("QcWorksheetInstanceCorrectionReturns");
+        builder.HasQueryFilter(item => !item.DeletedAt.HasValue);
+
+        builder.Property(item => item.Reason).HasMaxLength(1000).IsRequired();
+
+        // The history of one worksheet's correction cycles, read in order.
+        builder.HasIndex(item => new { item.WorksheetInstanceId, item.ReturnedAt });
+
+        builder
+            .HasOne(item => item.ReturnedBy)
+            .WithMany()
+            .HasForeignKey(item => item.ReturnedById)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

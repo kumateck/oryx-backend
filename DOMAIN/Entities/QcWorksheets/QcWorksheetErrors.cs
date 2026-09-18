@@ -433,6 +433,22 @@ public static class QcWorksheetErrors
             + "its expiry date. The batch and expiry are captured per use because no catalog "
             + "record tracks them.");
 
+    /// <summary>
+    /// Segregation of duties, enforced in code rather than left to however an administrator
+    /// happened to configure the approval chain.
+    /// <para>
+    /// Whoever performed the work cannot be the one who signs it off — the second pair of eyes
+    /// is the entire control. Refusing outright follows the same principle as QC's opt-out of
+    /// the approval engine's auto-approval fallback: a compliance gap fails loudly rather than
+    /// being quietly allowed.
+    /// </para>
+    /// </summary>
+    public static Error CannotReviewOwnWork =>
+        Error.Forbidden(
+            "QcWorksheetInstance.CannotReviewOwnWork",
+            "You performed this test, so you cannot review it. A worksheet must be reviewed by "
+            + "someone who did not enter, submit or hold its results.");
+
     public static Error ReviewCommentsRequired =>
         Error.Validation(
             "QcWorksheetInstance.ReviewCommentsRequired",
