@@ -26,11 +26,14 @@ namespace API.Controllers;
 /// can be granted without the other.
 /// </para>
 /// <para>
-/// That key is a single combined one rather than a view/create/edit split, mirroring
+/// Create/update/delete share that one key rather than splitting further, mirroring
 /// <see cref="QcWorksheetPermissionKeys.CanManageSamplingPointGroups"/>: a sampling point is plain
 /// reference data with no lifecycle of its own, exactly like the group table Milestone 2 added,
 /// and the multi-way splits elsewhere in this module are reserved for entities that have real
-/// transitions to gate.
+/// transitions to gate. Reading splits off into
+/// <see cref="QcWorksheetPermissionKeys.CanViewSamplingPoints"/>, again mirroring the group table:
+/// picking a point when authoring a program is a legitimate need for a role that has no business
+/// administering the register.
 /// </para>
 /// </summary>
 [ApiController]
@@ -51,7 +54,7 @@ public class QcMonitoringProgramController(
     /// page would hide points the author needs.
     /// </summary>
     [HttpGet("sampling-points")]
-    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
+    [Authorize(QcWorksheetPermissionKeys.CanViewSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SamplingPointDto>))]
     public async Task<IResult> GetSamplingPoints(
         [FromQuery] string searchQuery = null, [FromQuery] SamplingPointType? type = null)
@@ -62,7 +65,7 @@ public class QcMonitoringProgramController(
 
     /// <summary>Retrieves a single sampling point.</summary>
     [HttpGet("sampling-points/{id:guid}")]
-    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
+    [Authorize(QcWorksheetPermissionKeys.CanViewSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SamplingPointDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSamplingPoint([FromRoute] Guid id)

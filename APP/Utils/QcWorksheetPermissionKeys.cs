@@ -64,6 +64,17 @@ public static class QcWorksheetPermissionKeys
     /// </summary>
     public const string CanManageSamplingPointGroups = "CanManageSamplingPointGroups";
 
+    // Sampling Points
+
+    /// <summary>
+    /// Read access to the sampling point register, separate from
+    /// <see cref="CanManageSamplingPoints"/> for the same reason
+    /// <see cref="CanViewSamplingPointGroups"/> is separate from its Manage key: many roles
+    /// legitimately need to read reference data — to pick a point when authoring a monitoring
+    /// program, for one — without deserving admin rights over the register itself.
+    /// </summary>
+    public const string CanViewSamplingPoints = "CanViewSamplingPoints";
+
     /// <summary>
     /// Sampling point master data (Milestone 6), on its own dedicated key rather than sharing the
     /// monitoring program keys. Every action and view in this codebase gets its own key and never
@@ -71,11 +82,13 @@ public static class QcWorksheetPermissionKeys
     /// it: someone may legitimately maintain the point register without also being able to decide
     /// how often anything gets tested.
     /// <para>
-    /// One combined key rather than a view/create/edit split, mirroring
+    /// Create/edit/delete as one key rather than a create/edit split, mirroring
     /// <see cref="CanManageSamplingPointGroups"/> — this entity's closest sibling in the module,
     /// and the precedent for simple master data here. Both are plain reference data with no
     /// lifecycle of their own whose transitions could be gated separately; the multi-way splits in
-    /// this file are reserved for things that have real transitions to gate.
+    /// this file are reserved for things that have real transitions to gate. Only View splits off,
+    /// and only because reading is a different concern from administering, not a different
+    /// lifecycle stage.
     /// </para>
     /// </summary>
     public const string CanManageSamplingPoints = "CanManageSamplingPoints";
@@ -227,6 +240,12 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanManageSamplingPointGroups
     ];
 
+    private static readonly HashSet<string> SamplingPointKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewSamplingPoints,
+        QcWorksheetPermissionKeys.CanManageSamplingPoints
+    ];
+
     private static readonly HashSet<string> TestRequestKeys =
     [
         QcWorksheetPermissionKeys.CanViewQcTestRequests,
@@ -302,7 +321,7 @@ public static class QcWorksheetPermissionCatalog
         if (MonitoringProgramKeys.Contains(key)) return MonitoringPrograms;
         if (WaterQualityKeys.Contains(key)) return WaterQuality;
         if (SamplingPointGroupKeys.Contains(key)) return SamplingPointGroups;
-        if (key == QcWorksheetPermissionKeys.CanManageSamplingPoints) return SamplingPoints;
+        if (SamplingPointKeys.Contains(key)) return SamplingPoints;
         return WorksheetTemplates;
     }
 
