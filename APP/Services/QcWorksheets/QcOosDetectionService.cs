@@ -97,7 +97,8 @@ public class QcOosDetectionService(
             if (alreadyOpen.Contains(fieldKey))
                 continue;
 
-            var characteristic = ResolveCharacteristic(characteristics, fieldKey, subject.SamplingPointGroupId);
+            var characteristic = QcCharacteristicResolver.Resolve(
+                characteristics, fieldKey, subject.SamplingPointGroupId);
             if (characteristic is null)
                 continue;
 
@@ -223,39 +224,6 @@ public class QcOosDetectionService(
             return false;
 
         return await context.ApprovalStages.AnyAsync(stage => stage.ApprovalId == approval.Id);
-    }
-
-    /// <summary>
-    /// Picks the Characteristic a field is judged against.
-    /// <para>
-    /// The same (template, field) pair may appear on several Characteristics differentiated by
-    /// <see cref="SpecificationCharacteristic.SamplingPointGroupId"/> — that is how one EM test
-    /// carries a different Alert/Action tier per room classification. The subject's own group
-    /// wins; a group-less Characteristic is the fallback. A subject with a group that matches
-    /// nothing deliberately falls back rather than failing, because a general limit is still a
-    /// limit.
-    /// </para>
-    /// </summary>
-    private static SpecificationCharacteristic ResolveCharacteristic(
-        List<SpecificationCharacteristic> characteristics, string fieldKey, Guid? samplingPointGroupId)
-    {
-        var candidates = characteristics
-            .Where(item => string.Equals(item.SourceFieldKey, fieldKey, StringComparison.Ordinal))
-            .ToList();
-
-        if (candidates.Count == 0)
-            return null;
-
-        if (samplingPointGroupId.HasValue)
-        {
-            var tiered = candidates.FirstOrDefault(
-                item => item.SamplingPointGroupId == samplingPointGroupId.Value);
-
-            if (tiered is not null) return tiered;
-        }
-
-        return candidates.FirstOrDefault(item => !item.SamplingPointGroupId.HasValue)
-            ?? candidates[0];
     }
 
     private static OosCase BuildCase(

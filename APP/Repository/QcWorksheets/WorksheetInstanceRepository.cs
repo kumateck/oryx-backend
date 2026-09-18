@@ -36,7 +36,8 @@ public class WorksheetInstanceRepository(
     IMapper mapper,
     IQcSignatureService signatureService,
     IApprovalRepository approvalRepository,
-    IQcOosDetectionService oosDetection) : IWorksheetInstanceRepository
+    IQcOosDetectionService oosDetection,
+    IQcCoaGenerationService coaGeneration) : IWorksheetInstanceRepository
 {
     private const string ModelType = QcWorksheetModelTypes.WorksheetInstance;
 
@@ -523,7 +524,39 @@ public class WorksheetInstanceRepository(
 
         await RecalculateRoundStatus(instance.TestRequestSubjectId);
 
+        // Automatic certificate generation (Milestone 5). Checked after every approved review
+        // rather than by a polling job: this review may have been the last one the round was
+        // waiting on. The service applies the strict-hold rule itself and withholds silently when
+        // anything is still outstanding — including a single unreviewed worksheet on another
+        // Subject, or a single OOS case still open — so there is nothing to decide here.
+        //
+        // Deliberately after the transition has committed, and deliberately unable to fail the
+        // reviewer's own action: their review is a completed, re-authenticated signature, and
+        // discarding it because an ancillary document could not be assembled would be the wrong
+        // trade every time. The same reasoning AdvanceOnRetestReviewedAsync already applies to a
+        // missing approval chain.
+        if (request.Approve)
+            await TryGenerateCertificate(instance.TestRequestSubjectId, userId);
+
         return await GetWorksheetInstance(id);
+    }
+
+    /// <summary>
+    /// Asks the certificate engine whether this review completed the round. Never throws into the
+    /// caller — see the note at the call site.
+    /// </summary>
+    private async Task TryGenerateCertificate(Guid subjectId, Guid userId)
+    {
+        var testRequestId = await context.QcTestRequestSubjects
+            .AsNoTracking()
+            .Where(item => item.Id == subjectId)
+            .Select(item => item.TestRequestId)
+            .SingleOrDefaultAsync();
+
+        if (testRequestId == Guid.Empty)
+            return;
+
+        await coaGeneration.TryGenerateAsync(testRequestId, userId);
     }
 
     public async Task<Result<WorksheetInstanceDetailDto>> ReturnForCorrection(

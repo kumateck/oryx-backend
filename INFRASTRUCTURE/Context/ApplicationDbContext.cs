@@ -872,6 +872,24 @@ public class ApplicationDbContext(
     /// </summary>
     public DbSet<DOMAIN.Entities.QcWorksheets.OosCase> QcOosCases { get; set; }
 
+    /// <summary>
+    /// Milestone 5 — certificates. Two new tables, <c>QcCoas</c> and <c>QcCoaRows</c>.
+    /// <para>
+    /// Entirely additive and entirely separate from the live certificate path: nothing here reads
+    /// or writes <c>CommercialCertificates</c>, <c>CommercialCoaItems</c> or
+    /// <c>RoutineCertificates</c>, which keep running unchanged. The name <c>Coa</c> is the
+    /// rebuilt module's own entity and is not a rename of any of them.
+    /// </para>
+    /// <para>
+    /// Every value a certificate prints is stored on these two tables, snapshotted at generation
+    /// time. Nothing joins forward to the Specification or the WorksheetInstances to render an
+    /// issued document.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.Coa> Coas { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.CoaRow> CoaRows { get; set; }
+
     #endregion
 
     // #region TenantFilter

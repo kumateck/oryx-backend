@@ -46,7 +46,8 @@ public class OosCaseRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IQcSignatureService signatureService,
-    IApprovalRepository approvalRepository) : IOosCaseRepository
+    IApprovalRepository approvalRepository,
+    IQcCoaGenerationService coaGeneration) : IOosCaseRepository
 {
     private const string ModelType = QcWorksheetModelTypes.OosCase;
 
@@ -436,8 +437,17 @@ public class OosCaseRepository(
         await context.SaveChangesAsync();
 
         var testRequestId = await TestRequestIdFor(oosCase.WorksheetInstanceId);
-        if (testRequestId != Guid.Empty)
-            await QcTestRequestStatusCalculator.RecalculateAsync(context, testRequestId);
+        if (testRequestId == Guid.Empty)
+            return;
+
+        await QcTestRequestStatusCalculator.RecalculateAsync(context, testRequestId);
+
+        // Closing this case may have been the last thing the round was held on (Milestone 5).
+        // The strict-hold rule is symmetric: a round whose worksheets are all Reviewed is held
+        // open by a single unclosed case, so releasing that hold is as much a generation trigger
+        // as the last review is. The service re-applies the whole gate and withholds silently if
+        // another case is still open.
+        await coaGeneration.TryGenerateAsync(testRequestId, userId);
     }
 
     /// <summary>
@@ -511,10 +521,11 @@ public class OosCaseRepository(
     };
 
     /// <summary>
-    /// Delegates to <see cref="QcReleaseHold"/> rather than re-deriving the rule: the TestRequest
-    /// detail reports the same hold as <c>BlocksRelease</c>, and two implementations of "is this
-    /// round held" would be two chances for the screen and the gate to disagree about whether a
-    /// round is still under investigation.
+    /// Delegates to <see cref="QcReleaseHold"/> rather than re-deriving the rule: Milestone 5's
+    /// certificate gate and the TestRequest detail's <c>BlocksRelease</c> both ask the same
+    /// question, and two implementations of "is this round held" would be two chances for a
+    /// certificate to be issued on a round still under investigation — or for the screen and the
+    /// gate to disagree about whether one is.
     /// </summary>
     private Task<int> CountOpenCases(Guid testRequestId) =>
         QcReleaseHold.CountOpenCasesAsync(context, testRequestId);

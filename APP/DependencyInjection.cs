@@ -183,6 +183,12 @@ public static class DependencyInjection
         // Specification are separate concerns, and the judging half has to be testable alone.
         services.AddScoped<IQcOosDetectionService, QcOosDetectionService>();
         services.AddScoped<IOosCaseRepository, OosCaseRepository>();
+
+        // Milestone 5 — certificates. Generation is a service rather than part of the repository
+        // because it is a system trigger with two callers (a worksheet reaching Reviewed, and an
+        // OOS case closing), while the repository serves only the two user actions.
+        services.AddScoped<IQcCoaGenerationService, QcCoaGenerationService>();
+        services.AddScoped<ICoaRepository, CoaRepository>();
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
         services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();

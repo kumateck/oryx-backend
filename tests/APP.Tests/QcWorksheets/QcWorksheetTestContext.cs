@@ -77,6 +77,8 @@ internal sealed class QcWorksheetTestContext : IDisposable
     internal QcApprovalRepository Approvals { get; }
     internal QcOosDetectionService OosDetection { get; }
     internal OosCaseRepository OosCases { get; }
+    internal QcCoaGenerationService CoaGeneration { get; }
+    internal CoaRepository Coas { get; }
 
     internal User Approver { get; private set; }
     internal Role ApproverRole { get; private set; }
@@ -120,10 +122,19 @@ internal sealed class QcWorksheetTestContext : IDisposable
         OosDetection = new QcOosDetectionService(
             Db, ApprovalRepository, NullLogger<QcOosDetectionService>.Instance);
 
-        WorksheetInstances = new WorksheetInstanceRepository(
-            Db, Mapper, SignatureService, ApprovalRepository, OosDetection);
+        // Milestone 5. The real generation service, wired into both of its real triggers, so the
+        // certificate tests exercise the same automatic path production takes rather than calling
+        // the generator by hand.
+        CoaGeneration = new QcCoaGenerationService(
+            Db, NullLogger<QcCoaGenerationService>.Instance);
 
-        OosCases = new OosCaseRepository(Db, Mapper, SignatureService, ApprovalRepository);
+        WorksheetInstances = new WorksheetInstanceRepository(
+            Db, Mapper, SignatureService, ApprovalRepository, OosDetection, CoaGeneration);
+
+        OosCases = new OosCaseRepository(
+            Db, Mapper, SignatureService, ApprovalRepository, CoaGeneration);
+
+        Coas = new CoaRepository(Db, Mapper, CoaGeneration);
 
         Approvals = new QcApprovalRepository(Db, Mapper);
     }
