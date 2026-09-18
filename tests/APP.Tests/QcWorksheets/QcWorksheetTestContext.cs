@@ -6,7 +6,10 @@ using APP.Services.QcWorksheets;
 using AutoMapper;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -72,6 +75,8 @@ internal sealed class QcWorksheetTestContext : IDisposable
     internal TestRequestRepository TestRequests { get; }
     internal WorksheetInstanceRepository WorksheetInstances { get; }
     internal QcApprovalRepository Approvals { get; }
+    internal QcOosDetectionService OosDetection { get; }
+    internal OosCaseRepository OosCases { get; }
 
     internal User Approver { get; private set; }
     internal Role ApproverRole { get; private set; }
@@ -112,8 +117,13 @@ internal sealed class QcWorksheetTestContext : IDisposable
 
         TestRequests = new TestRequestRepository(Db, Mapper);
 
+        OosDetection = new QcOosDetectionService(
+            Db, ApprovalRepository, NullLogger<QcOosDetectionService>.Instance);
+
         WorksheetInstances = new WorksheetInstanceRepository(
-            Db, Mapper, SignatureService, ApprovalRepository);
+            Db, Mapper, SignatureService, ApprovalRepository, OosDetection);
+
+        OosCases = new OosCaseRepository(Db, Mapper, SignatureService, ApprovalRepository);
 
         Approvals = new QcApprovalRepository(Db, Mapper);
     }
@@ -195,6 +205,126 @@ internal sealed class QcWorksheetTestContext : IDisposable
         Db.QcWorksheetTemplates.Add(template);
         await Db.SaveChangesAsync();
         return template;
+    }
+
+    /// <summary>
+    /// Adds an acceptance-criteria row binding a Specification to the worksheet field it
+    /// judges. Milestone 4's detection resolves limits through exactly this pair.
+    /// </summary>
+    internal async Task<SpecificationCharacteristic> SeedCharacteristic(
+        Specification specification,
+        WorksheetTemplate template,
+        string fieldKey,
+        string acceptanceCriteria = null,
+        string alertLimit = null,
+        string actionLimit = null,
+        Guid? samplingPointGroupId = null,
+        string testName = null)
+    {
+        var characteristic = new SpecificationCharacteristic
+        {
+            Id = Guid.NewGuid(),
+            SpecificationId = specification.Id,
+            TestName = testName ?? fieldKey,
+
+            // AcceptanceCriteria is required on this entity — every Characteristic states its
+            // criteria, and a tiered one states Alert/Action limits on top. When a test cares
+            // only about the tiered limits, the criteria text mirrors the Action limit, which
+            // is what a real tiered Characteristic looks like. The evaluator prefers an
+            // explicit ActionLimit regardless, so this never changes what is under test.
+            AcceptanceCriteria = acceptanceCriteria ?? actionLimit ?? alertLimit ?? "Complies",
+            AlertLimit = alertLimit,
+            ActionLimit = actionLimit,
+            SamplingPointGroupId = samplingPointGroupId,
+            SourceWorksheetTemplateId = template.Id,
+            SourceFieldKey = fieldKey,
+            IncludeOnCoa = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.QcSpecificationCharacteristics.Add(characteristic);
+        await Db.SaveChangesAsync();
+        return characteristic;
+    }
+
+    /// <summary>
+    /// Sets the retest policy, which the seeded Specification defaults to SameSample. The
+    /// FreshResample path is a different branch of the retest flow and has to be selectable.
+    /// </summary>
+    internal async Task SetRetestPolicy(Specification specification, QcRetestPolicy policy)
+    {
+        var tracked = await Db.QcSpecifications.SingleAsync(item => item.Id == specification.Id);
+        tracked.RetestPolicy = policy;
+        specification.RetestPolicy = policy;
+        await Db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// A row in the live material batch table — the real, shared, system-of-record entity the
+    /// OOS disposition quarantines and releases. Deliberately the production table, because a
+    /// QC-only shadow status would prove nothing about the behaviour under test.
+    /// </summary>
+    internal async Task<MaterialBatch> SeedMaterialBatch(
+        string batchNumber, BatchStatus status = BatchStatus.Testing)
+    {
+        // A real parent Material is required, not an arbitrary FK: MaterialBatch's global query
+        // filter reads through the navigation (`!entity.Material.DeletedAt.HasValue`), so a
+        // batch whose Material does not exist is invisible to every query in the application.
+        var material = new Material
+        {
+            Id = Guid.NewGuid(),
+            Code = $"MAT-{Guid.NewGuid().ToString()[..6]}",
+            Name = "Seeded material",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.Materials.Add(material);
+
+        // A real UoM as well. MaterialBatch.UoM is auto-included and the relationship is
+        // required, so a batch pointing at a UoM that does not exist is silently dropped from
+        // any query that materializes the entity — which would make this seed a phantom.
+        var uom = new UnitOfMeasure
+        {
+            Id = Guid.NewGuid(),
+            Name = "Kilogram",
+            Symbol = "kg",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.UnitOfMeasures.Add(uom);
+
+        var batch = new MaterialBatch
+        {
+            Id = Guid.NewGuid(),
+            MaterialId = material.Id,
+            UoMId = uom.Id,
+            BatchNumber = batchNumber,
+            Status = status,
+            DateReceived = DateTime.UtcNow.AddDays(-7),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.MaterialBatches.Add(batch);
+        await Db.SaveChangesAsync();
+        return batch;
+    }
+
+    /// <summary>The Product counterpart. Note BatchManufacturingStatus has no Quarantine or Available value.</summary>
+    internal async Task<BatchManufacturingRecord> SeedBatchManufacturingRecord(
+        string batchNumber, BatchManufacturingStatus status = BatchManufacturingStatus.Testing)
+    {
+        var record = new BatchManufacturingRecord
+        {
+            Id = Guid.NewGuid(),
+            ProductionScheduleProductId = Guid.NewGuid(),
+            BatchNumber = batchNumber,
+            Status = status,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.BatchManufacturingRecords.Add(record);
+        await Db.SaveChangesAsync();
+        return record;
     }
 
     internal async Task<SamplingPointGroup> SeedSamplingPointGroup(string name)

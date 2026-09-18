@@ -366,6 +366,17 @@ public class WorksheetQueueItemDto : WorksheetInstanceSummaryDto
     public DateTime? CollectedAt { get; set; }
     public string SpecificationCode { get; set; }
     public int SpecificationVersion { get; set; }
+
+    /// <summary>
+    /// True when this worksheet's submission triggered an OOS case that is still open. The
+    /// reviewer queue renders these with a red flag and a link into the case
+    /// (test-room-ux.md, "Reviewer queue") — a reviewer has to see that a result is already
+    /// under formal investigation before they sign it off.
+    /// </summary>
+    public bool HasOpenOosCase { get; set; }
+
+    /// <summary>The case to link to, when there is one. Null otherwise.</summary>
+    public Guid? OosCaseId { get; set; }
 }
 
 /// <summary>The Test Room's three counts, alongside the cards themselves.</summary>

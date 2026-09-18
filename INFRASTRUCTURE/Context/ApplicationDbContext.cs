@@ -860,6 +860,18 @@ public class ApplicationDbContext(
     /// </summary>
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn> QcWorksheetInstanceCorrectionReturns { get; set; }
 
+    /// <summary>
+    /// Milestone 4 — the formal OOS/OOT workflow, one case per failing FieldKey.
+    /// <para>
+    /// Coexists with, and does not modify, the live <c>OosInvestigations</c> table. The one
+    /// place the rebuilt QC module writes to a pre-existing live entity is this workflow's
+    /// disposition, which updates <c>MaterialBatch.Status</c> and
+    /// <c>BatchManufacturingRecord.Status</c> — an application-level status update through the
+    /// existing columns, with no schema change to either table.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.OosCase> QcOosCases { get; set; }
+
     #endregion
 
     // #region TenantFilter

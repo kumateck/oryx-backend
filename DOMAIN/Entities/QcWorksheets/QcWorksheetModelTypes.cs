@@ -20,9 +20,18 @@ public static class QcWorksheetModelTypes
     /// </summary>
     public const string WorksheetInstance = "QcWorksheetInstance";
 
+    /// <summary>
+    /// Milestone 4. The QA disposition of an OOS case is an approval like every other QC
+    /// approval: same engine, same centralized <see cref="QcApproval"/> table, same
+    /// re-authentication wrapper. There is deliberately no separate OOS-only signature
+    /// mechanism — an earlier draft of this module was already corrected once for inventing a
+    /// parallel audit table, and that correction holds here.
+    /// </summary>
+    public const string OosCase = "QcOosCase";
+
     public static bool IsQcWorksheetModelType(string modelType) =>
         modelType is StandardTestProcedure or WorksheetTemplate or Specification
-            or WorksheetInstance;
+            or WorksheetInstance or OosCase;
 }
 
 /// <summary>
@@ -36,6 +45,7 @@ public static class QcApprovalEntityTypes
     public const string WorksheetTemplate = "WorksheetTemplate";
     public const string Specification = "Specification";
     public const string WorksheetInstance = "WorksheetInstance";
+    public const string OosCase = "OosCase";
 
     /// <summary>
     /// Maps an approval-engine modelType to the EntityType recorded on the QcApproval row.
@@ -46,6 +56,7 @@ public static class QcApprovalEntityTypes
         QcWorksheetModelTypes.WorksheetTemplate => WorksheetTemplate,
         QcWorksheetModelTypes.Specification => Specification,
         QcWorksheetModelTypes.WorksheetInstance => WorksheetInstance,
+        QcWorksheetModelTypes.OosCase => OosCase,
         _ => null
     };
 }

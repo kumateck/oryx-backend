@@ -100,6 +100,14 @@ public static class QcWorksheetPermissionKeys
     public const string CanReviewChemicalWorksheet = "CanReviewChemicalWorksheet";
     public const string CanReviewMicrobialWorksheet = "CanReviewMicrobialWorksheet";
     public const string CanReturnWorksheetForCorrection = "CanReturnWorksheetForCorrection";
+
+    // OOS cases. Three keys for three genuinely different authorities: running the Phase 1
+    // lab-error check, deciding a retest is warranted, and signing the QA disposition that
+    // rejects or releases a real batch. In a real lab these sit with a QC Officer, a QC
+    // Manager and a QA Manager respectively, which is exactly why they are not one key.
+    public const string CanInvestigateQcOosCase = "CanInvestigateQcOosCase";
+    public const string CanAuthorizeQcOosRetest = "CanAuthorizeQcOosRetest";
+    public const string CanDispositionQcOosCase = "CanDispositionQcOosCase";
 }
 
 /// <summary>
@@ -115,6 +123,7 @@ public static class QcWorksheetPermissionCatalog
     public const string SamplingPointGroups = "QC Sampling Point Groups";
     public const string TestRequests = "QC Test Requests";
     public const string TestRoom = "QC Test Room";
+    public const string OosCases = "QC OOS Cases";
 
     private static readonly HashSet<string> StpKeys =
     [
@@ -165,6 +174,13 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanReturnWorksheetForCorrection
     ];
 
+    private static readonly HashSet<string> OosCaseKeys =
+    [
+        QcWorksheetPermissionKeys.CanInvestigateQcOosCase,
+        QcWorksheetPermissionKeys.CanAuthorizeQcOosRetest,
+        QcWorksheetPermissionKeys.CanDispositionQcOosCase
+    ];
+
     public static IReadOnlyList<PermissionDto> Generate()
     {
         return typeof(QcWorksheetPermissionKeys)
@@ -180,6 +196,7 @@ public static class QcWorksheetPermissionCatalog
         if (SpecificationKeys.Contains(key)) return Specifications;
         if (TestRequestKeys.Contains(key)) return TestRequests;
         if (TestRoomKeys.Contains(key)) return TestRoom;
+        if (OosCaseKeys.Contains(key)) return OosCases;
         if (SamplingPointGroupKeys.Contains(key)) return SamplingPointGroups;
         return WorksheetTemplates;
     }

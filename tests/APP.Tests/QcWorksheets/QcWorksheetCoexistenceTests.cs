@@ -65,7 +65,9 @@ public class QcWorksheetCoexistenceTests
         // rights over it, while Create/Edit/Delete stay fused under the single Manage key.
         // Milestone 3 adds five operations keys and eleven test room keys — the execution
         // transitions split Chemical from Microbial, since those analysts are staffed
-        // separately.
+        // separately. Milestone 4 adds three OOS keys: investigating, authorizing a retest and
+        // signing the disposition are three different authorities, held by three different
+        // roles in a real lab.
         Assert.Equal(
         [
             "CanApproveQcSpecification",
@@ -73,17 +75,20 @@ public class QcWorksheetCoexistenceTests
             "CanApproveWorksheetTemplate",
             "CanAssignQcTestRequest",
             "CanAssignWorksheet",
+            "CanAuthorizeQcOosRetest",
             "CanCreateQcSpecification",
             "CanCreateQcStp",
             "CanCreateScheduledQcTestRequest",
             "CanCreateUnscheduledQcTestRequest",
             "CanCreateWorksheetTemplate",
+            "CanDispositionQcOosCase",
             "CanEditQcSpecification",
             "CanEditQcStp",
             "CanEditWorksheetTemplate",
             "CanEnterChemicalWorksheetResult",
             "CanEnterMicrobialWorksheetResult",
             "CanImportQcStp",
+            "CanInvestigateQcOosCase",
             "CanManageSamplingPointGroups",
             "CanReassignWorksheet",
             "CanRecordQcSample",
@@ -116,9 +121,12 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("QcWorksheetTemplate", QcWorksheetModelTypes.WorksheetTemplate);
         Assert.Equal("QcSpecification", QcWorksheetModelTypes.Specification);
         Assert.Equal("QcWorksheetInstance", QcWorksheetModelTypes.WorksheetInstance);
+        Assert.Equal("QcOosCase", QcWorksheetModelTypes.OosCase);
 
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.WorksheetInstance));
+        Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
+            QcWorksheetModelTypes.OosCase));
 
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.StandardTestProcedure));
@@ -137,8 +145,11 @@ public class QcWorksheetCoexistenceTests
                      "Specification", "MaterialSpecification", "ProductSpecification",
 
                      // The live analytical request path must not be captured by the QC branch
-                     // either: it keeps running through its own approval dispatch.
-                     "AnalyticalTestRequest", "WorksheetInstance", "TestRequest"
+                     // either: it keeps running through its own approval dispatch. "OosCase"
+                     // and "OosInvestigation" are listed for the same reason — the live
+                     // qa/oos-investigations path keeps its own dispatch untouched.
+                     "AnalyticalTestRequest", "WorksheetInstance", "TestRequest",
+                     "OosCase", "OosInvestigation"
                  })
         {
             Assert.False(QcWorksheetModelTypes.IsQcWorksheetModelType(other), other);
@@ -168,7 +179,16 @@ public class QcWorksheetCoexistenceTests
             QcApprovalEntityTypes.WorksheetInstance,
             QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.WorksheetInstance));
 
+        Assert.Equal(
+            QcApprovalEntityTypes.OosCase,
+            QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.OosCase));
+
         Assert.Null(QcApprovalEntityTypes.FromModelType("Response"));
+
+        // The bare entity-type name is not a model type either: the live OosInvestigation
+        // path cannot be routed into QC's approval handler.
+        Assert.Null(QcApprovalEntityTypes.FromModelType("OosCase"));
+        Assert.Null(QcApprovalEntityTypes.FromModelType("OosInvestigation"));
 
         // The bare EntityType string is not itself a model type: only "QcSpecification" maps.
         Assert.Null(QcApprovalEntityTypes.FromModelType("Specification"));
@@ -195,6 +215,16 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetFieldValue).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstanceReassignment).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetInstanceCorrectionReturn).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(OosCase).Namespace);
+
+        // And the new case is emphatically not the live OosInvestigation under another name:
+        // different type, different namespace, different table, both still live.
+        Assert.NotEqual(
+            typeof(DOMAIN.Entities.OosInvestigations.OosInvestigation), typeof(OosCase));
+
+        Assert.Equal(
+            "DOMAIN.Entities.OosInvestigations",
+            typeof(DOMAIN.Entities.OosInvestigations.OosInvestigation).Namespace);
     }
 
     /// <summary>

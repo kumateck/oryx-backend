@@ -478,4 +478,75 @@ public static class QcWorksheetErrors
         Error.Validation(
             "QcWorksheetInstance.ReviewCommentsRequired",
             "A reason is required when returning a worksheet for correction.");
+
+    // --- OOS cases (Milestone 4) ------------------------------------------
+
+    public static Error OosCaseNotFound(Guid id) =>
+        Error.NotFound("QcOosCase.NotFound", $"The OOS case with the Id: {id} was not found");
+
+    public static Error StartInvestigationRequiresOpen(OosCaseStatus status) =>
+        Error.Validation(
+            "QcOosCase.StartInvestigationRequiresOpen",
+            $"Only an Open OOS case can have its investigation started. This case is {status}.");
+
+    public static Error InvestigationNotEditable(OosCaseStatus status) =>
+        Error.Validation(
+            "QcOosCase.InvestigationNotEditable",
+            "Investigation findings can only be edited while the investigation is in progress. "
+            + $"This case is {status}.");
+
+    public static Error RetestRequiresInvestigationInProgress(OosCaseStatus status) =>
+        Error.Validation(
+            "QcOosCase.RetestRequiresInvestigationInProgress",
+            $"A retest can only be authorized from an investigation in progress. This case is {status}.");
+
+    public static Error EscalateRequiresInvestigationInProgress(OosCaseStatus status) =>
+        Error.Validation(
+            "QcOosCase.EscalateRequiresInvestigationInProgress",
+            $"A case can only be escalated to QA from an investigation in progress. This case is {status}.");
+
+    public static Error DispositionRequiresPendingQa(OosCaseStatus status) =>
+        Error.Validation(
+            "QcOosCase.DispositionRequiresPendingQa",
+            $"Only a case awaiting QA disposition can be disposed. This case is {status}.");
+
+    public static Error DispositionOutcomeRequired =>
+        Error.Validation(
+            "QcOosCase.DispositionOutcomeRequired",
+            "A disposition must state its outcome: ConfirmedOOS, Invalidated or RetestAccepted.");
+
+    /// <summary>
+    /// The readiness check carried forward from the live <c>OosInvestigation</c>: required
+    /// analysis must be complete before an investigation can close. Disposing while results are
+    /// still coming in would decide a batch's fate on a partial picture.
+    /// </summary>
+    public static Error DispositionBlockedByIncompleteWork(
+        string worksheetCode, WorksheetInstanceStatus status) =>
+        Error.Validation(
+            "QcOosCase.DispositionBlockedByIncompleteWork",
+            $"Worksheet '{worksheetCode}' for this sample is still {status}. Every worksheet for "
+            + "the sample must be reviewed before QA can dispose of the case.");
+
+    public static Error RetestAcceptedRequiresRetest =>
+        Error.Validation(
+            "QcOosCase.RetestAcceptedRequiresRetest",
+            "A RetestAccepted disposition requires an authorized retest to accept. This case was "
+            + "escalated without one.");
+
+    /// <summary>
+    /// The Specification is required to declare its retest policy precisely so a retest never
+    /// has to guess between reusing the sample and demanding a fresh one.
+    /// </summary>
+    public static Error RetestPolicyNotSet(string specificationCode) =>
+        Error.Validation(
+            "QcOosCase.RetestPolicyNotSet",
+            $"Specification '{specificationCode}' does not declare a retest policy, so whether "
+            + "this retest may reuse the original sample cannot be determined. Set the policy on "
+            + "the Specification first.");
+
+    public static Error OosCaseBlocksRelease(int openCaseCount) =>
+        Error.Validation(
+            "QcOosCase.BlocksRelease",
+            $"This test request has {openCaseCount} open OOS case(s) and cannot be released until "
+            + "each one is closed by a QA disposition.");
 }
