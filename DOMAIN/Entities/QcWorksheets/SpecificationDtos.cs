@@ -168,4 +168,12 @@ public class SpecificationAvailableFieldDto
     public WorksheetFieldMode Mode { get; set; }
     public string Unit { get; set; }
     public string Analyte { get; set; }
+
+    /// <summary>
+    /// Populated only when <see cref="Mode"/> is Constant — the field's inline acceptance
+    /// criteria (see field-catalog.md refinement 1). Surfaced here so a caller can read it
+    /// straight off this endpoint, rather than only when it happens to have loaded the full
+    /// worksheet template separately.
+    /// </summary>
+    public string ConstantValue { get; set; }
 }

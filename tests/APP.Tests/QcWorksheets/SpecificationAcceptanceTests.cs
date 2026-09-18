@@ -523,6 +523,51 @@ public class SpecificationAcceptanceTests
         Assert.DoesNotContain(fields.Value, field => field.WorksheetTemplateId == unlinked.Id);
     }
 
+    /// <summary>
+    /// A Constant-mode field's inline acceptance criteria (field-catalog.md refinement 1 —
+    /// Media Qualification criteria are baked into the method, never bound to a COA
+    /// Specification) rides along on available-fields. Without it the criteria are only
+    /// readable when the caller happens to have loaded the whole worksheet template
+    /// separately, which this endpoint exists precisely to avoid.
+    /// </summary>
+    [Fact]
+    public async Task Available_fields_surfaces_constant_mode_acceptance_criteria()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await harness.SeedEffectiveTemplate(
+            "WS/MEDIA", WorksheetCategory.MediaQualification, "ph_range", "plain_entry");
+
+        var constantField = template.Sections
+            .Single().Fields.Single(field => field.FieldKey == "ph_range");
+        constantField.Mode = WorksheetFieldMode.Constant;
+        constantField.ConstantValue = "7.00 - 7.40";
+        await harness.Db.SaveChangesAsync();
+
+        var request = NewRequest();
+        request.WorksheetLinks =
+        [
+            new CreateSpecificationWorksheetLinkRequest
+            {
+                WorksheetTemplateId = template.Id,
+                AnalysisType = SpecificationAnalysisType.Chemical
+            }
+        ];
+
+        var created = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
+        Assert.True(created.IsSuccess);
+
+        var fields = await harness.Specifications.GetAvailableFields(created.Value.Id);
+        Assert.True(fields.IsSuccess);
+
+        var constant = fields.Value.Single(field => field.FieldKey == "ph_range");
+        Assert.Equal(WorksheetFieldMode.Constant, constant.Mode);
+        Assert.Equal("7.00 - 7.40", constant.ConstantValue);
+
+        // An Entry-mode field carries no inline criteria and must not invent any.
+        var entry = fields.Value.Single(field => field.FieldKey == "plain_entry");
+        Assert.Null(entry.ConstantValue);
+    }
+
     // -----------------------------------------------------------------------
     // Criterion 3 — same field, two tiers
     // -----------------------------------------------------------------------

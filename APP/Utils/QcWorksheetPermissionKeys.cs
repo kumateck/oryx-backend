@@ -43,10 +43,24 @@ public static class QcWorksheetPermissionKeys
     public const string CanApproveQcSpecification = "CanApproveQcSpecification";
     public const string CanSupersedeQcSpecification = "CanSupersedeQcSpecification";
 
+    // Sampling Point Groups
+
     /// <summary>
-    /// A single key rather than the view/create/edit/approve/supersede split the controlled
-    /// documents get: a sampling point group is plain reference data maintained by the QC
-    /// Manager, with no lifecycle of its own whose transitions could be gated separately.
+    /// Read access to the sampling point group list, separate from
+    /// <see cref="CanManageSamplingPointGroups"/>: a role with Specification-authoring rights
+    /// but no reference-data management rights still has to list groups to populate the
+    /// dropdown a characteristic's Alert/Action tier is grouped by. View is a genuinely
+    /// distinct concern from Manage — many roles legitimately need read access to reference
+    /// data without deserving admin rights over it.
+    /// </summary>
+    public const string CanViewSamplingPointGroups = "CanViewSamplingPointGroups";
+
+    /// <summary>
+    /// Create/edit/delete, as a single key rather than the create/edit/approve/supersede split
+    /// the controlled documents get: a sampling point group is plain reference data maintained
+    /// by the QC Manager, with no lifecycle of its own whose transitions could be gated
+    /// separately. Only View splits off, and only because it is a different concern, not a
+    /// different lifecycle stage.
     /// </summary>
     public const string CanManageSamplingPointGroups = "CanManageSamplingPointGroups";
 }
@@ -82,6 +96,12 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanSupersedeQcSpecification
     ];
 
+    private static readonly HashSet<string> SamplingPointGroupKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewSamplingPointGroups,
+        QcWorksheetPermissionKeys.CanManageSamplingPointGroups
+    ];
+
     public static IReadOnlyList<PermissionDto> Generate()
     {
         return typeof(QcWorksheetPermissionKeys)
@@ -95,7 +115,7 @@ public static class QcWorksheetPermissionCatalog
     {
         if (StpKeys.Contains(key)) return StandardTestProcedures;
         if (SpecificationKeys.Contains(key)) return Specifications;
-        if (key == QcWorksheetPermissionKeys.CanManageSamplingPointGroups) return SamplingPointGroups;
+        if (SamplingPointGroupKeys.Contains(key)) return SamplingPointGroups;
         return WorksheetTemplates;
     }
 

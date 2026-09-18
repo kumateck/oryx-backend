@@ -122,7 +122,8 @@ public class SpecificationRepository(
                     Type = field.Type,
                     Mode = field.Mode,
                     Unit = field.Unit,
-                    Analyte = field.Analyte
+                    Analyte = field.Analyte,
+                    ConstantValue = field.ConstantValue
                 });
         }
 

@@ -49,7 +49,7 @@ public class QcWorksheetCoexistenceTests
     }
 
     /// <summary>
-    /// The exact key list, by name: Milestone 1's eleven plus Milestone 2's six. Listing them
+    /// The exact key list, by name: Milestone 1's eleven plus Milestone 2's seven. Listing them
     /// explicitly is the point — a key added without a brief calling for it fails here.
     /// </summary>
     [Fact]
@@ -60,7 +60,9 @@ public class QcWorksheetCoexistenceTests
             .ToList();
 
         // Milestone 2 adds the five-way split a controlled document gets for Specification,
-        // plus one key for SamplingPointGroup, which is plain reference data.
+        // plus two keys for SamplingPointGroup, which is plain reference data: View splits off
+        // from Manage because read access to reference data is a distinct concern from admin
+        // rights over it, while Create/Edit/Delete stay fused under the single Manage key.
         Assert.Equal(
         [
             "CanApproveQcSpecification",
@@ -79,6 +81,7 @@ public class QcWorksheetCoexistenceTests
             "CanSupersedeWorksheetTemplate",
             "CanViewQcSpecifications",
             "CanViewQcStps",
+            "CanViewSamplingPointGroups",
             "CanViewWorksheetTemplates"
         ], keys);
     }

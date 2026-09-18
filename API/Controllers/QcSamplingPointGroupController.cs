@@ -13,9 +13,12 @@ namespace API.Controllers;
 /// reference.
 /// <para>
 /// Plain CRUD with no lifecycle and no versioning — this is reference data, not a controlled
-/// document — so every action sits behind the single
-/// <see cref="QcWorksheetPermissionKeys.CanManageSamplingPointGroups"/> key rather than a
-/// view/create/edit/approve/supersede split.
+/// document — so create/update/delete all sit behind the single
+/// <see cref="QcWorksheetPermissionKeys.CanManageSamplingPointGroups"/> key rather than the
+/// create/edit/approve/supersede split a controlled document gets. Reading splits off into
+/// <see cref="QcWorksheetPermissionKeys.CanViewSamplingPointGroups"/>, because a
+/// Specification author needs to list groups to populate a characteristic's dropdown without
+/// thereby earning the right to administer the reference data itself.
 /// </para>
 /// </summary>
 [ApiController]
@@ -29,7 +32,7 @@ public class QcSamplingPointGroupController(ISamplingPointGroupRepository reposi
     /// options an author needs.
     /// </summary>
     [HttpGet]
-    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPointGroups)]
+    [Authorize(QcWorksheetPermissionKeys.CanViewSamplingPointGroups)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SamplingPointGroupDto>))]
     public async Task<IResult> GetSamplingPointGroups([FromQuery] string searchQuery = null)
     {
@@ -39,7 +42,7 @@ public class QcSamplingPointGroupController(ISamplingPointGroupRepository reposi
 
     /// <summary>Retrieves a single sampling point group.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPointGroups)]
+    [Authorize(QcWorksheetPermissionKeys.CanViewSamplingPointGroups)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SamplingPointGroupDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSamplingPointGroup([FromRoute] Guid id)
