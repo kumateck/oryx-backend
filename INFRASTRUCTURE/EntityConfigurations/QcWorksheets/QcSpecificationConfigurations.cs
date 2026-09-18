@@ -72,6 +72,13 @@ public class SpecificationWorksheetLinkConfiguration : IEntityTypeConfiguration<
         // slot occupied. Enforced in SpecificationRepository instead, per the brief.
         builder.HasIndex(item => new { item.SpecificationId, item.AnalysisType });
 
+        // The pinned version travels with the link, mirroring TestRequest's
+        // SpecificationId + SpecificationVersion pair: the id points at one immutable version
+        // row, and this records which version that is without needing a join. Indexed because
+        // "which specifications are pinned to this template version" is the question asked
+        // when a template version is revised.
+        builder.HasIndex(item => new { item.WorksheetTemplateId, item.WorksheetTemplateVersion });
+
         // Restrict: a worksheet template a specification depends on must not vanish
         // underneath it.
         builder

@@ -92,9 +92,9 @@ public interface ISpecificationRepository
         Guid id, QcSupersedeRequest request, Guid userId);
 
     /// <summary>
-    /// Every field on the current Effective version of each linked worksheet template —
-    /// what the SourceFieldKey dropdown is populated from, and the same resolution the
-    /// SourceFieldKey validation uses.
+    /// Every field on the <b>pinned</b> version of each linked worksheet template — what the
+    /// SourceFieldKey dropdown is populated from, and the same resolution the SourceFieldKey
+    /// validation uses, so the dropdown can only ever offer a field that will validate.
     /// </summary>
     Task<Result<List<SpecificationAvailableFieldDto>>> GetAvailableFields(Guid id);
 }

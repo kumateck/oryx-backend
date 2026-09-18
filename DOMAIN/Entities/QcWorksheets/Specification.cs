@@ -166,9 +166,33 @@ public class SpecificationWorksheetLink : BaseEntity
 
     public Specification Specification { get; set; }
 
+    /// <summary>
+    /// The exact worksheet template version this link is pinned to. Each version is its own
+    /// row, so this id already identifies one version; <see cref="WorksheetTemplateVersion"/>
+    /// records which one without needing a join.
+    /// </summary>
     public Guid WorksheetTemplateId { get; set; }
 
     public WorksheetTemplate WorksheetTemplate { get; set; }
+
+    /// <summary>
+    /// The pinned version number, captured server-side from the linked template when the link
+    /// is saved. Never client-supplied.
+    /// <para>
+    /// Hard version pinning, matching the locked governance rule already applied to
+    /// <c>TestRequest</c>/<c>WorksheetInstance</c> (lifecycle-and-governance.md, "Version
+    /// pinning"): no in-flight upgrades, not even for a non-breaking template revision. When
+    /// the pinned version is later superseded this link stays where it is; moving to a newer
+    /// template version is an edit of the Specification itself, which — once the Specification
+    /// is Effective — means a new Specification version under edit-triggers-versioning.
+    /// </para>
+    /// <para>
+    /// Mirrors <c>TestRequest.SpecificationId + SpecificationVersion</c>: the id is the
+    /// pointer, this is the readable pin that lets the document be reconstructed without
+    /// cross-referencing change logs.
+    /// </para>
+    /// </summary>
+    public int WorksheetTemplateVersion { get; set; }
 
     public SpecificationAnalysisType AnalysisType { get; set; }
 }
@@ -219,7 +243,10 @@ public class SpecificationCharacteristic : BaseEntity
 
     public WorksheetTemplate SourceWorksheetTemplate { get; set; }
 
-    /// <summary>Must exist on the source template's current Effective version.</summary>
+    /// <summary>
+    /// Must exist on the template version the owning Specification's link is pinned to — not
+    /// on whichever version happens to be Effective at the time of the check.
+    /// </summary>
     [StringLength(100)] public string SourceFieldKey { get; set; }
 
     public bool IncludeOnCoa { get; set; } = true;

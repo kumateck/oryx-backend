@@ -48,6 +48,13 @@ public class SpecificationDetailDto : SpecificationSummaryDto
 public class SpecificationWorksheetLinkDto : BaseDto
 {
     public Guid WorksheetTemplateId { get; set; }
+
+    /// <summary>
+    /// The pinned template version this link resolves against. Captured server-side at save
+    /// time; a client reads it but never sets it.
+    /// </summary>
+    public int WorksheetTemplateVersion { get; set; }
+
     public SpecificationAnalysisType AnalysisType { get; set; }
 
     /// <summary>Resolved so a client can render the linked template without a second call.</summary>
@@ -147,7 +154,10 @@ public class SpecificationAvailableFieldDto
     public string WorksheetTemplateCode { get; set; }
     public string WorksheetTemplateName { get; set; }
 
-    /// <summary>The template version these fields were actually read from.</summary>
+    /// <summary>
+    /// The pinned template version these fields were read from — the version the link is
+    /// fixed to, never a newer one that has since become Effective.
+    /// </summary>
     public int WorksheetTemplateVersion { get; set; }
 
     public SpecificationAnalysisType AnalysisType { get; set; }

@@ -72,10 +72,16 @@ public class SpecificationRepository(
     }
 
     /// <summary>
-    /// Powers the SourceFieldKey dropdown. Every field on each linked template's current
-    /// Effective version is returned, not just the Result/CalculatedValue ones: those are the
-    /// realistic candidates, but filtering stays on the client so a future field type that
-    /// warrants COA inclusion needs no backend change.
+    /// Powers the SourceFieldKey dropdown. Every field on each link's <b>pinned</b> template
+    /// version is returned, not just the Result/CalculatedValue ones: those are the realistic
+    /// candidates, but filtering stays on the client so a future field type that warrants COA
+    /// inclusion needs no backend change.
+    /// <para>
+    /// The pinned version is what the dropdown offers, so an author can only ever pick a
+    /// field that the same version's validation will accept. If a newer template version has
+    /// since become Effective, its fields deliberately do not appear here — adopting it means
+    /// re-pointing the link, which is an edit of the Specification.
+    /// </para>
     /// </summary>
     public async Task<Result<List<SpecificationAvailableFieldDto>>> GetAvailableFields(Guid id)
     {
@@ -92,7 +98,7 @@ public class SpecificationRepository(
 
         foreach (var link in specification.WorksheetLinks)
         {
-            var template = await ResolveCurrentEffectiveTemplate(link.WorksheetTemplateId);
+            var template = await LoadPinnedTemplate(link.WorksheetTemplateId);
             if (template is null)
                 continue;
 
@@ -104,7 +110,11 @@ public class SpecificationRepository(
                     WorksheetTemplateId = template.Id,
                     WorksheetTemplateCode = template.Code,
                     WorksheetTemplateName = template.Name,
-                    WorksheetTemplateVersion = template.Version,
+
+                    // The link's own pin, not the row's current version — they agree, since a
+                    // template version row is immutable, and reporting the pin makes the
+                    // contract explicit.
+                    WorksheetTemplateVersion = link.WorksheetTemplateVersion,
                     AnalysisType = link.AnalysisType,
                     SectionName = section.Name,
                     FieldKey = field.FieldKey,
@@ -131,6 +141,7 @@ public class SpecificationRepository(
             return Result.Failure<SpecificationDetailDto>(validation.Error);
 
         var specificationId = Guid.NewGuid();
+        var pinnedVersions = await LoadPinnedVersions(request.WorksheetLinks);
 
         var specification = new Specification
         {
@@ -145,7 +156,7 @@ public class SpecificationRepository(
             Approved = false,
             CreatedAt = DateTime.UtcNow,
             CreatedById = userId,
-            WorksheetLinks = BuildLinks(request.WorksheetLinks, userId),
+            WorksheetLinks = BuildLinks(request.WorksheetLinks, userId, pinnedVersions),
             Characteristics = BuildCharacteristics(request.Characteristics, userId)
         };
 
@@ -201,7 +212,12 @@ public class SpecificationRepository(
             .ToListAsync();
         context.QcSpecificationCharacteristics.RemoveRange(existingCharacteristics);
 
-        foreach (var link in BuildLinks(request.WorksheetLinks, userId))
+        // Re-pinned from whichever template rows the request now points at. Keeping the same
+        // template id re-reads the same immutable version row, so an unrelated edit never
+        // moves the pin; picking a different version's id in the dropdown is what moves it.
+        var pinnedVersions = await LoadPinnedVersions(request.WorksheetLinks);
+
+        foreach (var link in BuildLinks(request.WorksheetLinks, userId, pinnedVersions))
         {
             link.SpecificationId = id;
             context.QcSpecificationWorksheetLinks.Add(link);
@@ -248,6 +264,12 @@ public class SpecificationRepository(
                 {
                     Id = Guid.NewGuid(),
                     WorksheetTemplateId = link.WorksheetTemplateId,
+
+                    // The clone inherits the predecessor's pin rather than silently adopting
+                    // whatever is Effective now. Creating a new Specification version is not
+                    // by itself a decision to change worksheet template version; the author
+                    // re-points the link explicitly if that is what they mean.
+                    WorksheetTemplateVersion = link.WorksheetTemplateVersion,
                     AnalysisType = link.AnalysisType,
                     CreatedAt = DateTime.UtcNow,
                     CreatedById = userId
@@ -496,7 +518,9 @@ public class SpecificationRepository(
 
             if (!fieldKeysByTemplate.TryGetValue(characteristic.SourceWorksheetTemplateId, out var resolved))
             {
-                var template = await ResolveCurrentEffectiveTemplate(characteristic.SourceWorksheetTemplateId);
+                // The pinned version, never a newer Effective successor: a Specification's
+                // field validation must not shift when its linked template is superseded.
+                var template = await LoadPinnedTemplate(characteristic.SourceWorksheetTemplateId);
                 if (template is null)
                     return QcWorksheetErrors.LinkedTemplateNotFound(characteristic.SourceWorksheetTemplateId);
 
@@ -532,55 +556,21 @@ public class SpecificationRepository(
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Resolves a worksheet template reference to the version whose fields are currently in
-    /// force, by walking the SupersedesId chain forward from the linked row.
+    /// Loads the exact worksheet template version a link is pinned to — the row the link's
+    /// <c>WorksheetTemplateId</c> names, and nothing else.
     /// <para>
-    /// A link is made to whichever version was Effective at authoring time; when that version
-    /// is later superseded, the Specification follows its successor rather than pinning.
-    /// Pinning happens at TestRequest creation (Milestone 3), which is the level
-    /// lifecycle-and-governance.md's version-pinning rule actually governs — a Specification
-    /// is itself a living controlled document, not an execution record.
-    /// </para>
-    /// <para>
-    /// Falls back to the linked row itself when no Effective successor exists, so a
-    /// Specification can still be drafted against a template that has not yet gone Effective.
+    /// Hard version pinning, matching the locked governance rule already applied to
+    /// <c>TestRequest</c>/<c>WorksheetInstance</c> (lifecycle-and-governance.md, "Version
+    /// pinning"). There is deliberately no walk forward through <c>SupersedesId</c>: when the
+    /// pinned version is superseded, this Specification keeps resolving against the pinned
+    /// version, so neither its stored characteristics nor the fields offered for new ones
+    /// shift underneath it. Adopting a newer template version is an explicit edit of the
+    /// Specification, which — once it is Effective — requires a new Specification version
+    /// under edit-triggers-versioning.
     /// </para>
     /// </summary>
-    private async Task<WorksheetTemplate> ResolveCurrentEffectiveTemplate(Guid templateId)
-    {
-        var template = await LoadTemplateWithFields(templateId);
-        if (template is null)
-            return null;
-
-        if (template.Status == QcDocumentStatus.Effective)
-            return template;
-
-        // Bounded: a version chain is short, and the bound stops a cycle from hanging the
-        // request if data is ever corrupted.
-        var current = template;
-        for (var hop = 0; hop < 50; hop++)
-        {
-            var successorId = await context.QcWorksheetTemplates
-                .AsNoTracking()
-                .Where(item => item.SupersedesId == current.Id)
-                .Select(item => (Guid?)item.Id)
-                .FirstOrDefaultAsync();
-
-            if (!successorId.HasValue)
-                break;
-
-            var successor = await LoadTemplateWithFields(successorId.Value);
-            if (successor is null)
-                break;
-
-            current = successor;
-            if (current.Status == QcDocumentStatus.Effective)
-                return current;
-        }
-
-        // No Effective version in this chain: the linked row is the best available truth.
-        return template;
-    }
+    private async Task<WorksheetTemplate> LoadPinnedTemplate(Guid templateId) =>
+        await LoadTemplateWithFields(templateId);
 
     private async Task<WorksheetTemplate> LoadTemplateWithFields(Guid templateId) =>
         await context.QcWorksheetTemplates
@@ -599,13 +589,43 @@ public class SpecificationRepository(
         return await context.ApprovalStages.AnyAsync(stage => stage.ApprovalId == approval.Id);
     }
 
+    /// <summary>
+    /// Reads the version of each linked template straight from the template rows. The pin is
+    /// captured server-side and is never client-supplied — a request carrying its own version
+    /// number could otherwise claim a pin that does not match the row it points at.
+    /// </summary>
+    private async Task<Dictionary<Guid, int>> LoadPinnedVersions(
+        List<CreateSpecificationWorksheetLinkRequest> links)
+    {
+        var templateIds = (links ?? [])
+            .Select(link => link.WorksheetTemplateId)
+            .Distinct()
+            .ToList();
+
+        if (templateIds.Count == 0)
+            return [];
+
+        return await context.QcWorksheetTemplates
+            .AsNoTracking()
+            .Where(template => templateIds.Contains(template.Id))
+            .ToDictionaryAsync(template => template.Id, template => template.Version);
+    }
+
     private static List<SpecificationWorksheetLink> BuildLinks(
-        List<CreateSpecificationWorksheetLinkRequest> links, Guid userId) =>
+        List<CreateSpecificationWorksheetLinkRequest> links,
+        Guid userId,
+        IReadOnlyDictionary<Guid, int> pinnedVersions) =>
         (links ?? [])
         .Select(link => new SpecificationWorksheetLink
         {
             Id = Guid.NewGuid(),
             WorksheetTemplateId = link.WorksheetTemplateId,
+
+            // Pinned at save time. Validation already proved the template exists, so the
+            // lookup cannot miss; the fallback only keeps this total.
+            WorksheetTemplateVersion = pinnedVersions.TryGetValue(link.WorksheetTemplateId, out var version)
+                ? version
+                : 0,
             AnalysisType = link.AnalysisType!.Value,
             CreatedAt = DateTime.UtcNow,
             CreatedById = userId
@@ -689,6 +709,7 @@ public class SpecificationRepository(
             {
                 Id = link.Id,
                 WorksheetTemplateId = link.WorksheetTemplateId,
+                WorksheetTemplateVersion = link.WorksheetTemplateVersion,
                 AnalysisType = link.AnalysisType,
                 CreatedAt = link.CreatedAt,
                 WorksheetTemplate = link.WorksheetTemplate is null

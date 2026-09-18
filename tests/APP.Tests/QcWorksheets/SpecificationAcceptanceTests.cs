@@ -198,28 +198,31 @@ public class SpecificationAcceptanceTests
         Assert.Equal("QcSpecification.CharacteristicFieldKeyNotFound", result.Error.Code);
     }
 
+    // -----------------------------------------------------------------------
+    // Version pinning — the locked governance rule, applied to the template link
+    // -----------------------------------------------------------------------
+
     /// <summary>
-    /// Criterion 2, resolution half — "current Effective version" means exactly that. A link
-    /// pointing at a superseded version validates against the successor now in force, so a
-    /// field added in the new version is accepted and one dropped from it is not.
+    /// Hard version pinning. A Specification linked to worksheet template v1 keeps validating
+    /// against v1 after v1 is superseded by an Effective v2: a field that exists only on v2 is
+    /// still refused, and a field that exists only on the pinned v1 is still accepted.
+    /// <para>
+    /// This is the inverse of following the chain forward, and is what
+    /// lifecycle-and-governance.md's "no in-flight upgrades, even for non-breaking revisions"
+    /// requires. Adopting v2 means re-pointing the link, which is an edit of the Specification.
+    /// </para>
     /// </summary>
     [Fact]
-    public async Task Field_keys_resolve_against_the_current_effective_version_of_the_chain()
+    public async Task Field_validation_does_not_shift_when_the_linked_template_is_superseded()
     {
         using var harness = new QcWorksheetTestContext();
 
-        var v1 = await harness.SeedEffectiveTemplate("WS/CHEM", WorksheetCategory.Chemical, "assay", "retired_field");
-        v1.Status = QcDocumentStatus.Superseded;
-
-        var v2 = await harness.SeedEffectiveTemplate("WS/CHEM", WorksheetCategory.Chemical, "assay", "new_field");
-        v2.Version = 2;
-        v2.SupersedesId = v1.Id;
-        await harness.Db.SaveChangesAsync();
+        var v1 = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay", "only_on_v1");
 
         var request = NewRequest();
         request.WorksheetLinks =
         [
-            // The specification still points at v1, the version it was authored against.
             new CreateSpecificationWorksheetLinkRequest
             {
                 WorksheetTemplateId = v1.Id,
@@ -230,24 +233,253 @@ public class SpecificationAcceptanceTests
         [
             new CreateSpecificationCharacteristicRequest
             {
-                TestName = "New test",
+                TestName = "Legacy test",
                 AcceptanceCriteria = "Complies",
                 SourceWorksheetTemplateId = v1.Id,
-                SourceFieldKey = "new_field",
+                SourceFieldKey = "only_on_v1",
                 DisplayOrder = 1
             }
         ];
 
-        // A field that exists only on v2 is accepted, because v2 is what is in force.
-        Assert.True((await harness.Specifications.CreateSpecification(request, Guid.NewGuid())).IsSuccess);
+        var created = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
+        Assert.True(created.IsSuccess);
+        Assert.Equal(1, created.Value.WorksheetLinks[0].WorksheetTemplateVersion);
 
-        // A field that existed only on the superseded v1 is not.
+        // v1 is now superseded by an Effective v2 that drops only_on_v1 and adds only_on_v2.
+        v1.Status = QcDocumentStatus.Superseded;
+        var v2 = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay", "only_on_v2");
+        v2.Version = 2;
+        v2.SupersedesId = v1.Id;
+        await harness.Db.SaveChangesAsync();
+
+        // The existing specification is untouched: still pinned to v1.
+        var reread = await harness.Specifications.GetSpecification(created.Value.Id);
+        Assert.Equal(v1.Id, reread.Value.WorksheetLinks[0].WorksheetTemplateId);
+        Assert.Equal(1, reread.Value.WorksheetLinks[0].WorksheetTemplateVersion);
+        Assert.Equal("only_on_v1", reread.Value.Characteristics[0].SourceFieldKey);
+
+        // A field that exists only on the newer Effective v2 is still refused, because the
+        // link is pinned to v1 — no in-flight upgrade.
         request.Code = "QCD/SPEC/RM/002";
-        request.Characteristics[0].SourceFieldKey = "retired_field";
+        request.Characteristics[0].SourceFieldKey = "only_on_v2";
 
-        var stale = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
-        Assert.False(stale.IsSuccess);
-        Assert.Equal("QcSpecification.CharacteristicFieldKeyNotFound", stale.Error.Code);
+        var forwardAttempt = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
+        Assert.False(forwardAttempt.IsSuccess);
+        Assert.Equal("QcSpecification.CharacteristicFieldKeyNotFound", forwardAttempt.Error.Code);
+
+        // And a field that exists only on the pinned (now superseded) v1 is still accepted.
+        request.Code = "QCD/SPEC/RM/003";
+        request.Characteristics[0].SourceFieldKey = "only_on_v1";
+
+        var pinnedAttempt = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
+        Assert.True(pinnedAttempt.IsSuccess);
+        Assert.Equal(1, pinnedAttempt.Value.WorksheetLinks[0].WorksheetTemplateVersion);
+    }
+
+    /// <summary>
+    /// The pinned version is captured from the template row server-side, so it always matches
+    /// the version actually linked rather than anything a caller could assert.
+    /// </summary>
+    [Fact]
+    public async Task Pinned_version_is_captured_from_the_linked_template_row()
+    {
+        using var harness = new QcWorksheetTestContext();
+
+        var template = await harness.SeedEffectiveTemplate("WS/CHEM", WorksheetCategory.Chemical, "assay");
+        template.Version = 7;
+        await harness.Db.SaveChangesAsync();
+
+        var request = NewRequest();
+        request.WorksheetLinks =
+        [
+            new CreateSpecificationWorksheetLinkRequest
+            {
+                WorksheetTemplateId = template.Id,
+                AnalysisType = SpecificationAnalysisType.Chemical
+            }
+        ];
+
+        var created = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
+
+        Assert.True(created.IsSuccess);
+        Assert.Equal(7, created.Value.WorksheetLinks[0].WorksheetTemplateVersion);
+
+        // There is no way for a caller to claim a pin: the request contract carries no
+        // version property at all, so the pin can only come from the template row.
+        Assert.DoesNotContain(
+            typeof(CreateSpecificationWorksheetLinkRequest).GetProperties(),
+            property => property.Name.Contains("Version", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// available-fields offers the pinned version's fields, so the dropdown can only ever
+    /// suggest a field that the same version's validation will accept.
+    /// </summary>
+    [Fact]
+    public async Task Available_fields_offers_the_pinned_version_not_a_newer_effective_one()
+    {
+        using var harness = new QcWorksheetTestContext();
+
+        var v1 = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay", "only_on_v1");
+
+        var request = NewRequest();
+        request.WorksheetLinks =
+        [
+            new CreateSpecificationWorksheetLinkRequest
+            {
+                WorksheetTemplateId = v1.Id,
+                AnalysisType = SpecificationAnalysisType.Chemical
+            }
+        ];
+
+        var created = await harness.Specifications.CreateSpecification(request, Guid.NewGuid());
+        Assert.True(created.IsSuccess);
+
+        v1.Status = QcDocumentStatus.Superseded;
+        var v2 = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay", "only_on_v2");
+        v2.Version = 2;
+        v2.SupersedesId = v1.Id;
+        await harness.Db.SaveChangesAsync();
+
+        var fields = await harness.Specifications.GetAvailableFields(created.Value.Id);
+
+        Assert.True(fields.IsSuccess);
+        Assert.Contains(fields.Value, field => field.FieldKey == "only_on_v1");
+        Assert.DoesNotContain(fields.Value, field => field.FieldKey == "only_on_v2");
+        Assert.All(fields.Value, field =>
+        {
+            Assert.Equal(v1.Id, field.WorksheetTemplateId);
+            Assert.Equal(1, field.WorksheetTemplateVersion);
+        });
+    }
+
+    /// <summary>
+    /// Creating a new Specification version inherits the predecessor's pin. Deciding to revise
+    /// a Specification is not by itself a decision to move to a newer worksheet template
+    /// version — that stays an explicit, separate act.
+    /// </summary>
+    [Fact]
+    public async Task New_specification_version_inherits_the_pin_rather_than_adopting_the_latest()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.Specification);
+        var userId = harness.Approver.Id;
+
+        var v1Template = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay");
+
+        var request = NewRequest();
+        request.WorksheetLinks =
+        [
+            new CreateSpecificationWorksheetLinkRequest
+            {
+                WorksheetTemplateId = v1Template.Id,
+                AnalysisType = SpecificationAnalysisType.Chemical
+            }
+        ];
+
+        var created = await harness.Specifications.CreateSpecification(request, userId);
+        var specId = created.Value.Id;
+
+        await harness.Specifications.SubmitForReview(specId, userId);
+        await harness.Specifications.Approve(
+            specId,
+            new QcApprovalRequest
+            {
+                Password = QcWorksheetTestContext.CorrectPassword,
+                Comments = "Approved by"
+            },
+            userId,
+            []);
+        await harness.Specifications.MakeEffective(specId, userId);
+
+        // The linked template is revised and a v2 goes Effective.
+        v1Template.Status = QcDocumentStatus.Superseded;
+        var v2Template = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay", "only_on_v2");
+        v2Template.Version = 2;
+        v2Template.SupersedesId = v1Template.Id;
+        await harness.Db.SaveChangesAsync();
+
+        var newVersion = await harness.Specifications.CreateNewVersion(specId, userId);
+
+        Assert.True(newVersion.IsSuccess);
+        Assert.Equal(2, newVersion.Value.Version);
+
+        // The new Specification draft still points at template v1, not the newly Effective v2.
+        Assert.Equal(v1Template.Id, newVersion.Value.WorksheetLinks[0].WorksheetTemplateId);
+        Assert.Equal(1, newVersion.Value.WorksheetLinks[0].WorksheetTemplateVersion);
+    }
+
+    /// <summary>
+    /// Re-pointing the link at a newer template version is how an upgrade happens — an
+    /// explicit edit, which re-pins.
+    /// </summary>
+    [Fact]
+    public async Task Repointing_the_link_moves_the_pin_to_the_new_version()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var userId = Guid.NewGuid();
+
+        var v1 = await harness.SeedEffectiveTemplate("WS/CHEM", WorksheetCategory.Chemical, "assay");
+
+        var request = NewRequest();
+        request.WorksheetLinks =
+        [
+            new CreateSpecificationWorksheetLinkRequest
+            {
+                WorksheetTemplateId = v1.Id,
+                AnalysisType = SpecificationAnalysisType.Chemical
+            }
+        ];
+
+        var created = await harness.Specifications.CreateSpecification(request, userId);
+        Assert.Equal(1, created.Value.WorksheetLinks[0].WorksheetTemplateVersion);
+
+        v1.Status = QcDocumentStatus.Superseded;
+        var v2 = await harness.SeedEffectiveTemplate(
+            "WS/CHEM", WorksheetCategory.Chemical, "assay", "only_on_v2");
+        v2.Version = 2;
+        v2.SupersedesId = v1.Id;
+        await harness.Db.SaveChangesAsync();
+
+        // The author edits the Draft and picks v2 from the dropdown.
+        var update = new UpdateSpecificationRequest
+        {
+            Code = "QCD/SPEC/RM/001",
+            Name = "Ascorbic Acid",
+            AppliesTo = SpecificationAppliesTo.RawMaterial,
+            RetestPolicy = QcRetestPolicy.SameSample,
+            WorksheetLinks =
+            [
+                new CreateSpecificationWorksheetLinkRequest
+                {
+                    WorksheetTemplateId = v2.Id,
+                    AnalysisType = SpecificationAnalysisType.Chemical
+                }
+            ],
+            Characteristics =
+            [
+                new CreateSpecificationCharacteristicRequest
+                {
+                    TestName = "New test",
+                    AcceptanceCriteria = "Complies",
+                    SourceWorksheetTemplateId = v2.Id,
+                    SourceFieldKey = "only_on_v2",
+                    DisplayOrder = 1
+                }
+            ]
+        };
+
+        var edited = await harness.Specifications.UpdateSpecification(created.Value.Id, update, userId);
+
+        Assert.True(edited.IsSuccess);
+        Assert.Equal(v2.Id, edited.Value.WorksheetLinks[0].WorksheetTemplateId);
+        Assert.Equal(2, edited.Value.WorksheetLinks[0].WorksheetTemplateVersion);
+        Assert.Equal("only_on_v2", edited.Value.Characteristics[0].SourceFieldKey);
     }
 
     /// <summary>

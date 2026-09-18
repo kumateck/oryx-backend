@@ -47,9 +47,10 @@ public class QcSpecificationController(ISpecificationRepository repository) : Co
     }
 
     /// <summary>
-    /// Every field on the current Effective version of each linked worksheet template, which
-    /// is what the SourceFieldKey dropdown is populated from. All field types are returned;
-    /// the client filters to the realistic candidates.
+    /// Every field on the pinned version of each linked worksheet template, which is what the
+    /// SourceFieldKey dropdown is populated from. All field types are returned; the client
+    /// filters to the realistic candidates. A newer Effective template version deliberately
+    /// does not appear here — adopting it means re-pointing the link.
     /// </summary>
     [HttpGet("{id:guid}/available-fields")]
     [Authorize(QcWorksheetPermissionKeys.CanEditQcSpecification)]
