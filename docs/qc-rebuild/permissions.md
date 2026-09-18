@@ -10,6 +10,9 @@ CONFIGURATION
   qc.worksheetTemplate.view / .create / .edit / .approve / .supersede
   qc.specification.view / .create / .edit / .approve / .supersede
   qc.monitoringProgram.view / .create / .edit / .pause
+  qc.samplingPoint.manage               (master data — one combined key, mirroring the
+                                         single key Milestone 2 gave SamplingPointGroup;
+                                         neither has a lifecycle to gate transitions on)
 
 WATER QUALITY
   qc.waterQuality.view

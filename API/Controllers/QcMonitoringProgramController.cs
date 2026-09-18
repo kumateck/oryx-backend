@@ -18,10 +18,19 @@ namespace API.Controllers;
 /// full lifecycle in Milestone 2.
 /// </para>
 /// <para>
-/// Sampling points sit under this same controller and behind these same keys. The build brief for
-/// this milestone states its permission key list is already defined and adds none, and a point
-/// exists only to be scheduled: creating one and creating the program that schedules it are the
-/// same act of configuration by the same person.
+/// Sampling points are served from this same controller because they are the master data the
+/// schedule is built on, but they sit behind their own dedicated
+/// <see cref="QcWorksheetPermissionKeys.CanManageSamplingPoints"/> key and never share the
+/// monitoring program keys — every action and view in this codebase gets its own. Maintaining the
+/// point register and deciding how often anything is tested are different authorities, and either
+/// can be granted without the other.
+/// </para>
+/// <para>
+/// That key is a single combined one rather than a view/create/edit split, mirroring
+/// <see cref="QcWorksheetPermissionKeys.CanManageSamplingPointGroups"/>: a sampling point is plain
+/// reference data with no lifecycle of its own, exactly like the group table Milestone 2 added,
+/// and the multi-way splits elsewhere in this module are reserved for entities that have real
+/// transitions to gate.
 /// </para>
 /// </summary>
 [ApiController]
@@ -42,7 +51,7 @@ public class QcMonitoringProgramController(
     /// page would hide points the author needs.
     /// </summary>
     [HttpGet("sampling-points")]
-    [Authorize(QcWorksheetPermissionKeys.CanViewMonitoringPrograms)]
+    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SamplingPointDto>))]
     public async Task<IResult> GetSamplingPoints(
         [FromQuery] string searchQuery = null, [FromQuery] SamplingPointType? type = null)
@@ -53,7 +62,7 @@ public class QcMonitoringProgramController(
 
     /// <summary>Retrieves a single sampling point.</summary>
     [HttpGet("sampling-points/{id:guid}")]
-    [Authorize(QcWorksheetPermissionKeys.CanViewMonitoringPrograms)]
+    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SamplingPointDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSamplingPoint([FromRoute] Guid id)
@@ -64,7 +73,7 @@ public class QcMonitoringProgramController(
 
     /// <summary>Creates a sampling point. Codes are unique among live points.</summary>
     [HttpPost("sampling-points")]
-    [Authorize(QcWorksheetPermissionKeys.CanCreateMonitoringProgram)]
+    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SamplingPointDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -82,7 +91,7 @@ public class QcMonitoringProgramController(
     /// period already resolves against it.
     /// </summary>
     [HttpPut("sampling-points/{id:guid}")]
-    [Authorize(QcWorksheetPermissionKeys.CanEditMonitoringProgram)]
+    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SamplingPointDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -98,7 +107,7 @@ public class QcMonitoringProgramController(
 
     /// <summary>Deletes a sampling point. Refused while any monitoring program still schedules it.</summary>
     [HttpDelete("sampling-points/{id:guid}")]
-    [Authorize(QcWorksheetPermissionKeys.CanEditMonitoringProgram)]
+    [Authorize(QcWorksheetPermissionKeys.CanManageSamplingPoints)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

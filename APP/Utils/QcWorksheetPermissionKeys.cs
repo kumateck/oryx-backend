@@ -64,6 +64,22 @@ public static class QcWorksheetPermissionKeys
     /// </summary>
     public const string CanManageSamplingPointGroups = "CanManageSamplingPointGroups";
 
+    /// <summary>
+    /// Sampling point master data (Milestone 6), on its own dedicated key rather than sharing the
+    /// monitoring program keys. Every action and view in this codebase gets its own key and never
+    /// shares one, and a sampling point is a different entity from the schedule that references
+    /// it: someone may legitimately maintain the point register without also being able to decide
+    /// how often anything gets tested.
+    /// <para>
+    /// One combined key rather than a view/create/edit split, mirroring
+    /// <see cref="CanManageSamplingPointGroups"/> — this entity's closest sibling in the module,
+    /// and the precedent for simple master data here. Both are plain reference data with no
+    /// lifecycle of their own whose transitions could be gated separately; the multi-way splits in
+    /// this file are reserved for things that have real transitions to gate.
+    /// </para>
+    /// </summary>
+    public const string CanManageSamplingPoints = "CanManageSamplingPoints";
+
     // Test requests (the ARD / round)
     public const string CanViewQcTestRequests = "CanViewQcTestRequests";
 
@@ -178,6 +194,7 @@ public static class QcWorksheetPermissionCatalog
     public const string WorksheetTemplates = "QC Worksheet Templates";
     public const string Specifications = "QC Specifications";
     public const string SamplingPointGroups = "QC Sampling Point Groups";
+    public const string SamplingPoints = "QC Sampling Points";
     public const string TestRequests = "QC Test Requests";
     public const string TestRoom = "QC Test Room";
     public const string OosCases = "QC OOS Cases";
@@ -285,6 +302,7 @@ public static class QcWorksheetPermissionCatalog
         if (MonitoringProgramKeys.Contains(key)) return MonitoringPrograms;
         if (WaterQualityKeys.Contains(key)) return WaterQuality;
         if (SamplingPointGroupKeys.Contains(key)) return SamplingPointGroups;
+        if (key == QcWorksheetPermissionKeys.CanManageSamplingPoints) return SamplingPoints;
         return WorksheetTemplates;
     }
 
