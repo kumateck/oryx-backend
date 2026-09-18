@@ -290,7 +290,13 @@ public class QcCoaGenerationService(
         ApplyHeaderIdentity(coa, round, subjects, shape, await ResolveBatchFactsAsync(subjects));
 
         coa.Rows = BuildRows(coa.Id, subjects, instances, characteristics, values, dispositions, userId);
-        coa.OverallComplies = coa.Rows.TrueForAll(row => row.Complies);
+
+        // The document's verdict turns on unresolved failures only. A row QA invalidated, or
+        // replaced with an accepted retest, is a closed investigation on the strength of which the
+        // batch was released — printing "DOES NOT COMPLY" over the whole certificate because of it
+        // would misstate the outcome as badly as hiding the row would. A ConfirmedOOS row does
+        // count: QA confirmed the result and the batch was rejected.
+        coa.OverallComplies = !coa.Rows.Exists(CoaRowVerdict.IsUnresolvedFailure);
 
         return coa;
     }
@@ -446,11 +452,11 @@ public class QcCoaGenerationService(
                 // A Subject that never ran this track has nothing to print for it. This is the
                 // fresh-resample case: the retest Subject re-runs one worksheet, so the tracks it
                 // did not re-run simply do not appear under it.
-                if (source is null)
+                if (source.Instance is null)
                     continue;
 
                 var result = values
-                    .Where(item => item.WorksheetInstanceId == source.Id
+                    .Where(item => item.WorksheetInstanceId == source.Instance.Id
                         && string.Equals(item.FieldKey, characteristic.SourceFieldKey, StringComparison.Ordinal))
                     .Select(item => item.Value)
                     .FirstOrDefault(item => !string.IsNullOrWhiteSpace(item));
@@ -469,7 +475,14 @@ public class QcCoaGenerationService(
                     SubjectLabel = subject.SubjectLabel,
 
                     SpecificationCharacteristicId = characteristic.Id,
-                    SourceWorksheetInstanceId = source.Id,
+                    SourceWorksheetInstanceId = source.Instance.Id,
+
+                    // The QA decision that governs this row, snapshotted alongside the value it
+                    // governs. Null for the ordinary row. This never edits the measured value or
+                    // the literal verdict below — it sits beside them so a closed investigation
+                    // cannot be read as an open one.
+                    DispositionOutcome = source.Disposition?.DispositionOutcome,
+                    DispositionReason = Truncate(source.Disposition?.DispositionComments, 2000),
 
                     DisplayLabel = Truncate(characteristic.TestName, 255),
                     GroupName = characteristic.GroupName,
@@ -497,14 +510,27 @@ public class QcCoaGenerationService(
     }
 
     /// <summary>
-    /// Which worksheet a row's result is taken from.
+    /// Where a row's result comes from, and the QA decision that governs it.
+    /// </summary>
+    /// <param name="Instance">The worksheet the value is read from. Null when this Subject never ran the track.</param>
+    /// <param name="Disposition">The closed OOS case governing this field, or null for the ordinary row.</param>
+    private readonly record struct RowSource(WorksheetInstance Instance, OosCase Disposition);
+
+    /// <summary>
+    /// Which worksheet a row's result is taken from, and which disposition annotates it.
     /// <para>
-    /// Normally the Subject's own instance for that template. When an OOS case on that instance
-    /// and that field has been closed with a disposition that displaced the original — the retest
-    /// result was accepted, or the original was invalidated — the certificate draws from the
-    /// retest instead, which is exactly what "the disposition record says which one the COA is
-    /// allowed to draw from" means. A ConfirmedOOS disposition leaves the original standing: the
-    /// result was real, and the certificate says so.
+    /// Normally the Subject's own instance for that template, with no disposition. When an OOS
+    /// case on that instance and that field has been closed, the case comes back too — it is what
+    /// lets the certificate distinguish a resolved finding from an unresolved one.
+    /// </para>
+    /// <para>
+    /// A disposition that <i>displaced</i> the original — the retest result was accepted, or the
+    /// original was invalidated and a finished retest exists — moves the row onto the retest,
+    /// which is exactly what "the disposition record says which one the COA is allowed to draw
+    /// from" means. Otherwise the original stands and the row prints what was actually measured:
+    /// a ConfirmedOOS result was real, and an Invalidated one with no retest to replace it is
+    /// still real data that a GxP record must not hide. The annotation, not the value, is what
+    /// carries the resolution.
     /// </para>
     /// <para>
     /// The retest may live under a different Subject when the Specification's policy is
@@ -512,7 +538,7 @@ public class QcCoaGenerationService(
     /// Subject alone.
     /// </para>
     /// </summary>
-    private static WorksheetInstance ResolveSourceInstance(
+    private static RowSource ResolveSourceInstance(
         List<WorksheetInstance> subjectInstances,
         List<WorksheetInstance> allInstances,
         List<OosCase> dispositions,
@@ -524,21 +550,30 @@ public class QcCoaGenerationService(
             ?? subjectInstances.Find(item => item.WorksheetTemplateId == templateId);
 
         if (original is null)
-            return null;
+            return default;
 
-        var displaced = dispositions.Find(item =>
+        // Every closed case against this worksheet and this field annotates the row, whatever its
+        // outcome — a row drawn from an accepted retest is as much in need of explaining as one
+        // left standing by a confirmed OOS.
+        var governing = dispositions.Find(item =>
             item.WorksheetInstanceId == original.Id
-            && string.Equals(item.FieldKey, fieldKey, StringComparison.Ordinal)
-            && item.RetestWorksheetInstanceId.HasValue
-            && item.DispositionOutcome is OosDispositionOutcome.RetestAccepted
-                or OosDispositionOutcome.Invalidated);
+            && string.Equals(item.FieldKey, fieldKey, StringComparison.Ordinal));
 
-        if (displaced is null)
-            return original;
+        if (governing is null)
+            return new RowSource(original, null);
 
-        var retest = allInstances.Find(item => item.Id == displaced.RetestWorksheetInstanceId.Value);
+        var displaces = governing.RetestWorksheetInstanceId.HasValue
+            && governing.DispositionOutcome is OosDispositionOutcome.RetestAccepted
+                or OosDispositionOutcome.Invalidated;
 
-        return retest is not null && IsFinished(retest.Status) ? retest : original;
+        if (!displaces)
+            return new RowSource(original, governing);
+
+        var retest = allInstances.Find(item => item.Id == governing.RetestWorksheetInstanceId.Value);
+
+        return retest is not null && IsFinished(retest.Status)
+            ? new RowSource(retest, governing)
+            : new RowSource(original, governing);
     }
 
     private static string Truncate(string value, int maxLength) =>

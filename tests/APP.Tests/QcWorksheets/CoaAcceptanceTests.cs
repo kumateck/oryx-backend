@@ -47,6 +47,11 @@ public class CoaAcceptanceTests
     {
         await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
 
+        // Revising a certificate records a re-authenticated signature in the shared QcApproval
+        // table, which needs an Approval row to hang off — the same requirement manual
+        // supersession has.
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.Coa);
+
         var chemical = await harness.SeedEffectiveTemplate(
             $"WS/CHEM/{Guid.NewGuid().ToString()[..6]}", WorksheetCategory.Chemical, ChemicalField);
 
@@ -526,7 +531,11 @@ public class CoaAcceptanceTests
 
         var revised = await harness.Coas.Revise(
             original.Id,
-            new ReviseCoaRequest { Reason = "Transcription error in the assay result." },
+            new ReviseCoaRequest
+            {
+                Reason = "Transcription error in the assay result.",
+                Password = QcWorksheetTestContext.CorrectPassword
+            },
             harness.Approver.Id);
 
         Assert.True(revised.IsSuccess, revised.Error?.Description);
@@ -592,7 +601,11 @@ public class CoaAcceptanceTests
 
         var revised = await harness.Coas.Revise(
             original.Id,
-            new ReviseCoaRequest { Reason = "Assay transposed on data entry." },
+            new ReviseCoaRequest
+            {
+                Reason = "Assay transposed on data entry.",
+                Password = QcWorksheetTestContext.CorrectPassword
+            },
             harness.Approver.Id);
 
         Assert.True(revised.IsSuccess, revised.Error?.Description);
@@ -631,7 +644,13 @@ public class CoaAcceptanceTests
         var draft = Assert.Single(await Certificates(harness, round.TestRequestId));
 
         var tooEarly = await harness.Coas.Revise(
-            draft.Id, new ReviseCoaRequest { Reason = "Because." }, harness.Approver.Id);
+            draft.Id,
+            new ReviseCoaRequest
+            {
+                Reason = "Because.",
+                Password = QcWorksheetTestContext.CorrectPassword
+            },
+            harness.Approver.Id);
 
         Assert.False(tooEarly.IsSuccess);
         Assert.Equal("QcCoa.ReviseRequiresIssued", tooEarly.Error.Code);
@@ -639,10 +658,287 @@ public class CoaAcceptanceTests
         await harness.Coas.Issue(draft.Id, harness.Approver.Id);
 
         var noReason = await harness.Coas.Revise(
-            draft.Id, new ReviseCoaRequest { Reason = "   " }, harness.Approver.Id);
+            draft.Id,
+            new ReviseCoaRequest
+            {
+                Reason = "   ",
+                Password = QcWorksheetTestContext.CorrectPassword
+            },
+            harness.Approver.Id);
 
         Assert.False(noReason.IsSuccess);
         Assert.Equal("QcCoa.RevisionReasonRequired", noReason.Error.Code);
+    }
+
+    /// <summary>
+    /// A revision is a meaning-of-signature event. A wrong password refuses it outright, and —
+    /// because every check and the signature itself happen before a single write — the original is
+    /// left exactly as it was: still Issued, nothing superseded, no revision in existence and no
+    /// signature recorded against it.
+    /// </summary>
+    [Theory]
+    [InlineData("wrong-password", "QcWorksheet.ReauthenticationFailed")]
+    [InlineData("", "QcWorksheet.ReauthenticationRequired")]
+    [InlineData(null, "QcWorksheet.ReauthenticationRequired")]
+    public async Task A_revision_without_a_valid_signature_is_refused_and_changes_nothing(
+        string? password, string expectedError)
+    {
+        using var harness = new QcWorksheetTestContext();
+        var round = await ArrangeBothTracks(harness);
+
+        var chemical = InstanceFor(round, 0, round.Chemical);
+        var microbial = InstanceFor(round, 0, round.Microbial);
+
+        await Submit(round, chemical, ChemicalField, "98.7%");
+        await Submit(round, microbial, MicrobialField, "45 CFU/g");
+        await Review(round, chemical);
+        await Review(round, microbial);
+
+        var original = Assert.Single(await Certificates(harness, round.TestRequestId));
+        await harness.Coas.Issue(original.Id, harness.Approver.Id);
+
+        var refused = await harness.Coas.Revise(
+            original.Id,
+            new ReviseCoaRequest { Reason = "Assay transposed on data entry.", Password = password },
+            harness.Approver.Id);
+
+        Assert.False(refused.IsSuccess);
+        Assert.Equal(expectedError, refused.Error.Code);
+
+        // The original is untouched: still Issued, still the only certificate on the round.
+        var untouched = Assert.Single(await Certificates(harness, round.TestRequestId));
+        Assert.Equal(original.Id, untouched.Id);
+        Assert.Equal(CoaStatus.Issued, untouched.Status);
+        Assert.Equal(1, untouched.RevisionNumber);
+        Assert.Null(untouched.RevisionReason);
+
+        // No draft revision was left behind, and nothing was superseded.
+        Assert.Empty(await harness.Db.Coas
+            .AsNoTracking()
+            .Where(item => item.SupersedesId == original.Id)
+            .ToListAsync());
+
+        Assert.Empty(await harness.Db.Coas
+            .AsNoTracking()
+            .Where(item => item.Status == CoaStatus.Superseded)
+            .ToListAsync());
+
+        // And no signature was recorded for an act that never happened.
+        Assert.Empty(await harness.Db.QcApprovals
+            .AsNoTracking()
+            .Where(item => item.EntityType == QcApprovalEntityTypes.Coa)
+            .ToListAsync());
+    }
+
+    /// <summary>
+    /// A successful revision records a re-authenticated signature in the same shared table as
+    /// every other QC signature, against the certificate being withdrawn — so its trail answers
+    /// "who authorized this, and when".
+    /// </summary>
+    [Fact]
+    public async Task A_revision_records_a_reauthenticated_signature_in_the_shared_table()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var round = await ArrangeBothTracks(harness);
+
+        var chemical = InstanceFor(round, 0, round.Chemical);
+        var microbial = InstanceFor(round, 0, round.Microbial);
+
+        await Submit(round, chemical, ChemicalField, "98.7%");
+        await Submit(round, microbial, MicrobialField, "45 CFU/g");
+        await Review(round, chemical);
+        await Review(round, microbial);
+
+        var original = Assert.Single(await Certificates(harness, round.TestRequestId));
+        await harness.Coas.Issue(original.Id, harness.Approver.Id);
+
+        var revised = await harness.Coas.Revise(
+            original.Id,
+            new ReviseCoaRequest
+            {
+                Reason = "Assay transposed on data entry.",
+                Password = QcWorksheetTestContext.CorrectPassword
+            },
+            harness.Approver.Id);
+
+        Assert.True(revised.IsSuccess, revised.Error?.Description);
+
+        var signature = await harness.Db.QcApprovals
+            .AsNoTracking()
+            .SingleAsync(item => item.EntityType == QcApprovalEntityTypes.Coa
+                && item.EntityId == original.Id);
+
+        Assert.Equal(harness.Approver.Id, signature.ApprovedById);
+        Assert.Equal("Assay transposed on data entry.", signature.Comments);
+        Assert.NotNull(signature.ApprovalTime);
+
+        // The distinguishing mark of a QC signature: a valid session was not enough, and the
+        // moment of re-authentication is on the record.
+        Assert.NotNull(signature.ReauthConfirmedAt);
+    }
+
+    // =======================================================================
+    // Disposition annotation — a resolved finding is not an unresolved failure
+    // =======================================================================
+
+    /// <summary>
+    /// A row whose OOS case QA closed as <c>Invalidated</c>, with no retest to replace the result,
+    /// still shows the literal value that was measured — hiding real data is exactly what a GxP
+    /// record must not do — but its compliance column reads "Invalidated" with QA's reason, not a
+    /// bare "does not comply".
+    /// <para>
+    /// The distinction matters to whoever is holding the certificate: one says an investigation
+    /// was completed and closed, the other says a test failed and nobody dealt with it.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task An_invalidated_result_shows_its_value_annotated_rather_than_as_a_plain_failure()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.OosCase);
+
+        var round = await ArrangeBothTracks(harness);
+
+        var chemical = InstanceFor(round, 0, round.Chemical);
+        var microbial = InstanceFor(round, 0, round.Microbial);
+
+        // Breaches the acceptance criteria, opening an OosCase automatically.
+        await Submit(round, chemical, ChemicalField, "88.0%");
+        await Submit(round, microbial, MicrobialField, "45 CFU/g");
+        await Review(round, chemical);
+        await Review(round, microbial);
+
+        var oosCase = await harness.Db.QcOosCases.SingleAsync(item => item.WorksheetInstanceId == chemical);
+
+        // Escalated without a retest, then invalidated: an assignable laboratory error was found,
+        // so the original result is void — but there is no second result to print in its place.
+        await harness.OosCases.StartInvestigation(oosCase.Id, harness.Approver.Id);
+
+        await harness.OosCases.Escalate(
+            oosCase.Id,
+            new EscalateOosCaseRequest { Reason = "Assignable laboratory error identified." },
+            harness.Approver.Id);
+
+        var disposed = await harness.OosCases.RecordDisposition(
+            oosCase.Id,
+            new OosDispositionRequest
+            {
+                Outcome = OosDispositionOutcome.Invalidated,
+                Password = QcWorksheetTestContext.CorrectPassword,
+                DispositionComments = "Standard mis-prepared; original result void."
+            },
+            harness.Approver.Id,
+            [harness.ApproverRole.Id]);
+
+        Assert.True(disposed.IsSuccess, disposed.Error?.Description);
+
+        var certificate = Assert.Single(await Certificates(harness, round.TestRequestId));
+        var assayRow = certificate.Rows.Single(row => row.DisplayLabel == "Assay");
+
+        // The measured value is still there. It is never erased or blanked.
+        Assert.Equal("88.0%", assayRow.ResultValue);
+
+        // The literal evaluation is untouched too — that is what an auditor needs.
+        Assert.False(assayRow.Complies);
+
+        // And the disposition is snapshotted beside it.
+        Assert.Equal(OosDispositionOutcome.Invalidated, assayRow.DispositionOutcome);
+        Assert.Equal("Standard mis-prepared; original result void.", assayRow.DispositionReason);
+
+        // What the certificate actually prints is the annotation, not a bare failure.
+        var detail = await harness.Coas.GetCoa(certificate.Id);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        var rendered = detail.Value.Subjects
+            .SelectMany(subject => subject.Groups)
+            .SelectMany(group => group.Rows)
+            .Single(row => row.DisplayLabel == "Assay");
+
+        Assert.Equal("88.0%", rendered.ResultValue);
+        Assert.False(rendered.Complies);
+        Assert.Equal(
+            "Invalidated — Standard mis-prepared; original result void.",
+            rendered.ComplianceLabel);
+
+        Assert.DoesNotContain("Does not comply", rendered.ComplianceLabel, StringComparison.Ordinal);
+
+        // A closed investigation is not an unresolved failure, so it does not drag the document's
+        // verdict — or its section's — down with it.
+        Assert.False(rendered.IsUnresolvedFailure);
+        Assert.True(certificate.OverallComplies);
+        Assert.All(detail.Value.Subjects, subject => Assert.True(subject.Complies));
+
+        // The untouched microbial row still reads plainly, so the annotation is scoped to the row
+        // the disposition actually governs.
+        var microbialRow = detail.Value.Subjects
+            .SelectMany(subject => subject.Groups)
+            .SelectMany(group => group.Rows)
+            .Single(row => row.DisplayLabel == "TAMC");
+
+        Assert.Null(microbialRow.DispositionOutcome);
+        Assert.Equal("Complies", microbialRow.ComplianceLabel);
+    }
+
+    /// <summary>
+    /// The counterpart, so the annotation cannot be mistaken for a way of excusing every failure:
+    /// a <c>ConfirmedOOS</c> disposition means QA confirmed the result stands and the batch was
+    /// rejected. That row is still an unresolved failure for the document's purposes, and the
+    /// certificate's overall verdict still reads as not complying.
+    /// </summary>
+    [Fact]
+    public async Task A_confirmed_oos_row_still_fails_the_certificate_but_names_the_disposition()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.OosCase);
+
+        var round = await ArrangeBothTracks(harness);
+
+        var chemical = InstanceFor(round, 0, round.Chemical);
+        var microbial = InstanceFor(round, 0, round.Microbial);
+
+        await Submit(round, chemical, ChemicalField, "88.0%");
+        await Submit(round, microbial, MicrobialField, "45 CFU/g");
+        await Review(round, chemical);
+        await Review(round, microbial);
+
+        var oosCase = await harness.Db.QcOosCases.SingleAsync(item => item.WorksheetInstanceId == chemical);
+
+        await harness.OosCases.StartInvestigation(oosCase.Id, harness.Approver.Id);
+
+        await harness.OosCases.Escalate(
+            oosCase.Id,
+            new EscalateOosCaseRequest { Reason = "No assignable laboratory error found." },
+            harness.Approver.Id);
+
+        await harness.OosCases.RecordDisposition(
+            oosCase.Id,
+            new OosDispositionRequest
+            {
+                Outcome = OosDispositionOutcome.ConfirmedOOS,
+                Password = QcWorksheetTestContext.CorrectPassword,
+                DispositionComments = "Result confirmed on review of the raw data."
+            },
+            harness.Approver.Id,
+            [harness.ApproverRole.Id]);
+
+        var certificate = Assert.Single(await Certificates(harness, round.TestRequestId));
+        var detail = await harness.Coas.GetCoa(certificate.Id);
+
+        var rendered = detail.Value.Subjects
+            .SelectMany(subject => subject.Groups)
+            .SelectMany(group => group.Rows)
+            .Single(row => row.DisplayLabel == "Assay");
+
+        Assert.Equal("88.0%", rendered.ResultValue);
+        Assert.False(rendered.Complies);
+
+        // Named, so the reader knows QA looked at it — but still counted as a failure.
+        Assert.Equal(
+            "Confirmed out of specification — Result confirmed on review of the raw data.",
+            rendered.ComplianceLabel);
+
+        Assert.True(rendered.IsUnresolvedFailure);
+        Assert.False(certificate.OverallComplies);
     }
 
     // =======================================================================

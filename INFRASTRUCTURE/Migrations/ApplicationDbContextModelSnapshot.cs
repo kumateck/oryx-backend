@@ -14062,6 +14062,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("DispositionOutcome")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DispositionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<string>("GroupName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");

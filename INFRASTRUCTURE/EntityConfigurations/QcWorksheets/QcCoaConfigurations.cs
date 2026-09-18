@@ -98,6 +98,11 @@ public class CoaRowConfiguration : IEntityTypeConfiguration<CoaRow>
         builder.Property(item => item.AcceptanceCriteria).HasMaxLength(2000);
         builder.Property(item => item.ResultValue).HasMaxLength(2000);
 
+        // The QA disposition governing the row, snapshotted beside the value it governs rather
+        // than replacing it: a resolved finding has to be distinguishable from an unresolved one
+        // without the measured value ever being hidden.
+        builder.Property(item => item.DispositionReason).HasMaxLength(2000);
+
         // The viewer reads one certificate's rows in print order, and nothing else reads this
         // table at all.
         builder.HasIndex(item => new { item.CoaId, item.TestRequestSubjectId, item.DisplayOrder });

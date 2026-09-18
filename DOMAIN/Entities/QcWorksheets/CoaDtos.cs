@@ -163,8 +163,37 @@ public class CoaRowDto
     public string GroupName { get; set; }
     public int DisplayOrder { get; set; }
     public string AcceptanceCriteria { get; set; }
+
+    /// <summary>
+    /// What was actually measured, exactly as snapshotted. Always present, including on a row a
+    /// QA disposition later voided — real data is never hidden from a GxP record.
+    /// </summary>
     public string ResultValue { get; set; }
+
+    /// <summary>
+    /// The literal limit evaluation, for audit. Read <see cref="ComplianceLabel"/>, not this, to
+    /// render the compliance column: a resolved finding is not the same thing as a failure, and
+    /// this boolean deliberately cannot tell them apart.
+    /// </summary>
     public bool Complies { get; set; }
+
+    /// <summary>The QA disposition governing this row, or null for the ordinary row.</summary>
+    public OosDispositionOutcome? DispositionOutcome { get; set; }
+
+    /// <summary>QA's own words when they disposed of the case.</summary>
+    public string DispositionReason { get; set; }
+
+    /// <summary>
+    /// What the compliance column prints — "Complies", "Does not comply", or, for a disposed row,
+    /// the disposition and QA's reason ("Invalidated — ..."). This is the field a renderer shows.
+    /// </summary>
+    public string ComplianceLabel { get; set; }
+
+    /// <summary>
+    /// True when this row is a genuine failure nobody has resolved — the only kind that should
+    /// read as a problem on a finished certificate.
+    /// </summary>
+    public bool IsUnresolvedFailure { get; set; }
 }
 
 // ---------------------------------------------------------------------------
@@ -172,10 +201,22 @@ public class CoaRowDto
 // ---------------------------------------------------------------------------
 
 /// <summary>
-/// Reissues a certificate. The reason is mandatory: a certificate is only ever replaced for a
-/// stated cause, and the stated cause is part of the record.
+/// Reissues a certificate.
+/// <para>
+/// Carries the re-authentication credential because a revision is a meaning-of-signature event:
+/// it withdraws a document that is already in circulation and that other parties may already be
+/// relying on. A valid session is deliberately not enough — exactly as it is not enough to
+/// approve an STP, review a worksheet or sign an OOS disposition.
+/// </para>
+/// <para>
+/// The reason is mandatory alongside it: a certificate is only ever replaced for a stated cause,
+/// and the stated cause is part of the record.
+/// </para>
 /// </summary>
 public class ReviseCoaRequest
 {
-    [StringLength(1000)] public string Reason { get; set; }
+    [Required, StringLength(1000)] public string Reason { get; set; }
+
+    /// <summary>The acting user's own password, re-entered. Verified against their credentials, never stored.</summary>
+    [Required] public string Password { get; set; }
 }

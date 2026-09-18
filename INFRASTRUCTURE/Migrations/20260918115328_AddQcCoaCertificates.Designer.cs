@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260918110215_AddQcCoaCertificates")]
+    [Migration("20260918115328_AddQcCoaCertificates")]
     partial class AddQcCoaCertificates
     {
         /// <inheritdoc />
@@ -14064,6 +14064,13 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("integer");
+
+                    b.Property<int?>("DispositionOutcome")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DispositionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<string>("GroupName")
                         .HasMaxLength(200)

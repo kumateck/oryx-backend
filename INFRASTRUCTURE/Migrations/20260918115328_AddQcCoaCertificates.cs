@@ -104,6 +104,8 @@ namespace INFRASTRUCTURE.Migrations
                     AcceptanceCriteria = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     ResultValue = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     Complies = table.Column<bool>(type: "boolean", nullable: false),
+                    DispositionOutcome = table.Column<int>(type: "integer", nullable: true),
+                    DispositionReason = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: true),

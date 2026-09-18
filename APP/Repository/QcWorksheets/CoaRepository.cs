@@ -29,14 +29,21 @@ namespace APP.Repository.QcWorksheets;
 /// <para>
 /// <b>Revision supersedes, never overwrites.</b> A revision is a new record. The original stays
 /// fully retrievable, is marked Superseded only once the replacement is actually issued, and is
-/// never deleted or edited in place.
+/// never deleted or edited in place. Raising one is a meaning-of-signature event and takes the
+/// same re-authentication every other QC signature does — issuing is the deliberate exception,
+/// because the reviews that gated generation were each signed already, whereas withdrawing a
+/// certificate already in circulation is a fresh decision by a named person.
 /// </para>
 /// </summary>
 public class CoaRepository(
     ApplicationDbContext context,
     IMapper mapper,
+    IQcSignatureService signatureService,
+    IQcReauthContext reauthContext,
     IQcCoaGenerationService generationService) : ICoaRepository
 {
+    private const string ModelType = QcWorksheetModelTypes.Coa;
+
     // -----------------------------------------------------------------------
     // Reads
     // -----------------------------------------------------------------------
@@ -214,8 +221,17 @@ public class CoaRepository(
     /// Reissues a certificate as a new record, recomputing its rows from current data — a retest
     /// completed, or a data-entry correction was made.
     /// <para>
+    /// Requires a re-authenticated signature. Withdrawing a certificate that is already in
+    /// circulation is a decision a named person makes and answers for, so it takes the acting
+    /// user's own password on top of a valid session, recorded in the same shared
+    /// <see cref="QcApproval"/> table as every other QC signature — against the <i>original</i>,
+    /// so its trail answers "who authorized withdrawing this, and when".
+    /// </para>
+    /// <para>
     /// The original is left exactly as it is. It only becomes Superseded when this new draft is
-    /// itself issued, and it is never edited or deleted at any point.
+    /// itself issued, and it is never edited or deleted at any point. Every check and the
+    /// signature itself happen before a single write, so a refused or failed signature leaves the
+    /// original untouched rather than needing to be rolled back.
     /// </para>
     /// </summary>
     public async Task<Result<CoaDetailDto>> Revise(Guid id, ReviseCoaRequest request, Guid userId)
@@ -247,10 +263,40 @@ public class CoaRepository(
         if (!hold.Satisfied)
             return Result.Failure<CoaDetailDto>(QcWorksheetErrors.CoaGenerationHeld(hold.Reason));
 
+        // QC's standing opt-out of the approval engine's silent auto-approval fallback: without a
+        // configured Approval row there is nothing for the signature to hang off, and a QC
+        // signature is never recorded without one.
+        var approval = await context.Approvals.FirstOrDefaultAsync(item => item.ItemType == ModelType);
+        if (approval is null)
+            return Result.Failure<CoaDetailDto>(
+                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
+
+        // Built before the signature is taken but deliberately not persisted yet: the signer is
+        // signing for a document that exists, and a signature is never recorded against a
+        // revision that then failed to assemble.
         var revision = await generationService.BuildAsync(original.TestRequestId, userId);
         if (revision is null)
             return Result.Failure<CoaDetailDto>(QcWorksheetErrors.CoaGenerationHeld(
                 "The round's data could not be assembled into a certificate."));
+
+        // The meaning-of-signature gate. Nothing above this line has written anything, so a wrong
+        // or missing password simply refuses: the original stays Issued, no QcApproval row is
+        // recorded, and no revision exists.
+        var verified = await signatureService.VerifyAsync(userId, request.Password);
+        if (!verified.IsSuccess)
+            return Result.Failure<CoaDetailDto>(verified.Error);
+
+        var recorded = await QcApprovalHandler.RecordSignedActionAsync(
+            context,
+            reauthContext,
+            ModelType,
+            original.Id,
+            approval.Id,
+            userId,
+            request.Reason.Trim());
+
+        if (!recorded.IsSuccess)
+            return Result.Failure<CoaDetailDto>(recorded.Error);
 
         revision.SupersedesId = original.Id;
         revision.RevisionNumber = original.RevisionNumber + 1;
@@ -410,7 +456,9 @@ public class CoaRepository(
                 TestRequestSubjectId = subject.Key,
                 SubjectRef = subject.First().SubjectRef,
                 SubjectLabel = subject.First().SubjectLabel,
-                Complies = subject.All(row => row.Complies),
+                // Consistent with the certificate's overall verdict: a resolved finding does not
+                // make a section read as failing.
+                Complies = !subject.Any(CoaRowVerdict.IsUnresolvedFailure),
                 Groups = subject
                     .GroupBy(row => row.GroupName ?? string.Empty)
                     .OrderBy(group => group.Key, StringComparer.Ordinal)
@@ -438,7 +486,18 @@ public class CoaRepository(
         GroupName = row.GroupName,
         DisplayOrder = row.DisplayOrder,
         AcceptanceCriteria = row.AcceptanceCriteria,
+
+        // The measured value always renders. A disposition annotates it; it never erases it.
         ResultValue = row.ResultValue,
-        Complies = row.Complies
+        Complies = row.Complies,
+
+        DispositionOutcome = row.DispositionOutcome,
+        DispositionReason = row.DispositionReason,
+
+        // Computed from the snapshot rather than stored, so the wording of a label can be improved
+        // later without rewriting certificates that were already issued — the facts it is built
+        // from are the frozen part.
+        ComplianceLabel = CoaRowVerdict.Label(row),
+        IsUnresolvedFailure = CoaRowVerdict.IsUnresolvedFailure(row)
     };
 }

@@ -139,11 +139,14 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("QcSpecification", QcWorksheetModelTypes.Specification);
         Assert.Equal("QcWorksheetInstance", QcWorksheetModelTypes.WorksheetInstance);
         Assert.Equal("QcOosCase", QcWorksheetModelTypes.OosCase);
+        Assert.Equal("QcCoa", QcWorksheetModelTypes.Coa);
 
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.WorksheetInstance));
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.OosCase));
+        Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
+            QcWorksheetModelTypes.Coa));
 
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.StandardTestProcedure));
@@ -166,7 +169,12 @@ public class QcWorksheetCoexistenceTests
                      // and "OosInvestigation" are listed for the same reason — the live
                      // qa/oos-investigations path keeps its own dispatch untouched.
                      "AnalyticalTestRequest", "WorksheetInstance", "TestRequest",
-                     "OosCase", "OosInvestigation"
+                     "OosCase", "OosInvestigation",
+
+                     // And the live certificate path keeps its own dispatch: "Coa" bare, and the
+                     // commercial/routine certificate model types, must not route into QC's
+                     // handler because Milestone 5 registered "QcCoa".
+                     "Coa", "CommercialCertificate", "RoutineCertificate"
                  })
         {
             Assert.False(QcWorksheetModelTypes.IsQcWorksheetModelType(other), other);
@@ -200,7 +208,14 @@ public class QcWorksheetCoexistenceTests
             QcApprovalEntityTypes.OosCase,
             QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.OosCase));
 
+        Assert.Equal(
+            QcApprovalEntityTypes.Coa,
+            QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.Coa));
+
         Assert.Null(QcApprovalEntityTypes.FromModelType("Response"));
+
+        // Same for the certificate path: the bare name is not a model type.
+        Assert.Null(QcApprovalEntityTypes.FromModelType("Coa"));
 
         // The bare entity-type name is not a model type either: the live OosInvestigation
         // path cannot be routed into QC's approval handler.

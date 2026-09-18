@@ -134,7 +134,9 @@ internal sealed class QcWorksheetTestContext : IDisposable
         OosCases = new OosCaseRepository(
             Db, Mapper, SignatureService, ApprovalRepository, CoaGeneration);
 
-        Coas = new CoaRepository(Db, Mapper, CoaGeneration);
+        // The real signature service and the real re-auth context, so a revision's signature is
+        // verified against genuine password hashing rather than a stub that always says yes.
+        Coas = new CoaRepository(Db, Mapper, SignatureService, Reauth, CoaGeneration);
 
         Approvals = new QcApprovalRepository(Db, Mapper);
     }

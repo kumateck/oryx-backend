@@ -284,6 +284,100 @@ public class CoaRow : BaseEntity
     /// snapshotted limits, taken at generation time. An Alert-limit breach still complies: it
     /// flags for trend review and blocks nothing,
     /// which is the locked rule in lifecycle-and-governance.md.
+    /// <para>
+    /// Deliberately the <b>literal</b> evaluation of the value this row carries, and nothing else.
+    /// A QA disposition never rewrites it — see <see cref="DispositionOutcome"/>, which annotates
+    /// the row on top rather than altering what was measured. Keeping this boolean purely
+    /// mechanical is what lets an auditor ask "did this value meet its limit" and get an answer no
+    /// later human decision has edited.
+    /// </para>
     /// </summary>
     public bool Complies { get; set; }
+
+    /// <summary>
+    /// The QA disposition governing this row, when a closed OOS case touched the value it carries.
+    /// Null for the ordinary row, which is most of them.
+    /// <para>
+    /// This exists to stop a <i>resolved</i> finding from being misread as an unresolved one. When
+    /// a case closed as <see cref="OosDispositionOutcome.Invalidated"/> with no retest to replace
+    /// the result, the row still carries the literal value that was measured — never hidden, never
+    /// blanked, because suppressing real data is exactly what a GxP record must not do — but the
+    /// certificate reads it as "Invalidated", not as a bare failure. The two mean entirely
+    /// different things to whoever is holding the document.
+    /// </para>
+    /// <para>
+    /// Snapshotted at generation time like everything else here: the disposition in force when the
+    /// certificate was produced is the one it keeps.
+    /// </para>
+    /// </summary>
+    public OosDispositionOutcome? DispositionOutcome { get; set; }
+
+    /// <summary>
+    /// What QA said when they disposed of the case, snapshotted — the "[disposition reason]" the
+    /// certificate prints beside the outcome, so a reader is not left with a bare label they would
+    /// have to go and look up.
+    /// </summary>
+    [StringLength(2000)] public string DispositionReason { get; set; }
+}
+
+/// <summary>
+/// How a row reads on the finished document, stated once so the row, its subject's section and the
+/// certificate's overall verdict can never disagree with each other.
+/// </summary>
+public static class CoaRowVerdict
+{
+    /// <summary>
+    /// Whether this row stands as a genuine, unresolved failure — which is the only kind that
+    /// should drag a certificate's overall verdict down.
+    /// <para>
+    /// A row QA disposed of as <see cref="OosDispositionOutcome.Invalidated"/> (the result was
+    /// void) or <see cref="OosDispositionOutcome.RetestAccepted"/> (a different result counts) is
+    /// resolved: the finding was investigated and closed, and the batch was released on the
+    /// strength of that decision. <see cref="OosDispositionOutcome.ConfirmedOOS"/> is the
+    /// opposite — QA confirmed the result stands and the batch was rejected — so it counts.
+    /// </para>
+    /// <para>
+    /// <see cref="CoaRow.Complies"/> itself is never touched by any of this. It stays the literal
+    /// evaluation of the measured value, for audit.
+    /// </para>
+    /// </summary>
+    public static bool IsUnresolvedFailure(CoaRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        if (row.Complies)
+            return false;
+
+        return row.DispositionOutcome is not (OosDispositionOutcome.Invalidated
+            or OosDispositionOutcome.RetestAccepted);
+    }
+
+    /// <summary>
+    /// What the compliance column prints.
+    /// <para>
+    /// A disposed row never reads as a bare "Does not comply": that phrasing belongs to a finding
+    /// nobody has resolved, and printing it over a closed investigation would misrepresent the
+    /// record to whoever is holding the certificate. It names the disposition instead, with QA's
+    /// own words beside it, while the measured value stays visible in its own column.
+    /// </para>
+    /// </summary>
+    public static string Label(CoaRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        if (row.DispositionOutcome is null)
+            return row.Complies ? "Complies" : "Does not comply";
+
+        var outcome = row.DispositionOutcome.Value switch
+        {
+            OosDispositionOutcome.Invalidated => "Invalidated",
+            OosDispositionOutcome.RetestAccepted => "Retest accepted",
+            OosDispositionOutcome.ConfirmedOOS => "Confirmed out of specification",
+            _ => row.Complies ? "Complies" : "Does not comply"
+        };
+
+        return string.IsNullOrWhiteSpace(row.DispositionReason)
+            ? outcome
+            : $"{outcome} — {row.DispositionReason.Trim()}";
+    }
 }

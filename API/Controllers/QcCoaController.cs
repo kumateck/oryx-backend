@@ -94,14 +94,22 @@ public class QcCoaController(ICoaRepository repository) : ControllerBase
     /// Reissues a certificate with its rows recomputed from current data, under a mandatory
     /// reason.
     /// <para>
+    /// An electronic signature: requires the caller's own password in addition to a valid session,
+    /// recorded in the same centralized QcApproval table as every other QC signature. Issuance is
+    /// the deliberate exception to that rule; this is not. Withdrawing a certificate that is
+    /// already in circulation is a fresh decision by a named person, and it is signed for as one.
+    /// </para>
+    /// <para>
     /// The original is never overwritten or deleted. It stays fully retrievable, and only moves to
-    /// Superseded once this replacement is itself issued.
+    /// Superseded once this replacement is itself issued — and a refused signature leaves it
+    /// untouched.
     /// </para>
     /// </summary>
     [HttpPost("{id:guid}/revise")]
     [Authorize(QcWorksheetPermissionKeys.CanReviseQcCertificate)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CoaDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IResult> Revise([FromRoute] Guid id, [FromBody] ReviseCoaRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
