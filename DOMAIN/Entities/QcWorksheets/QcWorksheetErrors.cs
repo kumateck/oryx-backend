@@ -589,4 +589,159 @@ public static class QcWorksheetErrors
         Error.Validation(
             "QcCoa.GenerationHeld",
             $"A certificate cannot be produced for this test request. {reason}");
+
+    // -----------------------------------------------------------------------
+    // Milestone 6 — sampling points, monitoring programs, water quality
+    // -----------------------------------------------------------------------
+
+    public static Error SamplingPointNotFound(Guid id) =>
+        Error.NotFound("QcSamplingPoint.NotFound", $"The sampling point with the Id: {id} was not found");
+
+    public static Error DuplicateSamplingPointCode(string code) =>
+        Error.Conflict(
+            "QcSamplingPoint.DuplicateCode",
+            $"A sampling point with the code '{code}' already exists. Codes are unique precisely "
+            + "so a point's trend history cannot be split in two by a near-duplicate.");
+
+    public static Error SamplingPointInUse(string code, int programCount) =>
+        Error.Validation(
+            "QcSamplingPoint.InUse",
+            $"Sampling point '{code}' is scheduled by {programCount} monitoring program(s) and "
+            + "cannot be deleted. Delete or repoint the programs first.");
+
+    public static Error SamplingPointTypeImmutable =>
+        Error.Validation(
+            "QcSamplingPoint.TypeImmutable",
+            "A sampling point's type cannot be changed once monitoring programs, rounds or water "
+            + "quality periods reference it — the specifications and limits already resolved "
+            + "against it are type-specific.");
+
+    /// <summary>
+    /// Water/EM only, mirroring <see cref="SamplingPointGroupIsRoutineOnly"/>. A batch round's
+    /// Subject names a batch; there is no point to name.
+    /// </summary>
+    public static Error SamplingPointIsRoutineOnly(TestRequestType type) =>
+        Error.Validation(
+            "QcTestRequest.SamplingPointIsRoutineOnly",
+            "A sampling point can only be named on a routine Water or Environmental subject. "
+            + $"This round is {type}.");
+
+    public static Error SamplingPointTypeMismatch(TestRequestType roundType, SamplingPointType pointType) =>
+        Error.Validation(
+            "QcTestRequest.SamplingPointTypeMismatch",
+            $"This is a {roundType} round, but the selected sampling point is a {pointType} point.");
+
+    public static Error MonitoringProgramNotFound(Guid id) =>
+        Error.NotFound(
+            "QcMonitoringProgram.NotFound",
+            $"The monitoring program with the Id: {id} was not found");
+
+    public static Error MonitoringProgramSpecificationNotFound(Guid id) =>
+        Error.Validation(
+            "QcMonitoringProgram.SpecificationNotFound",
+            $"The specification with the Id: {id} was not found");
+
+    /// <summary>
+    /// A schedule that raises real testing rounds must name a controlled document somebody
+    /// signed for — the same rule <c>TestRequestRepository</c> applies at round creation.
+    /// </summary>
+    public static Error MonitoringProgramSpecificationNotEffective(string code, QcDocumentStatus status) =>
+        Error.Validation(
+            "QcMonitoringProgram.SpecificationNotEffective",
+            $"Specification '{code}' is {status}. A monitoring program can only schedule testing "
+            + "against an Effective specification.");
+
+    public static Error MonitoringProgramSpecificationTypeMismatch(
+        SamplingPointType pointType, SpecificationAppliesTo appliesTo) =>
+        Error.Validation(
+            "QcMonitoringProgram.SpecificationTypeMismatch",
+            $"This is a {pointType} sampling point, but the selected specification applies to "
+            + $"{appliesTo}.");
+
+    public static Error MonitoringProgramSpecificationHasNoWorksheetLinks(string code) =>
+        Error.Validation(
+            "QcMonitoringProgram.SpecificationHasNoWorksheetLinks",
+            $"Specification '{code}' links no worksheet templates, so a generated round would "
+            + "have no worksheets to run.");
+
+    public static Error CustomIntervalRequired =>
+        Error.Validation(
+            "QcMonitoringProgram.CustomIntervalRequired",
+            "A Custom frequency must state its interval in days.");
+
+    public static Error CustomIntervalNotApplicable(MonitoringFrequency frequency) =>
+        Error.Validation(
+            "QcMonitoringProgram.CustomIntervalNotApplicable",
+            "A custom interval is only meaningful with a Custom frequency. This program is "
+            + $"{frequency}.");
+
+    /// <summary>
+    /// One live schedule per (point, specification). A second identical program would simply
+    /// raise the same round twice.
+    /// </summary>
+    public static Error DuplicateMonitoringProgram(string samplingPointCode, string specificationCode) =>
+        Error.Conflict(
+            "QcMonitoringProgram.Duplicate",
+            $"Sampling point '{samplingPointCode}' already has a monitoring program against "
+            + $"specification '{specificationCode}'.");
+
+    public static Error PauseRequiresActive(MonitoringProgramStatus status) =>
+        Error.Validation(
+            "QcMonitoringProgram.PauseRequiresActive",
+            $"Only an Active monitoring program can be paused. This program is {status}.");
+
+    public static Error ResumeRequiresPaused(MonitoringProgramStatus status) =>
+        Error.Validation(
+            "QcMonitoringProgram.ResumeRequiresPaused",
+            $"Only a Paused monitoring program can be resumed. This program is {status}.");
+
+    public static Error WaterQualityPeriodNotFound(Guid id) =>
+        Error.NotFound(
+            "QcWaterQualityPeriod.NotFound",
+            $"The water quality period with the Id: {id} was not found");
+
+    public static Error ActivateRequiresPendingActivation(WaterQualityPeriodStatus status) =>
+        Error.Validation(
+            "QcWaterQualityPeriod.ActivateRequiresPendingActivation",
+            "Only a PendingActivation water quality period can be activated. This period is "
+            + $"{status}.");
+
+    public static Error RetrospectiveReasonRequired =>
+        Error.Validation(
+            "QcWaterQualityPeriod.RetrospectiveReasonRequired",
+            "A retrospective reason is required. Activating a period tells production it may rely "
+            + "on this water for a window that has already elapsed, and the justification for that "
+            + "is part of the record.");
+
+    /// <summary>
+    /// The dynamic-ValidUntil rule taken at its word (lifecycle-and-governance.md, "Water
+    /// validity periods"): the window ends at the point's next scheduled test. With no schedule
+    /// there is no next test, so there is nothing honest to bound the window with — and an
+    /// unbounded window would cover production indefinitely, which is the exact failure the
+    /// dynamic rule exists to prevent.
+    /// </summary>
+    public static Error NoMonitoringProgramForValidUntil(string samplingPointCode) =>
+        Error.Validation(
+            "QcWaterQualityPeriod.NoMonitoringProgramForValidUntil",
+            $"Sampling point '{samplingPointCode}' has no active monitoring program, so there is "
+            + "no next scheduled test to bound this period's validity against. Configure a "
+            + "monitoring program for the point first.");
+
+    public static Error HoldRequiresActive(WaterQualityPeriodStatus status) =>
+        Error.Validation(
+            "QcWaterQualityPeriod.HoldRequiresActive",
+            $"Only an Active water quality period can be held. This period is {status}.");
+
+    public static Error HoldReasonRequired =>
+        Error.Validation(
+            "QcWaterQualityPeriod.HoldReasonRequired",
+            "A hold reason is required. Withdrawing a period flags every water use underneath it "
+            + "for Quality Impact Assessment, and the cause is part of that flag.");
+
+    public static Error WaterUseRequiresActivePeriod(WaterQualityPeriodStatus status) =>
+        Error.Validation(
+            "QcWaterUseRecord.RequiresActivePeriod",
+            $"Water use can only be recorded against an Active period. This period is {status}. "
+            + "Recording use against a period that covers nothing would assert coverage that was "
+            + "never granted.");
 }

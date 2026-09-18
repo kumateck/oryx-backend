@@ -95,9 +95,18 @@ public class TestRequestSubjectConfiguration : IEntityTypeConfiguration<TestRequ
             .HasForeignKey(item => item.BatchManufacturingRecordId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // SamplingPointId is intentionally left as a bare column with no relationship: the
-        // SamplingPoint entity arrives in Milestone 6, which adds the constraint then.
+        // Milestone 6's retroactive addition: the column was declared here in Milestone 3 and
+        // left unconstrained because QcSamplingPoints did not exist yet. It does now, so the
+        // relationship is real — Restrict, because a point under test must not be deletable out
+        // from under the round that tested it, and because a water quality period resolves its
+        // point through this Subject.
         builder.HasIndex(item => item.SamplingPointId);
+
+        builder
+            .HasOne(item => item.SamplingPoint)
+            .WithMany()
+            .HasForeignKey(item => item.SamplingPointId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasMany(item => item.WorksheetInstances)

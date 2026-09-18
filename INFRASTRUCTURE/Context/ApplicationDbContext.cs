@@ -890,6 +890,32 @@ public class ApplicationDbContext(
 
     public DbSet<DOMAIN.Entities.QcWorksheets.CoaRow> CoaRows { get; set; }
 
+    /// <summary>
+    /// Milestone 6 — scheduled routine testing. <c>QcSamplingPoints</c> turns what the old system
+    /// only ever held as a loose string into master data, and <c>QcMonitoringPrograms</c> is the
+    /// per-point schedule the daily due-date scan reads.
+    /// <para>
+    /// Entirely additive. Nothing here reads or writes <c>RoutineDefinitions</c>,
+    /// <c>RoutineExecutions</c>, <c>RoutineSamples</c> or <c>RoutineTracks</c> — the shelved
+    /// routine implementation's tables stay untouched, exactly like every other do-not-touch
+    /// boundary in this module.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPoint> QcSamplingPoints { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.MonitoringProgram> QcMonitoringPrograms { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — water validity windows and the uses booked against them.
+    /// <para>
+    /// New tables, and deliberately not a reuse of any existing water-adjacent table: nothing here
+    /// touches the live water stock path this module coexists with.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterQualityPeriod> QcWaterQualityPeriods { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterUseRecord> QcWaterUseRecords { get; set; }
+
     #endregion
 
     // #region TenantFilter

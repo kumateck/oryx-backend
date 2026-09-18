@@ -148,12 +148,40 @@ public class CreateTestRequestRequest
 
 public class CreateTestRequestSubjectRequest
 {
-    [Required, StringLength(200)] public string SubjectRef { get; set; }
+    /// <summary>
+    /// The batch number, or the sampling point code.
+    /// <para>
+    /// No longer <c>[Required]</c> at the model-binding layer since Milestone 6: a routine Subject
+    /// that names a <see cref="SamplingPointId"/> has its code filled from the point's own record,
+    /// and demanding the caller type it as well is what the picker exists to stop. It is still
+    /// mandatory in every other case — <c>TestRequestRepository</c> rejects a Subject that ends up
+    /// with neither, which it did already.
+    /// </para>
+    /// </summary>
+    [StringLength(200)] public string SubjectRef { get; set; }
+
     [StringLength(500)] public string SubjectLabel { get; set; }
     [StringLength(100)] public string ArNumber { get; set; }
 
     /// <summary>Water/EM only; an id from the SamplingPointGroup table, never free text.</summary>
     public Guid? SamplingPointGroupId { get; set; }
+
+    /// <summary>
+    /// Water/EM only; an id from the SamplingPoint master table, never free text — the picker
+    /// Milestone 6 introduced so a routine Subject names a real point instead of a typed code.
+    /// <para>
+    /// Optional, deliberately. Unscheduled routine testing can legitimately name a point that has
+    /// no monitoring program, or no master-data row, configured for it yet — in which case
+    /// <see cref="SubjectRef"/> alone carries the code exactly as it did before.
+    /// </para>
+    /// <para>
+    /// When it <i>is</i> supplied it wins: <see cref="SubjectRef"/> and
+    /// <see cref="SubjectLabel"/> are filled from the point's own Code and Name, and
+    /// <see cref="SamplingPointGroupId"/> is taken from the point's group rather than from the
+    /// request — so a picked point cannot be paired with someone else's Alert/Action tier.
+    /// </para>
+    /// </summary>
+    public Guid? SamplingPointId { get; set; }
 
     /// <summary>RawMaterial/PackagingMaterial only.</summary>
     public Guid? MaterialBatchId { get; set; }

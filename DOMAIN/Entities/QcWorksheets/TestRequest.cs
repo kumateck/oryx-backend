@@ -198,14 +198,25 @@ public class TestRequestSubject : BaseEntity
     public SamplingPointGroup SamplingPointGroup { get; set; }
 
     /// <summary>
-    /// Water/EM only, and deliberately without a navigation property or foreign key yet: the
-    /// <c>SamplingPoint</c> table it will reference does not exist until Milestone 6
-    /// (build-briefs/06-monitoring-programs-and-water-quality.md), which introduces the entity
-    /// and adds the constraint. The column exists now because the brief lists it on this
-    /// entity, and it is auto-populated only by a MonitoringProgram; no endpoint in this
-    /// milestone accepts it, so it cannot be set to an unresolvable value in the meantime.
+    /// Water/EM only. A real link to the <see cref="SamplingPoint"/> master table, which
+    /// Milestone 6 introduced — the column was declared in Milestone 3 and left deliberately
+    /// unconstrained until the table it names existed.
+    /// <para>
+    /// Auto-populated from the <see cref="MonitoringProgram"/> when the round is system-generated
+    /// by the daily due-date scan, and selectable from the picker when a Subject is added
+    /// manually. It stays optional because unscheduled routine testing can legitimately name a
+    /// point that has no monitoring program — or no master-data row — configured for it yet.
+    /// </para>
+    /// <para>
+    /// <see cref="SubjectRef"/> remains the display string and mirrors
+    /// <see cref="SamplingPoint.Code"/> whenever this is set. The two are not merged because
+    /// <see cref="TestRequestSubject"/> also serves Material/Product Subjects, which have no
+    /// sampling point concept at all.
+    /// </para>
     /// </summary>
     public Guid? SamplingPointId { get; set; }
+
+    public SamplingPoint SamplingPoint { get; set; }
 
     /// <summary>
     /// RawMaterial/PackagingMaterial only. Milestone 4's OOS quarantine needs a real batch to

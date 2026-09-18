@@ -40,7 +40,8 @@ public class CoaRepository(
     IMapper mapper,
     IQcSignatureService signatureService,
     IQcReauthContext reauthContext,
-    IQcCoaGenerationService generationService) : ICoaRepository
+    IQcCoaGenerationService generationService,
+    IQcWaterQualityPeriodService waterQualityPeriodService) : ICoaRepository
 {
     private const string ModelType = QcWorksheetModelTypes.Coa;
 
@@ -156,6 +157,12 @@ public class CoaRepository(
 
         await LockCertifiedWorksheets(coa.TestRequestId, userId);
         await ReleaseRound(coa.TestRequestId, userId);
+
+        // Milestone 6. A Water certificate scaffolds a validity window per Subject, at
+        // PendingActivation — it covers nothing until somebody activates it with a stated reason.
+        // A no-op for every other round type, which is why it is called unconditionally rather
+        // than behind a type check duplicated here.
+        await waterQualityPeriodService.ScaffoldForIssuedCoaAsync(coa.TestRequestId, userId);
 
         return await GetCoa(id);
     }

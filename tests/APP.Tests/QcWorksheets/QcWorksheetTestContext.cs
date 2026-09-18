@@ -80,6 +80,13 @@ internal sealed class QcWorksheetTestContext : IDisposable
     internal QcCoaGenerationService CoaGeneration { get; }
     internal CoaRepository Coas { get; }
 
+    // Milestone 6 — scheduled routine testing and water validity windows.
+    internal SamplingPointRepository SamplingPoints { get; }
+    internal MonitoringProgramRepository MonitoringPrograms { get; }
+    internal QcMonitoringScanService MonitoringScan { get; }
+    internal QcWaterQualityPeriodService WaterQualityPeriods { get; }
+    internal WaterQualityRepository WaterQuality { get; }
+
     internal User Approver { get; private set; }
     internal Role ApproverRole { get; private set; }
 
@@ -134,9 +141,23 @@ internal sealed class QcWorksheetTestContext : IDisposable
         OosCases = new OosCaseRepository(
             Db, Mapper, SignatureService, ApprovalRepository, CoaGeneration);
 
+        // Milestone 6. The real scan and the real water-period scaffolding, wired into the real
+        // certificate issuance path below — so the water tests exercise the same automatic
+        // trigger production takes rather than creating periods by hand.
+        SamplingPoints = new SamplingPointRepository(Db, Mapper);
+        MonitoringPrograms = new MonitoringProgramRepository(Db, Mapper);
+
+        MonitoringScan = new QcMonitoringScanService(
+            Db, NullLogger<QcMonitoringScanService>.Instance);
+
+        WaterQualityPeriods = new QcWaterQualityPeriodService(
+            Db, NullLogger<QcWaterQualityPeriodService>.Instance);
+
+        WaterQuality = new WaterQualityRepository(Db, Mapper);
+
         // The real signature service and the real re-auth context, so a revision's signature is
         // verified against genuine password hashing rather than a stub that always says yes.
-        Coas = new CoaRepository(Db, Mapper, SignatureService, Reauth, CoaGeneration);
+        Coas = new CoaRepository(Db, Mapper, SignatureService, Reauth, CoaGeneration, WaterQualityPeriods);
 
         Approvals = new QcApprovalRepository(Db, Mapper);
     }
@@ -341,6 +362,64 @@ internal sealed class QcWorksheetTestContext : IDisposable
         Db.BatchManufacturingRecords.Add(record);
         await Db.SaveChangesAsync();
         return record;
+    }
+
+    /// <summary>
+    /// A row in the Milestone 6 sampling point master table — the real table, since the whole
+    /// point of the milestone is that a routine subject names one of these rather than a string.
+    /// </summary>
+    internal async Task<SamplingPoint> SeedSamplingPoint(
+        string code,
+        SamplingPointType type = SamplingPointType.Water,
+        Guid? samplingPointGroupId = null,
+        string area = null)
+    {
+        var point = new SamplingPoint
+        {
+            Id = Guid.NewGuid(),
+            Code = code,
+            Name = $"{code} point",
+            Area = area,
+            Type = type,
+            SamplingPointGroupId = samplingPointGroupId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.QcSamplingPoints.Add(point);
+        await Db.SaveChangesAsync();
+        return point;
+    }
+
+    /// <summary>
+    /// An Active monitoring program, pinned to the given specification row's own version — the
+    /// same pin the create endpoint writes.
+    /// </summary>
+    internal async Task<MonitoringProgram> SeedMonitoringProgram(
+        SamplingPoint point,
+        Specification specification,
+        DateTime nextDueDate,
+        MonitoringFrequency frequency = MonitoringFrequency.Weekly,
+        int leadTimeDays = 0,
+        int? customIntervalDays = null,
+        MonitoringProgramStatus status = MonitoringProgramStatus.Active)
+    {
+        var program = new MonitoringProgram
+        {
+            Id = Guid.NewGuid(),
+            SamplingPointId = point.Id,
+            SpecificationId = specification.Id,
+            SpecificationVersion = specification.Version,
+            Frequency = frequency,
+            CustomIntervalDays = customIntervalDays,
+            LeadTimeDays = leadTimeDays,
+            NextDueDate = nextDueDate,
+            Status = status,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.QcMonitoringPrograms.Add(program);
+        await Db.SaveChangesAsync();
+        return program;
     }
 
     internal async Task<SamplingPointGroup> SeedSamplingPointGroup(string name)

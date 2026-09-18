@@ -189,6 +189,18 @@ public static class DependencyInjection
         // OOS case closing), while the repository serves only the two user actions.
         services.AddScoped<IQcCoaGenerationService, QcCoaGenerationService>();
         services.AddScoped<ICoaRepository, CoaRepository>();
+
+        // Milestone 6 — scheduled routine testing and water validity windows. The due-date scan
+        // and the water-period scaffolding are services rather than repository methods for the
+        // same reason certificate generation is: both are system triggers hanging off something
+        // other than a user action (a nightly clock, a certificate issuance), and both have to be
+        // testable without that trigger.
+        services.AddScoped<ISamplingPointRepository, SamplingPointRepository>();
+        services.AddScoped<IMonitoringProgramRepository, MonitoringProgramRepository>();
+        services.AddScoped<IQcMonitoringScanService, QcMonitoringScanService>();
+        services.AddScoped<IQcWaterQualityPeriodService, QcWaterQualityPeriodService>();
+        services.AddScoped<IWaterQualityRepository, WaterQualityRepository>();
+
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
         services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();
@@ -228,6 +240,11 @@ public static class DependencyInjection
         services.AddHostedService<MaterialBatchExpiryService>();
         services.AddHostedService<EmployeeSuspensionService>();
         services.AddHostedService<WaterStockMaintenanceService>();
+
+        // Milestone 6 — the daily QC monitoring due-date scan. A plain BackgroundService on a
+        // 24-hour delay, matching every other scheduled job above; no scheduler package is
+        // introduced for one sweep.
+        services.AddHostedService<QcMonitoringScanBackgroundService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)

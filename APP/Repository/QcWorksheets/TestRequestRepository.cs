@@ -157,6 +157,8 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
                 return Result.Failure<TestRequestDetailDto>(validation.Error);
         }
 
+        var points = await LoadSamplingPoints(subjects);
+
         var testRequest = new TestRequest
         {
             Id = Guid.NewGuid(),
@@ -178,7 +180,7 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
         };
 
         foreach (var subjectRequest in subjects)
-            testRequest.Subjects.Add(BuildSubject(subjectRequest, specification, userId));
+            testRequest.Subjects.Add(BuildSubject(subjectRequest, specification, userId, points));
 
         context.QcTestRequests.Add(testRequest);
 
@@ -218,9 +220,11 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
                 return Result.Failure<TestRequestDetailDto>(validation.Error);
         }
 
+        var points = await LoadSamplingPoints(subjects);
+
         foreach (var subjectRequest in subjects)
         {
-            var subject = BuildSubject(subjectRequest, specification, userId);
+            var subject = BuildSubject(subjectRequest, specification, userId, points);
             subject.TestRequestId = testRequest.Id;
             context.QcTestRequestSubjects.Add(subject);
         }
@@ -318,10 +322,30 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
 
     private async Task<Result> ValidateSubject(CreateTestRequestSubjectRequest subject, TestRequestType type)
     {
-        if (string.IsNullOrWhiteSpace(subject.SubjectRef))
+        // Milestone 6: a picked sampling point supplies the code, so a Subject naming one does not
+        // also have to type it. Everything else still must carry a reference of its own.
+        if (string.IsNullOrWhiteSpace(subject.SubjectRef) && !subject.SamplingPointId.HasValue)
             return Error.Validation(
                 "QcTestRequest.SubjectRefRequired",
                 "Every subject must carry a batch number or sampling point code.");
+
+        // Milestone 6's dropdown-only rule, enforced server-side rather than left to the picker:
+        // the point must exist, and its discipline must match the round it is being tested in.
+        if (subject.SamplingPointId.HasValue)
+        {
+            if (!QcTestRequestTypes.IsRoutine(type))
+                return QcWorksheetErrors.SamplingPointIsRoutineOnly(type);
+
+            var point = await context.QcSamplingPoints
+                .AsNoTracking()
+                .SingleOrDefaultAsync(item => item.Id == subject.SamplingPointId.Value);
+
+            if (point is null)
+                return QcWorksheetErrors.SamplingPointNotFound(subject.SamplingPointId.Value);
+
+            if (QcSamplingPointTypes.ToTestRequestType(point.Type) != type)
+                return QcWorksheetErrors.SamplingPointTypeMismatch(type, point.Type);
+        }
 
         // Each optional link belongs to exactly one category of round. Setting one on the wrong
         // category would be meaningless data that a later COA or OOS case could read.
@@ -369,17 +393,29 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
     /// is what "RequiredWorksheets" means — resolved once, here, and never stored as a list.
     /// </summary>
     private static TestRequestSubject BuildSubject(
-        CreateTestRequestSubjectRequest request, Specification specification, Guid userId)
+        CreateTestRequestSubjectRequest request,
+        Specification specification,
+        Guid userId,
+        IReadOnlyDictionary<Guid, SamplingPoint> points)
     {
         var subjectId = Guid.NewGuid();
+
+        // Milestone 6: a picked point is the authority on its own code, name and Alert/Action
+        // tier. Letting a caller's free text override any of the three would reintroduce exactly
+        // the drift the master table was created to end.
+        var point = request.SamplingPointId.HasValue
+                    && points.TryGetValue(request.SamplingPointId.Value, out var resolved)
+            ? resolved
+            : null;
 
         return new TestRequestSubject
         {
             Id = subjectId,
-            SubjectRef = request.SubjectRef?.Trim(),
-            SubjectLabel = request.SubjectLabel?.Trim(),
+            SubjectRef = point?.Code ?? request.SubjectRef?.Trim(),
+            SubjectLabel = point?.Name ?? request.SubjectLabel?.Trim(),
             ArNumber = request.ArNumber?.Trim(),
-            SamplingPointGroupId = request.SamplingPointGroupId,
+            SamplingPointId = request.SamplingPointId,
+            SamplingPointGroupId = point?.SamplingPointGroupId ?? request.SamplingPointGroupId,
             MaterialBatchId = request.MaterialBatchId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             CollectedAt = request.CollectedAt,
@@ -414,6 +450,27 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Every sampling point named across a batch of Subject requests, in one query rather than
+    /// one per Subject — a routine round routinely carries 60–90 of them.
+    /// </summary>
+    private async Task<Dictionary<Guid, SamplingPoint>> LoadSamplingPoints(
+        List<CreateTestRequestSubjectRequest> subjects)
+    {
+        var ids = subjects
+            .Where(subject => subject.SamplingPointId.HasValue)
+            .Select(subject => subject.SamplingPointId.Value)
+            .Distinct()
+            .ToList();
+
+        if (ids.Count == 0) return [];
+
+        return await context.QcSamplingPoints
+            .AsNoTracking()
+            .Where(item => ids.Contains(item.Id))
+            .ToDictionaryAsync(item => item.Id);
+    }
 
     private async Task<Specification> LoadSpecificationGraph(Guid specificationId) =>
         await context.QcSpecifications

@@ -137,6 +137,34 @@ public static class QcWorksheetPermissionKeys
     public const string CanViewQcCertificate = "CanViewQcCertificate";
     public const string CanIssueQcCertificate = "CanIssueQcCertificate";
     public const string CanReviseQcCertificate = "CanReviseQcCertificate";
+
+    // Monitoring programs — the scheduling configuration behind routine Water/Environmental
+    // testing. Four keys, exactly as named by docs/qc-rebuild/permissions.md; a monitoring
+    // program has no approval lifecycle, being operational configuration rather than a
+    // controlled document, so there is nothing further to gate.
+    //
+    // SamplingPoint master data sits behind these same four keys rather than a fifth of its own:
+    // the brief for this milestone states its key list is already defined and adds none, and a
+    // point exists only to be scheduled by a program. Creating a point and creating the program
+    // that schedules it are the same act of configuration by the same person.
+    public const string CanViewMonitoringPrograms = "CanViewMonitoringPrograms";
+    public const string CanCreateMonitoringProgram = "CanCreateMonitoringProgram";
+    public const string CanEditMonitoringProgram = "CanEditMonitoringProgram";
+
+    /// <summary>
+    /// Covers Resume as well as Pause. The two are one authority over whether a schedule runs,
+    /// not two — and unlike every other paired transition in this module, neither direction
+    /// writes a result, a signature or a batch status.
+    /// </summary>
+    public const string CanPauseMonitoringProgram = "CanPauseMonitoringProgram";
+
+    // Water quality. Viewing a validity window, telling production it may rely on one, and
+    // withdrawing one are three genuinely different authorities, so they are three keys —
+    // and recording a use is a fourth, held by production-facing staff who activate nothing.
+    public const string CanViewQcWaterQualityPeriods = "CanViewQcWaterQualityPeriods";
+    public const string CanActivateQcWaterQualityPeriod = "CanActivateQcWaterQualityPeriod";
+    public const string CanHoldQcWaterQualityPeriod = "CanHoldQcWaterQualityPeriod";
+    public const string CanRecordQcWaterUse = "CanRecordQcWaterUse";
 }
 
 /// <summary>
@@ -154,6 +182,8 @@ public static class QcWorksheetPermissionCatalog
     public const string TestRoom = "QC Test Room";
     public const string OosCases = "QC OOS Cases";
     public const string Certificates = "QC Certificates";
+    public const string MonitoringPrograms = "QC Monitoring Programs";
+    public const string WaterQuality = "QC Water Quality";
 
     private static readonly HashSet<string> StpKeys =
     [
@@ -219,6 +249,22 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanReviseQcCertificate
     ];
 
+    private static readonly HashSet<string> MonitoringProgramKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewMonitoringPrograms,
+        QcWorksheetPermissionKeys.CanCreateMonitoringProgram,
+        QcWorksheetPermissionKeys.CanEditMonitoringProgram,
+        QcWorksheetPermissionKeys.CanPauseMonitoringProgram
+    ];
+
+    private static readonly HashSet<string> WaterQualityKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewQcWaterQualityPeriods,
+        QcWorksheetPermissionKeys.CanActivateQcWaterQualityPeriod,
+        QcWorksheetPermissionKeys.CanHoldQcWaterQualityPeriod,
+        QcWorksheetPermissionKeys.CanRecordQcWaterUse
+    ];
+
     public static IReadOnlyList<PermissionDto> Generate()
     {
         return typeof(QcWorksheetPermissionKeys)
@@ -236,6 +282,8 @@ public static class QcWorksheetPermissionCatalog
         if (TestRoomKeys.Contains(key)) return TestRoom;
         if (OosCaseKeys.Contains(key)) return OosCases;
         if (CertificateKeys.Contains(key)) return Certificates;
+        if (MonitoringProgramKeys.Contains(key)) return MonitoringPrograms;
+        if (WaterQualityKeys.Contains(key)) return WaterQuality;
         if (SamplingPointGroupKeys.Contains(key)) return SamplingPointGroups;
         return WorksheetTemplates;
     }

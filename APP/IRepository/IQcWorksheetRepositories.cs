@@ -286,3 +286,96 @@ public interface ICoaRepository
     /// </summary>
     Task<Result<CoaDetailDto>> Revise(Guid id, ReviseCoaRequest request, Guid userId);
 }
+
+/// <summary>
+/// Sampling point master data (Milestone 6) — what the old system held only as a typed string.
+/// Plain CRUD: no lifecycle, no versioning, no approval, exactly like
+/// <see cref="ISamplingPointGroupRepository"/>.
+/// </summary>
+public interface ISamplingPointRepository
+{
+    Task<Result<List<SamplingPointDto>>> GetSamplingPoints(string searchQuery, SamplingPointType? type);
+
+    Task<Result<SamplingPointDto>> GetSamplingPoint(Guid id);
+
+    Task<Result<SamplingPointDto>> CreateSamplingPoint(CreateSamplingPointRequest request, Guid userId);
+
+    Task<Result<SamplingPointDto>> UpdateSamplingPoint(
+        Guid id, UpdateSamplingPointRequest request, Guid userId);
+
+    Task<Result> DeleteSamplingPoint(Guid id, Guid userId);
+}
+
+/// <summary>
+/// The per-point testing schedule (Milestone 6).
+/// <para>
+/// There is deliberately no approval lifecycle here: a monitoring program is operational
+/// configuration, not a controlled document. Pause and Resume are its only state transitions.
+/// </para>
+/// </summary>
+public interface IMonitoringProgramRepository
+{
+    /// <summary>
+    /// Unpaginated and ordered by due date — this feeds the calendar view, whose Overdue and
+    /// Due Today groupings are the whole reason it exists.
+    /// </summary>
+    Task<Result<List<MonitoringProgramDto>>> GetMonitoringPrograms(
+        string searchQuery,
+        MonitoringProgramStatus? status,
+        SamplingPointType? samplingPointType,
+        Guid? samplingPointId);
+
+    Task<Result<MonitoringProgramDto>> GetMonitoringProgram(Guid id);
+
+    Task<Result<MonitoringProgramDto>> CreateMonitoringProgram(
+        CreateMonitoringProgramRequest request, Guid userId);
+
+    /// <summary>
+    /// Ordinary edit, including repointing the program at a newer Specification version — the
+    /// deliberate human act hard version pinning requires when the document is revised.
+    /// </summary>
+    Task<Result<MonitoringProgramDto>> UpdateMonitoringProgram(
+        Guid id, UpdateMonitoringProgramRequest request, Guid userId);
+
+    Task<Result<MonitoringProgramDto>> Pause(Guid id, Guid userId);
+
+    /// <summary>
+    /// Resumes without rolling NextDueDate forward — a program paused past its due date comes
+    /// back overdue, which is the truth.
+    /// </summary>
+    Task<Result<MonitoringProgramDto>> Resume(Guid id, Guid userId);
+}
+
+/// <summary>
+/// Water validity windows and the uses booked against them (Milestone 6).
+/// <para>
+/// There is deliberately no create method. A window is scaffolded by
+/// <c>IQcWaterQualityPeriodService</c> when a Water certificate is issued, and the only things a
+/// person does to one afterwards are activate it, hold it, and record uses against it.
+/// </para>
+/// </summary>
+public interface IWaterQualityRepository
+{
+    Task<Result<List<WaterQualityPeriodSummaryDto>>> GetPeriods(
+        WaterQualityPeriodStatus? status, Guid? samplingPointId);
+
+    /// <summary>The window with its use log, Held records included and distinguishable.</summary>
+    Task<Result<WaterQualityPeriodDetailDto>> GetPeriod(Guid id);
+
+    /// <summary>
+    /// PendingActivation to Active. Requires a retrospective reason and resolves ValidUntil from
+    /// the point's next scheduled test at that moment — never a fixed offset from ValidFrom.
+    /// </summary>
+    Task<Result<WaterQualityPeriodDetailDto>> Activate(
+        Guid id, ActivateWaterQualityPeriodRequest request, Guid userId);
+
+    /// <summary>
+    /// Active to Held, flagging every Recorded use underneath for Quality Impact Assessment in
+    /// the same transaction.
+    /// </summary>
+    Task<Result<WaterQualityPeriodDetailDto>> Hold(
+        Guid id, HoldWaterQualityPeriodRequest request, Guid userId);
+
+    /// <summary>Manual entry, and refused unless the window is Active.</summary>
+    Task<Result<WaterUseRecordDto>> RecordUse(RecordWaterUseRequest request, Guid userId);
+}
