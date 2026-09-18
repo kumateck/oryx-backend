@@ -291,12 +291,13 @@ public class OosCaseAcceptanceTests
     }
 
     /// <summary>
-    /// The Product path. BatchManufacturingStatus has no Quarantine value, so the quarantine
-    /// maps onto Testing — the closest "held with QC, not releasable" state. Documented in
-    /// <c>QcOosBatchDisposition</c> and flagged for governance.
+    /// The Product path, the direct mirror of the material one: a real
+    /// <see cref="BatchManufacturingStatus.Quarantine"/>, not an approximation. Production and
+    /// Warehouse read this field to decide whether a batch may be used, so it has to say
+    /// "quarantined" outright rather than something that merely implies it.
     /// </summary>
     [Fact]
-    public async Task A_product_record_is_held_on_investigation_start()
+    public async Task A_product_record_is_quarantined_on_investigation_start()
     {
         using var harness = new QcWorksheetTestContext();
         await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
@@ -318,10 +319,82 @@ public class OosCaseAcceptanceTests
         await harness.OosCases.StartInvestigation(oosCase.Id, harness.Approver.Id);
 
         var held = await harness.Db.BatchManufacturingRecords.SingleAsync(item => item.Id == record.Id);
-        Assert.Equal(BatchManufacturingStatus.Testing, held.Status);
+        Assert.Equal(BatchManufacturingStatus.Quarantine, held.Status);
 
         var withAudit = await harness.Db.QcOosCases.SingleAsync();
         Assert.Equal(BatchManufacturingStatus.New, withAudit.QuarantinedFromBatchManufacturingStatus);
+    }
+
+    /// <summary>
+    /// The Product disposition, both directions. A favourable close releases to
+    /// <see cref="BatchManufacturingStatus.Available"/> — deliberately distinct from
+    /// <see cref="BatchManufacturingStatus.Approved"/>, which is the normal QA release path, so
+    /// the provenance of the release survives.
+    /// </summary>
+    [Theory]
+    [InlineData(OosDispositionOutcome.Invalidated, BatchManufacturingStatus.Available)]
+    [InlineData(OosDispositionOutcome.ConfirmedOOS, BatchManufacturingStatus.Rejected)]
+    public async Task A_product_disposition_writes_the_real_batch_status(
+        OosDispositionOutcome outcome, BatchManufacturingStatus expected)
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.OosCase);
+
+        var record = await harness.SeedBatchManufacturingRecord("BMR-002", BatchManufacturingStatus.New);
+
+        var scenario = await Arrange(
+            harness,
+            actionLimit: "NMT 100 CFU/4Hrs",
+            batchManufacturingRecordId: record.Id,
+            type: TestRequestType.Product);
+
+        await SubmitWith(scenario, "250");
+        await ReviewAsSomeoneElse(harness, scenario.InstanceId);
+
+        var oosCase = await harness.Db.QcOosCases.SingleAsync();
+        await harness.OosCases.StartInvestigation(oosCase.Id, harness.Approver.Id);
+        await harness.OosCases.Escalate(
+            oosCase.Id, new EscalateOosCaseRequest { Reason = "No lab error." }, harness.Approver.Id);
+
+        var disposed = await harness.OosCases.RecordDisposition(
+            oosCase.Id,
+            new OosDispositionRequest
+            {
+                Outcome = outcome,
+                Password = QcWorksheetTestContext.CorrectPassword,
+                DispositionComments = $"{outcome}."
+            },
+            harness.Approver.Id,
+            [harness.ApproverRole.Id]);
+
+        Assert.True(disposed.IsSuccess, disposed.Error?.Description);
+
+        var after = await harness.Db.BatchManufacturingRecords.SingleAsync(item => item.Id == record.Id);
+        Assert.Equal(expected, after.Status);
+
+        var closed = await harness.Db.QcOosCases.SingleAsync();
+        Assert.Equal(OosCaseStatus.Closed, closed.Status);
+        Assert.Null(closed.QuarantinedBatchManufacturingRecordId);
+    }
+
+    /// <summary>
+    /// The two appended enum values must not shift any already-persisted numeric value —
+    /// anything storing the number rather than the name would silently change meaning.
+    /// </summary>
+    [Fact]
+    public void Existing_batch_manufacturing_status_values_are_not_renumbered()
+    {
+        Assert.Equal(0, (int)BatchManufacturingStatus.New);
+        Assert.Equal(1, (int)BatchManufacturingStatus.Testing);
+        Assert.Equal(2, (int)BatchManufacturingStatus.Approved);
+        Assert.Equal(3, (int)BatchManufacturingStatus.Rejected);
+        Assert.Equal(4, (int)BatchManufacturingStatus.TestTaken);
+        Assert.Equal(5, (int)BatchManufacturingStatus.Checked);
+
+        // Appended, so they occupy previously unused numbers.
+        Assert.Equal(6, (int)BatchManufacturingStatus.Quarantine);
+        Assert.Equal(7, (int)BatchManufacturingStatus.Available);
     }
 
     // =======================================================================

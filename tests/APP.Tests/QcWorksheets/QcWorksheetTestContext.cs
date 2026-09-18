@@ -309,7 +309,10 @@ internal sealed class QcWorksheetTestContext : IDisposable
         return batch;
     }
 
-    /// <summary>The Product counterpart. Note BatchManufacturingStatus has no Quarantine or Available value.</summary>
+    /// <summary>
+    /// The Product counterpart — the live batch manufacturing record the OOS disposition
+    /// quarantines and releases, using the real Quarantine/Available statuses.
+    /// </summary>
     internal async Task<BatchManufacturingRecord> SeedBatchManufacturingRecord(
         string batchNumber, BatchManufacturingStatus status = BatchManufacturingStatus.Testing)
     {

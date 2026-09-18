@@ -26,29 +26,18 @@ namespace APP.Services.QcWorksheets;
 /// carries Quarantine, Available and Rejected, and the live <c>OosInvestigation</c> already
 /// writes all three for exactly these transitions.</para>
 ///
-/// <para><b>Product — no 1:1 mapping exists, and the live system offers no precedent.</b>
-/// <see cref="BatchManufacturingStatus"/> is a different enum with a different shape:
-/// <c>New | Testing | Approved | Rejected | TestTaken | Checked</c>. It has <b>no Quarantine
-/// value and no Available value</b>, and the live <c>OosInvestigation</c> never writes it at
-/// all — that entity carries only a <c>MaterialBatchId</c>, so its quarantine/release
-/// behaviour has only ever applied to material batches. The two Product mappings below are
-/// therefore genuine design decisions rather than mirrors of existing behaviour, and are
-/// flagged as such for governance:
-/// <list type="bullet">
-///   <item><description><b>Quarantine =&gt; <see cref="BatchManufacturingStatus.Testing"/></b>.
-///   The closest available "held with QC, not releasable" state, and the value
-///   <c>ProductAnalyticalRawDataRepository</c> already sets when a record goes out for QC
-///   testing. It is lossy: it does not say "quarantined", and a record already in Testing shows
-///   no visible change. A dedicated Quarantine enum value would express this properly, but
-///   adding one is a schema change to a live table and is out of this milestone's scope.</description></item>
-///   <item><description><b>Release =&gt; <see cref="BatchManufacturingStatus.Approved"/></b>.
-///   The Available-equivalent, matching the brief's "Invalidated/RetestAccepted =&gt; Available"
-///   rule. Note this means closing an OOS case favourably marks a product batch Approved, which
-///   is the same terminal state the normal QA release path (<c>ResponseFinalApproval</c>) writes
-///   — flagged because an OOS closure is arguably not the same authority as a batch
-///   release.</description></item>
-/// </list>
-/// </para>
+/// <para><b>Product — a real mapping, after a governance ruling.</b>
+/// <see cref="BatchManufacturingStatus"/> originally carried no Quarantine and no Available
+/// value, and the live <c>OosInvestigation</c> never wrote this field at all — that entity has
+/// only a <c>MaterialBatchId</c>, so its quarantine/release behaviour had only ever applied to
+/// material batches. An earlier draft of this file approximated the two states with
+/// <c>Testing</c> and <c>Approved</c>. That was rejected, correctly: an approximated quarantine
+/// is close to no quarantine at all, because Warehouse and Production read this field to decide
+/// whether a batch may be used and <c>Testing</c> does not tell them a batch is locked out.
+/// <see cref="BatchManufacturingStatus.Quarantine"/> and
+/// <see cref="BatchManufacturingStatus.Available"/> were therefore added to the live enum —
+/// appended, so no already-persisted numeric value shifts. The Product mapping is now the
+/// direct counterpart of the Material one rather than a stand-in.</para>
 ///
 /// <para><b>Release only what this case actually holds.</b> A favourable close moves the batch
 /// back only when it is still sitting in the state this case put it in. If something else has
@@ -69,8 +58,8 @@ internal static class QcOosBatchDisposition
     /// <summary>The material status a quarantine puts a batch into, and the only one a favourable close will move back out of.</summary>
     internal const BatchStatus MaterialQuarantine = BatchStatus.Quarantine;
 
-    /// <summary>See the Product note in the type remarks — this is a decision, not a mirror.</summary>
-    internal const BatchManufacturingStatus ProductQuarantine = BatchManufacturingStatus.Testing;
+    /// <summary>The Product counterpart, and the only status a favourable close will move back out of.</summary>
+    internal const BatchManufacturingStatus ProductQuarantine = BatchManufacturingStatus.Quarantine;
 
     /// <summary>
     /// Quarantines a material batch, returning the status it held beforehand so the case can
@@ -92,7 +81,7 @@ internal static class QcOosBatchDisposition
         return previous;
     }
 
-    /// <summary>The Product counterpart. See the type remarks for why <c>Testing</c> stands in for a quarantine.</summary>
+    /// <summary>The Product counterpart, holding the record in a real, system-wide quarantine.</summary>
     internal static BatchManufacturingStatus? Quarantine(BatchManufacturingRecord record)
     {
         if (record is null) return null;
@@ -134,7 +123,17 @@ internal static class QcOosBatchDisposition
         batch.UpdatedAt = DateTime.UtcNow;
     }
 
-    /// <summary>The Product counterpart. See the type remarks for why <c>Approved</c> stands in for Available.</summary>
+    /// <summary>
+    /// The Product counterpart, now the direct mirror of the material path.
+    /// <para>
+    /// Release goes to <see cref="BatchManufacturingStatus.Available"/> rather than
+    /// <see cref="BatchManufacturingStatus.Approved"/>: both mean the batch is usable, but
+    /// keeping them apart preserves <i>why</i> it is usable — a normal QA release
+    /// (<c>ResponseFinalApproval</c>) and a favourable OOS closure are different provenance,
+    /// and an OOS audit asks exactly that question. Reports meaning "released, not rejected"
+    /// must count both; <c>ReportRepository.GetBmrReleaseRate</c> does.
+    /// </para>
+    /// </summary>
     internal static void Dispose(BatchManufacturingRecord record, OosDispositionOutcome outcome)
     {
         if (record is null) return;
@@ -148,7 +147,7 @@ internal static class QcOosBatchDisposition
 
         if (record.Status != ProductQuarantine) return;
 
-        record.Status = BatchManufacturingStatus.Approved;
+        record.Status = BatchManufacturingStatus.Available;
         record.UpdatedAt = DateTime.UtcNow;
     }
 }
