@@ -377,6 +377,31 @@ public static class QcWorksheetErrors
                 : $"Referenced result '{fieldKey}' has not resolved: no matching reviewed "
                   + $"qualification was found for '{resolutionValue}'.");
 
+    /// <summary>
+    /// A Calculated field that cannot be evaluated blocks submission outright.
+    /// <para>
+    /// The alternative — skipping the field, or storing a blank — would let a worksheet be
+    /// submitted as complete while the number a COA later has to cite does not exist. An
+    /// unevaluatable formula means the worksheet is not actually finished, so it fails here for
+    /// the same reason a missing entry does, naming the field and the arithmetic reason.
+    /// </para>
+    /// </summary>
+    public static Error CalculatedFieldUnevaluatable(string fieldKey, string label, string reason) =>
+        Error.Validation(
+            "QcWorksheetInstance.CalculatedFieldUnevaluatable",
+            $"'{label}' ({fieldKey}) could not be calculated: {reason} A calculated field must "
+            + "produce a value before the worksheet can be submitted.");
+
+    /// <summary>
+    /// A Calculated field is system-computed at submission, so there is no analyst write path to
+    /// it — the same reasoning as <see cref="FieldIsNotEnterable"/> for a Constant field.
+    /// </summary>
+    public static Error CalculatedFieldIsNotEnterable(string fieldKey) =>
+        Error.Validation(
+            "QcWorksheetInstance.CalculatedFieldNotEnterable",
+            $"Field '{fieldKey}' is calculated. Its value is computed from the worksheet's own "
+            + "entries at submission and cannot be typed in.");
+
     // --- Hard instrument / reagent gates ----------------------------------
 
     public static Error InstrumentNotFound(string fieldKey, string value) =>

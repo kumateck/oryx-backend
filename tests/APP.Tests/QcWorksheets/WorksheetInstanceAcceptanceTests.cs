@@ -1086,4 +1086,200 @@ public class WorksheetInstanceAcceptanceTests
         Assert.Empty((await harness.WorksheetInstances.GetMyWork(analystA.Id, null)).Value.Items);
         Assert.Single((await harness.WorksheetInstances.GetMyWork(analystB.Id, null)).Value.Items);
     }
+
+    // -----------------------------------------------------------------------
+    // Calculated fields are evaluated and persisted at submission
+    // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// A worksheet carrying a realistic microbiological CFU calculation: three plate counts in a
+    /// table, averaged, then multiplied by the dilution factor.
+    /// <para>
+    /// The two Calculated fields are declared in the "wrong" order on purpose —
+    /// <c>cfu_per_g</c> (order 3) references <c>mean_count</c> (order 4) — so the test proves
+    /// evaluation resolves by dependency rather than by template order.
+    /// </para>
+    /// </summary>
+    private static async Task<WorksheetTemplate> CfuTemplate(QcWorksheetTestContext harness, string code) =>
+        await harness.SeedTemplateWithFields(
+            code,
+            WorksheetCategory.Microbial,
+            new WorksheetField
+            {
+                FieldKey = "plate_counts",
+                Label = "Plate counts",
+                Type = WorksheetFieldType.Table,
+                Mode = WorksheetFieldMode.Entry,
+                Order = 1,
+                ColumnDefinitions = """[{"label":"CFU","key":"cfu","type":"Number"}]"""
+            },
+            new WorksheetField
+            {
+                FieldKey = "dilution_factor",
+                Label = "Dilution factor",
+                Type = WorksheetFieldType.Dilution,
+                Mode = WorksheetFieldMode.Entry,
+                Order = 2
+            },
+            new WorksheetField
+            {
+                FieldKey = "cfu_per_g",
+                Label = "CFU per g",
+                Type = WorksheetFieldType.CfuCalculation,
+                Mode = WorksheetFieldMode.Calculated,
+                Order = 3,
+                FormulaExpression = "{mean_count} * {dilution_factor}"
+            },
+            new WorksheetField
+            {
+                FieldKey = "mean_count",
+                Label = "Mean plate count",
+                Type = WorksheetFieldType.CalculatedValue,
+                Mode = WorksheetFieldMode.Calculated,
+                Order = 4,
+                FormulaExpression = "AVG({plate_counts.cfu})"
+            });
+
+    private static SaveWorksheetValuesRequest PlateCounts(string dilutionFactor, params string[] counts) =>
+        new()
+        {
+            FieldValues =
+            [
+                .. counts.Select((count, index) => new WorksheetFieldValueEntry
+                {
+                    FieldKey = "plate_counts",
+                    RowIndex = index,
+                    ColumnKey = "cfu",
+                    Value = count
+                }),
+                new WorksheetFieldValueEntry { FieldKey = "dilution_factor", Value = dilutionFactor }
+            ]
+        };
+
+    /// <summary>
+    /// A submitted worksheet stores its calculated results as real
+    /// <see cref="WorksheetFieldValue"/> rows, matching manual evaluation.
+    /// <para>
+    /// Before this, a Calculated field was evaluated only at template-save time to prove the
+    /// formula parsed, and never against entered data — so the official record held the raw
+    /// inputs and no computed result. A COA citing a CFU/g figure needs the number itself to
+    /// exist, not merely to be rebuildable.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task Calculated_fields_are_evaluated_against_entered_data_and_persisted_at_submission()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await CfuTemplate(harness, "WS/EM/11");
+        var (instanceId, analyst) = await StartedWorksheet(harness, template);
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        // AVG(30, 42, 48) = 40; 40 * 100 = 4000.
+        await harness.WorksheetInstances.SaveValues(
+            instanceId, PlateCounts("100", "30", "42", "48"), analyst.Id);
+
+        // Nothing is computed before submission — the gap this closes.
+        Assert.Empty(await harness.Db.QcWorksheetFieldValues
+            .Where(value => value.WorksheetInstanceId == instanceId && value.FieldKey == "cfu_per_g")
+            .ToListAsync());
+
+        var result = await harness.WorksheetInstances.Submit(instanceId, analyst.Id);
+        Assert.True(result.IsSuccess);
+
+        var stored = await harness.Db.QcWorksheetFieldValues
+            .Where(value => value.WorksheetInstanceId == instanceId)
+            .ToListAsync();
+
+        var mean = Assert.Single(stored, value => value.FieldKey == "mean_count");
+        var cfu = Assert.Single(stored, value => value.FieldKey == "cfu_per_g");
+
+        Assert.Equal("40", mean.Value);
+        Assert.Equal("4000", cfu.Value);
+
+        // Stored as an ordinary value row: attributed, timestamped, and indistinguishable in
+        // shape from a typed one — system-computed rather than user-typed is the only difference.
+        Assert.Equal(analyst.Id, cfu.EnteredById);
+        Assert.NotEqual(default, cfu.EnteredAt);
+        Assert.Null(cfu.RowIndex);
+        Assert.Null(cfu.ColumnKey);
+
+        // And it reaches the read model the COA and the reviewer both use.
+        var detail = await harness.WorksheetInstances.GetWorksheetInstance(instanceId);
+        var field = detail.Value.Sections
+            .SelectMany(section => section.Fields)
+            .Single(item => item.FieldKey == "cfu_per_g");
+
+        Assert.Equal("4000", Assert.Single(field.Values).Value);
+    }
+
+    /// <summary>
+    /// A Calculated field whose inputs will not evaluate refuses the submission outright, naming
+    /// the field — and leaves nothing behind.
+    /// <para>
+    /// "TNTC" (too numerous to count) is a real entry on a real plate-count sheet: it satisfies
+    /// the required-value check, so it gets past everything except the arithmetic. Silently
+    /// skipping the field, or storing a blank result, would let the worksheet be submitted as
+    /// complete while the number it exists to produce does not.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task A_calculated_field_that_cannot_be_evaluated_refuses_submission_and_persists_nothing()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await CfuTemplate(harness, "WS/EM/12");
+        var (instanceId, analyst) = await StartedWorksheet(harness, template);
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        await harness.WorksheetInstances.SaveValues(
+            instanceId, PlateCounts("100", "30", "TNTC", "48"), analyst.Id);
+
+        var result = await harness.WorksheetInstances.Submit(instanceId, analyst.Id);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("QcWorksheetInstance.CalculatedFieldUnevaluatable", result.Error.Code);
+
+        // The message names the field the analyst has to act on, and why — the root cause
+        // (mean_count, which reads the poisoned column) rather than cfu_per_g downstream of it.
+        Assert.Contains("mean_count", result.Error.Description);
+        Assert.Contains("TNTC", result.Error.Description);
+
+        var stored = await harness.Db.QcWorksheetFieldValues
+            .Where(value => value.WorksheetInstanceId == instanceId)
+            .ToListAsync();
+
+        // Neither calculated field was written — not even the one that could have been computed
+        // on its own. A refused submit is all-or-nothing.
+        Assert.DoesNotContain(stored, value => value.FieldKey == "cfu_per_g");
+        Assert.DoesNotContain(stored, value => value.FieldKey == "mean_count");
+
+        var instance = await harness.Db.QcWorksheetInstances.SingleAsync(item => item.Id == instanceId);
+        Assert.Equal(WorksheetInstanceStatus.InProgress, instance.Status);
+        Assert.Null(instance.SubmittedAt);
+    }
+
+    /// <summary>
+    /// A Calculated field has no analyst write path, for the same reason a Constant one has
+    /// none: its value is derived at submission, so a typed value would only be overwritten.
+    /// </summary>
+    [Fact]
+    public async Task A_calculated_field_cannot_be_typed_into()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var template = await CfuTemplate(harness, "WS/EM/13");
+        var (instanceId, analyst) = await StartedWorksheet(harness, template);
+
+        var result = await harness.WorksheetInstances.SaveValues(
+            instanceId,
+            new SaveWorksheetValuesRequest
+            {
+                FieldValues = [new WorksheetFieldValueEntry { FieldKey = "cfu_per_g", Value = "999999" }]
+            },
+            analyst.Id);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("QcWorksheetInstance.CalculatedFieldNotEnterable", result.Error.Code);
+        Assert.Empty(await harness.Db.QcWorksheetFieldValues
+            .Where(value => value.WorksheetInstanceId == instanceId)
+            .ToListAsync());
+    }
 }

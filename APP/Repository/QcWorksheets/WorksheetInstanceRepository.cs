@@ -273,6 +273,13 @@ public class WorksheetInstanceRepository(
                 return Result.Failure<WorksheetInstanceDetailDto>(
                     QcWorksheetErrors.FieldIsNotEnterable(field.FieldKey, field.Mode));
 
+            // A Calculated field is derived from the worksheet's own entries at submission, so
+            // it has no analyst write path either. Accepting a typed value here would store a
+            // number that submission then silently overwrote.
+            if (field.Mode == WorksheetFieldMode.Calculated)
+                return Result.Failure<WorksheetInstanceDetailDto>(
+                    QcWorksheetErrors.CalculatedFieldIsNotEnterable(field.FieldKey));
+
             if (field.Type == WorksheetFieldType.ReferencedResult)
                 return Result.Failure<WorksheetInstanceDetailDto>(
                     QcWorksheetErrors.ReferencedResultIsNotEnterable(field.FieldKey));
@@ -353,8 +360,11 @@ public class WorksheetInstanceRepository(
                     QcWorksheetErrors.RequiredFieldMissing(entry.Field.FieldKey, entry.Field.Label));
         }
 
-        // Every ReferencedResult must have resolved, and the resolved value is written down
-        // now: the trace has to survive even if the source is superseded afterwards.
+        // Every ReferencedResult must have resolved. The resolutions are collected rather than
+        // written straight away, because the calculations below may still refuse the submission
+        // — and a refused submit must leave nothing behind.
+        var resolutions = new List<(FieldWithValues Entry, ReferencedResultDto Resolution)>();
+
         foreach (var entry in fields.Where(item => item.Field.Type == WorksheetFieldType.ReferencedResult))
         {
             var resolution = await ResolveReferencedResult(instance, entry.Field, fields);
@@ -364,7 +374,45 @@ public class WorksheetInstanceRepository(
                     QcWorksheetErrors.ReferencedResultUnresolved(
                         entry.Field.FieldKey, resolution.ResolutionValue));
 
-            PersistResolvedValue(entry, instance.Id, resolution, userId);
+            resolutions.Add((entry, resolution));
+        }
+
+        // Calculated fields are evaluated against the data actually entered, and the result is
+        // written down as a real WorksheetFieldValue. Recomputing for display alone would leave
+        // the official record without the number a COA has to cite, and without an audit trail
+        // for it. A ReferencedResult that has just resolved counts as an input, so the freshly
+        // resolved values go in alongside the entered ones.
+        var calculationInputs = fields.SelectMany(item => item.Values).ToList();
+
+        calculationInputs.AddRange(resolutions.Select(item => new WorksheetFieldValue
+        {
+            FieldKey = item.Entry.Field.FieldKey,
+            Value = item.Resolution.Value
+        }));
+
+        if (!QcWorksheetCalculator.TryEvaluateAll(
+                fields.Select(item => item.Field).ToList(),
+                calculationInputs,
+                out var calculated,
+                out var failedField,
+                out var calculationError))
+            return Result.Failure<WorksheetInstanceDetailDto>(
+                QcWorksheetErrors.CalculatedFieldUnevaluatable(
+                    failedField.FieldKey, failedField.Label, calculationError));
+
+        // Past every gate, so the system-computed values are written down now. The resolved
+        // reference trace has to survive even if its source is superseded afterwards, and the
+        // calculated result has to survive independently of the inputs it came from.
+        foreach (var (entry, resolution) in resolutions)
+            PersistSystemValue(
+                entry, instance.Id, resolution.Value, resolution.ResolvedFromInstanceId, userId);
+
+        foreach (var item in calculated)
+        {
+            var entry = fields.First(field =>
+                string.Equals(field.Field.FieldKey, item.Field.FieldKey, StringComparison.OrdinalIgnoreCase));
+
+            PersistSystemValue(entry, instance.Id, item.Value, resolvedFromInstanceId: null, userId);
         }
 
         instance.Status = WorksheetInstanceStatus.Submitted;
@@ -793,13 +841,25 @@ public class WorksheetInstanceRepository(
     }
 
     /// <summary>
-    /// Writes the resolved value down at submission, with the source instance recorded on it,
-    /// so the ARD reconstructs without re-running the lookup.
+    /// Writes a system-computed scalar down at submission — a resolved ReferencedResult (with
+    /// the source instance recorded on it, so the ARD reconstructs without re-running the
+    /// lookup) or an evaluated Calculated field.
+    /// <para>
+    /// Both are stored as ordinary <see cref="WorksheetFieldValue"/> rows rather than in a
+    /// parallel shape: the official record should not distinguish between a number a person
+    /// typed and one the system derived, beyond the attribution already carried on every row.
+    /// Re-submitting after a correction overwrites in place, so the stored result always matches
+    /// the inputs standing at the last submission.
+    /// </para>
     /// </summary>
-    private void PersistResolvedValue(
-        FieldWithValues entry, Guid instanceId, ReferencedResultDto resolution, Guid userId)
+    private void PersistSystemValue(
+        FieldWithValues entry,
+        Guid instanceId,
+        string value,
+        Guid? resolvedFromInstanceId,
+        Guid userId)
     {
-        var existing = entry.Values.FirstOrDefault(value => value.ColumnKey is null && value.RowIndex is null);
+        var existing = entry.Values.FirstOrDefault(item => item.ColumnKey is null && item.RowIndex is null);
 
         if (existing is null)
         {
@@ -808,10 +868,10 @@ public class WorksheetInstanceRepository(
                 Id = Guid.NewGuid(),
                 WorksheetInstanceId = instanceId,
                 FieldKey = entry.Field.FieldKey,
-                Value = resolution.Value,
+                Value = value,
                 EnteredById = userId,
                 EnteredAt = DateTime.UtcNow,
-                ResolvedFromInstanceId = resolution.ResolvedFromInstanceId,
+                ResolvedFromInstanceId = resolvedFromInstanceId,
                 CreatedAt = DateTime.UtcNow,
                 CreatedById = userId
             });
@@ -821,8 +881,8 @@ public class WorksheetInstanceRepository(
 
         // Already tracked — LoadFieldsWithValues reads these for update, not no-tracking — so
         // mutating is enough and the save that follows picks it up.
-        existing.Value = resolution.Value;
-        existing.ResolvedFromInstanceId = resolution.ResolvedFromInstanceId;
+        existing.Value = value;
+        existing.ResolvedFromInstanceId = resolvedFromInstanceId;
         existing.EnteredById = userId;
         existing.EnteredAt = DateTime.UtcNow;
         existing.UpdatedAt = DateTime.UtcNow;
