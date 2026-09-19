@@ -232,6 +232,22 @@ public class WorksheetInstanceDetailDto : WorksheetInstanceSummaryDto
     /// recent one.
     /// </summary>
     public List<WorksheetInstanceCorrectionReturnDto> CorrectionReturns { get; set; } = [];
+
+    /// <summary>
+    /// Every OOS case opened against this worksheet, oldest first. An empty list is the real
+    /// answer to "is this result out of specification", not merely the absence of one.
+    /// <para>
+    /// Granularity is per-FieldKey, so a worksheet covering nine Characteristics can hold
+    /// several cases at once and one failing test does not read as "this worksheet is OOS".
+    /// </para>
+    /// <para>
+    /// Carried here rather than fetched separately so a reviewer gets the backend's real,
+    /// tested OOS state in the same call that already loads the worksheet for review — without
+    /// needing the OOS investigation permission that
+    /// <c>GET /qc/worksheets/oos-cases</c> requires.
+    /// </para>
+    /// </summary>
+    public List<WorksheetInstanceOosCaseDto> OosCases { get; set; } = [];
 }
 
 public class WorksheetInstanceSectionDto

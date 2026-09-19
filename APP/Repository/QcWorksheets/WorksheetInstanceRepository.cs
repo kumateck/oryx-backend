@@ -1205,6 +1205,29 @@ public class WorksheetInstanceRepository(
             .OrderBy(item => item.ReturnedAt)
             .ToListAsync();
 
+        // The worksheet's own OOS state, straight off the OosCase rows — no joins, because
+        // everything projected here lives on the case itself. A reviewer needs the backend's
+        // real answer here rather than re-deriving one from acceptance-criteria text, which can
+        // disagree with the LimitEvaluator grammar that actually opened (or did not open) these
+        // cases.
+        dto.OosCases = await context.QcOosCases
+            .AsNoTracking()
+            .Where(item => item.WorksheetInstanceId == instance.Id)
+            .OrderBy(item => item.OpenedAt)
+            .Select(item => new WorksheetInstanceOosCaseDto
+            {
+                Id = item.Id,
+                FieldKey = item.FieldKey,
+                Status = item.Status,
+                OpenedAt = item.OpenedAt,
+                ObservedValue = item.ObservedValue,
+                BreachedLimit = item.BreachedLimit,
+                DispositionOutcome = item.DispositionOutcome,
+                BlocksRelease = item.Status != OosCaseStatus.Closed,
+                RetestWorksheetInstanceId = item.RetestWorksheetInstanceId
+            })
+            .ToListAsync();
+
         dto.Header = BuildHeader(instance, template, reassignments);
 
         dto.CorrectionReturns = correctionReturns

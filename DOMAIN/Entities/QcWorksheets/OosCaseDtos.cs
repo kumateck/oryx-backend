@@ -92,6 +92,50 @@ public class OosCaseDetailDto : OosCaseSummaryDto
     public bool BlocksRelease { get; set; }
 }
 
+/// <summary>
+/// An OOS case as seen from the worksheet it was opened against, carried on
+/// <see cref="WorksheetInstanceDetailDto"/>.
+/// <para>
+/// Deliberately narrower than <see cref="OosCaseSummaryDto"/>: every field here comes off the
+/// <see cref="OosCase"/> row itself, so attaching it costs one indexed read and no joins. The
+/// summary DTO's subject, round and template details would all be duplicates of what the
+/// worksheet's own header already carries.
+/// </para>
+/// <para>
+/// This exists so a reviewer can ask "is this worksheet under an OOS case, and what came of
+/// it" in the call that already loads the worksheet. The alternative — re-deriving the answer
+/// by parsing Specification acceptance-criteria text client-side — can disagree with the
+/// backend's tested <c>LimitEvaluator</c> grammar, and a reviewer disagreeing with the system
+/// of record about whether a result is out of specification is the failure worth designing
+/// out.
+/// </para>
+/// </summary>
+public class WorksheetInstanceOosCaseDto
+{
+    public Guid Id { get; set; }
+
+    /// <summary>Which Result field breached. One worksheet can hold several cases, one per field.</summary>
+    public string FieldKey { get; set; }
+
+    public OosCaseStatus Status { get; set; }
+
+    public DateTime OpenedAt { get; set; }
+
+    /// <summary>The value that breached and the limit it breached, as captured at detection.</summary>
+    public string ObservedValue { get; set; }
+
+    public string BreachedLimit { get; set; }
+
+    /// <summary>Null until QA has signed a disposition; set to the three-way outcome after.</summary>
+    public OosDispositionOutcome? DispositionOutcome { get; set; }
+
+    /// <summary>True while this case is unclosed, and therefore still holding its round.</summary>
+    public bool BlocksRelease { get; set; }
+
+    /// <summary>The linked retest worksheet, once one has been authorized.</summary>
+    public Guid? RetestWorksheetInstanceId { get; set; }
+}
+
 // ---------------------------------------------------------------------------
 // OosCase — writes
 // ---------------------------------------------------------------------------

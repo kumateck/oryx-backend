@@ -1021,6 +1021,140 @@ public class OosCaseAcceptanceTests
     /// Runs a case all the way to a signed disposition against a real material batch, and
     /// returns that batch as the database now holds it.
     /// </summary>
+    // =======================================================================
+    // Looking an OosCase up by the worksheet it was opened against
+    // =======================================================================
+
+    /// <summary>
+    /// The reviewer queue's question — "is this worksheet under an OOS case, and what came of
+    /// it" — answered by the call that already loads the worksheet for review.
+    /// <para>
+    /// Before this there was no way to ask it without already knowing the case's own id, which
+    /// pushed the frontend into re-deriving OOS status by parsing Specification
+    /// acceptance-criteria text client-side. That derivation can disagree with the
+    /// <c>LimitEvaluator</c> grammar that actually decides whether a case opens, and a reviewer
+    /// disagreeing with the system of record about whether a result is out of specification is
+    /// the failure this closes.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task A_worksheet_with_an_open_case_reports_it_on_its_own_detail()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        var scenario = await Arrange(harness, actionLimit: "NMT 100 CFU/4Hrs");
+        await SubmitWith(scenario, "250");
+
+        var detail = await harness.WorksheetInstances.GetWorksheetInstance(scenario.InstanceId);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        var reported = Assert.Single(detail.Value.OosCases);
+
+        // The same case the OOS module holds — not a second, re-derived opinion about it.
+        var stored = await harness.Db.QcOosCases
+            .SingleAsync(item => item.WorksheetInstanceId == scenario.InstanceId);
+
+        Assert.Equal(stored.Id, reported.Id);
+        Assert.Equal(FieldKey, reported.FieldKey);
+        Assert.Equal(OosCaseStatus.Open, reported.Status);
+        Assert.Equal("250", reported.ObservedValue);
+        Assert.Equal("NMT 100 CFU/4Hrs", reported.BreachedLimit);
+        Assert.NotEqual(default, reported.OpenedAt);
+
+        // Still open, so still holding its round — and no outcome yet.
+        Assert.True(reported.BlocksRelease);
+        Assert.Null(reported.DispositionOutcome);
+        Assert.Null(reported.RetestWorksheetInstanceId);
+    }
+
+    /// <summary>
+    /// A compliant result reports an empty list. That is the real answer to "is this out of
+    /// specification", not the absence of one — the reviewer queue can rely on it rather than
+    /// falling back to parsing criteria text.
+    /// </summary>
+    [Fact]
+    public async Task A_worksheet_with_no_case_reports_none()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        var scenario = await Arrange(harness, actionLimit: "NMT 100 CFU/4Hrs");
+        await SubmitWith(scenario, "40");
+
+        var detail = await harness.WorksheetInstances.GetWorksheetInstance(scenario.InstanceId);
+
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+        Assert.NotNull(detail.Value.OosCases);
+        Assert.Empty(detail.Value.OosCases);
+    }
+
+    /// <summary>
+    /// Once QA has signed a disposition, the outcome travels with the worksheet: a reviewer
+    /// opening a closed case's worksheet sees which of the three findings was reached, and that
+    /// the case is no longer holding the round.
+    /// </summary>
+    [Fact]
+    public async Task A_worksheet_with_a_disposed_case_reports_the_outcome()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await DisposeScenario(harness, OosDispositionOutcome.Invalidated);
+
+        var closed = await harness.Db.QcOosCases.SingleAsync();
+
+        var detail = await harness.WorksheetInstances.GetWorksheetInstance(closed.WorksheetInstanceId);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        var reported = Assert.Single(detail.Value.OosCases);
+
+        Assert.Equal(closed.Id, reported.Id);
+        Assert.Equal(OosCaseStatus.Closed, reported.Status);
+        Assert.Equal(OosDispositionOutcome.Invalidated, reported.DispositionOutcome);
+
+        // Closed, so it no longer blocks the round.
+        Assert.False(reported.BlocksRelease);
+    }
+
+    /// <summary>
+    /// Granularity is per-FieldKey, so one worksheet can be under several cases at once. The
+    /// list reports each, which is what lets a reviewer see <i>which</i> test failed rather than
+    /// just that something did.
+    /// </summary>
+    [Fact]
+    public async Task A_worksheet_reports_one_entry_per_failing_field()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        const string secondField = "bioburden";
+        var scenario = await Arrange(harness, actionLimit: "NMT 100 CFU/4Hrs", extraFieldKeys: secondField);
+
+        await harness.SeedCharacteristic(
+            scenario.Specification, scenario.Template, secondField, null, null, "NMT 10 CFU/g");
+
+        await harness.WorksheetInstances.SaveValues(
+            scenario.InstanceId,
+            new SaveWorksheetValuesRequest
+            {
+                FieldValues =
+                [
+                    new WorksheetFieldValueEntry { FieldKey = FieldKey, Value = "250" },
+                    new WorksheetFieldValueEntry { FieldKey = secondField, Value = "75" }
+                ]
+            },
+            scenario.Analyst.Id);
+
+        var submitted = await harness.WorksheetInstances.Submit(scenario.InstanceId, scenario.Analyst.Id);
+        Assert.True(submitted.IsSuccess, submitted.Error?.Description);
+
+        var detail = await harness.WorksheetInstances.GetWorksheetInstance(scenario.InstanceId);
+
+        Assert.Equal(2, detail.Value.OosCases.Count);
+        Assert.Contains(detail.Value.OosCases, item => item.FieldKey == FieldKey);
+        Assert.Contains(detail.Value.OosCases, item => item.FieldKey == secondField);
+        Assert.All(detail.Value.OosCases, item => Assert.True(item.BlocksRelease));
+    }
+
     private static async Task<MaterialBatch> DisposeScenario(
         QcWorksheetTestContext harness, OosDispositionOutcome outcome, bool withRetest = false)
     {
