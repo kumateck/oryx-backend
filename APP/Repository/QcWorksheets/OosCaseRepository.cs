@@ -510,15 +510,14 @@ public class OosCaseRepository(
         CreatedById = userId
     };
 
-    private async Task<int> CountOpenCases(Guid testRequestId) =>
-        await context.QcOosCases
-            .AsNoTracking()
-            .CountAsync(item => item.Status != OosCaseStatus.Closed
-                && context.QcWorksheetInstances.Any(instance =>
-                    instance.Id == item.WorksheetInstanceId
-                    && context.QcTestRequestSubjects.Any(subject =>
-                        subject.Id == instance.TestRequestSubjectId
-                        && subject.TestRequestId == testRequestId)));
+    /// <summary>
+    /// Delegates to <see cref="QcReleaseHold"/> rather than re-deriving the rule: the TestRequest
+    /// detail reports the same hold as <c>BlocksRelease</c>, and two implementations of "is this
+    /// round held" would be two chances for the screen and the gate to disagree about whether a
+    /// round is still under investigation.
+    /// </summary>
+    private Task<int> CountOpenCases(Guid testRequestId) =>
+        QcReleaseHold.CountOpenCasesAsync(context, testRequestId);
 
     private async Task<TestRequestSubject> LoadSubject(Guid worksheetInstanceId) =>
         await context.QcWorksheetInstances

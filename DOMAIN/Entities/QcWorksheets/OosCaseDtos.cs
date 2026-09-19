@@ -136,6 +136,47 @@ public class WorksheetInstanceOosCaseDto
     public Guid? RetestWorksheetInstanceId { get; set; }
 }
 
+/// <summary>
+/// An OOS case as seen from the round it is holding, carried on
+/// <see cref="TestRequestDetailDto"/>.
+/// <para>
+/// A sibling of <see cref="WorksheetInstanceOosCaseDto"/> rather than a reuse of it, for two
+/// reasons. It needs <see cref="WorksheetInstanceId"/>, which that DTO deliberately omits
+/// because its parent already is the worksheet — at round level the worksheet is exactly the
+/// thing the UI has to link back to. And it drops <c>BlocksRelease</c>, which would be
+/// uniformly true here: membership of this list <i>is</i> the blocking state, so carrying a
+/// per-row flag would invite a reader to filter on a column that is never false.
+/// </para>
+/// <para>
+/// Everything projected comes off the <see cref="OosCase"/> row itself, so attaching the list
+/// costs one indexed read and no joins.
+/// </para>
+/// </summary>
+public class TestRequestBlockingOosCaseDto
+{
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// The worksheet the case was opened against. The round detail already lists every
+    /// worksheet under every subject, so this is enough for the UI to locate the subject row
+    /// without a second lookup.
+    /// </summary>
+    public Guid WorksheetInstanceId { get; set; }
+
+    /// <summary>Which Result field breached. One worksheet can hold several cases, one per field.</summary>
+    public string FieldKey { get; set; }
+
+    /// <summary>
+    /// Never <see cref="OosCaseStatus.Closed"/> — a closed case does not block and is not
+    /// listed. Carried so the UI can say <i>why</i> the round is held: awaiting investigation
+    /// reads differently from awaiting a QA signature.
+    /// </summary>
+    public OosCaseStatus Status { get; set; }
+
+    /// <summary>Detection time. The list is ordered by this, oldest first.</summary>
+    public DateTime OpenedAt { get; set; }
+}
+
 // ---------------------------------------------------------------------------
 // OosCase — writes
 // ---------------------------------------------------------------------------

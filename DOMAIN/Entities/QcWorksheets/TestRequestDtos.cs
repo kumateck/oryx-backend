@@ -38,6 +38,33 @@ public class TestRequestSummaryDto : BaseDto
 public class TestRequestDetailDto : TestRequestSummaryDto
 {
     public List<TestRequestSubjectDto> Subjects { get; set; } = [];
+
+    /// <summary>
+    /// Whether an unclosed OOS case anywhere under this round is holding it back from release.
+    /// <para>
+    /// This is the backend's own answer, not an approximation: it comes from the same
+    /// <c>QcReleaseHold</c> definition that <c>IOosCaseRepository.IsReleaseBlocked</c> asks, so
+    /// the badge on this screen and the gate that actually withholds release cannot disagree.
+    /// </para>
+    /// <para>
+    /// True exactly when <see cref="BlockingOosCases"/> is non-empty — the flag is derived from
+    /// that list in the same read, rather than being a second query that could race it.
+    /// </para>
+    /// </summary>
+    public bool BlocksRelease { get; set; }
+
+    /// <summary>
+    /// The cases currently holding this round, oldest first. Only cases that actually block are
+    /// listed: a Closed case is dispositioned and releases its hold, so it never appears here.
+    /// <para>
+    /// Carried on the round detail rather than behind a new OOS endpoint because the readers of
+    /// this DTO hold <c>CanViewQcTestRequests</c>, not the OOS keys. Routing them through the
+    /// OOS queue to render a "blocked" badge would mean granting an unrelated permission for a
+    /// read the round detail can answer in a call it already makes — the same reasoning that
+    /// put <c>OosCases</c> on <see cref="WorksheetInstanceDetailDto"/>.
+    /// </para>
+    /// </summary>
+    public List<TestRequestBlockingOosCaseDto> BlockingOosCases { get; set; } = [];
 }
 
 public class TestRequestSubjectDto : BaseDto

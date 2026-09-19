@@ -65,9 +65,18 @@ public class QcWorksheetCoexistenceTests
         // rights over it, while Create/Edit/Delete stay fused under the single Manage key.
         // Milestone 3 adds five operations keys and eleven test room keys — the execution
         // transitions split Chemical from Microbial, since those analysts are staffed
-        // separately. Milestone 4 adds three OOS keys: investigating, authorizing a retest and
-        // signing the disposition are three different authorities, held by three different
-        // roles in a real lab.
+        // separately. Milestone 4 adds four OOS keys. Three are the acting authorities:
+        // investigating, authorizing a retest and signing the disposition are three different
+        // authorities, held by three different roles in a real lab.
+        //
+        // The fourth is CanViewQcOosCases, one key more than the brief's own list names, and
+        // deliberately so. Reading the queue and a single case was gated on
+        // CanInvestigateQcOosCase, which left the other two authorities unusable alone: a QA
+        // Manager holding only CanDispositionQcOosCase could not load the case they had to
+        // sign, and the QC Manager holding only CanAuthorizeQcOosRetest was shut out the same
+        // way. Splitting View off mirrors the SamplingPointGroup view/manage pair exactly —
+        // reading is a distinct concern from acting, and the alternative was granting a QA
+        // signer an investigation permission purely to see what they were signing.
         Assert.Equal(
         [
             "CanApproveQcSpecification",
@@ -102,6 +111,7 @@ public class QcWorksheetCoexistenceTests
             "CanSupersedeQcSpecification",
             "CanSupersedeQcStp",
             "CanSupersedeWorksheetTemplate",
+            "CanViewQcOosCases",
             "CanViewQcSpecifications",
             "CanViewQcStps",
             "CanViewQcTestRequests",

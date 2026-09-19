@@ -1155,6 +1155,153 @@ public class OosCaseAcceptanceTests
         Assert.All(detail.Value.OosCases, item => Assert.True(item.BlocksRelease));
     }
 
+    // =======================================================================
+    // Round-level release blocking, on the TestRequest detail
+    // =======================================================================
+
+    /// <summary>
+    /// The test-request screen's question — "is this round held by an OOS case, and which one" —
+    /// answered by the call that already loads the round.
+    /// <para>
+    /// The backend knew the answer (<c>IsReleaseBlocked</c>) but exposed it nowhere over HTTP,
+    /// so the frontend had to approximate it. An approximation that disagrees with the gate
+    /// actually withholding release is the failure this closes: both now read the same
+    /// <c>QcReleaseHold</c> predicate.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task A_round_with_an_open_case_reports_it_as_blocking_release()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        var scenario = await Arrange(harness, actionLimit: "NMT 100 CFU/4Hrs");
+        await SubmitWith(scenario, "250");
+
+        var detail = await harness.TestRequests.GetTestRequest(scenario.TestRequestId);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        Assert.True(detail.Value.BlocksRelease);
+
+        var reported = Assert.Single(detail.Value.BlockingOosCases);
+
+        // The same case the OOS module holds, and the same worksheet it was opened against —
+        // the id is what lets the screen link straight to it.
+        var stored = await harness.Db.QcOosCases
+            .SingleAsync(item => item.WorksheetInstanceId == scenario.InstanceId);
+
+        Assert.Equal(stored.Id, reported.Id);
+        Assert.Equal(scenario.InstanceId, reported.WorksheetInstanceId);
+        Assert.Equal(FieldKey, reported.FieldKey);
+        Assert.Equal(OosCaseStatus.Open, reported.Status);
+        Assert.NotEqual(default, reported.OpenedAt);
+
+        // The flag and the enforcing gate are the same answer, by construction.
+        var blocked = await harness.OosCases.IsReleaseBlocked(scenario.TestRequestId);
+        Assert.Equal(blocked.Value, detail.Value.BlocksRelease);
+    }
+
+    /// <summary>
+    /// A round with nothing open reports false and an empty list — the real answer, not merely
+    /// the absence of one.
+    /// </summary>
+    [Fact]
+    public async Task A_round_with_no_case_reports_no_block()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        var scenario = await Arrange(harness, actionLimit: "NMT 100 CFU/4Hrs");
+        await SubmitWith(scenario, "40");
+
+        var detail = await harness.TestRequests.GetTestRequest(scenario.TestRequestId);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        Assert.False(detail.Value.BlocksRelease);
+        Assert.NotNull(detail.Value.BlockingOosCases);
+        Assert.Empty(detail.Value.BlockingOosCases);
+
+        var blocked = await harness.OosCases.IsReleaseBlocked(scenario.TestRequestId);
+        Assert.Equal(blocked.Value, detail.Value.BlocksRelease);
+    }
+
+    /// <summary>
+    /// A signed disposition closes the case and releases the hold. The round stops reporting a
+    /// block, and the closed case drops out of the list entirely rather than lingering with a
+    /// false flag — membership of that list <i>is</i> the blocking state.
+    /// </summary>
+    [Fact]
+    public async Task A_round_whose_only_case_is_closed_reports_no_block()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await DisposeScenario(harness, OosDispositionOutcome.Invalidated);
+
+        var closed = await harness.Db.QcOosCases.SingleAsync();
+        Assert.Equal(OosCaseStatus.Closed, closed.Status);
+
+        var testRequestId = await harness.Db.QcWorksheetInstances
+            .Where(item => item.Id == closed.WorksheetInstanceId)
+            .Select(item => item.TestRequestSubject.TestRequestId)
+            .SingleAsync();
+
+        var detail = await harness.TestRequests.GetTestRequest(testRequestId);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        Assert.False(detail.Value.BlocksRelease);
+        Assert.Empty(detail.Value.BlockingOosCases);
+
+        var blocked = await harness.OosCases.IsReleaseBlocked(testRequestId);
+        Assert.Equal(blocked.Value, detail.Value.BlocksRelease);
+    }
+
+    /// <summary>
+    /// Several open cases on one round are all listed, oldest first, so the screen can link to
+    /// each rather than reporting an undifferentiated "blocked".
+    /// </summary>
+    [Fact]
+    public async Task A_round_lists_every_blocking_case_oldest_first()
+    {
+        using var harness = new QcWorksheetTestContext();
+        await harness.SeedApprovalChain(QcWorksheetModelTypes.WorksheetInstance);
+
+        const string secondField = "bioburden";
+        var scenario = await Arrange(harness, actionLimit: "NMT 100 CFU/4Hrs", extraFieldKeys: secondField);
+
+        await harness.SeedCharacteristic(
+            scenario.Specification, scenario.Template, secondField, null, null, "NMT 10 CFU/g");
+
+        await harness.WorksheetInstances.SaveValues(
+            scenario.InstanceId,
+            new SaveWorksheetValuesRequest
+            {
+                FieldValues =
+                [
+                    new WorksheetFieldValueEntry { FieldKey = FieldKey, Value = "250" },
+                    new WorksheetFieldValueEntry { FieldKey = secondField, Value = "75" }
+                ]
+            },
+            scenario.Analyst.Id);
+
+        var submitted = await harness.WorksheetInstances.Submit(scenario.InstanceId, scenario.Analyst.Id);
+        Assert.True(submitted.IsSuccess, submitted.Error?.Description);
+
+        var detail = await harness.TestRequests.GetTestRequest(scenario.TestRequestId);
+        Assert.True(detail.IsSuccess, detail.Error?.Description);
+
+        Assert.True(detail.Value.BlocksRelease);
+        Assert.Equal(2, detail.Value.BlockingOosCases.Count);
+        Assert.Contains(detail.Value.BlockingOosCases, item => item.FieldKey == FieldKey);
+        Assert.Contains(detail.Value.BlockingOosCases, item => item.FieldKey == secondField);
+
+        // Oldest first, and every entry genuinely blocks — a Closed case is never listed.
+        Assert.Equal(
+            detail.Value.BlockingOosCases.OrderBy(item => item.OpenedAt).Select(item => item.Id),
+            detail.Value.BlockingOosCases.Select(item => item.Id));
+        Assert.All(
+            detail.Value.BlockingOosCases,
+            item => Assert.NotEqual(OosCaseStatus.Closed, item.Status));
+    }
+
     private static async Task<MaterialBatch> DisposeScenario(
         QcWorksheetTestContext harness, OosDispositionOutcome outcome, bool withRetest = false)
     {

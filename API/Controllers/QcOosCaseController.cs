@@ -17,6 +17,14 @@ namespace API.Controllers;
 /// that every action gets its own.
 /// </para>
 /// <para>
+/// Reading is a fourth, <see cref="QcWorksheetPermissionKeys.CanViewQcOosCases"/>, and it has to
+/// be: all three authorities above act on a case, and two of them — the retest authorizer and
+/// the QA signer — held no key that let them load it. Gating the queue and the detail on
+/// <see cref="QcWorksheetPermissionKeys.CanInvestigateQcOosCase"/> meant a QA Manager could sign
+/// a disposition only by first being granted an investigation permission they have no business
+/// holding. Same split, and the same reasoning, as the SamplingPointGroup view/manage pair.
+/// </para>
+/// <para>
 /// This controller is entirely additive. The live <c>qa/oos-investigations</c> route and its
 /// controller are untouched and keep working unchanged alongside it.
 /// </para>
@@ -28,7 +36,7 @@ public class QcOosCaseController(IOosCaseRepository repository) : ControllerBase
 {
     /// <summary>The OOS queue, filterable by status.</summary>
     [HttpGet]
-    [Authorize(QcWorksheetPermissionKeys.CanInvestigateQcOosCase)]
+    [Authorize(QcWorksheetPermissionKeys.CanViewQcOosCases)]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<OosCaseSummaryDto>>))]
     public async Task<IResult> GetOosCases(
@@ -46,7 +54,7 @@ public class QcOosCaseController(IOosCaseRepository repository) : ControllerBase
     /// it, the investigation, and — once a retest exists — both worksheets side by side.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize(QcWorksheetPermissionKeys.CanInvestigateQcOosCase)]
+    [Authorize(QcWorksheetPermissionKeys.CanViewQcOosCases)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OosCaseDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetOosCase([FromRoute] Guid id)

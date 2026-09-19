@@ -105,6 +105,22 @@ public static class QcWorksheetPermissionKeys
     // lab-error check, deciding a retest is warranted, and signing the QA disposition that
     // rejects or releases a real batch. In a real lab these sit with a QC Officer, a QC
     // Manager and a QA Manager respectively, which is exactly why they are not one key.
+
+    /// <summary>
+    /// Read access to the OOS queue and to a single case, separate from
+    /// <see cref="CanInvestigateQcOosCase"/> for the same reason
+    /// <see cref="CanViewSamplingPointGroups"/> is separate from its Manage key: reading is a
+    /// different concern from acting.
+    /// <para>
+    /// The concrete failure this fixes is a QA Manager holding only
+    /// <see cref="CanDispositionQcOosCase"/> — the person who must sign the disposition —
+    /// being unable to load the case they are signing. The QC Manager holding only
+    /// <see cref="CanAuthorizeQcOosRetest"/> was locked out the same way. Both authorities act
+    /// on a case they could not read, which is not a workable split.
+    /// </para>
+    /// </summary>
+    public const string CanViewQcOosCases = "CanViewQcOosCases";
+
     public const string CanInvestigateQcOosCase = "CanInvestigateQcOosCase";
     public const string CanAuthorizeQcOosRetest = "CanAuthorizeQcOosRetest";
     public const string CanDispositionQcOosCase = "CanDispositionQcOosCase";
@@ -176,6 +192,7 @@ public static class QcWorksheetPermissionCatalog
 
     private static readonly HashSet<string> OosCaseKeys =
     [
+        QcWorksheetPermissionKeys.CanViewQcOosCases,
         QcWorksheetPermissionKeys.CanInvestigateQcOosCase,
         QcWorksheetPermissionKeys.CanAuthorizeQcOosRetest,
         QcWorksheetPermissionKeys.CanDispositionQcOosCase

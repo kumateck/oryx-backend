@@ -158,11 +158,26 @@ separate alter-table migration; check before choosing).
 
 ## Backend permission keys
 
-Already defined — no new keys:
+Three were already defined:
 
 ```
 CanInvestigateQcOosCase, CanAuthorizeQcOosRetest, CanDispositionQcOosCase
 ```
+
+Plus one this milestone adds, which the brief's own list did not name:
+
+```
+CanViewQcOosCases
+```
+
+Reading the queue and a single case was originally gated on
+`CanInvestigateQcOosCase`, which made both of the other two authorities unusable on
+their own: a QA Manager holding only `CanDispositionQcOosCase` — the person who must
+sign the disposition — could not load the case they were signing, and the QC Manager
+holding only `CanAuthorizeQcOosRetest` was shut out the same way. Granting either of
+them an investigation permission to work around that is exactly the shared-key shape
+this module's per-action rule exists to prevent. Same view/act split, same reasoning,
+as the `CanViewSamplingPointGroups` / `CanManageSamplingPointGroups` pair.
 
 ## Backend endpoints
 

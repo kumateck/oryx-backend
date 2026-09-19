@@ -1,4 +1,5 @@
 using APP.IRepository;
+using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.QcWorksheets;
@@ -82,9 +83,32 @@ public class TestRequestRepository(ApplicationDbContext context, IMapper mapper)
     public async Task<Result<TestRequestDetailDto>> GetTestRequest(Guid id)
     {
         var request = await LoadDetail(id);
-        return request is null
-            ? Result.Failure<TestRequestDetailDto>(QcWorksheetErrors.TestRequestNotFound(id))
-            : Result.Success(ToDetailDto(request));
+        if (request is null)
+            return Result.Failure<TestRequestDetailDto>(QcWorksheetErrors.TestRequestNotFound(id));
+
+        var dto = ToDetailDto(request);
+
+        // The round's release hold, straight off the OosCase rows: one indexed read, no joins,
+        // because everything projected lives on the case itself. QcReleaseHold owns the "still
+        // open" predicate, so what this reports and what IsReleaseBlocked enforces cannot drift
+        // apart — the frontend previously had to approximate this, and an approximation that
+        // disagrees with the real gate is the failure worth designing out.
+        dto.BlockingOosCases = await QcReleaseHold.OpenCasesFor(context, id)
+            .Select(item => new TestRequestBlockingOosCaseDto
+            {
+                Id = item.Id,
+                WorksheetInstanceId = item.WorksheetInstanceId,
+                FieldKey = item.FieldKey,
+                Status = item.Status,
+                OpenedAt = item.OpenedAt
+            })
+            .ToListAsync();
+
+        // Derived from the list just read, not counted in a second query: two reads could
+        // observe different instants and report a block with no cases to show for it.
+        dto.BlocksRelease = dto.BlockingOosCases.Count > 0;
+
+        return Result.Success(dto);
     }
 
     // -----------------------------------------------------------------------
