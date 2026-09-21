@@ -268,6 +268,7 @@ CanViewQcStps, CanCreateQcStp, CanEditQcStp, CanApproveQcStp, CanSupersedeQcStp,
 CanImportQcStp
 CanViewWorksheetTemplates, CanCreateWorksheetTemplate, CanEditWorksheetTemplate,
 CanApproveWorksheetTemplate, CanSupersedeWorksheetTemplate
+CanViewQcApprovalHistory
 ```
 
 Exact same string values as [permissions.md](../permissions.md)'s `CanXxx`
@@ -301,6 +302,12 @@ against the same shared `QcApproval` table, request/response DTOs carrying
 `Sections[] -> Fields[]` instead of `Steps[]`. No import endpoint — worksheet
 templates have no equivalent existing document library to migrate from.
 
+`QcWorksheetApprovalController` at `api/v{version}/qc/worksheets/approvals` keeps
+`GET /my-pending` authenticated but otherwise ungated because it is self-scoped to
+the caller's configured approvals. `GET /{entityType}/{entityId}`, which returns the
+full signature trail for an arbitrary QC entity, is separately gated by
+`CanViewQcApprovalHistory`.
+
 ## Frontend
 
 New file `src/lib/permission-keys/qc-worksheets.ts` (partial — this milestone's
@@ -310,6 +317,7 @@ slice only; later milestones add to it):
 export const qcWorksheetPermissions = {
   stps: { view, create, edit, approve, supersede, import: import_ },
   worksheetTemplates: { view, create, edit, approve, supersede },
+  approvalHistory: { view },
 } as const;
 ```
 

@@ -51,6 +51,10 @@ CERTIFICATES
   qc.coa.issue
   qc.coa.revise
   qc.coa.view
+
+APPROVAL AUDIT
+  qc.approvalHistory.view               (full signature trail for an arbitrary QC entity;
+                                         distinct from the self-scoped "my pending" queue)
 ```
 
 Split by `.chemical`/`.microbial` in Test Room follows directly from the
@@ -74,3 +78,10 @@ Phase 3 rollout without handing that same group ordinary STP-creation rights.
 See [roles-permission-matrix.md](./roles-permission-matrix.md) for which real job
 roles (QC Officer, QA Executive, QC Manager, QA Manager/Deputy, QA Head) get which of
 the keys above.
+
+The centralized `GET qc/worksheets/approvals/my-pending` queue is the one confirmed
+exception to the dedicated-view-key rule: it is inherently self-scoped and returns
+only rows for which the caller is already a configured approver. The separate
+`GET qc/worksheets/approvals/{entityType}/{entityId}` endpoint is not self-scoped —
+it accepts any QC entity address and returns its full signature trail — so it requires
+`qc.approvalHistory.view` (`CanViewQcApprovalHistory` in code).

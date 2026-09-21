@@ -36,9 +36,11 @@ public class QcWorksheetApprovalController(IQcApprovalRepository repository) : C
 
     /// <summary>
     /// The full signature trail for one QC document, including when each approver
-    /// re-authenticated.
+    /// re-authenticated. Unlike <see cref="GetMyPending"/>, this is not self-scoped:
+    /// callers can address any QC entity, so reading it requires the dedicated audit key.
     /// </summary>
     [HttpGet("{entityType}/{entityId:guid}")]
+    [Authorize(QcWorksheetPermissionKeys.CanViewQcApprovalHistory)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<QcApprovalDto>))]
     public async Task<IResult> GetForEntity(
         [FromRoute] string entityType, [FromRoute] Guid entityId)

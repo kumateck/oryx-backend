@@ -121,6 +121,17 @@ authority today.
 | `qc.coa.issue` | | | | ✓ | ✓ |
 | `qc.coa.revise` | | | | ✓ | ✓ |
 
+## Approval Audit
+
+| Key | QC Officer | QA Executive | QC Manager | QA Manager / Deputy | QA Head |
+|---|:-:|:-:|:-:|:-:|:-:|
+| `qc.approvalHistory.view` | | ✓ | ✓ | ✓ | ✓ |
+
+The key exposes the full signature trail for an explicitly addressed QC entity, so
+it is held by review, configuration, and approval roles rather than every analyst.
+It does not gate the self-scoped "my pending approvals" queue, which remains
+available to any authenticated user who is actually assigned a pending approval.
+
 ## Open question
 
 This matrix assumes QC Manager and QA Manager/Deputy/Head are distinct chains (QC
