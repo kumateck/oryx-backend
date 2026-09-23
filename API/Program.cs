@@ -41,6 +41,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.EnableAnnotations();
     options.DescribeAllParametersInCamelCase();
+    // QC and legacy OOS endpoints intentionally use similarly named request
+    // DTOs. Use fully-qualified names so Swagger can expose both contracts.
+    options.CustomSchemaIds(type => type.FullName);
 
     options.AddSecurityDefinition(
         "Bearer",

@@ -313,6 +313,11 @@ public class WorksheetInstanceRepository(
             if (field.Type == WorksheetFieldType.ReferencedResult)
                 return Result.Failure<WorksheetInstanceDetailDto>(
                     QcWorksheetErrors.ReferencedResultIsNotEnterable(field.FieldKey));
+
+            if (field.Type == WorksheetFieldType.Table
+                && WorksheetRowHeaders.IsHeaderColumn(field.ColumnDefinitions, entry.ColumnKey))
+                return Result.Failure<WorksheetInstanceDetailDto>(
+                    QcWorksheetErrors.RowHeaderIsNotEnterable(field.FieldKey, entry.ColumnKey));
         }
 
         var existing = await context.QcWorksheetFieldValues

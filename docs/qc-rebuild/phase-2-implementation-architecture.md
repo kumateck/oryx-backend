@@ -142,6 +142,8 @@ CanReturnWorksheetForCorrection
 CanInvestigateQcOosCase, CanAuthorizeQcOosRetest, CanDispositionQcOosCase
 
 CanIssueQcCertificate, CanReviseQcCertificate, CanViewQcCertificate
+
+CanViewQcApprovalHistory
 ```
 
 `QcSpecification`/`QcTestRequests`/`QcOosCase`/`QcCertificate` are prefixed `Qc`
@@ -150,6 +152,10 @@ throughout specifically to avoid any name collision with the existing
 in `quality-control.ts`/`quality-assurance.ts` — two keys with the same short name in
 different files would still be distinct strings, but the prefix makes the two
 systems visually unambiguous in code review and in the permissions admin UI.
+
+`CanViewQcApprovalHistory` gates the non-self-scoped signature-trail read at
+`GET qc/worksheets/approvals/{entityType}/{entityId}`. It deliberately does not gate
+the `my-pending` queue, which can only return approvals assigned to the caller.
 
 ## Backend controllers
 

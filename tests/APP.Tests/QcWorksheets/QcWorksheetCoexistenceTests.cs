@@ -95,6 +95,8 @@ public class QcWorksheetCoexistenceTests
         // SamplingPointGroup pair exactly: create/edit/delete stay fused under Manage, since
         // neither entity has a lifecycle whose transitions could be gated separately, while View
         // splits off because reading reference data is a different concern from administering it.
+        // CanViewQcApprovalHistory is likewise a distinct read boundary: the self-scoped pending
+        // queue needs no key, but the arbitrary-entity signature trail does.
         Assert.Equal(
         [
             "CanActivateQcWaterQualityPeriod",
@@ -139,6 +141,7 @@ public class QcWorksheetCoexistenceTests
             "CanSupersedeQcStp",
             "CanSupersedeWorksheetTemplate",
             "CanViewMonitoringPrograms",
+            "CanViewQcApprovalHistory",
             "CanViewQcCertificate",
             "CanViewQcOosCases",
             "CanViewQcSpecifications",
