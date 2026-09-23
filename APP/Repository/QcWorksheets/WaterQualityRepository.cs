@@ -30,7 +30,7 @@ namespace APP.Repository.QcWorksheets;
 /// </para>
 /// </summary>
 public class WaterQualityRepository(ApplicationDbContext context, IMapper mapper)
-    : IWaterQualityRepository
+    : IQcWaterQualityRepository
 {
     // -----------------------------------------------------------------------
     // Reads

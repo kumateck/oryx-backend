@@ -24,7 +24,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/qc/worksheets/water-quality")]
 [Authorize]
-public class QcWaterQualityController(IWaterQualityRepository repository) : ControllerBase
+public class QcWaterQualityController(IQcWaterQualityRepository repository) : ControllerBase
 {
     /// <summary>
     /// Lists water validity windows, filterable by status and sampling point. Unpaginated: the

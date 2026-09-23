@@ -199,7 +199,8 @@ public static class DependencyInjection
         services.AddScoped<IMonitoringProgramRepository, MonitoringProgramRepository>();
         services.AddScoped<IQcMonitoringScanService, QcMonitoringScanService>();
         services.AddScoped<IQcWaterQualityPeriodService, QcWaterQualityPeriodService>();
-        services.AddScoped<IWaterQualityRepository, WaterQualityRepository>();
+        services.AddScoped<IWaterQualityRepository, APP.Repository.WaterQualityRepository>();
+        services.AddScoped<IQcWaterQualityRepository, APP.Repository.QcWorksheets.WaterQualityRepository>();
 
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
