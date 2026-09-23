@@ -142,9 +142,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ChemicalArdId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -181,12 +178,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime>("ManufacturingDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("MicrobialArdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("MicrobialRequired")
-                        .HasColumnType("boolean");
 
                     b.Property<int>("NumberOfContainers")
                         .HasColumnType("integer");
@@ -2568,13 +2559,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("MaterialBatchId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialSamplingId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ProductionActivityStepId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RoutineTrackId")
                         .HasColumnType("uuid");
 
                     b.Property<int?>("Stage")
@@ -2597,11 +2582,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialBatchId");
 
-                    b.HasIndex("MaterialSamplingId");
-
                     b.HasIndex("ProductionActivityStepId");
-
-                    b.HasIndex("RoutineTrackId");
 
                     b.ToTable("FormAssignees");
                 });
@@ -2799,9 +2780,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int?>("AnalysisType")
-                        .HasColumnType("integer");
 
                     b.Property<bool>("Complies")
                         .HasColumnType("boolean");
@@ -3016,17 +2994,11 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("MaterialBatchId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("MaterialSamplingId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ProductionActivityStepId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("Rejected")
                         .HasColumnType("boolean");
-
-                    b.Property<Guid?>("RoutineTrackId")
-                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3049,12 +3021,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialBatchId");
 
-                    b.HasIndex("MaterialSamplingId");
-
                     b.HasIndex("ProductionActivityStepId");
-
-                    b.HasIndex("RoutineTrackId")
-                        .IsUnique();
 
                     b.HasIndex("BatchManufacturingRecordId", "ProductionActivityStepId")
                         .IsUnique()
@@ -4280,2499 +4247,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ResponseFormulaSubmissionSets", null, t =>
                         {
                             t.HasCheckConstraint("CK_ResponseFormulaSubmissionSet_Sequence", "\"Sequence\" > 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureApplicability", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("BatchType")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ProcedureRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SiteId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("SiteId");
-
-                    b.HasIndex("ProcedureRevisionId", "ProductId", "SiteId", "BatchType")
-                        .IsUnique();
-
-                    b.ToTable("ProcedureApplicabilities", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ProcedureApplicability_BatchType", "\"BatchType\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureDefinition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId", "SubjectTypeId");
-
-                    b.ToTable("ProcedureDefinitions", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureRevision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ApprovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<string>("ParameterSchemaJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("ProcedureDefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("RetiredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TemplateWorkflowContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("TemplateWorkflowId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("TemplateWorkflowName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<Guid>("TemplateWorkflowRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApprovedById");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ReviewedById");
-
-                    b.HasIndex("ProcedureDefinitionId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "TemplateWorkflowId");
-
-                    b.HasIndex(new[] { "ProcedureDefinitionId" }, "IX_ProcedureRevisions_OneApprovedRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2 AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex(new[] { "ProcedureDefinitionId" }, "IX_ProcedureRevisions_OneOpenRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("ProcedureRevisions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ProcedureRevision_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_ProcedureRevision_Sequence", "\"Sequence\" > 0");
-
-                            t.HasCheckConstraint("CK_ProcedureRevision_Status", "\"Status\" BETWEEN 0 AND 3");
-
-                            t.HasCheckConstraint("CK_ProcedureRevision_WorkflowHash", "\"TemplateWorkflowContentHash\" ~ '^[a-f0-9]{64}$'");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureRevisionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ProcedureRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("ProcedureRevisionId", "OccurredAt");
-
-                    b.ToTable("ProcedureRevisionAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ProcedureRevisionAudit_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_ProcedureRevisionAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureStageScope", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProcedureRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("RecordScope")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateWorkflowNodeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateWorkflowRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("WorkflowNodeKey")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("WorkflowNodeName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int>("WorkflowNodeOrder")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProcedureRevisionId", "TemplateWorkflowNodeId")
-                        .IsUnique();
-
-                    b.HasIndex("ProcedureRevisionId", "TemplateWorkflowRevisionId");
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "TemplateWorkflowNodeId");
-
-                    b.ToTable("ProcedureStageScopes", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ProcedureStageScope_RecordScope", "\"RecordScope\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId", "SubjectTypeId");
-
-                    b.ToTable("TemplateActivities", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityAction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ActionType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("RequiresApproval")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("RequiresIndependentChecker")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateActivityRevisionId", "Key")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateActivityRevisionId", "Order")
-                        .IsUnique();
-
-                    b.ToTable("TemplateActivityActions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityAction_Approval", "\"ActionType\" <> 2 OR \"RequiresApproval\"");
-
-                            t.HasCheckConstraint("CK_TemplateActivityAction_Order", "\"Order\" >= 0");
-
-                            t.HasCheckConstraint("CK_TemplateActivityAction_Type", "\"ActionType\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityActionRole", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("RoleKind")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateActivityActionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("TemplateActivityActionId", "RoleId", "RoleKind")
-                        .IsUnique();
-
-                    b.ToTable("TemplateActivityActionRoles", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityActionRole_Kind", "\"RoleKind\" BETWEEN 0 AND 2");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityCompletionRule", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("RuleType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TargetKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateActivityRevisionId", "Order")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateActivityRevisionId", "RuleType", "TargetKey")
-                        .IsUnique()
-                        .HasDatabaseName("IX_TemplateActivityCompletionRules_TemplateActivityRevisionId~1");
-
-                    b.ToTable("TemplateActivityCompletionRules", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityCompletionRule_Order", "\"Order\" >= 0");
-
-                            t.HasCheckConstraint("CK_TemplateActivityCompletionRule_Type", "\"RuleType\" BETWEEN 0 AND 4");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityDataBinding", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("DataType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Direction")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsRequired")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateActivityRevisionId", "Key")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateActivityRevisionId", "Order")
-                        .IsUnique();
-
-                    b.ToTable("TemplateActivityDataBindings", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityDataBinding_Direction", "\"Direction\" BETWEEN 0 AND 1");
-
-                            t.HasCheckConstraint("CK_TemplateActivityDataBinding_Order", "\"Order\" >= 0");
-
-                            t.HasCheckConstraint("CK_TemplateActivityDataBinding_Type", "\"DataType\" BETWEEN 0 AND 6");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityFormBinding", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsRequired")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateFormId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateFormRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Usage")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateActivityRevisionId", "Key")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateActivityRevisionId", "Order")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateActivityRevisionId", "TemplateFormId")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateFormRevisionId", "TemplateFormId");
-
-                    b.ToTable("TemplateActivityFormBindings", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityFormBinding_Order", "\"Order\" >= 0");
-
-                            t.HasCheckConstraint("CK_TemplateActivityFormBinding_Usage", "\"Usage\" BETWEEN 0 AND 2");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityResourceRequirement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CapabilityId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<bool>("IsRequired")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateActivityRevisionId", "CapabilityId")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateActivityRevisionId", "Order")
-                        .IsUnique();
-
-                    b.ToTable("TemplateActivityResources", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityResource_Order", "\"Order\" >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Instructions")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("PublishedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("RetiredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateActivityId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PublishedById");
-
-                    b.HasIndex("ReviewedById");
-
-                    b.HasIndex("TemplateActivityId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "TemplateActivityId" }, "IX_TemplateActivityRevisions_OneOpenRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex(new[] { "TemplateActivityId" }, "IX_TemplateActivityRevisions_OnePublishedRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2 AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("TemplateActivityRevisions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityRevision_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateActivityRevision_Sequence", "\"Sequence\" > 0");
-
-                            t.HasCheckConstraint("CK_TemplateActivityRevision_Status", "\"Status\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityRevisionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("TemplateActivityRevisionId", "OccurredAt");
-
-                    b.ToTable("TemplateActivityRevisionAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateActivityRevisionAudit_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateActivityRevisionAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAdoption", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("AdoptedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("AdoptedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DependencyMappingsJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("GrantVersion")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("RoleMappingsJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("SnapshotHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("SourceContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("SourceDefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SourceRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TargetAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("TargetContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("TargetDefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TargetRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("TemplateKind")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateSharingGrantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdoptedById");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateSharingGrantId")
-                        .IsUnique();
-
-                    b.HasIndex("TargetAreaId", "TemplateKind", "AdoptedAt");
-
-                    b.ToTable("TemplateAdoptions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateAdoption_GrantVersion", "\"GrantVersion\" > 0");
-
-                            t.HasCheckConstraint("CK_TemplateAdoption_Kind", "\"TemplateKind\" BETWEEN 0 AND 4");
-
-                            t.HasCheckConstraint("CK_TemplateAdoption_SnapshotHash", "\"SnapshotHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateAdoption_SourceHash", "\"SourceContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateAdoption_TargetHash", "\"TargetContentHash\" ~ '^[a-f0-9]{64}$'");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateArea", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("NormalizedName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("OwnerRoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ReviewPolicyId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasFilter("\"DeletedAt\" IS NULL");
-
-                    b.HasIndex("OwnerRoleId");
-
-                    b.ToTable("TemplateAreas", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateArea_Name", "btrim(\"Name\") <> ''");
-
-                            t.HasCheckConstraint("CK_TemplateArea_Version", "\"Version\" > 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("SnapshotHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("TemplateAreaId", "Version")
-                        .IsUnique();
-
-                    b.ToTable("TemplateAreaAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateAreaAudit_SnapshotHash", "\"SnapshotHash\" ~ '^[a-f0-9]{64}$'");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaCapability", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CapabilityId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateAreaId", "CapabilityId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateAreaCapabilities", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaPurpose", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateAreaPurposes", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaRoleGrant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AccessLevel")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("TemplateAreaId", "RoleId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateAreaRoleGrants", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateAreaRoleGrant_AccessLevel", "\"AccessLevel\" BETWEEN 0 AND 4");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaSubjectType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateAreaId", "SubjectTypeId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateAreaSubjectTypes", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateForm", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId", "SubjectTypeId");
-
-                    b.ToTable("TemplateForms", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormConditionalRule", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ComparisonValue")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("Operator")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("SourceFormSectionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SourceQuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SourceQuestionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TargetFormSectionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateFormRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SourceQuestionRevisionId", "SourceQuestionId");
-
-                    b.HasIndex("TemplateFormRevisionId", "SourceFormSectionId");
-
-                    b.HasIndex("TemplateFormRevisionId", "TargetFormSectionId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateFormConditionalRules", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateFormConditionalRule_Operator", "\"Operator\" BETWEEN 0 AND 2");
-
-                            t.HasCheckConstraint("CK_TemplateFormConditionalRule_Value", "(\"Operator\" = 2 AND \"ComparisonValue\" IS NULL) OR (\"Operator\" IN (0, 1) AND length(trim(\"ComparisonValue\")) > 0)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormRevision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("PublishedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("RequiresEvidence")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("RequiresSignature")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("RetiredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateFormId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PublishedById");
-
-                    b.HasIndex("ReviewedById");
-
-                    b.HasIndex("TemplateFormId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "TemplateFormId" }, "IX_TemplateFormRevisions_OneOpenRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex(new[] { "TemplateFormId" }, "IX_TemplateFormRevisions_OnePublishedRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2 AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("TemplateFormRevisions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateFormRevision_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateFormRevision_Sequence", "\"Sequence\" > 0");
-
-                            t.HasCheckConstraint("CK_TemplateFormRevision_Status", "\"Status\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormRevisionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateFormRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("TemplateFormRevisionId", "OccurredAt");
-
-                    b.ToTable("TemplateFormRevisionAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateFormRevisionAudit_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateFormRevisionAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormSection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsRequired")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateFormRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateSectionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateSectionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateSectionId");
-
-                    b.HasIndex("TemplateFormRevisionId", "Order")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateFormRevisionId", "TemplateSectionId")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateSectionRevisionId", "TemplateSectionId");
-
-                    b.ToTable("TemplateFormSections", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateFormSection_Order", "\"Order\" >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId", "SubjectTypeId");
-
-                    b.ToTable("TemplateQuestions", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionCalculationReference", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ReferencedQuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ReferencedQuestionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateQuestionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReferencedQuestionId");
-
-                    b.HasIndex("ReferencedQuestionRevisionId");
-
-                    b.HasIndex("ReferencedQuestionRevisionId", "ReferencedQuestionId")
-                        .HasDatabaseName("IX_TemplateQuestionCalculationReferences_ReferencedQuestionRe~1");
-
-                    b.HasIndex("TemplateQuestionRevisionId", "ReferencedQuestionId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateQuestionCalculationReferences", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionOption", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("Rank")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateQuestionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateQuestionRevisionId", "Rank")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateQuestionRevisionId", "Value")
-                        .IsUnique();
-
-                    b.ToTable("TemplateQuestionOptions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateQuestionOption_Rank", "\"Rank\" >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AnswerType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ContentHash")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("HelpText")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("InputType")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("Maximum")
-                        .HasPrecision(28, 10)
-                        .HasColumnType("numeric(28,10)");
-
-                    b.Property<decimal?>("Minimum")
-                        .HasPrecision(28, 10)
-                        .HasColumnType("numeric(28,10)");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("PublishedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("RetiredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Sensitivity")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateQuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("UnitOfMeasureId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Wording")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PublishedById");
-
-                    b.HasIndex("ReviewedById");
-
-                    b.HasIndex("UnitOfMeasureId");
-
-                    b.HasIndex("TemplateQuestionId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "TemplateQuestionId" }, "IX_TemplateQuestionRevisions_OneOpenRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex(new[] { "TemplateQuestionId" }, "IX_TemplateQuestionRevisions_OnePublishedRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2 AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("TemplateQuestionRevisions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateQuestionRevision_AnswerType", "\"AnswerType\" BETWEEN 0 AND 12");
-
-                            t.HasCheckConstraint("CK_TemplateQuestionRevision_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateQuestionRevision_Range", "\"Minimum\" IS NULL OR \"Maximum\" IS NULL OR \"Minimum\" <= \"Maximum\"");
-
-                            t.HasCheckConstraint("CK_TemplateQuestionRevision_Sensitivity", "\"Sensitivity\" BETWEEN 0 AND 2");
-
-                            t.HasCheckConstraint("CK_TemplateQuestionRevision_Sequence", "\"Sequence\" > 0");
-
-                            t.HasCheckConstraint("CK_TemplateQuestionRevision_Status", "\"Status\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionRevisionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateQuestionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("TemplateQuestionRevisionId", "OccurredAt");
-
-                    b.ToTable("TemplateQuestionRevisionAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateQuestionRevisionAudit_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateQuestionRevisionAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId", "SubjectTypeId");
-
-                    b.ToTable("TemplateSections", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionConditionalRule", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ComparisonValue")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("DependsOnSectionQuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Operator")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TargetSectionQuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateSectionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateSectionRevisionId", "DependsOnSectionQuestionId");
-
-                    b.HasIndex("TemplateSectionRevisionId", "TargetSectionQuestionId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateSectionConditionalRules", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateSectionConditionalRule_Operator", "\"Operator\" BETWEEN 0 AND 2");
-
-                            t.HasCheckConstraint("CK_TemplateSectionConditionalRule_Value", "(\"Operator\" = 2 AND \"ComparisonValue\" IS NULL) OR (\"Operator\" IN (0, 1) AND length(trim(\"ComparisonValue\")) > 0)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionQuestion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateQuestionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateQuestionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateSectionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateQuestionId");
-
-                    b.HasIndex("TemplateQuestionRevisionId", "TemplateQuestionId");
-
-                    b.HasIndex("TemplateSectionRevisionId", "Order")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateSectionRevisionId", "TemplateQuestionId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateSectionQuestions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateSectionQuestion_Order", "\"Order\" >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("PublishedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("RetiredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateSectionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PublishedById");
-
-                    b.HasIndex("ReviewedById");
-
-                    b.HasIndex("TemplateSectionId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "TemplateSectionId" }, "IX_TemplateSectionRevisions_OneOpenRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex(new[] { "TemplateSectionId" }, "IX_TemplateSectionRevisions_OnePublishedRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2 AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("TemplateSectionRevisions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateSectionRevision_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateSectionRevision_Sequence", "\"Sequence\" > 0");
-
-                            t.HasCheckConstraint("CK_TemplateSectionRevision_Status", "\"Status\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionRevisionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateSectionRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("TemplateSectionRevisionId", "OccurredAt");
-
-                    b.ToTable("TemplateSectionRevisionAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateSectionRevisionAudit_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateSectionRevisionAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSharingGrant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DecidedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("DecidedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("RequestedByAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RequestedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RevisionContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("RevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("RevokedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SourceAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TargetAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("TemplateKind")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("DecidedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RequestedById");
-
-                    b.HasIndex("RevokedById");
-
-                    b.HasIndex("TargetAreaId", "Status");
-
-                    b.HasIndex(new[] { "SourceAreaId", "TargetAreaId", "TemplateKind", "DefinitionId", "RevisionId" }, "IX_TemplateSharingGrants_OneOpenGrant")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("TemplateSharingGrants", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateSharingGrant_Areas", "\"SourceAreaId\" <> \"TargetAreaId\" AND \"RequestedByAreaId\" IN (\"SourceAreaId\", \"TargetAreaId\")");
-
-                            t.HasCheckConstraint("CK_TemplateSharingGrant_ContentHash", "\"RevisionContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateSharingGrant_Kind", "\"TemplateKind\" BETWEEN 0 AND 4");
-
-                            t.HasCheckConstraint("CK_TemplateSharingGrant_Status", "\"Status\" BETWEEN 0 AND 3");
-
-                            t.HasCheckConstraint("CK_TemplateSharingGrant_Version", "\"Version\" > 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSharingGrantAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateSharingGrantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("TemplateSharingGrantId", "Version")
-                        .IsUnique();
-
-                    b.ToTable("TemplateSharingGrantAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateSharingGrantAudit_SnapshotHash", "\"SnapshotHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateSharingGrantAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflow", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PurposeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<string>("SubjectTypeId")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("TemplateAreaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("TemplateAreaId", "PurposeId", "SubjectTypeId");
-
-                    b.ToTable("TemplateWorkflows", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowEdge", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BranchExpression")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("BranchKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("SourceNodeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TargetNodeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateWorkflowRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "TargetNodeId");
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "SourceNodeId", "TargetNodeId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateWorkflowEdges", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateWorkflowEdge_Order", "\"Order\" >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("HoldGroupKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("JoinGroupKey")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int>("NodeType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ReworkMaxAttempts")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("ReworkTargetNodeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("TemplateActivityId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("TemplateActivityRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateWorkflowRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("WaitConfiguration")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<int?>("WaitKind")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateActivityRevisionId", "TemplateActivityId");
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "Key")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "Order")
-                        .IsUnique();
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "ReworkTargetNodeId");
-
-                    b.ToTable("TemplateWorkflowNodes", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateWorkflowNode_Order", "\"Order\" >= 0");
-
-                            t.HasCheckConstraint("CK_TemplateWorkflowNode_ReworkAttempts", "\"ReworkMaxAttempts\" IS NULL OR \"ReworkMaxAttempts\" BETWEEN 1 AND 10");
-
-                            t.HasCheckConstraint("CK_TemplateWorkflowNode_Type", "\"NodeType\" BETWEEN 0 AND 10");
-
-                            t.HasCheckConstraint("CK_TemplateWorkflowNode_WaitKind", "\"WaitKind\" IS NULL OR \"WaitKind\" BETWEEN 0 AND 2");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowNodeLayout", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<double>("PositionX")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("PositionY")
-                        .HasColumnType("double precision");
-
-                    b.Property<Guid>("TemplateWorkflowNodeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TemplateWorkflowRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "TemplateWorkflowNodeId")
-                        .IsUnique();
-
-                    b.ToTable("TemplateWorkflowNodeLayouts", (string)null);
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<DateTime?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("PublishedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("RetiredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ReviewedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Sequence")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TemplateWorkflowId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("PublishedById");
-
-                    b.HasIndex("ReviewedById");
-
-                    b.HasIndex("TemplateWorkflowId", "Sequence")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "TemplateWorkflowId" }, "IX_TemplateWorkflowRevisions_OneOpenRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" IN (0, 1) AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex(new[] { "TemplateWorkflowId" }, "IX_TemplateWorkflowRevisions_OnePublishedRevision")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2 AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("TemplateWorkflowRevisions", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateWorkflowRevision_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateWorkflowRevision_Sequence", "\"Sequence\" > 0");
-
-                            t.HasCheckConstraint("CK_TemplateWorkflowRevision_Status", "\"Status\" BETWEEN 0 AND 3");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevisionAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("NewStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PriorStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("SnapshotJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<Guid>("TemplateWorkflowRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorId");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("TemplateWorkflowRevisionId", "OccurredAt");
-
-                    b.ToTable("TemplateWorkflowRevisionAudits", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_TemplateWorkflowRevisionAudit_ContentHash", "\"ContentHash\" ~ '^[a-f0-9]{64}$'");
-
-                            t.HasCheckConstraint("CK_TemplateWorkflowRevisionAudit_Status", "\"NewStatus\" BETWEEN 0 AND 3 AND (\"PriorStatus\" IS NULL OR \"PriorStatus\" BETWEEN 0 AND 3)");
                         });
                 });
 
@@ -9489,9 +6963,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AnalysisType")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -9561,9 +7032,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(1000000)
                         .HasColumnType("character varying(1000000)");
 
-                    b.Property<Guid?>("ChemicalArdId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -9594,12 +7062,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid>("MaterialBatchId")
                         .HasColumnType("uuid");
-
-                    b.Property<Guid?>("MicrobialArdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("MicrobialRequired")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("SampleDate")
                         .HasColumnType("timestamp with time zone");
@@ -13138,9 +10600,6 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AnalysisType")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -16453,6 +13912,419 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("RevisedPurchaseOrderItem");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Coa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AreaOrRoom")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("BatchNumber")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CertificateCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("CertificateShape")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IssuedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("OverallComplies")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ProductOrMaterialName")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RevisionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("SampleDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SpecificationCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("SpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SpecificationVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("SupersedesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("TestCompletionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TestRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CertificateCode")
+                        .IsUnique();
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("IssuedAt");
+
+                    b.HasIndex("IssuedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SpecificationId");
+
+                    b.HasIndex("SupersedesId");
+
+                    b.HasIndex("Status", "CertificateShape");
+
+                    b.HasIndex("TestRequestId", "Status");
+
+                    b.ToTable("QcCoas", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.CoaRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AcceptanceCriteria")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("CoaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Complies")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayLabel")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("DispositionOutcome")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DispositionReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("GroupName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResultValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid?>("SourceWorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SpecificationCharacteristicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SubjectLabel")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("SubjectRef")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("TestRequestSubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SourceWorksheetInstanceId");
+
+                    b.HasIndex("SpecificationCharacteristicId");
+
+                    b.HasIndex("TestRequestSubjectId");
+
+                    b.HasIndex("CoaId", "TestRequestSubjectId", "DisplayOrder");
+
+                    b.ToTable("QcCoaRows", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.MonitoringProgram", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("CustomIntervalDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Frequency")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LeadTimeDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("NextDueDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SamplingPointId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SpecificationVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SamplingPointId");
+
+                    b.HasIndex("SamplingPointId", "SpecificationId");
+
+                    b.HasIndex("SpecificationId", "SpecificationVersion");
+
+                    b.HasIndex("Status", "NextDueDate");
+
+                    b.ToTable("QcMonitoringPrograms", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.OosCase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("BreachedLimit")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("CorrectiveActions")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DispositionAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DispositionById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DispositionComments")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("DispositionOutcome")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FieldKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("InvestigatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("InvestigatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InvestigationDetails")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ObservedValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreventiveActions")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("QuarantinedBatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("QuarantinedFromBatchManufacturingStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("QuarantinedFromBatchStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("QuarantinedMaterialBatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RetestAuthorizedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RetestAuthorizedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RetestWorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RootCauseAnalysis")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("SpecificationCharacteristicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DispositionById");
+
+                    b.HasIndex("InvestigatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("OpenedAt");
+
+                    b.HasIndex("QuarantinedBatchManufacturingRecordId");
+
+                    b.HasIndex("QuarantinedMaterialBatchId");
+
+                    b.HasIndex("RetestAuthorizedById");
+
+                    b.HasIndex("RetestWorksheetInstanceId");
+
+                    b.HasIndex("SpecificationCharacteristicId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Status", "OpenedAt");
+
+                    b.HasIndex("WorksheetInstanceId", "FieldKey");
+
+                    b.ToTable("QcOosCases", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.QcApproval", b =>
                 {
                     b.Property<Guid>("Id")
@@ -16524,6 +14396,327 @@ namespace INFRASTRUCTURE.Migrations
                         .IsUnique();
 
                     b.ToTable("QcApprovals", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SamplingPoint", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Area")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("SamplingPointGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SamplingPointGroupId");
+
+                    b.HasIndex("Type");
+
+                    b.ToTable("QcSamplingPoints", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SamplingPointGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("QcSamplingPointGroups", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Specification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AppliesTo")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EffectiveDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("RetestPolicy")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Stage")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("SupersedesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SupersedesId");
+
+                    b.HasIndex("AppliesTo", "Stage");
+
+                    b.ToTable("QcSpecifications", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AcceptanceCriteria")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ActionLimit")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("AlertLimit")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Analyte")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("GroupName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IncludeOnCoa")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SamplingPointGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SourceFieldKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("SourceWorksheetTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TestName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SamplingPointGroupId");
+
+                    b.HasIndex("SourceWorksheetTemplateId", "SourceFieldKey");
+
+                    b.HasIndex("SpecificationId", "DisplayOrder");
+
+                    b.ToTable("QcSpecificationCharacteristics", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AnalysisType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("WorksheetTemplateVersion")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SpecificationId", "AnalysisType");
+
+                    b.HasIndex("WorksheetTemplateId", "WorksheetTemplateVersion");
+
+                    b.ToTable("QcSpecificationWorksheetLinks", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.StandardTestProcedure", b =>
@@ -16668,6 +14861,308 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("StandardTestProcedureId", "Order");
 
                     b.ToTable("QcStpSteps", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.TestRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IssueNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IssuedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ScheduleOrigin")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SpecificationVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UnscheduledReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArNumber");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("IssuedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SpecificationId", "SpecificationVersion");
+
+                    b.HasIndex("Type", "Status");
+
+                    b.ToTable("QcTestRequests", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.TestRequestSubject", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("BatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CollectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SamplingPointGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SamplingPointId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SubjectLabel")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("SubjectRef")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("TestRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchManufacturingRecordId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialBatchId");
+
+                    b.HasIndex("SamplingPointGroupId");
+
+                    b.HasIndex("SamplingPointId");
+
+                    b.HasIndex("SubjectRef");
+
+                    b.HasIndex("TestRequestId");
+
+                    b.HasIndex("TestRequestId", "SubjectRef");
+
+                    b.ToTable("QcTestRequestSubjects", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WaterQualityPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ActivatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("HeldAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("HeldById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("HoldReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RetrospectiveReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("SamplingPointId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TestRequestSubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivatedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("HeldById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("TestRequestSubjectId");
+
+                    b.HasIndex("SamplingPointId", "Status");
+
+                    b.HasIndex("Status", "ValidUntil");
+
+                    b.ToTable("QcWaterQualityPeriods", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WaterUseRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductionActivityStepId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RecordedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WaterQualityPeriodId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchManufacturingRecordId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductionActivityStepId");
+
+                    b.HasIndex("RecordedById");
+
+                    b.HasIndex("UsedAt");
+
+                    b.HasIndex("WaterQualityPeriodId", "Status");
+
+                    b.ToTable("QcWaterUseRecords", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetField", b =>
@@ -16847,6 +15342,282 @@ namespace INFRASTRUCTURE.Migrations
                         .IsUnique();
 
                     b.ToTable("QcWorksheetFieldRevisions", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetFieldValue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ColumnKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EnteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EnteredById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FieldKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ResolvedFromInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("RowIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("EnteredById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ResolvedFromInstanceId");
+
+                    b.HasIndex("ColumnKey", "Value");
+
+                    b.HasIndex("WorksheetInstanceId", "FieldKey");
+
+                    b.ToTable("QcWorksheetFieldValues", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AnalysisType")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Approved")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("AssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AssignedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AssignedToId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RetestOfInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TestRequestSubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("WorksheetTemplateVersion")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("RetestOfInstanceId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TestRequestSubjectId");
+
+                    b.HasIndex("AnalysisType", "Status");
+
+                    b.HasIndex("AssignedToId", "Status");
+
+                    b.HasIndex("WorksheetTemplateId", "Status");
+
+                    b.HasIndex("WorksheetTemplateId", "WorksheetTemplateVersion");
+
+                    b.ToTable("QcWorksheetInstances", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ApprovalRound")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("ReturnedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReturnedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Signed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ReturnedById");
+
+                    b.HasIndex("WorksheetInstanceId", "ReturnedAt");
+
+                    b.ToTable("QcWorksheetInstanceCorrectionReturns", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FromUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("ReassignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReassignedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ToUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetInstanceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FromUserId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ReassignedById");
+
+                    b.HasIndex("ToUserId");
+
+                    b.HasIndex("WorksheetInstanceId", "ReassignedAt");
+
+                    b.ToTable("QcWorksheetInstanceReassignments", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetSection", b =>
@@ -17442,898 +16213,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("QualityAuditTeamMembers");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.CommercialCertificate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AnalyticalTestRequestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CertificateCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("Combined")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("IssuedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("MaterialSamplingId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RowsJson")
-                        .HasMaxLength(100000000)
-                        .HasColumnType("text");
-
-                    b.Property<int>("Target")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnalyticalTestRequestId")
-                        .IsUnique()
-                        .HasFilter("\"AnalyticalTestRequestId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("IssuedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialSamplingId")
-                        .IsUnique()
-                        .HasFilter("\"MaterialSamplingId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("CommercialCertificates", t =>
-                        {
-                            t.HasCheckConstraint("CK_CommercialCertificates_Target", "(\"Target\" = 0 AND \"MaterialSamplingId\" IS NOT NULL AND \"AnalyticalTestRequestId\" IS NULL) OR (\"Target\" = 1 AND \"MaterialSamplingId\" IS NULL AND \"AnalyticalTestRequestId\" IS NOT NULL)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.CommercialCoaItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayLabel")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("FormFieldId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("GroupName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("MaterialArdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductArdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Reference")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("SpecificationText")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("Unit")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FormFieldId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialArdId", "FormFieldId")
-                        .IsUnique()
-                        .HasFilter("\"MaterialArdId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex("ProductArdId", "FormFieldId")
-                        .IsUnique()
-                        .HasFilter("\"ProductArdId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("CommercialCoaItems", t =>
-                        {
-                            t.HasCheckConstraint("CK_CommercialCoaItems_Ard", "(\"MaterialArdId\" IS NOT NULL AND \"ProductArdId\" IS NULL) OR (\"MaterialArdId\" IS NULL AND \"ProductArdId\" IS NOT NULL)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.MicrobialRequirement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("MaterialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<int?>("Stage")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Subject")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("VerifiedById")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("MaterialId")
-                        .IsUnique()
-                        .HasFilter("\"Subject\" = 0 AND \"IsVerified\" = FALSE AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex("ProductId")
-                        .IsUnique()
-                        .HasFilter("\"Subject\" = 1 AND \"IsVerified\" = FALSE AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("MicrobialRequirements", t =>
-                        {
-                            t.HasCheckConstraint("CK_MicrobialRequirements_Subject", "(\"Subject\" = 0 AND \"MaterialId\" IS NOT NULL AND \"ProductId\" IS NULL AND \"Stage\" IS NULL) OR (\"Subject\" = 1 AND \"MaterialId\" IS NULL AND \"ProductId\" IS NOT NULL AND \"Stage\" = 2)");
-                        });
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineArd", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AnalysisType")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid>("FormId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SpecNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("VerifiedById")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FormId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("Type", "AnalysisType")
-                        .IsUnique()
-                        .HasFilter("\"DeletedAt\" IS NULL");
-
-                    b.ToTable("RoutineArds");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineAuditEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ActorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Detail")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("RoutineExecutionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RoutineExecutionId");
-
-                    b.ToTable("RoutineAuditEvents");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineCertificate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CertificateCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("Combined")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("IssuedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoutineExecutionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RoutineSampleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RowsJson")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RoutineExecutionId")
-                        .IsUnique()
-                        .HasFilter("\"RoutineSampleId\" IS NULL AND \"DeletedAt\" IS NULL");
-
-                    b.HasIndex("RoutineSampleId")
-                        .IsUnique()
-                        .HasFilter("\"RoutineSampleId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-
-                    b.ToTable("RoutineCertificates");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineCoaItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisplayLabel")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("FormFieldId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("GroupName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<bool>("IncludeOnCoa")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Reference")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<Guid>("RoutineArdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SpecificationText")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("Unit")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("FormFieldId");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RoutineArdId", "FormFieldId")
-                        .IsUnique()
-                        .HasFilter("\"DeletedAt\" IS NULL");
-
-                    b.ToTable("RoutineCoaItems");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineDefinition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Cadence")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.ToTable("RoutineDefinitions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineExecution", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("Cadence")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DoneAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("DoneById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("EmergencyReason")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<string>("EmergencyTrigger")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Origin")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("PeriodEnd")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("PeriodStart")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("RndTrialBatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RoutineCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("RoutineDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("RoutineDefinitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("DoneById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RndTrialBatchId");
-
-                    b.HasIndex("RoutineCode")
-                        .IsUnique();
-
-                    b.HasIndex("RoutineDefinitionId");
-
-                    b.ToTable("RoutineExecutions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineSample", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AreaName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<DateTime>("CollectedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoutineExecutionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SamplingPoint")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RoutineExecutionId");
-
-                    b.ToTable("RoutineSamples");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineTrack", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AnalysisType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("CoaItemsSnapshotJson")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("FormId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("FormRevisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoutineArdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoutineSampleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("WorksheetFinalizedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("WorksheetFinalizedById")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RoutineArdId");
-
-                    b.HasIndex("RoutineSampleId", "AnalysisType")
-                        .IsUnique()
-                        .HasFilter("\"DeletedAt\" IS NULL");
-
-                    b.ToTable("RoutineTracks");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.WaterQualityPeriod", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ApprovedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("HeldAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("HeldById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("HoldReason")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RetrospectiveReason")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid>("RoutineCertificateId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoutineSampleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SamplingPoint")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ValidFrom")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApprovedById");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("HeldById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("RoutineCertificateId")
-                        .IsUnique()
-                        .HasFilter("\"DeletedAt\" IS NULL");
-
-                    b.HasIndex("RoutineSampleId");
-
-                    b.ToTable("WaterQualityPeriods");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.WaterUseRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("BatchManufacturingRecordId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("LastDeletedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("LastUpdatedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ProductionActivityStepId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RndTrialBatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SamplingPoint")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("UsedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("WaterQualityPeriodId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatchManufacturingRecordId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LastDeletedById");
-
-                    b.HasIndex("LastUpdatedById");
-
-                    b.HasIndex("ProductionActivityStepId");
-
-                    b.HasIndex("RndTrialBatchId");
-
-                    b.HasIndex("WaterQualityPeriodId");
-
-                    b.ToTable("WaterUseRecords", t =>
-                        {
-                            t.HasCheckConstraint("CK_WaterUseRecords_Subject", "(\"BatchManufacturingRecordId\" IS NOT NULL AND \"RndTrialBatchId\" IS NULL) OR (\"BatchManufacturingRecordId\" IS NULL AND \"ProductionActivityStepId\" IS NULL AND \"RndTrialBatchId\" IS NOT NULL)");
-                        });
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.RecoverableItemsReports.RecoverableItemReport", b =>
@@ -24674,18 +22553,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("MaterialBatchId");
 
-                    b.HasOne("DOMAIN.Entities.MaterialSampling.MaterialSampling", "MaterialSampling")
-                        .WithMany()
-                        .HasForeignKey("MaterialSamplingId");
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineTrack", "RoutineTrack")
-                        .WithMany()
-                        .HasForeignKey("RoutineTrackId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("BatchManufacturingRecord");
 
@@ -24699,11 +22569,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("MaterialBatch");
 
-                    b.Navigation("MaterialSampling");
-
                     b.Navigation("ProductionActivityStep");
-
-                    b.Navigation("RoutineTrack");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.FormField", b =>
@@ -24987,18 +22853,9 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("MaterialBatchId");
 
-                    b.HasOne("DOMAIN.Entities.MaterialSampling.MaterialSampling", "MaterialSampling")
-                        .WithMany()
-                        .HasForeignKey("MaterialSamplingId");
-
                     b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
                         .WithMany()
                         .HasForeignKey("ProductionActivityStepId");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineTrack", "RoutineTrack")
-                        .WithOne("Response")
-                        .HasForeignKey("DOMAIN.Entities.Forms.Response", "RoutineTrackId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("BatchManufacturingRecord");
 
@@ -25016,11 +22873,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Navigation("MaterialBatch");
 
-                    b.Navigation("MaterialSampling");
-
                     b.Navigation("ProductionActivityStep");
-
-                    b.Navigation("RoutineTrack");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.ResponseApproval", b =>
@@ -25505,1162 +23358,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Response");
 
                     b.Navigation("SubmittedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureApplicability", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.ProcedureRevision", "ProcedureRevision")
-                        .WithMany("Applicabilities")
-                        .HasForeignKey("ProcedureRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Sites.Site", "Site")
-                        .WithMany()
-                        .HasForeignKey("SiteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ProcedureRevision");
-
-                    b.Navigation("Product");
-
-                    b.Navigation("Site");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureDefinition", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany()
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureRevision", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.ProcedureDefinition", "ProcedureDefinition")
-                        .WithMany("Revisions")
-                        .HasForeignKey("ProcedureDefinitionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
-                        .WithMany()
-                        .HasForeignKey("ReviewedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", "TemplateWorkflowRevision")
-                        .WithMany()
-                        .HasForeignKey("TemplateWorkflowRevisionId", "TemplateWorkflowId")
-                        .HasPrincipalKey("Id", "TemplateWorkflowId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedBy");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("ProcedureDefinition");
-
-                    b.Navigation("ReviewedBy");
-
-                    b.Navigation("TemplateWorkflowRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureRevisionAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.ProcedureRevision", "ProcedureRevision")
-                        .WithMany("Audits")
-                        .HasForeignKey("ProcedureRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("ProcedureRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureStageScope", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.ProcedureRevision", "ProcedureRevision")
-                        .WithMany("StageScopes")
-                        .HasForeignKey("ProcedureRevisionId", "TemplateWorkflowRevisionId")
-                        .HasPrincipalKey("Id", "TemplateWorkflowRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", "TemplateWorkflowNode")
-                        .WithMany()
-                        .HasForeignKey("TemplateWorkflowRevisionId", "TemplateWorkflowNodeId")
-                        .HasPrincipalKey("TemplateWorkflowRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ProcedureRevision");
-
-                    b.Navigation("TemplateWorkflowNode");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivity", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany()
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityAction", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany("Actions")
-                        .HasForeignKey("TemplateActivityRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateActivityRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityActionRole", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityAction", "TemplateActivityAction")
-                        .WithMany("Roles")
-                        .HasForeignKey("TemplateActivityActionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-
-                    b.Navigation("TemplateActivityAction");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityCompletionRule", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany("CompletionRules")
-                        .HasForeignKey("TemplateActivityRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateActivityRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityDataBinding", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany("DataBindings")
-                        .HasForeignKey("TemplateActivityRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateActivityRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityFormBinding", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany("Forms")
-                        .HasForeignKey("TemplateActivityRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateFormRevision", "TemplateFormRevision")
-                        .WithMany()
-                        .HasForeignKey("TemplateFormRevisionId", "TemplateFormId")
-                        .HasPrincipalKey("Id", "TemplateFormId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateActivityRevision");
-
-                    b.Navigation("TemplateFormRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityResourceRequirement", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany("Resources")
-                        .HasForeignKey("TemplateActivityRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateActivityRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "PublishedBy")
-                        .WithMany()
-                        .HasForeignKey("PublishedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
-                        .WithMany()
-                        .HasForeignKey("ReviewedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivity", "TemplateActivity")
-                        .WithMany("Revisions")
-                        .HasForeignKey("TemplateActivityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PublishedBy");
-
-                    b.Navigation("ReviewedBy");
-
-                    b.Navigation("TemplateActivity");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityRevisionAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateActivityRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateActivityRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAdoption", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "AdoptedBy")
-                        .WithMany()
-                        .HasForeignKey("AdoptedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TargetArea")
-                        .WithMany()
-                        .HasForeignKey("TargetAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSharingGrant", "TemplateSharingGrant")
-                        .WithMany()
-                        .HasForeignKey("TemplateSharingGrantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("AdoptedBy");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TargetArea");
-
-                    b.Navigation("TemplateSharingGrant");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateArea", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "OwnerRole")
-                        .WithMany()
-                        .HasForeignKey("OwnerRoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("OwnerRole");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaCapability", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany("Capabilities")
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaPurpose", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany("Purposes")
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaRoleGrant", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany("RoleGrants")
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateAreaSubjectType", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany("SubjectTypes")
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateForm", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany()
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormConditionalRule", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateFormRevision", "TemplateFormRevision")
-                        .WithMany("ConditionalRules")
-                        .HasForeignKey("TemplateFormRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", null)
-                        .WithMany()
-                        .HasForeignKey("SourceQuestionRevisionId", "SourceQuestionId")
-                        .HasPrincipalKey("Id", "TemplateQuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateFormSection", "SourceFormSection")
-                        .WithMany()
-                        .HasForeignKey("TemplateFormRevisionId", "SourceFormSectionId")
-                        .HasPrincipalKey("TemplateFormRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateFormSection", "TargetFormSection")
-                        .WithMany()
-                        .HasForeignKey("TemplateFormRevisionId", "TargetFormSectionId")
-                        .HasPrincipalKey("TemplateFormRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_TemplateFormConditionalRules_TemplateFormSections_Template~1");
-
-                    b.Navigation("SourceFormSection");
-
-                    b.Navigation("TargetFormSection");
-
-                    b.Navigation("TemplateFormRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormRevision", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "PublishedBy")
-                        .WithMany()
-                        .HasForeignKey("PublishedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
-                        .WithMany()
-                        .HasForeignKey("ReviewedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateForm", "TemplateForm")
-                        .WithMany("Revisions")
-                        .HasForeignKey("TemplateFormId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PublishedBy");
-
-                    b.Navigation("ReviewedBy");
-
-                    b.Navigation("TemplateForm");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormRevisionAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateFormRevision", "TemplateFormRevision")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateFormRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateFormRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormSection", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateFormRevision", "TemplateFormRevision")
-                        .WithMany("Sections")
-                        .HasForeignKey("TemplateFormRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSection", "TemplateSection")
-                        .WithMany()
-                        .HasForeignKey("TemplateSectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", "TemplateSectionRevision")
-                        .WithMany()
-                        .HasForeignKey("TemplateSectionRevisionId", "TemplateSectionId")
-                        .HasPrincipalKey("Id", "TemplateSectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateFormRevision");
-
-                    b.Navigation("TemplateSection");
-
-                    b.Navigation("TemplateSectionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestion", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany()
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionCalculationReference", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestion", "ReferencedQuestion")
-                        .WithMany()
-                        .HasForeignKey("ReferencedQuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", "TemplateQuestionRevision")
-                        .WithMany("CalculationReferences")
-                        .HasForeignKey("TemplateQuestionRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", "ReferencedQuestionRevision")
-                        .WithMany()
-                        .HasForeignKey("ReferencedQuestionRevisionId", "ReferencedQuestionId")
-                        .HasPrincipalKey("Id", "TemplateQuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_TemplateQuestionCalculationReferences_TemplateQuestionRevi~1");
-
-                    b.Navigation("ReferencedQuestion");
-
-                    b.Navigation("ReferencedQuestionRevision");
-
-                    b.Navigation("TemplateQuestionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionOption", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", "TemplateQuestionRevision")
-                        .WithMany("Options")
-                        .HasForeignKey("TemplateQuestionRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateQuestionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "PublishedBy")
-                        .WithMany()
-                        .HasForeignKey("PublishedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
-                        .WithMany()
-                        .HasForeignKey("ReviewedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestion", "TemplateQuestion")
-                        .WithMany("Revisions")
-                        .HasForeignKey("TemplateQuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UnitOfMeasure")
-                        .WithMany()
-                        .HasForeignKey("UnitOfMeasureId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PublishedBy");
-
-                    b.Navigation("ReviewedBy");
-
-                    b.Navigation("TemplateQuestion");
-
-                    b.Navigation("UnitOfMeasure");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionRevisionAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", "TemplateQuestionRevision")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateQuestionRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateQuestionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSection", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany()
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionConditionalRule", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", "TemplateSectionRevision")
-                        .WithMany("ConditionalRules")
-                        .HasForeignKey("TemplateSectionRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSectionQuestion", "DependsOnSectionQuestion")
-                        .WithMany()
-                        .HasForeignKey("TemplateSectionRevisionId", "DependsOnSectionQuestionId")
-                        .HasPrincipalKey("TemplateSectionRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSectionQuestion", "TargetSectionQuestion")
-                        .WithMany()
-                        .HasForeignKey("TemplateSectionRevisionId", "TargetSectionQuestionId")
-                        .HasPrincipalKey("TemplateSectionRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_TemplateSectionConditionalRules_TemplateSectionQuestions_T~1");
-
-                    b.Navigation("DependsOnSectionQuestion");
-
-                    b.Navigation("TargetSectionQuestion");
-
-                    b.Navigation("TemplateSectionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionQuestion", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestion", "TemplateQuestion")
-                        .WithMany()
-                        .HasForeignKey("TemplateQuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", "TemplateSectionRevision")
-                        .WithMany("Questions")
-                        .HasForeignKey("TemplateSectionRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", "TemplateQuestionRevision")
-                        .WithMany()
-                        .HasForeignKey("TemplateQuestionRevisionId", "TemplateQuestionId")
-                        .HasPrincipalKey("Id", "TemplateQuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateQuestion");
-
-                    b.Navigation("TemplateQuestionRevision");
-
-                    b.Navigation("TemplateSectionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "PublishedBy")
-                        .WithMany()
-                        .HasForeignKey("PublishedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
-                        .WithMany()
-                        .HasForeignKey("ReviewedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSection", "TemplateSection")
-                        .WithMany("Revisions")
-                        .HasForeignKey("TemplateSectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PublishedBy");
-
-                    b.Navigation("ReviewedBy");
-
-                    b.Navigation("TemplateSection");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionRevisionAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", "TemplateSectionRevision")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateSectionRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateSectionRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSharingGrant", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "DecidedBy")
-                        .WithMany()
-                        .HasForeignKey("DecidedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "RequestedBy")
-                        .WithMany()
-                        .HasForeignKey("RequestedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "RevokedBy")
-                        .WithMany()
-                        .HasForeignKey("RevokedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "SourceArea")
-                        .WithMany()
-                        .HasForeignKey("SourceAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TargetArea")
-                        .WithMany()
-                        .HasForeignKey("TargetAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("DecidedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RequestedBy");
-
-                    b.Navigation("RevokedBy");
-
-                    b.Navigation("SourceArea");
-
-                    b.Navigation("TargetArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSharingGrantAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateSharingGrant", "TemplateSharingGrant")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateSharingGrantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateSharingGrant");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflow", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateArea", "TemplateArea")
-                        .WithMany()
-                        .HasForeignKey("TemplateAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("TemplateArea");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowEdge", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", "TemplateWorkflowRevision")
-                        .WithMany("Edges")
-                        .HasForeignKey("TemplateWorkflowRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", "SourceNode")
-                        .WithMany("OutgoingEdges")
-                        .HasForeignKey("TemplateWorkflowRevisionId", "SourceNodeId")
-                        .HasPrincipalKey("TemplateWorkflowRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", "TargetNode")
-                        .WithMany("IncomingEdges")
-                        .HasForeignKey("TemplateWorkflowRevisionId", "TargetNodeId")
-                        .HasPrincipalKey("TemplateWorkflowRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_TemplateWorkflowEdges_TemplateWorkflowNodes_TemplateWorkfl~1");
-
-                    b.Navigation("SourceNode");
-
-                    b.Navigation("TargetNode");
-
-                    b.Navigation("TemplateWorkflowRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", "TemplateWorkflowRevision")
-                        .WithMany("Nodes")
-                        .HasForeignKey("TemplateWorkflowRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", "TemplateActivityRevision")
-                        .WithMany()
-                        .HasForeignKey("TemplateActivityRevisionId", "TemplateActivityId")
-                        .HasPrincipalKey("Id", "TemplateActivityId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", "ReworkTargetNode")
-                        .WithMany()
-                        .HasForeignKey("TemplateWorkflowRevisionId", "ReworkTargetNodeId")
-                        .HasPrincipalKey("TemplateWorkflowRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("ReworkTargetNode");
-
-                    b.Navigation("TemplateActivityRevision");
-
-                    b.Navigation("TemplateWorkflowRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowNodeLayout", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", "TemplateWorkflowRevision")
-                        .WithMany("Layouts")
-                        .HasForeignKey("TemplateWorkflowRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", "TemplateWorkflowNode")
-                        .WithMany()
-                        .HasForeignKey("TemplateWorkflowRevisionId", "TemplateWorkflowNodeId")
-                        .HasPrincipalKey("TemplateWorkflowRevisionId", "Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("TemplateWorkflowNode");
-
-                    b.Navigation("TemplateWorkflowRevision");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "PublishedBy")
-                        .WithMany()
-                        .HasForeignKey("PublishedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
-                        .WithMany()
-                        .HasForeignKey("ReviewedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflow", "TemplateWorkflow")
-                        .WithMany("Revisions")
-                        .HasForeignKey("TemplateWorkflowId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("PublishedBy");
-
-                    b.Navigation("ReviewedBy");
-
-                    b.Navigation("TemplateWorkflow");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevisionAudit", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
-                        .WithMany()
-                        .HasForeignKey("ActorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", "TemplateWorkflowRevision")
-                        .WithMany("Audits")
-                        .HasForeignKey("TemplateWorkflowRevisionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Actor");
-
-                    b.Navigation("TemplateWorkflowRevision");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Grns.Grn", b =>
@@ -32762,6 +29459,224 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UoM");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Coa", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "IssuedBy")
+                        .WithMany()
+                        .HasForeignKey("IssuedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "Specification")
+                        .WithMany()
+                        .HasForeignKey("SpecificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Coa", "Supersedes")
+                        .WithMany()
+                        .HasForeignKey("SupersedesId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.TestRequest", "TestRequest")
+                        .WithMany()
+                        .HasForeignKey("TestRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("IssuedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Specification");
+
+                    b.Navigation("Supersedes");
+
+                    b.Navigation("TestRequest");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.CoaRow", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Coa", "Coa")
+                        .WithMany("Rows")
+                        .HasForeignKey("CoaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "SourceWorksheetInstance")
+                        .WithMany()
+                        .HasForeignKey("SourceWorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic", "SpecificationCharacteristic")
+                        .WithMany()
+                        .HasForeignKey("SpecificationCharacteristicId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.TestRequestSubject", "TestRequestSubject")
+                        .WithMany()
+                        .HasForeignKey("TestRequestSubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Coa");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SourceWorksheetInstance");
+
+                    b.Navigation("SpecificationCharacteristic");
+
+                    b.Navigation("TestRequestSubject");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.MonitoringProgram", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SamplingPoint", "SamplingPoint")
+                        .WithMany()
+                        .HasForeignKey("SamplingPointId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "Specification")
+                        .WithMany()
+                        .HasForeignKey("SpecificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SamplingPoint");
+
+                    b.Navigation("Specification");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.OosCase", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "DispositionBy")
+                        .WithMany()
+                        .HasForeignKey("DispositionById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "InvestigatedBy")
+                        .WithMany()
+                        .HasForeignKey("InvestigatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "QuarantinedBatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("QuarantinedBatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "QuarantinedMaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("QuarantinedMaterialBatchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "RetestAuthorizedBy")
+                        .WithMany()
+                        .HasForeignKey("RetestAuthorizedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "RetestWorksheetInstance")
+                        .WithMany()
+                        .HasForeignKey("RetestWorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic", "SpecificationCharacteristic")
+                        .WithMany()
+                        .HasForeignKey("SpecificationCharacteristicId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "WorksheetInstance")
+                        .WithMany()
+                        .HasForeignKey("WorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("DispositionBy");
+
+                    b.Navigation("InvestigatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("QuarantinedBatchManufacturingRecord");
+
+                    b.Navigation("QuarantinedMaterialBatch");
+
+                    b.Navigation("RetestAuthorizedBy");
+
+                    b.Navigation("RetestWorksheetInstance");
+
+                    b.Navigation("SpecificationCharacteristic");
+
+                    b.Navigation("WorksheetInstance");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.QcApproval", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
@@ -32792,6 +29707,164 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SamplingPoint", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SamplingPointGroup", "SamplingPointGroup")
+                        .WithMany()
+                        .HasForeignKey("SamplingPointGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SamplingPointGroup");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SamplingPointGroup", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Specification", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "Supersedes")
+                        .WithMany()
+                        .HasForeignKey("SupersedesId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Supersedes");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SamplingPointGroup", "SamplingPointGroup")
+                        .WithMany()
+                        .HasForeignKey("SamplingPointGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetTemplate", "SourceWorksheetTemplate")
+                        .WithMany()
+                        .HasForeignKey("SourceWorksheetTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "Specification")
+                        .WithMany("Characteristics")
+                        .HasForeignKey("SpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SamplingPointGroup");
+
+                    b.Navigation("SourceWorksheetTemplate");
+
+                    b.Navigation("Specification");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "Specification")
+                        .WithMany("WorksheetLinks")
+                        .HasForeignKey("SpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetTemplate", "WorksheetTemplate")
+                        .WithMany()
+                        .HasForeignKey("WorksheetTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Specification");
+
+                    b.Navigation("WorksheetTemplate");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.StandardTestProcedure", b =>
@@ -32858,6 +29931,201 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("StandardTestProcedure");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.TestRequest", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "IssuedBy")
+                        .WithMany()
+                        .HasForeignKey("IssuedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "Specification")
+                        .WithMany()
+                        .HasForeignKey("SpecificationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("IssuedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Specification");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.TestRequestSubject", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("BatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SamplingPointGroup", "SamplingPointGroup")
+                        .WithMany()
+                        .HasForeignKey("SamplingPointGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SamplingPoint", "SamplingPoint")
+                        .WithMany()
+                        .HasForeignKey("SamplingPointId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.TestRequest", "TestRequest")
+                        .WithMany("Subjects")
+                        .HasForeignKey("TestRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BatchManufacturingRecord");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialBatch");
+
+                    b.Navigation("SamplingPoint");
+
+                    b.Navigation("SamplingPointGroup");
+
+                    b.Navigation("TestRequest");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WaterQualityPeriod", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "ActivatedBy")
+                        .WithMany()
+                        .HasForeignKey("ActivatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "HeldBy")
+                        .WithMany()
+                        .HasForeignKey("HeldById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.SamplingPoint", "SamplingPoint")
+                        .WithMany()
+                        .HasForeignKey("SamplingPointId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.TestRequestSubject", "TestRequestSubject")
+                        .WithMany()
+                        .HasForeignKey("TestRequestSubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActivatedBy");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("HeldBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("SamplingPoint");
+
+                    b.Navigation("TestRequestSubject");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WaterUseRecord", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("BatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
+                        .WithMany()
+                        .HasForeignKey("ProductionActivityStepId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "RecordedBy")
+                        .WithMany()
+                        .HasForeignKey("RecordedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WaterQualityPeriod", "WaterQualityPeriod")
+                        .WithMany("UseRecords")
+                        .HasForeignKey("WaterQualityPeriodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BatchManufacturingRecord");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ProductionActivityStep");
+
+                    b.Navigation("RecordedBy");
+
+                    b.Navigation("WaterQualityPeriod");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetField", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -32921,6 +30189,197 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("WorksheetField");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetFieldValue", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "EnteredBy")
+                        .WithMany()
+                        .HasForeignKey("EnteredById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "ResolvedFromInstance")
+                        .WithMany()
+                        .HasForeignKey("ResolvedFromInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "WorksheetInstance")
+                        .WithMany("FieldValues")
+                        .HasForeignKey("WorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("EnteredBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ResolvedFromInstance");
+
+                    b.Navigation("WorksheetInstance");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstance", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "AssignedBy")
+                        .WithMany()
+                        .HasForeignKey("AssignedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "RetestOfInstance")
+                        .WithMany()
+                        .HasForeignKey("RetestOfInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.TestRequestSubject", "TestRequestSubject")
+                        .WithMany("WorksheetInstances")
+                        .HasForeignKey("TestRequestSubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetTemplate", "WorksheetTemplate")
+                        .WithMany()
+                        .HasForeignKey("WorksheetTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedBy");
+
+                    b.Navigation("AssignedTo");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("RetestOfInstance");
+
+                    b.Navigation("TestRequestSubject");
+
+                    b.Navigation("WorksheetTemplate");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ReturnedBy")
+                        .WithMany()
+                        .HasForeignKey("ReturnedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "WorksheetInstance")
+                        .WithMany("CorrectionReturns")
+                        .HasForeignKey("WorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ReturnedBy");
+
+                    b.Navigation("WorksheetInstance");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "FromUser")
+                        .WithMany()
+                        .HasForeignKey("FromUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ReassignedBy")
+                        .WithMany()
+                        .HasForeignKey("ReassignedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ToUser")
+                        .WithMany()
+                        .HasForeignKey("ToUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetInstance", "WorksheetInstance")
+                        .WithMany("Reassignments")
+                        .HasForeignKey("WorksheetInstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("FromUser");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ReassignedBy");
+
+                    b.Navigation("ToUser");
+
+                    b.Navigation("WorksheetInstance");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetSection", b =>
@@ -33272,485 +30731,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("QualityAudit");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.CommercialCertificate", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest", "AnalyticalTestRequest")
-                        .WithMany()
-                        .HasForeignKey("AnalyticalTestRequestId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "IssuedBy")
-                        .WithMany()
-                        .HasForeignKey("IssuedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.MaterialSampling.MaterialSampling", "MaterialSampling")
-                        .WithMany()
-                        .HasForeignKey("MaterialSamplingId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("AnalyticalTestRequest");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("IssuedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MaterialSampling");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.CommercialCoaItem", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Forms.FormField", "FormField")
-                        .WithMany()
-                        .HasForeignKey("FormFieldId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.MaterialARD.MaterialAnalyticalRawData", "MaterialArd")
-                        .WithMany("CoaItems")
-                        .HasForeignKey("MaterialArdId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData", "ProductArd")
-                        .WithMany("CoaItems")
-                        .HasForeignKey("ProductArdId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("FormField");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("MaterialArd");
-
-                    b.Navigation("ProductArd");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.MicrobialRequirement", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
-                        .WithMany()
-                        .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Products.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("Material");
-
-                    b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineArd", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Forms.Form", "Form")
-                        .WithMany()
-                        .HasForeignKey("FormId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Form");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineAuditEvent", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineExecution", "RoutineExecution")
-                        .WithMany("AuditEvents")
-                        .HasForeignKey("RoutineExecutionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RoutineExecution");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineCertificate", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineExecution", "RoutineExecution")
-                        .WithMany()
-                        .HasForeignKey("RoutineExecutionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineSample", "RoutineSample")
-                        .WithMany()
-                        .HasForeignKey("RoutineSampleId");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RoutineExecution");
-
-                    b.Navigation("RoutineSample");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineCoaItem", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Forms.FormField", "FormField")
-                        .WithMany()
-                        .HasForeignKey("FormFieldId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineArd", "RoutineArd")
-                        .WithMany("CoaItems")
-                        .HasForeignKey("RoutineArdId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("FormField");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RoutineArd");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineDefinition", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineExecution", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "DoneBy")
-                        .WithMany()
-                        .HasForeignKey("DoneById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.RndTrialBatches.RndTrialBatch", "RndTrialBatch")
-                        .WithMany()
-                        .HasForeignKey("RndTrialBatchId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineDefinition", "RoutineDefinition")
-                        .WithMany("Executions")
-                        .HasForeignKey("RoutineDefinitionId");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("DoneBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RndTrialBatch");
-
-                    b.Navigation("RoutineDefinition");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineSample", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineExecution", "RoutineExecution")
-                        .WithMany("Samples")
-                        .HasForeignKey("RoutineExecutionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RoutineExecution");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineTrack", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineArd", "RoutineArd")
-                        .WithMany()
-                        .HasForeignKey("RoutineArdId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineSample", "RoutineSample")
-                        .WithMany("Tracks")
-                        .HasForeignKey("RoutineSampleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RoutineArd");
-
-                    b.Navigation("RoutineSample");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.WaterQualityPeriod", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "HeldBy")
-                        .WithMany()
-                        .HasForeignKey("HeldById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineCertificate", "RoutineCertificate")
-                        .WithMany()
-                        .HasForeignKey("RoutineCertificateId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.RoutineSample", "RoutineSample")
-                        .WithMany()
-                        .HasForeignKey("RoutineSampleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedBy");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("HeldBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("RoutineCertificate");
-
-                    b.Navigation("RoutineSample");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.WaterUseRecord", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
-                        .WithMany()
-                        .HasForeignKey("BatchManufacturingRecordId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
-                        .WithMany()
-                        .HasForeignKey("LastDeletedById");
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("LastUpdatedById");
-
-                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivityStep", "ProductionActivityStep")
-                        .WithMany()
-                        .HasForeignKey("ProductionActivityStepId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.RndTrialBatches.RndTrialBatch", "RndTrialBatch")
-                        .WithMany()
-                        .HasForeignKey("RndTrialBatchId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("DOMAIN.Entities.QualityRoutines.WaterQualityPeriod", "WaterQualityPeriod")
-                        .WithMany("UseRecords")
-                        .HasForeignKey("WaterQualityPeriodId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("BatchManufacturingRecord");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("LastDeletedBy");
-
-                    b.Navigation("LastUpdatedBy");
-
-                    b.Navigation("ProductionActivityStep");
-
-                    b.Navigation("RndTrialBatch");
-
-                    b.Navigation("WaterQualityPeriod");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.RecoverableItemsReports.RecoverableItemReport", b =>
@@ -36893,128 +33873,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Executions");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureDefinition", b =>
-                {
-                    b.Navigation("Revisions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.ProcedureRevision", b =>
-                {
-                    b.Navigation("Applicabilities");
-
-                    b.Navigation("Audits");
-
-                    b.Navigation("StageScopes");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivity", b =>
-                {
-                    b.Navigation("Revisions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityAction", b =>
-                {
-                    b.Navigation("Roles");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateActivityRevision", b =>
-                {
-                    b.Navigation("Actions");
-
-                    b.Navigation("Audits");
-
-                    b.Navigation("CompletionRules");
-
-                    b.Navigation("DataBindings");
-
-                    b.Navigation("Forms");
-
-                    b.Navigation("Resources");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateArea", b =>
-                {
-                    b.Navigation("Audits");
-
-                    b.Navigation("Capabilities");
-
-                    b.Navigation("Purposes");
-
-                    b.Navigation("RoleGrants");
-
-                    b.Navigation("SubjectTypes");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateForm", b =>
-                {
-                    b.Navigation("Revisions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateFormRevision", b =>
-                {
-                    b.Navigation("Audits");
-
-                    b.Navigation("ConditionalRules");
-
-                    b.Navigation("Sections");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestion", b =>
-                {
-                    b.Navigation("Revisions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateQuestionRevision", b =>
-                {
-                    b.Navigation("Audits");
-
-                    b.Navigation("CalculationReferences");
-
-                    b.Navigation("Options");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSection", b =>
-                {
-                    b.Navigation("Revisions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSectionRevision", b =>
-                {
-                    b.Navigation("Audits");
-
-                    b.Navigation("ConditionalRules");
-
-                    b.Navigation("Questions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateSharingGrant", b =>
-                {
-                    b.Navigation("Audits");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflow", b =>
-                {
-                    b.Navigation("Revisions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowNode", b =>
-                {
-                    b.Navigation("IncomingEdges");
-
-                    b.Navigation("OutgoingEdges");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.FullProcedures.TemplateWorkflowRevision", b =>
-                {
-                    b.Navigation("Audits");
-
-                    b.Navigation("Edges");
-
-                    b.Navigation("Layouts");
-
-                    b.Navigation("Nodes");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.Grns.Grn", b =>
                 {
                     b.Navigation("MaterialBatches");
@@ -37104,11 +33962,6 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.LeaveRequests.LeaveRequest", b =>
                 {
                     b.Navigation("Approvals");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.MaterialARD.MaterialAnalyticalRawData", b =>
-                {
-                    b.Navigation("CoaItems");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", b =>
@@ -37219,11 +34072,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("PerformanceRecords");
 
                     b.Navigation("PricingAgreements");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData", b =>
-                {
-                    b.Navigation("CoaItems");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductSpecifications.ProductSpecification", b =>
@@ -37340,14 +34188,50 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Charges");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Coa", b =>
+                {
+                    b.Navigation("Rows");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Specification", b =>
+                {
+                    b.Navigation("Characteristics");
+
+                    b.Navigation("WorksheetLinks");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.StandardTestProcedure", b =>
                 {
                     b.Navigation("Steps");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.TestRequest", b =>
+                {
+                    b.Navigation("Subjects");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.TestRequestSubject", b =>
+                {
+                    b.Navigation("WorksheetInstances");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WaterQualityPeriod", b =>
+                {
+                    b.Navigation("UseRecords");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetField", b =>
                 {
                     b.Navigation("Revisions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetInstance", b =>
+                {
+                    b.Navigation("CorrectionReturns");
+
+                    b.Navigation("FieldValues");
+
+                    b.Navigation("Reassignments");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.WorksheetSection", b =>
@@ -37377,38 +34261,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("Findings");
 
                     b.Navigation("TeamMembers");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineArd", b =>
-                {
-                    b.Navigation("CoaItems");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineDefinition", b =>
-                {
-                    b.Navigation("Executions");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineExecution", b =>
-                {
-                    b.Navigation("AuditEvents");
-
-                    b.Navigation("Samples");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineSample", b =>
-                {
-                    b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.RoutineTrack", b =>
-                {
-                    b.Navigation("Response");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.QualityRoutines.WaterQualityPeriod", b =>
-                {
-                    b.Navigation("UseRecords");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.Requisition", b =>

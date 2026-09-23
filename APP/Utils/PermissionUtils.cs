@@ -83,11 +83,6 @@ public static class PermissionSubmodules
     public const string ProductStp = "Product STP";
     public const string ProductSpecification = "Product Specification";
     public const string ProductArd = "Product ARD";
-    public const string RoutineTests = "Routine Tests";
-    public const string RoutineSetup = "Routine Setup";
-    public const string MicrobialRequirements = "Microbial Requirements";
-    public const string WaterQuality = "Water Quality";
-    public const string QualityCertificates = "Quality Certificates";
 
     // Quality Assurance
     public const string IssueBmr = "Issue BMR";
@@ -465,19 +460,6 @@ public static class PermissionKeys
     public const string CanEditProductArd = "CanEditProductArd";
     public const string CanDeleteProductArd = "CanDeleteProductArd";
     public const string CanVerifyProductArd = "CanVerifyProductArd";
-    public const string CanViewRoutineTests = "CanViewRoutineTests";
-    public const string CanCreateRoutineTest = "CanCreateRoutineTest";
-    public const string CanAssignRoutineTest = "CanAssignRoutineTest";
-    public const string CanPerformRoutineTest = "CanPerformRoutineTest";
-    public const string CanCheckRoutineTest = "CanCheckRoutineTest";
-    public const string CanApproveRoutineTest = "CanApproveRoutineTest";
-    public const string CanViewRoutineSetup = "CanViewRoutineSetup";
-    public const string CanManageRoutineSetup = "CanManageRoutineSetup";
-    public const string CanManageMicrobialRequirements = "CanManageMicrobialRequirements";
-    public const string CanViewWaterQuality = "CanViewWaterQuality";
-    public const string CanManageWaterQuality = "CanManageWaterQuality";
-    public const string CanViewQualityCertificates = "CanViewQualityCertificates";
-    public const string CanGenerateQualityCertificate = "CanGenerateQualityCertificate";
 
     // Quality Assurance
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
@@ -2181,19 +2163,6 @@ public static class PermissionUtils
             PermissionSubmodules.ProductArd,
             PermissionKeys.CanDeleteProductArd
         );
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineTests, PermissionKeys.CanViewRoutineTests);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineTests, PermissionKeys.CanCreateRoutineTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineTests, PermissionKeys.CanAssignRoutineTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineTests, PermissionKeys.CanPerformRoutineTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineTests, PermissionKeys.CanCheckRoutineTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineTests, PermissionKeys.CanApproveRoutineTest);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineSetup, PermissionKeys.CanViewRoutineSetup);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.RoutineSetup, PermissionKeys.CanManageRoutineSetup);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MicrobialRequirements, PermissionKeys.CanManageMicrobialRequirements);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.WaterQuality, PermissionKeys.CanViewWaterQuality);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.WaterQuality, PermissionKeys.CanManageWaterQuality);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.QualityCertificates, PermissionKeys.CanViewQualityCertificates);
-        addPermission(PermissionModules.QualityControl, PermissionSubmodules.QualityCertificates, PermissionKeys.CanGenerateQualityCertificate);
 
         // Quality Assurance
         addPermission(
@@ -4604,7 +4573,6 @@ public static class PermissionUtils
             PermissionKeys.CanPromoteRndTechnologyTransfer
         );
 
-        permissions.AddRange(FullProcedurePermissionCatalog.Generate());
         permissions.AddRange(QcWorksheetPermissionCatalog.Generate());
         return permissions;
     }

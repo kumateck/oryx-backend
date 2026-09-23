@@ -71,7 +71,6 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
-using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
@@ -388,19 +387,6 @@ public class ApplicationDbContext(
     public DbSet<FormField> FormFields { get; set; }
     public DbSet<Question> Questions { get; set; }
     public DbSet<QuestionOption> QuestionOptions { get; set; }
-    public DbSet<MicrobialRequirement> MicrobialRequirements => Set<MicrobialRequirement>();
-    public DbSet<CommercialCoaItem> CommercialCoaItems => Set<CommercialCoaItem>();
-    public DbSet<CommercialCertificate> CommercialCertificates => Set<CommercialCertificate>();
-    public DbSet<RoutineArd> RoutineArds => Set<RoutineArd>();
-    public DbSet<RoutineCoaItem> RoutineCoaItems => Set<RoutineCoaItem>();
-    public DbSet<RoutineDefinition> RoutineDefinitions => Set<RoutineDefinition>();
-    public DbSet<RoutineExecution> RoutineExecutions => Set<RoutineExecution>();
-    public DbSet<RoutineSample> RoutineSamples => Set<RoutineSample>();
-    public DbSet<RoutineTrack> RoutineTracks => Set<RoutineTrack>();
-    public DbSet<RoutineAuditEvent> RoutineAuditEvents => Set<RoutineAuditEvent>();
-    public DbSet<RoutineCertificate> RoutineCertificates => Set<RoutineCertificate>();
-    public DbSet<WaterQualityPeriod> WaterQualityPeriods => Set<WaterQualityPeriod>();
-    public DbSet<WaterUseRecord> WaterUseRecords => Set<WaterUseRecord>();
     public DbSet<Response> Responses { get; set; }
     public DbSet<FormResponse> FormResponses { get; set; }
     public DbSet<FormReviewer> FormReviewers { get; set; }
@@ -846,6 +832,89 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetSection> QcWorksheetSections { get; set; }
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetField> QcWorksheetFields { get; set; }
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldRevision> QcWorksheetFieldRevisions { get; set; }
+
+    // Milestone 2. QcSamplingPointGroups is shared master data: Milestone 6's
+    // MonitoringProgram references this same table rather than duplicating the concept.
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPointGroup> QcSamplingPointGroups { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.Specification> QcSpecifications { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink> QcSpecificationWorksheetLinks { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic> QcSpecificationCharacteristics { get; set; }
+
+    // Milestone 3 — the execution layer. A round (TestRequest) covers many Subjects, each
+    // carrying one WorksheetInstance per worksheet link on the round's pinned Specification.
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequest> QcTestRequests { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequestSubject> QcTestRequestSubjects { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstance> QcWorksheetInstances { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldValue> QcWorksheetFieldValues { get; set; }
+
+    /// <summary>
+    /// A plain audit log, deliberately not an approval table: reassigning a worksheet is an
+    /// administrative action rather than an electronic signature.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment> QcWorksheetInstanceReassignments { get; set; }
+
+    /// <summary>
+    /// Every correction cycle a worksheet went through. A log rather than a summary, for the
+    /// same reason reassignments are: keeping only the latest return would discard the earlier
+    /// ones, and the history is the record.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn> QcWorksheetInstanceCorrectionReturns { get; set; }
+
+    /// <summary>
+    /// Milestone 4 — the formal OOS/OOT workflow, one case per failing FieldKey.
+    /// <para>
+    /// Coexists with, and does not modify, the live <c>OosInvestigations</c> table. The one
+    /// place the rebuilt QC module writes to a pre-existing live entity is this workflow's
+    /// disposition, which updates <c>MaterialBatch.Status</c> and
+    /// <c>BatchManufacturingRecord.Status</c> — an application-level status update through the
+    /// existing columns, with no schema change to either table.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.OosCase> QcOosCases { get; set; }
+
+    /// <summary>
+    /// Milestone 5 — certificates. Two new tables, <c>QcCoas</c> and <c>QcCoaRows</c>.
+    /// <para>
+    /// Entirely additive and entirely separate from the live certificate path: nothing here reads
+    /// or writes <c>CommercialCertificates</c>, <c>CommercialCoaItems</c> or
+    /// <c>RoutineCertificates</c>, which keep running unchanged. The name <c>Coa</c> is the
+    /// rebuilt module's own entity and is not a rename of any of them.
+    /// </para>
+    /// <para>
+    /// Every value a certificate prints is stored on these two tables, snapshotted at generation
+    /// time. Nothing joins forward to the Specification or the WorksheetInstances to render an
+    /// issued document.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.Coa> Coas { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.CoaRow> CoaRows { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — scheduled routine testing. <c>QcSamplingPoints</c> turns what the old system
+    /// only ever held as a loose string into master data, and <c>QcMonitoringPrograms</c> is the
+    /// per-point schedule the daily due-date scan reads.
+    /// <para>
+    /// Entirely additive. Nothing here reads or writes <c>RoutineDefinitions</c>,
+    /// <c>RoutineExecutions</c>, <c>RoutineSamples</c> or <c>RoutineTracks</c> — the shelved
+    /// routine implementation's tables stay untouched, exactly like every other do-not-touch
+    /// boundary in this module.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPoint> QcSamplingPoints { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.MonitoringProgram> QcMonitoringPrograms { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — water validity windows and the uses booked against them.
+    /// <para>
+    /// New tables, and deliberately not a reuse of any existing water-adjacent table: nothing here
+    /// touches the live water stock path this module coexists with.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterQualityPeriod> QcWaterQualityPeriods { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterUseRecord> QcWaterUseRecords { get; set; }
 
     #endregion
 
@@ -2066,95 +2135,6 @@ public class ApplicationDbContext(
 
     private void ConfigureConstraints(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<MicrobialRequirement>().HasOne(item => item.Material)
-            .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<MicrobialRequirement>().HasOne(item => item.Product)
-            .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<MicrobialRequirement>().HasIndex(item => item.MaterialId)
-            .IsUnique().HasFilter("\"Subject\" = 0 AND \"IsVerified\" = FALSE AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<MicrobialRequirement>().HasIndex(item => item.ProductId)
-            .IsUnique().HasFilter("\"Subject\" = 1 AND \"IsVerified\" = FALSE AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<MicrobialRequirement>().ToTable(table =>
-            table.HasCheckConstraint("CK_MicrobialRequirements_Subject",
-                "(\"Subject\" = 0 AND \"MaterialId\" IS NOT NULL AND \"ProductId\" IS NULL AND \"Stage\" IS NULL) OR " +
-                "(\"Subject\" = 1 AND \"MaterialId\" IS NULL AND \"ProductId\" IS NOT NULL AND \"Stage\" = 2)"));
-        modelBuilder.Entity<CommercialCertificate>().HasOne(item => item.MaterialSampling)
-            .WithMany().HasForeignKey(item => item.MaterialSamplingId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CommercialCertificate>().HasOne(item => item.AnalyticalTestRequest)
-            .WithMany().HasForeignKey(item => item.AnalyticalTestRequestId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CommercialCertificate>().HasIndex(item => item.MaterialSamplingId)
-            .IsUnique().HasFilter("\"MaterialSamplingId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<CommercialCertificate>().HasIndex(item => item.AnalyticalTestRequestId)
-            .IsUnique().HasFilter("\"AnalyticalTestRequestId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<CommercialCertificate>().ToTable(table =>
-            table.HasCheckConstraint("CK_CommercialCertificates_Target",
-                "(\"Target\" = 0 AND \"MaterialSamplingId\" IS NOT NULL AND \"AnalyticalTestRequestId\" IS NULL) OR " +
-                "(\"Target\" = 1 AND \"MaterialSamplingId\" IS NULL AND \"AnalyticalTestRequestId\" IS NOT NULL)"));
-        modelBuilder.Entity<CommercialCoaItem>().HasOne(item => item.MaterialArd)
-            .WithMany(item => item.CoaItems).HasForeignKey(item => item.MaterialArdId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<CommercialCoaItem>().HasOne(item => item.ProductArd)
-            .WithMany(item => item.CoaItems).HasForeignKey(item => item.ProductArdId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<CommercialCoaItem>().HasOne(item => item.FormField)
-            .WithMany().HasForeignKey(item => item.FormFieldId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CommercialCoaItem>().HasIndex(item => new { item.MaterialArdId, item.FormFieldId })
-            .IsUnique().HasFilter("\"MaterialArdId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<CommercialCoaItem>().HasIndex(item => new { item.ProductArdId, item.FormFieldId })
-            .IsUnique().HasFilter("\"ProductArdId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<CommercialCoaItem>().ToTable(table =>
-            table.HasCheckConstraint("CK_CommercialCoaItems_Ard",
-                "(\"MaterialArdId\" IS NOT NULL AND \"ProductArdId\" IS NULL) OR " +
-                "(\"MaterialArdId\" IS NULL AND \"ProductArdId\" IS NOT NULL)"));
-        modelBuilder.Entity<RoutineArd>().HasIndex(item => new { item.Type, item.AnalysisType })
-            .IsUnique().HasFilter("\"DeletedAt\" IS NULL");
-        modelBuilder.Entity<RoutineCoaItem>().HasIndex(item => new { item.RoutineArdId, item.FormFieldId })
-            .IsUnique().HasFilter("\"DeletedAt\" IS NULL");
-        modelBuilder.Entity<RoutineExecution>().HasIndex(item => item.RoutineCode).IsUnique();
-        modelBuilder.Entity<RoutineTrack>().HasIndex(item => new { item.RoutineSampleId, item.AnalysisType })
-            .IsUnique().HasFilter("\"DeletedAt\" IS NULL");
-        modelBuilder.Entity<RoutineCertificate>().HasIndex(item => item.RoutineSampleId)
-            .IsUnique().HasFilter("\"RoutineSampleId\" IS NOT NULL AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<RoutineCertificate>().HasIndex(item => item.RoutineExecutionId)
-            .IsUnique().HasFilter("\"RoutineSampleId\" IS NULL AND \"DeletedAt\" IS NULL");
-        modelBuilder.Entity<WaterQualityPeriod>()
-            .HasIndex(item => item.RoutineCertificateId).IsUnique()
-            .HasFilter("\"DeletedAt\" IS NULL");
-        modelBuilder.Entity<WaterQualityPeriod>().HasOne(item => item.RoutineCertificate)
-            .WithMany().HasForeignKey(item => item.RoutineCertificateId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<WaterQualityPeriod>().HasOne(item => item.RoutineSample)
-            .WithMany().HasForeignKey(item => item.RoutineSampleId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<WaterUseRecord>().HasOne(item => item.WaterQualityPeriod)
-            .WithMany(item => item.UseRecords).HasForeignKey(item => item.WaterQualityPeriodId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<WaterUseRecord>().HasOne(item => item.BatchManufacturingRecord)
-            .WithMany().HasForeignKey(item => item.BatchManufacturingRecordId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<WaterUseRecord>().HasOne(item => item.ProductionActivityStep)
-            .WithMany().HasForeignKey(item => item.ProductionActivityStepId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<WaterUseRecord>().HasOne(item => item.RndTrialBatch)
-            .WithMany().HasForeignKey(item => item.RndTrialBatchId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<WaterUseRecord>().ToTable(table =>
-            table.HasCheckConstraint("CK_WaterUseRecords_Subject",
-                "(\"BatchManufacturingRecordId\" IS NOT NULL AND \"RndTrialBatchId\" IS NULL) OR " +
-                "(\"BatchManufacturingRecordId\" IS NULL AND \"ProductionActivityStepId\" IS NULL AND \"RndTrialBatchId\" IS NOT NULL)"));
-        modelBuilder.Entity<Response>().HasOne(item => item.RoutineTrack)
-            .WithOne(item => item.Response).HasForeignKey<Response>(item => item.RoutineTrackId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<FormAssignee>().HasOne(item => item.RoutineTrack)
-            .WithMany().HasForeignKey(item => item.RoutineTrackId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<RoutineExecution>().HasOne(item => item.RndTrialBatch)
-            .WithMany().HasForeignKey(item => item.RndTrialBatchId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<RoutineArd>().HasOne(item => item.Form)
-            .WithMany().HasForeignKey(item => item.FormId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<RoutineTrack>().HasOne(item => item.RoutineArd)
-            .WithMany().HasForeignKey(item => item.RoutineArdId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.ProductionOrder)
             .WithMany().HasForeignKey(item => item.ProductionOrderId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.QualityAudits.QualityAudit>().HasOne(item => item.Material)

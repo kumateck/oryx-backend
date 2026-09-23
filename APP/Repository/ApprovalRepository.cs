@@ -4477,6 +4477,9 @@ public class ApprovalRepository(
                 break;
             case QcWorksheetModelTypes.StandardTestProcedure:
             case QcWorksheetModelTypes.WorksheetTemplate:
+            case QcWorksheetModelTypes.Specification:
+            case QcWorksheetModelTypes.WorksheetInstance:
+            case QcWorksheetModelTypes.OosCase:
                 await QcApprovalHandler.CreateAsync(context, modelType, modelId, stages, approval);
                 break;
             default:

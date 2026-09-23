@@ -55,12 +55,6 @@ precision gaps, closed here:
    than factor 2") — they're never tied to a COA-bound `Specification` at all, since
    Media Qualification produces no COA. `Result` now supports inline `Constant`-mode
    acceptance text/range as an alternative to `Characteristic` binding.
-   **Confirmed storage (2026-09-18):** no dedicated `AcceptanceCriteria` column exists
-   on `WorksheetField` — a Constant-mode `Result` field's inline criteria live in the
-   existing `ConstantValue` field, the same column any other `Constant`-mode field
-   uses to carry its fixed value. This is the settled convention, not a provisional
-   stand-in; the frontend worksheet-template builder (`build-briefs/01-...`) already
-   implements it this way.
 2. **`ReferencedResult` needed a runtime resolution key, not just a template
    pointer.** A Water worksheet references six different Media Qualification
    instances by medium name *and batch number* — many qualification records exist

@@ -261,6 +261,39 @@ internal static class QcApprovalHandler
                 template.Status = QcDocumentStatus.Approved;
                 template.UpdatedAt = DateTime.UtcNow;
                 break;
+
+            case QcApprovalEntityTypes.Specification:
+                var specification = await context.QcSpecifications
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (specification is null) return;
+                specification.Approved = true;
+                specification.Status = QcDocumentStatus.Approved;
+                specification.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            // A worksheet carries the execution lifecycle rather than the controlled-document
+            // one, so an approved review lands on Reviewed, not "Approved".
+            case QcApprovalEntityTypes.WorksheetInstance:
+                var instance = await context.QcWorksheetInstances
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (instance is null) return;
+                instance.Approved = true;
+                instance.Status = WorksheetInstanceStatus.Reviewed;
+                instance.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            // An OOS case's Status is deliberately left alone here. Flipping Approved is all
+            // this handler does; closing the case and writing the real batch status is
+            // OosCaseRepository's job, because that write has to happen against the outcome the
+            // signer stated and only once every required stage has signed — which is exactly
+            // what Approved becoming true means.
+            case QcApprovalEntityTypes.OosCase:
+                var oosCase = await context.QcOosCases
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (oosCase is null) return;
+                oosCase.Approved = true;
+                oosCase.UpdatedAt = DateTime.UtcNow;
+                break;
         }
     }
 
@@ -287,6 +320,42 @@ internal static class QcApprovalHandler
                 template.Approved = false;
                 template.Status = QcDocumentStatus.Draft;
                 template.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcApprovalEntityTypes.Specification:
+                var specification = await context.QcSpecifications
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (specification is null) return;
+                specification.Approved = false;
+                specification.Status = QcDocumentStatus.Draft;
+                specification.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            // A rejected review is a return for correction: the worksheet goes back to the
+            // analyst, in progress, with its entered values and its assignee intact.
+            case QcApprovalEntityTypes.WorksheetInstance:
+                var instance = await context.QcWorksheetInstances
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (instance is null) return;
+                instance.Approved = false;
+                instance.Status = WorksheetInstanceStatus.InProgress;
+                instance.SubmittedAt = null;
+                instance.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            // A refused disposition sends the case back to QA's queue with its proposed outcome
+            // cleared, rather than closing it: nothing has been decided, and a batch that is
+            // still quarantined must stay quarantined.
+            case QcApprovalEntityTypes.OosCase:
+                var oosCase = await context.QcOosCases
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (oosCase is null) return;
+                oosCase.Approved = false;
+                oosCase.Status = OosCaseStatus.PendingQaDisposition;
+                oosCase.DispositionOutcome = null;
+                oosCase.DispositionById = null;
+                oosCase.DispositionAt = null;
+                oosCase.UpdatedAt = DateTime.UtcNow;
                 break;
         }
     }

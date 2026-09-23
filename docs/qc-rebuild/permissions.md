@@ -10,6 +10,11 @@ CONFIGURATION
   qc.worksheetTemplate.view / .create / .edit / .approve / .supersede
   qc.specification.view / .create / .edit / .approve / .supersede
   qc.monitoringProgram.view / .create / .edit / .pause
+  qc.samplingPoint.view / .manage       (master data — view splits off, then create/edit/
+                                         delete share one key, mirroring the pair Milestone 2
+                                         gave SamplingPointGroup; neither has a lifecycle to
+                                         gate transitions on, but reading reference data is a
+                                         distinct concern from administering it)
 
 WATER QUALITY
   qc.waterQuality.view
@@ -34,6 +39,10 @@ TEST ROOM
   qc.worksheet.returnForCorrection
 
 QUALITY REVIEW / OOS
+  qc.oos.view                           (the queue and a single case — read splits off from
+                                         investigate, because the retest authorizer and the QA
+                                         signer both act on a case they would otherwise hold
+                                         no key to load)
   qc.oos.investigate
   qc.oos.retest.authorize
   qc.oos.disposition
@@ -65,13 +74,3 @@ Phase 3 rollout without handing that same group ordinary STP-creation rights.
 See [roles-permission-matrix.md](./roles-permission-matrix.md) for which real job
 roles (QC Officer, QA Executive, QC Manager, QA Manager/Deputy, QA Head) get which of
 the keys above.
-
-**Confirmed exception (2026-09-18):** the centralized `qc/worksheets/approvals` queue
-itself has no dedicated view key, unlike every other screen in this list. This is
-deliberate, not an oversight — the queue is inherently self-scoped to "my pending
-approvals" (the backend only ever returns items the caller is a configured approver
-for), so a separate view permission would gate nothing real; anyone who can see an
-item in that queue is, by construction, someone already entitled to act on it via
-that item's own `.approve` key (`qc.stp.approve`, `qc.worksheetTemplate.approve`,
-etc.). The sidebar entry is gated on holding any one of those `.approve` keys, purely
-as a navigational convenience, not as an access-control boundary.
