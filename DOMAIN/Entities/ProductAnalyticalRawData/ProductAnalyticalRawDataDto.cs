@@ -3,18 +3,21 @@ using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Users;
 
 namespace DOMAIN.Entities.ProductAnalyticalRawData;
 
 public class ProductAnalyticalRawDataDto : WithAttachment
 {
+    public DOMAIN.Entities.QualityRoutines.AnalysisType AnalysisType { get; set; }
     public string SpecNumber { get; set; }
     public TestStage Stage { get; set; }
     public string Description { get; set; }
     public FormDto Form { get; set; }
     public ProductStandardTestProcedureDto ProductStandardTestProcedure { get; set; }
     public bool IsVerified { get; set; }
+    public List<CommercialCoaItemRequest> CoaItems { get; set; } = [];
 }
 
 public class ProductBatchArd

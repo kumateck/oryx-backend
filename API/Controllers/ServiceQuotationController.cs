@@ -99,9 +99,12 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
         [FromQuery] int pageSize = 10,
         [FromQuery] QuotationStatus? status = null,
         [FromQuery] Guid? jobOrderId = null,
-        [FromQuery] Guid? serviceProviderId = null)
+        [FromQuery] Guid? serviceProviderId = null,
+        [FromQuery] JobOrderStatus? jobOrderStatus = null,
+        [FromQuery] bool proformaPending = false)
     {
-        var result = await repository.GetServiceQuotations(page, pageSize, status, jobOrderId, serviceProviderId);
+        var result = await repository.GetServiceQuotations(page, pageSize, status, jobOrderId,
+            serviceProviderId, jobOrderStatus, proformaPending);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -211,4 +214,3 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 }
-

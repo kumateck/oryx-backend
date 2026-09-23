@@ -1,5 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.JobRequests;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.JobRequests;
@@ -14,7 +15,8 @@ namespace APP.Repository;
 public class JobRequestRepository(ApplicationDbContext context,
     IMapper mapper, 
     UserManager<User> userManager,
-    IApprovalRepository approvalRepository)
+    IApprovalRepository approvalRepository,
+    IJobRequestAssignmentNotifier assignmentNotifier)
     : IJobRequestRepository
 {
     public async Task<Result<Guid>> CreateJobRequest(CreateJobRequest request, Guid departmentId, Guid issuedById)
@@ -250,8 +252,20 @@ public class JobRequestRepository(ApplicationDbContext context,
         if (approvalGate.IsFailure)
             return approvalGate.Error;
 
-        var employee = await context.Employees.AnyAsync(e => e.Id == request.AssignedToEmployeeId);
-        if (!employee) return Error.Validation("Employee.Invalid", "Invalid employee");
+        var employee = await context.Employees
+            .FirstOrDefaultAsync(e => e.Id == request.AssignedToEmployeeId);
+        if (employee is null) return Error.Validation("Employee.Invalid", "Invalid employee");
+
+        if (string.IsNullOrWhiteSpace(employee.Email))
+            return Error.Validation(
+                "Employee.UserAccountUnavailable",
+                "The selected employee has no active user account and cannot receive this assignment");
+
+        var assignee = await userManager.FindByEmailAsync(employee.Email);
+        if (assignee is null || assignee.IsDisabled)
+            return Error.Validation(
+                "Employee.UserAccountUnavailable",
+                "The selected employee has no active user account and cannot receive this assignment");
 
         var assignedBy = await userManager.FindByIdAsync(request.AssignedById.ToString());
         if (assignedBy is null) return Error.Validation("User.Invalid", "User Invalid");
@@ -277,6 +291,8 @@ public class JobRequestRepository(ApplicationDbContext context,
         await context.JobExecutions.AddAsync(jobExecution);
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
+
+        await assignmentNotifier.NotifyAssigned(assignee, jobRequest);
 
         return jobExecution.Id;
     }

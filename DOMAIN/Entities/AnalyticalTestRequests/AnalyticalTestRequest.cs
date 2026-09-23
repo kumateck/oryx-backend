@@ -8,6 +8,9 @@ namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequest : BaseEntity
 {
+    public Guid? ChemicalArdId { get; set; }
+    public Guid? MicrobialArdId { get; set; }
+    public bool MicrobialRequired { get; set; }
     public Guid BatchManufacturingRecordId { get; set; }
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid ProductionScheduleProductId { get; set; }

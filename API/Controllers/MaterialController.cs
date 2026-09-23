@@ -5,6 +5,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Authorization;
@@ -81,6 +82,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="page">The current page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="searchQuery">Search query for filtering results.</param>
+    /// <param name="analysisType">The analysis type the ARD is being created for.</param>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("not-linked-to-ards")]
     [ProducesResponseType(
@@ -91,10 +93,13 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         [FromQuery] MaterialKind kind,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null
+        [FromQuery] string searchQuery = null,
+        [FromQuery] AnalysisType analysisType = AnalysisType.Chemical
     )
     {
-        var result = await repository.GetMaterialsNotLinkedToArd(page, pageSize, searchQuery, kind);
+        var result = await repository.GetMaterialsNotLinkedToArd(
+            page, pageSize, searchQuery, kind, analysisType
+        );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

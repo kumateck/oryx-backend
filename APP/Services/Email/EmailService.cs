@@ -9,15 +9,20 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
     public void SendMail(string name, string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
-        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "erp@entrancepharmaceuticals.com";
+        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME");
         var password = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-        var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "entrancepharmaceuticals.com";
+        var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST");
+        var sender = Environment.GetEnvironmentVariable("SMTP_FROM") ?? username;
         var smtpPort = Convert.ToInt32(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
+
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) ||
+            string.IsNullOrWhiteSpace(smtpHost) || string.IsNullOrWhiteSpace(sender))
+            throw new InvalidOperationException("SMTP_HOST, SMTP_USERNAME and SMTP_PASSWORD must be configured before sending email");
 
         try
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Kumateck LTD", "noreply@kumateck.com"));
+            message.From.Add(new MailboxAddress("Kumateck LTD", sender));
             message.To.Add(new MailboxAddress(name, to));
             message.Subject = subject;
 

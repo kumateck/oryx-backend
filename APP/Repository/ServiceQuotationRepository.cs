@@ -92,7 +92,9 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         int pageSize,
         QuotationStatus? status = null, 
         Guid? jobOrderId = null, 
-        Guid? serviceProviderId = null)
+        Guid? serviceProviderId = null,
+        JobOrderStatus? jobOrderStatus = null,
+        bool proformaPending = false)
     {
         var query = context.ServiceQuotations
             .AsSplitQuery()
@@ -121,6 +123,13 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         {
             query = query.Where(q => q.ServiceProviderId == serviceProviderId.Value);
         }
+
+        if (jobOrderStatus.HasValue)
+            query = query.Where(q => q.JobOrder.Status == jobOrderStatus.Value);
+
+        if (proformaPending)
+            query = query.Where(q => q.JobOrder.Status == JobOrderStatus.QuotationsReceived ||
+                (q.JobOrder.Status == JobOrderStatus.QuotationSelected && q.IsSelected));
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,
             mapper.Map<ServiceQuotationDto>);
@@ -219,4 +228,3 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         return quotationDto.OrderBy(q => q.GrandTotal).ToList();
     }
 }
-

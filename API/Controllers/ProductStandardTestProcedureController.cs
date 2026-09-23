@@ -1,8 +1,10 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -157,7 +159,8 @@ public class ProductStandardTestProcedureController(
     }
 
     /// <summary>
-    /// Retrieves a paginated list of standard test procedures that are not linked to any ARD.
+    /// Retrieves a paginated list of standard test procedures whose product has no ARD yet
+    /// for the requested stage and analysis type.
     /// </summary>
     [HttpGet("unlinked-to-ard")]
     [ProducesResponseType(
@@ -165,15 +168,19 @@ public class ProductStandardTestProcedureController(
         Type = typeof(Paginateable<IEnumerable<ProductStandardTestProcedureDto>>)
     )]
     public async Task<IResult> GetProductStandardTestProceduresNotLinkedToArd(
+        [FromQuery] TestStage stage,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null
+        [FromQuery] string searchQuery = null,
+        [FromQuery] AnalysisType analysisType = AnalysisType.Chemical
     )
     {
         var result = await repository.GetProductStandardTestProceduresNotLinkedToArd(
             page,
             pageSize,
-            searchQuery
+            searchQuery,
+            stage,
+            analysisType
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

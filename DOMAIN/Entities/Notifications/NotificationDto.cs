@@ -33,4 +33,5 @@ public enum NotificationType
     TicketAssigned = 17,
     TicketStatusChanged = 18,
     TicketCommentAdded = 19,
+    JobRequestAssigned = 20,
 }

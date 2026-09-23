@@ -1,6 +1,8 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Repository.QcWorksheets;
 using APP.Services.ProductionActivityStepEventPublisher;
+using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
@@ -21,6 +23,7 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.RndProjects;
 using DOMAIN.Entities.RndFormulations;
@@ -177,6 +180,15 @@ public class ApprovalRepository(
         if (modelType == nameof(RndTechnologyTransfer))
             return await RndTechnologyTransferApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
+
+        // Rebuilt QC module. The handler refuses unless the caller re-authenticated during
+        // this request, so reaching this through the generic approval endpoint cannot sign
+        // a QC document — see IQcReauthContext.
+        if (QcWorksheetModelTypes.IsQcWorksheetModelType(modelType))
+            return await QcApprovalHandler.ApproveAsync(
+                context,
+                serviceProvider.GetService<IQcReauthContext>(),
+                modelType, modelId, userId, roleIds, comments);
 
         if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
         {
@@ -2151,6 +2163,13 @@ public class ApprovalRepository(
         if (modelType == nameof(RndTechnologyTransfer))
             return await RndTechnologyTransferApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
+
+        // Rebuilt QC module — same re-authentication gate as ApproveItem above.
+        if (QcWorksheetModelTypes.IsQcWorksheetModelType(modelType))
+            return await QcApprovalHandler.RejectAsync(
+                context,
+                serviceProvider.GetService<IQcReauthContext>(),
+                modelType, modelId, userId, roleIds, comments);
 
         if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
         {
@@ -4350,6 +4369,20 @@ public class ApprovalRepository(
                 .OrderBy(stage => stage.Order)
                 .ToListAsync();
 
+        // QC deliberately opts out of the automatic-approval fallback below. Every other
+        // module treats "no workflow configured" as "approve it automatically"; for a QC
+        // controlled document that would produce an approved record with no identified
+        // approver and no re-authenticated signature, which is exactly what
+        // meaning-of-signature forbids. QC fails loudly instead.
+        if (QcWorksheetModelTypes.IsQcWorksheetModelType(modelType)
+            && (approval is null || stages.Count == 0))
+        {
+            throw new InvalidOperationException(
+                $"No approval workflow is configured for '{configurationType}'. A QC document "
+                + "cannot be submitted for review until an administrator defines its approval "
+                + "stages, because QC documents may never be automatically approved.");
+        }
+
         if (approval is null || stages.Count == 0)
         {
             var reason = approval is null
@@ -4441,6 +4474,10 @@ public class ApprovalRepository(
                 break;
             case nameof(RndTechnologyTransfer):
                 await RndTechnologyTransferApprovalHandler.CreateAsync(context, modelId, stages, approval);
+                break;
+            case QcWorksheetModelTypes.StandardTestProcedure:
+            case QcWorksheetModelTypes.WorksheetTemplate:
+                await QcApprovalHandler.CreateAsync(context, modelType, modelId, stages, approval);
                 break;
             default:
                 throw new NotSupportedException(

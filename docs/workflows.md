@@ -1,5 +1,185 @@
 # Workflow behavior
 
+## Procedure definition workflow (2026-09-16)
+
+1. An area Author creates a Procedure revision from one exact Published
+   Workflow revision and its current content hash.
+2. The draft declares Product/Site applicability by Batch Type and assigns every
+   Activity node to exactly one Manufacturing, Packaging, Shared or Development
+   record scope. Production-purpose Procedures reject Development scope.
+3. Draft saves are reasoned and hash-fenced. Validation is side-effect-free and
+   reports dependency, scope and applicability failures without changing state.
+4. Submission, review and approval require separate capabilities and actors as
+   required by the area's review policy.
+5. Approval rechecks the Workflow/hash, Activity coverage and active Product/Site
+   references in a serializable transaction. A replacement approval retires the
+   previous Approved revision atomically.
+6. Retirement is explicit, reasoned and audited. Historical revisions remain
+   available by exact ID.
+
+An Approved Procedure definition is not an issued batch. It creates no BMR/BPR
+master, release bundle, effective assignment, run, evidence or domain effect;
+legacy Routes remain the execution owner.
+
+## Template sharing grant workflow (2026-09-16)
+
+1. Templates are private to their owning area until a reasoned sharing request
+   pins one exact Published revision and content hash for one target area.
+2. The source Publisher may offer it or the target Author may request it. A
+   different actor in the other area approves or rejects the request.
+3. Approval rechecks Published state, hash, source ownership, and target
+   purpose/subject compatibility. Drift fails closed.
+4. A Publisher in either area may revoke an Active grant with the current
+   version and a reason. Every transition appends a hashed audit snapshot.
+5. Impact reads return definition dependencies and active-grant counts only.
+   Completed responses and regulated evidence remain separately authorized.
+
+The grant records governed eligibility rather than a direct cross-area
+reference. The separate adoption workflow below consumes it to create a local
+Draft. Sharing alone does not inherit approvals or move existing consumers.
+
+## Template adoption workflow (2026-09-16)
+
+1. A target-area Author selects one current Active sharing grant and supplies
+   exact dependency mappings; Activity adoption also supplies explicit local
+   role mappings.
+2. The server rechecks the grant version, both active areas and the exact source
+   revision's Published state and content hash.
+3. Missing, extra, duplicate or incompatible dependency/role mappings fail
+   before any target definition is committed.
+4. The existing Question, Section, Form, Activity or Workflow create service
+   creates a target-owned Draft and performs its normal target validation.
+5. In the same serializable transaction, the grant version advances, an
+   `Adopted` grant audit is appended and immutable source-to-target lineage is
+   recorded. A grant can be adopted only once.
+6. The Draft follows the target area's own review and publication lifecycle.
+   Source approvals, actors, responses, evidence and existing consumers are not
+   copied or moved.
+
+## Template Workflow revision workflow (2026-09-16)
+
+1. An area Author declares a typed node/edge graph and pins each Activity
+   node to an exact Published Activity revision in the same area/purpose/
+   subject context.
+2. Branch nodes carry unique branch keys on every outgoing edge; Fork/Join
+   and Hold/Resume nodes pair by a shared group key; Rework nodes point only
+   to a strictly earlier node and declare a bounded attempt ceiling.
+3. The server rejects a graph with more than one Start, no End, an
+   unreachable node, a cycle outside the Rework back-reference, or an
+   unpaired Fork/Join or Hold/Resume key, before it is ever persisted.
+4. Review/publication follows the same hash-fenced, reasoned, three-person
+   governance as Activities, Forms, Sections and Questions. Publication
+   rechecks every pinned Activity revision is still Published; a replacement
+   retires the prior Published revision atomically.
+5. Node layout (canvas position) can be saved independently of this
+   lifecycle — it works against Draft, In Review or Published revisions, is
+   not hash-fenced against the governed content, and is not audited.
+6. Node labels and node/edge order are governed semantic content and therefore
+   change the revision hash. Layout coordinates must be finite numbers.
+
+Publishing a Workflow does not execute it. A governed action contract,
+release bundle, handler version and idempotent domain adapter remain
+mandatory runtime gates, same as the Activity layer it pins. Legacy Route
+execution is unchanged.
+
+## Template Activity revision workflow (2026-09-16)
+
+1. An area Author binds exact Published Forms and declares ordered typed actions.
+2. Actions name eligible performer roles and, where required, disjoint checker
+   and approver roles already assigned to the area.
+3. Resources must be configured capabilities. Inputs/outputs and completion
+   rules are explicit; required forms, evidence, approvals and transaction
+   receipts cannot be omitted from completion.
+4. Review/publication follows the same hash-fenced, reasoned, three-person
+   governance as Questions, Sections and Forms.
+5. Publication rechecks Forms, roles and capabilities. Missing dependencies fail
+   closed; a replacement retires the prior Published revision atomically.
+
+Publishing an Activity does not execute it. A governed action contract, release
+bundle, handler version and idempotent domain adapter remain mandatory runtime
+gates. Legacy Route execution is unchanged.
+
+## Template Section and Form revision workflow (2026-09-16)
+
+1. An area Author composes a Section only from exact Published Question
+   revisions, or a Form only from exact Published Section revisions in the same
+   area/purpose/subject context.
+2. Conditional dependencies point only backward. A Section rule references an
+   earlier pinned Question; a Form rule references an exact Question revision
+   inside an earlier pinned Section.
+3. Draft saves and lifecycle transitions require an expected content hash and
+   reason. A different Reviewer records review or returns the revision.
+4. An independent Publisher rechecks pinned dependencies. A retired dependency
+   makes publication fail closed.
+5. Publishing a replacement retires the prior Published revision
+   transactionally. Historical consumers remain pinned to exact revision IDs.
+
+This governs reusable definitions only. It grants no completed-response access,
+binds no signature evidence, issues no BMR/BPR and executes no Procedure. Legacy
+Forms, Questions and Routes are unchanged.
+
+## Template Question revision workflow (2026-09-16)
+
+1. An area Author creates a stable question and its first Draft revision against
+   an active area purpose/subject binding.
+2. Draft saves require the currently loaded content hash. Invalid answer/input
+   combinations, options, limits, UOMs or calculation references fail closed.
+3. Submission moves Draft to In Review. A different Reviewer records review or
+   returns it to Draft for reasoned correction; the content hash must still match.
+4. A Publisher who is not the author publishes the reviewed revision. Under a
+   regulated three-person policy the Publisher must also differ from the
+   Reviewer.
+5. Publication retires the prior Published revision in one transaction. Existing
+   consumers can remain pinned to that exact historical revision; changes begin
+   as a new Draft.
+6. A Publisher can explicitly retire a Published revision using its exact hash
+   and a reason. Every command records an actor/correlation-bound JSON snapshot
+   audit. Area bindings in use by a question cannot be removed.
+
+This lifecycle does not by itself publish activity/workflow templates or
+execute a Procedure. Legacy Settings Questions and Routes are unchanged.
+
+## Template Area configuration workflow (2026-09-16)
+
+1. A caller with `CanViewQuestionTemplates` loads the reviewed catalog. The
+   catalog exposes supported purposes, subjects, declarative capabilities,
+   review policies and active roles; it does not expose executable URLs/code.
+2. A caller with `CanManageTemplateAreas` creates an area while acting through
+   its owner role or an Administrator grant. The server validates every
+   combination and writes configuration plus a hashed audit snapshot together.
+3. Readers see only areas assigned through their current roles. Viewer, Author,
+   Reviewer and Publisher grants do not imply administration; owner role or an
+   Administrator grant is required for changes.
+4. Updates and active-state changes require a reason and expected version.
+   Stale writes return 409 and do not append an audit record. Deactivation
+   retains the area and history; there is no destructive delete workflow.
+5. Template Question, Section and Form revisions now use their own
+   author/review/publish workflows; Workflow templates and
+   completed-response access remain separate future
+   workflows with their own keys and subject scopes. Area administration
+   cannot issue a Procedure or execute a material or quality action.
+
+## Full Procedures capability registration (2026-09-16)
+
+The permission system can now assign the reviewed Full Procedures capabilities,
+but existing roles retain their current claims and no workflow transition was
+activated. A future endpoint must require its capability and independently pass
+resource, area, assignment, state and separation-of-duties checks. Legacy Route
+execution remains unchanged.
+The persisted area policy prevents an area manager from publishing or
+reading HR/QC/Microbiology responses by implication and rejects an actor whose
+global key is valid but whose area or owner-group assignment is not.
+
+## Chemical, Microbial, Routine QC, and water coverage (2026-09-15)
+
+Chemical and configured Microbial tracks have separate worksheets and aggregate before
+material/product release or certificate issue. Scheduled routines use Monthly or
+Quarterly calendar periods; emergency routines are Event-triggered with a reason. Water
+requires both analysis tracks, Environmental monitoring requires Microbial, and water
+coverage/use records never mutate unlimited stock. Linked routine work also gates R&D
+trial-batch completion. See
+[`quality-ard-routine-microbiology-2026-09-15.md`](quality-ard-routine-microbiology-2026-09-15.md).
+
 ## Full Procedures Phase-0 backend semantics (2026-09-15)
 
 The isolated `APP/Services/FullProcedures/ProcedureRuntimeSpike.cs` proves graph
@@ -385,3 +565,15 @@ orders exist the rate is null rather than a fabricated zero.
 4. Apply optional material-kind and inclusive timestamp filters to pending receipts.
 5. Return an empty report when no receipt matches; warehouse configuration is not an
    error for consolidated QC reporting.
+
+## Internal job assignment and external proforma handoff (2026-09-16)
+
+1. A pending Job Request branches explicitly to internal assignment or an external Job Order; changing the request to `Acknowledged` is not an assignment operation.
+2. Internal assignment validates an active ERP user for the selected employee, persists the assigned request and Job Execution, and sends that user an in-app `JobRequestAssigned` notification.
+3. The assignee is visible on the Job Request list so assignment delivery can be reconciled against the selected employee.
+4. For external work, quotation comparison persists the chosen quotation through `POST /api/v1/job-orders/select-quotation`.
+5. Sending a Service Proforma Request repeats that idempotent selection mutation before the proforma mutation. This restores `QuotationSelected` for legacy records where `ServiceQuotation.IsSelected` was stored without the matching Job Order status.
+6. If quotation persistence fails, the proforma request is not sent. Existing approval gates, audit headers, quotation ownership checks, and proforma duplicate protection remain authoritative.
+# Service quotation handoff (2026-09-16)
+
+The quotation list projects the persisted job-order status for pending comparison and proforma queues. Reselection of the same quotation at `QuotationSelected` is idempotent. Selecting a different quotation is permitted only before a proforma request, while an order already beyond `QuotationSelected` rejects selection without changing its state. Proforma request creation still creates a persisted invoice request and advances the order to `ProformaInvoiceRequested`; historical quotations remain available.

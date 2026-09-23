@@ -219,13 +219,21 @@ public class PermissionRepository(
         if (role == null)
             return RoleErrors.NotFound(roleId);
 
-        if (permissionModules.Count == 0)
-            return Result.Success();
-
         // Extract permissions and their types from the provided sections
         var requestedPermissions = permissionModules
+            .Where(section => section?.Children != null)
             .SelectMany(section => section.Children)
             .Select(permission => new { permission.Key, Types = permission.Types ?? [] })
+            .Where(permission => !string.IsNullOrWhiteSpace(permission.Key))
+            .GroupBy(permission => permission.Key, StringComparer.Ordinal)
+            .Select(group => new
+            {
+                Key = group.Key,
+                Types = group.SelectMany(permission => permission.Types)
+                    .Where(type => !string.IsNullOrWhiteSpace(type))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList(),
+            })
             .ToList();
 
         // Retrieve current role permissions
@@ -235,51 +243,57 @@ public class PermissionRepository(
 
         var roleClaimIds = roleClaims.Select(r => r.Id).ToList();
 
-        context.RoleClaims.RemoveRange(roleClaims);
-
         var permissionTypes = await context
             .PermissionTypes.Where(pt => roleClaimIds.Contains(pt.RoleClaimId))
             .ToListAsync();
 
+        // Delete the dependent rows first. Calling RoleManager.AddClaimAsync while
+        // the old tracked claims are marked Deleted can cause EF to track duplicate
+        // RoleClaim keys and surface as an unhandled 500 during SaveChanges.
         context.PermissionTypes.RemoveRange(permissionTypes);
+        context.RoleClaims.RemoveRange(roleClaims);
 
-        // Add new permissions and their types
-        foreach (var permission in requestedPermissions)
-        {
-            // Add the new role claim for the permission
-            var claim = new Claim(AppConstants.Permission, permission.Key);
-            await roleManager.AddClaimAsync(role, claim);
+        await context.SaveChangesAsync();
 
-            // Retrieve the newly added role claim ID
-            var newClaim = await context.RoleClaims.FirstOrDefaultAsync(rc =>
-                rc.RoleId == roleId && rc.ClaimValue == permission.Key
-            );
-
-            if (newClaim != null)
+        // Insert the complete replacement set in one unit of work. This also makes
+        // an empty permission list a real clear operation.
+        var newClaims = requestedPermissions
+            .Select(permission => new IdentityRoleClaim<Guid>
             {
-                if (permission.Types.Count == 0)
-                    continue;
-                // Add associated types to PermissionType table
-                await context.PermissionTypes.AddRangeAsync(
-                    permission
-                        .Types.Select(type => new PermissionType
-                        {
-                            Key = permission.Key,
-                            RoleClaimId = newClaim.Id,
-                            Type = type,
-                        })
-                        .ToList()
-                );
+                RoleId = roleId,
+                ClaimType = AppConstants.Permission,
+                ClaimValue = permission.Key,
+            })
+            .ToList();
+        await context.RoleClaims.AddRangeAsync(newClaims);
+        await context.SaveChangesAsync();
+
+        var newPermissionTypes = newClaims
+            .SelectMany((claim, index) => requestedPermissions[index].Types.Select(type => new PermissionType
+            {
+                Key = claim.ClaimValue,
+                RoleClaimId = claim.Id,
+                Type = type,
+            }))
+            .ToList();
+        await context.PermissionTypes.AddRangeAsync(newPermissionTypes);
+
+        try
+        {
+            await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{roleId}");
+            // Clear the cache for users in the role
+            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name ?? "");
+            foreach (var user in usersInRole)
+            {
+                cache.Remove($"UserId_{user.Id}_Permissions");
+                await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{user.Id}");
             }
         }
-
-        await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{roleId}");
-        // Clear the cache for users in the role
-        var usersInRole = await userManager.GetUsersInRoleAsync(role.Name ?? "");
-        foreach (var user in usersInRole)
+        catch (Exception exception)
         {
-            cache.Remove($"UserId_{user.Id}_Permissions");
-            await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{user.Id}");
+            // Redis is an optimization. A cache outage must not turn a committed
+            // permission change into a 500 response.
+            logger.LogWarning(exception, "Unable to invalidate permission cache for role {RoleId}", roleId);
         }
 
         await context.SaveChangesAsync();

@@ -10,6 +10,7 @@ public class ServiceQuotationDto : BaseDto
 {
     public string QuotationNumber { get; set; }
     public Guid JobOrderId { get; set; }
+    public JobOrderStatus JobOrderStatus { get; set; }
     public ServiceDto Service { get; set; }
     public ServiceProviderReducedDto ServiceProvider { get; set; }
     public DateTime SubmittedDate { get; set; }
@@ -60,4 +61,3 @@ public class ServiceChargeDto
     public decimal Cost { get; set; }
     public string PriceUoM { get; set; }
 }
-

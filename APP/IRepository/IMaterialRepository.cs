@@ -3,6 +3,7 @@ using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.AspNetCore.Http;
@@ -24,7 +25,8 @@ public interface IMaterialRepository
         int page,
         int pageSize,
         string searchQuery,
-        MaterialKind kind
+        MaterialKind kind,
+        AnalysisType analysisType
     );
     Task<Result<List<MaterialCategoryDto>>> GetMaterialCategories(MaterialKind? materialKind);
     Task<Result<List<MaterialDto>>> GetMaterials();

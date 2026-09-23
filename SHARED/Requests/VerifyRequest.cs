@@ -7,6 +7,8 @@ public enum VerifiableEntity
     ProductSpecification = 2,
     MaterialAnalyticalRawData = 3,
     ProductAnalyticalRawData = 4,
+    RoutineArd = 5,
+    MicrobialRequirement = 6,
 }
 
 public class VerifyRequest

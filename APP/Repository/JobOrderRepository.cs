@@ -209,6 +209,14 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         if (quotation is null)
             return Error.NotFound("Quotation.NotFound", "Quotation not found");
 
+        if (jobOrder.Status == JobOrderStatus.QuotationSelected &&
+            jobOrder.SelectedQuotationId == request.QuotationId)
+            return Result.Success();
+
+        if (jobOrder.Status != JobOrderStatus.QuotationsReceived &&
+            jobOrder.Status != JobOrderStatus.QuotationSelected)
+            return Error.Validation("JobOrder.InvalidStatus", "Quotation selection is not available at this job order stage");
+
         // Update all quotations - mark selected one
         foreach (var quot in jobOrder.Quotations)
         {
@@ -440,4 +448,3 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         return $"JO-{DateTime.UtcNow:yyyyMM}-{count + 1:D4}";
     }
 }
-

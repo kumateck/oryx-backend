@@ -2,10 +2,14 @@ using System.Collections.Concurrent;
 using APP.Claims;
 using APP.IRepository;
 using APP.Repository;
+using APP.Repository.QcWorksheets;
 using APP.Services;
+using APP.Services.QcWorksheets;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
+using APP.Services.FullProcedures;
+using APP.Services.JobRequests;
 using APP.Services.Message;
 using APP.Services.NotificationService;
 using APP.Services.OnlyOffice;
@@ -99,6 +103,10 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
+        services.AddScoped<IRoutineQcRepository, RoutineQcRepository>();
+        services.AddScoped<IMicrobialRequirementRepository, MicrobialRequirementRepository>();
+        services.AddScoped<ICommercialCertificateRepository, CommercialCertificateRepository>();
+        services.AddScoped<IWaterQualityRepository, WaterQualityRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IDesignationRepository, DesignationRepository>();
         services.AddScoped<ILeaveEntitlementRepository, LeaveEntitlementRepository>();
@@ -163,6 +171,14 @@ public static class DependencyInjection
         services.AddScoped<IItemGrnRepository, ItemGrnRepository>();
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IStpDocumentRepository, StpDocumentRepository>();
+
+        // Rebuilt QC module (additive; coexists with the live Material/Product/Packaging QC path).
+        services.AddScoped<IQcReauthContext, QcReauthContext>();
+        services.AddScoped<IQcSignatureService, QcSignatureService>();
+        services.AddScoped<IStpDocxImportService, StpDocxImportService>();
+        services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
+        services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
+        services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
         services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();
@@ -173,6 +189,15 @@ public static class DependencyInjection
         services.AddScoped<IFormulaResponseRuntimeService, FormulaResponseRuntimeService>();
         services.AddScoped<IFormulaSubmissionService, FormulaSubmissionService>();
         services.AddScoped<IFormRevisionService, FormRevisionService>();
+        services.AddScoped<ITemplateAreaService, TemplateAreaService>();
+        services.AddScoped<ITemplateQuestionService, TemplateQuestionService>();
+        services.AddScoped<ITemplateSectionService, TemplateSectionService>();
+        services.AddScoped<ITemplateFormService, TemplateFormService>();
+        services.AddScoped<ITemplateActivityService, TemplateActivityService>();
+        services.AddScoped<ITemplateWorkflowService, TemplateWorkflowService>();
+        services.AddScoped<ITemplateSharingService, TemplateSharingService>();
+        services.AddScoped<ITemplateAdoptionService, TemplateAdoptionService>();
+        services.AddScoped<IProcedureService, ProcedureService>();
         services.AddSingleton(_ => FormulaCalculationSettings.Load());
         services.AddTransient<FormulaCalculationClientAuthHandler>();
         services.AddHttpClient<IFormulaCalculationClient, FormulaCalculationClient>((provider, client) =>
@@ -194,6 +219,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IJobRequestAssignmentNotifier, JobRequestAssignmentNotifier>();
         services.AddScoped<IProductionActivityStepEventPublisher, ProductionActivityStepEventPublisher>();
         //services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
