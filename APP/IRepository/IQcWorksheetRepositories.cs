@@ -354,7 +354,7 @@ public interface IMonitoringProgramRepository
 /// person does to one afterwards are activate it, hold it, and record uses against it.
 /// </para>
 /// </summary>
-public interface IWaterQualityRepository
+public interface IQcWaterQualityRepository
 {
     Task<Result<List<WaterQualityPeriodSummaryDto>>> GetPeriods(
         WaterQualityPeriodStatus? status, Guid? samplingPointId);
