@@ -336,6 +336,49 @@ public class WorksheetTemplateAcceptanceTests
         Assert.Equal(2, unchanged.Value.Sections[0].Fields[0].Revisions.Count);
     }
 
+    [Fact]
+    public async Task Editing_a_draft_repairs_duplicate_saved_field_keys()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var userId = (await harness.SeedUser()).Id;
+        var request = new CreateWorksheetTemplateRequest
+        {
+            Code = "WS-DUP-REPAIR", Name = "Duplicate repair",
+            Category = WorksheetCategory.Chemical,
+            Sections = [new CreateWorksheetSectionRequest
+            {
+                Order = 1, Name = "Assay", Fields = [Field("standard_weight", "Standard weight")]
+            }]
+        };
+        var created = await harness.Templates.CreateTemplate(request, userId);
+        Assert.True(created.IsSuccess);
+        var original = await harness.Db.QcWorksheetFields
+            .Include(field => field.Revisions)
+            .SingleAsync(field => field.Id == created.Value.Sections[0].Fields[0].Id);
+        var duplicate = new WorksheetField
+        {
+            Id = Guid.NewGuid(), WorksheetSectionId = original.WorksheetSectionId,
+            FieldKey = original.FieldKey, Label = original.Label,
+            Type = original.Type, Mode = original.Mode, Order = original.Order,
+            CreatedAt = original.CreatedAt.AddMilliseconds(1), CreatedById = userId
+        };
+        harness.Db.QcWorksheetFields.Add(duplicate);
+        await harness.Db.SaveChangesAsync();
+
+        var edited = await harness.Templates.UpdateTemplate(created.Value.Id,
+            new UpdateWorksheetTemplateRequest
+            {
+                Code = request.Code, Name = request.Name, Category = request.Category,
+                Sections = request.Sections
+            }, userId);
+
+        Assert.True(edited.IsSuccess);
+        Assert.Equal(original.Id, edited.Value.Sections[0].Fields[0].Id);
+        Assert.Single(await harness.Db.QcWorksheetFields
+            .Where(field => field.WorksheetSectionId == original.WorksheetSectionId)
+            .ToListAsync());
+    }
+
     /// <summary>The edit-triggers-versioning rule applies to templates exactly as to STPs.</summary>
     [Fact]
     public async Task Effective_template_rejects_edits_and_versions_correctly()

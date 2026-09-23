@@ -348,6 +348,11 @@ public class WorksheetTemplateRepository(
 
         foreach (var field in fields)
         {
+            if (field.Mode == WorksheetFieldMode.Constant
+                && field.Type != WorksheetFieldType.Heading
+                && string.IsNullOrWhiteSpace(field.ConstantValue))
+                return QcWorksheetErrors.ConstantValueRequired(field.FieldKey);
+
             var formulaRequired = field.Type is WorksheetFieldType.CalculatedValue
                 or WorksheetFieldType.CfuCalculation;
 
@@ -407,6 +412,9 @@ public class WorksheetTemplateRepository(
 
         if (string.IsNullOrWhiteSpace(table?.ColumnDefinitions))
             return null;
+
+        if (WorksheetRowHeaders.IsHeaderColumn(table.ColumnDefinitions, columnKey))
+            return false;
 
         try
         {
@@ -518,9 +526,17 @@ public class WorksheetTemplateRepository(
         WorksheetTemplate template, List<CreateWorksheetSectionRequest> requested, Guid userId)
     {
         var incoming = requested ?? [];
-        var existingFields = template.Sections
+        var originalSections = template.Sections.ToList();
+        var originalFields = originalSections
             .SelectMany(section => section.Fields)
-            .ToDictionary(field => field.FieldKey ?? string.Empty, StringComparer.OrdinalIgnoreCase);
+            .ToList();
+        // Older concurrent saves could leave duplicate keys in a draft. Keep the oldest
+        // field (and its revision history), then remove the other rows during the merge.
+        var existingFields = originalFields
+            .GroupBy(field => field.FieldKey ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key,
+                group => group.OrderBy(field => field.CreatedAt).ThenBy(field => field.Id).First(),
+                StringComparer.OrdinalIgnoreCase);
 
         var keptFieldIds = new HashSet<Guid>();
         var keptSectionIds = new HashSet<Guid>();
@@ -599,6 +615,7 @@ public class WorksheetTemplateRepository(
                     var created = NewField(fieldRequest, fieldIndex, userId);
                     created.WorksheetSectionId = section.Id;
                     context.QcWorksheetFields.Add(created);
+                    existingFields[key] = created;
                     keptFieldIds.Add(created.Id);
                     fields.Add(created);
                 }
@@ -608,15 +625,14 @@ public class WorksheetTemplateRepository(
             resultSections.Add(section);
         }
 
-        var removedFields = template.Sections
-            .SelectMany(section => section.Fields)
+        var removedFields = originalFields
             .Where(field => !keptFieldIds.Contains(field.Id))
             .ToList();
 
         if (removedFields.Count > 0)
             context.QcWorksheetFields.RemoveRange(removedFields);
 
-        var removedSections = template.Sections
+        var removedSections = originalSections
             .Where(section => !keptSectionIds.Contains(section.Id))
             .ToList();
 

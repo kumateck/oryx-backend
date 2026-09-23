@@ -87,6 +87,11 @@ public static class QcWorksheetErrors
             "QcWorksheetTemplate.InvalidFormula",
             $"The formula on field '{fieldKey}' is invalid: {reason}");
 
+    public static Error ConstantValueRequired(string fieldKey) =>
+        Error.Validation(
+            "QcWorksheetTemplate.ConstantValueRequired",
+            $"The constant field '{fieldKey}' requires a value.");
+
     public static Error TemplateHasNoSections =>
         Error.Validation("QcWorksheetTemplate.NoSections", "A worksheet template must have at least one section");
 
@@ -355,6 +360,11 @@ public static class QcWorksheetErrors
         Error.Validation(
             "QcWorksheetInstance.FieldNotEnterable",
             $"Field '{fieldKey}' is {mode} and cannot be entered by an analyst.");
+
+    public static Error RowHeaderIsNotEnterable(string fieldKey, string columnKey) =>
+        Error.Validation(
+            "QcWorksheetInstance.RowHeaderNotEnterable",
+            $"Column '{columnKey}' of table '{fieldKey}' contains template row headers and cannot be entered by an analyst.");
 
     public static Error ReferencedResultIsNotEnterable(string fieldKey) =>
         Error.Validation(

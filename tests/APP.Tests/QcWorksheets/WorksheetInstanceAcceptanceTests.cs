@@ -283,6 +283,41 @@ public class WorksheetInstanceAcceptanceTests
         Assert.Equal("SF-91", subject.SubjectRef);
     }
 
+    [Fact]
+    public async Task Configured_table_row_headers_cannot_be_written_as_results()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var table = Field("peak_areas", WorksheetFieldType.Table);
+        table.ColumnDefinitions = """
+            [{"key":"injection","label":"Injection","type":"ShortText","rowHeader":true,"fixedValues":["1","2"]},
+             {"key":"standard","label":"Standard","type":"Measurement"}]
+            """;
+        var template = await harness.SeedTemplateWithFields(
+            "WS/EM/ROW-HEADERS", WorksheetCategory.Microbial, table);
+        var (instanceId, analyst) = await StartedWorksheet(harness, template);
+
+        var rejected = await harness.WorksheetInstances.SaveValues(
+            instanceId,
+            new SaveWorksheetValuesRequest { FieldValues = [
+                new WorksheetFieldValueEntry {
+                    FieldKey = "peak_areas", ColumnKey = "injection", RowIndex = 0, Value = "9"
+                }
+            ] },
+            analyst.Id);
+        Assert.False(rejected.IsSuccess);
+        Assert.Equal("QcWorksheetInstance.RowHeaderNotEnterable", rejected.Error.Code);
+
+        var accepted = await harness.WorksheetInstances.SaveValues(
+            instanceId,
+            new SaveWorksheetValuesRequest { FieldValues = [
+                new WorksheetFieldValueEntry {
+                    FieldKey = "peak_areas", ColumnKey = "standard", RowIndex = 0, Value = "123"
+                }
+            ] },
+            analyst.Id);
+        Assert.True(accepted.IsSuccess, accepted.Error?.Description);
+    }
+
     // -----------------------------------------------------------------------
     // Criterion 5 — the instrument gate
     // -----------------------------------------------------------------------
