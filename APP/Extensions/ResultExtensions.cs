@@ -29,6 +29,7 @@ public static class ResultExtensions
                 ErrorType.Validation => StatusCodes.Status400BadRequest,
                 ErrorType.NotFound => StatusCodes.Status404NotFound,
                 ErrorType.Conflict => StatusCodes.Status409Conflict,
+                ErrorType.Forbidden => StatusCodes.Status403Forbidden,
                 ErrorType.Failure => StatusCodes.Status412PreconditionFailed,
                 _ => StatusCodes.Status500InternalServerError
             };
@@ -39,6 +40,7 @@ public static class ResultExtensions
                 ErrorType.Validation => "Bad Request",
                 ErrorType.NotFound => "Not Found.",
                 ErrorType.Conflict => "Conflict",
+                ErrorType.Forbidden => "Forbidden",
                 _ => "Server Failure"
             };
 
@@ -48,6 +50,7 @@ public static class ResultExtensions
                 ErrorType.Validation => "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.1",
                 ErrorType.NotFound => "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.4",
                 ErrorType.Conflict => "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.8",
+                ErrorType.Forbidden => "https://datatracker.ietf.org/doc/html/rfc7231#section-6.5.3",
                 _ => "https://datatracker.ietf.org/doc/html/rfc7231#section-6.6.1"
             };
     }

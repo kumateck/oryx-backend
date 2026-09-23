@@ -820,6 +820,104 @@ public class ApplicationDbContext(
 
     #endregion
 
+    #region QcWorksheets
+
+    // Rebuilt QC module (additive). Coexists with, and does not touch, the live
+    // Material/Product/Packaging QC tables. Mapped by
+    // INFRASTRUCTURE/EntityConfigurations/QcWorksheets/.
+    public DbSet<DOMAIN.Entities.QcWorksheets.QcApproval> QcApprovals { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.StandardTestProcedure> QcStandardTestProcedures { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.StpStep> QcStpSteps { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetTemplate> QcWorksheetTemplates { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetSection> QcWorksheetSections { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetField> QcWorksheetFields { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldRevision> QcWorksheetFieldRevisions { get; set; }
+
+    // Milestone 2. QcSamplingPointGroups is shared master data: Milestone 6's
+    // MonitoringProgram references this same table rather than duplicating the concept.
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPointGroup> QcSamplingPointGroups { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.Specification> QcSpecifications { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink> QcSpecificationWorksheetLinks { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic> QcSpecificationCharacteristics { get; set; }
+
+    // Milestone 3 — the execution layer. A round (TestRequest) covers many Subjects, each
+    // carrying one WorksheetInstance per worksheet link on the round's pinned Specification.
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequest> QcTestRequests { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequestSubject> QcTestRequestSubjects { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstance> QcWorksheetInstances { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldValue> QcWorksheetFieldValues { get; set; }
+
+    /// <summary>
+    /// A plain audit log, deliberately not an approval table: reassigning a worksheet is an
+    /// administrative action rather than an electronic signature.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment> QcWorksheetInstanceReassignments { get; set; }
+
+    /// <summary>
+    /// Every correction cycle a worksheet went through. A log rather than a summary, for the
+    /// same reason reassignments are: keeping only the latest return would discard the earlier
+    /// ones, and the history is the record.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn> QcWorksheetInstanceCorrectionReturns { get; set; }
+
+    /// <summary>
+    /// Milestone 4 — the formal OOS/OOT workflow, one case per failing FieldKey.
+    /// <para>
+    /// Coexists with, and does not modify, the live <c>OosInvestigations</c> table. The one
+    /// place the rebuilt QC module writes to a pre-existing live entity is this workflow's
+    /// disposition, which updates <c>MaterialBatch.Status</c> and
+    /// <c>BatchManufacturingRecord.Status</c> — an application-level status update through the
+    /// existing columns, with no schema change to either table.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.OosCase> QcOosCases { get; set; }
+
+    /// <summary>
+    /// Milestone 5 — certificates. Two new tables, <c>QcCoas</c> and <c>QcCoaRows</c>.
+    /// <para>
+    /// Entirely additive and entirely separate from the live certificate path: nothing here reads
+    /// or writes <c>CommercialCertificates</c>, <c>CommercialCoaItems</c> or
+    /// <c>RoutineCertificates</c>, which keep running unchanged. The name <c>Coa</c> is the
+    /// rebuilt module's own entity and is not a rename of any of them.
+    /// </para>
+    /// <para>
+    /// Every value a certificate prints is stored on these two tables, snapshotted at generation
+    /// time. Nothing joins forward to the Specification or the WorksheetInstances to render an
+    /// issued document.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.Coa> Coas { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.CoaRow> CoaRows { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — scheduled routine testing. <c>QcSamplingPoints</c> turns what the old system
+    /// only ever held as a loose string into master data, and <c>QcMonitoringPrograms</c> is the
+    /// per-point schedule the daily due-date scan reads.
+    /// <para>
+    /// Entirely additive. Nothing here reads or writes <c>RoutineDefinitions</c>,
+    /// <c>RoutineExecutions</c>, <c>RoutineSamples</c> or <c>RoutineTracks</c> — the shelved
+    /// routine implementation's tables stay untouched, exactly like every other do-not-touch
+    /// boundary in this module.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPoint> QcSamplingPoints { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.MonitoringProgram> QcMonitoringPrograms { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — water validity windows and the uses booked against them.
+    /// <para>
+    /// New tables, and deliberately not a reuse of any existing water-adjacent table: nothing here
+    /// touches the live water stock path this module coexists with.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterQualityPeriod> QcWaterQualityPeriods { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterUseRecord> QcWaterUseRecords { get; set; }
+
+    #endregion
+
     // #region TenantFilter
     // private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, IBaseEntity, IOrganizationType
     // {

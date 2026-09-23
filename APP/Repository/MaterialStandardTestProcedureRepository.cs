@@ -4,6 +4,7 @@ using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -72,7 +73,8 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
         int pageSize,
         string searchQuery,
         MaterialKind materialKind,
-        bool unused
+        bool unused,
+        AnalysisType analysisType = AnalysisType.Chemical
     )
     {
         var query = context
@@ -85,10 +87,10 @@ public class MaterialStandardTestProcedureRepository(ApplicationDbContext contex
 
         if (unused)
         {
-            var usedStpIds = await context
-                .MaterialAnalyticalRawData.Select(item => item.StpId)
-                .ToListAsync();
-            query = query.Where(stp => !usedStpIds.Contains(stp.Id));
+            query = query.Where(stp => !context.MaterialAnalyticalRawData.Any(ard =>
+                ard.MaterialStandardTestProcedure.MaterialId == stp.MaterialId
+                && ard.AnalysisType == analysisType
+            ));
         }
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

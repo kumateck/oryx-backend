@@ -21,9 +21,15 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         CreateProductAnalyticalRawDataRequest request
     )
     {
+        if (!Enum.IsDefined(request.AnalysisType) ||
+            request.AnalysisType == DOMAIN.Entities.QualityRoutines.AnalysisType.Microbial
+            && request.Stage != TestStage.Finished)
+            return Error.Validation("ProductArd.AnalysisType",
+                "Microbial analysis is configured for finished product stage only.");
         var form = await context
             .Forms.Include(item => item.Sections)
                 .ThenInclude(section => section.Fields)
+                .ThenInclude(field => field.Question)
             .FirstOrDefaultAsync(item => item.Id == request.FormId);
 
         if (form == null)
@@ -47,7 +53,26 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             );
         }
 
+        var productId = await context.ProductStandardTestProcedures
+            .Where(item => item.Id == request.StpId).Select(item => item.ProductId)
+            .SingleAsync();
+        if (await context.ProductAnalyticalRawData.AnyAsync(item =>
+            item.ProductStandardTestProcedure.ProductId == productId &&
+            item.Stage == request.Stage && item.AnalysisType == request.AnalysisType))
+            return Error.Conflict("ProductArd.Exists",
+                "This product stage already has an ARD for the requested analysis type.");
+        if (!form.Sections.Any(section =>
+            section.AnalysisType == null || section.AnalysisType == request.AnalysisType))
+            return Error.Validation("ProductArd.Worksheet",
+                "The worksheet form has no sections configured for the requested analysis type.");
         var analyticalRawData = mapper.Map<ProductAnalyticalRawData>(request);
+        analyticalRawData.Id = Guid.NewGuid();
+        var coaItems = CommercialCoaConfiguration.Build(
+            form, request.AnalysisType, request.CoaItems,
+            materialArdId: null,
+            productArdId: analyticalRawData.Id);
+        if (coaItems.IsFailure) return coaItems.Errors;
+        analyticalRawData.CoaItems = coaItems.Value;
 
         await context.ProductAnalyticalRawData.AddAsync(analyticalRawData);
         await context.SaveChangesAsync();
@@ -61,6 +86,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var query = context
             .ProductAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .IgnoreQueryFilters()
             .Include(ad => ad.ProductStandardTestProcedure)
                 .ThenInclude(p => p.Product)
@@ -110,6 +136,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var analyticalRawData = await context
             .ProductAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .IgnoreQueryFilters()
             .Include(ad => ad.Form)
             .Include(ad => ad.ProductStandardTestProcedure)
@@ -141,6 +168,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
     {
         var analyticalRawData = await context
             .ProductAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .IgnoreQueryFilters()
             .Include(ad => ad.Form)
                 .ThenInclude(f => f.Sections.OrderBy(s => s.Order))
@@ -189,12 +217,14 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
 
         var productArd = await context
             .ProductAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .IgnoreQueryFilters()
             .Include(p => p.ProductStandardTestProcedure)
             .Where(p => !p.DeletedAt.HasValue)
             .FirstOrDefaultAsync(p =>
                 p.ProductStandardTestProcedure.ProductId == bmr.ProductionScheduleProduct.ProductId
                 && (!testStage.HasValue || p.Stage == testStage.Value)
+                && p.AnalysisType == DOMAIN.Entities.QualityRoutines.AnalysisType.Chemical
             );
 
         var productSpec = await context.ProductSpecifications
@@ -241,6 +271,9 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             );
         }
 
+        if (request.AnalysisType != analyticalRawData.AnalysisType)
+            return Error.Conflict("ProductArd.AnalysisType",
+                "An existing ARD cannot change analysis type; create a governed revision.");
         mapper.Map(request, analyticalRawData);
 
         context.ProductAnalyticalRawData.Update(analyticalRawData);

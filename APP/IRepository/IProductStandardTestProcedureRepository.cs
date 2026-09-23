@@ -1,6 +1,8 @@
 using APP.Utils;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using SHARED;
 
 namespace APP.IRepository;
@@ -29,7 +31,9 @@ public interface IProductStandardTestProcedureRepository
     Task<Result<List<ProductStpMappingDto>>> AddRemoveProductsToStp(AddRemoveProductToStpRequest request);
     Task<
         Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
-    > GetProductStandardTestProceduresNotLinkedToArd(int page, int pageSize, string searchQuery);
+    > GetProductStandardTestProceduresNotLinkedToArd(
+        int page, int pageSize, string searchQuery, TestStage stage, AnalysisType analysisType
+    );
 
     Task<Result> DeleteProductStandardTestProcedure(Guid id, Guid userId);
 }

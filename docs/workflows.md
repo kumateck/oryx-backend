@@ -1,5 +1,23 @@
 # Workflow behavior
 
+## QC worksheet table row headers (2026-09-22)
+
+A template table may define one row-header column with fixed labels. These are
+template content, not analyst entries: `SaveValues` rejects a value addressed
+to that column, and formula validation excludes it from table aggregates.
+Other table columns remain normal result inputs. The frontend uses the number
+of configured labels as the fixed row count; tables without headers retain
+open-ended rows. No approval or instance status changes are implied.
+
+## QC worksheet template constants (2026-09-22)
+
+Creating or updating a worksheet template validates that each Constant-mode
+field has a nonblank `ConstantValue`. Heading fields are exempt because their
+label is the displayed heading. The template stores the fixed value, includes
+it in the detail and worksheet instance DTOs, and worksheet execution renders
+it as read-only method text. This validation happens before a template write,
+so rejected drafts create no template or field revisions.
+
 ## Full Procedures Phase-0 backend semantics (2026-09-15)
 
 The isolated `APP/Services/FullProcedures/ProcedureRuntimeSpike.cs` proves graph
@@ -385,3 +403,10 @@ orders exist the rate is null rather than a fabricated zero.
 4. Apply optional material-kind and inclusive timestamp filters to pending receipts.
 5. Return an empty report when no receipt matches; warehouse configuration is not an
    error for consolidated QC reporting.
+
+## QC worksheet draft edit recovery (2026-09-22)
+
+When editing a Draft worksheet template, fields are matched by their worksheet-wide keys so
+their identities and revision histories survive edits. If older overlapping saves left duplicate
+stored keys, the edit keeps the oldest field and its history and removes the duplicate rows.
+Incoming duplicate keys remain invalid; this recovery applies only to already-stored draft data.

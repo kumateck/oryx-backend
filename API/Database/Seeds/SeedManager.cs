@@ -9,7 +9,12 @@ public static class SeedManager
     {
         using var scope = host.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        context.Database.Migrate();
+        var configuration = scope.ServiceProvider
+            .GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
+        if (configuration.GetValue("Database:ApplyMigrationsOnStartup", true))
+        {
+            context.Database.Migrate();
+        }
 
         try
         {

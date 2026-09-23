@@ -3,6 +3,12 @@ using APP.Repository;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.OosInvestigations;
+using DOMAIN.Entities.Forms;
+using DOMAIN.Entities.ProductAnalyticalRawData;
+using DOMAIN.Entities.Products;
+using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.QualityRoutines;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,14 +52,42 @@ public class OosInvestigationRepositoryTests
 
     private static AnalyticalTestRequest SeedAtr(ApplicationDbContext context)
     {
+        var product = new Product { Id = Guid.NewGuid(), Name = "Test product" };
+        var scheduleProduct = new ProductionScheduleProduct
+        {
+            Id = Guid.NewGuid(), ProductId = product.Id, Product = product
+        };
+        var form = new Form { Id = Guid.NewGuid(), Name = "Chemical worksheet" };
+        var stp = new ProductStandardTestProcedure
+        {
+            Id = Guid.NewGuid(), ProductId = product.Id, Product = product,
+            StpNumber = "STP-TEST"
+        };
+        var ard = new ProductAnalyticalRawData
+        {
+            Id = Guid.NewGuid(), StpId = stp.Id,
+            ProductStandardTestProcedure = stp, FormId = form.Id, Form = form,
+            Stage = TestStage.Intermediate, AnalysisType = AnalysisType.Chemical,
+            IsVerified = true
+        };
         var atr = new AnalyticalTestRequest
         {
-            Id = Guid.NewGuid(),
-            Status = AnalyticalTestStatus.Testing,
+            Id = Guid.NewGuid(), Status = AnalyticalTestStatus.Testing,
             ExpiryDate = DateTime.UtcNow.AddYears(1),
             ManufacturingDate = DateTime.UtcNow,
+            ProductionScheduleProductId = scheduleProduct.Id,
+            BatchManufacturingRecordId = Guid.NewGuid(),
+            ProductionActivityStepId = Guid.NewGuid(),
+            ChemicalArdId = ard.Id, Stage = TestStage.Intermediate
         };
-        context.AnalyticalTestRequests.Add(atr);
+        var response = new Response
+        {
+            Id = Guid.NewGuid(), FormId = form.Id, Form = form,
+            BatchManufacturingRecordId = atr.BatchManufacturingRecordId,
+            ProductionActivityStepId = atr.ProductionActivityStepId,
+            Approved = true
+        };
+        context.AddRange(product, scheduleProduct, form, stp, ard, atr, response);
         return atr;
     }
 

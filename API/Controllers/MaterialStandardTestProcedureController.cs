@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,9 +32,9 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>))]
     public async Task<IResult> GetStandardTestProcedures([FromQuery] MaterialKind materialKind, [FromQuery] bool unused, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null)
+        [FromQuery] string searchQuery = null, [FromQuery] AnalysisType analysisType = AnalysisType.Chemical)
     {
-        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind, unused);
+        var result = await repository.GetMaterialStandardTestProcedures(page, pageSize, searchQuery, materialKind, unused, analysisType);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

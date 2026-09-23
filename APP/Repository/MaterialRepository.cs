@@ -13,6 +13,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Reports.Warehouse;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
@@ -171,7 +172,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         int page,
         int pageSize,
         string searchQuery,
-        MaterialKind kind
+        MaterialKind kind,
+        AnalysisType analysisType
     )
     {
         var query = context
@@ -179,6 +181,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(m =>
                 !context.MaterialAnalyticalRawData.Any(ard =>
                     ard.MaterialStandardTestProcedure.MaterialId == m.Id
+                    && ard.AnalysisType == analysisType
                 )
             )
             .AsQueryable();
@@ -1200,6 +1203,11 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             return Error.NotFound("MaterialBatch.NotFound", "Material batch not found.");
         }
 
+        var readiness = await QualityAnalysisReadiness.MaterialAsync(context, batchId);
+        if (readiness.IsFailure) return readiness.Errors;
+        if (!readiness.Value)
+            return Error.Conflict("MaterialBatch.QcPending",
+                "Chemical or configured Microbial analysis is not fully approved.");
         materialBatch.Status = BatchStatus.Approved;
         materialBatch.DateApproved = DateTime.UtcNow;
 

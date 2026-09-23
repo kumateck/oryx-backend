@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using APP.Claims;
 using APP.IRepository;
 using APP.Repository;
+using APP.Repository.QcWorksheets;
 using APP.Services;
+using APP.Services.QcWorksheets;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
@@ -163,6 +165,42 @@ public static class DependencyInjection
         services.AddScoped<IItemGrnRepository, ItemGrnRepository>();
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IStpDocumentRepository, StpDocumentRepository>();
+
+        // Rebuilt QC module (additive; coexists with the live Material/Product/Packaging QC path).
+        services.AddScoped<IQcReauthContext, QcReauthContext>();
+        services.AddScoped<IQcSignatureService, QcSignatureService>();
+        services.AddScoped<IStpDocxImportService, StpDocxImportService>();
+        services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
+        services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
+        services.AddScoped<ISpecificationRepository, SpecificationRepository>();
+        services.AddScoped<ISamplingPointGroupRepository, SamplingPointGroupRepository>();
+        services.AddScoped<ITestRequestRepository, TestRequestRepository>();
+        services.AddScoped<IWorksheetInstanceRepository, WorksheetInstanceRepository>();
+        services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();
+
+        // Milestone 4 — the formal OOS/OOT workflow. Detection is its own service rather than
+        // part of the worksheet repository: submitting a result and judging it against a
+        // Specification are separate concerns, and the judging half has to be testable alone.
+        services.AddScoped<IQcOosDetectionService, QcOosDetectionService>();
+        services.AddScoped<IOosCaseRepository, OosCaseRepository>();
+
+        // Milestone 5 — certificates. Generation is a service rather than part of the repository
+        // because it is a system trigger with two callers (a worksheet reaching Reviewed, and an
+        // OOS case closing), while the repository serves only the two user actions.
+        services.AddScoped<IQcCoaGenerationService, QcCoaGenerationService>();
+        services.AddScoped<ICoaRepository, CoaRepository>();
+
+        // Milestone 6 — scheduled routine testing and water validity windows. The due-date scan
+        // and the water-period scaffolding are services rather than repository methods for the
+        // same reason certificate generation is: both are system triggers hanging off something
+        // other than a user action (a nightly clock, a certificate issuance), and both have to be
+        // testable without that trigger.
+        services.AddScoped<ISamplingPointRepository, SamplingPointRepository>();
+        services.AddScoped<IMonitoringProgramRepository, MonitoringProgramRepository>();
+        services.AddScoped<IQcMonitoringScanService, QcMonitoringScanService>();
+        services.AddScoped<IQcWaterQualityPeriodService, QcWaterQualityPeriodService>();
+        services.AddScoped<IWaterQualityRepository, WaterQualityRepository>();
+
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
         services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();
@@ -202,6 +240,11 @@ public static class DependencyInjection
         services.AddHostedService<MaterialBatchExpiryService>();
         services.AddHostedService<EmployeeSuspensionService>();
         services.AddHostedService<WaterStockMaintenanceService>();
+
+        // Milestone 6 — the daily QC monitoring due-date scan. A plain BackgroundService on a
+        // 24-hour delay, matching every other scheduled job above; no scheduler package is
+        // introduced for one sweep.
+        services.AddHostedService<QcMonitoringScanBackgroundService>();
     }
 
     public static void AddSingletonServices(this IServiceCollection services)

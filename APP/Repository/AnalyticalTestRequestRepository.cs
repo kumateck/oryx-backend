@@ -32,7 +32,18 @@ public class AnalyticalTestRequestRepository(
         )
             return Error.Validation("Atr", $"This atr at stage {request.Stage} already exists");
 
+        var productId = await context.ProductionScheduleProducts
+            .Where(item => item.Id == request.ProductionScheduleProductId)
+            .Select(item => item.ProductId).FirstOrDefaultAsync();
+        if (productId == Guid.Empty)
+            return Error.NotFound("Atr.Product", "Production schedule product was not found.");
+        var selection = await QualityAnalysisSnapshot.ForProductAsync(
+            context, productId, request.Stage);
+        if (selection.IsFailure) return selection.Errors;
         var test = mapper.Map<AnalyticalTestRequest>(request);
+        test.ChemicalArdId = selection.Value.ChemicalArdId;
+        test.MicrobialArdId = selection.Value.MicrobialArdId;
+        test.MicrobialRequired = selection.Value.MicrobialRequired;
         await context.AddAsync(test);
         await context.SaveChangesAsync();
         return test.Id;
@@ -177,6 +188,12 @@ public class AnalyticalTestRequestRepository(
         }
         else if (request.Status == AnalyticalTestStatus.Released)
         {
+            var readiness = await QualityAnalysisReadiness.ProductStageAsync(context, test);
+            if (readiness.IsFailure) return readiness.Errors;
+            if (!readiness.Value)
+                return Error.Conflict("Atr.QcPending",
+                    "Chemical or configured Microbial analysis is not fully approved.");
+            test.Status = AnalyticalTestStatus.Released;
             test.ReleasedAt = DateTime.UtcNow;
             test.ReleasedById = userId;
             var activityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
@@ -270,6 +287,11 @@ public class AnalyticalTestRequestRepository(
             return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         }
 
+        var readiness = await QualityAnalysisReadiness.ProductStageAsync(context, test);
+        if (readiness.IsFailure) return readiness.Errors;
+        if (!readiness.Value)
+            return Error.Conflict("Atr.QcPending",
+                "Chemical or configured Microbial analysis is not fully approved.");
         test.ExpiryDate = extendedExpiryDate;
         test.Status = AnalyticalTestStatus.Released;
         test.LastUpdatedById = userId;
