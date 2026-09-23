@@ -71,6 +71,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
@@ -451,6 +452,20 @@ public class ApplicationDbContext(
 
     public DbSet<QcEquipment> QcEquipments { get; set; }
     public DbSet<QcEquipmentCategory> QcEquipmentCategories { get; set; }
+
+    public DbSet<MicrobialRequirement> MicrobialRequirements => Set<MicrobialRequirement>();
+    public DbSet<CommercialCoaItem> CommercialCoaItems => Set<CommercialCoaItem>();
+    public DbSet<CommercialCertificate> CommercialCertificates => Set<CommercialCertificate>();
+    public DbSet<RoutineArd> RoutineArds => Set<RoutineArd>();
+    public DbSet<RoutineCoaItem> RoutineCoaItems => Set<RoutineCoaItem>();
+    public DbSet<RoutineDefinition> RoutineDefinitions => Set<RoutineDefinition>();
+    public DbSet<RoutineExecution> RoutineExecutions => Set<RoutineExecution>();
+    public DbSet<RoutineSample> RoutineSamples => Set<RoutineSample>();
+    public DbSet<RoutineTrack> RoutineTracks => Set<RoutineTrack>();
+    public DbSet<RoutineAuditEvent> RoutineAuditEvents => Set<RoutineAuditEvent>();
+    public DbSet<RoutineCertificate> RoutineCertificates => Set<RoutineCertificate>();
+    public DbSet<WaterQualityPeriod> WaterQualityPeriods => Set<WaterQualityPeriod>();
+    public DbSet<WaterUseRecord> WaterUseRecords => Set<WaterUseRecord>();
 
     #endregion
 
