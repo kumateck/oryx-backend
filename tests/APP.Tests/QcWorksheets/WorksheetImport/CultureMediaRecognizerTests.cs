@@ -148,10 +148,17 @@ public class CultureMediaRecognizerTests
         var userId = (await harness.SeedUser()).Id;
 
         var request = WorksheetImportTemplateMapper.ToCreateRequest(Propose(NewForm()).Template);
+        var remark = request.Sections.SelectMany(section => section.Fields).Single(field => field.FieldKey == CultureMediaKeys.Remark);
+        Assert.Equal("[\"Complies\",\"Does not comply\"]", remark.OptionsJson);
+        Assert.DoesNotContain(request.Sections.SelectMany(section => section.Fields),
+            field => field.OptionsJson is not null && field.Type is not (WorksheetFieldType.Select or WorksheetFieldType.GrowthObservation));
+
         var result = await harness.Templates.CreateTemplate(request, userId);
 
         Assert.True(result.IsSuccess, result.Error?.Description);
         Assert.Equal(QcDocumentStatus.Draft, result.Value.Status);
+        var saved = result.Value.Sections.SelectMany(section => section.Fields).Single(field => field.FieldKey == CultureMediaKeys.Remark);
+        Assert.Equal("[\"Complies\",\"Does not comply\"]", saved.OptionsJson);
     }
 
     [Theory]
