@@ -8,6 +8,7 @@ using APP.Services.QcWorksheets;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
+using APP.Services.JobRequests;
 using APP.Services.Message;
 using APP.Services.NotificationService;
 using APP.Services.OnlyOffice;
@@ -154,6 +155,7 @@ public static class DependencyInjection
         services.AddScoped<IItemInventoryTransactionRepository, ItemInventoryTransactionRepository>();
         services.AddScoped<IDamagedStocksRepository, DamagedStocksRepository>();
         services.AddScoped<IRecoverableItemReportRepository, RecoverableItemReportRepository>();
+        services.AddScoped<IJobRequestAssignmentNotifier, JobRequestAssignmentNotifier>();
         services.AddScoped<IJobRequestRepository, JobRequestRepository>();
         services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IJobExecutionRepository, JobExecutionRepository>();
