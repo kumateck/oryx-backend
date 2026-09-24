@@ -226,6 +226,7 @@ internal static class AutomaticApprovalProcessor
 
             case QcWorksheetModelTypes.StandardTestProcedure:
             case QcWorksheetModelTypes.WorksheetTemplate:
+            case QcWorksheetModelTypes.Specification:
                 // Defence in depth. QC is gated earlier, in CreateInitialApprovalsAsync, so
                 // this should be unreachable; if it is ever reached, failing is the only
                 // acceptable outcome. A QC controlled document may never be approved

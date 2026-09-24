@@ -11,9 +11,10 @@ public static class QcWorksheetModelTypes
 {
     public const string StandardTestProcedure = "QcStandardTestProcedure";
     public const string WorksheetTemplate = "QcWorksheetTemplate";
+    public const string Specification = "QcSpecification";
 
     public static bool IsQcWorksheetModelType(string modelType) =>
-        modelType is StandardTestProcedure or WorksheetTemplate;
+        modelType is StandardTestProcedure or WorksheetTemplate or Specification;
 }
 
 /// <summary>
@@ -25,6 +26,7 @@ public static class QcApprovalEntityTypes
 {
     public const string StandardTestProcedure = "StandardTestProcedure";
     public const string WorksheetTemplate = "WorksheetTemplate";
+    public const string Specification = "Specification";
 
     /// <summary>
     /// Maps an approval-engine modelType to the EntityType recorded on the QcApproval row.
@@ -33,6 +35,7 @@ public static class QcApprovalEntityTypes
     {
         QcWorksheetModelTypes.StandardTestProcedure => StandardTestProcedure,
         QcWorksheetModelTypes.WorksheetTemplate => WorksheetTemplate,
+        QcWorksheetModelTypes.Specification => Specification,
         _ => null
     };
 }

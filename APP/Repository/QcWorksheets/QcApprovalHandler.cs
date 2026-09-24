@@ -261,6 +261,15 @@ internal static class QcApprovalHandler
                 template.Status = QcDocumentStatus.Approved;
                 template.UpdatedAt = DateTime.UtcNow;
                 break;
+
+            case QcApprovalEntityTypes.Specification:
+                var specification = await context.QcSpecifications
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (specification is null) return;
+                specification.Approved = true;
+                specification.Status = QcDocumentStatus.Approved;
+                specification.UpdatedAt = DateTime.UtcNow;
+                break;
         }
     }
 
@@ -287,6 +296,15 @@ internal static class QcApprovalHandler
                 template.Approved = false;
                 template.Status = QcDocumentStatus.Draft;
                 template.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcApprovalEntityTypes.Specification:
+                var specification = await context.QcSpecifications
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (specification is null) return;
+                specification.Approved = false;
+                specification.Status = QcDocumentStatus.Draft;
+                specification.UpdatedAt = DateTime.UtcNow;
                 break;
         }
     }

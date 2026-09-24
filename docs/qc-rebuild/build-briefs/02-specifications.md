@@ -132,14 +132,21 @@ CanViewQcSpecifications, CanCreateQcSpecification, CanEditQcSpecification,
 CanApproveQcSpecification, CanSupersedeQcSpecification
 ```
 
-Add one new key for the master-data entity, following the same naming convention:
+Add two new keys for the master-data entity, following the same naming convention:
 
 ```
-CanManageSamplingPointGroups   // single key, not view/create/edit/approve/supersede
-                                // split — this is plain reference-data maintenance,
-                                // not a controlled document with its own lifecycle;
-                                // granted to QC Manager, matching monitoringProgram's
-                                // .create/.edit tier in roles-permission-matrix.md
+CanViewSamplingPointGroups     // read access, split off from Manage: a role with
+                                // Specification-authoring rights but no reference-data
+                                // management rights still has to list groups to
+                                // populate a characteristic's dropdown. View is a
+                                // distinct concern from Manage, not a distinct
+                                // lifecycle stage.
+CanManageSamplingPointGroups   // create/edit/delete as one key, not a
+                                // create/edit/approve/supersede split — this is plain
+                                // reference-data maintenance, not a controlled
+                                // document with its own lifecycle; granted to QC
+                                // Manager, matching monitoringProgram's .create/.edit
+                                // tier in roles-permission-matrix.md
 ```
 
 ## Backend endpoints
@@ -156,12 +163,13 @@ Two additional endpoints specific to authoring:
 
 | Verb | Route | Permission | Purpose |
 |---|---|---|---|
-| GET | `/{id}/available-fields` | `CanEditQcSpecification` | Given the Specification's current `WorksheetLinks`, returns every `WorksheetField` (Label, FieldKey, Type, Unit) from those templates' current *Effective* versions — powers the SourceFieldKey dropdown; only `Result`-typed and `CalculatedValue`-typed fields are realistic candidates, but return all fields and let the frontend filter, since a future field type might also warrant COA inclusion |
+| GET | `/{id}/available-fields` | `CanEditQcSpecification` | Given the Specification's current `WorksheetLinks`, returns every `WorksheetField` (Label, FieldKey, Type, Unit, and `ConstantValue` for Constant-mode fields carrying inline acceptance criteria) from those templates' current *Effective* versions — powers the SourceFieldKey dropdown; only `Result`-typed and `CalculatedValue`-typed fields are realistic candidates, but return all fields and let the frontend filter, since a future field type might also warrant COA inclusion |
 
 `SamplingPointGroupController` at `api/v{version}/qc/worksheets/sampling-point-groups`:
-plain CRUD (`GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}`), all four
-behind `CanManageSamplingPointGroups`. No lifecycle — this is reference data, not a
-controlled document.
+plain CRUD (`GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}`). The two reads
+sit behind `CanViewSamplingPointGroups`; create/update/delete behind
+`CanManageSamplingPointGroups`. No lifecycle — this is reference data, not a controlled
+document — so the write side needs no further splitting.
 
 ## Frontend
 

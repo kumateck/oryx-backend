@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917212519_AddQcSpecifications")]
+    partial class AddQcSpecifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -14227,9 +14230,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("WorksheetTemplateId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("WorksheetTemplateVersion")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
@@ -14238,9 +14238,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
-                    b.HasIndex("SpecificationId", "AnalysisType");
+                    b.HasIndex("WorksheetTemplateId");
 
-                    b.HasIndex("WorksheetTemplateId", "WorksheetTemplateVersion");
+                    b.HasIndex("SpecificationId", "AnalysisType");
 
                     b.ToTable("QcSpecificationWorksheetLinks", (string)null);
                 });

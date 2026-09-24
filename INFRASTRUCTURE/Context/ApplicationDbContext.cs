@@ -833,6 +833,13 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetField> QcWorksheetFields { get; set; }
     public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldRevision> QcWorksheetFieldRevisions { get; set; }
 
+    // Milestone 2. QcSamplingPointGroups is shared master data: Milestone 6's
+    // MonitoringProgram references this same table rather than duplicating the concept.
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPointGroup> QcSamplingPointGroups { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.Specification> QcSpecifications { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink> QcSpecificationWorksheetLinks { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic> QcSpecificationCharacteristics { get; set; }
+
     #endregion
 
     // #region TenantFilter

@@ -62,6 +62,58 @@ public interface IWorksheetTemplateRepository
         Guid id, QcSupersedeRequest request, Guid userId);
 }
 
+public interface ISpecificationRepository
+{
+    Task<Result<Paginateable<IEnumerable<SpecificationSummaryDto>>>> GetSpecifications(
+        int page, int pageSize, string searchQuery, QcDocumentStatus? status,
+        SpecificationAppliesTo? appliesTo);
+
+    Task<Result<SpecificationDetailDto>> GetSpecification(Guid id);
+
+    Task<Result<SpecificationDetailDto>> CreateSpecification(
+        CreateSpecificationRequest request, Guid userId);
+
+    Task<Result<SpecificationDetailDto>> UpdateSpecification(
+        Guid id, UpdateSpecificationRequest request, Guid userId);
+
+    Task<Result<SpecificationDetailDto>> CreateNewVersion(Guid id, Guid userId);
+
+    Task<Result<SpecificationDetailDto>> SubmitForReview(Guid id, Guid userId);
+
+    Task<Result<SpecificationDetailDto>> Approve(
+        Guid id, QcApprovalRequest request, Guid userId, List<Guid> roleIds);
+
+    Task<Result<SpecificationDetailDto>> Reject(
+        Guid id, QcApprovalRequest request, Guid userId, List<Guid> roleIds);
+
+    Task<Result<SpecificationDetailDto>> MakeEffective(Guid id, Guid userId);
+
+    Task<Result<SpecificationDetailDto>> Supersede(
+        Guid id, QcSupersedeRequest request, Guid userId);
+
+    /// <summary>
+    /// Every field on the <b>pinned</b> version of each linked worksheet template — what the
+    /// SourceFieldKey dropdown is populated from, and the same resolution the SourceFieldKey
+    /// validation uses, so the dropdown can only ever offer a field that will validate.
+    /// </summary>
+    Task<Result<List<SpecificationAvailableFieldDto>>> GetAvailableFields(Guid id);
+}
+
+public interface ISamplingPointGroupRepository
+{
+    Task<Result<List<SamplingPointGroupDto>>> GetSamplingPointGroups(string searchQuery);
+
+    Task<Result<SamplingPointGroupDto>> GetSamplingPointGroup(Guid id);
+
+    Task<Result<SamplingPointGroupDto>> CreateSamplingPointGroup(
+        CreateSamplingPointGroupRequest request, Guid userId);
+
+    Task<Result<SamplingPointGroupDto>> UpdateSamplingPointGroup(
+        Guid id, UpdateSamplingPointGroupRequest request, Guid userId);
+
+    Task<Result> DeleteSamplingPointGroup(Guid id, Guid userId);
+}
+
 public interface IQcApprovalRepository
 {
     /// <summary>

@@ -48,24 +48,40 @@ public class QcWorksheetCoexistenceTests
             Assert.Single(generated.Where(permission => permission.Key == key));
     }
 
-    /// <summary>The brief's eleven keys, by name.</summary>
+    /// <summary>
+    /// The exact key list, by name: Milestone 1's eleven plus Milestone 2's seven. Listing them
+    /// explicitly is the point — a key added without a brief calling for it fails here.
+    /// </summary>
     [Fact]
     public void Permission_keys_match_the_brief()
     {
-        var keys = ConstantsOf(typeof(QcWorksheetPermissionKeys)).OrderBy(key => key).ToList();
+        var keys = ConstantsOf(typeof(QcWorksheetPermissionKeys))
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToList();
 
+        // Milestone 2 adds the five-way split a controlled document gets for Specification,
+        // plus two keys for SamplingPointGroup, which is plain reference data: View splits off
+        // from Manage because read access to reference data is a distinct concern from admin
+        // rights over it, while Create/Edit/Delete stay fused under the single Manage key.
         Assert.Equal(
         [
+            "CanApproveQcSpecification",
             "CanApproveQcStp",
             "CanApproveWorksheetTemplate",
+            "CanCreateQcSpecification",
             "CanCreateQcStp",
             "CanCreateWorksheetTemplate",
+            "CanEditQcSpecification",
             "CanEditQcStp",
             "CanEditWorksheetTemplate",
             "CanImportQcStp",
+            "CanManageSamplingPointGroups",
+            "CanSupersedeQcSpecification",
             "CanSupersedeQcStp",
             "CanSupersedeWorksheetTemplate",
+            "CanViewQcSpecifications",
             "CanViewQcStps",
+            "CanViewSamplingPointGroups",
             "CanViewWorksheetTemplates"
         ], keys);
     }
@@ -79,17 +95,23 @@ public class QcWorksheetCoexistenceTests
     {
         Assert.Equal("QcStandardTestProcedure", QcWorksheetModelTypes.StandardTestProcedure);
         Assert.Equal("QcWorksheetTemplate", QcWorksheetModelTypes.WorksheetTemplate);
+        Assert.Equal("QcSpecification", QcWorksheetModelTypes.Specification);
 
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.StandardTestProcedure));
         Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
             QcWorksheetModelTypes.WorksheetTemplate));
+        Assert.True(QcWorksheetModelTypes.IsQcWorksheetModelType(
+            QcWorksheetModelTypes.Specification));
 
-        // Existing model types must not be captured by the QC branch.
+        // Existing model types must not be captured by the QC branch. "Specification" bare is
+        // listed deliberately: the live Material/Product specification path must not be
+        // routed into QC's approval handler by the new model type.
         foreach (var other in new[]
                  {
                      "PurchaseRequisition", "StockRequisition", "PurchaseOrder", "Response",
-                     "RndProject", "BillingSheet", "StandardTestProcedure", "WorksheetTemplate"
+                     "RndProject", "BillingSheet", "StandardTestProcedure", "WorksheetTemplate",
+                     "Specification", "MaterialSpecification", "ProductSpecification"
                  })
         {
             Assert.False(QcWorksheetModelTypes.IsQcWorksheetModelType(other), other);
@@ -111,8 +133,15 @@ public class QcWorksheetCoexistenceTests
             QcApprovalEntityTypes.WorksheetTemplate,
             QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.WorksheetTemplate));
 
+        Assert.Equal(
+            QcApprovalEntityTypes.Specification,
+            QcApprovalEntityTypes.FromModelType(QcWorksheetModelTypes.Specification));
+
         Assert.Null(QcApprovalEntityTypes.FromModelType("Response"));
+
+        // The bare EntityType string is not itself a model type: only "QcSpecification" maps.
         Assert.Null(QcApprovalEntityTypes.FromModelType("Specification"));
+        Assert.Null(QcApprovalEntityTypes.FromModelType("MaterialSpecification"));
     }
 
     /// <summary>
@@ -125,5 +154,65 @@ public class QcWorksheetCoexistenceTests
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(StandardTestProcedure).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(WorksheetTemplate).Namespace);
         Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(QcApproval).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(Specification).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(SpecificationWorksheetLink).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(SpecificationCharacteristic).Namespace);
+        Assert.Equal("DOMAIN.Entities.QcWorksheets", typeof(SamplingPointGroup).Namespace);
+    }
+
+    /// <summary>
+    /// Criterion 8 — the new Specification is a distinct type on a distinct table from the
+    /// live <c>MaterialSpecification</c>/<c>ProductSpecification</c>, which keep working
+    /// untouched. A shared table name here would silently repoint the existing pages.
+    /// </summary>
+    [Fact]
+    public void Qc_specification_is_a_separate_type_and_table_from_the_live_specifications()
+    {
+        var liveMaterial = Type.GetType(
+            "DOMAIN.Entities.Materials.MaterialSpecification, DOMAIN", throwOnError: false)
+            ?? typeof(DOMAIN.Entities.Base.BaseEntity).Assembly
+                .GetTypes()
+                .FirstOrDefault(type => type.Name == "MaterialSpecification");
+
+        // The live entity still exists — this milestone did not replace or rename it.
+        Assert.NotNull(liveMaterial);
+        Assert.NotEqual(typeof(Specification), liveMaterial);
+        Assert.NotEqual("DOMAIN.Entities.QcWorksheets", liveMaterial.Namespace);
+
+        var liveProduct = typeof(DOMAIN.Entities.Base.BaseEntity).Assembly
+            .GetTypes()
+            .FirstOrDefault(type => type.Name == "ProductSpecification");
+
+        Assert.NotNull(liveProduct);
+        Assert.NotEqual(typeof(Specification), liveProduct);
+    }
+
+    /// <summary>
+    /// The new tables are namespaced with the module's Qc prefix, so none of them can collide
+    /// with an existing table name.
+    /// </summary>
+    [Fact]
+    public void Milestone_two_tables_are_namespaced()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var model = harness.Db.Model;
+
+        // Read the mapped name from the annotation rather than the relational GetTableName
+        // extension, which the in-memory test provider does not bring along.
+        string TableNameOf(Type type) =>
+            (string)model.FindEntityType(type)!.FindAnnotation("Relational:TableName")!.Value!;
+
+        foreach (var type in new[]
+                 {
+                     typeof(Specification), typeof(SpecificationWorksheetLink),
+                     typeof(SpecificationCharacteristic), typeof(SamplingPointGroup)
+                 })
+        {
+            Assert.StartsWith("Qc", TableNameOf(type), StringComparison.Ordinal);
+        }
+
+        // And specifically not the live tables.
+        Assert.Equal("QcSpecifications", TableNameOf(typeof(Specification)));
+        Assert.Equal("QcSamplingPointGroups", TableNameOf(typeof(SamplingPointGroup)));
     }
 }

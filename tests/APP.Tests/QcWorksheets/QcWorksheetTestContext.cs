@@ -9,6 +9,7 @@ using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,15 @@ internal sealed class NoCurrentUser : ICurrentUserService
     public Guid? UserId => null;
     public Guid? DepartmentId => null;
     public string DepartmentType => string.Empty;
+}
+
+/// <summary>
+/// There is no request in a unit test. The mapper's avatar/signature resolvers handle a null
+/// HttpContext, so this satisfies their constructor dependency without faking a request.
+/// </summary>
+internal sealed class NullHttpContextAccessor : IHttpContextAccessor
+{
+    public HttpContext HttpContext { get; set; }
 }
 
 /// <summary>
@@ -55,6 +65,8 @@ internal sealed class QcWorksheetTestContext : IDisposable
     internal QcSignatureService SignatureService { get; }
     internal StandardTestProcedureRepository Stps { get; }
     internal WorksheetTemplateRepository Templates { get; }
+    internal SpecificationRepository Specifications { get; }
+    internal SamplingPointGroupRepository SamplingPointGroups { get; }
     internal QcApprovalRepository Approvals { get; }
 
     internal User Approver { get; private set; }
@@ -89,6 +101,11 @@ internal sealed class QcWorksheetTestContext : IDisposable
         Templates = new WorksheetTemplateRepository(
             Db, Mapper, SignatureService, Reauth, ApprovalRepository);
 
+        Specifications = new SpecificationRepository(
+            Db, Mapper, SignatureService, Reauth, ApprovalRepository);
+
+        SamplingPointGroups = new SamplingPointGroupRepository(Db, Mapper);
+
         Approvals = new QcApprovalRepository(Db, Mapper);
     }
 
@@ -118,6 +135,71 @@ internal sealed class QcWorksheetTestContext : IDisposable
 
         await Db.SaveChangesAsync();
         return approval.Id;
+    }
+
+    /// <summary>
+    /// Inserts an Effective worksheet template carrying the given field keys, so a
+    /// Specification test can link to something real without running the whole template
+    /// approval cycle it is not trying to prove.
+    /// </summary>
+    internal async Task<WorksheetTemplate> SeedEffectiveTemplate(
+        string code,
+        WorksheetCategory category,
+        params string[] fieldKeys)
+    {
+        var sectionId = Guid.NewGuid();
+
+        var template = new WorksheetTemplate
+        {
+            Id = Guid.NewGuid(),
+            Code = code,
+            Name = $"{code} worksheet",
+            Category = category,
+            Version = 1,
+            Status = QcDocumentStatus.Effective,
+            EffectiveDate = DateTime.UtcNow,
+            Approved = true,
+            CreatedAt = DateTime.UtcNow,
+            Sections =
+            [
+                new WorksheetSection
+                {
+                    Id = sectionId,
+                    Order = 1,
+                    Name = "Results",
+                    CreatedAt = DateTime.UtcNow,
+                    Fields = fieldKeys.Select((key, index) => new WorksheetField
+                    {
+                        Id = Guid.NewGuid(),
+                        WorksheetSectionId = sectionId,
+                        Order = index + 1,
+                        FieldKey = key,
+                        Label = key,
+                        Type = WorksheetFieldType.Result,
+                        Mode = WorksheetFieldMode.Entry,
+                        CreatedAt = DateTime.UtcNow
+                    }).ToList()
+                }
+            ]
+        };
+
+        Db.QcWorksheetTemplates.Add(template);
+        await Db.SaveChangesAsync();
+        return template;
+    }
+
+    internal async Task<SamplingPointGroup> SeedSamplingPointGroup(string name)
+    {
+        var group = new SamplingPointGroup
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        Db.QcSamplingPointGroups.Add(group);
+        await Db.SaveChangesAsync();
+        return group;
     }
 
     internal async Task<User> SeedUser()
@@ -152,6 +234,12 @@ internal sealed class QcWorksheetTestContext : IDisposable
     {
         var services = new ServiceCollection();
         services.AddLogging();
+
+        // UserDto's Avatar/Signature resolvers take an IHttpContextAccessor to build absolute
+        // URLs. They are null-safe (`request.HttpContext?.Request.Host`), so a null accessor
+        // is enough here — without one registered, mapping any loaded User navigation throws.
+        services.AddSingleton<IHttpContextAccessor, NullHttpContextAccessor>();
+
         services.AddAutoMapper(cfg => { }, typeof(OryxMapper));
         return services.BuildServiceProvider().GetRequiredService<IMapper>();
     }
