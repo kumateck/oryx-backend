@@ -38,6 +38,33 @@ public class TestRequestSummaryDto : BaseDto
 public class TestRequestDetailDto : TestRequestSummaryDto
 {
     public List<TestRequestSubjectDto> Subjects { get; set; } = [];
+
+    /// <summary>
+    /// Whether an unclosed OOS case anywhere under this round is holding it back from release.
+    /// <para>
+    /// This is the backend's own answer, not an approximation: it comes from the same
+    /// <c>QcReleaseHold</c> definition that <c>IOosCaseRepository.IsReleaseBlocked</c> asks, so
+    /// the badge on this screen and the gate that actually withholds release cannot disagree.
+    /// </para>
+    /// <para>
+    /// True exactly when <see cref="BlockingOosCases"/> is non-empty — the flag is derived from
+    /// that list in the same read, rather than being a second query that could race it.
+    /// </para>
+    /// </summary>
+    public bool BlocksRelease { get; set; }
+
+    /// <summary>
+    /// The cases currently holding this round, oldest first. Only cases that actually block are
+    /// listed: a Closed case is dispositioned and releases its hold, so it never appears here.
+    /// <para>
+    /// Carried on the round detail rather than behind a new OOS endpoint because the readers of
+    /// this DTO hold <c>CanViewQcTestRequests</c>, not the OOS keys. Routing them through the
+    /// OOS queue to render a "blocked" badge would mean granting an unrelated permission for a
+    /// read the round detail can answer in a call it already makes — the same reasoning that
+    /// put <c>OosCases</c> on <see cref="WorksheetInstanceDetailDto"/>.
+    /// </para>
+    /// </summary>
+    public List<TestRequestBlockingOosCaseDto> BlockingOosCases { get; set; } = [];
 }
 
 public class TestRequestSubjectDto : BaseDto
@@ -232,6 +259,22 @@ public class WorksheetInstanceDetailDto : WorksheetInstanceSummaryDto
     /// recent one.
     /// </summary>
     public List<WorksheetInstanceCorrectionReturnDto> CorrectionReturns { get; set; } = [];
+
+    /// <summary>
+    /// Every OOS case opened against this worksheet, oldest first. An empty list is the real
+    /// answer to "is this result out of specification", not merely the absence of one.
+    /// <para>
+    /// Granularity is per-FieldKey, so a worksheet covering nine Characteristics can hold
+    /// several cases at once and one failing test does not read as "this worksheet is OOS".
+    /// </para>
+    /// <para>
+    /// Carried here rather than fetched separately so a reviewer gets the backend's real,
+    /// tested OOS state in the same call that already loads the worksheet for review — without
+    /// needing the OOS investigation permission that
+    /// <c>GET /qc/worksheets/oos-cases</c> requires.
+    /// </para>
+    /// </summary>
+    public List<WorksheetInstanceOosCaseDto> OosCases { get; set; } = [];
 }
 
 public class WorksheetInstanceSectionDto
@@ -366,6 +409,17 @@ public class WorksheetQueueItemDto : WorksheetInstanceSummaryDto
     public DateTime? CollectedAt { get; set; }
     public string SpecificationCode { get; set; }
     public int SpecificationVersion { get; set; }
+
+    /// <summary>
+    /// True when this worksheet's submission triggered an OOS case that is still open. The
+    /// reviewer queue renders these with a red flag and a link into the case
+    /// (test-room-ux.md, "Reviewer queue") — a reviewer has to see that a result is already
+    /// under formal investigation before they sign it off.
+    /// </summary>
+    public bool HasOpenOosCase { get; set; }
+
+    /// <summary>The case to link to, when there is one. Null otherwise.</summary>
+    public Guid? OosCaseId { get; set; }
 }
 
 /// <summary>The Test Room's three counts, alongside the cards themselves.</summary>

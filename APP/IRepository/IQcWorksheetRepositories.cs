@@ -186,6 +186,56 @@ public interface IWorksheetInstanceRepository
         Guid id, ReturnWorksheetForCorrectionRequest request, Guid userId);
 }
 
+/// <summary>
+/// The formal OOS/OOT workflow (Milestone 4): Phase 1 investigation, retest or escalation, and
+/// the QA disposition that rejects or releases the real batch.
+/// </summary>
+public interface IOosCaseRepository
+{
+    Task<Result<Paginateable<IEnumerable<OosCaseSummaryDto>>>> GetOosCases(
+        int page, int pageSize, string searchQuery, OosCaseStatus? status);
+
+    /// <summary>
+    /// Full detail: the breach in context against the round's <b>pinned</b> Specification
+    /// version, the investigation, and both the original and retest worksheets side by side.
+    /// </summary>
+    Task<Result<OosCaseDetailDto>> GetOosCase(Guid id);
+
+    /// <summary>
+    /// Whether an unclosed OOS case is holding this round back from Released. The single source
+    /// of truth for the release block — Milestone 5's certificate flow asks this rather than
+    /// re-deriving the rule.
+    /// </summary>
+    Task<Result<bool>> IsReleaseBlocked(Guid testRequestId);
+
+    /// <summary>
+    /// Opens Phase 1 and quarantines the linked batch. Quarantine happens <b>here</b>, not at
+    /// auto-creation: locking a batch out of use across the whole ERP deserves a human
+    /// confirmation first.
+    /// </summary>
+    Task<Result<OosCaseDetailDto>> StartInvestigation(Guid id, Guid userId);
+
+    Task<Result<OosCaseDetailDto>> UpdateInvestigation(
+        Guid id, UpdateOosInvestigationRequest request, Guid userId);
+
+    /// <summary>
+    /// Creates the retest as a <b>new</b> WorksheetInstance linked by <c>RetestOfInstanceId</c>,
+    /// pinned to the original's own template version. The original's values are never touched.
+    /// Which sample it runs against follows the Specification's <see cref="QcRetestPolicy"/>.
+    /// </summary>
+    Task<Result<OosCaseDetailDto>> AuthorizeRetest(
+        Guid id, AuthorizeOosRetestRequest request, Guid userId);
+
+    Task<Result<OosCaseDetailDto>> Escalate(Guid id, EscalateOosCaseRequest request, Guid userId);
+
+    /// <summary>
+    /// The QA disposition, signed through the shared QcApproval table and the re-authentication
+    /// wrapper. Writes the real batch status only once every required stage has signed.
+    /// </summary>
+    Task<Result<OosCaseDetailDto>> RecordDisposition(
+        Guid id, OosDispositionRequest request, Guid userId, List<Guid> roleIds);
+}
+
 public interface IQcApprovalRepository
 {
     /// <summary>

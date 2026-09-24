@@ -35,7 +35,8 @@ public class WorksheetInstanceRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IQcSignatureService signatureService,
-    IApprovalRepository approvalRepository) : IWorksheetInstanceRepository
+    IApprovalRepository approvalRepository,
+    IQcOosDetectionService oosDetection) : IWorksheetInstanceRepository
 {
     private const string ModelType = QcWorksheetModelTypes.WorksheetInstance;
 
@@ -83,13 +84,14 @@ public class WorksheetInstanceRepository(
             query = query.Where(instance => instance.AnalysisType == analysisType.Value);
 
         var instances = await query.ToListAsync();
+        var openCases = await LoadOpenOosCases(instances);
 
         return Result.Success(new WorksheetQueueDto
         {
             PendingCount = instances.Count(item => item.Status == WorksheetInstanceStatus.NotStarted),
             InProgressCount = instances.Count(item => item.Status == WorksheetInstanceStatus.InProgress),
             AwaitingReviewCount = instances.Count(item => item.Status == WorksheetInstanceStatus.Submitted),
-            Items = instances.Select(ToQueueItem).ToList()
+            Items = instances.Select(instance => ToQueueItem(instance, openCases)).ToList()
         });
     }
 
@@ -107,12 +109,39 @@ public class WorksheetInstanceRepository(
             query = query.Where(instance => instance.AnalysisType == analysisType.Value);
 
         var instances = await query.ToListAsync();
+        var openCases = await LoadOpenOosCases(instances);
 
         return Result.Success(new WorksheetQueueDto
         {
             AwaitingReviewCount = instances.Count,
-            Items = instances.Select(ToQueueItem).ToList()
+            Items = instances.Select(instance => ToQueueItem(instance, openCases)).ToList()
         });
+    }
+
+    /// <summary>
+    /// The open OOS case against each worksheet in a queue, in one query rather than one per
+    /// card. A worksheet can in principle carry a case per failing field; the queue flags the
+    /// worksheet and links to the oldest, since the flag is "this result is under formal
+    /// investigation", not a count.
+    /// </summary>
+    private async Task<Dictionary<Guid, Guid>> LoadOpenOosCases(List<WorksheetInstance> instances)
+    {
+        if (instances.Count == 0) return [];
+
+        var ids = instances.Select(instance => instance.Id).ToList();
+
+        var cases = await context.QcOosCases
+            .AsNoTracking()
+            .Where(item => ids.Contains(item.WorksheetInstanceId)
+                && item.Status != OosCaseStatus.Closed)
+            .Select(item => new { item.Id, item.WorksheetInstanceId, item.OpenedAt })
+            .ToListAsync();
+
+        return cases
+            .GroupBy(item => item.WorksheetInstanceId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(item => item.OpenedAt).First().Id);
     }
 
     // -----------------------------------------------------------------------
@@ -426,6 +455,16 @@ public class WorksheetInstanceRepository(
         // other module uses. No QcApproval row is signed here — that happens on review.
         await approvalRepository.CreateInitialApprovalsAsync(ModelType, id);
 
+        // Automatic OOS detection (Milestone 4): every Result field is judged against the
+        // Characteristic bound to it on the round's pinned Specification version. An Action
+        // limit breach opens an OosCase, which blocks the round from reaching Released; an
+        // Alert breach only flags for trend review and blocks nothing.
+        //
+        // Deliberately after the submission has been accepted and saved, not before: the
+        // result stands as submitted whatever it says, and an out-of-specification value is a
+        // finding to investigate rather than a reason to refuse the analyst's entry.
+        await oosDetection.DetectOnSubmitAsync(id, userId);
+
         await RecalculateRoundStatus(instance.TestRequestSubjectId);
 
         return await GetWorksheetInstance(id);
@@ -476,6 +515,11 @@ public class WorksheetInstanceRepository(
             instance.LastUpdatedById = userId;
             await context.SaveChangesAsync();
         }
+
+        // If this worksheet was a retest an OOS case is waiting on, reviewing it closes Phase 1
+        // and hands the case to QA (Milestone 4). A no-op for every other worksheet.
+        if (request.Approve)
+            await oosDetection.AdvanceOnRetestReviewedAsync(id, userId);
 
         await RecalculateRoundStatus(instance.TestRequestSubjectId);
 
@@ -1105,11 +1149,19 @@ public class WorksheetInstanceRepository(
     // Projection
     // -----------------------------------------------------------------------
 
-    private WorksheetQueueItemDto ToQueueItem(WorksheetInstance instance)
+    private WorksheetQueueItemDto ToQueueItem(
+        WorksheetInstance instance, Dictionary<Guid, Guid> openOosCases)
     {
         var dto = QcWorksheetInstanceMapper.Fill(new WorksheetQueueItemDto(), instance, mapper);
         var subject = instance.TestRequestSubject;
         var request = subject?.TestRequest;
+
+        // The reviewer queue's red flag: this result is already under formal OOS investigation.
+        if (openOosCases.TryGetValue(instance.Id, out var oosCaseId))
+        {
+            dto.HasOpenOosCase = true;
+            dto.OosCaseId = oosCaseId;
+        }
 
         dto.TestRequestId = request?.Id ?? Guid.Empty;
         dto.TestRequestType = request?.Type ?? default;
@@ -1151,6 +1203,29 @@ public class WorksheetInstanceRepository(
             .Include(item => item.ReturnedBy)
             .Where(item => item.WorksheetInstanceId == instance.Id)
             .OrderBy(item => item.ReturnedAt)
+            .ToListAsync();
+
+        // The worksheet's own OOS state, straight off the OosCase rows — no joins, because
+        // everything projected here lives on the case itself. A reviewer needs the backend's
+        // real answer here rather than re-deriving one from acceptance-criteria text, which can
+        // disagree with the LimitEvaluator grammar that actually opened (or did not open) these
+        // cases.
+        dto.OosCases = await context.QcOosCases
+            .AsNoTracking()
+            .Where(item => item.WorksheetInstanceId == instance.Id)
+            .OrderBy(item => item.OpenedAt)
+            .Select(item => new WorksheetInstanceOosCaseDto
+            {
+                Id = item.Id,
+                FieldKey = item.FieldKey,
+                Status = item.Status,
+                OpenedAt = item.OpenedAt,
+                ObservedValue = item.ObservedValue,
+                BreachedLimit = item.BreachedLimit,
+                DispositionOutcome = item.DispositionOutcome,
+                BlocksRelease = item.Status != OosCaseStatus.Closed,
+                RetestWorksheetInstanceId = item.RetestWorksheetInstanceId
+            })
             .ToListAsync();
 
         dto.Header = BuildHeader(instance, template, reassignments);

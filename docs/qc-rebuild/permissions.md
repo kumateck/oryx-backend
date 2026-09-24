@@ -34,6 +34,10 @@ TEST ROOM
   qc.worksheet.returnForCorrection
 
 QUALITY REVIEW / OOS
+  qc.oos.view                           (the queue and a single case — read splits off from
+                                         investigate, because the retest authorizer and the QA
+                                         signer both act on a case they would otherwise hold
+                                         no key to load)
   qc.oos.investigate
   qc.oos.retest.authorize
   qc.oos.disposition

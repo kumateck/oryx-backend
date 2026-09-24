@@ -281,6 +281,19 @@ internal static class QcApprovalHandler
                 instance.Status = WorksheetInstanceStatus.Reviewed;
                 instance.UpdatedAt = DateTime.UtcNow;
                 break;
+
+            // An OOS case's Status is deliberately left alone here. Flipping Approved is all
+            // this handler does; closing the case and writing the real batch status is
+            // OosCaseRepository's job, because that write has to happen against the outcome the
+            // signer stated and only once every required stage has signed — which is exactly
+            // what Approved becoming true means.
+            case QcApprovalEntityTypes.OosCase:
+                var oosCase = await context.QcOosCases
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (oosCase is null) return;
+                oosCase.Approved = true;
+                oosCase.UpdatedAt = DateTime.UtcNow;
+                break;
         }
     }
 
@@ -328,6 +341,21 @@ internal static class QcApprovalHandler
                 instance.Status = WorksheetInstanceStatus.InProgress;
                 instance.SubmittedAt = null;
                 instance.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            // A refused disposition sends the case back to QA's queue with its proposed outcome
+            // cleared, rather than closing it: nothing has been decided, and a batch that is
+            // still quarantined must stay quarantined.
+            case QcApprovalEntityTypes.OosCase:
+                var oosCase = await context.QcOosCases
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (oosCase is null) return;
+                oosCase.Approved = false;
+                oosCase.Status = OosCaseStatus.PendingQaDisposition;
+                oosCase.DispositionOutcome = null;
+                oosCase.DispositionById = null;
+                oosCase.DispositionAt = null;
+                oosCase.UpdatedAt = DateTime.UtcNow;
                 break;
         }
     }

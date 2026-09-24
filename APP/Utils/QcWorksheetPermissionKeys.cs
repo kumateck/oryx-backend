@@ -100,6 +100,30 @@ public static class QcWorksheetPermissionKeys
     public const string CanReviewChemicalWorksheet = "CanReviewChemicalWorksheet";
     public const string CanReviewMicrobialWorksheet = "CanReviewMicrobialWorksheet";
     public const string CanReturnWorksheetForCorrection = "CanReturnWorksheetForCorrection";
+
+    // OOS cases. Three keys for three genuinely different authorities: running the Phase 1
+    // lab-error check, deciding a retest is warranted, and signing the QA disposition that
+    // rejects or releases a real batch. In a real lab these sit with a QC Officer, a QC
+    // Manager and a QA Manager respectively, which is exactly why they are not one key.
+
+    /// <summary>
+    /// Read access to the OOS queue and to a single case, separate from
+    /// <see cref="CanInvestigateQcOosCase"/> for the same reason
+    /// <see cref="CanViewSamplingPointGroups"/> is separate from its Manage key: reading is a
+    /// different concern from acting.
+    /// <para>
+    /// The concrete failure this fixes is a QA Manager holding only
+    /// <see cref="CanDispositionQcOosCase"/> — the person who must sign the disposition —
+    /// being unable to load the case they are signing. The QC Manager holding only
+    /// <see cref="CanAuthorizeQcOosRetest"/> was locked out the same way. Both authorities act
+    /// on a case they could not read, which is not a workable split.
+    /// </para>
+    /// </summary>
+    public const string CanViewQcOosCases = "CanViewQcOosCases";
+
+    public const string CanInvestigateQcOosCase = "CanInvestigateQcOosCase";
+    public const string CanAuthorizeQcOosRetest = "CanAuthorizeQcOosRetest";
+    public const string CanDispositionQcOosCase = "CanDispositionQcOosCase";
 }
 
 /// <summary>
@@ -115,6 +139,7 @@ public static class QcWorksheetPermissionCatalog
     public const string SamplingPointGroups = "QC Sampling Point Groups";
     public const string TestRequests = "QC Test Requests";
     public const string TestRoom = "QC Test Room";
+    public const string OosCases = "QC OOS Cases";
 
     private static readonly HashSet<string> StpKeys =
     [
@@ -165,6 +190,14 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanReturnWorksheetForCorrection
     ];
 
+    private static readonly HashSet<string> OosCaseKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewQcOosCases,
+        QcWorksheetPermissionKeys.CanInvestigateQcOosCase,
+        QcWorksheetPermissionKeys.CanAuthorizeQcOosRetest,
+        QcWorksheetPermissionKeys.CanDispositionQcOosCase
+    ];
+
     public static IReadOnlyList<PermissionDto> Generate()
     {
         return typeof(QcWorksheetPermissionKeys)
@@ -180,6 +213,7 @@ public static class QcWorksheetPermissionCatalog
         if (SpecificationKeys.Contains(key)) return Specifications;
         if (TestRequestKeys.Contains(key)) return TestRequests;
         if (TestRoomKeys.Contains(key)) return TestRoom;
+        if (OosCaseKeys.Contains(key)) return OosCases;
         if (SamplingPointGroupKeys.Contains(key)) return SamplingPointGroups;
         return WorksheetTemplates;
     }

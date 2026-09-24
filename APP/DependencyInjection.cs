@@ -177,6 +177,12 @@ public static class DependencyInjection
         services.AddScoped<ITestRequestRepository, TestRequestRepository>();
         services.AddScoped<IWorksheetInstanceRepository, WorksheetInstanceRepository>();
         services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();
+
+        // Milestone 4 — the formal OOS/OOT workflow. Detection is its own service rather than
+        // part of the worksheet repository: submitting a result and judging it against a
+        // Specification are separate concerns, and the judging half has to be testable alone.
+        services.AddScoped<IQcOosDetectionService, QcOosDetectionService>();
+        services.AddScoped<IOosCaseRepository, OosCaseRepository>();
         services.AddScoped<IStpDocumentAccessService, StpDocumentAccessService>();
         services.AddSingleton(_ => OnlyOfficeSettings.Load());
         services.AddScoped<IOnlyOfficeConfigService, OnlyOfficeConfigService>();

@@ -6796,7 +6796,17 @@ public partial class ReportRepository(
             .Select(group =>
             {
                 var total = group.Count();
-                var issued = group.Count(row => row.Status == BatchManufacturingStatus.Approved);
+
+                // Both released states count as issued. Approved is the normal QA release
+                // path; Available is a batch released after a QC OOS case closed favourably.
+                // Counting only Approved would leave every OOS-released batch falling into
+                // Pending below — which is computed by subtraction, so an unhandled status is
+                // not merely uncounted, it is actively claimed to be pending. A batch that has
+                // been released is not pending anything.
+                var issued = group.Count(row =>
+                    row.Status == BatchManufacturingStatus.Approved
+                    || row.Status == BatchManufacturingStatus.Available);
+
                 var rejected = group.Count(row => row.Status == BatchManufacturingStatus.Rejected);
                 return new BmrReleaseRateDto
                 {
