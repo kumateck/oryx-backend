@@ -132,6 +132,17 @@ case in exactly the same way.
 
   So "Absence of E. coli", "absence of E.coli" and "Absence of E coli" all match. It is never
   a fuzzy or substring match: anything that reduces to a different string is a breach.
+- **Organisms are compared when both sides name one.** This is checked after the keywords
+  match.
+  - The organism is the text after "absence of" / "presence of", normalized the same way
+    (trailing clause dropped). "E. coli", "E.coli" and "E coli" are all `e coli`.
+  - Trailing genus words `spp`, `sp` and `species` are dropped, so "Salmonella spp." equals
+    "Salmonella". A named species ("Salmonella typhi") is still different from the genus.
+  - No abbreviation is expanded: "Escherichia coli" and "E. coli" are different organisms.
+  - If both sides name an organism and the organisms differ, it is a breach (ActionOos). For
+    example, "Absence of Salmonella" against "Absence of E. coli" is a breach.
+  - If either side names no organism (e.g. water's plain "Absent" / "Detected"), only the
+    keywords are compared, exactly as before. So "Absent" satisfies "Absence of E. coli in 1g".
 - **MultiSelect** (value stored as a JSON array) is judged choice by choice, and the worst
   outcome stands, from most to least severe: ActionOos, ManualReview, Alert, Compliant. So the
   field complies only if every chosen value does. An empty selection is judged as blank.
