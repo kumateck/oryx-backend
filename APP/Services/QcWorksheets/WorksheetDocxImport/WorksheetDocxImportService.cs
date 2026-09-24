@@ -18,7 +18,10 @@ public interface IWorksheetDocxImportService
 public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoader) : IWorksheetDocxImportService
 {
     private static readonly IReadOnlyDictionary<ArdFamily, IArdFamilyRecognizer> Recognizers =
-        new IArdFamilyRecognizer[] { new CultureMediaRecognizer(), new ProductMicroRecognizer(), new PurifiedWaterRecognizer() }.ToDictionary(recognizer => recognizer.Family);
+        new IArdFamilyRecognizer[]
+        {
+            new CultureMediaRecognizer(), new ProductMicroRecognizer(), new PurifiedWaterRecognizer(), new EnvironmentalMonitoringRecognizer()
+        }.ToDictionary(recognizer => recognizer.Family);
 
     public async Task<List<WorksheetImportProposal>> ProposeAsync(
         IEnumerable<IFormFile> files, CancellationToken cancellationToken = default)
@@ -41,9 +44,18 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
             proposals.Add(Propose(file.FileName, stream, catalog));
         }
 
-        // Needs the whole upload: an older media form is blocked by a newer twin in the batch.
-        CultureMediaSupersession.Apply(proposals, catalog);
+        ApplyBatchRules(proposals, catalog);
         return proposals;
+    }
+
+    /// <summary>
+    /// Rules that need the whole upload: an older media form is blocked by a newer twin in the
+    /// batch, and an EM worksheet takes suggested Alert limits from a completed COA uploaded with it.
+    /// </summary>
+    public static void ApplyBatchRules(IReadOnlyList<WorksheetImportProposal> proposals, IWorksheetImportCatalog catalog)
+    {
+        CultureMediaSupersession.Apply(proposals, catalog);
+        EmCoaCrossCheck.Apply(proposals);
     }
 
     /// <summary>The pure core: one document stream and a catalog in, one proposal out.</summary>

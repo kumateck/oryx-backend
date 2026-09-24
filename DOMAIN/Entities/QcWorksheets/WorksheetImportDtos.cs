@@ -139,6 +139,10 @@ public class SpecificationCharacteristicProposal
     public string PrintedCriteria { get; set; }
 
     public string AlertLimit { get; set; }
+
+    /// <summary>Where a suggested <see cref="AlertLimit"/> came from, e.g. a completed COA in the same upload.</summary>
+    public string AlertLimitSource { get; set; }
+
     public string ActionLimit { get; set; }
     public string SourceFieldKey { get; set; }
     public string GroupName { get; set; }

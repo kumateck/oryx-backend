@@ -44,7 +44,7 @@ internal static class ArdCorpus
                 return new CorpusFile(relative, ExpectedFamily(relative), proposal, DocxDocumentReader.Read(again));
             })
             .ToList();
-        CultureMediaSupersession.Apply(files.Select(file => file.Proposal).ToList(), InMemoryWorksheetImportCatalog.Empty);
+        WorksheetDocxImportService.ApplyBatchRules(files.Select(file => file.Proposal).ToList(), InMemoryWorksheetImportCatalog.Empty);
         return files;
     }
 
