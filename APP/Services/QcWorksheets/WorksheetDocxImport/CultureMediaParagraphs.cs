@@ -8,8 +8,6 @@ internal sealed partial class CultureMediaWalker
     /// <summary>Labels that end in a colon yet head a block rather than ask for a value.</summary>
     private static readonly HashSet<string> ColonHeadings = ["conclusion", "conclusions", "results", "tests", "observations"];
 
-    private const int SentenceLength = 80;
-
     [GeneratedRegex(@"\bObserved\b", RegexOptions.IgnoreCase)]
     private static partial Regex ObservedRegex();
 
@@ -127,58 +125,9 @@ internal sealed partial class CultureMediaWalker
         return true;
     }
 
-    /// <summary>
-    /// A sentence carrying dictionary choice phrases: one Select/GrowthObservation per phrase,
-    /// and, for a long criterion sentence, the printed wording as Instructions so the analyst
-    /// sees exactly what they are asserting.
-    /// </summary>
-    private void AddChoices(DocxBlock block, string text, IReadOnlyList<ChoiceMatch> choices)
-    {
-        string baseLabel = null;
-        var sentence = text;
-        if (ImportText.TrySplitLabel(text, out var label, out var value) && text.IndexOf(':') < choices[0].Index
-            && label.Length <= 120)
-        {
-            baseLabel = label;
-            sentence = value;
-        }
-
-        var location = ImportProposalBuilder.At(block);
-        var sectionName = builder.CurrentSection?.Name ?? "Result";
-
-        if (sentence.Length > SentenceLength)
-            AddInstructions(block, baseLabel ?? sectionName, sentence, ImportConfidence.High, "Printed criterion wording for the choice below");
-
-        foreach (var choice in choices)
-        {
-            var fieldLabel = baseLabel is null
-                ? $"{sectionName} – {choice.Topic}"
-                : choices.Count > 1 ? $"{baseLabel} – {choice.Topic}" : baseLabel;
-
-            var key = ImportText.Canonical(baseLabel) == "remark" && !builder.IsKeyTaken(CultureMediaKeys.Remark)
-                ? CultureMediaKeys.Remark
-                : choices.Count > 1
-                    ? $"{ImportText.SnakeKey(baseLabel ?? sectionName, 45)}_{ImportText.SnakeKey(choice.Topic, 20)}"
-                    : ImportText.SnakeKey(fieldLabel);
-
-            builder.AddField(new ProposedWorksheetField
-            {
-                FieldKey = key,
-                Label = fieldLabel,
-                Type = choice.Type,
-                Mode = WorksheetFieldMode.Entry,
-                Options = choice.Options.ToList()
-            }, location, ImportConfidence.High, $"Choice phrase '{text.Substring(choice.Index, choice.Length)}' from the curated dictionary");
-        }
-    }
+    private void AddChoices(DocxBlock block, string text, IReadOnlyList<ChoiceMatch> choices) =>
+        ChoiceFields.Add(builder, block, text, choices, reservedRemarkKey: CultureMediaKeys.Remark);
 
     private void AddInstructions(DocxBlock block, string label, string text, ImportConfidence confidence, string reason) =>
-        builder.AddField(new ProposedWorksheetField
-        {
-            FieldKey = ImportText.SnakeKey(label ?? text, 40) + "_text",
-            Label = label ?? (text.Length > 80 ? text[..80].TrimEnd() + "…" : text),
-            Type = WorksheetFieldType.Instructions,
-            Mode = WorksheetFieldMode.Constant,
-            ConstantValue = text
-        }, ImportProposalBuilder.At(block), confidence, reason);
+        ChoiceFields.AddInstructions(builder, block, label, text, confidence, reason);
 }

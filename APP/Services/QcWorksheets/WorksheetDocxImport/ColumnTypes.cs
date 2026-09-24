@@ -98,6 +98,32 @@ public static class FormulaLibrary
     public static string CfuFromAverage(string averageKey, string dilutionFactorKey) =>
         $"{{{averageKey}}} * {{{dilutionFactorKey}}}";
 
+    /// <summary>
+    /// The numeric factor of a printed dilution: "1 in 10", "1:10" and "1/10" are all 10 (a in b
+    /// is b / a). False for anything else, including a blank.
+    /// </summary>
+    public static bool TryParseDilutionFactor(string printed, out double factor)
+    {
+        factor = 0;
+        var match = System.Text.RegularExpressions.Regex.Match(printed ?? string.Empty,
+            @"^\s*(?<a>\d+(?:\.\d+)?)\s*(?:in|:|/)\s*(?<b>\d+(?:\.\d+)?)\s*$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!match.Success)
+            return false;
+
+        var a = double.Parse(match.Groups["a"].Value, System.Globalization.CultureInfo.InvariantCulture);
+        var b = double.Parse(match.Groups["b"].Value, System.Globalization.CultureInfo.InvariantCulture);
+        if (a <= 0 || b <= 0)
+            return false;
+
+        factor = b / a;
+        return true;
+    }
+
+    /// <summary>cfu = average × a literal dilution factor, e.g. <c>{tamc_average} * 10</c>.</summary>
+    public static string CfuFromAverage(string averageKey, double dilutionFactor) =>
+        $"{{{averageKey}}} * {QcWorksheetCalculator.Format(dilutionFactor)}";
+
     /// <summary>Aggregate over a table column: <c>AVG({table.column})</c>.</summary>
     public static string ColumnAverage(string tableKey, string columnKey) => $"AVG({{{tableKey}.{columnKey}}})";
 }

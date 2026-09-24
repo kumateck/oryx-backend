@@ -31,7 +31,7 @@ public static partial class RunDataLabels
         @"(?<![A-Za-z])(Batch\s*No\.?|Lot\s*No\.?|Culture\s+Medium\s+Name|Medium\s+Code|Issue\s*No\.?|Issue\s+Date|"
         + @"Issued\s+By|Format\s+No\.?|Serial\s+No\.?|Revision\s+No\.?|Analysis\s+Start\s+Date|Analysis\s+End\s+Date|"
         + @"Date\s+of\s+Mfg\.?|Date\s+of\s+Expiry|Date\s+Received|Date\s+Opened|Sampled\s+By|Sampled\s+On|Date\s+Sampled|"
-        + @"A\.?\s*R\.?\s*No\.?|Mfg\.?\s*Date|Exp\.?\s*Date|Product\s+Name)\s*:",
+        + @"A\.?\s*R\.?\s*No\.?|Mfg\.?\s*Date|Exp\.?\s*Date|Product\s+Name|Spec\.?\s*No\.?|SOP\s*No\.?)\s*:",
         RegexOptions.IgnoreCase)]
     public static partial Regex LabelStartRegex();
 
@@ -71,6 +71,8 @@ public static partial class RunDataLabels
             (["Revision No"], "revision_no", "Revision No.", RunDataDisposition.HeaderData, WorksheetFieldType.ShortText),
             // Format No. is the controlled form's number, but two media sheets print a serial
             // ("QCD/MIC/BDCA/26/001") under it, so its value is never trusted as a Constant.
+            (["Spec No", "Specification No"], "spec_no", "Spec. No.", RunDataDisposition.HeaderData, WorksheetFieldType.ShortText),
+            (["SOP No"], "sop_no", "SOP No.", RunDataDisposition.HeaderData, WorksheetFieldType.ShortText),
             (["Format No", "Format Number"], "format_no", "Format No.", RunDataDisposition.HeaderData, WorksheetFieldType.ShortText)
         };
 

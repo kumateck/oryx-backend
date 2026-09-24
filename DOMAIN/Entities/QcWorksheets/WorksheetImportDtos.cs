@@ -111,6 +111,16 @@ public class SpecificationCharacteristicProposal
     public string ActionLimit { get; set; }
     public string SourceFieldKey { get; set; }
     public string GroupName { get; set; }
+
+    /// <summary>The manufacturing stage the Specification governs; Finished for product ARDs.</summary>
+    public SpecificationStage? Stage { get; set; }
+
+    /// <summary>Context from the running header: the product the Specification is for.</summary>
+    public string ProductName { get; set; }
+
+    /// <summary>Context from the running header: the printed Specification number ("Spec. No."), when present.</summary>
+    public string SpecificationCode { get; set; }
+
     public ImportConfidence Confidence { get; set; }
     public ImportSourceLocation Location { get; set; }
 }

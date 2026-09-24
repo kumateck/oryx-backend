@@ -29,11 +29,32 @@ public static class EquipmentTable
         if (nameColumn < 0)
             nameColumn = codeColumn == 0 ? 1 : 0;
 
-        return Enumerable.Range(1, table.Rows.Count - 1)
+        var end = ReagentHeaderRow(table) ?? table.Rows.Count;
+        return Enumerable.Range(1, end - 1)
             .Select(row => new EquipmentRow(row, table.Resolved(row, nameColumn), table.Resolved(row, codeColumn)))
             .Where(item => !ImportText.IsBlank(item.Name) || !ImportText.IsBlank(item.Code))
             .ToList();
     }
+
+    /// <summary>
+    /// Product sheets continue the equipment table with "REAGENTS USED | REAGENT CODE" rows.
+    /// Those are reagents (the media, with their medium codes), not equipment.
+    /// </summary>
+    public static IReadOnlyList<EquipmentRow> ReagentRows(DocxTable table)
+    {
+        if (ReagentHeaderRow(table) is not { } header)
+            return [];
+        return Enumerable.Range(header + 1, table.Rows.Count - header - 1)
+            .Select(row => new EquipmentRow(row, table.Resolved(row, 0), table.Resolved(row, 1)))
+            .Where(item => !ImportText.IsBlank(item.Name))
+            .ToList();
+    }
+
+    private static int? ReagentHeaderRow(DocxTable table) =>
+        Enumerable.Range(1, Math.Max(0, table.Rows.Count - 1))
+            .Where(row => ImportText.Canonical(table.Resolved(row, 0)).Contains("reagent"))
+            .Select(row => (int?)row)
+            .FirstOrDefault();
 
     public static void Apply(DocxBlock block, ImportProposalBuilder builder)
     {
@@ -63,6 +84,15 @@ public static class EquipmentTable
                 builder.Flag(WorksheetImportFlagCodes.UnmatchedEquipment,
                     $"'{name}' ({item.Code}) is not in the QC equipment register.", location);
         }
+
+        var reagents = ReagentRows(block.Table);
+        if (reagents.Count == 0)
+            return;
+
+        builder.Section("Reagents");
+        foreach (var item in reagents)
+            ReagentTable.AddReagent(builder, item.Name, "reagent_" + ImportText.SnakeKey(item.Name, 40),
+                ImportText.IsBlank(item.Code) ? item.Name : $"{item.Name} ({item.Code})", ImportProposalBuilder.At(block, item.Row));
     }
 }
 

@@ -90,15 +90,32 @@ public static partial class ParameterTable
     public static ParameterDecision DecideText(string text) =>
         ImportText.TrySplitLabel(text, out var label, out var value) ? Decide(label, value) : null;
 
-    /// <summary>A table whose rows are label | value pairs (exactly two columns, labels filled).</summary>
+    /// <summary>
+    /// The table's title when its first row is one cell spanning every column ("Pre-incubation",
+    /// "Growth Promotion and Sterility of the Culture Media"); otherwise null.
+    /// </summary>
+    public static string Title(DocxTable table)
+    {
+        if (table.Rows.Count < 2 || table.ColumnCount < 2)
+            return null;
+        var origin = table.Rows[0][0];
+        return table.Rows[0].All(cell => cell.OriginRow == origin.OriginRow && cell.OriginColumn == origin.OriginColumn)
+               && !ImportText.IsBlank(origin.Text)
+            ? origin.Text
+            : null;
+    }
+
+    private static int FirstBodyRow(DocxTable table) => Title(table) is null ? 0 : 1;
+
+    /// <summary>A table whose rows are label | value pairs (exactly two columns, labels filled), under an optional title.</summary>
     public static bool IsTwoColumnParameterTable(DocxTable table) =>
         table.ColumnCount == 2
-        && table.Rows.Count > 0
-        && Enumerable.Range(0, table.Rows.Count).All(row => !ImportText.IsBlank(table.Resolved(row, 0)))
-        && !table.RowTexts(0).All(text => text.Length > 0 && text == text.ToUpperInvariant());
+        && table.Rows.Count > FirstBodyRow(table)
+        && Enumerable.Range(FirstBodyRow(table), table.Rows.Count - FirstBodyRow(table)).All(row => !ImportText.IsBlank(table.Resolved(row, 0)))
+        && !table.RowTexts(FirstBodyRow(table)).All(text => text.Length > 0 && text == text.ToUpperInvariant());
 
     public static IReadOnlyList<(int Row, ParameterDecision Decision)> ReadTwoColumn(DocxTable table) =>
-        Enumerable.Range(0, table.Rows.Count)
+        Enumerable.Range(FirstBodyRow(table), table.Rows.Count - FirstBodyRow(table))
             .Where(row => table.Cell(row, 1) is { IsContinuation: false } || table.Resolved(row, 1).Length == 0)
             .Select(row => (row, Decide(table.Resolved(row, 0), table.Resolved(row, 1))))
             .ToList();

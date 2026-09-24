@@ -27,44 +27,71 @@ public static partial class MediaReference
 
     public static bool IsReferToSheet(string text) => ReferToSheetRegex().IsMatch(text ?? string.Empty);
 
-    public static bool IsMediaReferenceTable(DocxTable table) =>
-        BatchRow(table) >= 0 && MediumNames(table).Count > 0;
+    /// <summary>One cited medium: its printed name and the cell holding its batch number.</summary>
+    public sealed record CitedMedium(string Name, int Row, int Column);
 
-    public static IReadOnlyList<(int Column, string Name)> MediumNames(DocxTable table)
+    public static bool IsMediaReferenceTable(DocxTable table) => Media(table).Count > 0;
+
+    /// <summary>
+    /// The media a reference table cites, in either printed layout:
+    /// <list type="bullet">
+    /// <item>one column per medium — a name row, then a "Medium Batch no:" row (most sheets);</item>
+    /// <item>one row per medium — a "Medium Name | Medium Batch No | Remark" header row (Entrima).</item>
+    /// </list>
+    /// A spanning title row above either layout is ignored.
+    /// </summary>
+    public static IReadOnlyList<CitedMedium> Media(DocxTable table)
     {
-        var batchRow = BatchRow(table);
-        if (batchRow < 0)
+        var header = Enumerable.Range(0, table.Rows.Count).FirstOrDefault(row =>
+        {
+            var cells = table.RowTexts(row).Select(ImportText.Canonical).ToList();
+            return cells.Contains("mediumname") && cells.Any(cell => cell.StartsWith("mediumbatchno"));
+        }, -1);
+
+        if (header >= 0)
+        {
+            var texts = table.RowTexts(header).Select(ImportText.Canonical).ToList();
+            var nameColumn = texts.IndexOf("mediumname");
+            var batchColumn = texts.FindIndex(cell => cell.StartsWith("mediumbatchno"));
+            return Enumerable.Range(header + 1, table.Rows.Count - header - 1)
+                .Select(row => new CitedMedium(table.Resolved(row, nameColumn), row, batchColumn))
+                .Where(item => !ImportText.IsBlank(item.Name))
+                .ToList();
+        }
+
+        var batchRow = Enumerable.Range(0, table.Rows.Count)
+            .FirstOrDefault(row => ImportText.Canonical(table.Resolved(row, 0)).StartsWith("mediumbatchno"), -1);
+        if (batchRow < 1)
             return [];
 
         // "Medium Name | …" row when there is one, else the row above the batch row.
-        var nameRow = Enumerable.Range(0, table.Rows.Count)
+        var nameRow = Enumerable.Range(0, batchRow)
             .FirstOrDefault(row => ImportText.Canonical(table.Resolved(row, 0)) == "mediumname", batchRow - 1);
-        if (nameRow < 0)
-            return [];
 
         return Enumerable.Range(1, table.ColumnCount - 1)
             .Where(column => table.Cell(nameRow, column) is { IsHorizontalSpan: false })
-            .Select(column => (column, table.Resolved(nameRow, column)))
-            .Where(item => !ImportText.IsBlank(item.Item2))
+            .Select(column => new CitedMedium(table.Resolved(nameRow, column), batchRow, column))
+            .Where(item => !ImportText.IsBlank(item.Name))
             .ToList();
     }
 
-    public static void Apply(DocxBlock block, ImportProposalBuilder builder)
+    /// <param name="mediumCodes">Printed medium codes by normalized name (a product sheet's reagent list), used to match the media template by code first.</param>
+    public static void Apply(DocxBlock block, ImportProposalBuilder builder, IReadOnlyDictionary<string, string> mediumCodes = null)
     {
-        var batchRow = BatchRow(block.Table);
         builder.Section("Culture media");
 
-        foreach (var (column, name) in MediumNames(block.Table))
+        foreach (var medium in Media(block.Table))
         {
-            var location = ImportProposalBuilder.At(block, batchRow, column);
-            var slug = ImportText.SnakeKey(name, 40);
-            var batchField = ReagentTable.AddReagent(builder, name, $"medium_batch_{slug}", $"{name} — medium batch no.", location);
+            var location = ImportProposalBuilder.At(block, medium.Row, medium.Column);
+            var slug = ImportText.SnakeKey(medium.Name, 40);
+            var batchField = ReagentTable.AddReagent(builder, medium.Name, $"medium_batch_{slug}", $"{medium.Name} — medium batch no.", location);
 
-            var template = builder.Catalog.FindMediaTemplate(name);
+            var code = mediumCodes?.GetValueOrDefault(ImportText.Canonical(medium.Name));
+            var template = builder.Catalog.FindMediaTemplate(medium.Name, code);
             builder.AddField(new ProposedWorksheetField
             {
                 FieldKey = $"media_qualification_{slug}",
-                Label = $"{name} — media qualification remark",
+                Label = $"{medium.Name} — media qualification remark",
                 Type = WorksheetFieldType.ReferencedResult,
                 Mode = WorksheetFieldMode.Entry,
                 ReferencedResultSourceTemplateId = template?.Id,
@@ -77,11 +104,8 @@ public static partial class MediaReference
 
             if (template is null)
                 builder.Flag(WorksheetImportFlagCodes.MediaTemplateMissing,
-                    $"No MediaQualification template exists for '{name}'. Import the media sheets first.", location);
+                    $"No MediaQualification template exists for '{medium.Name}'{(code is null ? string.Empty : $" ({code})")}. "
+                    + "Import the media sheets first, or repoint this field.", location);
         }
     }
-
-    private static int BatchRow(DocxTable table) =>
-        Enumerable.Range(0, table.Rows.Count)
-            .FirstOrDefault(row => ImportText.Canonical(table.Resolved(row, 0)).StartsWith("mediumbatchno"), -1);
 }
