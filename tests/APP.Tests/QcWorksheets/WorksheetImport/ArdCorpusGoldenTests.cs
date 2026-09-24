@@ -31,19 +31,19 @@ public class ArdCorpusGoldenTests(ITestOutputHelper output)
     }
 
     [CorpusFact]
-    public void Certificates_are_rejected_and_pending_families_are_flagged()
+    public void Certificates_are_rejected_and_every_family_has_a_recognizer()
     {
         foreach (var file in ArdCorpus.Load())
         {
+            Assert.DoesNotContain(file.Proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.RecognizerPending);
             if (file.Expected == ArdFamily.CompletedCertificate)
             {
                 Assert.Null(file.Proposal.Template);
                 Assert.Contains(file.Proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.CompletedOutputNotTemplate);
             }
-            else if (file.Expected is ArdFamily.EnvironmentalMonitoring)
+            else
             {
-                Assert.Null(file.Proposal.Template);
-                Assert.Contains(file.Proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.RecognizerPending);
+                Assert.NotNull(file.Proposal.Template);
             }
         }
     }

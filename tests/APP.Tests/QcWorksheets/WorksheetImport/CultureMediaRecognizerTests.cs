@@ -191,7 +191,6 @@ public class CultureMediaRecognizerTests
 
     [Theory]
     [InlineData("QUALITY CONTROL MICROBIOLOGY CERTIFICATE OF ANALYSIS", WorksheetImportFlagCodes.CompletedOutputNotTemplate)]
-    [InlineData("ENVIRONMENTAL MONITORING RAW DATA", WorksheetImportFlagCodes.RecognizerPending)]
     [InlineData("A MEMO", WorksheetImportFlagCodes.UnknownFamily)]
     public void Other_families_stop_with_a_flag_and_no_template(string header, string flag)
     {
