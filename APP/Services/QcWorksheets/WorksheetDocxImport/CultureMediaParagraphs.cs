@@ -87,8 +87,13 @@ internal sealed partial class CultureMediaWalker
     }
 
     /// <summary>
-    /// "pH Range: 7.2 ± 0.2   Observed: ……" (older form: "pH: 7.00-7.40 Observed:"). The
-    /// printed range is a Specification proposal; the observed pH is an Entry field.
+    /// "pH Range: 7.2 ± 0.2   Observed: ……" (older form: "pH: 7.00-7.40 Observed:").
+    /// <para>
+    /// Media qualification never binds to a Specification (field-catalog refinement 1), so the
+    /// printed range stays on the sheet as a read-only, Result-typed Constant holding the
+    /// inline acceptance criteria. It cannot be one field with the observed value: a Constant
+    /// field accepts no entry, so the observed pH is its own Number entry beside it.
+    /// </para>
     /// </summary>
     private bool TryReadPh(DocxBlock block, string text)
     {
@@ -96,24 +101,28 @@ internal sealed partial class CultureMediaWalker
             return false;
 
         var location = ImportProposalBuilder.At(block);
-        var rangePart = ObservedRegex().Split(text)[0];
-        var field = builder.AddField(new ProposedWorksheetField
+        var prefix = _inPreviousBatch ? "previously_approved_" : string.Empty;
+        var labelPrefix = _inPreviousBatch ? "Previously approved batch – " : string.Empty;
+
+        if (PrintedSpecification.TryParseRange(ObservedRegex().Split(text)[0], out var criteria))
+            builder.AddField(new ProposedWorksheetField
+            {
+                FieldKey = prefix + "ph_range",
+                Label = labelPrefix + "pH range (acceptance)",
+                Type = WorksheetFieldType.Result,
+                Mode = WorksheetFieldMode.Constant,
+                ConstantValue = criteria
+            }, location, ImportConfidence.High, "Printed pH range: inline acceptance criteria, read-only");
+        else if (!_inPreviousBatch)
+            builder.Flag(WorksheetImportFlagCodes.MissingMetadata, "No printed pH range: add the acceptance range by hand.", location);
+
+        builder.AddField(new ProposedWorksheetField
         {
-            FieldKey = _inPreviousBatch ? "previously_approved_ph_observed" : "ph_observed",
-            Label = _inPreviousBatch ? "Previously approved batch – pH (observed)" : "pH (observed)",
+            FieldKey = prefix + "ph_observed",
+            Label = labelPrefix + "pH (observed)",
             Type = WorksheetFieldType.Number,
             Mode = WorksheetFieldMode.Entry
         }, location, ImportConfidence.High, "'Observed' blank beside the printed pH range");
-
-        // The previously approved batch is checked against the same range: one proposal only.
-        if (_inPreviousBatch)
-            return true;
-
-        if (PrintedSpecification.TryParseRange(rangePart, out var criteria))
-            builder.Proposal.SpecificationProposals.Add(PrintedSpecification.Proposal(
-                "pH", criteria, field.FieldKey, location, ImportConfidence.High));
-        else
-            builder.Flag(WorksheetImportFlagCodes.MissingMetadata, "No printed pH range: the specification must be supplied by hand.", location);
 
         return true;
     }

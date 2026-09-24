@@ -68,6 +68,7 @@ internal sealed partial class CultureMediaWalker
             }
         }
 
+        builder.Proposal.Medium = CultureMediaSupersession.Identify(_mediumName, code);
         builder.Section("Medium details");
         var location = ImportProposalBuilder.At(block);
 

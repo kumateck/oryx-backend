@@ -59,23 +59,47 @@ public class ArdCorpusGoldenTests(ITestOutputHelper output)
     }
 
     [CorpusFact]
-    public void Old_media_forms_are_flagged_superseded_and_new_forms_are_not()
+    public void Old_media_forms_are_blocked_only_when_a_newer_twin_exists()
     {
         var media = ArdCorpus.Load().Where(file => file.Expected == ArdFamily.CultureMedia).ToList();
         var superseded = media.Where(file => file.Proposal.FormatVersion == nameof(CultureMediaFormat.Superseded)).ToList();
+        bool Has(CorpusFile file, string code) => file.Proposal.Flags.Any(flag => flag.Code == code);
 
-        output.WriteLine($"Old-format (SupersededFormat) media files: {superseded.Count} of {media.Count}");
+        output.WriteLine($"Old-format media files: {superseded.Count} of {media.Count}");
         foreach (var file in superseded)
-            output.WriteLine($"  {file.RelativePath}");
+            output.WriteLine($"  {file.RelativePath}: {(Has(file, WorksheetImportFlagCodes.SupersededFormatBlocked) ? "SupersededFormatBlocked" : "SupersededFormat (warning)")}");
 
         foreach (var file in media)
         {
-            var flagged = file.Proposal.Flags.Any(flag => flag.Code == WorksheetImportFlagCodes.SupersededFormat);
-            Assert.True(flagged == (file.Proposal.FormatVersion == nameof(CultureMediaFormat.Superseded)), file.RelativePath);
+            var isOld = file.Proposal.FormatVersion == nameof(CultureMediaFormat.Superseded);
+            var flags = new[] { WorksheetImportFlagCodes.SupersededFormat, WorksheetImportFlagCodes.SupersededFormatBlocked }.Count(code => Has(file, code));
+            Assert.True(flags == (isOld ? 1 : 0), $"{file.RelativePath}: {flags} supersession flags");
             Assert.NotEqual(nameof(CultureMediaFormat.Unknown), file.Proposal.FormatVersion);
+            Assert.NotNull(file.Proposal.Medium);
+
+            // Media limits stay on the sheet: no media sheet proposes a Specification.
+            Assert.Empty(file.Proposal.SpecificationProposals);
         }
 
         Assert.Equal(11, superseded.Count);
+        Assert.Equal(10, superseded.Count(file => Has(file, WorksheetImportFlagCodes.SupersededFormatBlocked)));
+        var warned = Assert.Single(superseded, file => Has(file, WorksheetImportFlagCodes.SupersededFormat));
+        Assert.EndsWith("EEBM.docx", warned.RelativePath);
+    }
+
+    [CorpusFact]
+    public void Standard_zones_stay_on_the_sheet_as_fixed_columns()
+    {
+        var sheet = Assert.Single(ArdCorpus.Load(), file => file.RelativePath.EndsWith("Mueller Hinton Agar.docx"));
+        var tables = sheet.Proposal.Template.Sections.SelectMany(section => section.Fields)
+            .Where(field => field.FieldKey.StartsWith("antibiotic_sensitivity_")).ToList();
+
+        Assert.Equal(3, tables.Count);
+        foreach (var table in tables)
+        {
+            var standard = Columns(table.ColumnDefinitions).Single(column => column.GetProperty("key").GetString() == "standardZone");
+            Assert.True(standard.GetProperty("fixedValues").GetArrayLength() > 0);
+        }
     }
 
     [CorpusFact]

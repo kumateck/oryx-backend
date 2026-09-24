@@ -23,13 +23,16 @@ public sealed class CorpusFactAttribute : FactAttribute
 
 internal sealed record CorpusFile(string RelativePath, ArdFamily Expected, WorksheetImportProposal Proposal, DocxDocument Document);
 
-/// <summary>Loads the real corpus from <see cref="CorpusFactAttribute.Variable"/>; never copied into the repository.</summary>
+/// <summary>
+/// Loads the real corpus from <see cref="CorpusFactAttribute.Variable"/> (never copied into the
+/// repository) as one upload batch, so the batch-level supersession rule applies.
+/// </summary>
 internal static class ArdCorpus
 {
     public static List<CorpusFile> Load()
     {
         var root = Environment.GetEnvironmentVariable(CorpusFactAttribute.Variable)!;
-        return Directory.EnumerateFiles(root, "*.docx", SearchOption.AllDirectories)
+        var files = Directory.EnumerateFiles(root, "*.docx", SearchOption.AllDirectories)
             .Where(path => !Path.GetFileName(path).StartsWith("~$", StringComparison.Ordinal))
             .OrderBy(path => path, StringComparer.Ordinal)
             .Select(path =>
@@ -41,6 +44,8 @@ internal static class ArdCorpus
                 return new CorpusFile(relative, ExpectedFamily(relative), proposal, DocxDocumentReader.Read(again));
             })
             .ToList();
+        CultureMediaSupersession.Apply(files.Select(file => file.Proposal).ToList(), InMemoryWorksheetImportCatalog.Empty);
+        return files;
     }
 
     /// <summary>The corpus is filed by family; product sheets are the "FP" / "Finished Product" files.</summary>

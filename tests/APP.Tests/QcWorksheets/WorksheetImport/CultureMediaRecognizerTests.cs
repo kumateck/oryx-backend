@@ -75,8 +75,13 @@ public class CultureMediaRecognizerTests
         Assert.Single(fields, field => field.Type == WorksheetFieldType.Instrument);
         Assert.Equal("QCD/SOP/044; BP", byKey["references"].ConstantValue);
 
-        var ph = Assert.Single(proposal.SpecificationProposals);
-        Assert.Equal(("pH", "7.2 ± 0.2 (7.0 – 7.4)", "ph_observed"), (ph.TestName, ph.AcceptanceCriteria, ph.SourceFieldKey));
+        // Media limits stay on the sheet: an inline, read-only acceptance range beside the
+        // observed entry, and no Specification proposals at all.
+        Assert.Equal((WorksheetFieldType.Result, WorksheetFieldMode.Constant, "7.2 ± 0.2 (7.0 – 7.4)"),
+            (byKey["ph_range"].Type, byKey["ph_range"].Mode, byKey["ph_range"].ConstantValue));
+        Assert.Equal((WorksheetFieldType.Number, WorksheetFieldMode.Entry), (byKey["ph_observed"].Type, byKey["ph_observed"].Mode));
+        Assert.Empty(proposal.SpecificationProposals);
+        Assert.Equal(("Test Agar", "testagar", "qcdrgtta001"), (proposal.Medium.Name, proposal.Medium.NameKey, proposal.Medium.CodeKey));
     }
 
     [Fact]

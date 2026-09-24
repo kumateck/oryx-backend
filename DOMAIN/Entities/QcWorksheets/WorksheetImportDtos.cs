@@ -1,54 +1,9 @@
-using SHARED;
-
 namespace DOMAIN.Entities.QcWorksheets;
 
 // ---------------------------------------------------------------------------
 // Worksheet DOCX import (build brief 07, Phase B). Proposals only: nothing here is
 // persisted, and nothing is ever approved automatically.
 // ---------------------------------------------------------------------------
-
-/// <summary>The document family an ARD worksheet belongs to.</summary>
-public enum ArdFamily
-{
-    Unknown = 0,
-    ProductMicro = 1,
-    CultureMedia = 2,
-    EnvironmentalMonitoring = 3,
-    PurifiedWater = 4,
-    CompletedCertificate = 5
-}
-
-public enum ImportConfidence
-{
-    High = 0,
-    Medium = 1,
-    Low = 2
-}
-
-public static class WorksheetImportErrors
-{
-    public static readonly Error NoFiles =
-        Error.Validation("QcWorksheetTemplate.ImportNoFiles", "At least one .docx file is required");
-}
-
-/// <summary>Stable flag codes a reviewer (and the Phase C screen) can key on.</summary>
-public static class WorksheetImportFlagCodes
-{
-    public const string InvalidFile = "InvalidFile";
-    public const string CompletedOutputNotTemplate = "CompletedOutputNotTemplate";
-    public const string UnknownFamily = "UnknownFamily";
-    public const string RecognizerPending = "RecognizerPending";
-    public const string SupersededFormat = "SupersededFormat";
-    public const string UnmatchedEquipment = "UnmatchedEquipment";
-    public const string UnmatchedReagent = "UnmatchedReagent";
-    public const string MediaTemplateMissing = "MediaTemplateMissing";
-    public const string RowFormulaNotEvaluated = "RowFormulaNotEvaluated";
-    public const string MixedColumn = "MixedColumn";
-    public const string IncompleteValue = "IncompleteValue";
-    public const string SuspectedRunData = "SuspectedRunData";
-    public const string UnrecognizedContent = "UnrecognizedContent";
-    public const string MissingMetadata = "MissingMetadata";
-}
 
 /// <summary>Where in the source document something came from.</summary>
 public class ImportSourceLocation
@@ -183,6 +138,25 @@ public class ImportReagentMatch
     public string MatchedName { get; set; }
 }
 
+/// <summary>
+/// Which medium a culture-media proposal is for, normalized so the old and new form of one
+/// medium compare equal ("Plate count Agar" / "Plate Count Agar").
+/// </summary>
+public class MediumIdentity
+{
+    /// <summary>The medium name as printed.</summary>
+    public string Name { get; set; }
+
+    /// <summary>Lower-case letters and digits of the name only.</summary>
+    public string NameKey { get; set; }
+
+    /// <summary>The printed medium code (e.g. QCD/RGT/CA-001); null on the older form.</summary>
+    public string Code { get; set; }
+
+    /// <summary>Lower-case letters and digits of the code only; null when there is no code.</summary>
+    public string CodeKey { get; set; }
+}
+
 /// <summary>The reader's normalized model, returned so a review screen can show the source.</summary>
 public class ImportSourceDocument
 {
@@ -210,6 +184,9 @@ public class WorksheetImportProposal
 
     /// <summary>For culture media: "New" or "Superseded".</summary>
     public string FormatVersion { get; set; }
+
+    /// <summary>For culture media: the medium this sheet qualifies, used to find a newer twin.</summary>
+    public MediumIdentity Medium { get; set; }
 
     /// <summary>Null when the family produces no template (certificates, unknown, pending recognizers).</summary>
     public ProposedWorksheetTemplate Template { get; set; }

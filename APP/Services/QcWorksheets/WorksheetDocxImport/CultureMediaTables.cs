@@ -85,9 +85,10 @@ internal sealed partial class CultureMediaWalker
         && ImportText.Canonical(table.Resolved(0, 1)).Contains("standardzone");
 
     /// <summary>
-    /// Antimicrobial | Standard Zone | Zone observed, one table per organism. The standard zone
-    /// is a printed specification, so it becomes a Specification proposal per antimicrobial and
-    /// is left out of the template; the antimicrobial is the fixed row header.
+    /// Antimicrobial | Standard Zone | Zone observed, one table per organism. Media limits stay
+    /// on the sheet (media qualification never binds to a Specification), so the printed
+    /// standard zone is a read-only fixed column beside the analyst's reading; the antimicrobial
+    /// is the fixed row header.
     /// </summary>
     private void ReadAntibioticTable(DocxBlock block, string caption)
     {
@@ -96,27 +97,16 @@ internal sealed partial class CultureMediaWalker
         var location = ImportProposalBuilder.At(block);
 
         var standard = grid.Columns.First(column => column.SourceColumn == 1);
-        var columns = grid.Columns.Where(column => column != standard).ToList();
+        if (standard.FixedValues is not null)
+            standard.Reason = "Printed standard zone (acceptance range per antimicrobial): read-only fixed values";
 
         if (caption is null)
             builder.Flag(WorksheetImportFlagCodes.UnrecognizedContent,
                 "Antibiotic sensitivity table without an organism caption above it.", location);
 
         builder.Section("Antibiotic Sensitivity Test");
-        var table = builder.AddTable("antibiotic_sensitivity_" + ImportText.SnakeKey(organism, 40),
-            $"Antibiotic sensitivity – {organism}", columns, location,
-            "Antimicrobial rows fixed; Standard Zone moved to specification proposals");
-
-        foreach (var row in grid.DataRows)
-        {
-            var antimicrobial = block.Table.Resolved(row, 0);
-            var zone = block.Table.Resolved(row, 1);
-            if (ImportText.IsBlank(antimicrobial) || ImportText.IsBlank(zone))
-                continue;
-
-            builder.Proposal.SpecificationProposals.Add(PrintedSpecification.Proposal(
-                $"Zone of inhibition – {antimicrobial}", zone, table.FieldKey, ImportProposalBuilder.At(block, row, 1),
-                ImportConfidence.High, groupName: organism, analyte: antimicrobial));
-        }
+        builder.AddTable("antibiotic_sensitivity_" + ImportText.SnakeKey(organism, 40),
+            $"Antibiotic sensitivity – {organism}", grid.Columns, location,
+            "Antimicrobial and standard zone fixed per row; zone observed entered");
     }
 }

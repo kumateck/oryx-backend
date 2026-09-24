@@ -23,8 +23,12 @@ public interface IWorksheetImportCatalog
     /// <summary>Reagent by normalized name.</summary>
     CatalogReagent FindReagent(string name);
 
-    /// <summary>The MediaQualification template for a medium, by normalized medium name.</summary>
-    CatalogTemplate FindMediaTemplate(string mediumName);
+    /// <summary>
+    /// A saved, non-superseded MediaQualification template for a medium: by medium code when
+    /// one is given (imported media templates take the medium code as their code), otherwise
+    /// by normalized medium name.
+    /// </summary>
+    CatalogTemplate FindMediaTemplate(string mediumName, string mediumCode = null);
 }
 
 public sealed class InMemoryWorksheetImportCatalog(
@@ -48,13 +52,24 @@ public sealed class InMemoryWorksheetImportCatalog(
     public CatalogReagent FindReagent(string name) =>
         string.IsNullOrWhiteSpace(name) ? null : _reagents[ImportText.Canonical(name)].FirstOrDefault();
 
-    public CatalogTemplate FindMediaTemplate(string mediumName)
+    public CatalogTemplate FindMediaTemplate(string mediumName, string mediumCode = null)
     {
+        var code = ImportText.Canonical(mediumCode);
+        if (code.Length > 0
+            && _mediaTemplates.FirstOrDefault(template => ImportText.Canonical(template.Code) == code) is { } byCode)
+            return byCode;
+
+        // Imported names read "Culture Media Qualification – {medium}". Equality once that
+        // wording is removed, never "contains"/"ends with": "Casein Digest Agar" must not land
+        // on the Soyabean-Casein Digest Agar template.
         var wanted = ImportText.Canonical(mediumName);
         return wanted.Length == 0
             ? null
-            : _mediaTemplates.FirstOrDefault(template => ImportText.Canonical(template.Name).Contains(wanted));
+            : _mediaTemplates.FirstOrDefault(template => MediumPart(template.Name) == wanted);
     }
+
+    private static string MediumPart(string templateName) =>
+        ImportText.Canonical(templateName).Replace("culturemediaqualification", string.Empty).Replace("mediaqualification", string.Empty);
 }
 
 public interface IWorksheetImportCatalogLoader

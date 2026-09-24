@@ -41,6 +41,8 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
             proposals.Add(Propose(file.FileName, stream, catalog));
         }
 
+        // Needs the whole upload: an older media form is blocked by a newer twin in the batch.
+        CultureMediaSupersession.Apply(proposals, catalog);
         return proposals;
     }
 
