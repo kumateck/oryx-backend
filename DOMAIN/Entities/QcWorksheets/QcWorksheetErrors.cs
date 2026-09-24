@@ -549,4 +549,44 @@ public static class QcWorksheetErrors
             "QcOosCase.BlocksRelease",
             $"This test request has {openCaseCount} open OOS case(s) and cannot be released until "
             + "each one is closed by a QA disposition.");
+
+    // -----------------------------------------------------------------------
+    // Milestone 5 — certificates
+    // -----------------------------------------------------------------------
+
+    public static Error CoaNotFound(Guid id) =>
+        Error.NotFound("QcCoa.NotFound", $"The certificate with the Id: {id} was not found");
+
+    public static Error IssueRequiresDraft(CoaStatus status) =>
+        Error.Validation(
+            "QcCoa.IssueRequiresDraft",
+            $"Only a Draft certificate can be issued. This certificate is {status}.");
+
+    public static Error ReviseRequiresIssued(CoaStatus status) =>
+        Error.Validation(
+            "QcCoa.ReviseRequiresIssued",
+            $"Only an Issued certificate can be revised. This certificate is {status}. A Draft "
+            + "is regenerated from current data whenever it is raised, so there is nothing to "
+            + "revise until it has been issued.");
+
+    public static Error RevisionReasonRequired =>
+        Error.Validation(
+            "QcCoa.RevisionReasonRequired",
+            "A reason for revision is required. A certificate is only ever replaced for a stated "
+            + "cause, and the stated cause is part of the record.");
+
+    public static Error RevisionAlreadyInProgress =>
+        Error.Validation(
+            "QcCoa.RevisionAlreadyInProgress",
+            "A revision of this certificate is already drafted and not yet issued. Issue or "
+            + "discard it before raising another.");
+
+    /// <summary>
+    /// The strict-hold combination rule (lifecycle-and-governance.md), surfaced as an error on the
+    /// one path a user can reach it from. Generation itself never errors — it simply withholds.
+    /// </summary>
+    public static Error CoaGenerationHeld(string reason) =>
+        Error.Validation(
+            "QcCoa.GenerationHeld",
+            $"A certificate cannot be produced for this test request. {reason}");
 }

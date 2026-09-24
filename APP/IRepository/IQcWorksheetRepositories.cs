@@ -247,3 +247,42 @@ public interface IQcApprovalRepository
     /// <summary>The full signature trail for one QC document.</summary>
     Task<Result<List<QcApprovalDto>>> GetApprovalsForEntity(string entityType, Guid entityId);
 }
+
+/// <summary>
+/// Certificates (Milestone 5): the viewer, issuance and revision.
+/// <para>
+/// There is deliberately no create and no update method. A <c>Coa</c> is produced by
+/// <c>IQcCoaGenerationService</c> when the round it certifies passes the strict-hold gate, and
+/// the only two things a user does to one afterwards are issue it and revise it.
+/// </para>
+/// </summary>
+public interface ICoaRepository
+{
+    Task<Result<Paginateable<IEnumerable<CoaSummaryDto>>>> GetCoas(
+        int page,
+        int pageSize,
+        string searchQuery,
+        CoaStatus? status,
+        CoaCertificateShape? shape,
+        DateTime? from,
+        DateTime? to);
+
+    /// <summary>
+    /// The rendered certificate: the shape's own header block and the snapshotted rows, grouped by
+    /// Subject and GroupName. Nothing here is re-derived from the Specification or the
+    /// WorksheetInstances — every value was captured at generation time.
+    /// </summary>
+    Task<Result<CoaDetailDto>> GetCoa(Guid id);
+
+    /// <summary>
+    /// Draft to Issued. Locks the worksheets the certificate draws on and releases the round.
+    /// Carries no re-authentication: the reviews that gated generation were each signed already.
+    /// </summary>
+    Task<Result<CoaDetailDto>> Issue(Guid id, Guid userId);
+
+    /// <summary>
+    /// Creates a replacement Draft with rows recomputed from current data. The original is
+    /// untouched and only becomes Superseded once the replacement is itself issued.
+    /// </summary>
+    Task<Result<CoaDetailDto>> Revise(Guid id, ReviseCoaRequest request, Guid userId);
+}
