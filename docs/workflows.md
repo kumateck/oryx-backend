@@ -15,6 +15,10 @@ revisions (brief 07, Phase A).
   saved.
 - **Unchanged:** approval, instance status and every other workflow.
 
+- **Calculated columns:** a table column with `"mode": "Calculated"` is computed per row at
+  submit and stored like an entered cell. An unevaluatable row blocks submit with a
+  cell-targeted `CalculatedFieldUnevaluatable`. `SaveValues` refuses writes to these columns.
+
 See `docs/qc-rebuild/field-catalog.md` for the column contract.
 
 ## QC worksheet table row headers (2026-09-22)

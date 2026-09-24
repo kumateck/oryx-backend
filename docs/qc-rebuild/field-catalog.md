@@ -78,6 +78,8 @@ sent, so keys the backend does not interpret survive a save.
 | `fixedValues` | Template-owned per-row values. The analyst cannot write to this column, and aggregates skip it. |
 | `group` | Optional display-only string. Columns with the same group appear under one spanning header, e.g. "New Batch" over Plate 1 / Plate 2 / Colour. Keys stay flat (`newBatch_plate1`). |
 | `options` | JSON string array of choices for a Select, MultiSelect or GrowthObservation column. |
+| `mode` | `"Calculated"` (or `2`) makes the column a per-row calculated column. It is the **only** trigger. `type` (e.g. `CalculatedValue`) is display-only. |
+| `formula` | The per-row formula of a calculated column, e.g. `({newBatch_plate1} + {newBatch_plate2}) / 2`. |
 
 - **Several fixed columns are allowed** (e.g. organism, strain code, incubation period). One
   of them may be the `rowHeader`.
@@ -96,6 +98,60 @@ sent, so keys the backend does not interpret survive a save.
   Errors name the column as `tableKey.columnKey`. At `SaveValues` and submit, a cell in a
   column that has options must be one of them. A `MultiSelect` column uses the JSON-array
   encoding above.
+
+### Calculated columns
+
+A column with `"mode": "Calculated"` is computed at submit for every row, the same way a
+Calculated field is. The result is stored as an ordinary cell: one `WorksheetFieldValue` per
+(table `FieldKey`, `RowIndex`, `ColumnKey`). Example:
+
+```json
+{"key":"newBatch_av","label":"Av.","type":"CalculatedValue","mode":"Calculated",
+ "formula":"({newBatch_plate1} + {newBatch_plate2}) / 2","group":"New Batch"}
+```
+
+- **What a formula may reference.** The syntax is the same as field formulas.
+  - `{key}` resolves first to a column of the **same row** in the same table. That can be:
+    - an entered cell;
+    - a fixed column's `fixedValues[row]`, which must be numeric;
+    - another calculated column's result for that row.
+  - If `{key}` is not a column of the table, it resolves to a **scalar worksheet field**
+    (entered, or a Calculated field's result). A column key wins over a field key with the
+    same name.
+  - `AVG/SUM/MIN/MAX/RSD({table.column})` aggregate any table's column, as in field
+    formulas.
+- **Which rows are computed.**
+  - A fixed table computes every fixed row (the `fixedValues` length).
+  - An open-ended table computes each row that has at least one non-blank entered cell.
+- **Aggregates.** A calculated column counts in aggregates (e.g. a Calculated field
+  `AVG({media.newBatch_av})`) once every row of it is computed. This matches the scalar rule,
+  where a Calculated field's result feeds later formulas. Fields and cells are evaluated
+  together until nothing new can be computed, so they can depend on each other in either
+  direction.
+- **Unevaluatable cells block submit** (`QcWorksheetInstance.CalculatedFieldUnevaluatable`),
+  and nothing is written. Causes include a missing input, a non-numeric entry such as "TNTC"
+  (which spoils that row's result), or a cycle. The message names the cell:
+  `Table '{fieldKey}', column '{columnKey}', row {n}: could not be calculated: {reason} A calculated cell must produce a value before the worksheet can be submitted.`
+  Here `{n}` is 1-based, and `{reason}` is one of:
+  - `column 'x' holds 'TNTC', which is not a number.`
+  - `column 'x' has no value in this row.`
+  - `column 'x' holds '<label>' in this row, which is not a number.` (a non-numeric fixed value)
+  - `field 'x' holds '…', which is not a number.`
+  - the evaluator's own message.
+- **Not enterable.** `SaveValues` refuses a write to a calculated column
+  (`QcWorksheetInstance.CalculatedFieldNotEnterable`):
+  `Table '{fieldKey}', column '{columnKey}', row {n}: this column is calculated. Its values are computed from each row's entries at submission and cannot be typed in.`
+- **Excluded from other checks.** A calculated column is excluded from option checks and from
+  the submit check that a table has entries. It may not carry `options`, `fixedValues` or
+  `rowHeader`.
+- **Re-submission recomputes from scratch.** A previously stored result is never an input.
+  A result for a row that no longer computes is removed.
+- **At template save** (`QcWorksheetTemplate.InvalidFormula`, naming `tableKey.columnKey`):
+  - `mode: Calculated` needs a `formula`;
+  - a `formula` without `mode: Calculated` is refused, because it would never be computed;
+  - the formula must parse and must not reference its own column;
+  - each `{key}` must be a column of the table or a field of the template;
+  - aggregate references follow the field-formula rules.
 
 `Result` and `ReferencedResult` are the two types the whole traceability chain runs
 through — every other type is just data entry, but these two are what
