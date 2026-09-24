@@ -24,34 +24,12 @@ public class WorksheetOptionValueTests
         OptionsJson = optionsJson
     };
 
-    private static async Task<(Guid InstanceId, User Analyst)> StartedWorksheet(
-        QcWorksheetTestContext harness, WorksheetTemplate template)
-    {
-        var analyst = await harness.SeedUser("analyst.a");
-        var specification = await harness.SeedEffectiveSpecification(
-            SpecificationAppliesTo.RoutineEnvironmental, (template, SpecificationAnalysisType.Microbial));
-
-        var created = await harness.TestRequests.CreateTestRequest(
-            new CreateTestRequestRequest
-            {
-                Type = TestRequestType.RoutineEnvironmental,
-                SpecificationId = specification.Id,
-                ScheduleOrigin = TestRequestScheduleOrigin.Scheduled,
-                ArNumber = "ARD-OPTIONS",
-                Subjects = [new CreateTestRequestSubjectRequest { SubjectRef = "PW-01", SubjectLabel = "Point 1" }]
-            },
-            Guid.NewGuid());
-
-        await harness.TestRequests.RecordSample(created.Value.Id, new RecordTestRequestSampleRequest(), Guid.NewGuid());
-        var instanceId = created.Value.Subjects.Single().WorksheetInstances.Single().Id;
-        await harness.WorksheetInstances.Assign(
-            instanceId, new AssignWorksheetInstanceRequest { AssignedToId = analyst.Id }, Guid.NewGuid());
-        await harness.WorksheetInstances.Start(instanceId, analyst.Id);
-        return (instanceId, analyst);
-    }
+    private static Task<(Guid InstanceId, User Analyst)> StartedWorksheet(
+        QcWorksheetTestContext harness, WorksheetTemplate template) =>
+        QcWorksheetRuns.StartedWorksheet(harness, template);
 
     private static SaveWorksheetValuesRequest Values(params WorksheetFieldValueEntry[] entries) =>
-        new() { FieldValues = entries.ToList() };
+        QcWorksheetRuns.Values(entries);
 
     [Fact]
     public async Task A_select_value_outside_its_options_is_refused_on_save_and_nothing_is_persisted()
