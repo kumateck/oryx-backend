@@ -23,6 +23,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using SHARED.Services.Identity;
+using WaterQualityRepository = APP.Repository.QcWorksheets.WaterQualityRepository;
 
 namespace APP.Tests.QcWorksheets;
 
