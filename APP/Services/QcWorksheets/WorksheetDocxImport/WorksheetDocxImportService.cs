@@ -18,7 +18,7 @@ public interface IWorksheetDocxImportService
 public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoader) : IWorksheetDocxImportService
 {
     private static readonly IReadOnlyDictionary<ArdFamily, IArdFamilyRecognizer> Recognizers =
-        new IArdFamilyRecognizer[] { new CultureMediaRecognizer(), new ProductMicroRecognizer() }.ToDictionary(recognizer => recognizer.Family);
+        new IArdFamilyRecognizer[] { new CultureMediaRecognizer(), new ProductMicroRecognizer(), new PurifiedWaterRecognizer() }.ToDictionary(recognizer => recognizer.Family);
 
     public async Task<List<WorksheetImportProposal>> ProposeAsync(
         IEnumerable<IFormFile> files, CancellationToken cancellationToken = default)

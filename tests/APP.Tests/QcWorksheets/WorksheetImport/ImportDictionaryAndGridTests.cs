@@ -37,7 +37,7 @@ public class RunDataAndChoiceTests
 
     [Theory]
     [InlineData("Remark: Complies/ Does not comply", "Complies", "Does not comply")]
-    [InlineData("Remark: Comply / Do not Comply", "Comply", "Do not comply")]
+    [InlineData("Remark: Comply / Do not Comply", "Complies", "Does not comply")]
     [InlineData("Result: Absent / Detected", "Absent", "Detected")]
     [InlineData("Presence of E. coli / Absence of E. coli", "Presence of E. coli", "Absence of E. coli")]
     [InlineData("Negative control: There was / was no growth on the plates.", "Growth", "No Growth")]

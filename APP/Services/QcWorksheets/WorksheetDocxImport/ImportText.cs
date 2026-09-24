@@ -34,6 +34,14 @@ public static partial class ImportText
     [GeneratedRegex(@"(?<=\b[A-Z]{2,}/)\s+(?=[A-Z0-9])")]
     private static partial Regex SplitCodeRegex();
 
+    // "QCD /SOP/075": the same split, with the space before the slash.
+    [GeneratedRegex(@"(?<=\b[A-Z]{2,})\s+(?=/[A-Z0-9])")]
+    private static partial Regex SplitCodeBeforeSlashRegex();
+
+    // "A. ", "i. ", "ii. ", "Iii ." — the enumerators on a sheet's own headings and captions.
+    [GeneratedRegex(@"^\s*(?:[A-Za-z]|[ivxIVX]+)\s*\.\s*(?=\S)")]
+    private static partial Regex EnumeratorRegex();
+
     [GeneratedRegex(@"Page\s*\d+\s*of\s*\d+", RegexOptions.IgnoreCase)]
     private static partial Regex PageOfRegex();
 
@@ -53,7 +61,30 @@ public static partial class ImportText
                 return KnownWords.Contains(joined) ? joined : match.Value;
             });
 
-    public static string Clean(string text) => SplitCodeRegex().Replace(Normalize(Dehyphenate(Normalize(text))), string.Empty);
+    public static string Clean(string text) =>
+        SplitCodeBeforeSlashRegex().Replace(SplitCodeRegex().Replace(Normalize(Dehyphenate(Normalize(text))), string.Empty), string.Empty);
+
+    /// <summary>
+    /// A short key for a method step's caption: "Sample Preparation and Pre-Incubation" →
+    /// "pre_incubation", "Selection and Subculture" → "selection_subculture"; anything else is
+    /// its snake_case, truncated.
+    /// </summary>
+    public static string StepKey(string caption)
+    {
+        var canonical = Canonical(caption);
+        if (canonical.Contains("preincubation"))
+            return "pre_incubation";
+        if (canonical.Contains("selection") && canonical.Contains("subculture"))
+            return "selection_subculture";
+        if (canonical.Contains("selection"))
+            return "selection";
+        if (canonical.Contains("subculture"))
+            return "subculture";
+        return SnakeKey(caption, 24);
+    }
+
+    /// <summary>"ii. Selection" → "Selection"; "Iii .Rappaport …" → "Rappaport …".</summary>
+    public static string StripEnumerator(string text) => EnumeratorRegex().Replace(Normalize(text), string.Empty);
 
     public static string StripPageNumbers(string text) => Normalize(PageOfRegex().Replace(text ?? string.Empty, " "));
 

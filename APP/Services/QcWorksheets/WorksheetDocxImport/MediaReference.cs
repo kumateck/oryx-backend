@@ -78,34 +78,41 @@ public static partial class MediaReference
     /// <param name="mediumCodes">Printed medium codes by normalized name (a product sheet's reagent list), used to match the media template by code first.</param>
     public static void Apply(DocxBlock block, ImportProposalBuilder builder, IReadOnlyDictionary<string, string> mediumCodes = null)
     {
-        builder.Section("Culture media");
-
         foreach (var medium in Media(block.Table))
+            AddMedium(builder, medium.Name, ImportProposalBuilder.At(block, medium.Row, medium.Column), mediumCodes);
+    }
+
+    /// <summary>
+    /// One cited medium: a Reagent batch field (the resolution key) and a ReferencedResult on the
+    /// media template's remark. Also used for the paragraph form of a citation (water sheets:
+    /// caption, "Medium Batch no.:", then a serial number that is run data and not kept).
+    /// </summary>
+    public static void AddMedium(
+        ImportProposalBuilder builder, string name, ImportSourceLocation location, IReadOnlyDictionary<string, string> mediumCodes = null)
+    {
+        builder.Section("Culture media");
+        var slug = ImportText.SnakeKey(name, 40);
+        var batchField = ReagentTable.AddReagent(builder, name, $"medium_batch_{slug}", $"{name} — medium batch no.", location);
+
+        var code = mediumCodes?.GetValueOrDefault(ImportText.Canonical(name));
+        var template = builder.Catalog.FindMediaTemplate(name, code);
+        builder.AddField(new ProposedWorksheetField
         {
-            var location = ImportProposalBuilder.At(block, medium.Row, medium.Column);
-            var slug = ImportText.SnakeKey(medium.Name, 40);
-            var batchField = ReagentTable.AddReagent(builder, medium.Name, $"medium_batch_{slug}", $"{medium.Name} — medium batch no.", location);
+            FieldKey = $"media_qualification_{slug}",
+            Label = $"{name} — media qualification remark",
+            Type = WorksheetFieldType.ReferencedResult,
+            Mode = WorksheetFieldMode.Entry,
+            ReferencedResultSourceTemplateId = template?.Id,
+            ReferencedResultSourceFieldKey = CultureMediaKeys.Remark,
+            ReferencedResultResolutionFieldKey = batchField.FieldKey
+        }, location, template is null ? ImportConfidence.Low : ImportConfidence.High,
+            template is null
+                ? "Referenced media qualification; no MediaQualification template for this medium yet"
+                : $"Referenced media qualification from template {template.Code}, resolved by batch number");
 
-            var code = mediumCodes?.GetValueOrDefault(ImportText.Canonical(medium.Name));
-            var template = builder.Catalog.FindMediaTemplate(medium.Name, code);
-            builder.AddField(new ProposedWorksheetField
-            {
-                FieldKey = $"media_qualification_{slug}",
-                Label = $"{medium.Name} — media qualification remark",
-                Type = WorksheetFieldType.ReferencedResult,
-                Mode = WorksheetFieldMode.Entry,
-                ReferencedResultSourceTemplateId = template?.Id,
-                ReferencedResultSourceFieldKey = CultureMediaKeys.Remark,
-                ReferencedResultResolutionFieldKey = batchField.FieldKey
-            }, location, template is null ? ImportConfidence.Low : ImportConfidence.High,
-                template is null
-                    ? "Referenced media qualification; no MediaQualification template for this medium yet"
-                    : $"Referenced media qualification from template {template.Code}, resolved by batch number");
-
-            if (template is null)
-                builder.Flag(WorksheetImportFlagCodes.MediaTemplateMissing,
-                    $"No MediaQualification template exists for '{medium.Name}'{(code is null ? string.Empty : $" ({code})")}. "
-                    + "Import the media sheets first, or repoint this field.", location);
-        }
+        if (template is null)
+            builder.Flag(WorksheetImportFlagCodes.MediaTemplateMissing,
+                $"No MediaQualification template exists for '{name}'{(code is null ? string.Empty : $" ({code})")}. "
+                + "Import the media sheets first, or repoint this field.", location);
     }
 }

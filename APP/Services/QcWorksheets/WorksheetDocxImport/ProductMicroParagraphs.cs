@@ -8,10 +8,6 @@ internal sealed partial class ProductMicroWalker
 {
     private static readonly HashSet<string> ColonHeadings = ["conclusions", "results", "tests", "observations"];
 
-    // "A. ", "i. ", "ii. " — the enumerators on the sheet's own headings.
-    [GeneratedRegex(@"^\s*(?:[A-Za-z]|[ivxIVX]+)\.\s+")]
-    private static partial Regex EnumeratorRegex();
-
     [GeneratedRegex(@"\s*\([^()]*\)\s*$")]
     private static partial Regex TrailingParenthesisRegex();
 
@@ -82,7 +78,7 @@ internal sealed partial class ProductMicroWalker
                             && (!hasLabel || (value.Length == 0 && ColonHeadings.Contains(ImportText.Canonical(label))));
         if (isHeadingLike)
         {
-            var caption = EnumeratorRegex().Replace(text, string.Empty).TrimEnd(':', ' ');
+            var caption = ImportText.StripEnumerator(text).TrimEnd(':', ' ');
             if (next?.Table is not null)
                 _caption = caption;
             // Inside an organism's test, "Subculture" captions a table rather than opening a section;
@@ -104,7 +100,7 @@ internal sealed partial class ProductMicroWalker
 
     private void StartSection(string heading, bool organism)
     {
-        var name = EnumeratorRegex().Replace(ImportText.Normalize(heading), string.Empty).TrimEnd(':', '.', ' ');
+        var name = ImportText.StripEnumerator(heading).TrimEnd(':', '.', ' ');
         if (!name.Any(char.IsLower))
             name = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name.ToLowerInvariant());
 

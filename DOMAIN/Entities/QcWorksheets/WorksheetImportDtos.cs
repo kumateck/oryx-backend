@@ -95,6 +95,28 @@ public class SamplingPointProposal
     public string Name { get; set; }
     public string Area { get; set; }
     public SamplingPointType Type { get; set; }
+
+    /// <summary>The <see cref="SamplingPointGroupProposal"/> whose limit tier applies to this point, if any.</summary>
+    public string GroupName { get; set; }
+
+    public ImportSourceLocation Location { get; set; }
+}
+
+/// <summary>
+/// Points printed under one limit tier ("SP14, SP15, NSP1 … – NMT 80 cfu/mL"). The
+/// Specifications phase creates a SamplingPointGroup from it and a characteristic per tier.
+/// </summary>
+public class SamplingPointGroupProposal
+{
+    public string Name { get; set; }
+    public string AcceptanceCriteria { get; set; }
+
+    /// <summary>The point list as printed, ranges and all ("SP10- SP15, NSP1-NSP15").</summary>
+    public string PrintedPoints { get; set; }
+
+    /// <summary>The codes of this sheet's sampling points that fall in the tier, as printed in the point list.</summary>
+    public List<string> PointCodes { get; set; } = [];
+
     public ImportSourceLocation Location { get; set; }
 }
 
@@ -211,6 +233,7 @@ public class WorksheetImportProposal
     public ProposedWorksheetTemplate Template { get; set; }
 
     public List<SamplingPointProposal> SamplingPointProposals { get; set; } = [];
+    public List<SamplingPointGroupProposal> SamplingPointGroupProposals { get; set; } = [];
     public List<SpecificationCharacteristicProposal> SpecificationProposals { get; set; } = [];
     public List<ImportEquipmentMatch> EquipmentMatches { get; set; } = [];
     public List<ImportReagentMatch> ReagentMatches { get; set; } = [];

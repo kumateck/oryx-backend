@@ -51,4 +51,7 @@ public static class WorksheetImportFlagCodes
     public const string SuspectedRunData = "SuspectedRunData";
     public const string UnrecognizedContent = "UnrecognizedContent";
     public const string MissingMetadata = "MissingMetadata";
+
+    /// <summary>A sampling point that no printed limit tier covers (or that a tier lists twice).</summary>
+    public const string SamplingPointWithoutLimit = "SamplingPointWithoutLimit";
 }

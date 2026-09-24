@@ -60,7 +60,7 @@ internal sealed partial class ProductMicroWalker
     {
         var sectionName = builder.CurrentSection?.Name;
         var group = title is null || string.Equals(title, sectionName, StringComparison.OrdinalIgnoreCase) ? null : title;
-        var keyPrefix = Join(_prefix, group is null ? null : ImportText.SnakeKey(group, 20));
+        var keyPrefix = Join(_prefix, group is null ? null : ImportText.StepKey(group));
 
         foreach (var (row, decision) in ParameterTable.ReadTwoColumn(block.Table))
         {

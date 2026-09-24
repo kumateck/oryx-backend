@@ -165,7 +165,10 @@ public static class SamplingPointList
         if (code is null || name is null)
             return [];
 
+        // A table can repeat its header rows part-way down (one Word table, reprinted header).
+        var headerKey = ImportText.Canonical(code.Label);
         return grid.DataRows
+            .Where(row => ImportText.Canonical(block.Table.Resolved(row, code.SourceColumn)) != headerKey)
             .Select(row => new SamplingPointProposal
             {
                 Code = block.Table.Resolved(row, code.SourceColumn),
@@ -190,6 +193,7 @@ public static class SamplingPointList
         grid.Columns.FirstOrDefault(column =>
         {
             var canonical = ImportText.Canonical(column.Label);
-            return canonical.EndsWith("name") || canonical.Contains("location") || canonical is "description";
+            return canonical.EndsWith("name") || canonical.Contains("location") || canonical.Contains("detail")
+                   || canonical is "description";
         });
 }

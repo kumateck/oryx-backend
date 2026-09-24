@@ -22,7 +22,9 @@ public static class ChoicePhrases
         new("Compliance", WorksheetFieldType.Select,
             new Regex(@"\bcomplies\s*/\s*does\s+not\s+comply\b", Flags), _ => ["Complies", "Does not comply"]),
         new("Compliance", WorksheetFieldType.Select,
-            new Regex(@"\bcomply\s*/\s*do\s+not\s+comply\b", Flags), _ => ["Comply", "Do not comply"]),
+            // Same meaning as "Complies / Does not comply", so the same options: one compliance
+            // vocabulary keeps templates (and the COA text judged against them) consistent.
+            new Regex(@"\bcomply\s*/\s*do\s+not\s+comply\b", Flags), _ => ["Complies", "Does not comply"]),
         new("Presence", WorksheetFieldType.GrowthObservation,
             new Regex(@"\babsent\s*/\s*detected\b", Flags), _ => ["Absent", "Detected"]),
         new("Presence", WorksheetFieldType.Select,
