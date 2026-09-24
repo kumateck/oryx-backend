@@ -365,8 +365,11 @@ public class WorksheetTemplateRepository(
             if (!columnFormulas.IsSuccess)
                 return columnFormulas;
 
-            var formulaRequired = field.Type is WorksheetFieldType.CalculatedValue
-                or WorksheetFieldType.CfuCalculation;
+            // Mode decides, as it does for table columns: every Calculated-mode field is
+            // evaluated at submit whatever its type (a Calculated Result is how a CFU result is
+            // usually authored), so its formula is proven here rather than failing at submit.
+            var formulaRequired = field.Mode == WorksheetFieldMode.Calculated
+                || field.Type is WorksheetFieldType.CalculatedValue or WorksheetFieldType.CfuCalculation;
 
             if (!formulaRequired)
                 continue;
