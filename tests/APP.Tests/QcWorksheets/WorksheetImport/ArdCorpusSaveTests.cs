@@ -13,7 +13,7 @@ namespace APP.Tests.QcWorksheets.WorksheetImport;
 public class ArdCorpusSaveTests
 {
     [CorpusFact]
-    public async Task Every_media_proposal_saves_as_a_draft_template()
+    public async Task Every_media_and_product_proposal_saves_as_a_draft_template()
     {
         using var harness = new QcWorksheetTestContext();
         var userId = (await harness.SeedUser()).Id;
@@ -33,7 +33,7 @@ public class ArdCorpusSaveTests
     [CorpusFact]
     public void Cultural_response_organisms_match_the_test_strain_list()
     {
-        foreach (var file in ArdCorpus.Load().Where(file => file.Proposal.Template is not null))
+        foreach (var file in ArdCorpus.Load().Where(file => file.Proposal.Family == ArdFamily.CultureMedia))
         {
             var fields = file.Proposal.Template.Sections.SelectMany(section => section.Fields).ToList();
             var strains = OrganismValues(fields.SingleOrDefault(field => field.FieldKey == "test_strains"));

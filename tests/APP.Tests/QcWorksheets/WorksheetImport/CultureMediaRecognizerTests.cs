@@ -163,7 +163,6 @@ public class CultureMediaRecognizerTests
 
     [Theory]
     [InlineData("QUALITY CONTROL MICROBIOLOGY CERTIFICATE OF ANALYSIS", WorksheetImportFlagCodes.CompletedOutputNotTemplate)]
-    [InlineData("ANALYTICAL RAW DATA – MICROBIOLOGY", WorksheetImportFlagCodes.RecognizerPending)]
     [InlineData("ENVIRONMENTAL MONITORING RAW DATA", WorksheetImportFlagCodes.RecognizerPending)]
     [InlineData("MICROBIOLOGY ANALYTICAL WORKSHEET WATER", WorksheetImportFlagCodes.RecognizerPending)]
     [InlineData("A MEMO", WorksheetImportFlagCodes.UnknownFamily)]

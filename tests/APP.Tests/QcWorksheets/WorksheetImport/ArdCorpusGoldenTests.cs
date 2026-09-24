@@ -40,7 +40,7 @@ public class ArdCorpusGoldenTests(ITestOutputHelper output)
                 Assert.Null(file.Proposal.Template);
                 Assert.Contains(file.Proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.CompletedOutputNotTemplate);
             }
-            else if (file.Expected != ArdFamily.CultureMedia)
+            else if (file.Expected is ArdFamily.EnvironmentalMonitoring or ArdFamily.PurifiedWater)
             {
                 Assert.Null(file.Proposal.Template);
                 Assert.Contains(file.Proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.RecognizerPending);

@@ -56,7 +56,9 @@ public static class EquipmentTable
             .Select(row => (int?)row)
             .FirstOrDefault();
 
-    public static void Apply(DocxBlock block, ImportProposalBuilder builder)
+    /// <param name="capturedReagents">Normalized names already captured as Reagent fields (a product
+    /// sheet's cited media), which the reagent list would otherwise repeat.</param>
+    public static void Apply(DocxBlock block, ImportProposalBuilder builder, IReadOnlySet<string> capturedReagents = null)
     {
         builder.Section("Equipment");
         foreach (var item in Read(block.Table))
@@ -85,7 +87,9 @@ public static class EquipmentTable
                     $"'{name}' ({item.Code}) is not in the QC equipment register.", location);
         }
 
-        var reagents = ReagentRows(block.Table);
+        var reagents = ReagentRows(block.Table)
+            .Where(item => capturedReagents?.Contains(ImportText.Canonical(item.Name)) != true)
+            .ToList();
         if (reagents.Count == 0)
             return;
 
