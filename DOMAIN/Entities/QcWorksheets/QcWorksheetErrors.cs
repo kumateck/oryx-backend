@@ -451,6 +451,27 @@ public static class QcWorksheetErrors
             $"Field '{fieldKey}' is calculated. Its value is computed from the worksheet's own "
             + "entries at submission and cannot be typed in.");
 
+    /// <summary>
+    /// <see cref="CalculatedFieldUnevaluatable"/> for one cell of a per-row calculated table
+    /// column. Same code; the message names the table, column and 1-based row in the same form
+    /// as <see cref="CellValueNotAnOption"/> so a client can pin it to the cell.
+    /// </summary>
+    public static Error CalculatedCellUnevaluatable(
+        string fieldKey, string columnKey, int? rowIndex, string reason) =>
+        Error.Validation(
+            "QcWorksheetInstance.CalculatedFieldUnevaluatable",
+            $"Table '{fieldKey}', column '{columnKey}', row {(rowIndex ?? 0) + 1}: could not be "
+            + $"calculated: {reason} A calculated cell must produce a value before the worksheet can "
+            + "be submitted.");
+
+    /// <summary><see cref="CalculatedFieldIsNotEnterable"/> for a calculated table column.</summary>
+    public static Error CalculatedColumnIsNotEnterable(string fieldKey, string columnKey, int? rowIndex) =>
+        Error.Validation(
+            "QcWorksheetInstance.CalculatedFieldNotEnterable",
+            $"Table '{fieldKey}', column '{columnKey}', row {(rowIndex ?? 0) + 1}: this column is "
+            + "calculated. Its values are computed from each row's entries at submission and cannot "
+            + "be typed in.");
+
     // --- Hard instrument / reagent gates ----------------------------------
 
     public static Error InstrumentNotFound(string fieldKey, string value) =>

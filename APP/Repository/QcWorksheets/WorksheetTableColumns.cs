@@ -15,13 +15,17 @@ internal sealed record WorksheetTableColumn(
     bool RowHeader,
     bool HasFixedValues,
     bool FixedValuesIsArray,
-    int FixedValueCount,
+    List<string> FixedValues,
     bool HasOptions,
     bool OptionsReadable,
-    List<string> Options)
+    List<string> Options,
+    bool IsCalculated,
+    string Formula)
 {
     /// <summary>Template-owned: rendered from the template, never entered.</summary>
     public bool IsFixed => RowHeader || HasFixedValues;
+
+    public int FixedValueCount => FixedValues.Count;
 }
 
 /// <summary>
@@ -89,10 +93,13 @@ internal static class WorksheetTableColumns
         if (column.HasOptions && column.IsFixed)
             return QcWorksheetErrors.OptionsNotAllowed(name, "a fixed column");
 
+        if (column.HasOptions && column.IsCalculated)
+            return QcWorksheetErrors.OptionsNotAllowed(name, "a calculated column");
+
         if (column.HasOptions && column.Type is { } known && !choiceType)
             return QcWorksheetErrors.OptionsNotAllowed(name, known.ToString());
 
-        if ((choiceType && !column.IsFixed) || column.HasOptions)
+        if ((choiceType && !column.IsFixed && !column.IsCalculated) || column.HasOptions)
         {
             if (!column.OptionsReadable || count < 2)
                 return QcWorksheetErrors.OptionsRequired(name);
@@ -150,16 +157,46 @@ internal static class WorksheetTableColumns
         var options = new List<string>();
         var optionsReadable = hasOptions && WorksheetFieldOptions.TryRead(optionsElement, out options);
 
+        var formula = column.TryGetProperty("formula", out var formulaElement)
+            && formulaElement.ValueKind == JsonValueKind.String
+                ? formulaElement.GetString()
+                : null;
+
         return new WorksheetTableColumn(
             key,
             ReadType(column),
             rowHeader,
             hasFixed,
             fixedIsArray,
-            fixedIsArray ? fixedValues.GetArrayLength() : 0,
+            fixedIsArray
+                ? fixedValues.EnumerateArray().Select(item => item.ValueKind == JsonValueKind.String
+                    ? item.GetString()
+                    : item.GetRawText()).ToList()
+                : [],
             hasOptions,
             optionsReadable,
-            options ?? []);
+            options ?? [],
+            ReadCalculated(column),
+            formula);
+    }
+
+    /// <summary>
+    /// The one trigger for a per-row calculated column: <c>"mode": "Calculated"</c> (or the
+    /// enum number 2), the same Mode rule that makes a scalar field calculated. <c>type</c> is
+    /// display only and never triggers evaluation.
+    /// </summary>
+    private static bool ReadCalculated(JsonElement column)
+    {
+        if (!column.TryGetProperty("mode", out var mode))
+            return false;
+
+        if (mode.ValueKind == JsonValueKind.String)
+            return string.Equals(mode.GetString()?.Trim(), nameof(WorksheetFieldMode.Calculated),
+                StringComparison.OrdinalIgnoreCase);
+
+        return mode.ValueKind == JsonValueKind.Number
+            && mode.TryGetInt32(out var number)
+            && number == (int)WorksheetFieldMode.Calculated;
     }
 
     /// <summary>A column's <c>type</c> may be the enum name or its number; anything else is unknown.</summary>

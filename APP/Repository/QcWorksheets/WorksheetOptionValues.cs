@@ -60,7 +60,8 @@ internal static class WorksheetOptionValues
         foreach (var value in values.Where(value => !string.IsNullOrEmpty(value.ColumnKey)))
         {
             var column = WorksheetTableColumns.Find(columns, value.ColumnKey);
-            if (column is null || !column.OptionsReadable)
+            // A calculated column's cells are system output, not a choice anyone made.
+            if (column is null || column.IsCalculated || !column.OptionsReadable)
                 continue;
 
             var options = WorksheetFieldOptions.Distinct(column.Options);

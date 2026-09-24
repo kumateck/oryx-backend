@@ -361,6 +361,10 @@ public class WorksheetTemplateRepository(
             if (!columns.IsSuccess)
                 return columns;
 
+            var columnFormulas = WorksheetColumnFormulas.Validate(field, knownKeys, tableKeys, FindTableColumn);
+            if (!columnFormulas.IsSuccess)
+                return columnFormulas;
+
             var formulaRequired = field.Type is WorksheetFieldType.CalculatedValue
                 or WorksheetFieldType.CfuCalculation;
 
@@ -386,25 +390,16 @@ public class WorksheetTemplateRepository(
 
             foreach (var reference in analysis.TableReferences)
             {
-                if (!knownKeys.Contains(reference.TableFieldKey))
-                    return QcWorksheetErrors.InvalidFormula(
-                        field.FieldKey,
-                        $"it references '{reference.TableFieldKey}', which is not a field in this template");
-
-                if (!tableKeys.Contains(reference.TableFieldKey))
-                    return QcWorksheetErrors.InvalidFormula(
-                        field.FieldKey,
-                        $"'{reference.TableFieldKey}' is not a Table field, so {reference.Function}() cannot aggregate it");
-
-                var column = FindColumn(fields, reference.TableFieldKey, reference.ColumnKey);
-                if (column == false)
-                    return QcWorksheetErrors.InvalidFormula(
-                        field.FieldKey,
-                        $"'{reference.TableFieldKey}' has no column '{reference.ColumnKey}'");
+                var check = WorksheetColumnFormulas.ValidateTableReference(
+                    field.FieldKey, reference, knownKeys, tableKeys, FindTableColumn);
+                if (!check.IsSuccess)
+                    return check;
             }
         }
 
         return Result.Success();
+
+        bool? FindTableColumn(string tableKey, string columnKey) => FindColumn(fields, tableKey, columnKey);
     }
 
     /// <summary>
