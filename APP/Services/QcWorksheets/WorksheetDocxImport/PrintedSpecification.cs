@@ -34,6 +34,36 @@ public static partial class PrintedSpecification
     public static bool IsLimit(string text) => LimitRegex().IsMatch(text ?? string.Empty);
 
     /// <summary>
+    /// The option a printed qualitative specification means: the option the printed text starts
+    /// with ("Absence of E. coli in 1g of sample" → "Absence of E.coli"), compared after
+    /// normalizing case, whitespace and spacing around punctuation; else "Absent" for a printed
+    /// "Absence of …". Null when no option fits.
+    /// </summary>
+    public static string CompliantOption(string printed, IReadOnlyCollection<string> options)
+    {
+        if (options is not { Count: > 0 } || string.IsNullOrWhiteSpace(printed))
+            return null;
+
+        var text = NormalizeQualitative(printed);
+        var byPrefix = options.Where(option => text.StartsWith(NormalizeQualitative(option), StringComparison.Ordinal))
+            .OrderByDescending(option => option.Length)
+            .FirstOrDefault();
+        if (byPrefix is not null)
+            return byPrefix;
+
+        return text.StartsWith("absence", StringComparison.Ordinal)
+            ? options.FirstOrDefault(option => NormalizeQualitative(option) == "absent")
+            : null;
+    }
+
+    private static string NormalizeQualitative(string text) =>
+        PunctuationSpacingRegex().Replace(ImportText.Normalize(text).ToLowerInvariant(), "$1");
+
+    // "e. coli" and "e.coli" compare equal: no space after '.', ',', '/' or '-'.
+    [GeneratedRegex(@"\s*([.,/-])\s*")]
+    private static partial Regex PunctuationSpacingRegex();
+
+    /// <summary>
     /// A numeric range as printed, with "centre ± delta" also spelled out as low – high:
     /// "7.2 ± 0.2" → "7.2 ± 0.2 (7.0 – 7.4)"; "5.00 – 5.40" stays as printed.
     /// </summary>
@@ -71,6 +101,7 @@ public static partial class PrintedSpecification
             TestName = testName?.Length > 200 ? testName[..200] : testName,
             Analyte = analyte,
             AcceptanceCriteria = criteria,
+            PrintedCriteria = criteria,
             SourceFieldKey = sourceFieldKey,
             GroupName = groupName,
             Confidence = confidence,

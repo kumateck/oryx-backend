@@ -115,6 +115,34 @@ public class CultureMediaRecognizerTests
     }
 
     [Fact]
+    public void The_plate_average_is_computed_per_row_by_the_real_calculator()
+    {
+        var request = WorksheetImportTemplateMapper.ToCreateRequest(Propose(NewForm()).Template);
+        var fields = request.Sections.SelectMany(section => section.Fields).Select(field => new WorksheetField
+        {
+            FieldKey = field.FieldKey, Type = field.Type, Mode = field.Mode, FormulaExpression = field.FormulaExpression,
+            ColumnDefinitions = field.ColumnDefinitions, Order = field.Order
+        }).ToList();
+        var cells = new[]
+            {
+                (0, "newBatch_plate1", "40"), (0, "newBatch_plate2", "60"), (1, "newBatch_plate1", "10"), (1, "newBatch_plate2", "20"),
+                (0, "previouslyApprovedBatch_plate1", "30"), (0, "previouslyApprovedBatch_plate2", "34"),
+                (1, "previouslyApprovedBatch_plate1", "12"), (1, "previouslyApprovedBatch_plate2", "18")
+            }
+            .Select(cell => new WorksheetFieldValue { FieldKey = "cultural_response", RowIndex = cell.Item1, ColumnKey = cell.Item2, Value = cell.Item3 })
+            .ToList();
+
+        Assert.True(APP.Services.QcWorksheets.QcWorksheetCalculator.TryEvaluateAll(fields, cells, out var computed, out var failure),
+            failure?.Reason);
+        string[] Averages(string column) =>
+            computed.Where(item => item.ColumnKey == column).OrderBy(item => item.RowIndex).Select(item => item.Value).ToArray();
+
+        Assert.Equal(["50", "15"], Averages("newBatch_av"));
+        Assert.Equal(["32", "15"], Averages("previouslyApprovedBatch_av"));
+        Assert.DoesNotContain(Propose(NewForm()).Flags, flag => flag.Code == "RowFormulaNotEvaluated");
+    }
+
+    [Fact]
     public void The_old_form_is_flagged_superseded()
     {
         var proposal = Propose([

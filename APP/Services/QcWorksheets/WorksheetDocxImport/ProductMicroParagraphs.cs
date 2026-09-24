@@ -42,7 +42,7 @@ internal sealed partial class ProductMicroWalker
         if (EnumerationTests.TryGetValue(ImportText.Canonical(plain), out var prefix))
         {
             StartSection(plain, organism: false);
-            (_prefix, _judgedTestName, _judgedKey) = (prefix, text, null);
+            (_prefix, _judgedTestName, _judgedKey, _judgedOptions) = (prefix, text, null, null);
             return;
         }
 
@@ -54,7 +54,7 @@ internal sealed partial class ProductMicroWalker
         {
             StartSection(text, organism: true);
             var organism = text[text.IndexOf("of", StringComparison.OrdinalIgnoreCase)..][2..].Trim();
-            (_prefix, _judgedTestName, _judgedKey) = (ImportText.SnakeKey(organism, 30), text, null);
+            (_prefix, _judgedTestName, _judgedKey, _judgedOptions) = (ImportText.SnakeKey(organism, 30), text, null, null);
             return;
         }
 
@@ -74,7 +74,7 @@ internal sealed partial class ProductMicroWalker
             var added = ChoiceFields.Add(builder, block, text, choices, _prefix,
                 keyOverride: isResult ? Join(_prefix, "result") : null);
             if (isResult)
-                _judgedKey = added[0].FieldKey;
+                (_judgedKey, _judgedOptions) = (added[0].FieldKey, added[0].Options);
             return;
         }
 
@@ -110,7 +110,7 @@ internal sealed partial class ProductMicroWalker
 
         _inOrganism = organism;
         if (!organism)
-            (_prefix, _judgedKey, _judgedTestName) = (null, null, null);
+            (_prefix, _judgedKey, _judgedTestName, _judgedOptions) = (null, null, null, null);
         builder.Section(name);
     }
 }

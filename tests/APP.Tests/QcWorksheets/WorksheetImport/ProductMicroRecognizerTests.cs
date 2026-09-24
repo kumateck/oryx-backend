@@ -85,7 +85,7 @@ public class ProductMicroRecognizerTests
         var values = new[] { ("tamc_plate_1", "30"), ("tamc_plate_2", "60") }
             .Select(item => new WorksheetFieldValue { FieldKey = item.Item1, Value = item.Item2 }).ToList();
 
-        Assert.True(QcWorksheetCalculator.TryEvaluateAll(entities, values, out var computed, out _, out var error), error);
+        Assert.True(QcWorksheetCalculator.TryEvaluateAll(entities, values, out var computed, out var failure), failure?.ToString());
         var result = computed.Single(item => item.Field.FieldKey == "tamc_result");
         Assert.Equal("450", result.Value);
 
@@ -122,8 +122,10 @@ public class ProductMicroRecognizerTests
         Assert.DoesNotContain("reagent_test_soya_agar", fields.Keys);
         Assert.Contains("reagent_other_reagent", fields.Keys);
 
-        Assert.Equal([("tamc_result", "NMT 200cfu/mL"), ("escherichia_coli_result", "Absence of E. coli in 1mL of sample")],
-            proposal.SpecificationProposals.Select(item => (item.SourceFieldKey, item.AcceptanceCriteria)));
+        // A choice result's criteria is exactly its compliant option; the printed sentence is context.
+        Assert.Equal([("tamc_result", "NMT 200cfu/mL", "NMT 200cfu/mL"),
+                      ("escherichia_coli_result", "Absence of E.coli", "Absence of E. coli in 1mL of sample")],
+            proposal.SpecificationProposals.Select(item => (item.SourceFieldKey, item.AcceptanceCriteria, item.PrintedCriteria)));
         Assert.All(proposal.SpecificationProposals, item =>
             Assert.Equal((SpecificationStage.Finished, "TEST SYRUP", "XX/FP/SPC/001"), (item.Stage!.Value, item.ProductName, item.SpecificationCode)));
 
@@ -140,6 +142,21 @@ public class ProductMicroRecognizerTests
         var fields = Fields(Propose(Sheet(), new InMemoryWorksheetImportCatalog([], [], [saved])));
 
         Assert.Equal(saved.Id, fields["media_qualification_test_soya_agar"].ReferencedResultSourceTemplateId);
+    }
+
+    [Theory]
+    [InlineData("Absence of E. coli in 1g of sample", "Absence of E.coli")]
+    [InlineData("absence of  e.coli", "Absence of E.coli")]
+    [InlineData("Presence of E.coli", "Presence of E.coli")]
+    [InlineData("Absence of specified indicator pathogens", null)]
+    public void A_printed_qualitative_specification_maps_to_its_option(string printed, string? expected) =>
+        Assert.Equal(expected, PrintedSpecification.CompliantOption(printed, ["Presence of E.coli", "Absence of E.coli"]));
+
+    [Fact]
+    public void A_printed_absence_maps_to_absent()
+    {
+        Assert.Equal("Absent", PrintedSpecification.CompliantOption("Absence of specified indicator pathogens.", ["Absent", "Detected"]));
+        Assert.Null(PrintedSpecification.CompliantOption("NMT 100 cfu/mL", ["Absent", "Detected"]));
     }
 
     [Theory]

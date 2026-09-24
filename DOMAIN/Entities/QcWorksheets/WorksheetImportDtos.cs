@@ -106,7 +106,16 @@ public class SpecificationCharacteristicProposal
 {
     public string TestName { get; set; }
     public string Analyte { get; set; }
+
+    /// <summary>
+    /// What the limit check compares against. For a choice result it is exactly the compliant
+    /// option ("Absence of E.coli"), since qualitative criteria are a normalized exact match.
+    /// </summary>
     public string AcceptanceCriteria { get; set; }
+
+    /// <summary>The specification as printed ("Absence of E. coli in 1g of sample"), kept as context.</summary>
+    public string PrintedCriteria { get; set; }
+
     public string AlertLimit { get; set; }
     public string ActionLimit { get; set; }
     public string SourceFieldKey { get; set; }

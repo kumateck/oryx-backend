@@ -175,6 +175,7 @@ internal sealed partial class ProductMicroWalker
             ? FormulaLibrary.CfuFromAverage(average, factor)
             : FormulaLibrary.CfuFromAverage(average, _dilutionFactorKey);
 
+        _judgedOptions = null;
         _judgedKey = builder.AddField(new ProposedWorksheetField
         {
             FieldKey = Join(prefix, "result"), Label = unit is null ? "Result" : $"Result ({unit})",

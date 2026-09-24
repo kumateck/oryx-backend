@@ -50,7 +50,7 @@ internal sealed partial class CultureMediaWalker
     private void ReadGrid(DocxBlock block, string caption)
     {
         var grid = DataGrid.Read(block.Table);
-        var averages = PlateAverage.Apply(grid.Columns);
+        PlateAverage.Apply(grid.Columns);
         var location = ImportProposalBuilder.At(block);
 
         var labels = grid.Columns.Select(column => ImportText.Canonical(column.Label)).ToList();
@@ -68,15 +68,9 @@ internal sealed partial class CultureMediaWalker
                 $"'{label}' has {grid.DataRows.Count} printed rows but no column filled in every row; proposed as an open-ended table.",
                 location);
 
-        var field = builder.AddTable(key, label, grid.Columns, location,
+        // The Av. columns are computed per row at submit ("mode": "Calculated" with a formula).
+        builder.AddTable(key, label, grid.Columns, location,
             grid.HasFixedRows ? $"Grid with {grid.DataRows.Count} fixed rows" : "Grid with open-ended rows");
-
-        if (averages.Count > 0)
-            builder.Flag(WorksheetImportFlagCodes.RowFormulaNotEvaluated,
-                $"'{field.Label}': {string.Join(", ", averages.Select(column => column.Key))} carry a per-row average formula in "
-                + "ColumnDefinitions. The current calculator evaluates scalar Calculated fields only, so these "
-                + "cells are not computed or persisted until per-row column formulas are supported.",
-                location);
     }
 
     private static bool IsAntibioticTable(DocxTable table) =>

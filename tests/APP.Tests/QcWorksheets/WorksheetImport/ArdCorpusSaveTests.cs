@@ -18,9 +18,14 @@ public class ArdCorpusSaveTests
         using var harness = new QcWorksheetTestContext();
         var userId = (await harness.SeedUser()).Id;
 
+        var calculatedColumns = 0;
         foreach (var file in ArdCorpus.Load().Where(file => file.Proposal.Template is not null))
         {
             var request = WorksheetImportTemplateMapper.ToCreateRequest(file.Proposal.Template);
+            calculatedColumns += request.Sections.SelectMany(section => section.Fields)
+                .Where(field => field.ColumnDefinitions is not null)
+                .Sum(field => JsonDocument.Parse(field.ColumnDefinitions).RootElement.EnumerateArray()
+                    .Count(column => column.TryGetProperty("mode", out var mode) && mode.GetString() == "Calculated"));
 
             // Codes repeat across the old and new form of one medium; the test is about structure.
             request.Code = $"{request.Code}#{Guid.NewGuid():N}"[..Math.Min(100, request.Code.Length + 33)];
@@ -28,6 +33,26 @@ public class ArdCorpusSaveTests
             var result = await harness.Templates.CreateTemplate(request, userId);
             Assert.True(result.IsSuccess, $"{file.RelativePath}: {result.Error?.Code} {result.Error?.Description}");
         }
+
+        // The per-row Av. columns went through the real column-formula validation above.
+        Assert.True(calculatedColumns >= 20, $"only {calculatedColumns} calculated columns were saved");
+    }
+
+    [CorpusFact]
+    public async Task A_broken_average_formula_is_refused_by_template_validation()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var userId = (await harness.SeedUser()).Id;
+
+        var media = ArdCorpus.Load().First(file => file.RelativePath == "Cetrimide.docx");
+        var request = WorksheetImportTemplateMapper.ToCreateRequest(media.Proposal.Template);
+        var table = request.Sections.SelectMany(section => section.Fields).Single(field => field.FieldKey == "cultural_response");
+        table.ColumnDefinitions = table.ColumnDefinitions.Replace("{newBatch_plate2}", "{no_such_column}");
+
+        var result = await harness.Templates.CreateTemplate(request, userId);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("no_such_column", result.Error.Description);
     }
 
     [CorpusFact]

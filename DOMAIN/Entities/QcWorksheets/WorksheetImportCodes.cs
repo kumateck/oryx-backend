@@ -46,7 +46,6 @@ public static class WorksheetImportFlagCodes
     public const string UnmatchedEquipment = "UnmatchedEquipment";
     public const string UnmatchedReagent = "UnmatchedReagent";
     public const string MediaTemplateMissing = "MediaTemplateMissing";
-    public const string RowFormulaNotEvaluated = "RowFormulaNotEvaluated";
     public const string MixedColumn = "MixedColumn";
     public const string IncompleteValue = "IncompleteValue";
     public const string SuspectedRunData = "SuspectedRunData";

@@ -41,6 +41,7 @@ internal sealed partial class ProductMicroWalker(DocxDocument document, ImportPr
     private string _caption;
     private string _judgedKey;
     private string _judgedTestName;
+    private IReadOnlyList<string> _judgedOptions;
     private double? _dilutionFactor;
     private string _dilutionFactorKey;
 
@@ -131,23 +132,44 @@ internal sealed partial class ProductMicroWalker(DocxDocument document, ImportPr
             builder.AddDecision(decision with { Reason = "Analysis date from the running header; entered per run" }, location);
     }
 
-    private void AddSpecification(DocxBlock block, string criteria)
+    /// <summary>
+    /// A printed specification, bound to the result before it. For a choice result the criteria
+    /// become exactly the compliant option, since the limit check compares qualitative criteria by
+    /// normalized exact match; the printed sentence ("… in 1g of sample") is kept alongside.
+    /// </summary>
+    private void AddSpecification(DocxBlock block, string printed)
     {
         var location = ImportProposalBuilder.At(block);
         if (_judgedKey is null)
             builder.Flag(WorksheetImportFlagCodes.UnrecognizedContent,
-                $"Specification '{criteria}' has no result field before it to constrain.", location);
+                $"Specification '{printed}' has no result field before it to constrain.", location);
+
+        var criteria = printed;
+        var confident = true;
+        if (_judgedOptions is { Count: > 0 })
+        {
+            criteria = PrintedSpecification.CompliantOption(printed, _judgedOptions);
+            confident = criteria is not null;
+            if (criteria is null)
+            {
+                criteria = printed;
+                builder.Flag(WorksheetImportFlagCodes.UnrecognizedContent,
+                    $"Specification '{printed}' matches none of the result's options ({string.Join(" / ", _judgedOptions)}); "
+                    + "set the compliant option by hand.", location);
+            }
+        }
 
         builder.Proposal.SpecificationProposals.Add(new SpecificationCharacteristicProposal
         {
             TestName = _judgedTestName ?? builder.CurrentSection?.Name ?? "Microbiology",
             AcceptanceCriteria = criteria,
+            PrintedCriteria = printed,
             SourceFieldKey = _judgedKey,
             Stage = SpecificationStage.Finished,
             ProductName = _productName,
             SpecificationCode = _specificationCode,
-            Confidence = _judgedKey is null ? ImportConfidence.Low
-                : PrintedSpecification.IsLimit(criteria) ? ImportConfidence.High : ImportConfidence.Medium,
+            Confidence = _judgedKey is null || !confident ? ImportConfidence.Low
+                : PrintedSpecification.IsLimit(printed) ? ImportConfidence.High : ImportConfidence.Medium,
             Location = location
         });
     }

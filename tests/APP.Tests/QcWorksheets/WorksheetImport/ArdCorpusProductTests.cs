@@ -105,8 +105,18 @@ public class ArdCorpusProductTests(ITestOutputHelper output)
     {
         foreach (var file in Products())
         {
-            var keys = Fields(file).Select(field => field.FieldKey).ToHashSet();
+            var byKey = Fields(file).ToDictionary(field => field.FieldKey);
+            var keys = byKey.Keys.ToHashSet();
             var proposals = file.Proposal.SpecificationProposals;
+
+            // A choice result is judged by normalized exact match, so its criteria must be one of
+            // its options; the printed sentence is kept separately.
+            foreach (var proposal in proposals.Where(item => byKey.GetValueOrDefault(item.SourceFieldKey)?.Options is { Count: > 0 }))
+            {
+                Assert.Contains(proposal.AcceptanceCriteria, byKey[proposal.SourceFieldKey].Options!);
+                Assert.StartsWith("Absence of", proposal.AcceptanceCriteria);
+                Assert.NotEqual(proposal.AcceptanceCriteria, proposal.PrintedCriteria);
+            }
 
             Assert.True(proposals.Count >= 2, file.RelativePath);
             Assert.All(proposals, proposal =>
