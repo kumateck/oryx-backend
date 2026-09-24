@@ -840,6 +840,26 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink> QcSpecificationWorksheetLinks { get; set; }
     public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic> QcSpecificationCharacteristics { get; set; }
 
+    // Milestone 3 — the execution layer. A round (TestRequest) covers many Subjects, each
+    // carrying one WorksheetInstance per worksheet link on the round's pinned Specification.
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequest> QcTestRequests { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequestSubject> QcTestRequestSubjects { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstance> QcWorksheetInstances { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldValue> QcWorksheetFieldValues { get; set; }
+
+    /// <summary>
+    /// A plain audit log, deliberately not an approval table: reassigning a worksheet is an
+    /// administrative action rather than an electronic signature.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment> QcWorksheetInstanceReassignments { get; set; }
+
+    /// <summary>
+    /// Every correction cycle a worksheet went through. A log rather than a summary, for the
+    /// same reason reassignments are: keeping only the latest return would discard the earlier
+    /// ones, and the history is the record.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn> QcWorksheetInstanceCorrectionReturns { get; set; }
+
     #endregion
 
     // #region TenantFilter

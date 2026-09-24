@@ -270,6 +270,17 @@ internal static class QcApprovalHandler
                 specification.Status = QcDocumentStatus.Approved;
                 specification.UpdatedAt = DateTime.UtcNow;
                 break;
+
+            // A worksheet carries the execution lifecycle rather than the controlled-document
+            // one, so an approved review lands on Reviewed, not "Approved".
+            case QcApprovalEntityTypes.WorksheetInstance:
+                var instance = await context.QcWorksheetInstances
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (instance is null) return;
+                instance.Approved = true;
+                instance.Status = WorksheetInstanceStatus.Reviewed;
+                instance.UpdatedAt = DateTime.UtcNow;
+                break;
         }
     }
 
@@ -305,6 +316,18 @@ internal static class QcApprovalHandler
                 specification.Approved = false;
                 specification.Status = QcDocumentStatus.Draft;
                 specification.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            // A rejected review is a return for correction: the worksheet goes back to the
+            // analyst, in progress, with its entered values and its assignee intact.
+            case QcApprovalEntityTypes.WorksheetInstance:
+                var instance = await context.QcWorksheetInstances
+                    .SingleOrDefaultAsync(item => item.Id == entityId);
+                if (instance is null) return;
+                instance.Approved = false;
+                instance.Status = WorksheetInstanceStatus.InProgress;
+                instance.SubmittedAt = null;
+                instance.UpdatedAt = DateTime.UtcNow;
                 break;
         }
     }

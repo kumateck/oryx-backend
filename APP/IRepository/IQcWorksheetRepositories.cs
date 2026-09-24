@@ -114,6 +114,78 @@ public interface ISamplingPointGroupRepository
     Task<Result> DeleteSamplingPointGroup(Guid id, Guid userId);
 }
 
+public interface ITestRequestRepository
+{
+    Task<Result<Paginateable<IEnumerable<TestRequestSummaryDto>>>> GetTestRequests(
+        int page, int pageSize, string searchQuery, TestRequestStatus? status, TestRequestType? type,
+        DateTime? from, DateTime? to);
+
+    Task<Result<TestRequestDetailDto>> GetTestRequest(Guid id);
+
+    /// <summary>
+    /// Creates the round and, in the same transaction, every WorksheetInstance it implies —
+    /// one per (Subject × the pinned Specification's WorksheetLink).
+    /// </summary>
+    Task<Result<TestRequestDetailDto>> CreateTestRequest(CreateTestRequestRequest request, Guid userId);
+
+    /// <summary>
+    /// Adds Subjects to a round that has not yet started testing, each getting its own
+    /// WorksheetInstances off the round's already-pinned Specification version.
+    /// </summary>
+    Task<Result<TestRequestDetailDto>> AddSubjects(
+        Guid id, AddTestRequestSubjectsRequest request, Guid userId);
+
+    Task<Result<TestRequestDetailDto>> RecordSample(
+        Guid id, RecordTestRequestSampleRequest request, Guid userId);
+}
+
+public interface IWorksheetInstanceRepository
+{
+    /// <summary>
+    /// Full detail: the computed header block, the pinned template version's sections and
+    /// fields merged with recorded values, and runtime-resolved ReferencedResult fields.
+    /// </summary>
+    Task<Result<WorksheetInstanceDetailDto>> GetWorksheetInstance(Guid id);
+
+    /// <summary>
+    /// Which analysis track a worksheet belongs to. The controller needs this before it can
+    /// decide which of the paired Chemical/Microbial permission keys the action requires —
+    /// the keys are split per track precisely so a microbiologist is never granted chemistry
+    /// actions, and that choice cannot be made from the route alone.
+    /// </summary>
+    Task<Result<SpecificationAnalysisType>> GetAnalysisType(Guid id);
+
+    /// <summary>The Test Room's "My Work" — only the instances assigned to this user.</summary>
+    Task<Result<WorksheetQueueDto>> GetMyWork(Guid userId, SpecificationAnalysisType? analysisType);
+
+    /// <summary>"Awaiting My Review" — everything submitted on the given track.</summary>
+    Task<Result<WorksheetQueueDto>> GetReviewQueue(SpecificationAnalysisType? analysisType);
+
+    Task<Result<WorksheetInstanceDetailDto>> Assign(
+        Guid id, AssignWorksheetInstanceRequest request, Guid userId);
+
+    /// <summary>
+    /// Moves the work to someone else and writes a plain audit row. Never rewrites
+    /// <c>EnteredBy</c> on values already entered, never resets Status, and never creates a
+    /// QcApproval row — reassignment is administrative, not a signature.
+    /// </summary>
+    Task<Result<WorksheetInstanceDetailDto>> Reassign(
+        Guid id, ReassignWorksheetInstanceRequest request, Guid userId);
+
+    Task<Result<WorksheetInstanceDetailDto>> Start(Guid id, Guid userId);
+
+    Task<Result<WorksheetInstanceDetailDto>> SaveValues(
+        Guid id, SaveWorksheetValuesRequest request, Guid userId);
+
+    Task<Result<WorksheetInstanceDetailDto>> Submit(Guid id, Guid userId);
+
+    Task<Result<WorksheetInstanceDetailDto>> Review(
+        Guid id, ReviewWorksheetInstanceRequest request, Guid userId, List<Guid> roleIds);
+
+    Task<Result<WorksheetInstanceDetailDto>> ReturnForCorrection(
+        Guid id, ReturnWorksheetForCorrectionRequest request, Guid userId);
+}
+
 public interface IQcApprovalRepository
 {
     /// <summary>

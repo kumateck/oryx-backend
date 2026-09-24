@@ -13,8 +13,16 @@ public static class QcWorksheetModelTypes
     public const string WorksheetTemplate = "QcWorksheetTemplate";
     public const string Specification = "QcSpecification";
 
+    /// <summary>
+    /// Milestone 3. A submitted worksheet's review is an approval like any other QC approval:
+    /// same engine, same centralized table, same re-authentication wrapper. Reassignment is
+    /// deliberately not here — it is an administrative action, not a signature.
+    /// </summary>
+    public const string WorksheetInstance = "QcWorksheetInstance";
+
     public static bool IsQcWorksheetModelType(string modelType) =>
-        modelType is StandardTestProcedure or WorksheetTemplate or Specification;
+        modelType is StandardTestProcedure or WorksheetTemplate or Specification
+            or WorksheetInstance;
 }
 
 /// <summary>
@@ -27,6 +35,7 @@ public static class QcApprovalEntityTypes
     public const string StandardTestProcedure = "StandardTestProcedure";
     public const string WorksheetTemplate = "WorksheetTemplate";
     public const string Specification = "Specification";
+    public const string WorksheetInstance = "WorksheetInstance";
 
     /// <summary>
     /// Maps an approval-engine modelType to the EntityType recorded on the QcApproval row.
@@ -36,6 +45,7 @@ public static class QcApprovalEntityTypes
         QcWorksheetModelTypes.StandardTestProcedure => StandardTestProcedure,
         QcWorksheetModelTypes.WorksheetTemplate => WorksheetTemplate,
         QcWorksheetModelTypes.Specification => Specification,
+        QcWorksheetModelTypes.WorksheetInstance => WorksheetInstance,
         _ => null
     };
 }
