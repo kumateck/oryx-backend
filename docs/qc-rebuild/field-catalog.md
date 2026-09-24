@@ -12,9 +12,11 @@ STRUCTURE       Section (optional linked Instrument)
                     unit; rows repeat, fixed-count e.g. 20 tablets/6 vessels or
                     open-ended e.g. N sampling points; columns are heterogeneous —
                     a table can mix Measurement, GrowthObservation, CalculatedValue
-                    columns in one grid)
+                    columns in one grid — see "Table column contract" below)
                 Instructions, Heading
 BASIC           ShortText, LongText, Number, Date, Time, Select, MultiSelect, Checkbox
+                    (Select/MultiSelect carry an OptionsJson choice list — see
+                    "Choice options" below)
 SCIENTIFIC      Measurement (value+unit)
                 CalculatedValue (formula over any FieldKey in the same
                     WorksheetInstance — not just same-section — and/or a table-column
@@ -38,6 +40,62 @@ INTEGRATION     ReferencedResult (cross-WorksheetInstance; resolved by
                 "Identification: refer to chromatogram from Assay" within one
                 WorksheetInstance — not a cross-instance resolution)
 ```
+
+## Choice options (`OptionsJson`)
+
+`Select`, `MultiSelect` and `GrowthObservation` fields carry `OptionsJson`: a JSON array of
+strings, e.g. `["Absent","Detected"]`. The same property appears on the template field, its
+revisions, the instance field DTO, and the create/update request.
+
+- **At template save:** these three types need at least two distinct, non-blank options
+  (`QcWorksheetTemplate.OptionsRequired`). Every other type must carry none
+  (`QcWorksheetTemplate.OptionsNotAllowed`). An empty `[]` counts as none. Options are stored
+  trimmed and de-duplicated, ignoring case, in the order they were authored.
+- **At `SaveValues` and submit:** a Select or GrowthObservation value must equal one of the
+  options exactly (case-sensitive, after trimming) (`QcWorksheetInstance.ValueNotAnOption`).
+  Nothing is written when a value is refused.
+- **MultiSelect value encoding:** the value is stored in the single `Value` column as a JSON
+  array of the chosen options, e.g. `["E. coli","Salmonella, spp."]`. Every element must be
+  an option. A bare string that is not a JSON array counts as one choice. A comma-separated
+  list is not used, because real options contain commas. To clear a MultiSelect, send an
+  empty value (the row is deleted), not `[]`.
+- **Templates saved before options existed** have `OptionsJson = null`. They still load and
+  run: a field with no options is not checked at runtime. Its next template edit must supply
+  options.
+
+## Table column contract
+
+A Table's `ColumnDefinitions` is a JSON array of column objects. It is stored exactly as
+sent, so keys the backend does not interpret survive a save.
+
+| Key | Meaning |
+| --- | --- |
+| `key` | Column key. A value's `ColumnKey` and formula references `{table.key}` use it. |
+| `label` | Header text. |
+| `type` | A `WorksheetFieldType` name (or its number). |
+| `unit` | Optional unit. |
+| `rowHeader` | `true` marks the fixed column shown as the row label. It must also have `fixedValues`. |
+| `fixedValues` | Template-owned per-row values. The analyst cannot write to this column, and aggregates skip it. |
+| `group` | Optional display-only string. Columns with the same group appear under one spanning header, e.g. "New Batch" over Plate 1 / Plate 2 / Colour. Keys stay flat (`newBatch_plate1`). |
+| `options` | JSON string array of choices for a Select, MultiSelect or GrowthObservation column. |
+
+- **Several fixed columns are allowed** (e.g. organism, strain code, incubation period). One
+  of them may be the `rowHeader`.
+- **All `fixedValues` lists in one table must be the same length.** That length is the
+  table's fixed row count.
+- **A table is either fully fixed-row or fully open-ended.** It has fixed rows when any
+  column has `fixedValues`, and open-ended rows when none does. The template is refused
+  (`QcWorksheetTemplate.FixedRowCountMismatch`) when:
+  - a `fixedValues` list is empty or is not a list;
+  - a `rowHeader` column has no `fixedValues`;
+  - the `fixedValues` lengths differ.
+- **Column `options`** follow the field rules:
+  - a choice-type column needs at least two distinct options;
+  - a column of another known type, or any fixed column, must not have options.
+
+  Errors name the column as `tableKey.columnKey`. At `SaveValues` and submit, a cell in a
+  column that has options must be one of them. A `MultiSelect` column uses the JSON-array
+  encoding above.
 
 `Result` and `ReferencedResult` are the two types the whole traceability chain runs
 through — every other type is just data entry, but these two are what

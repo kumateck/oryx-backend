@@ -353,6 +353,14 @@ public class WorksheetTemplateRepository(
                 && string.IsNullOrWhiteSpace(field.ConstantValue))
                 return QcWorksheetErrors.ConstantValueRequired(field.FieldKey);
 
+            var options = WorksheetFieldOptions.Validate(field);
+            if (!options.IsSuccess)
+                return options;
+
+            var columns = WorksheetTableColumns.Validate(field);
+            if (!columns.IsSuccess)
+                return columns;
+
             var formulaRequired = field.Type is WorksheetFieldType.CalculatedValue
                 or WorksheetFieldType.CfuCalculation;
 
@@ -479,6 +487,7 @@ public class WorksheetTemplateRepository(
             ConstantValue = request.ConstantValue,
             FormulaExpression = request.FormulaExpression,
             ColumnDefinitions = request.ColumnDefinitions,
+            OptionsJson = WorksheetFieldOptions.Normalize(request.OptionsJson),
             ReferencedResultSourceTemplateId = request.ReferencedResultSourceTemplateId,
             ReferencedResultSourceFieldKey = request.ReferencedResultSourceFieldKey,
             ReferencedResultResolutionFieldKey = request.ReferencedResultResolutionFieldKey,
@@ -505,6 +514,7 @@ public class WorksheetTemplateRepository(
             ConstantValue = source.ConstantValue,
             FormulaExpression = source.FormulaExpression,
             ColumnDefinitions = source.ColumnDefinitions,
+            OptionsJson = source.OptionsJson,
             ReferencedResultSourceTemplateId = source.ReferencedResultSourceTemplateId,
             ReferencedResultSourceFieldKey = source.ReferencedResultSourceFieldKey,
             ReferencedResultResolutionFieldKey = source.ReferencedResultResolutionFieldKey,
@@ -590,6 +600,7 @@ public class WorksheetTemplateRepository(
                     field.ConstantValue = fieldRequest.ConstantValue;
                     field.FormulaExpression = fieldRequest.FormulaExpression;
                     field.ColumnDefinitions = fieldRequest.ColumnDefinitions;
+                    field.OptionsJson = WorksheetFieldOptions.Normalize(fieldRequest.OptionsJson);
                     field.ReferencedResultSourceTemplateId = fieldRequest.ReferencedResultSourceTemplateId;
                     field.ReferencedResultSourceFieldKey = fieldRequest.ReferencedResultSourceFieldKey;
                     field.ReferencedResultResolutionFieldKey = fieldRequest.ReferencedResultResolutionFieldKey;
@@ -651,6 +662,7 @@ public class WorksheetTemplateRepository(
         || field.ConstantValue != request.ConstantValue
         || field.FormulaExpression != request.FormulaExpression
         || field.ColumnDefinitions != request.ColumnDefinitions
+        || field.OptionsJson != WorksheetFieldOptions.Normalize(request.OptionsJson)
         || field.ReferencedResultSourceTemplateId != request.ReferencedResultSourceTemplateId
         || field.ReferencedResultSourceFieldKey != request.ReferencedResultSourceFieldKey
         || field.ReferencedResultResolutionFieldKey != request.ReferencedResultResolutionFieldKey;
@@ -669,6 +681,7 @@ public class WorksheetTemplateRepository(
         ConstantValue = field.ConstantValue,
         FormulaExpression = field.FormulaExpression,
         ColumnDefinitions = field.ColumnDefinitions,
+        OptionsJson = field.OptionsJson,
         ReferencedResultSourceTemplateId = field.ReferencedResultSourceTemplateId,
         ReferencedResultSourceFieldKey = field.ReferencedResultSourceFieldKey,
         ReferencedResultResolutionFieldKey = field.ReferencedResultResolutionFieldKey,
@@ -766,6 +779,7 @@ public class WorksheetTemplateRepository(
                         ConstantValue = field.ConstantValue,
                         FormulaExpression = field.FormulaExpression,
                         ColumnDefinitions = field.ColumnDefinitions,
+                        OptionsJson = field.OptionsJson,
                         ReferencedResultSourceTemplateId = field.ReferencedResultSourceTemplateId,
                         ReferencedResultSourceFieldKey = field.ReferencedResultSourceFieldKey,
                         ReferencedResultResolutionFieldKey = field.ReferencedResultResolutionFieldKey,
@@ -785,6 +799,7 @@ public class WorksheetTemplateRepository(
                                 ConstantValue = revision.ConstantValue,
                                 FormulaExpression = revision.FormulaExpression,
                                 ColumnDefinitions = revision.ColumnDefinitions,
+                                OptionsJson = revision.OptionsJson,
                                 Order = revision.Order,
                                 CreatedAt = revision.CreatedAt
                             })

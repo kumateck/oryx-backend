@@ -1,5 +1,22 @@
 # Workflow behavior
 
+## QC worksheet choice options and fixed columns (2026-09-24)
+
+Worksheet fields gain a nullable `OptionsJson` (a JSON string array) on the field and on its
+revisions (brief 07, Phase A).
+
+- **Template create and update:** Select, MultiSelect and GrowthObservation fields must have
+  two or more distinct options, and other types must have none. A table's `fixedValues`
+  columns must all be the same length. `rowHeader` needs `fixedValues`.
+- **`SaveValues` and submit:** both refuse a choice that is not an option
+  (`ValueNotAnOption`) before anything is written.
+- **Existing templates:** a template with no options is not checked at runtime, so existing
+  Effective templates keep working. An existing Draft must add options the next time it is
+  saved.
+- **Unchanged:** approval, instance status and every other workflow.
+
+See `docs/qc-rebuild/field-catalog.md` for the column contract.
+
 ## QC worksheet table row headers (2026-09-22)
 
 A template table may define one row-header column with fixed labels. These are

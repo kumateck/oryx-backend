@@ -332,11 +332,21 @@ public class WorksheetInstanceRepository(
             .Distinct()
             .ToList();
 
-        var gate = await RunGates(
-            touched.Select(field => new FieldWithValues(
+        var touchedValues = touched
+            .Select(field => new FieldWithValues(
                 field,
-                projected.Where(value => Matches(value, field.FieldKey)).ToList())).ToList(),
-            requireComplete: false);
+                projected.Where(value => Matches(value, field.FieldKey)).ToList()))
+            .ToList();
+
+        // A choice must be one of the template's options (build brief 07, A1).
+        foreach (var item in touchedValues)
+        {
+            var choice = WorksheetOptionValues.Check(item.Field, item.Values);
+            if (!choice.IsSuccess)
+                return Result.Failure<WorksheetInstanceDetailDto>(choice.Error);
+        }
+
+        var gate = await RunGates(touchedValues, requireComplete: false);
 
         if (!gate.IsSuccess)
             return Result.Failure<WorksheetInstanceDetailDto>(gate.Error);
@@ -381,6 +391,14 @@ public class WorksheetInstanceRepository(
         var gate = await RunGates(fields, requireComplete: true);
         if (!gate.IsSuccess)
             return Result.Failure<WorksheetInstanceDetailDto>(gate.Error);
+
+        // Choices are re-checked over everything recorded, for the same defence-in-depth reason.
+        foreach (var entry in fields)
+        {
+            var choice = WorksheetOptionValues.Check(entry.Field, entry.Values);
+            if (!choice.IsSuccess)
+                return Result.Failure<WorksheetInstanceDetailDto>(choice.Error);
+        }
 
         foreach (var entry in fields)
         {
@@ -1337,7 +1355,8 @@ public class WorksheetInstanceRepository(
                     ConstantValue = field.ConstantValue,
                     FormulaExpression = field.FormulaExpression,
                     ColumnDefinitions = field.ColumnDefinitions,
-                    ReadOnly = field.Mode != WorksheetFieldMode.Entry
+                    OptionsJson = field.OptionsJson,
+                    ReadOnly =field.Mode != WorksheetFieldMode.Entry
                         || field.Type == WorksheetFieldType.ReferencedResult,
                     RequiredForSubmission = field.Type == WorksheetFieldType.ReferencedResult
                         || IsRequiredForSubmission(field),

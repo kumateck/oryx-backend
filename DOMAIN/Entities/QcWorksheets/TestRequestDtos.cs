@@ -330,6 +330,12 @@ public class WorksheetInstanceFieldDto
     public string ColumnDefinitions { get; set; }
 
     /// <summary>
+    /// The field's choice list (JSON string array), or null. A MultiSelect value is stored as a
+    /// JSON string array of the chosen options.
+    /// </summary>
+    public string OptionsJson { get; set; }
+
+    /// <summary>
     /// True for anything the analyst may not type into: a Constant-mode field, a Calculated
     /// field, and a ReferencedResult field (which is resolved, never entered).
     /// </summary>
