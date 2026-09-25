@@ -110,9 +110,15 @@ from [phase-2-implementation-architecture.md](../phase-2-implementation-architec
   periods start `PendingActivation` on Coa issuance and require an explicit,
   reasoned `/activate` action before production can rely on them. Depends on
   Milestones 2, 3, and 5.
+- [07-worksheet-docx-import.md](./07-worksheet-docx-import.md) — the worksheet DOCX
+  importer. It turns ARD Word files into Draft templates, plus SamplingPoint and
+  Specification-characteristic proposals. It rests on a raw-XML analysis of all 49 files
+  in the lab's microbiology corpus. The EM/water room lists become SamplingPoints, not
+  template rows. Phase A adds the one missing model piece (Select options storage) and
+  formalizes the existing fixed-column contract. Depends on M1–M6, all merged. The
+  Specifications work follows it.
 
-## Status: complete
+## Status
 
-Every entity in [domain-model.md](../domain-model.md) now has a build brief, and
-both spikes have been run and resolved. Nothing stands between this and starting
-Milestone 1.
+M1–M6 are complete and merged (backend into `desmond-latest`, frontend into
+`final-for-live`). Brief 07 is the next build.

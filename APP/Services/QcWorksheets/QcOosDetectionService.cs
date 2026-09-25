@@ -17,9 +17,10 @@ namespace APP.Services.QcWorksheets;
 public interface IQcOosDetectionService
 {
     /// <summary>
-    /// Evaluates every Result-typed field on a just-submitted worksheet against the
-    /// Characteristics bound to it, opening an <see cref="OosCase"/> for each Action-limit
-    /// breach. Returns the cases opened, newest first.
+    /// Evaluates every field on a just-submitted worksheet that a Characteristic on the round's
+    /// pinned Specification binds, whatever the field's type (see <see cref="QcBoundFieldJudge"/>),
+    /// opening an <see cref="OosCase"/> for each Action-limit breach. Returns the cases opened,
+    /// newest first.
     /// </summary>
     Task<List<OosCase>> DetectOnSubmitAsync(Guid worksheetInstanceId, Guid userId);
 
@@ -62,18 +63,29 @@ public class QcOosDetectionService(
         if (characteristics.Count == 0)
             return [];
 
-        // The pinned template version's own Result fields — resolved by id, never forward.
-        var resultFieldKeys = await context.QcWorksheetFields
+        // The pinned template version's own fields — resolved by id, never forward. Judged =
+        // bound by a characteristic: every candidate field (a Result field, or any scalar Entry
+        // or Calculated field) is judged if a Characteristic names it, and skipped if none does.
+        var templateFields = await context.QcWorksheetFields
             .AsNoTracking()
-            .Where(field => field.Type == WorksheetFieldType.Result
-                && context.QcWorksheetSections.Any(section =>
-                    section.Id == field.WorksheetSectionId
-                    && section.WorksheetTemplateId == instance.WorksheetTemplateId))
-            .Select(field => field.FieldKey)
+            .Where(field => context.QcWorksheetSections.Any(section =>
+                section.Id == field.WorksheetSectionId
+                && section.WorksheetTemplateId == instance.WorksheetTemplateId))
+            .Select(field => new { field.FieldKey, field.Type, field.Mode })
             .ToListAsync();
+
+        var judgedFields = templateFields
+            .Where(field => QcBoundFieldJudge.IsCandidate(field.Type, field.Mode))
+            .ToList();
+
+        var resultFieldKeys = judgedFields.Select(field => field.FieldKey).ToList();
 
         if (resultFieldKeys.Count == 0)
             return [];
+
+        var fieldTypes = judgedFields
+            .GroupBy(field => field.FieldKey, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Type, StringComparer.Ordinal);
 
         var values = await context.QcWorksheetFieldValues
             .AsNoTracking()
@@ -102,14 +114,14 @@ public class QcOosDetectionService(
             if (characteristic is null)
                 continue;
 
-            // A scalar Result field is one row. A value that was never entered still gets
+            // A judged field is one scalar row. A value that was never entered still gets
             // judged, because "nothing was entered against a hard limit" is not a pass.
             var submitted = values
                 .Where(value => value.FieldKey == fieldKey)
                 .Select(value => value.Value)
                 .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
-            var evaluation = LimitEvaluator.Evaluate(characteristic, submitted);
+            var evaluation = QcBoundFieldJudge.Evaluate(characteristic, fieldTypes[fieldKey], submitted);
 
             switch (evaluation.Outcome)
             {

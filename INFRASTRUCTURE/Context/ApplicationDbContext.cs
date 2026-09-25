@@ -309,6 +309,7 @@ public class ApplicationDbContext(
     public DbSet<SupplierContact> SupplierContacts { get; set; }
     public DbSet<SupplierBankDetail> SupplierBankDetails { get; set; }
     public DbSet<SupplierPricingAgreement> SupplierPricingAgreements { get; set; }
+    public DbSet<SupplierPricingAgreementApproval> SupplierPricingAgreementApprovals { get; set; }
     public DbSet<SupplierPerformanceRecord> SupplierPerformanceRecords { get; set; }
     public DbSet<Manufacturer> Manufacturers { get; set; }
     public DbSet<ManufacturerMaterial> ManufacturerMaterials { get; set; }
@@ -2533,6 +2534,15 @@ public class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<SupplierPricingAgreement>().HasOne(item => item.UoM)
             .WithMany().HasForeignKey(item => item.UoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPricingAgreementApproval>()
+            .HasOne(item => item.SupplierPricingAgreement)
+            .WithMany(item => item.Approvals)
+            .HasForeignKey(item => item.SupplierPricingAgreementId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SupplierPricingAgreementApproval>()
+            .HasOne(item => item.Approval)
+            .WithMany().HasForeignKey(item => item.ApprovalId)
+            .OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<SupplierPerformanceRecord>().HasOne(item => item.Supplier)
             .WithMany(item => item.PerformanceRecords).HasForeignKey(item => item.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);

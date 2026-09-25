@@ -9,7 +9,8 @@ namespace APP.Repository;
 
 public partial class SupplierRelationshipRepository(
     ApplicationDbContext context,
-    ILogger<SupplierRelationshipRepository> logger
+    ILogger<SupplierRelationshipRepository> logger,
+    IApprovalRepository approvalRepository
 ) : ISupplierRelationshipRepository
 {
     private async Task<Result<Supplier>> RequireSupplier(Guid supplierId)

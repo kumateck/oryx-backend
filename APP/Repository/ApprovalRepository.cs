@@ -23,6 +23,7 @@ using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.RndProjects;
@@ -169,6 +170,10 @@ public class ApprovalRepository(
 
         if (modelType == nameof(CustomerQuotation))
             return await CustomerQuotationApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+
+        if (modelType == nameof(SupplierPricingAgreement))
+            return await SupplierPricingAgreementApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
         if (modelType == nameof(RndProject))
@@ -2154,6 +2159,10 @@ public class ApprovalRepository(
             return await CustomerQuotationApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == nameof(SupplierPricingAgreement))
+            return await SupplierPricingAgreementApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
+
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
@@ -3747,6 +3756,27 @@ public class ApprovalRepository(
             });
         }
 
+        var supplierAgreements = await context.SupplierPricingAgreements
+            .AsSplitQuery().Include(item => item.Approvals)
+            .Include(item => item.Supplier).Include(item => item.Material)
+            .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+            .Where(item => item.Status == SupplierPricingAgreementStatus.Pending
+                && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
+                    && stage.Status == ApprovalStatus.Pending
+                    && (stage.UserId == userId
+                        || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+            .ToListAsync();
+        foreach (var agreement in supplierAgreements)
+            entitiesRequiringApproval.Add(new ApprovalEntity {
+                ModelType = nameof(SupplierPricingAgreement), Id = agreement.Id,
+                SupplierId = agreement.SupplierId,
+                Code = $"{agreement.Supplier?.Name} · {agreement.Material?.Name}",
+                Department = mapper.Map<DepartmentDto>(agreement.CreatedBy?.Department),
+                CreatedAt = agreement.CreatedAt,
+                RequestedBy = mapper.Map<UserDto>(agreement.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(agreement.Id),
+            });
+
         var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
 
         foreach (var payment in payments)
@@ -3872,6 +3902,7 @@ public class ApprovalRepository(
         await Collect(context.ProformaInvoiceApprovals);
         await Collect(context.ProductionOrderApprovals);
         await Collect(context.CustomerQuotationApprovals.Where(stage => stage.ActivatedAt.HasValue));
+        await Collect(context.SupplierPricingAgreementApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.RndProjectApprovals);
         await Collect(context.RndFormulationApprovals.Where(stage => stage.ActivatedAt.HasValue));
@@ -4305,6 +4336,23 @@ public class ApprovalRepository(
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
+            case nameof(SupplierPricingAgreement):
+                var supplierAgreement = await context.SupplierPricingAgreements
+                    .Include(item => item.Supplier).Include(item => item.Material)
+                    .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (supplierAgreement is null)
+                    return Error.NotFound("SupplierPricingAgreement.NotFound", "Agreement proposal not found.");
+                return new ApprovalEntity {
+                    ModelType = modelType, Id = modelId,
+                    SupplierId = supplierAgreement.SupplierId,
+                    Code = $"{supplierAgreement.Supplier?.Name} · {supplierAgreement.Material?.Name}",
+                    CreatedAt = supplierAgreement.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(supplierAgreement.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(supplierAgreement.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
             default:
                 throw new NotImplementedException(
                     $"Approval handling not implemented for model type: {modelType}"
@@ -4464,6 +4512,10 @@ public class ApprovalRepository(
                 break;
             case nameof(CustomerQuotation):
                 await CustomerQuotationApprovalHandler.CreateAsync(
+                    context, modelId, stages, approval);
+                break;
+            case nameof(SupplierPricingAgreement):
+                await SupplierPricingAgreementApprovalHandler.CreateAsync(
                     context, modelId, stages, approval);
                 break;
             case nameof(RndProject):
