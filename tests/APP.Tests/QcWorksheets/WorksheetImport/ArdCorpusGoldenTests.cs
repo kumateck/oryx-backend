@@ -41,7 +41,7 @@ public class ArdCorpusGoldenTests(ITestOutputHelper output)
                 Assert.Null(file.Proposal.Template);
                 Assert.Contains(file.Proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.CompletedOutputNotTemplate);
             }
-            else
+            else if (!file.Proposal.Flags.Any(flag => flag.Code == WorksheetImportFlagCodes.SharedTemplateInBatch))
             {
                 Assert.NotNull(file.Proposal.Template);
             }

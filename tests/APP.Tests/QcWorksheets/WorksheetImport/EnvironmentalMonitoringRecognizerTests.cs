@@ -62,7 +62,7 @@ public class EnvironmentalMonitoringRecognizerTests
         var proposal = Em();
         var fields = proposal.Template.Sections.SelectMany(section => section.Fields).ToDictionary(field => field.FieldKey);
 
-        Assert.Equal((ArdFamily.EnvironmentalMonitoring, "EM-TEST-AREA"), (proposal.Family, proposal.Template.Code));
+        Assert.Equal((ArdFamily.EnvironmentalMonitoring, "EM-AIRBORNE-VIABLES"), (proposal.Family, proposal.Template.Code));
         Assert.Equal((WorksheetFieldType.ColonyCount, WorksheetFieldMode.Entry, "CFU/4Hrs"),
             (fields["airborne_viables"].Type, fields["airborne_viables"].Mode, fields["airborne_viables"].Unit));
         Assert.Equal("100,000 / D", fields["cleanroom_classification"].ConstantValue);

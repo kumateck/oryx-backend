@@ -26,58 +26,67 @@ public class ArdCorpusEmTests(ITestOutputHelper output)
     }
 
     [CorpusFact]
-    public void Every_room_is_a_sampling_point_and_none_is_a_template_row()
+    public void Every_room_is_a_sampling_point_and_the_one_template_has_no_room_rows()
     {
         var worksheets = Worksheets();
         Assert.Equal(8, worksheets.Count);
 
+        // Uploaded together, the eight area sheets propose the shared template exactly once.
+        var carrier = Assert.Single(worksheets, file => file.Proposal.Template is not null);
+        Assert.Equal(EnvironmentalMonitoringRecognizer.TemplateCode, carrier.Proposal.Template.Code);
+        Assert.All(worksheets.Where(file => file != carrier), file =>
+        {
+            Assert.Equal(WorksheetImportFlagCodes.SharedTemplateInBatch, file.Proposal.Flags[0].Code);
+            Assert.Equal(carrier.Proposal.FileName, file.Proposal.SharedTemplate.CarriedBy);
+        });
+
+        var fields = Fields(carrier);
+        Assert.DoesNotContain(fields, field => field.Type == WorksheetFieldType.Table);
+        var result = Assert.Single(fields, field => field.FieldKey == EnvironmentalMonitoringRecognizer.ResultKey);
+        Assert.Equal((WorksheetFieldType.ColonyCount, WorksheetFieldMode.Entry, "CFU/4Hrs"), (result.Type, result.Mode, result.Unit));
+
+        // Instrument labels are excluded: the Microbiology Lab's LAF benches are both sampling
+        // points and equipment used in the test ("Laminar Air Flow Unit (QCD/EQT/LAF/001)").
+        var texts = fields.Where(field => field.Type != WorksheetFieldType.Instrument)
+            .SelectMany(field => new[] { field.Label, field.ConstantValue ?? string.Empty }).ToList();
+
+        var total = 0;
         foreach (var file in worksheets)
         {
             var printed = PrintedRooms(file);
             var points = file.Proposal.SamplingPointProposals;
+            total += points.Count;
             output.WriteLine($"{file.RelativePath}: {printed.Count} printed room rows → {points.Count} sampling points "
-                             + $"({printed.Select(room => room.Code).Distinct(StringComparer.OrdinalIgnoreCase).Count()} distinct codes)");
+                             + $"(area '{points[0].Area}')");
 
             var codes = points.Select(point => ImportText.Canonical(point.Code)).ToHashSet();
             Assert.All(printed, room => Assert.Contains(ImportText.Canonical(room.Code), codes));
             Assert.All(points, point => Assert.Equal(SamplingPointType.Environmental, point.Type));
             Assert.All(points, point => Assert.False(string.IsNullOrWhiteSpace(point.Area)));
-
-            var fields = Fields(file);
-            Assert.DoesNotContain(fields, field => field.Type == WorksheetFieldType.Table);
-            // Instrument labels are excluded: the Microbiology Lab's LAF benches are both sampling
-            // points and equipment used in the test ("Laminar Air Flow Unit (QCD/EQT/LAF/001)").
-            var texts = fields.Where(field => field.Type != WorksheetFieldType.Instrument)
-                .SelectMany(field => new[] { field.Label, field.ConstantValue ?? string.Empty }).ToList();
             foreach (var point in points.Where(point => point.Code.Length > 3))
                 Assert.DoesNotContain(texts, text => Regex.IsMatch(text, $@"(?<![\w/]){Regex.Escape(point.Code)}(?![\w])"));
-
-            var result = Assert.Single(fields, field => field.FieldKey == EnvironmentalMonitoringRecognizer.ResultKey);
-            Assert.Equal((WorksheetFieldType.ColonyCount, WorksheetFieldMode.Entry, "CFU/4Hrs"), (result.Type, result.Mode, result.Unit));
         }
+
+        Assert.Equal(222, total);
+        var tablet = worksheets.Single(file => file.RelativePath.Contains("(Tablet)"));
+        Assert.Contains(tablet.Proposal.Flags, flag => flag.Message.Contains("'SF-56' is printed for two different rooms"));
+        Assert.Equal(7, tablet.Proposal.Flags.Count(flag => flag.Message.Contains("listed twice") || flag.Message.Contains("two different rooms")));
     }
 
     [CorpusFact]
-    public void The_area_templates_differ_only_in_name_equipment_and_constants()
+    public void Each_area_sheet_uploaded_alone_proposes_the_same_template()
     {
-        var comparable = Worksheets().ToDictionary(file => file.RelativePath, file => Fields(file)
-            .Where(field => field.Type is not (WorksheetFieldType.Instrument or WorksheetFieldType.Reagent))
-            .Select(field => string.Join(" | ", field.FieldKey, field.Type, field.Mode, field.Unit,
-                field.Mode == WorksheetFieldMode.Constant ? null : field.Label, string.Join("/", field.Options ?? [])))
-            .ToList());
+        var root = Environment.GetEnvironmentVariable(CorpusFactAttribute.Variable)!;
+        var alone = Worksheets().Select(file =>
+        {
+            using var stream = File.OpenRead(Path.Combine(root, file.RelativePath));
+            var proposal = WorksheetDocxImportService.Propose(file.RelativePath, stream, InMemoryWorksheetImportCatalog.Empty);
+            WorksheetDocxImportService.ApplyBatchRules([proposal], InMemoryWorksheetImportCatalog.Empty);
+            return (file.RelativePath, Json: System.Text.Json.JsonSerializer.Serialize(WorksheetImportTemplateMapper.ToCreateRequest(proposal.Template)));
+        }).ToList();
 
-        var first = comparable.First();
-        foreach (var other in comparable.Skip(1))
-            Assert.True(first.Value.SequenceEqual(other.Value), $"{other.Key} differs from {first.Key} in structure");
-
-        // The per-area Constants: report which ones actually differ between the eight sheets.
-        var constants = Worksheets().SelectMany(file => Fields(file).Where(field => field.Mode == WorksheetFieldMode.Constant
-                && field.Type != WorksheetFieldType.Instructions)
-            .Select(field => (field.FieldKey, field.ConstantValue)))
-            .GroupBy(item => item.FieldKey)
-            .Select(group => $"{group.Key}: {string.Join(" | ", group.Select(item => item.ConstantValue).Distinct())}");
-        foreach (var line in constants)
-            output.WriteLine(line);
+        foreach (var (path, json) in alone.Skip(1))
+            Assert.True(json == alone[0].Json, $"{path} proposes a different template from {alone[0].RelativePath}");
     }
 
     [CorpusFact]
