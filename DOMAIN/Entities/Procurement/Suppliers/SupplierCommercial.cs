@@ -21,6 +21,10 @@ public class SupplierBankDetail : BaseEntity
 
 public class SupplierPricingAgreement : BaseEntity
 {
+    public SupplierPricingAgreementStatus Status { get; set; } = SupplierPricingAgreementStatus.Approved;
+    public SupplierPricingAgreementChangeKind ChangeKind { get; set; } = SupplierPricingAgreementChangeKind.Create;
+    public Guid? ReplacesAgreementId { get; set; }
+    public List<SupplierPricingAgreementApproval> Approvals { get; set; } = [];
     public Guid SupplierId { get; set; }
     public Supplier Supplier { get; set; }
     public Guid MaterialId { get; set; }
@@ -34,6 +38,18 @@ public class SupplierPricingAgreement : BaseEntity
     public DateTime EffectiveFrom { get; set; }
     public DateTime? EffectiveTo { get; set; }
     [StringLength(2000)] public string Notes { get; set; }
+}
+
+public enum SupplierPricingAgreementStatus { Pending = 0, Approved = 1, Rejected = 2 }
+public enum SupplierPricingAgreementChangeKind { Create = 0, Replace = 1, Archive = 2 }
+
+public class SupplierPricingAgreementApproval : DOMAIN.Entities.Approvals.ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid SupplierPricingAgreementId { get; set; }
+    public SupplierPricingAgreement SupplierPricingAgreement { get; set; }
+    public Guid ApprovalId { get; set; }
+    public DOMAIN.Entities.Approvals.Approval Approval { get; set; }
 }
 
 public class SupplierBankDetailRequest
@@ -74,6 +90,12 @@ public class SupplierBankDetailDto : BaseDto
 
 public class SupplierPricingAgreementDto : BaseDto
 {
+    public SupplierPricingAgreementStatus Status { get; set; }
+    public SupplierPricingAgreementChangeKind ChangeKind { get; set; }
+    public Guid? ReplacesAgreementId { get; set; }
+    public decimal? PriorAgreedPrice { get; set; }
+    public string PriorPriceUoM { get; set; }
+    public string PriorCurrencySymbol { get; set; }
     public Guid SupplierId { get; set; }
     public Guid MaterialId { get; set; }
     public string MaterialName { get; set; }

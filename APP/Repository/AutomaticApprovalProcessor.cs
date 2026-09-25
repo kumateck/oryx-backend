@@ -2,6 +2,7 @@ using APP.Services.ProductionActivityStepEventPublisher;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
@@ -159,6 +160,16 @@ internal static class AutomaticApprovalProcessor
                 EnsureFound(quotation, modelType, modelId);
                 quotation.Approved = true;
                 quotation.Status = CustomerQuotationStatus.Accepted;
+                break;
+
+            case nameof(SupplierPricingAgreement):
+                var agreement = await context.SupplierPricingAgreements
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(agreement, modelType, modelId);
+                var activation = await SupplierPricingAgreementApprovalHandler
+                    .ActivateAsync(context, agreement, null);
+                if (!activation.IsSuccess)
+                    throw new InvalidOperationException(activation.Errors.First().Description);
                 break;
 
             case nameof(RndProject):
