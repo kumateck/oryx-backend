@@ -63,7 +63,7 @@ public readonly record struct LimitEvaluation(LimitOutcome Outcome, string Limit
 /// exhaustively tested without a database.
 /// </para>
 /// </summary>
-public static class LimitEvaluator
+public static partial class LimitEvaluator
 {
     /// <summary>
     /// Not More Than. Accepts the abbreviation and the spelled-out form, plus the symbols the
@@ -239,10 +239,20 @@ public static class LimitEvaluator
         if (expected.Length == 0)
             return Judgement.Indeterminate($"The limit '{limit}' normalizes to nothing comparable.");
 
-        return expected == actual
-            ? Judgement.Satisfied()
-            : Judgement.Breached(
+        if (expected != actual)
+            return Judgement.Breached(
                 $"'{submittedValue}' does not match the required '{limit}'.");
+
+        // Same absence/presence kernel. When both sides also name an organism, it must be the
+        // same organism — "Absence of Salmonella" does not satisfy "Absence of E. coli".
+        var expectedOrganism = OrganismOf(limit);
+        var actualOrganism = OrganismOf(submittedValue);
+
+        if (expectedOrganism.Length > 0 && actualOrganism.Length > 0 && expectedOrganism != actualOrganism)
+            return Judgement.Breached(
+                $"'{submittedValue}' does not match the required '{limit}': it names a different organism.");
+
+        return Judgement.Satisfied();
     }
 
     /// <summary>
@@ -264,14 +274,7 @@ public static class LimitEvaluator
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
 
-        var builder = new StringBuilder(text.Length);
-        foreach (var character in text.ToLowerInvariant())
-            builder.Append(char.IsLetterOrDigit(character) ? character : ' ');
-
-        var normalized = string.Join(' ', builder.ToString()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-
-        normalized = StripContextClause(normalized);
+        var normalized = StripContextClause(Collapse(text));
 
         if (normalized.StartsWith("absence of ", StringComparison.Ordinal)
             || normalized is "absence" or "absent")
@@ -296,6 +299,17 @@ public static class LimitEvaluator
         }
 
         return normalized;
+    }
+
+    /// <summary>Lowercase, and collapse every run of non-alphanumeric characters to one space.</summary>
+    private static string Collapse(string text)
+    {
+        var builder = new StringBuilder(text.Length);
+        foreach (var character in text.ToLowerInvariant())
+            builder.Append(char.IsLetterOrDigit(character) ? character : ' ');
+
+        return string.Join(' ', builder.ToString()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
     /// <summary>

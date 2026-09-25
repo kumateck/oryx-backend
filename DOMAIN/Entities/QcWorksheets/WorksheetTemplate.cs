@@ -150,8 +150,20 @@ public class WorksheetField : BaseEntity
     /// </summary>
     public string FormulaExpression { get; set; }
 
-    /// <summary>Populated only when <see cref="Type"/> is Table; JSON array of { label, key, type, unit }.</summary>
+    /// <summary>
+    /// Populated only when <see cref="Type"/> is Table; a JSON array of column objects
+    /// <c>{ key, label, type, unit, rowHeader?, fixedValues?, group?, options? }</c>. Stored
+    /// verbatim, so keys the backend does not interpret survive a round-trip. See
+    /// field-catalog.md for the fixed-column contract.
+    /// </summary>
     public string ColumnDefinitions { get; set; }
+
+    /// <summary>
+    /// The choice list of a Select, MultiSelect or GrowthObservation field: a JSON array of
+    /// strings, e.g. <c>["Complies","Does not comply"]</c>. Null for every other type, and for
+    /// templates authored before options existed.
+    /// </summary>
+    public string OptionsJson { get; set; }
 
     /// <summary>Populated only when <see cref="Type"/> is ReferencedResult.</summary>
     public Guid? ReferencedResultSourceTemplateId { get; set; }
@@ -201,6 +213,8 @@ public class WorksheetFieldRevision : BaseEntity
     public string FormulaExpression { get; set; }
 
     public string ColumnDefinitions { get; set; }
+
+    public string OptionsJson { get; set; }
 
     public Guid? ReferencedResultSourceTemplateId { get; set; }
 

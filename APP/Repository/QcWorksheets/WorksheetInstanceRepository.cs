@@ -318,6 +318,13 @@ public class WorksheetInstanceRepository(
                 && WorksheetRowHeaders.IsHeaderColumn(field.ColumnDefinitions, entry.ColumnKey))
                 return Result.Failure<WorksheetInstanceDetailDto>(
                     QcWorksheetErrors.RowHeaderIsNotEnterable(field.FieldKey, entry.ColumnKey));
+
+            // A calculated column is computed per row at submission, exactly like a Calculated
+            // field, so it has no analyst write path either.
+            if (field.Type == WorksheetFieldType.Table
+                && WorksheetCalculatedCells.IsCalculatedColumn(field.ColumnDefinitions, entry.ColumnKey))
+                return Result.Failure<WorksheetInstanceDetailDto>(
+                    QcWorksheetErrors.CalculatedColumnIsNotEnterable(field.FieldKey, entry.ColumnKey, entry.RowIndex));
         }
 
         var existing = await context.QcWorksheetFieldValues
@@ -332,11 +339,21 @@ public class WorksheetInstanceRepository(
             .Distinct()
             .ToList();
 
-        var gate = await RunGates(
-            touched.Select(field => new FieldWithValues(
+        var touchedValues = touched
+            .Select(field => new FieldWithValues(
                 field,
-                projected.Where(value => Matches(value, field.FieldKey)).ToList())).ToList(),
-            requireComplete: false);
+                projected.Where(value => Matches(value, field.FieldKey)).ToList()))
+            .ToList();
+
+        // A choice must be one of the template's options (build brief 07, A1).
+        foreach (var item in touchedValues)
+        {
+            var choice = WorksheetOptionValues.Check(item.Field, item.Values);
+            if (!choice.IsSuccess)
+                return Result.Failure<WorksheetInstanceDetailDto>(choice.Error);
+        }
+
+        var gate = await RunGates(touchedValues, requireComplete: false);
 
         if (!gate.IsSuccess)
             return Result.Failure<WorksheetInstanceDetailDto>(gate.Error);
@@ -382,6 +399,14 @@ public class WorksheetInstanceRepository(
         if (!gate.IsSuccess)
             return Result.Failure<WorksheetInstanceDetailDto>(gate.Error);
 
+        // Choices are re-checked over everything recorded, for the same defence-in-depth reason.
+        foreach (var entry in fields)
+        {
+            var choice = WorksheetOptionValues.Check(entry.Field, entry.Values);
+            if (!choice.IsSuccess)
+                return Result.Failure<WorksheetInstanceDetailDto>(choice.Error);
+        }
+
         foreach (var entry in fields)
         {
             if (entry.Field.Type == WorksheetFieldType.ReferencedResult)
@@ -390,7 +415,10 @@ public class WorksheetInstanceRepository(
             if (!IsRequiredForSubmission(entry.Field))
                 continue;
 
-            if (entry.Values.All(value => string.IsNullOrWhiteSpace(value.Value)))
+            // A calculated column's cells are system output, never evidence the analyst entered
+            // anything — a stale result from an earlier submission must not satisfy this check.
+            if (WorksheetCalculatedCells.EnteredValues(entry.Field, entry.Values)
+                .All(value => string.IsNullOrWhiteSpace(value.Value)))
                 return Result.Failure<WorksheetInstanceDetailDto>(
                     QcWorksheetErrors.RequiredFieldMissing(entry.Field.FieldKey, entry.Field.Label));
         }
@@ -429,11 +457,12 @@ public class WorksheetInstanceRepository(
                 fields.Select(item => item.Field).ToList(),
                 calculationInputs,
                 out var calculated,
-                out var failedField,
-                out var calculationError))
-            return Result.Failure<WorksheetInstanceDetailDto>(
-                QcWorksheetErrors.CalculatedFieldUnevaluatable(
-                    failedField.FieldKey, failedField.Label, calculationError));
+                out var failure))
+            return Result.Failure<WorksheetInstanceDetailDto>(failure.ColumnKey is null
+                ? QcWorksheetErrors.CalculatedFieldUnevaluatable(
+                    failure.Field.FieldKey, failure.Field.Label, failure.Reason)
+                : QcWorksheetErrors.CalculatedCellUnevaluatable(
+                    failure.Field.FieldKey, failure.ColumnKey, failure.RowIndex, failure.Reason));
 
         // Past every gate, so the system-computed values are written down now. The resolved
         // reference trace has to survive even if its source is superseded afterwards, and the
@@ -442,13 +471,23 @@ public class WorksheetInstanceRepository(
             PersistSystemValue(
                 entry, instance.Id, resolution.Value, resolution.ResolvedFromInstanceId, userId);
 
-        foreach (var item in calculated)
+        foreach (var item in calculated.Where(item => item.ColumnKey is null))
         {
             var entry = fields.First(field =>
                 string.Equals(field.Field.FieldKey, item.Field.FieldKey, StringComparison.OrdinalIgnoreCase));
 
             PersistSystemValue(entry, instance.Id, item.Value, resolvedFromInstanceId: null, userId);
         }
+
+        // Per-row calculated columns: one value per (row, column), stored like an entered cell.
+        foreach (var entry in fields.Where(item => item.Field.Type == WorksheetFieldType.Table))
+            WorksheetCalculatedCells.Persist(
+                context,
+                entry.Field,
+                entry.Values,
+                calculated.Where(item => item.ColumnKey is not null && ReferenceEquals(item.Field, entry.Field)).ToList(),
+                instance.Id,
+                userId);
 
         instance.Status = WorksheetInstanceStatus.Submitted;
         instance.SubmittedAt = DateTime.UtcNow;
@@ -1337,7 +1376,8 @@ public class WorksheetInstanceRepository(
                     ConstantValue = field.ConstantValue,
                     FormulaExpression = field.FormulaExpression,
                     ColumnDefinitions = field.ColumnDefinitions,
-                    ReadOnly = field.Mode != WorksheetFieldMode.Entry
+                    OptionsJson = field.OptionsJson,
+                    ReadOnly =field.Mode != WorksheetFieldMode.Entry
                         || field.Type == WorksheetFieldType.ReferencedResult,
                     RequiredForSubmission = field.Type == WorksheetFieldType.ReferencedResult
                         || IsRequiredForSubmission(field),

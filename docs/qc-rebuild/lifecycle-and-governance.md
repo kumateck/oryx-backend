@@ -99,6 +99,62 @@ The move away from reopen-in-place to a separately linked retest instance is a r
 workflow change for QA staff used to the live pattern, not just an implementation
 detail — flag it explicitly in training/rollout material.
 
+### Which fields are judged (2026-09-24)
+
+**A field is judged if a characteristic binds it.** Detection judges every field that a
+Characteristic on the round's pinned Specification names in its `SourceFieldKey`, whatever
+the field's type. A specified-organism result is often a `Select` ("Presence of E. coli" /
+"Absence of E. coli", water "Absent" / "Detected") rather than a `Result`, and it opens a
+case in exactly the same way.
+
+- **Candidates.**
+  - `Result` fields are candidates in every mode. This is the M4 rule, unchanged.
+  - Any other field is a candidate when its mode is Entry or Calculated. Calculated fields are
+    judged on the value persisted at submit.
+  - Never judged:
+    - Constant fields;
+    - Heading and Instructions;
+    - Table, Reagent and ReferenceStandard. These hold several rows, and a Characteristic
+      binds only `(template, SourceFieldKey)`, with no column or row key. So table cells stay
+      out of scope.
+- **An unbound field is not judged**, the same as an unbound `Result` field under M4.
+- **A bound field that is blank at submit** follows the existing `Result` rule. It is judged
+  as "no value submitted", which gives ManualReview and opens a case, because nothing
+  entered against a hard limit is never a pass. In practice submit already refuses a blank
+  Entry field and an unevaluatable Calculated field, so only a Constant-mode `Result` can
+  reach this.
+- **Qualitative matching** is `LimitEvaluator`'s existing normalized exact match, applied to
+  both sides:
+  1. Lowercase.
+  2. Turn every run of non-alphanumeric characters into one space, then trim.
+  3. Drop a trailing `in` / `per` / `from` clause.
+  4. Reduce the absence, presence and conformance families to one keyword each.
+
+  So "Absence of E. coli", "absence of E.coli" and "Absence of E coli" all match. It is never
+  a fuzzy or substring match: anything that reduces to a different string is a breach.
+- **Organisms are compared when both sides name one.** This is checked after the keywords
+  match.
+  - The organism is the text after "absence of" / "presence of", normalized the same way
+    (trailing clause dropped). "E. coli", "E.coli" and "E coli" are all `e coli`.
+  - Trailing genus words `spp`, `sp` and `species` are dropped, so "Salmonella spp." equals
+    "Salmonella". A named species ("Salmonella typhi") is still different from the genus.
+  - No abbreviation is expanded: "Escherichia coli" and "E. coli" are different organisms.
+  - If both sides name an organism and the organisms differ, it is a breach (ActionOos). For
+    example, "Absence of Salmonella" against "Absence of E. coli" is a breach.
+  - If either side names no organism (e.g. water's plain "Absent" / "Detected"), only the
+    keywords are compared, exactly as before. So "Absent" satisfies "Absence of E. coli in 1g".
+- **MultiSelect** (value stored as a JSON array) is judged choice by choice, and the worst
+  outcome stands, from most to least severe: ActionOos, ManualReview, Alert, Compliant. So the
+  field complies only if every chosen value does. An empty selection is judged as blank.
+
+Everything else is as M4 built it:
+- the Alert and Action tiers;
+- ManualReview when a limit can't be parsed;
+- one open case per field key;
+- the link to a retest;
+- the reviewer queue's `OosCases`;
+- release blocking.
+
 ## Alert vs. Action limits
 
 An `AlertLimit` breach (real pattern confirmed against Environmental Monitoring and

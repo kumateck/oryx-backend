@@ -353,8 +353,23 @@ public class WorksheetTemplateRepository(
                 && string.IsNullOrWhiteSpace(field.ConstantValue))
                 return QcWorksheetErrors.ConstantValueRequired(field.FieldKey);
 
-            var formulaRequired = field.Type is WorksheetFieldType.CalculatedValue
-                or WorksheetFieldType.CfuCalculation;
+            var options = WorksheetFieldOptions.Validate(field);
+            if (!options.IsSuccess)
+                return options;
+
+            var columns = WorksheetTableColumns.Validate(field);
+            if (!columns.IsSuccess)
+                return columns;
+
+            var columnFormulas = WorksheetColumnFormulas.Validate(field, knownKeys, tableKeys, FindTableColumn);
+            if (!columnFormulas.IsSuccess)
+                return columnFormulas;
+
+            // Mode decides, as it does for table columns: every Calculated-mode field is
+            // evaluated at submit whatever its type (a Calculated Result is how a CFU result is
+            // usually authored), so its formula is proven here rather than failing at submit.
+            var formulaRequired = field.Mode == WorksheetFieldMode.Calculated
+                || field.Type is WorksheetFieldType.CalculatedValue or WorksheetFieldType.CfuCalculation;
 
             if (!formulaRequired)
                 continue;
@@ -378,25 +393,16 @@ public class WorksheetTemplateRepository(
 
             foreach (var reference in analysis.TableReferences)
             {
-                if (!knownKeys.Contains(reference.TableFieldKey))
-                    return QcWorksheetErrors.InvalidFormula(
-                        field.FieldKey,
-                        $"it references '{reference.TableFieldKey}', which is not a field in this template");
-
-                if (!tableKeys.Contains(reference.TableFieldKey))
-                    return QcWorksheetErrors.InvalidFormula(
-                        field.FieldKey,
-                        $"'{reference.TableFieldKey}' is not a Table field, so {reference.Function}() cannot aggregate it");
-
-                var column = FindColumn(fields, reference.TableFieldKey, reference.ColumnKey);
-                if (column == false)
-                    return QcWorksheetErrors.InvalidFormula(
-                        field.FieldKey,
-                        $"'{reference.TableFieldKey}' has no column '{reference.ColumnKey}'");
+                var check = WorksheetColumnFormulas.ValidateTableReference(
+                    field.FieldKey, reference, knownKeys, tableKeys, FindTableColumn);
+                if (!check.IsSuccess)
+                    return check;
             }
         }
 
         return Result.Success();
+
+        bool? FindTableColumn(string tableKey, string columnKey) => FindColumn(fields, tableKey, columnKey);
     }
 
     /// <summary>
@@ -479,6 +485,7 @@ public class WorksheetTemplateRepository(
             ConstantValue = request.ConstantValue,
             FormulaExpression = request.FormulaExpression,
             ColumnDefinitions = request.ColumnDefinitions,
+            OptionsJson = WorksheetFieldOptions.Normalize(request.OptionsJson),
             ReferencedResultSourceTemplateId = request.ReferencedResultSourceTemplateId,
             ReferencedResultSourceFieldKey = request.ReferencedResultSourceFieldKey,
             ReferencedResultResolutionFieldKey = request.ReferencedResultResolutionFieldKey,
@@ -505,6 +512,7 @@ public class WorksheetTemplateRepository(
             ConstantValue = source.ConstantValue,
             FormulaExpression = source.FormulaExpression,
             ColumnDefinitions = source.ColumnDefinitions,
+            OptionsJson = source.OptionsJson,
             ReferencedResultSourceTemplateId = source.ReferencedResultSourceTemplateId,
             ReferencedResultSourceFieldKey = source.ReferencedResultSourceFieldKey,
             ReferencedResultResolutionFieldKey = source.ReferencedResultResolutionFieldKey,
@@ -590,6 +598,7 @@ public class WorksheetTemplateRepository(
                     field.ConstantValue = fieldRequest.ConstantValue;
                     field.FormulaExpression = fieldRequest.FormulaExpression;
                     field.ColumnDefinitions = fieldRequest.ColumnDefinitions;
+                    field.OptionsJson = WorksheetFieldOptions.Normalize(fieldRequest.OptionsJson);
                     field.ReferencedResultSourceTemplateId = fieldRequest.ReferencedResultSourceTemplateId;
                     field.ReferencedResultSourceFieldKey = fieldRequest.ReferencedResultSourceFieldKey;
                     field.ReferencedResultResolutionFieldKey = fieldRequest.ReferencedResultResolutionFieldKey;
@@ -651,6 +660,7 @@ public class WorksheetTemplateRepository(
         || field.ConstantValue != request.ConstantValue
         || field.FormulaExpression != request.FormulaExpression
         || field.ColumnDefinitions != request.ColumnDefinitions
+        || field.OptionsJson != WorksheetFieldOptions.Normalize(request.OptionsJson)
         || field.ReferencedResultSourceTemplateId != request.ReferencedResultSourceTemplateId
         || field.ReferencedResultSourceFieldKey != request.ReferencedResultSourceFieldKey
         || field.ReferencedResultResolutionFieldKey != request.ReferencedResultResolutionFieldKey;
@@ -669,6 +679,7 @@ public class WorksheetTemplateRepository(
         ConstantValue = field.ConstantValue,
         FormulaExpression = field.FormulaExpression,
         ColumnDefinitions = field.ColumnDefinitions,
+        OptionsJson = field.OptionsJson,
         ReferencedResultSourceTemplateId = field.ReferencedResultSourceTemplateId,
         ReferencedResultSourceFieldKey = field.ReferencedResultSourceFieldKey,
         ReferencedResultResolutionFieldKey = field.ReferencedResultResolutionFieldKey,
@@ -766,6 +777,7 @@ public class WorksheetTemplateRepository(
                         ConstantValue = field.ConstantValue,
                         FormulaExpression = field.FormulaExpression,
                         ColumnDefinitions = field.ColumnDefinitions,
+                        OptionsJson = field.OptionsJson,
                         ReferencedResultSourceTemplateId = field.ReferencedResultSourceTemplateId,
                         ReferencedResultSourceFieldKey = field.ReferencedResultSourceFieldKey,
                         ReferencedResultResolutionFieldKey = field.ReferencedResultResolutionFieldKey,
@@ -785,6 +797,7 @@ public class WorksheetTemplateRepository(
                                 ConstantValue = revision.ConstantValue,
                                 FormulaExpression = revision.FormulaExpression,
                                 ColumnDefinitions = revision.ColumnDefinitions,
+                                OptionsJson = revision.OptionsJson,
                                 Order = revision.Order,
                                 CreatedAt = revision.CreatedAt
                             })

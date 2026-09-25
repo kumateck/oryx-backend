@@ -12,9 +12,11 @@ STRUCTURE       Section (optional linked Instrument)
                     unit; rows repeat, fixed-count e.g. 20 tablets/6 vessels or
                     open-ended e.g. N sampling points; columns are heterogeneous —
                     a table can mix Measurement, GrowthObservation, CalculatedValue
-                    columns in one grid)
+                    columns in one grid — see "Table column contract" below)
                 Instructions, Heading
 BASIC           ShortText, LongText, Number, Date, Time, Select, MultiSelect, Checkbox
+                    (Select/MultiSelect carry an OptionsJson choice list — see
+                    "Choice options" below)
 SCIENTIFIC      Measurement (value+unit)
                 CalculatedValue (formula over any FieldKey in the same
                     WorksheetInstance — not just same-section — and/or a table-column
@@ -38,6 +40,118 @@ INTEGRATION     ReferencedResult (cross-WorksheetInstance; resolved by
                 "Identification: refer to chromatogram from Assay" within one
                 WorksheetInstance — not a cross-instance resolution)
 ```
+
+## Choice options (`OptionsJson`)
+
+`Select`, `MultiSelect` and `GrowthObservation` fields carry `OptionsJson`: a JSON array of
+strings, e.g. `["Absent","Detected"]`. The same property appears on the template field, its
+revisions, the instance field DTO, and the create/update request.
+
+- **At template save:** these three types need at least two distinct, non-blank options
+  (`QcWorksheetTemplate.OptionsRequired`). Every other type must carry none
+  (`QcWorksheetTemplate.OptionsNotAllowed`). An empty `[]` counts as none. Options are stored
+  trimmed and de-duplicated, ignoring case, in the order they were authored.
+- **At `SaveValues` and submit:** a Select or GrowthObservation value must equal one of the
+  options exactly (case-sensitive, after trimming) (`QcWorksheetInstance.ValueNotAnOption`).
+  Nothing is written when a value is refused.
+- **MultiSelect value encoding:** the value is stored in the single `Value` column as a JSON
+  array of the chosen options, e.g. `["E. coli","Salmonella, spp."]`. Every element must be
+  an option. A bare string that is not a JSON array counts as one choice. A comma-separated
+  list is not used, because real options contain commas. To clear a MultiSelect, send an
+  empty value (the row is deleted), not `[]`.
+- **Templates saved before options existed** have `OptionsJson = null`. They still load and
+  run: a field with no options is not checked at runtime. Its next template edit must supply
+  options.
+
+## Table column contract
+
+A Table's `ColumnDefinitions` is a JSON array of column objects. It is stored exactly as
+sent, so keys the backend does not interpret survive a save.
+
+| Key | Meaning |
+| --- | --- |
+| `key` | Column key. A value's `ColumnKey` and formula references `{table.key}` use it. |
+| `label` | Header text. |
+| `type` | A `WorksheetFieldType` name (or its number). |
+| `unit` | Optional unit. |
+| `rowHeader` | `true` marks the fixed column shown as the row label. It must also have `fixedValues`. |
+| `fixedValues` | Template-owned per-row values. The analyst cannot write to this column, and aggregates skip it. |
+| `group` | Optional display-only string. Columns with the same group appear under one spanning header, e.g. "New Batch" over Plate 1 / Plate 2 / Colour. Keys stay flat (`newBatch_plate1`). |
+| `options` | JSON string array of choices for a Select, MultiSelect or GrowthObservation column. |
+| `mode` | `"Calculated"` (or `2`) makes the column a per-row calculated column. It is the **only** trigger. `type` (e.g. `CalculatedValue`) is display-only. |
+| `formula` | The per-row formula of a calculated column, e.g. `({newBatch_plate1} + {newBatch_plate2}) / 2`. |
+
+- **Several fixed columns are allowed** (e.g. organism, strain code, incubation period). One
+  of them may be the `rowHeader`.
+- **All `fixedValues` lists in one table must be the same length.** That length is the
+  table's fixed row count.
+- **A table is either fully fixed-row or fully open-ended.** It has fixed rows when any
+  column has `fixedValues`, and open-ended rows when none does. The template is refused
+  (`QcWorksheetTemplate.FixedRowCountMismatch`) when:
+  - a `fixedValues` list is empty or is not a list;
+  - a `rowHeader` column has no `fixedValues`;
+  - the `fixedValues` lengths differ.
+- **Column `options`** follow the field rules:
+  - a choice-type column needs at least two distinct options;
+  - a column of another known type, or any fixed column, must not have options.
+
+  Errors name the column as `tableKey.columnKey`. At `SaveValues` and submit, a cell in a
+  column that has options must be one of them. A `MultiSelect` column uses the JSON-array
+  encoding above.
+
+### Calculated columns
+
+A column with `"mode": "Calculated"` is computed at submit for every row, the same way a
+Calculated field is. The result is stored as an ordinary cell: one `WorksheetFieldValue` per
+(table `FieldKey`, `RowIndex`, `ColumnKey`). Example:
+
+```json
+{"key":"newBatch_av","label":"Av.","type":"CalculatedValue","mode":"Calculated",
+ "formula":"({newBatch_plate1} + {newBatch_plate2}) / 2","group":"New Batch"}
+```
+
+- **What a formula may reference.** The syntax is the same as field formulas.
+  - `{key}` resolves first to a column of the **same row** in the same table. That can be:
+    - an entered cell;
+    - a fixed column's `fixedValues[row]`, which must be numeric;
+    - another calculated column's result for that row.
+  - If `{key}` is not a column of the table, it resolves to a **scalar worksheet field**
+    (entered, or a Calculated field's result). A column key wins over a field key with the
+    same name.
+  - `AVG/SUM/MIN/MAX/RSD({table.column})` aggregate any table's column, as in field
+    formulas.
+- **Which rows are computed.**
+  - A fixed table computes every fixed row (the `fixedValues` length).
+  - An open-ended table computes each row that has at least one non-blank entered cell.
+- **Aggregates.** A calculated column counts in aggregates (e.g. a Calculated field
+  `AVG({media.newBatch_av})`) once every row of it is computed. This matches the scalar rule,
+  where a Calculated field's result feeds later formulas. Fields and cells are evaluated
+  together until nothing new can be computed, so they can depend on each other in either
+  direction.
+- **Unevaluatable cells block submit** (`QcWorksheetInstance.CalculatedFieldUnevaluatable`),
+  and nothing is written. Causes include a missing input, a non-numeric entry such as "TNTC"
+  (which spoils that row's result), or a cycle. The message names the cell:
+  `Table '{fieldKey}', column '{columnKey}', row {n}: could not be calculated: {reason} A calculated cell must produce a value before the worksheet can be submitted.`
+  Here `{n}` is 1-based, and `{reason}` is one of:
+  - `column 'x' holds 'TNTC', which is not a number.`
+  - `column 'x' has no value in this row.`
+  - `column 'x' holds '<label>' in this row, which is not a number.` (a non-numeric fixed value)
+  - `field 'x' holds '…', which is not a number.`
+  - the evaluator's own message.
+- **Not enterable.** `SaveValues` refuses a write to a calculated column
+  (`QcWorksheetInstance.CalculatedFieldNotEnterable`):
+  `Table '{fieldKey}', column '{columnKey}', row {n}: this column is calculated. Its values are computed from each row's entries at submission and cannot be typed in.`
+- **Excluded from other checks.** A calculated column is excluded from option checks and from
+  the submit check that a table has entries. It may not carry `options`, `fixedValues` or
+  `rowHeader`.
+- **Re-submission recomputes from scratch.** A previously stored result is never an input.
+  A result for a row that no longer computes is removed.
+- **At template save** (`QcWorksheetTemplate.InvalidFormula`, naming `tableKey.columnKey`):
+  - `mode: Calculated` needs a `formula`;
+  - a `formula` without `mode: Calculated` is refused, because it would never be computed;
+  - the formula must parse and must not reference its own column;
+  - each `{key}` must be a column of the table or a field of the template;
+  - aggregate references follow the field-formula rules.
 
 `Result` and `ReferencedResult` are the two types the whole traceability chain runs
 through — every other type is just data entry, but these two are what

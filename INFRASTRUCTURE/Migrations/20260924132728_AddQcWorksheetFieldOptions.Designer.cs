@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace INFRASTRUCTURE.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260924132728_AddQcWorksheetFieldOptions")]
+    partial class AddQcWorksheetFieldOptions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -13068,9 +13071,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("AgreedPrice")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("ChangeKind")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -13107,12 +13107,6 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<Guid?>("ReplacesAgreementId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
@@ -13139,67 +13133,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("SupplierId", "MaterialId", "UoMId", "EffectiveFrom");
 
                     b.ToTable("SupplierPricingAgreements");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.SupplierPricingAgreementApproval", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ApprovalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ApprovalTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ApprovedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Comments")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Required")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("StageStartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("SupplierPricingAgreementId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApprovalId");
-
-                    b.HasIndex("ApprovedById");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("SupplierPricingAgreementId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("SupplierPricingAgreementApprovals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData", b =>
@@ -31848,43 +31781,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UoM");
                 });
 
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.SupplierPricingAgreementApproval", b =>
-                {
-                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
-                        .WithMany()
-                        .HasForeignKey("ApprovalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
-                        .WithMany()
-                        .HasForeignKey("ApprovedById");
-
-                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId");
-
-                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.SupplierPricingAgreement", "SupplierPricingAgreement")
-                        .WithMany("Approvals")
-                        .HasForeignKey("SupplierPricingAgreementId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DOMAIN.Entities.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("Approval");
-
-                    b.Navigation("ApprovedBy");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("SupplierPricingAgreement");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -39353,11 +39249,6 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("PerformanceRecords");
 
                     b.Navigation("PricingAgreements");
-                });
-
-            modelBuilder.Entity("DOMAIN.Entities.Procurement.Suppliers.SupplierPricingAgreement", b =>
-                {
-                    b.Navigation("Approvals");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData", b =>
