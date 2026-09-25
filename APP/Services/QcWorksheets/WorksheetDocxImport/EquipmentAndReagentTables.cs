@@ -58,7 +58,9 @@ public static class EquipmentTable
 
     /// <param name="capturedReagents">Normalized names already captured as Reagent fields (a product
     /// sheet's cited media), which the reagent list would otherwise repeat.</param>
-    public static void Apply(DocxBlock block, ImportProposalBuilder builder, IReadOnlySet<string> capturedReagents = null)
+    /// <param name="keyByCode">Key each Instrument field by its equipment code ("instrument_qcd_eqt_bod_001")
+    /// rather than its name, so fields from several sheets of one shared template can be merged.</param>
+    public static void Apply(DocxBlock block, ImportProposalBuilder builder, IReadOnlySet<string> capturedReagents = null, bool keyByCode = false)
     {
         builder.Section("Equipment");
         foreach (var item in Read(block.Table))
@@ -69,7 +71,7 @@ public static class EquipmentTable
 
             var field = builder.AddField(new ProposedWorksheetField
             {
-                FieldKey = "instrument_" + ImportText.SnakeKey(name, 40),
+                FieldKey = "instrument_" + ImportText.SnakeKey(keyByCode && !ImportText.IsBlank(item.Code) ? item.Code : name, 40),
                 Label = ImportText.IsBlank(item.Code) ? name : $"{name} ({item.Code})",
                 Type = WorksheetFieldType.Instrument,
                 Mode = WorksheetFieldMode.Entry

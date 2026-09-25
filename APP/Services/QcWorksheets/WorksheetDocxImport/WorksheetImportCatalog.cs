@@ -8,7 +8,7 @@ public sealed record CatalogEquipment(Guid Id, string Code, string Name);
 
 public sealed record CatalogReagent(Guid Id, string Name);
 
-public sealed record CatalogTemplate(Guid Id, string Code, string Name);
+public sealed record CatalogTemplate(Guid Id, string Code, string Name, IReadOnlyCollection<string> FieldKeys = null);
 
 /// <summary>
 /// The reference data recognizers match against. Deliberately synchronous and in-memory: a
@@ -29,13 +29,22 @@ public interface IWorksheetImportCatalog
     /// by normalized medium name.
     /// </summary>
     CatalogTemplate FindMediaTemplate(string mediumName, string mediumCode = null);
+
+    /// <summary>A saved, non-superseded shared template (e.g. the EM template) by its code, with its field keys.</summary>
+    CatalogTemplate FindSharedTemplate(string code);
 }
 
 public sealed class InMemoryWorksheetImportCatalog(
     IEnumerable<CatalogEquipment> equipment,
     IEnumerable<CatalogReagent> reagents,
-    IEnumerable<CatalogTemplate> mediaTemplates) : IWorksheetImportCatalog
+    IEnumerable<CatalogTemplate> mediaTemplates,
+    IEnumerable<CatalogTemplate> sharedTemplates = null) : IWorksheetImportCatalog
 {
+    private readonly IReadOnlyList<CatalogTemplate> _sharedTemplates = (sharedTemplates ?? []).ToList();
+
+    public CatalogTemplate FindSharedTemplate(string code) =>
+        _sharedTemplates.FirstOrDefault(template => ImportText.Canonical(template.Code) == ImportText.Canonical(code));
+
     private readonly ILookup<string, CatalogEquipment> _equipment =
         equipment.ToLookup(item => ImportText.Canonical(item.Code));
 
@@ -80,6 +89,8 @@ public interface IWorksheetImportCatalogLoader
 /// <summary>Loads the catalog once per import request. Read-only.</summary>
 public sealed class WorksheetImportCatalogLoader(ApplicationDbContext context) : IWorksheetImportCatalogLoader
 {
+    private static readonly string[] SharedTemplateCodes = [EnvironmentalMonitoringRecognizer.TemplateCode];
+
     public async Task<IWorksheetImportCatalog> LoadAsync(CancellationToken cancellationToken = default)
     {
         var equipment = await context.QcEquipments
@@ -100,9 +111,21 @@ public sealed class WorksheetImportCatalogLoader(ApplicationDbContext context) :
             .Where(item => item.Category == WorksheetCategory.MediaQualification
                            && item.Status != QcDocumentStatus.Superseded)
             .OrderByDescending(item => item.Version)
-            .Select(item => new CatalogTemplate(item.Id, item.Code, item.Name))
+            .Select(item => new CatalogTemplate(item.Id, item.Code, item.Name, null))
             .ToListAsync(cancellationToken);
 
-        return new InMemoryWorksheetImportCatalog(equipment, reagents, templates);
+        var shared = await context.QcWorksheetTemplates
+            .AsNoTracking()
+            .Where(item => SharedTemplateCodes.Contains(item.Code) && item.Status != QcDocumentStatus.Superseded)
+            .OrderByDescending(item => item.Version)
+            .Select(item => new
+            {
+                item.Id, item.Code, item.Name,
+                Keys = item.Sections.SelectMany(section => section.Fields).Select(field => field.FieldKey).ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return new InMemoryWorksheetImportCatalog(equipment, reagents, templates,
+            shared.Select(item => new CatalogTemplate(item.Id, item.Code, item.Name, item.Keys)));
     }
 }

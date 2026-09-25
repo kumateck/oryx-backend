@@ -52,6 +52,12 @@ public static class WorksheetImportFlagCodes
     public const string UnrecognizedContent = "UnrecognizedContent";
     public const string MissingMetadata = "MissingMetadata";
 
+    /// <summary>This file's shared template is proposed on another file of the same upload.</summary>
+    public const string SharedTemplateInBatch = "SharedTemplateInBatch";
+
+    /// <summary>This file's shared template is already saved; only its points and specifications are proposed.</summary>
+    public const string SharedTemplateExists = "SharedTemplateExists";
+
     /// <summary>A sampling point that no printed limit tier covers (or that a tier lists twice).</summary>
     public const string SamplingPointWithoutLimit = "SamplingPointWithoutLimit";
 }

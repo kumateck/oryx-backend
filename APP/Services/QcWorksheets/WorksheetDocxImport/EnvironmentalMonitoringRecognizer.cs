@@ -18,6 +18,11 @@ public sealed partial class EnvironmentalMonitoringRecognizer : IArdFamilyRecogn
 {
     public const string ResultKey = "airborne_viables";
 
+    /// <summary>The one EM template every area sheet proposes, and its stable identity.</summary>
+    public const string TemplateCode = "EM-AIRBORNE-VIABLES";
+
+    public const string TemplateName = "Environmental Monitoring – Airborne Viables";
+
     public ArdFamily Family => ArdFamily.EnvironmentalMonitoring;
 
     [GeneratedRegex(@"\((?<area>[^()]+)\)[^()]*$")]
@@ -44,8 +49,14 @@ internal sealed partial class EnvironmentalMonitoringWalker(DocxDocument documen
         var template = builder.Template;
         template.Category = WorksheetCategory.Microbial;
         template.Department = "Microbiology";
-        template.Name = area is null ? "Environmental Monitoring (per room/point)" : $"Environmental Monitoring – {area} (per room/point)";
-        template.Code = area is null ? "EM" : "EM-" + ImportText.SnakeKey(area, 40).ToUpperInvariant().Replace('_', '-');
+        // One template for every area: the area sheets are identical but for rooms, limits and
+        // equipment, so the area lives on the sampling points, not in the template.
+        template.Name = EnvironmentalMonitoringRecognizer.TemplateName;
+        template.Code = EnvironmentalMonitoringRecognizer.TemplateCode;
+        builder.Proposal.SharedTemplate = new SharedTemplateReference
+        {
+            Key = EnvironmentalMonitoringRecognizer.TemplateCode, CarriedBy = builder.Proposal.FileName
+        };
 
         if (area is null)
             builder.Flag(WorksheetImportFlagCodes.MissingMetadata,
@@ -134,7 +145,8 @@ internal sealed partial class EnvironmentalMonitoringWalker(DocxDocument documen
 
         if (EquipmentTable.Is(table))
         {
-            EquipmentTable.Apply(block, builder, _citedMedia);
+            // Keyed by equipment code, so the same instrument on several area sheets is one field.
+            EquipmentTable.Apply(block, builder, _citedMedia, keyByCode: true);
             return;
         }
 

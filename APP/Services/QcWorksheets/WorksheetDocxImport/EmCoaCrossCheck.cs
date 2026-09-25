@@ -29,7 +29,7 @@ public static partial class EmCoaCrossCheck
         if (certificates.Count == 0)
             return;
 
-        foreach (var worksheet in batch.Where(proposal => proposal.Family == ArdFamily.EnvironmentalMonitoring && proposal.Template is not null))
+        foreach (var worksheet in batch.Where(proposal => proposal.Family == ArdFamily.EnvironmentalMonitoring))
         {
             var codes = worksheet.SamplingPointProposals.Select(point => ImportText.Canonical(point.Code)).ToHashSet();
             var (coa, rooms) = certificates.OrderByDescending(item => item.Rooms.Keys.Count(codes.Contains)).First();

@@ -145,6 +145,13 @@ public class SpecificationCharacteristicProposal
 
     public string ActionLimit { get; set; }
     public string SourceFieldKey { get; set; }
+
+    /// <summary>
+    /// Set when the field belongs to an already-saved template (a shared template that exists);
+    /// null when it belongs to the template proposed in this upload.
+    /// </summary>
+    public Guid? SourceWorksheetTemplateId { get; set; }
+
     public string GroupName { get; set; }
 
     /// <summary>The manufacturing stage the Specification governs; Finished for product ARDs.</summary>
@@ -202,25 +209,6 @@ public class MediumIdentity
     public string CodeKey { get; set; }
 }
 
-/// <summary>The reader's normalized model, returned so a review screen can show the source.</summary>
-public class ImportSourceDocument
-{
-    public string HeaderText { get; set; }
-    public List<ImportSourceBlock> Blocks { get; set; } = [];
-}
-
-public class ImportSourceBlock
-{
-    public int Index { get; set; }
-
-    /// <summary>Heading, Paragraph or Table.</summary>
-    public string Kind { get; set; }
-
-    public string Text { get; set; }
-    public int? Table { get; set; }
-    public List<List<string>> Rows { get; set; }
-}
-
 /// <summary>One file's proposal. Writes nothing; the reviewer saves through the normal endpoints.</summary>
 public class WorksheetImportProposal
 {
@@ -232,6 +220,9 @@ public class WorksheetImportProposal
 
     /// <summary>For culture media: the medium this sheet qualifies, used to find a newer twin.</summary>
     public MediumIdentity Medium { get; set; }
+
+    /// <summary>For families that share one template across files (EM): which template, and where it is proposed.</summary>
+    public SharedTemplateReference SharedTemplate { get; set; }
 
     /// <summary>Null when the family produces no template (certificates, unknown, pending recognizers).</summary>
     public ProposedWorksheetTemplate Template { get; set; }

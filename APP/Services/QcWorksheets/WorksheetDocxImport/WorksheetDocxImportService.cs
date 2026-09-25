@@ -50,12 +50,14 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
 
     /// <summary>
     /// Rules that need the whole upload: an older media form is blocked by a newer twin in the
-    /// batch, and an EM worksheet takes suggested Alert limits from a completed COA uploaded with it.
+    /// batch, an EM worksheet takes suggested Alert limits from a completed COA uploaded with it,
+    /// and the EM area sheets share one template, proposed once (or not at all when saved).
     /// </summary>
     public static void ApplyBatchRules(IReadOnlyList<WorksheetImportProposal> proposals, IWorksheetImportCatalog catalog)
     {
         CultureMediaSupersession.Apply(proposals, catalog);
         EmCoaCrossCheck.Apply(proposals);
+        SharedTemplates.Apply(proposals, catalog);
     }
 
     /// <summary>The pure core: one document stream and a catalog in, one proposal out.</summary>
