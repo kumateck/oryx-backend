@@ -985,10 +985,6 @@ public class ProcurementRepository(
         if (purchaseOrder is null)
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
 
-        var approvalGate = purchaseOrder.EnsureApprovedForProgression("Purchase order");
-        if (approvalGate.IsFailure)
-            return approvalGate;
-
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
         var fileContent = pdfService.GeneratePdfFromHtml(
             PdfTemplate.ProformaInvoiceTemplate(purchaseOrder)
