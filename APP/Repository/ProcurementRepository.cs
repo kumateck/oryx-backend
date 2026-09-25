@@ -1545,6 +1545,20 @@ public class ProcurementRepository(
             return Error.NotFound("ShipmentDocument.NotFound", "Shipment document not found");
         }
 
+        BillingSheet billingSheetToClear = null;
+        if (status == ShipmentStatus.Cleared)
+        {
+            billingSheetToClear = await context.BillingSheets
+                .Include(sheet => sheet.Charges)
+                .FirstOrDefaultAsync(sheet => sheet.InvoiceId == shipmentDocument.ShipmentInvoiceId);
+            if (billingSheetToClear is null || !billingSheetToClear.Approved)
+                return Error.Validation("BillingSheet.ApprovalRequired",
+                    "An approved billing sheet is required before clearing the shipment.");
+            if (billingSheetToClear.Charges.Any(charge => !charge.Paid))
+                return Error.Validation("BillingSheet.PaymentRequired",
+                    "All billing sheet charges must be paid before clearing the shipment.");
+        }
+
         shipmentDocument.Status = status;
         shipmentDocument.LastUpdatedById = userId;
         shipmentDocument.UpdatedAt = DateTime.UtcNow;
@@ -1553,14 +1567,7 @@ public class ProcurementRepository(
         {
             case ShipmentStatus.Cleared:
                 shipmentDocument.ClearedAt = DateTime.UtcNow;
-                var billingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs =>
-                    bs.InvoiceId == shipmentDocument.ShipmentInvoiceId
-                );
-                if (billingSheet is not null)
-                {
-                    billingSheet.Status = BillingSheetStatus.Paid;
-                    context.BillingSheets.Update(billingSheet);
-                }
+                billingSheetToClear!.Status = BillingSheetStatus.Paid;
                 break;
             case ShipmentStatus.InTransit:
                 shipmentDocument.TransitStartedAt = DateTime.UtcNow;
