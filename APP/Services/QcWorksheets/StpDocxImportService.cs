@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using APP.Services.QcWorksheets.WorksheetDocxImport;
 using DocumentFormat.OpenXml.Packaging;
 using DOMAIN.Entities.QcWorksheets;
 using Microsoft.AspNetCore.Http;
@@ -48,8 +49,6 @@ public interface IStpDocxImportService
 /// </summary>
 public class StpDocxImportService : IStpDocxImportService
 {
-    private const long MaxBytes = 20 * 1024 * 1024;
-
     // Anchored to the real code format rather than a greedy character class — the spike
     // found a greedy pattern swallowed the following product name, because correction 2
     // means there is no separator there either.
@@ -176,22 +175,7 @@ public class StpDocxImportService : IStpDocxImportService
         }
     }
 
-    private static string Validate(IFormFile file)
-    {
-        if (file is null || file.Length == 0)
-            return "The uploaded file is empty.";
-
-        if (file.Length > MaxBytes)
-            return $"The file exceeds the maximum allowed size of {MaxBytes / (1024 * 1024)}MB.";
-
-        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
-        return extension switch
-        {
-            ".docx" => null,
-            ".docm" => "Macro-enabled documents (.docm) are not supported.",
-            _ => "Only .docx files are supported."
-        };
-    }
+    private static string Validate(IFormFile file) => DocxUploadGuard.Validate(file);
 
     /// <summary>
     /// Correction 1: check every <c>word/header*.xml</c> part and use whichever has content.

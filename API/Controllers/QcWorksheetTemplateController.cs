@@ -1,22 +1,27 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.QcWorksheets.WorksheetDocxImport;
 using APP.Utils;
 using DOMAIN.Entities.QcWorksheets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SHARED;
 
 namespace API.Controllers;
 
 /// <summary>
 /// Reusable worksheet templates in the rebuilt QC module. Same lifecycle and signature
 /// rules as <see cref="QcStandardTestProcedureController"/>, carrying Sections -> Fields
-/// instead of Steps. There is no import endpoint: worksheet templates have no existing
-/// document library to migrate from.
+/// instead of Steps. The <c>import</c> endpoint turns the lab's ARD Word worksheets into
+/// reviewable proposals; unlike the STP import it writes nothing — saving a proposal goes
+/// through <see cref="CreateTemplate"/>.
 /// </summary>
 [ApiController]
 [Route("api/v{version:apiVersion}/qc/worksheets/templates")]
 [Authorize]
-public class QcWorksheetTemplateController(IWorksheetTemplateRepository repository) : ControllerBase
+public class QcWorksheetTemplateController(
+    IWorksheetTemplateRepository repository,
+    IWorksheetDocxImportService importService) : ControllerBase
 {
     /// <summary>Retrieves a paginated list of worksheet templates.</summary>
     [HttpGet]
@@ -163,5 +168,28 @@ public class QcWorksheetTemplateController(IWorksheetTemplateRepository reposito
 
         var result = await repository.Supersede(id, request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Proposes worksheet templates from one or more ARD .docx worksheets (multipart). Returns
+    /// one proposal per file — a Draft template shape, SamplingPoint and Specification
+    /// proposals, equipment/reagent matches, flags and per-field confidence — and <b>writes
+    /// nothing</b>. Refused or unreadable files come back as a proposal carrying an
+    /// <c>InvalidFile</c> flag, so one bad file never fails the batch.
+    /// </summary>
+    [HttpPost("import")]
+    [Authorize(QcWorksheetPermissionKeys.CanImportQcWorksheetTemplates)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<WorksheetImportProposal>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> Import(CancellationToken cancellationToken)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId is null) return TypedResults.Unauthorized();
+
+        if (!HttpContext.Request.HasFormContentType || HttpContext.Request.Form.Files.Count == 0)
+            return Result.Failure(WorksheetImportErrors.NoFiles).ToProblemDetails();
+
+        var proposals = await importService.ProposeAsync(HttpContext.Request.Form.Files, cancellationToken);
+        return TypedResults.Ok(proposals);
     }
 }

@@ -5,6 +5,7 @@ using APP.Repository;
 using APP.Repository.QcWorksheets;
 using APP.Services;
 using APP.Services.QcWorksheets;
+using APP.Services.QcWorksheets.WorksheetDocxImport;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
@@ -172,6 +173,8 @@ public static class DependencyInjection
         services.AddScoped<IQcReauthContext, QcReauthContext>();
         services.AddScoped<IQcSignatureService, QcSignatureService>();
         services.AddScoped<IStpDocxImportService, StpDocxImportService>();
+        services.AddScoped<IWorksheetImportCatalogLoader, WorksheetImportCatalogLoader>();
+        services.AddScoped<IWorksheetDocxImportService, WorksheetDocxImportService>();
         services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
         services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
         services.AddScoped<ISpecificationRepository, SpecificationRepository>();
