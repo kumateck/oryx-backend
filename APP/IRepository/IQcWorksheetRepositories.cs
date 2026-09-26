@@ -99,6 +99,27 @@ public interface ISpecificationRepository
     Task<Result<List<SpecificationAvailableFieldDto>>> GetAvailableFields(Guid id);
 }
 
+/// <summary>Build brief 08 — import proposals reviewed into Draft Specifications.</summary>
+public interface ISpecificationProposalRepository
+{
+    Task<Result<SpecificationProposalSetDetailDto>> CreateProposalSet(
+        CreateSpecificationProposalSetRequest request, Guid userId);
+
+    Task<Result<List<SpecificationProposalSetSummaryDto>>> GetProposalSets(
+        SpecificationProposalStatus? status, ArdFamily? family);
+
+    Task<Result<SpecificationProposalSetDetailDto>> GetProposalSet(Guid id);
+
+    /// <summary>Read-only: the reviewable Specification draft for one or more Pending sets of one family.</summary>
+    Task<Result<SpecificationDraftPlan>> BuildDraftPlan(SpecificationProposalDraftRequest request);
+
+    /// <summary>One transaction: upsert groups, assign points, create/update the Draft via M2, mark sets Applied.</summary>
+    Task<Result<SpecificationProposalApplyResult>> Apply(SpecificationProposalApplyRequest request, Guid userId);
+
+    Task<Result<SpecificationProposalSetDetailDto>> Dismiss(
+        Guid id, SpecificationProposalDismissRequest request, Guid userId);
+}
+
 public interface ISamplingPointGroupRepository
 {
     Task<Result<List<SamplingPointGroupDto>>> GetSamplingPointGroups(string searchQuery);
