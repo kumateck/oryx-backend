@@ -40,9 +40,20 @@ public static class ArdFamilyClassifier
             return new ArdClassification(ArdFamily.ProductMicro, "ANALYTICAL RAW DATA – MICROBIOLOGY");
 
         // "WATER" must be the sheet's own subject — in the running header or the metadata
-        // table — not any mention of water in the method text.
-        if (header.Contains("analyticalworksheet") && (header.Contains("water") || firstTableText.Contains("water")))
-            return new ArdClassification(ArdFamily.PurifiedWater, "ANALYTICAL WORKSHEET + WATER");
+        // table — not any mention of water in the method text. The header must also be the
+        // MICROBIOLOGY worksheet: a raw-material chemical sheet is also headed "ANALYTICAL
+        // WORKSHEET" and its Solubility row reads "Water:", which once misfiled it as water.
+        if (header.Contains("microbiologyanalyticalworksheet")
+            && (header.Contains("water") || firstTableText.Contains("water")))
+            return new ArdClassification(ArdFamily.PurifiedWater, "MICROBIOLOGY ANALYTICAL WORKSHEET + WATER");
+
+        // Known documents the importer does not build templates from; the evidence names
+        // them so the reviewer is told what the file is rather than just "unknown".
+        if (header.Contains("standardtestprocedure"))
+            return new ArdClassification(ArdFamily.Unknown, "STANDARD TEST PROCEDURE");
+
+        if (header.Contains("analyticalworksheet"))
+            return new ArdClassification(ArdFamily.Unknown, "ANALYTICAL WORKSHEET (chemical)");
 
         return new ArdClassification(ArdFamily.Unknown, null);
     }

@@ -91,8 +91,14 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
                 return proposal;
 
             case ArdFamily.Unknown:
-                Flag(proposal, WorksheetImportFlagCodes.UnknownFamily,
-                    "The document matches none of the known ARD families (product, culture media, EM, water).");
+                Flag(proposal, WorksheetImportFlagCodes.UnknownFamily, classification.Evidence switch
+                {
+                    "STANDARD TEST PROCEDURE" =>
+                        "This is a Standard Test Procedure, not a worksheet; import it from the STP import screen.",
+                    "ANALYTICAL WORKSHEET (chemical)" =>
+                        "This is a chemical analytical worksheet (raw material or finished product). Only microbiology worksheets can be imported so far: product microbiology, culture media, environmental monitoring and purified water.",
+                    _ => "The document matches none of the known ARD families (product microbiology, culture media, EM, water)."
+                });
                 return proposal;
         }
 

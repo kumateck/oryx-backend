@@ -148,4 +148,25 @@ public class ArdFamilyClassifierTests
 
         Assert.Equal(ArdFamily.Unknown, ArdFamilyClassifier.Classify(document).Family);
     }
+
+    [Fact]
+    public void A_raw_material_chemical_worksheet_is_not_water()
+    {
+        var document = Read(
+            [Grid(["TEST & OBSERVATIONS", "Solubility | Water: | Ethanol (96%):"])],
+            "QUALITY CONTROL DEPARTMENT\tRAW MATERIAL ANALYTICAL WORKSHEET\tBatch No.:");
+
+        var classification = ArdFamilyClassifier.Classify(document);
+
+        Assert.Equal(ArdFamily.Unknown, classification.Family);
+        Assert.Equal("ANALYTICAL WORKSHEET (chemical)", classification.Evidence);
+    }
+
+    [Fact]
+    public void A_standard_test_procedure_is_named_as_such()
+    {
+        var document = Read([P("Purpose")], "STANDARD TEST PROCEDURE\tSTP No.: QCD/STP/FP/009");
+
+        Assert.Equal("STANDARD TEST PROCEDURE", ArdFamilyClassifier.Classify(document).Evidence);
+    }
 }
