@@ -123,3 +123,37 @@ public class SpecificationCharacteristicConfiguration : IEntityTypeConfiguration
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+/// <summary>
+/// Build brief 08. A new table only: the proposal sets reference the existing template and
+/// Specification tables and alter neither.
+/// </summary>
+public class SpecificationProposalSetConfiguration : IEntityTypeConfiguration<SpecificationProposalSet>
+{
+    public void Configure(EntityTypeBuilder<SpecificationProposalSet> builder)
+    {
+        builder.ToTable("QcSpecProposalSets");
+        builder.HasQueryFilter(item => !item.DeletedAt.HasValue);
+
+        builder.Property(item => item.SourceFileName).HasMaxLength(500).IsRequired();
+        builder.Property(item => item.ProductName).HasMaxLength(500);
+        builder.Property(item => item.SpecificationCode).HasMaxLength(100);
+        builder.Property(item => item.ProposalJson).HasColumnType("jsonb").IsRequired();
+        builder.Property(item => item.DismissReason).HasMaxLength(2000);
+
+        // The review page lists Pending sets by family.
+        builder.HasIndex(item => new { item.Status, item.Family });
+
+        builder
+            .HasOne(item => item.WorksheetTemplate)
+            .WithMany()
+            .HasForeignKey(item => item.WorksheetTemplateId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne(item => item.AppliedSpecification)
+            .WithMany()
+            .HasForeignKey(item => item.AppliedSpecificationId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
