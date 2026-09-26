@@ -133,9 +133,17 @@ public static class DocxDocumentReader
                     ? above
                     : (rowIndex, column);
 
-                var text = origin == (rowIndex, column)
-                    ? ImportText.Clean(string.Join(" ", tableCell.Elements<Paragraph>().Select(ParagraphText)))
+                var isOrigin = origin == (rowIndex, column);
+                var text = isOrigin
+                    ? ImportText.Clean(string.Join(" ", tableCell.Elements<Paragraph>().Select(paragraph => ParagraphText(paragraph))))
                     : string.Empty;
+                IReadOnlyList<string> lines = isOrigin
+                    ? tableCell.Elements<Paragraph>().Select(paragraph => ImportText.Clean(ParagraphText(paragraph, markSuperscript: true)))
+                        .Where(line => line.Length > 0).ToList()
+                    : [];
+                IReadOnlyList<DocxTable> nested = isOrigin
+                    ? tableCell.Elements<Table>().Select(inner => BuildGrid(inner, -1)).ToList()
+                    : [];
 
                 for (var offset = 0; offset < span; offset++)
                 {
@@ -145,6 +153,8 @@ public static class DocxDocumentReader
                         Row = rowIndex,
                         Column = position,
                         Text = offset == 0 ? text : string.Empty,
+                        Lines = offset == 0 ? lines : [],
+                        NestedTables = offset == 0 ? nested : [],
                         OriginRow = origin.Item1,
                         OriginColumn = origin.Item2,
                         IsHorizontalSpan = offset > 0
@@ -176,13 +186,19 @@ public static class DocxDocumentReader
     /// Paragraph text with tabs and breaks as spaces (InnerText drops them, which fuses
     /// "7.2 ± 0.2" and "Observed:"), no-break hyphens kept, soft hyphens and deletions dropped.
     /// </summary>
-    internal static string ParagraphText(OpenXmlElement paragraph)
+    /// <param name="markSuperscript">Write superscript runs as "^3" (a degree sign for a raised "o"),
+    /// so "10<sup>3</sup> CFU/g" does not read as 103 and a footnote letter stays separable. Only the
+    /// cell <see cref="DocxCell.Lines"/> use it; <see cref="DocxCell.Text"/> keeps the plain text.</param>
+    internal static string ParagraphText(OpenXmlElement paragraph, bool markSuperscript = false)
     {
         var builder = new StringBuilder();
         foreach (var element in paragraph.Descendants())
         {
             switch (element)
             {
+                case Text text when markSuperscript && IsSuperscript(text):
+                    builder.Append(text.Text.Trim() is "o" or "0" ? "°" : "^" + text.Text.Trim());
+                    break;
                 case Text text:
                     builder.Append(text.Text);
                     break;
@@ -197,6 +213,11 @@ public static class DocxDocumentReader
 
         return builder.ToString();
     }
+
+    private static bool IsSuperscript(Text text) =>
+        text.Parent is Run run
+        && run.RunProperties?.VerticalTextAlignment?.Val?.Value == VerticalPositionValues.Superscript
+        && text.Text.Trim().Length > 0;
 
     internal static string Describe(DocxTable table) =>
         string.Join(" || ", table.Rows.Select((_, row) => string.Join(" | ", table.OriginCells(row).Select(cell => cell.Text))));

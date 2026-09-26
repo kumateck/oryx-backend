@@ -20,7 +20,8 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
     private static readonly IReadOnlyDictionary<ArdFamily, IArdFamilyRecognizer> Recognizers =
         new IArdFamilyRecognizer[]
         {
-            new CultureMediaRecognizer(), new ProductMicroRecognizer(), new PurifiedWaterRecognizer(), new EnvironmentalMonitoringRecognizer()
+            new CultureMediaRecognizer(), new ProductMicroRecognizer(), new PurifiedWaterRecognizer(), new EnvironmentalMonitoringRecognizer(),
+            new RawMaterialChemicalRecognizer(), new RawMaterialSpecificationRecognizer()
         }.ToDictionary(recognizer => recognizer.Family);
 
     public async Task<List<WorksheetImportProposal>> ProposeAsync(
@@ -51,13 +52,15 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
     /// <summary>
     /// Rules that need the whole upload: an older media form is blocked by a newer twin in the
     /// batch, an EM worksheet takes suggested Alert limits from a completed COA uploaded with it,
-    /// and the EM area sheets share one template, proposed once (or not at all when saved).
+    /// the EM area sheets share one template, proposed once (or not at all when saved), and a
+    /// raw-material Specification document binds to its RM-NNN worksheet (brief 09).
     /// </summary>
     public static void ApplyBatchRules(IReadOnlyList<WorksheetImportProposal> proposals, IWorksheetImportCatalog catalog)
     {
         CultureMediaSupersession.Apply(proposals, catalog);
         EmCoaCrossCheck.Apply(proposals);
         SharedTemplates.Apply(proposals, catalog);
+        RawMaterialPairing.Apply(proposals, catalog);
     }
 
     /// <summary>The pure core: one document stream and a catalog in, one proposal out.</summary>
@@ -91,8 +94,14 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
                 return proposal;
 
             case ArdFamily.Unknown:
-                Flag(proposal, WorksheetImportFlagCodes.UnknownFamily,
-                    "The document matches none of the known ARD families (product, culture media, EM, water).");
+                Flag(proposal, WorksheetImportFlagCodes.UnknownFamily, classification.Evidence switch
+                {
+                    "STANDARD TEST PROCEDURE" =>
+                        "This is a Standard Test Procedure, not a worksheet; import it from the STP import screen.",
+                    "ANALYTICAL WORKSHEET (chemical)" =>
+                        "This is a finished-product chemical analytical worksheet, which cannot be imported yet. Importable: product microbiology, culture media, environmental monitoring, purified water, and raw-material chemical worksheets with their Specification documents.",
+                    _ => "The document matches none of the known ARD families (product microbiology, culture media, EM, water)."
+                });
                 return proposal;
         }
 
@@ -105,7 +114,8 @@ public class WorksheetDocxImportService(IWorksheetImportCatalogLoader catalogLoa
 
         var builder = new ImportProposalBuilder(proposal, catalog);
         recognizer.Recognize(document, builder);
-        proposal.Template.Code ??= Path.GetFileNameWithoutExtension(fileName);
+        if (proposal.Template is not null)
+            proposal.Template.Code ??= Path.GetFileNameWithoutExtension(fileName);
         return proposal;
     }
 

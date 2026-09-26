@@ -50,7 +50,13 @@ public enum WorksheetFieldType
     CfuCalculation = 23,
 
     // Integration
-    ReferencedResult = 24
+    ReferencedResult = 24,
+
+    /// <summary>
+    /// An attachment captured inline in a section ("Attach Print Out" of an IR spectrum or a
+    /// chromatogram). Its value is the attachment reference the client stores.
+    /// </summary>
+    FileUpload = 25
 }
 
 /// <summary>

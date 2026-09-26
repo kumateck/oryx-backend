@@ -8,7 +8,11 @@ public sealed record CatalogEquipment(Guid Id, string Code, string Name);
 
 public sealed record CatalogReagent(Guid Id, string Name);
 
-public sealed record CatalogTemplate(Guid Id, string Code, string Name, IReadOnlyCollection<string> FieldKeys = null);
+public sealed record CatalogTemplate(
+    Guid Id, string Code, string Name, IReadOnlyCollection<string> FieldKeys = null, IReadOnlyList<CatalogSection> Sections = null);
+
+/// <summary>A saved template's section and the field a Specification characteristic binds to in it.</summary>
+public sealed record CatalogSection(string Name, string ResultFieldKey);
 
 /// <summary>
 /// The reference data recognizers match against. Deliberately synchronous and in-memory: a
@@ -32,15 +36,25 @@ public interface IWorksheetImportCatalog
 
     /// <summary>A saved, non-superseded shared template (e.g. the EM template) by its code, with its field keys.</summary>
     CatalogTemplate FindSharedTemplate(string code);
+
+    /// <summary>A saved, non-superseded raw-material template ("RM-012") by its code, with its sections (brief 09).</summary>
+    CatalogTemplate FindRawMaterialTemplate(string code);
 }
 
 public sealed class InMemoryWorksheetImportCatalog(
     IEnumerable<CatalogEquipment> equipment,
     IEnumerable<CatalogReagent> reagents,
     IEnumerable<CatalogTemplate> mediaTemplates,
-    IEnumerable<CatalogTemplate> sharedTemplates = null) : IWorksheetImportCatalog
+    IEnumerable<CatalogTemplate> sharedTemplates = null,
+    IEnumerable<CatalogTemplate> rawMaterialTemplates = null) : IWorksheetImportCatalog
 {
     private readonly IReadOnlyList<CatalogTemplate> _sharedTemplates = (sharedTemplates ?? []).ToList();
+    private readonly IReadOnlyList<CatalogTemplate> _rawMaterialTemplates = (rawMaterialTemplates ?? []).ToList();
+
+    public CatalogTemplate FindRawMaterialTemplate(string code) =>
+        string.IsNullOrWhiteSpace(code)
+            ? null
+            : _rawMaterialTemplates.FirstOrDefault(template => ImportText.Canonical(template.Code) == ImportText.Canonical(code));
 
     public CatalogTemplate FindSharedTemplate(string code) =>
         _sharedTemplates.FirstOrDefault(template => ImportText.Canonical(template.Code) == ImportText.Canonical(code));
@@ -111,7 +125,7 @@ public sealed class WorksheetImportCatalogLoader(ApplicationDbContext context) :
             .Where(item => item.Category == WorksheetCategory.MediaQualification
                            && item.Status != QcDocumentStatus.Superseded)
             .OrderByDescending(item => item.Version)
-            .Select(item => new CatalogTemplate(item.Id, item.Code, item.Name, null))
+            .Select(item => new CatalogTemplate(item.Id, item.Code, item.Name, null, null))
             .ToListAsync(cancellationToken);
 
         var shared = await context.QcWorksheetTemplates
@@ -125,7 +139,30 @@ public sealed class WorksheetImportCatalogLoader(ApplicationDbContext context) :
             })
             .ToListAsync(cancellationToken);
 
+        // Raw-material worksheets (RM-NNN), newest version first, with the field each section's
+        // Specification characteristics bind to.
+        var rawMaterial = await context.QcWorksheetTemplates
+            .AsNoTracking()
+            .Where(item => item.Code.StartsWith(RawMaterialHeader.CodePrefix) && item.Status != QcDocumentStatus.Superseded)
+            .OrderByDescending(item => item.Version)
+            .Select(item => new
+            {
+                item.Id, item.Code, item.Name,
+                Sections = item.Sections.OrderBy(section => section.Order).Select(section => new
+                {
+                    section.Name,
+                    Fields = section.Fields.OrderBy(field => field.Order)
+                        .Select(field => new { field.FieldKey, field.Label, field.Type, field.Mode }).ToList()
+                }).ToList()
+            })
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
         return new InMemoryWorksheetImportCatalog(equipment, reagents, templates,
-            shared.Select(item => new CatalogTemplate(item.Id, item.Code, item.Name, item.Keys)));
+            shared.Select(item => new CatalogTemplate(item.Id, item.Code, item.Name, item.Keys)),
+            rawMaterial.Select(item => new CatalogTemplate(item.Id, item.Code, item.Name,
+                item.Sections.SelectMany(section => section.Fields).Select(field => field.FieldKey).ToList(),
+                item.Sections.Select(section => new CatalogSection(section.Name, RawMaterialResultField.Choose(
+                    section.Fields.Select(field => new ResultCandidate(field.FieldKey, field.Label, field.Type, field.Mode))))).ToList())));
     }
 }

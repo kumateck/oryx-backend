@@ -828,8 +828,8 @@ public static class QcWorksheetErrors
     public static Error SpecificationProposalFamilyNotSupported(ArdFamily? family) =>
         Error.Validation(
             "QcSpecificationProposal.FamilyNotSupported",
-            $"Only product, purified water and environmental monitoring worksheets propose a "
-            + $"Specification. '{family?.ToString() ?? "none"}' does not.");
+            $"Only product, purified water and environmental monitoring worksheets and raw-material "
+            + $"Specification documents propose a Specification. '{family?.ToString() ?? "none"}' does not.");
 
     /// <summary>A proposal set with no characteristics is never stored.</summary>
     public static Error SpecificationProposalHasNoCharacteristics =>
@@ -861,7 +861,7 @@ public static class QcWorksheetErrors
     public static Error SpecificationProposalProductSingleSet =>
         Error.Validation(
             "QcSpecificationProposal.ProductSingleSet",
-            "A product Specification is drafted from exactly one proposal set.");
+            "A product or raw-material Specification is drafted from exactly one proposal set.");
 
     public static Error SpecificationProposalTemplateMismatch =>
         Error.Validation(

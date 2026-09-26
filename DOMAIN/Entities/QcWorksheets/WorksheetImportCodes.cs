@@ -12,7 +12,26 @@ public enum ArdFamily
     CultureMedia = 2,
     EnvironmentalMonitoring = 3,
     PurifiedWater = 4,
-    CompletedCertificate = 5
+    CompletedCertificate = 5,
+
+    /// <summary>"RAW MATERIAL ANALYTICAL WORKSHEET" (brief 09): a chemical template, code RM-NNN.</summary>
+    RawMaterialChemical = 6,
+
+    /// <summary>A raw-material Specification document ("SPC No.: QCD/SPC/RM/NNN"): proposals only, no template.</summary>
+    RawMaterialSpecification = 7
+}
+
+/// <summary>Where a raw-material Specification document found the worksheet its characteristics bind to.</summary>
+public enum RawMaterialPairingStatus
+{
+    /// <summary>No worksheet NNN in this upload and no saved RM-NNN template: import the worksheet first.</summary>
+    Missing = 0,
+
+    /// <summary>Bound to the worksheet proposal in the same upload; post after that worksheet is saved.</summary>
+    InUpload = 1,
+
+    /// <summary>Bound to an already-saved RM-NNN template, which is not modified.</summary>
+    ExistingTemplate = 2
 }
 
 public enum ImportConfidence
@@ -60,4 +79,22 @@ public static class WorksheetImportFlagCodes
 
     /// <summary>A sampling point that no printed limit tier covers (or that a tier lists twice).</summary>
     public const string SamplingPointWithoutLimit = "SamplingPointWithoutLimit";
+
+    /// <summary>
+    /// Brief 09: a Specification test with no worksheet section got an added section (Result +
+    /// "Attach print out") in the worksheet proposal of the same upload. The reviewer may remove it.
+    /// </summary>
+    public const string AddedForSpecification = "AddedForSpecification";
+
+    /// <summary>A calculated field whose formula was read from the printed formula; the reviewer confirms it.</summary>
+    public const string FormulaFromPrint = "FormulaFromPrint";
+
+    /// <summary>A calculated field left with an empty formula (titration/HPLC assay, "Calculation:" blank); never guessed.</summary>
+    public const string FormulaNeedsReview = "FormulaNeedsReview";
+
+    /// <summary>A Specification characteristic that matches no field of the already-saved RM-NNN template.</summary>
+    public const string FieldNotOnTemplate = "FieldNotOnTemplate";
+
+    /// <summary>A Specification document with no worksheet NNN in the upload and no saved RM-NNN template.</summary>
+    public const string WorksheetNotFound = "WorksheetNotFound";
 }
