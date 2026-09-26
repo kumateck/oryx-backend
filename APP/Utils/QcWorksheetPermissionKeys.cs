@@ -47,6 +47,19 @@ public static class QcWorksheetPermissionKeys
     public const string CanApproveQcSpecification = "CanApproveQcSpecification";
     public const string CanSupersedeQcSpecification = "CanSupersedeQcSpecification";
 
+    // Specification proposals (build brief 08). Storing a set is part of the import action
+    // itself, so it reuses CanImportQcWorksheetTemplates; reviewing, applying and dismissing
+    // are three different acts and each gets its own key.
+    public const string CanViewQcSpecificationProposals = "CanViewQcSpecificationProposals";
+
+    /// <summary>
+    /// Builds the draft plan and applies it. Applying only ever produces a Draft Specification
+    /// (plus the sampling point groups it needs), which still goes through the full M2 review.
+    /// </summary>
+    public const string CanApplyQcSpecificationProposals = "CanApplyQcSpecificationProposals";
+
+    public const string CanDismissQcSpecificationProposals = "CanDismissQcSpecificationProposals";
+
     // Sampling Point Groups
 
     /// <summary>
