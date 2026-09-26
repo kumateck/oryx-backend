@@ -97,9 +97,17 @@ public class QcWorksheetCoexistenceTests
         // splits off because reading reference data is a different concern from administering it.
         // CanViewQcApprovalHistory is likewise a distinct read boundary: the self-scoped pending
         // queue needs no key, but the arbitrary-entity signature trail does.
+        //
+        // Build brief 07 adds CanImportQcWorksheetTemplates, mirroring CanImportQcStp: turning the
+        // ARD Word worksheets into proposals is a migration-scale activity restricted separately
+        // from everyday template authoring.
+        //
+        // Build brief 08 adds three Specification proposal keys — view, apply and dismiss. Storing
+        // a proposal set is the save step of the import itself and reuses the import key.
         Assert.Equal(
         [
             "CanActivateQcWaterQualityPeriod",
+            "CanApplyQcSpecificationProposals",
             "CanApproveQcSpecification",
             "CanApproveQcStp",
             "CanApproveWorksheetTemplate",
@@ -112,6 +120,7 @@ public class QcWorksheetCoexistenceTests
             "CanCreateScheduledQcTestRequest",
             "CanCreateUnscheduledQcTestRequest",
             "CanCreateWorksheetTemplate",
+            "CanDismissQcSpecificationProposals",
             "CanDispositionQcOosCase",
             "CanEditMonitoringProgram",
             "CanEditQcSpecification",
@@ -121,6 +130,7 @@ public class QcWorksheetCoexistenceTests
             "CanEnterMicrobialWorksheetResult",
             "CanHoldQcWaterQualityPeriod",
             "CanImportQcStp",
+            "CanImportQcWorksheetTemplates",
             "CanInvestigateQcOosCase",
             "CanIssueQcCertificate",
             "CanManageSamplingPointGroups",
@@ -144,6 +154,7 @@ public class QcWorksheetCoexistenceTests
             "CanViewQcApprovalHistory",
             "CanViewQcCertificate",
             "CanViewQcOosCases",
+            "CanViewQcSpecificationProposals",
             "CanViewQcSpecifications",
             "CanViewQcStps",
             "CanViewQcTestRequests",

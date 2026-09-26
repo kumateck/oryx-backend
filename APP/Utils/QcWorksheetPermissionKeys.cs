@@ -32,12 +32,33 @@ public static class QcWorksheetPermissionKeys
     public const string CanApproveWorksheetTemplate = "CanApproveWorksheetTemplate";
     public const string CanSupersedeWorksheetTemplate = "CanSupersedeWorksheetTemplate";
 
+    /// <summary>
+    /// Deliberately separate from <see cref="CanCreateWorksheetTemplate"/>, mirroring
+    /// <see cref="CanImportQcStp"/>: turning the lab's ARD Word worksheets into proposals is a
+    /// migration-scale activity worth restricting independently. The import itself writes
+    /// nothing; saving a proposal still goes through the create endpoints and their keys.
+    /// </summary>
+    public const string CanImportQcWorksheetTemplates = "CanImportQcWorksheetTemplates";
+
     // Specifications
     public const string CanViewQcSpecifications = "CanViewQcSpecifications";
     public const string CanCreateQcSpecification = "CanCreateQcSpecification";
     public const string CanEditQcSpecification = "CanEditQcSpecification";
     public const string CanApproveQcSpecification = "CanApproveQcSpecification";
     public const string CanSupersedeQcSpecification = "CanSupersedeQcSpecification";
+
+    // Specification proposals (build brief 08). Storing a set is part of the import action
+    // itself, so it reuses CanImportQcWorksheetTemplates; reviewing, applying and dismissing
+    // are three different acts and each gets its own key.
+    public const string CanViewQcSpecificationProposals = "CanViewQcSpecificationProposals";
+
+    /// <summary>
+    /// Builds the draft plan and applies it. Applying only ever produces a Draft Specification
+    /// (plus the sampling point groups it needs), which still goes through the full M2 review.
+    /// </summary>
+    public const string CanApplyQcSpecificationProposals = "CanApplyQcSpecificationProposals";
+
+    public const string CanDismissQcSpecificationProposals = "CanDismissQcSpecificationProposals";
 
     // Sampling Point Groups
 

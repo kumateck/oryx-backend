@@ -856,6 +856,9 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink> QcSpecificationWorksheetLinks { get; set; }
     public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic> QcSpecificationCharacteristics { get; set; }
 
+    /// <summary>Build brief 08 — import proposals awaiting review into a Draft Specification.</summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationProposalSet> QcSpecificationProposalSets { get; set; }
+
     // Milestone 3 — the execution layer. A round (TestRequest) covers many Subjects, each
     // carrying one WorksheetInstance per worksheet link on the round's pinned Specification.
     public DbSet<DOMAIN.Entities.QcWorksheets.TestRequest> QcTestRequests { get; set; }
