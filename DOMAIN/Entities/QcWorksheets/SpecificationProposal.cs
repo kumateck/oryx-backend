@@ -142,8 +142,11 @@ public class SpecificationDraftPlan
 
     public ArdFamily Family { get; set; }
 
-    [StringLength(100)] public string Code { get; set; }
-    [StringLength(500)] public string Name { get; set; }
+    /// <summary>Null in a produced plan when nothing was printed; required on apply.</summary>
+    [Required, StringLength(100)] public string Code { get; set; }
+
+    [Required, StringLength(500)] public string Name { get; set; }
+
     public SpecificationAppliesTo? AppliesTo { get; set; }
     public SpecificationStage? Stage { get; set; }
 
