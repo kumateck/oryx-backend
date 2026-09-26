@@ -158,6 +158,19 @@ public class ArdFamilyClassifierTests
 
         var classification = ArdFamilyClassifier.Classify(document);
 
+        Assert.Equal(ArdFamily.RawMaterialChemical, classification.Family);
+        Assert.Equal("RAW MATERIAL ANALYTICAL WORKSHEET", classification.Evidence);
+    }
+
+    [Fact]
+    public void A_finished_product_chemical_worksheet_stays_unknown()
+    {
+        var document = Read(
+            [Grid(["TEST & OBSERVATIONS", "Assay | Weight of sample:"])],
+            "QUALITY CONTROL DEPARTMENT\tFINISHED PRODUCT ANALYTICAL WORKSHEET\tBatch No.:");
+
+        var classification = ArdFamilyClassifier.Classify(document);
+
         Assert.Equal(ArdFamily.Unknown, classification.Family);
         Assert.Equal("ANALYTICAL WORKSHEET (chemical)", classification.Evidence);
     }
