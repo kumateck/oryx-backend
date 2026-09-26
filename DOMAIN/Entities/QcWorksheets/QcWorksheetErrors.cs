@@ -814,4 +814,91 @@ public static class QcWorksheetErrors
             $"Water use can only be recorded against an Active period. This period is {status}. "
             + "Recording use against a period that covers nothing would assert coverage that was "
             + "never granted.");
+
+    // -----------------------------------------------------------------------
+    // Build brief 08 — Specification proposals from worksheet import
+    // -----------------------------------------------------------------------
+
+    public static Error SpecificationProposalSetNotFound(Guid id) =>
+        Error.NotFound(
+            "QcSpecificationProposal.NotFound",
+            $"The specification proposal set with the Id: {id} was not found");
+
+    /// <summary>Media and certificates carry no Specification: media limits stay on the sheet (brief 07).</summary>
+    public static Error SpecificationProposalFamilyNotSupported(ArdFamily? family) =>
+        Error.Validation(
+            "QcSpecificationProposal.FamilyNotSupported",
+            $"Only product, purified water and environmental monitoring worksheets propose a "
+            + $"Specification. '{family?.ToString() ?? "none"}' does not.");
+
+    /// <summary>A proposal set with no characteristics is never stored.</summary>
+    public static Error SpecificationProposalHasNoCharacteristics =>
+        Error.Validation(
+            "QcSpecificationProposal.NoCharacteristics",
+            "The proposal set has no specification characteristics, so there is nothing to review.");
+
+    public static Error SpecificationProposalSetsRequired =>
+        Error.Validation(
+            "QcSpecificationProposal.SetsRequired",
+            "Select at least one proposal set.");
+
+    public static Error SpecificationProposalPlanRequired =>
+        Error.Validation(
+            "QcSpecificationProposal.PlanRequired",
+            "The reviewed draft plan is required.");
+
+    /// <summary>Also the double-apply guard: a set already applied or dismissed cannot be applied again.</summary>
+    public static Error SpecificationProposalNotPending(string fileName, SpecificationProposalStatus status) =>
+        Error.Conflict(
+            "QcSpecificationProposal.NotPending",
+            $"The proposals from '{fileName}' are already {status}.");
+
+    public static Error SpecificationProposalMixedFamilies =>
+        Error.Validation(
+            "QcSpecificationProposal.MixedFamilies",
+            "All selected proposal sets must be of one family.");
+
+    public static Error SpecificationProposalProductSingleSet =>
+        Error.Validation(
+            "QcSpecificationProposal.ProductSingleSet",
+            "A product Specification is drafted from exactly one proposal set.");
+
+    public static Error SpecificationProposalTemplateMismatch =>
+        Error.Validation(
+            "QcSpecificationProposal.TemplateMismatch",
+            "The selected proposal sets bind to different worksheet templates, so they cannot "
+            + "share one Specification.");
+
+    public static Error SpecificationProposalTierConflict(string groupName) =>
+        Error.Validation(
+            "QcSpecificationProposal.TierConflict",
+            $"The plan has more than one row for the limit tier '{groupName}'. Keep one row per tier.");
+
+    public static Error SpecificationProposalGroupNotInPlan(string groupName) =>
+        Error.Validation(
+            "QcSpecificationProposal.GroupNotInPlan",
+            $"The limit tier '{groupName}' is neither an existing sampling point group nor one of "
+            + "the plan's groups.");
+
+    /// <summary>The import screen normally creates the points; if it did not, the reviewer creates them first.</summary>
+    public static Error SpecificationProposalSamplingPointNotFound(string code) =>
+        Error.Validation(
+            "QcSpecificationProposal.SamplingPointNotFound",
+            $"There is no sampling point with the code '{code}'. Create it first.");
+
+    /// <summary>
+    /// Moving a point between tiers is a limit change, so it is done deliberately in the
+    /// sampling-point master data rather than as a side effect of applying an import.
+    /// </summary>
+    public static Error SpecificationProposalSamplingPointGroupChange(
+        string code, string currentGroup, string proposedGroup) =>
+        Error.Validation(
+            "QcSpecificationProposal.SamplingPointGroupChange",
+            $"Sampling point '{code}' is already in the group '{currentGroup}', not '{proposedGroup}'. "
+            + "Move it in the sampling point master data if that is intended.");
+
+    public static Error SpecificationProposalDismissReasonRequired =>
+        Error.Validation(
+            "QcSpecificationProposal.DismissReasonRequired",
+            "A reason is required to dismiss a proposal set.");
 }

@@ -179,6 +179,7 @@ public static class DependencyInjection
         services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
         services.AddScoped<ISpecificationRepository, SpecificationRepository>();
         services.AddScoped<ISamplingPointGroupRepository, SamplingPointGroupRepository>();
+        services.AddScoped<ISpecificationProposalRepository, SpecificationProposalRepository>();
         services.AddScoped<ITestRequestRepository, TestRequestRepository>();
         services.AddScoped<IWorksheetInstanceRepository, WorksheetInstanceRepository>();
         services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();
