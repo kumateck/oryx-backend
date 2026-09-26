@@ -97,6 +97,10 @@ public class QcWorksheetCoexistenceTests
         // splits off because reading reference data is a different concern from administering it.
         // CanViewQcApprovalHistory is likewise a distinct read boundary: the self-scoped pending
         // queue needs no key, but the arbitrary-entity signature trail does.
+        //
+        // Build brief 07 adds CanImportQcWorksheetTemplates, mirroring CanImportQcStp: turning the
+        // ARD Word worksheets into proposals is a migration-scale activity restricted separately
+        // from everyday template authoring.
         Assert.Equal(
         [
             "CanActivateQcWaterQualityPeriod",
@@ -121,6 +125,7 @@ public class QcWorksheetCoexistenceTests
             "CanEnterMicrobialWorksheetResult",
             "CanHoldQcWaterQualityPeriod",
             "CanImportQcStp",
+            "CanImportQcWorksheetTemplates",
             "CanInvestigateQcOosCase",
             "CanIssueQcCertificate",
             "CanManageSamplingPointGroups",

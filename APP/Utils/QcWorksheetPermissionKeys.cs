@@ -32,6 +32,14 @@ public static class QcWorksheetPermissionKeys
     public const string CanApproveWorksheetTemplate = "CanApproveWorksheetTemplate";
     public const string CanSupersedeWorksheetTemplate = "CanSupersedeWorksheetTemplate";
 
+    /// <summary>
+    /// Deliberately separate from <see cref="CanCreateWorksheetTemplate"/>, mirroring
+    /// <see cref="CanImportQcStp"/>: turning the lab's ARD Word worksheets into proposals is a
+    /// migration-scale activity worth restricting independently. The import itself writes
+    /// nothing; saving a proposal still goes through the create endpoints and their keys.
+    /// </summary>
+    public const string CanImportQcWorksheetTemplates = "CanImportQcWorksheetTemplates";
+
     // Specifications
     public const string CanViewQcSpecifications = "CanViewQcSpecifications";
     public const string CanCreateQcSpecification = "CanCreateQcSpecification";

@@ -34,6 +34,16 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanImportQcStp
     ];
 
+    private static readonly HashSet<string> WorksheetTemplateKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewWorksheetTemplates,
+        QcWorksheetPermissionKeys.CanCreateWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanEditWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanApproveWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanSupersedeWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanImportQcWorksheetTemplates
+    ];
+
     private static readonly HashSet<string> SpecificationKeys =
     [
         QcWorksheetPermissionKeys.CanViewQcSpecifications,
@@ -122,6 +132,7 @@ public static class QcWorksheetPermissionCatalog
     private static string SubmoduleFor(string key)
     {
         if (StpKeys.Contains(key)) return StandardTestProcedures;
+        if (WorksheetTemplateKeys.Contains(key)) return WorksheetTemplates;
         if (SpecificationKeys.Contains(key)) return Specifications;
         if (TestRequestKeys.Contains(key)) return TestRequests;
         if (TestRoomKeys.Contains(key)) return TestRoom;

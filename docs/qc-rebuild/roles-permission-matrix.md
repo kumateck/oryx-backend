@@ -25,6 +25,7 @@ Five roles are QC/QA-relevant:
 | `qc.stp.approve` / `.supersede` | | | | ✓ | ✓ |
 | `qc.worksheetTemplate.view` | | ✓ | ✓ | ✓ | ✓ |
 | `qc.worksheetTemplate.create` / `.edit` | | | ✓ | | |
+| `qc.worksheetTemplate.import` | | | ✓ | | |
 | `qc.worksheetTemplate.approve` / `.supersede` | | | | ✓ | ✓ |
 | `qc.specification.view` | | ✓ | ✓ | ✓ | ✓ |
 | `qc.specification.create` / `.edit` | | | ✓ | | |
