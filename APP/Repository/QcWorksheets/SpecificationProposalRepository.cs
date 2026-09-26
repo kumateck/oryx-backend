@@ -281,10 +281,29 @@ public class SpecificationProposalRepository(
                 var groupName = Blank(proposal.GroupName);
 
                 // Identical rows from different sets (same tier, same limits) merge into one.
-                var signature = string.Join("\u001f", groupName ?? fieldKey, Normalize(proposal.TestName),
+                // A tier is identified by its name and limits alone; the test name printed beside
+                // it varies between area sheets without changing what is being judged.
+                var signature = string.Join("\u001f", groupName ?? fieldKey,
+                    groupName is null ? Normalize(proposal.TestName) : string.Empty,
                     Normalize(proposal.AcceptanceCriteria), Normalize(proposal.AlertLimit), Normalize(proposal.ActionLimit));
                 if (!seen.Add(signature))
                     continue;
+
+                // An Alert limit is only ever a suggestion (from a completed COA in the same
+                // upload), so a sheet that prints none agrees with one that has it: the rows
+                // merge, keeping the suggestion, rather than raising a false TierConflict.
+                var compatible = groupName is null
+                    ? null
+                    : rows.FirstOrDefault(row =>
+                        SameName(row.SamplingPointGroupName, groupName)
+                        && Normalize(row.AcceptanceCriteria) == Normalize(proposal.AcceptanceCriteria)
+                        && Normalize(row.ActionLimit) == Normalize(proposal.ActionLimit)
+                        && (row.AlertLimit is null || proposal.AlertLimit is null));
+                if (compatible is not null)
+                {
+                    compatible.AlertLimit ??= proposal.AlertLimit;
+                    continue;
+                }
 
                 // Appending: a tier the target Specification already carries is not added again.
                 if (groupName is not null
@@ -325,7 +344,7 @@ public class SpecificationProposalRepository(
             {
                 Code = SpecificationDraftPlanWarningCodes.TierConflict,
                 Message = $"The tier '{conflict.Key}' is proposed with different limits: "
-                          + string.Join(" / ", conflict.Select(row => row.ActionLimit ?? row.AcceptanceCriteria))
+                          + string.Join(" / ", conflict.Select(Limits))
                           + ". Keep one row for it before applying."
             });
         }
@@ -656,6 +675,14 @@ public class SpecificationProposalRepository(
         };
     }
 
+    private static string Limits(SpecificationDraftPlanCharacteristic row) =>
+        string.Join(", ", new[]
+        {
+            $"criteria {row.AcceptanceCriteria}",
+            row.AlertLimit is null ? null : $"alert {row.AlertLimit}",
+            row.ActionLimit is null ? null : $"action {row.ActionLimit}"
+        }.Where(part => part is not null));
+
     private static SpecificationProposalPayload ReadPayload(SpecificationProposalSet set) =>
         (string.IsNullOrWhiteSpace(set.ProposalJson)
             ? null
@@ -665,8 +692,9 @@ public class SpecificationProposalRepository(
     private static bool SameName(string left, string right) =>
         string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Case- and whitespace-insensitive, so "NMT 5 cfu/4Hrs" and "NMT 5 CFU/ 4Hrs" compare equal.</summary>
     private static string Normalize(string value) =>
-        string.Join(' ', (value ?? string.Empty).Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
+        new string((value ?? string.Empty).Where(character => !char.IsWhiteSpace(character)).ToArray())
             .ToLowerInvariant();
 
     private static string Blank(string value) =>
