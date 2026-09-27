@@ -150,6 +150,7 @@ public class QcWorksheetCoexistenceTests
             "CanSupersedeQcSpecification",
             "CanSupersedeQcStp",
             "CanSupersedeWorksheetTemplate",
+            "CanUseAiWorksheetExtraction",
             "CanViewMonitoringPrograms",
             "CanViewQcApprovalHistory",
             "CanViewQcCertificate",
