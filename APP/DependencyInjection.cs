@@ -6,6 +6,7 @@ using APP.Repository.QcWorksheets;
 using APP.Services;
 using APP.Services.QcWorksheets;
 using APP.Services.QcWorksheets.WorksheetDocxImport;
+using APP.Services.QcWorksheets.WorksheetDocxImport.AiExtraction;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
@@ -26,6 +27,7 @@ using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -175,6 +177,20 @@ public static class DependencyInjection
         services.AddScoped<IStpDocxImportService, StpDocxImportService>();
         services.AddScoped<IWorksheetImportCatalogLoader, WorksheetImportCatalogLoader>();
         services.AddScoped<IWorksheetDocxImportService, WorksheetDocxImportService>();
+
+        // Build brief 10 — the AI fallback extractor. A named HttpClient ("AnthropicClient"),
+        // matching the FormulaCalculationClient pattern above; the API key is read from
+        // configuration (Anthropic:ApiKey, environment-overridable, never checked in).
+        services.AddSingleton(provider =>
+            AnthropicSettings.Load(provider.GetRequiredService<IConfiguration>()));
+        services.AddHttpClient<IAiWorksheetExtractor, AnthropicWorksheetExtractor>(
+            "AnthropicClient",
+            (provider, client) =>
+            {
+                var settings = provider.GetRequiredService<AnthropicSettings>();
+                client.BaseAddress = new Uri("https://api.anthropic.com/");
+                client.Timeout = settings.Timeout;
+            });
         services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
         services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
         services.AddScoped<ISpecificationRepository, SpecificationRepository>();

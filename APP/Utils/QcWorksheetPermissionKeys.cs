@@ -40,6 +40,16 @@ public static class QcWorksheetPermissionKeys
     /// </summary>
     public const string CanImportQcWorksheetTemplates = "CanImportQcWorksheetTemplates";
 
+    /// <summary>
+    /// Build brief 10: gates the AI fallback extractor specifically, separate from
+    /// <see cref="CanImportQcWorksheetTemplates"/> — this triggers a paid external API call per
+    /// file and carries a materially different review burden than the deterministic recognizers.
+    /// Without it, an unrecognized file still gets the plain <c>UnknownFamily</c> refusal,
+    /// unchanged from brief 07. A file that matches a built family never reaches the AI
+    /// extractor even when this key is held.
+    /// </summary>
+    public const string CanUseAiWorksheetExtraction = "CanUseAiWorksheetExtraction";
+
     // Specifications
     public const string CanViewQcSpecifications = "CanViewQcSpecifications";
     public const string CanCreateQcSpecification = "CanCreateQcSpecification";
