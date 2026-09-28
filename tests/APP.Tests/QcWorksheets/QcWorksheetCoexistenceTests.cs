@@ -104,6 +104,11 @@ public class QcWorksheetCoexistenceTests
         //
         // Build brief 08 adds three Specification proposal keys — view, apply and dismiss. Storing
         // a proposal set is the save step of the import itself and reuses the import key.
+        //
+        // Build brief 11 adds CanManageAiWorksheetExtractionSettings, gating the AI provider/key
+        // management screen separately from CanUseAiWorksheetExtraction (using the feature) and
+        // CanImportQcWorksheetTemplates (importing at all) — choosing the vendor and holding the
+        // only access to its key is a different authority from either.
         Assert.Equal(
         [
             "CanActivateQcWaterQualityPeriod",
@@ -133,6 +138,7 @@ public class QcWorksheetCoexistenceTests
             "CanImportQcWorksheetTemplates",
             "CanInvestigateQcOosCase",
             "CanIssueQcCertificate",
+            "CanManageAiWorksheetExtractionSettings",
             "CanManageSamplingPointGroups",
             "CanManageSamplingPoints",
             "CanPauseMonitoringProgram",
