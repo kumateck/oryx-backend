@@ -1,5 +1,9 @@
 # Oryx ERP
 
+Full Procedures template scope update (2026-09-28): all five template creation
+services now enforce the catalog's allowed kind and purpose/subject pairing.
+See `docs/full-procedures-template-scope-2026-09-28.md`.
+
 ## Recent Updates
 
 - Chemical/Microbial and Routine QC (2026-09-15): typed commercial ARDs,
@@ -289,3 +293,10 @@ Details about the project's license.
 # SMTP delivery configuration
 
 Email delivery now requires `SMTP_HOST`, `SMTP_USERNAME`, and `SMTP_PASSWORD` in the deployed environment. Set optional `SMTP_PORT` (default 587) and `SMTP_FROM` (default SMTP_USERNAME) for the authorized sender. A 535 authentication failure must be resolved by verifying the deployed account and secret with the mail provider; do not log the password or mark a vendor request as sent after failure.
+
+The unified My Pending Approvals interface uses the self-scoped generic and QC queues. Generic detail and action endpoints require an active assigned stage; staff requisitions and production orders now support audited decisions. See [approval workflow documentation](docs/workflows.md).
+
+Full Procedures Question authoring accepts exact `calculationReferences`
+(`questionId`, `revisionId`) and rejects a stale or mismatched Published source.
+Legacy `calculationQuestionIds` callers remain supported. Documentation updated:
+this README, `docs/services.md`, and `docs/workflows.md`.

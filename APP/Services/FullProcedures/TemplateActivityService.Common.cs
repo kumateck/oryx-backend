@@ -76,8 +76,8 @@ public sealed partial class TemplateActivityService(ApplicationDbContext context
         };
 
     private static bool ValidContext(TemplateArea area, string purposeId, string subjectTypeId) =>
-        area.Purposes.Any(x => x.PurposeId == purposeId) &&
-        area.SubjectTypes.Any(x => x.SubjectTypeId == subjectTypeId);
+        TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, purposeId, subjectTypeId, TemplateDefinitionKind.Activity);
 
     private static TemplateActivityRevision NewRevision(Guid activityId, int sequence,
         Guid actorId, TemplateActivityContent content)
