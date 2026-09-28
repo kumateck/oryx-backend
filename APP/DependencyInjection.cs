@@ -191,6 +191,9 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri("https://api.anthropic.com/");
                 client.Timeout = settings.Timeout;
             });
+        // Build brief 11 — provider/key management, backing AiWorksheetExtractorRouter below.
+        services.AddScoped<IAiExtractionSettingsService, AiExtractionSettingsService>();
+
         services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
         services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
         services.AddScoped<ISpecificationRepository, SpecificationRepository>();
