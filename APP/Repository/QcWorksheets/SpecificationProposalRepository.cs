@@ -24,8 +24,11 @@ public class SpecificationProposalRepository(
     IMapper mapper,
     ISpecificationRepository specifications) : ISpecificationProposalRepository
 {
-    /// <summary>The COA section heading every imported characteristic sits under.</summary>
+    /// <summary>The COA section heading every imported microbiology characteristic sits under.</summary>
     internal const string MicrobialGroupName = "MICROBIAL";
+
+    /// <summary>The COA section heading of a raw-material Specification's chemical tests (brief 09).</summary>
+    internal const string ChemicalGroupName = "CHEMICAL";
 
     internal const string EnvironmentalSpecificationName = "Environmental Monitoring";
     internal const string WaterSpecificationName = "Purified Water";
@@ -36,7 +39,8 @@ public class SpecificationProposalRepository(
     [
         ArdFamily.ProductMicro,
         ArdFamily.PurifiedWater,
-        ArdFamily.EnvironmentalMonitoring
+        ArdFamily.EnvironmentalMonitoring,
+        ArdFamily.RawMaterialSpecification
     ];
 
     // -----------------------------------------------------------------------
@@ -171,6 +175,13 @@ public class SpecificationProposalRepository(
                 plan.Stage = SpecificationStage.Finished;
                 break;
 
+            case ArdFamily.RawMaterialSpecification:
+                // Brief 09: the SPC number and material from the document header; no stage.
+                plan.Code = sets[0].SpecificationCode;
+                plan.Name = sets[0].ProductName;
+                plan.AppliesTo = SpecificationAppliesTo.RawMaterial;
+                break;
+
             case ArdFamily.PurifiedWater:
                 plan.Name = WaterSpecificationName;
                 plan.AppliesTo = SpecificationAppliesTo.RoutineWater;
@@ -226,7 +237,11 @@ public class SpecificationProposalRepository(
             plan.WorksheetLinks.Add(new CreateSpecificationWorksheetLinkRequest
             {
                 WorksheetTemplateId = templateId,
-                AnalysisType = SpecificationAnalysisType.Microbial
+                // A raw-material Specification keeps a single Chemical link; its MICROBIAL rows bind
+                // to the sections the import added to that same chemical template.
+                AnalysisType = family == ArdFamily.RawMaterialSpecification
+                    ? SpecificationAnalysisType.Chemical
+                    : SpecificationAnalysisType.Microbial
             });
 
         var template = await context.QcWorksheetTemplates
@@ -278,13 +293,17 @@ public class SpecificationProposalRepository(
                     continue;
                 }
 
-                var groupName = Blank(proposal.GroupName);
+                // On a raw-material proposal GroupName is the COA heading (CHEMICAL / MICROBIAL, brief 09),
+                // not a sampling-point limit tier.
+                var rawMaterial = family == ArdFamily.RawMaterialSpecification;
+                var groupName = rawMaterial ? null : Blank(proposal.GroupName);
 
                 // Identical rows from different sets (same tier, same limits) merge into one.
                 // A tier is identified by its name and limits alone; the test name printed beside
                 // it varies between area sheets without changing what is being judged.
                 var signature = string.Join("\u001f", groupName ?? fieldKey,
                     groupName is null ? Normalize(proposal.TestName) : string.Empty,
+                    rawMaterial ? Normalize(proposal.Analyte) : string.Empty,
                     Normalize(proposal.AcceptanceCriteria), Normalize(proposal.AlertLimit), Normalize(proposal.ActionLimit));
                 if (!seen.Add(signature))
                     continue;
@@ -328,7 +347,7 @@ public class SpecificationProposalRepository(
                     SourceWorksheetTemplateId = templateId,
                     SourceFieldKey = fieldKey,
                     IncludeOnCoa = true,
-                    GroupName = MicrobialGroupName
+                    GroupName = rawMaterial ? Blank(proposal.GroupName) ?? ChemicalGroupName : MicrobialGroupName
                 });
             }
         }
@@ -612,7 +631,7 @@ public class SpecificationProposalRepository(
         if (sets.Select(set => set.Family).Distinct().Count() > 1)
             return Result.Failure<List<SpecificationProposalSet>>(QcWorksheetErrors.SpecificationProposalMixedFamilies);
 
-        if (sets[0].Family == ArdFamily.ProductMicro && sets.Count > 1)
+        if (sets[0].Family is ArdFamily.ProductMicro or ArdFamily.RawMaterialSpecification && sets.Count > 1)
             return Result.Failure<List<SpecificationProposalSet>>(QcWorksheetErrors.SpecificationProposalProductSingleSet);
 
         if (sets.Select(set => set.WorksheetTemplateId).Distinct().Count() > 1)

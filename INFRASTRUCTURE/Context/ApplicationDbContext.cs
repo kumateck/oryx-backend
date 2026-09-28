@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
@@ -103,8 +104,17 @@ namespace INFRASTRUCTURE.Context;
 public class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
     ICurrentUserService currentUserService
-) : IdentityDbContext<User, Role, Guid>(options)
+) : IdentityDbContext<User, Role, Guid>(options), IDataProtectionKeyContext
 {
+    // Build brief 11: persists the Data Protection key ring to the database (see
+    // AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>() in Program.cs) rather
+    // than the framework's default local-filesystem key ring, which would make a key encrypted
+    // on one instance undecryptable after a restart or on any other instance behind a load
+    // balancer. Required by Microsoft.AspNetCore.DataProtection.EntityFrameworkCore's
+    // IDataProtectionKeyContext contract.
+    public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys { get; set; }
+
+
     #region Auth
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -934,6 +944,16 @@ public class ApplicationDbContext(
     public DbSet<DOMAIN.Entities.QcWorksheets.WaterQualityPeriod> QcWaterQualityPeriods { get; set; }
 
     public DbSet<DOMAIN.Entities.QcWorksheets.WaterUseRecord> QcWaterUseRecords { get; set; }
+
+    /// <summary>
+    /// Build brief 11 — provider selection and key management for the AI fallback extractor
+    /// (build brief 10). Two rows max in <see cref="AiExtractionSettings"/> (one per
+    /// <see cref="DOMAIN.Entities.QcWorksheets.AiExtractionProvider"/> value) plus a singleton
+    /// active-provider row; additive only.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.AiExtractionSettings> QcAiExtractionSettings { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.AiExtractionActiveProvider> QcAiExtractionActiveProvider { get; set; }
 
     #endregion
 

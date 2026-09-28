@@ -163,6 +163,9 @@ public class SpecificationCharacteristicProposal
     /// <summary>Context from the running header: the printed Specification number ("Spec. No."), when present.</summary>
     public string SpecificationCode { get; set; }
 
+    /// <summary>The pharmacopoeia or in-house reference printed beside the test (raw-material Specifications: "BP 2025", "USP", "In-House").</summary>
+    public string Reference { get; set; }
+
     public ImportConfidence Confidence { get; set; }
     public ImportSourceLocation Location { get; set; }
 }
@@ -209,6 +212,39 @@ public class MediumIdentity
     public string CodeKey { get; set; }
 }
 
+/// <summary>
+/// Raw-material context (brief 09). A worksheet and its Specification document share the
+/// three-digit pairing key NNN (worksheet code RM-NNN, "SPC No.: QCD/SPC/RM/NNN").
+/// </summary>
+public class RawMaterialDocumentInfo
+{
+    /// <summary>The three-digit material number, from the file name prefix or the printed Spec./SPC number. The reviewer confirms it.</summary>
+    public string PairingKey { get; set; }
+
+    /// <summary>The worksheet template code the pair binds to: "RM-" + <see cref="PairingKey"/>.</summary>
+    public string TemplateCode { get; set; }
+
+    /// <summary>The material as printed ("Raw Material Name", or the Specification's title).</summary>
+    public string MaterialName { get; set; }
+
+    /// <summary>Specification documents: the SPC number ("QCD/SPC/RM/012").</summary>
+    public string SpecificationCode { get; set; }
+
+    /// <summary>Specification documents: the printed "Revision No.".</summary>
+    public string Revision { get; set; }
+
+    /// <summary>Specification documents: where the bound worksheet is. Null on a worksheet.</summary>
+    public RawMaterialPairingStatus? Pairing { get; set; }
+
+    /// <summary>With <see cref="RawMaterialPairingStatus.InUpload"/>: the worksheet file in this upload.</summary>
+    public string PairedFileName { get; set; }
+
+    /// <summary>With <see cref="RawMaterialPairingStatus.ExistingTemplate"/>: the saved template.</summary>
+    public Guid? PairedTemplateId { get; set; }
+
+    public string PairedTemplateCode { get; set; }
+}
+
 /// <summary>One file's proposal. Writes nothing; the reviewer saves through the normal endpoints.</summary>
 public class WorksheetImportProposal
 {
@@ -224,7 +260,10 @@ public class WorksheetImportProposal
     /// <summary>For families that share one template across files (EM): which template, and where it is proposed.</summary>
     public SharedTemplateReference SharedTemplate { get; set; }
 
-    /// <summary>Null when the family produces no template (certificates, unknown, pending recognizers).</summary>
+    /// <summary>For the raw-material families: the pairing key and header metadata (brief 09).</summary>
+    public RawMaterialDocumentInfo RawMaterial { get; set; }
+
+    /// <summary>Null when the family produces no template (certificates, unknown, pending recognizers, Specification documents).</summary>
     public ProposedWorksheetTemplate Template { get; set; }
 
     public List<SamplingPointProposal> SamplingPointProposals { get; set; } = [];

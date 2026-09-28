@@ -28,6 +28,18 @@ public sealed class DocxCell
 
     /// <summary>True for a horizontal-span filler specifically.</summary>
     public bool IsHorizontalSpan { get; init; }
+
+    /// <summary>
+    /// The cell's paragraphs, each normalized, blank ones dropped; empty for any filler. The
+    /// raw-material sheets stack "Label: ____" lines in one cell, which <see cref="Text"/> fuses.
+    /// </summary>
+    public IReadOnlyList<string> Lines { get; init; } = [];
+
+    /// <summary>
+    /// Tables nested in the cell, in order (the raw-material titration grids). Their text is
+    /// not part of <see cref="Text"/> or <see cref="Lines"/>.
+    /// </summary>
+    public IReadOnlyList<DocxTable> NestedTables { get; init; } = [];
 }
 
 public sealed class DocxTable

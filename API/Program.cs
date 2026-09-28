@@ -14,6 +14,7 @@ using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -165,6 +166,11 @@ var defaultDbConnectionString =
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(defaultDbConnectionString));
+
+// Build brief 11: Data Protection's key ring must be persisted to the database, not the
+// default local-filesystem key ring — otherwise an AI provider key encrypted on one
+// instance is undecryptable after a restart or on any other instance behind a load balancer.
+builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
 
 // Refuse to persist a price without the unit it was quoted in. Off by default so the
 // guard can be enabled only once fix_missing_price_uom.sql has repaired legacy rows.
