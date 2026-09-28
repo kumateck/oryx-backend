@@ -1,11 +1,33 @@
 using APP.Services.FullProcedures;
 using APP.Utils;
+using DOMAIN.Entities.FullProcedures;
 using Xunit;
 
 namespace APP.Tests.FullProcedures;
 
 public class TemplateAreaPolicyTests
 {
+    [Fact]
+    public void Template_services_reject_cross_purpose_subjects_and_unsupported_kinds()
+    {
+        var area = new TemplateArea
+        {
+            Purposes = [new TemplateAreaPurpose { PurposeId = "hr" },
+                new TemplateAreaPurpose { PurposeId = "production-procedure" }],
+            SubjectTypes = [new TemplateAreaSubjectType { SubjectTypeId = "employee" },
+                new TemplateAreaSubjectType { SubjectTypeId = "product" }],
+        };
+
+        Assert.True(TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, "hr", "employee", TemplateDefinitionKind.Workflow));
+        Assert.False(TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, "hr", "product", TemplateDefinitionKind.Workflow));
+        Assert.False(TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, "hr", "employee", TemplateDefinitionKind.Activity));
+        Assert.True(TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, "production-procedure", "product", TemplateDefinitionKind.Activity));
+    }
+
     private static readonly Guid OwnerGroupId = Guid.Parse("10000000-0000-0000-0000-000000000001");
     private static readonly Guid OtherOwnerGroupId = Guid.Parse("10000000-0000-0000-0000-000000000002");
     private static readonly Guid AreaId = Guid.Parse("20000000-0000-0000-0000-000000000001");

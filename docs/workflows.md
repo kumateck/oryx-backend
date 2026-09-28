@@ -410,3 +410,21 @@ When editing a Draft worksheet template, fields are matched by their worksheet-w
 their identities and revision histories survive edits. If older overlapping saves left duplicate
 stored keys, the edit keeps the oldest field and its history and removes the duplicate rows.
 Incoming duplicate keys remain invalid; this recovery applies only to already-stored draft data.
+
+## My Pending Approvals (2026-09-27)
+
+The legacy approval stage lookup considers every role held by the reviewer and refuses inactive stages. Completing a stage activates the next configured stage regardless of which user or role is assigned to it.
+
+The authenticated approver sees only active pending stages. Staff requisitions and production orders now advance through assigned stages on approve or reject and record the actor, time, decision, and comments in `ApprovalActionLog`. Rejected requests do not activate later stages. The dedicated My Pending Approval detail route and generic approval actions verify assignment before returning or mutating a document. QC worksheet instances and OOS cases are listed in the QC queue and open their specialized detail pages. Missing or empty-stage approval configurations still produce an audited system approval for non-QC documents. Controlled QC documents require an explicit configured signer and reauthentication.
+
+## Full Procedures authoring scope (2026-09-28)
+
+All five template kinds now apply the catalog's purpose/subject and allowed-kind
+rules on draft creation. Invalid combinations cannot enter the Draft → In Review
+→ Published lifecycle. Existing approved records and legacy Routes are not
+rewritten. See `docs/full-procedures-template-scope-2026-09-28.md`.
+
+Calculation Question authoring now validates the exact Published source
+revision selected by the caller. A superseded source cannot silently change
+the new Question's calculation snapshot. Existing ID-only callers retain the
+previous lookup behavior until migrated.
