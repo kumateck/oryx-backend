@@ -14,6 +14,7 @@ public class TemplateQuestionContentRequest
     public decimal? Minimum { get; set; }
     public decimal? Maximum { get; set; }
     public List<Guid> CalculationQuestionIds { get; set; } = [];
+    public List<TemplateQuestionReferenceRequest> CalculationReferences { get; set; } = [];
     public TemplateQuestionSensitivity Sensitivity { get; set; }
 }
 
@@ -46,6 +47,12 @@ public sealed class TemplateQuestionOptionRequest
 {
     public string Value { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
+}
+
+public sealed class TemplateQuestionReferenceRequest
+{
+    public Guid QuestionId { get; set; }
+    public Guid RevisionId { get; set; }
 }
 
 public sealed record TemplateQuestionDto(

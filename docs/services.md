@@ -534,3 +534,26 @@ material entity graph. See [the report contract](materials-ready-for-checklist-r
 - The selected employee must map by email to an active ERP user. A missing or disabled account returns `Employee.UserAccountUnavailable` before assignment records are created.
 - A successful assignment creates the job execution and then sends an in-app `JobRequestAssigned` notification directly to that user. The notification uses the existing persisted notification and activity-log service.
 - Service quotation selection remains the prerequisite mutation for `POST /api/v1/service-proforma-invoices/request`; no request payload shape changed.
+
+## Assigned approval queue (2026-09-27)
+
+`GET /api/v1/approval/my-pending` is scoped to the authenticated user. A mismatched `userId` returns 403. Only active pending stages are returned, including staff requisitions and production orders. The dedicated `GET /api/v1/approval/my-pending/{modelType}/{modelId}` and generic approval actions check that the caller has the document in their assigned queue. The preexisting generic detail endpoint remains available for historical views. The QC queue at `GET /api/v1/qc/worksheets/approvals/my-pending` now includes worksheet instances and OOS cases with detail routes. QC decisions continue through signed domain actions.
+
+## Full Procedures template scope (2026-09-28)
+
+Question, Section, Form, Activity, and Workflow create endpoints validate the
+Area's purpose and subject against the same catalog that defines allowed
+template kinds. A purpose/subject pair outside the catalog, or a template kind
+not allowed by that purpose, returns the existing invalid-template result
+before any draft or audit row is written. The request and response shapes are
+unchanged. See `docs/full-procedures-template-scope-2026-09-28.md`.
+
+## Exact calculation input revisions (2026-09-28)
+
+`POST /api/v1/template-questions`, its new-revision endpoint, and its draft
+update endpoint accept `calculationReferences` pairs containing `questionId`
+and `revisionId`. The server requires each exact revision to be Published in
+the same Area; stale and mismatched references fail validation. The existing
+`calculationQuestionIds` field remains available to existing callers, but may
+not be combined with the exact-pair field. Adoption maps exact target revision
+IDs through the same path.

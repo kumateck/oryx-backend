@@ -49,13 +49,15 @@ internal static class TemplateQuestionServiceSupport
             !Enum.IsDefined(request.Sensitivity)) return null;
         var rawOptions = request.Options ?? [];
         var rawReferences = request.CalculationQuestionIds ?? [];
+        var pinnedReferences = request.CalculationReferences ?? [];
         var wording = request.Wording?.Trim() ?? string.Empty;
         var inputType = request.InputType?.Trim() ?? string.Empty;
         var helpText = string.IsNullOrWhiteSpace(request.HelpText) ? null : request.HelpText.Trim();
         if (wording.Length is < 3 or > 500 || helpText?.Length > 1000 ||
             !Inputs[request.AnswerType].Contains(inputType) ||
             request.Minimum > request.Maximum || rawOptions.Count > 200 ||
-            rawReferences.Count > 100) return null;
+            rawReferences.Count + pinnedReferences.Count > 100 ||
+            (rawReferences.Count > 0 && pinnedReferences.Count > 0)) return null;
         var options = rawOptions.Select(item => new TemplateQuestionOptionRequest
         {
             Value = item.Value?.Trim() ?? string.Empty,
@@ -65,17 +67,25 @@ internal static class TemplateQuestionServiceSupport
                 item.Label.Length is < 1 or > 500) ||
             options.Select(item => item.Value).Distinct(StringComparer.Ordinal).Count() != options.Length ||
             rawReferences.Any(item => item == Guid.Empty) ||
-            rawReferences.Distinct().Count() != rawReferences.Count)
+            rawReferences.Distinct().Count() != rawReferences.Count ||
+            pinnedReferences.Any(item => item is null || item.QuestionId == Guid.Empty ||
+                item.RevisionId == Guid.Empty) ||
+            pinnedReferences.Select(item => item.QuestionId).Distinct().Count() != pinnedReferences.Count ||
+            pinnedReferences.Select(item => item.RevisionId).Distinct().Count() != pinnedReferences.Count)
             return null;
         var isChoice = request.AnswerType is TemplateQuestionAnswerType.SingleChoice or
             TemplateQuestionAnswerType.MultipleChoice;
         var isCalculation = request.AnswerType == TemplateQuestionAnswerType.Calculation;
         if (isChoice != (options.Length > 0) ||
-            isCalculation != (rawReferences.Count > 0)) return null;
+            isCalculation != (rawReferences.Count + pinnedReferences.Count > 0)) return null;
         return new TemplateQuestionContent(
             wording, request.AnswerType, inputType, request.UnitOfMeasureId, options,
             request.Required, helpText, request.Minimum, request.Maximum,
-            rawReferences.Order().Select(id => new TemplateQuestionReference(id, Guid.Empty)).ToArray(),
+            (pinnedReferences.Count > 0
+                ? pinnedReferences.Select(item => new TemplateQuestionReference(
+                    item.QuestionId, item.RevisionId))
+                : rawReferences.Select(id => new TemplateQuestionReference(id, Guid.Empty)))
+                .OrderBy(item => item.QuestionId).ToArray(),
             request.Sensitivity);
     }
 

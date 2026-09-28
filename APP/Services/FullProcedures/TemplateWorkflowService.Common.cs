@@ -56,8 +56,8 @@ public sealed partial class TemplateWorkflowService(ApplicationDbContext context
     }
 
     private static bool ValidContext(TemplateArea area, string purposeId, string subjectTypeId) =>
-        area.Purposes.Any(x => x.PurposeId == purposeId) &&
-        area.SubjectTypes.Any(x => x.SubjectTypeId == subjectTypeId);
+        TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, purposeId, subjectTypeId, TemplateDefinitionKind.Workflow);
 
     private static TemplateWorkflowRevision NewRevision(Guid workflowId, int sequence,
         Guid actorId, TemplateWorkflowContent content)
