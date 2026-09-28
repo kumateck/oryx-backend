@@ -43,7 +43,8 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanApproveWorksheetTemplate,
         QcWorksheetPermissionKeys.CanSupersedeWorksheetTemplate,
         QcWorksheetPermissionKeys.CanImportQcWorksheetTemplates,
-        QcWorksheetPermissionKeys.CanUseAiWorksheetExtraction
+        QcWorksheetPermissionKeys.CanUseAiWorksheetExtraction,
+        QcWorksheetPermissionKeys.CanManageAiWorksheetExtractionSettings
     ];
 
     private static readonly HashSet<string> SpecificationKeys =

@@ -50,6 +50,15 @@ public static class QcWorksheetPermissionKeys
     /// </summary>
     public const string CanUseAiWorksheetExtraction = "CanUseAiWorksheetExtraction";
 
+    /// <summary>
+    /// Build brief 11: gates the provider/key management screen — choosing which external
+    /// vendor receives redacted worksheet text and holding the only access to its key. Kept
+    /// separate from <see cref="CanUseAiWorksheetExtraction"/> (using the feature day to day)
+    /// and from <see cref="CanImportQcWorksheetTemplates"/> (importing at all); configuring
+    /// this is a different authority from either.
+    /// </summary>
+    public const string CanManageAiWorksheetExtractionSettings = "CanManageAiWorksheetExtractionSettings";
+
     // Specifications
     public const string CanViewQcSpecifications = "CanViewQcSpecifications";
     public const string CanCreateQcSpecification = "CanCreateQcSpecification";

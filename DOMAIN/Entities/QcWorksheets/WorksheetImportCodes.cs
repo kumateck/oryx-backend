@@ -55,10 +55,20 @@ public static class WorksheetImportErrors
         "QcWorksheetTemplate.AiResponseUngrounded",
         "The AI extractor's response could not be grounded in the document and was refused.");
 
-    /// <summary>Build brief 10: <c>CanUseAiWorksheetExtraction</c> is held but <c>Anthropic:ApiKey</c> is not configured.</summary>
+    /// <summary>
+    /// Build brief 10: <c>CanUseAiWorksheetExtraction</c> is held but no key is configured for
+    /// the active provider. Build brief 11 also returns this from
+    /// <c>IAiExtractionSettingsService.SetActiveProviderAsync</c> when the provider being
+    /// activated has no key saved yet — you can't activate a provider you haven't configured.
+    /// </summary>
     public static readonly Error AiExtractionUnavailable = Error.Validation(
         "QcWorksheetTemplate.AiExtractionUnavailable",
-        "AI extraction is not available: no Anthropic API key is configured.");
+        "AI extraction is not available: no API key is configured for the active provider.");
+
+    /// <summary>Build brief 11: <c>SaveProviderKeyAsync</c> rejects an empty/whitespace key.</summary>
+    public static readonly Error AiExtractionKeyRequired = Error.Validation(
+        "QcWorksheetTemplate.AiExtractionKeyRequired",
+        "An API key is required.");
 }
 
 /// <summary>Stable flag codes a reviewer (and the Phase C screen) can key on.</summary>
