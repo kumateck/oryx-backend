@@ -21,8 +21,11 @@ public sealed partial class TemplateAdoptionService
         if (!ExactDependencySet(request, expected) ||
             !await TargetQuestionsAvailableAsync(grant, request.DependencyMappings, token))
             return null;
-        var targetQuestionIds = expected.Select(x => FindDependency(request, x.Item1, x.Item2)
-            .TargetDefinitionId).ToList();
+        var targetReferences = expected.Select(x => FindDependency(request, x.Item1, x.Item2))
+            .Select(x => new TemplateQuestionReferenceRequest
+            {
+                QuestionId = x.TargetDefinitionId, RevisionId = x.TargetRevisionId,
+            }).ToList();
         return new AdoptionDraftRequest(TemplateRevisionKind.Question,
             new CreateTemplateQuestionRequest
             {
@@ -34,7 +37,7 @@ public sealed partial class TemplateAdoptionService
                     new TemplateQuestionOptionRequest { Value = x.Value, Label = x.Label }).ToList(),
                 Required = source.Required, HelpText = source.HelpText,
                 Minimum = source.Minimum, Maximum = source.Maximum,
-                CalculationQuestionIds = targetQuestionIds, Sensitivity = source.Sensitivity,
+                CalculationReferences = targetReferences, Sensitivity = source.Sensitivity,
             });
     }
 

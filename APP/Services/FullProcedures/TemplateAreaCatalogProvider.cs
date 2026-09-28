@@ -32,6 +32,17 @@ public static class TemplateAreaCatalogProvider
             ["equipment", "work-order"], ["capture-response", "approval", "electronic-signature"]),
     ];
 
+    public static bool AllowsTemplateContext(
+        TemplateArea area, string purposeId, string subjectTypeId,
+        TemplateDefinitionKind kind)
+    {
+        var purpose = PurposeDefinitions.SingleOrDefault(item => item.Id == purposeId);
+        return purpose is not null && purpose.Kinds.Contains(kind) &&
+            purpose.Subjects.Contains(subjectTypeId) &&
+            area.Purposes.Any(item => item.PurposeId == purposeId) &&
+            area.SubjectTypes.Any(item => item.SubjectTypeId == subjectTypeId);
+    }
+
     private static readonly TemplateCatalogItemDto[] SubjectTypes = Items(
         ("batch", "Batch"), ("candidate", "Candidate"), ("department", "Department"),
         ("employee", "Employee"), ("environment", "Environment"), ("equipment", "Equipment"),

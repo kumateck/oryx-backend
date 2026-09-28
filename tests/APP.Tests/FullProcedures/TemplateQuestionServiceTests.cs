@@ -143,7 +143,10 @@ public sealed partial class TemplateQuestionServiceTests
         calculation.Wording = "Calculate the derived result";
         calculation.AnswerType = TemplateQuestionAnswerType.Calculation;
         calculation.InputType = "formula";
-        calculation.CalculationQuestionIds = [source.TemplateQuestionId];
+        calculation.CalculationReferences = [new TemplateQuestionReferenceRequest
+        {
+            QuestionId = source.TemplateQuestionId, RevisionId = source.Id,
+        }];
 
         var result = await fixture.Service.CreateAsync(
             calculation, fixture.AuthorId, [fixture.AuthorRoleId], Guid.NewGuid());
@@ -152,6 +155,50 @@ public sealed partial class TemplateQuestionServiceTests
         var reference = Assert.Single(result.Value.CalculationReferences);
         Assert.Equal(source.TemplateQuestionId, reference.QuestionId);
         Assert.Equal(source.Id, reference.RevisionId);
+    }
+
+    [Fact]
+    public async Task Calculation_rejects_a_revision_other_than_the_selected_published_one()
+    {
+        await using var fixture = await Fixture.Create();
+        var source = await fixture.CreateAndPublishQuestion();
+        var calculation = fixture.QuestionRequest();
+        calculation.Wording = "Calculate the derived result";
+        calculation.AnswerType = TemplateQuestionAnswerType.Calculation;
+        calculation.InputType = "formula";
+        calculation.CalculationReferences = [new TemplateQuestionReferenceRequest
+        {
+            QuestionId = source.TemplateQuestionId, RevisionId = Guid.NewGuid(),
+        }];
+
+        var result = await fixture.Service.CreateAsync(
+            calculation, fixture.AuthorId, [fixture.AuthorRoleId], Guid.NewGuid());
+
+        Assert.Equal("TemplateQuestion.Invalid", Assert.Single(result.Errors).Code);
+    }
+
+    [Fact]
+    public async Task Calculation_rejects_a_selected_source_after_it_is_retired()
+    {
+        await using var fixture = await Fixture.Create();
+        var source = await fixture.CreateAndPublishQuestion();
+        var stored = await fixture.Context.Set<TemplateQuestionRevision>()
+            .SingleAsync(item => item.Id == source.Id);
+        stored.Status = TemplateQuestionRevisionStatus.Retired;
+        await fixture.Context.SaveChangesAsync();
+        var calculation = fixture.QuestionRequest();
+        calculation.Wording = "Calculate the derived result";
+        calculation.AnswerType = TemplateQuestionAnswerType.Calculation;
+        calculation.InputType = "formula";
+        calculation.CalculationReferences = [new TemplateQuestionReferenceRequest
+        {
+            QuestionId = source.TemplateQuestionId, RevisionId = source.Id,
+        }];
+
+        var result = await fixture.Service.CreateAsync(
+            calculation, fixture.AuthorId, [fixture.AuthorRoleId], Guid.NewGuid());
+
+        Assert.Equal("TemplateQuestion.Invalid", Assert.Single(result.Errors).Code);
     }
 
     [Fact]

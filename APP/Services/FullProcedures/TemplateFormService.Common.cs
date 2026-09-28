@@ -72,10 +72,9 @@ public sealed partial class TemplateFormService(ApplicationDbContext context)
         return TemplateFormServiceSupport.BuildContent(request, byRevision);
     }
 
-    private static bool ValidContext(
-        TemplateArea area, string purposeId, string subjectTypeId) =>
-        area.Purposes.Any(item => item.PurposeId == purposeId) &&
-        area.SubjectTypes.Any(item => item.SubjectTypeId == subjectTypeId);
+    private static bool ValidContext(TemplateArea area, string purposeId, string subjectTypeId) =>
+        TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, purposeId, subjectTypeId, TemplateDefinitionKind.Form);
 
     private static TemplateFormRevision NewRevision(
         Guid formId, int sequence, Guid actorId, TemplateFormContent content)

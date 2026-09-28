@@ -45,21 +45,24 @@ public sealed partial class TemplateQuestionService(ApplicationDbContext context
                 .AnyAsync(item => item.Id == content.UnitOfMeasureId.Value, cancellationToken))
             return null;
         if (content.CalculationReferences.Count == 0) return content;
+        var pinned = content.CalculationReferences.All(item => item.RevisionId != Guid.Empty);
         var questionIds = content.CalculationReferences.Select(item => item.QuestionId).ToArray();
+        var revisionIds = content.CalculationReferences.Select(item => item.RevisionId).ToArray();
         var references = await context.Set<TemplateQuestionRevision>().AsNoTracking()
             .Where(item => questionIds.Contains(item.TemplateQuestionId) &&
                 item.TemplateQuestion.TemplateAreaId == areaId &&
+                (!pinned || revisionIds.Contains(item.Id)) &&
                 item.Status == TemplateQuestionRevisionStatus.Published)
             .Select(item => new TemplateQuestionReference(item.TemplateQuestionId, item.Id))
             .ToListAsync(cancellationToken);
-        return references.Count == questionIds.Length ? content with
+        return references.Count == questionIds.Length &&
+            (!pinned || content.CalculationReferences.All(references.Contains)) ? content with
             { CalculationReferences = references.OrderBy(item => item.QuestionId).ToArray() } : null;
     }
 
-    private static bool ValidContext(
-        TemplateArea area, string purposeId, string subjectTypeId) =>
-        area.Purposes.Any(item => item.PurposeId == purposeId) &&
-        area.SubjectTypes.Any(item => item.SubjectTypeId == subjectTypeId);
+    private static bool ValidContext(TemplateArea area, string purposeId, string subjectTypeId) =>
+        TemplateAreaCatalogProvider.AllowsTemplateContext(
+            area, purposeId, subjectTypeId, TemplateDefinitionKind.Question);
 
     private static TemplateQuestionRevision NewRevision(
         Guid questionId, int sequence, Guid actorId, TemplateQuestionContent content)
