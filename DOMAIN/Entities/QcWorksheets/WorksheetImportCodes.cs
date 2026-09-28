@@ -45,6 +45,30 @@ public static class WorksheetImportErrors
 {
     public static readonly Error NoFiles =
         Error.Validation("QcWorksheetTemplate.ImportNoFiles", "At least one .docx file is required");
+
+    /// <summary>
+    /// Build brief 10: the AI extractor's response did not validate against the expected
+    /// schema, or proposed a field whose <c>sourceQuote</c> is not verbatim in the redacted
+    /// document. Refused outright — never partially accepted.
+    /// </summary>
+    public static readonly Error AiResponseUngrounded = Error.Validation(
+        "QcWorksheetTemplate.AiResponseUngrounded",
+        "The AI extractor's response could not be grounded in the document and was refused.");
+
+    /// <summary>
+    /// Build brief 10: <c>CanUseAiWorksheetExtraction</c> is held but no key is configured for
+    /// the active provider. Build brief 11 also returns this from
+    /// <c>IAiExtractionSettingsService.SetActiveProviderAsync</c> when the provider being
+    /// activated has no key saved yet — you can't activate a provider you haven't configured.
+    /// </summary>
+    public static readonly Error AiExtractionUnavailable = Error.Validation(
+        "QcWorksheetTemplate.AiExtractionUnavailable",
+        "AI extraction is not available: no API key is configured for the active provider.");
+
+    /// <summary>Build brief 11: <c>SaveProviderKeyAsync</c> rejects an empty/whitespace key.</summary>
+    public static readonly Error AiExtractionKeyRequired = Error.Validation(
+        "QcWorksheetTemplate.AiExtractionKeyRequired",
+        "An API key is required.");
 }
 
 /// <summary>Stable flag codes a reviewer (and the Phase C screen) can key on.</summary>
@@ -97,4 +121,24 @@ public static class WorksheetImportFlagCodes
 
     /// <summary>A Specification document with no worksheet NNN in the upload and no saved RM-NNN template.</summary>
     public const string WorksheetNotFound = "WorksheetNotFound";
+
+    /// <summary>
+    /// Build brief 10: any field of this proposal came from the AI fallback extractor, not a
+    /// deterministic recognizer. A distinct, non-dismissable banner — never folded into the
+    /// ordinary confidence styling.
+    /// </summary>
+    public const string AiExtracted = "AiExtracted";
+
+    /// <summary>
+    /// Build brief 10: the AI extractor recognized a run-data label or choice phrase not in the
+    /// curated dictionaries and is confident it is one. The suggestion is attached to this
+    /// flag's own text, informational only — never applied automatically.
+    /// </summary>
+    public const string AiDictionarySuggestion = "AiDictionarySuggestion";
+
+    /// <summary>
+    /// A run-data label was found but its value could not be confidently redacted before the AI
+    /// path would have sent it. The document is refused rather than sent unredacted.
+    /// </summary>
+    public const string RedactionRefused = "RedactionRefused";
 }

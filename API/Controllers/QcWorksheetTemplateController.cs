@@ -181,7 +181,9 @@ public class QcWorksheetTemplateController(
     [Authorize(QcWorksheetPermissionKeys.CanImportQcWorksheetTemplates)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<WorksheetImportProposal>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> Import(CancellationToken cancellationToken)
+    public async Task<IResult> Import(
+        CancellationToken cancellationToken,
+        [FromServices] IAuthorizationService authorizationService)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId is null) return TypedResults.Unauthorized();
@@ -189,7 +191,14 @@ public class QcWorksheetTemplateController(
         if (!HttpContext.Request.HasFormContentType || HttpContext.Request.Form.Files.Count == 0)
             return Result.Failure(WorksheetImportErrors.NoFiles).ToProblemDetails();
 
-        var proposals = await importService.ProposeAsync(HttpContext.Request.Form.Files, cancellationToken);
+        // Build brief 10: the AI fallback extractor is gated by its own key, separate from the
+        // import endpoint's CanImportQcWorksheetTemplates. Without it, an unrecognized file gets
+        // today's plain refusal, unchanged.
+        var aiAuthorized = await authorizationService.AuthorizeAsync(
+            User, QcWorksheetPermissionKeys.CanUseAiWorksheetExtraction);
+
+        var proposals = await importService.ProposeAsync(
+            HttpContext.Request.Form.Files, aiAuthorized.Succeeded, cancellationToken);
         return TypedResults.Ok(proposals);
     }
 }

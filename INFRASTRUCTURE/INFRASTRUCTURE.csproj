@@ -8,6 +8,10 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.6" />
+      <!-- Build brief 11: persists the Data Protection key ring to ApplicationDbContext instead of
+           the default local-filesystem key ring, so an encrypted AI provider key stays decryptable
+           after a restart or on any other instance behind a load balancer. -->
+      <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="9.0.3" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
         <PrivateAssets>all</PrivateAssets>
