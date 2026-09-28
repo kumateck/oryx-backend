@@ -2,6 +2,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -90,6 +91,26 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Details of a document in the caller's active pending queue.</summary>
+    [HttpGet("my-pending/{modelType}/{modelId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalEntity))]
+    public async Task<IResult> GetMyPendingApprovalDetail(string modelType, Guid modelId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
+        var assigned = await repository.GetEntitiesRequiringApproval(
+            Guid.Parse(userId), roleIds, modelType);
+        if (!assigned.Any(item => item.Id == modelId))
+            return TypedResults.Forbid();
+
+        var result = await repository.GetEntityRequiringApproval(modelType, modelId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Retrieves a paginated list of approvals.
     /// </summary>
@@ -167,6 +188,14 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         if (userId == null)
             return TypedResults.Unauthorized();
 
+        if (!QcWorksheetModelTypes.IsQcWorksheetModelType(modelType))
+        {
+            var assigned = await repository.GetEntitiesRequiringApproval(
+                Guid.Parse(userId), roleIds, modelType);
+            if (!assigned.Any(item => item.Id == modelId))
+                return TypedResults.Forbid();
+        }
+
         var result = await repository.ApproveItem(
             modelType,
             modelId,
@@ -197,6 +226,14 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         if (userId == null)
             return TypedResults.Unauthorized();
 
+        if (!QcWorksheetModelTypes.IsQcWorksheetModelType(modelType))
+        {
+            var assigned = await repository.GetEntitiesRequiringApproval(
+                Guid.Parse(userId), roleIds, modelType);
+            if (!assigned.Any(item => item.Id == modelId))
+                return TypedResults.Forbid();
+        }
+
         var result = await repository.RejectItem(
             modelType,
             modelId,
@@ -224,8 +261,13 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         if (currentUserId == null)
             return TypedResults.Unauthorized();
 
+        // The queue is always scoped to the authenticated approver. A supplied
+        // userId must never expose another user's assigned documents.
+        if (userId.HasValue && userId.Value != Guid.Parse(currentUserId))
+            return TypedResults.Forbid();
+
         var result = await repository.GetEntitiesRequiringApproval(
-            userId ?? Guid.Parse(currentUserId),
+            Guid.Parse(currentUserId),
             roleIds,
             modelType
         );

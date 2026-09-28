@@ -164,6 +164,13 @@ public class ApprovalRepository(
         string comments = null
     )
     {
+        if (modelType == nameof(StaffRequisition))
+            return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
+        if (modelType == nameof(ProductionOrder))
+            return await StaffAndProductionApprovalHandler.ReviewProductionAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
+
         if (modelType == nameof(AllocateProductionOrder))
             return await AllocateProductionOrderApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
@@ -231,11 +238,12 @@ public class ApprovalRepository(
                     Status = item.Status,
                     Required = item.Required,
                     ApprovalTime = item.ApprovalTime,
+                    ActivatedAt = item.ActivatedAt,
                     Comments = item.Comments,
                 })
                 .ToList();
 
-            var currentApprovals = GetCurrentApprovalStage(approvalStages, userId, roleIds[0]);
+            var currentApprovals = GetCurrentApprovalStage(approvalStages, userId, roleIds);
 
             var approvableStage = currentApprovals.FirstOrDefault();
 
@@ -294,14 +302,15 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
 
-                var newlyActiveStages = GetCurrentApprovalStage(
+                var newlyActiveStages = GetNextApprovalStages(
                         updatedApprovalStages,
                         userId,
-                        roleIds[0]
+                        roleIds
                     )
                     .Where(s => !s.ActivatedAt.HasValue)
                     .ToList();
@@ -309,7 +318,9 @@ public class ApprovalRepository(
                 foreach (var stageToActivate in newlyActiveStages)
                 {
                     var actualStage = requisition.Approvals.First(ra =>
-                        ra.Status != ApprovalStatus.Approved
+                        ra.Status == ApprovalStatus.Pending
+                        && !ra.ActivatedAt.HasValue
+                        && ra.Order == stageToActivate.Order
                         && (
                             ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue
                             || (
@@ -358,6 +369,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -365,7 +377,7 @@ public class ApprovalRepository(
                 var purchaseOrderCurrentApprovals = GetCurrentApprovalStage(
                     purchaseOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var purchaseOrderApprovingStage = purchaseOrderCurrentApprovals.FirstOrDefault();
@@ -423,14 +435,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -438,7 +451,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = purchaseOrder.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -484,6 +499,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -491,7 +507,7 @@ public class ApprovalRepository(
                 var billingSheetCurrentApprovals = GetCurrentApprovalStage(
                     billingSheetApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var billingSheetApprovingStage = billingSheetCurrentApprovals.FirstOrDefault();
@@ -548,14 +564,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -563,7 +580,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = billingSheet.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -609,6 +628,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -616,7 +636,7 @@ public class ApprovalRepository(
                 var staffRequisitionCurrentApprovals = GetCurrentApprovalStage(
                     staffRequisitionApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var staffRequisitionApprovingStage =
@@ -673,14 +693,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -688,7 +709,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = staffRequisition.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -735,6 +758,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -742,7 +766,7 @@ public class ApprovalRepository(
                 var leaveRequestCurrentApprovals = GetCurrentApprovalStage(
                     leaveRequestApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault();
@@ -798,14 +822,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -813,7 +838,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = leaveRequest.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -859,6 +886,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -866,7 +894,7 @@ public class ApprovalRepository(
                 var payrollRunCurrentApprovals = GetCurrentApprovalStage(
                     payrollRunApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var payrollRunApprovingStage = payrollRunCurrentApprovals.FirstOrDefault();
@@ -919,14 +947,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -934,7 +963,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = payrollRun.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue
                                 || (
@@ -979,6 +1010,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -986,7 +1018,7 @@ public class ApprovalRepository(
                 var performanceReviewCurrentApprovals = GetCurrentApprovalStage(
                     performanceReviewApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var performanceReviewApprovingStage = performanceReviewCurrentApprovals.FirstOrDefault();
@@ -1039,14 +1071,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1054,7 +1087,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = performanceReview.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId && stageToActivate.UserId.HasValue
                                 || (
@@ -1099,6 +1134,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1106,7 +1142,7 @@ public class ApprovalRepository(
                 var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(
                     overtimeRequestApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var overtimeRequestApprovingStage =
@@ -1164,14 +1200,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1179,7 +1216,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = overtimeRequest.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -1230,6 +1269,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1237,7 +1277,7 @@ public class ApprovalRepository(
                 var responseCurrentApprovals = GetCurrentApprovalStage(
                     responseApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
@@ -1305,14 +1345,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1320,7 +1361,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = currentResponseApprovals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -1368,6 +1411,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1375,7 +1419,7 @@ public class ApprovalRepository(
                 var allocationCurrentApprovals = GetCurrentApprovalStage(
                     allocateProductionOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault();
@@ -1434,14 +1478,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1449,7 +1494,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = proformaInvoice.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -1496,6 +1543,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1503,7 +1551,7 @@ public class ApprovalRepository(
                 var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(
                     shipmentDocumentOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var shipmentDocumentApprovingStage =
@@ -1562,14 +1610,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1577,7 +1626,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = shipmentDocument.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -1624,6 +1675,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1631,7 +1683,7 @@ public class ApprovalRepository(
                 var jobRequestCurrentApprovals = GetCurrentApprovalStage(
                     jobRequestOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var jobRequestApprovingStage = jobRequestCurrentApprovals.FirstOrDefault();
@@ -1688,14 +1740,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1703,7 +1756,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = jobRequest.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -1754,6 +1809,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1761,7 +1817,7 @@ public class ApprovalRepository(
                 var productionExtraPackingCurrentApprovals = GetCurrentApprovalStage(
                     productionExtraPackingOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var productionExtraPackingApprovingStage =
@@ -1820,14 +1876,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1835,7 +1892,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = productionExtraPacking.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -1886,6 +1945,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -1893,7 +1953,7 @@ public class ApprovalRepository(
                 var fgtnCurrentApprovals = GetCurrentApprovalStage(
                     fgtnOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var fgtnApprovingStage = fgtnCurrentApprovals.FirstOrDefault();
@@ -1950,14 +2010,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -1965,7 +2026,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = finishedGoodsTransferNote.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -2017,6 +2080,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2024,7 +2088,7 @@ public class ApprovalRepository(
                 var stockAdjustmentCurrentApprovals = GetCurrentApprovalStage(
                     stockAdjustmentOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var stockAdjustmentApprovingStage =
@@ -2090,14 +2154,15 @@ public class ApprovalRepository(
                             Status = item.Status,
                             Required = item.Required,
                             ApprovalTime = item.ApprovalTime,
+                            ActivatedAt = item.ActivatedAt,
                             Comments = item.Comments,
                         })
                         .ToList();
 
-                    var newlyActiveStages = GetCurrentApprovalStage(
+                    var newlyActiveStages = GetNextApprovalStages(
                             updatedApprovalStages,
                             userId,
-                            roleIds[0]
+                            roleIds
                         )
                         .Where(s => !s.ActivatedAt.HasValue)
                         .ToList();
@@ -2105,7 +2170,9 @@ public class ApprovalRepository(
                     foreach (var stageToActivate in newlyActiveStages)
                     {
                         var actualStage = stockAdjustment.Approvals.First(ra =>
-                            ra.Status != ApprovalStatus.Approved
+                            ra.Status == ApprovalStatus.Pending
+                            && !ra.ActivatedAt.HasValue
+                            && ra.Order == stageToActivate.Order
                             && (
                                 ra.UserId == stageToActivate.UserId
                                     && stageToActivate.UserId.HasValue
@@ -2151,6 +2218,13 @@ public class ApprovalRepository(
         string comments = null
     )
     {
+        if (modelType == nameof(StaffRequisition))
+            return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
+        if (modelType == nameof(ProductionOrder))
+            return await StaffAndProductionApprovalHandler.ReviewProductionAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
+
         if (modelType == nameof(AllocateProductionOrder))
             return await AllocateProductionOrderApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
@@ -2214,11 +2288,12 @@ public class ApprovalRepository(
                     Status = item.Status,
                     Required = item.Required,
                     ApprovalTime = item.ApprovalTime,
+                    ActivatedAt = item.ActivatedAt,
                     Comments = item.Comments,
                 })
                 .ToList();
 
-            var currentApprovals = GetCurrentApprovalStage(approvalStages, userId, roleIds[0]);
+            var currentApprovals = GetCurrentApprovalStage(approvalStages, userId, roleIds);
 
             var approvableStage = currentApprovals.FirstOrDefault();
 
@@ -2279,6 +2354,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2286,7 +2362,7 @@ public class ApprovalRepository(
                 var purchaseOrderCurrentApprovals = GetCurrentApprovalStage(
                     purchaseOrderApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var purchaseOrderApprovingStage = purchaseOrderCurrentApprovals.FirstOrDefault();
@@ -2344,6 +2420,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2351,7 +2428,7 @@ public class ApprovalRepository(
                 var billingSheetCurrentApprovals = GetCurrentApprovalStage(
                     billingSheetApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var billingSheetApprovingStage = billingSheetCurrentApprovals.FirstOrDefault();
@@ -2410,6 +2487,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2417,7 +2495,7 @@ public class ApprovalRepository(
                 var leaveRequestCurrentApprovals = GetCurrentApprovalStage(
                     leaveRequestApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var leaveRequestApprovingStage = leaveRequestCurrentApprovals.FirstOrDefault();
@@ -2496,6 +2574,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2503,7 +2582,7 @@ public class ApprovalRepository(
                 var payrollRunCurrentApprovals = GetCurrentApprovalStage(
                     payrollRunApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var payrollRunApprovingStage = payrollRunCurrentApprovals.FirstOrDefault();
@@ -2567,6 +2646,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2574,7 +2654,7 @@ public class ApprovalRepository(
                 var performanceReviewCurrentApprovals = GetCurrentApprovalStage(
                     performanceReviewApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var performanceReviewApprovingStage = performanceReviewCurrentApprovals.FirstOrDefault();
@@ -2637,6 +2717,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2644,7 +2725,7 @@ public class ApprovalRepository(
                 var overtimeRequestCurrentApprovals = GetCurrentApprovalStage(
                     overtimeRequestApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var overtimeRequestApprovingStage =
@@ -2711,6 +2792,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2718,7 +2800,7 @@ public class ApprovalRepository(
                 var responseCurrentApprovals = GetCurrentApprovalStage(
                     responseApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
@@ -2836,6 +2918,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2843,7 +2926,7 @@ public class ApprovalRepository(
                 var allocationCurrentApprovals = GetCurrentApprovalStage(
                     allocationApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var allocationApprovingStage = allocationCurrentApprovals.FirstOrDefault();
@@ -2902,6 +2985,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2909,7 +2993,7 @@ public class ApprovalRepository(
                 var shipmentDocumentCurrentApprovals = GetCurrentApprovalStage(
                     shipmentDocumentApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var shipmentDocumentApprovingStage =
@@ -2972,6 +3056,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -2979,7 +3064,7 @@ public class ApprovalRepository(
                 var jobRequestCurrentApprovals = GetCurrentApprovalStage(
                     jobRequestApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var jobRequestApprovingStage = jobRequestCurrentApprovals.FirstOrDefault();
@@ -3040,6 +3125,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -3047,7 +3133,7 @@ public class ApprovalRepository(
                 var productionExtraPackingCurrentApprovals = GetCurrentApprovalStage(
                     productionExtraPackingApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var productionExtraPackingApprovingStage =
@@ -3112,6 +3198,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -3119,7 +3206,7 @@ public class ApprovalRepository(
                 var fgtnCurrentApprovals = GetCurrentApprovalStage(
                     fgtnApprovalStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var fgtnApprovingStage = fgtnCurrentApprovals.FirstOrDefault();
@@ -3180,6 +3267,7 @@ public class ApprovalRepository(
                         Status = item.Status,
                         Required = item.Required,
                         ApprovalTime = item.ApprovalTime,
+                        ActivatedAt = item.ActivatedAt,
                         Comments = item.Comments,
                     })
                     .ToList();
@@ -3187,7 +3275,7 @@ public class ApprovalRepository(
                 var stockAdjustmentCurrentRejections = GetCurrentApprovalStage(
                     stockAdjustmentRejectionStages,
                     userId,
-                    roleIds[0]
+                    roleIds
                 );
 
                 var stockAdjustmentRejectingStage =
@@ -3252,7 +3340,8 @@ public class ApprovalRepository(
             .Where(po =>
                 po.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3285,7 +3374,8 @@ public class ApprovalRepository(
             .Where(po =>
                 po.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3347,7 +3437,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3376,7 +3467,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3407,7 +3499,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3436,7 +3529,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3467,7 +3561,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3531,7 +3626,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3560,7 +3656,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3589,7 +3686,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3622,7 +3720,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3653,7 +3752,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3682,7 +3782,8 @@ public class ApprovalRepository(
             .Where(bs =>
                 bs.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3712,7 +3813,8 @@ public class ApprovalRepository(
             .Where(item => item.Approvals.Any(stage =>
                 (stage.UserId == userId
                     || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                && stage.Status != ApprovalStatus.Approved))
+                && stage.Status == ApprovalStatus.Pending
+                && stage.ActivatedAt.HasValue))
             .ToListAsync();
 
         foreach (var allocation in allocations)
@@ -3803,7 +3905,8 @@ public class ApprovalRepository(
             .Where(item =>
                 item.Approvals.Any(a =>
                     (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status != ApprovalStatus.Approved
+                    && a.Status == ApprovalStatus.Pending
+                    && a.ActivatedAt.HasValue
                 )
             )
             .ToListAsync();
@@ -3857,6 +3960,38 @@ public class ApprovalRepository(
             ApprovalLogs = GetApprovalLogs(item.Id),
         }));
 
+        var staffRequisitions = await context.StaffRequisitions
+            .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+            .Include(item => item.Approvals)
+            .Where(item => item.Approvals.Any(stage =>
+                (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
+                && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
+            .ToListAsync();
+        entitiesRequiringApproval.AddRange(staffRequisitions.Select(item => new ApprovalEntity
+        {
+            ModelType = nameof(StaffRequisition), Id = item.Id,
+            Code = item.Id.ToString(), CreatedAt = item.CreatedAt,
+            Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
+            RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
+            ApprovalLogs = GetApprovalLogs(item.Id),
+        }));
+
+        var productionOrders = await context.ProductionOrders
+            .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+            .Include(item => item.Approvals)
+            .Where(item => item.Approvals.Any(stage =>
+                (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
+                && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
+            .ToListAsync();
+        entitiesRequiringApproval.AddRange(productionOrders.Select(item => new ApprovalEntity
+        {
+            ModelType = nameof(ProductionOrder), Id = item.Id,
+            Code = item.Code, CreatedAt = item.CreatedAt,
+            Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
+            RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
+            ApprovalLogs = GetApprovalLogs(item.Id),
+        }));
+
         if (!string.IsNullOrEmpty(modelType))
         {
             entitiesRequiringApproval = entitiesRequiringApproval
@@ -3876,7 +4011,7 @@ public class ApprovalRepository(
         async Task Collect(IQueryable<ResponsibleApprovalStage> query)
         {
             var results = await query
-                .Where(a => a.Status == ApprovalStatus.Pending)
+                .Where(a => a.Status == ApprovalStatus.Pending && a.ActivatedAt.HasValue)
                 .Select(a => new { a.UserId, a.RoleId })
                 .ToListAsync();
 
@@ -3958,6 +4093,36 @@ public class ApprovalRepository(
     {
         switch (modelType)
         {
+            case nameof(StaffRequisition):
+                var staff = await context.StaffRequisitions
+                    .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (staff is null)
+                    return Error.NotFound("StaffRequisition.NotFound", "Staff requisition not found.");
+                return new ApprovalEntity
+                {
+                    ModelType = modelType, Id = staff.Id, Code = staff.Id.ToString(),
+                    CreatedAt = staff.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(staff.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(staff.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(staff.Id),
+                };
+
+            case nameof(ProductionOrder):
+                var order = await context.ProductionOrders
+                    .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (order is null)
+                    return Error.NotFound("ProductionOrder.NotFound", "Production order not found.");
+                return new ApprovalEntity
+                {
+                    ModelType = modelType, Id = order.Id, Code = order.Code,
+                    CreatedAt = order.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(order.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(order.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(order.Id),
+                };
+
             case "PurchaseRequisition" or "StockRequisition" or "TrialRequisition":
                 var requisition = await context
                     .Requisitions.AsSplitQuery()
@@ -4360,22 +4525,50 @@ public class ApprovalRepository(
         }
     }
 
+    private static List<ResponsibleApprovalStage> GetNextApprovalStages(
+        List<ResponsibleApprovalStage> stages,
+        Guid _,
+        IReadOnlyCollection<Guid> __
+    )
+    {
+        var nextOrder = stages
+            .Where(stage => stage.Status == ApprovalStatus.Pending
+                            && !stage.ActivatedAt.HasValue)
+            .OrderBy(stage => stage.Order)
+            .Select(stage => (int?)stage.Order)
+            .FirstOrDefault();
+        return nextOrder.HasValue
+            ? stages.Where(stage => stage.Status == ApprovalStatus.Pending
+                                    && !stage.ActivatedAt.HasValue
+                                    && stage.Order == nextOrder.Value).ToList()
+            : [];
+    }
+
     public List<ResponsibleApprovalStage> GetCurrentApprovalStage(
         List<ResponsibleApprovalStage> stages,
         Guid userId,
         Guid roleId
     )
+        => GetCurrentApprovalStage(stages, userId, new List<Guid> { roleId });
+
+    public List<ResponsibleApprovalStage> GetCurrentApprovalStage(
+        List<ResponsibleApprovalStage> stages,
+        Guid userId,
+        IReadOnlyCollection<Guid> roleIds
+    )
     {
         var result = new List<ResponsibleApprovalStage>();
 
         // Sort by order first
-        var sortedStages = stages.OrderBy(s => s.Order).ToList();
+        var sortedStages = stages
+            .Where(s => s.Status == ApprovalStatus.Pending && s.ActivatedAt.HasValue)
+            .OrderBy(s => s.Order).ToList();
 
         // Find the next required unapproved stage
         var nextRequired = sortedStages.FirstOrDefault(s =>
             s.Required
             && s.Status != ApprovalStatus.Approved
-            && (s.UserId == userId || s.RoleId == roleId)
+            && (s.UserId == userId || (s.RoleId.HasValue && roleIds.Contains(s.RoleId.Value)))
         );
 
         if (nextRequired == null)
@@ -4385,7 +4578,7 @@ public class ApprovalRepository(
                 sortedStages.Where(s =>
                     !s.Required
                     && s.Status != ApprovalStatus.Approved
-                    && (s.UserId == userId || s.RoleId == roleId)
+                    && (s.UserId == userId || (s.RoleId.HasValue && roleIds.Contains(s.RoleId.Value)))
                 )
             );
             return result;
@@ -4395,6 +4588,7 @@ public class ApprovalRepository(
         var priorUnrequired = sortedStages
             .Where(s =>
                 !s.Required && s.Status != ApprovalStatus.Approved && s.Order < nextRequired.Order
+                && (s.UserId == userId || (s.RoleId.HasValue && roleIds.Contains(s.RoleId.Value)))
             )
             .ToList();
 
