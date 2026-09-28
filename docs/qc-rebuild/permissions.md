@@ -7,7 +7,7 @@ every action/view gets its own dedicated permission key, never shared (see
 ```
 CONFIGURATION
   qc.stp.view / .create / .edit / .approve / .supersede / .import
-  qc.worksheetTemplate.view / .create / .edit / .approve / .supersede
+  qc.worksheetTemplate.view / .create / .edit / .approve / .supersede / .import
   qc.specification.view / .create / .edit / .approve / .supersede
   qc.monitoringProgram.view / .create / .edit / .pause
   qc.samplingPoint.view / .manage       (master data — view splits off, then create/edit/
@@ -74,6 +74,14 @@ import produces the same thing a manual create would (a Draft) — bulk-importin
 existing STP library is a migration-scale activity worth being able to restrict
 independently of everyday STP authoring, e.g. to a small migration team during
 Phase 3 rollout without handing that same group ordinary STP-creation rights.
+
+`qc.worksheetTemplate.import` (`CanImportQcWorksheetTemplates` in code) mirrors
+`qc.stp.import` for the same reason: turning the lab's ARD Word worksheets into template
+proposals ([build brief 07](./build-briefs/07-worksheet-docx-import.md)) is a migration-scale
+activity, restricted separately from everyday template authoring. The import endpoint
+(`POST qc/worksheets/templates/import`) writes nothing — it returns proposals only. Saving
+one still goes through `qc.worksheetTemplate.create`, and accepting its SamplingPoint
+proposals through `qc.samplingPoint.manage`, so the import key alone never creates anything.
 
 See [roles-permission-matrix.md](./roles-permission-matrix.md) for which real job
 roles (QC Officer, QA Executive, QC Manager, QA Manager/Deputy, QA Head) get which of

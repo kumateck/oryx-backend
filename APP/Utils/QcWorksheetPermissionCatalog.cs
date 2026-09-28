@@ -14,6 +14,7 @@ public static class QcWorksheetPermissionCatalog
     public const string StandardTestProcedures = "QC Standard Test Procedures";
     public const string WorksheetTemplates = "QC Worksheet Templates";
     public const string Specifications = "QC Specifications";
+    public const string SpecificationProposals = "QC Specification Proposals";
     public const string SamplingPointGroups = "QC Sampling Point Groups";
     public const string SamplingPoints = "QC Sampling Points";
     public const string TestRequests = "QC Test Requests";
@@ -34,6 +35,18 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanImportQcStp
     ];
 
+    private static readonly HashSet<string> WorksheetTemplateKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewWorksheetTemplates,
+        QcWorksheetPermissionKeys.CanCreateWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanEditWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanApproveWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanSupersedeWorksheetTemplate,
+        QcWorksheetPermissionKeys.CanImportQcWorksheetTemplates,
+        QcWorksheetPermissionKeys.CanUseAiWorksheetExtraction,
+        QcWorksheetPermissionKeys.CanManageAiWorksheetExtractionSettings
+    ];
+
     private static readonly HashSet<string> SpecificationKeys =
     [
         QcWorksheetPermissionKeys.CanViewQcSpecifications,
@@ -41,6 +54,13 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanEditQcSpecification,
         QcWorksheetPermissionKeys.CanApproveQcSpecification,
         QcWorksheetPermissionKeys.CanSupersedeQcSpecification
+    ];
+
+    private static readonly HashSet<string> SpecificationProposalKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewQcSpecificationProposals,
+        QcWorksheetPermissionKeys.CanApplyQcSpecificationProposals,
+        QcWorksheetPermissionKeys.CanDismissQcSpecificationProposals
     ];
 
     private static readonly HashSet<string> SamplingPointGroupKeys =
@@ -122,7 +142,9 @@ public static class QcWorksheetPermissionCatalog
     private static string SubmoduleFor(string key)
     {
         if (StpKeys.Contains(key)) return StandardTestProcedures;
+        if (WorksheetTemplateKeys.Contains(key)) return WorksheetTemplates;
         if (SpecificationKeys.Contains(key)) return Specifications;
+        if (SpecificationProposalKeys.Contains(key)) return SpecificationProposals;
         if (TestRequestKeys.Contains(key)) return TestRequests;
         if (TestRoomKeys.Contains(key)) return TestRoom;
         if (OosCaseKeys.Contains(key)) return OosCases;

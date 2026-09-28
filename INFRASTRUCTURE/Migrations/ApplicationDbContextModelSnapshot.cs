@@ -16523,6 +16523,97 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("RevisedPurchaseOrderItem");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.AiExtractionActiveProvider", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("QcAiExtractionActiveProvider");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.AiExtractionSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedApiKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("KeyPreview")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Model")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("QcAiExtractionSettings");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Coa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -17279,6 +17370,80 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("QcSpecificationCharacteristics", (string)null);
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationProposalSet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AppliedSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DismissReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Family")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ProposalJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("SourceFileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("SpecificationCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorksheetTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppliedSpecificationId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("WorksheetTemplateId");
+
+                    b.HasIndex("Status", "Family");
+
+                    b.ToTable("QcSpecProposalSets", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink", b =>
                 {
                     b.Property<Guid>("Id")
@@ -17823,6 +17988,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Mode")
                         .HasColumnType("integer");
 
+                    b.Property<string>("OptionsJson")
+                        .HasColumnType("text");
+
                     b.Property<int>("Order")
                         .HasColumnType("integer");
 
@@ -17910,6 +18078,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<int>("Mode")
                         .HasColumnType("integer");
+
+                    b.Property<string>("OptionsJson")
+                        .HasColumnType("text");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
@@ -24260,6 +24431,25 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("WarehousesId");
 
                     b.ToTable("EmployeeWarehouse");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -34138,6 +34328,48 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UoM");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.AiExtractionActiveProvider", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.AiExtractionSettings", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.Coa", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -34507,6 +34739,42 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("SourceWorksheetTemplate");
 
                     b.Navigation("Specification");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationProposalSet", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.Specification", "AppliedSpecification")
+                        .WithMany()
+                        .HasForeignKey("AppliedSpecificationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.QcWorksheets.WorksheetTemplate", "WorksheetTemplate")
+                        .WithMany()
+                        .HasForeignKey("WorksheetTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AppliedSpecification");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("WorksheetTemplate");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink", b =>

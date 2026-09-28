@@ -32,12 +32,52 @@ public static class QcWorksheetPermissionKeys
     public const string CanApproveWorksheetTemplate = "CanApproveWorksheetTemplate";
     public const string CanSupersedeWorksheetTemplate = "CanSupersedeWorksheetTemplate";
 
+    /// <summary>
+    /// Deliberately separate from <see cref="CanCreateWorksheetTemplate"/>, mirroring
+    /// <see cref="CanImportQcStp"/>: turning the lab's ARD Word worksheets into proposals is a
+    /// migration-scale activity worth restricting independently. The import itself writes
+    /// nothing; saving a proposal still goes through the create endpoints and their keys.
+    /// </summary>
+    public const string CanImportQcWorksheetTemplates = "CanImportQcWorksheetTemplates";
+
+    /// <summary>
+    /// Build brief 10: gates the AI fallback extractor specifically, separate from
+    /// <see cref="CanImportQcWorksheetTemplates"/> — this triggers a paid external API call per
+    /// file and carries a materially different review burden than the deterministic recognizers.
+    /// Without it, an unrecognized file still gets the plain <c>UnknownFamily</c> refusal,
+    /// unchanged from brief 07. A file that matches a built family never reaches the AI
+    /// extractor even when this key is held.
+    /// </summary>
+    public const string CanUseAiWorksheetExtraction = "CanUseAiWorksheetExtraction";
+
+    /// <summary>
+    /// Build brief 11: gates the provider/key management screen — choosing which external
+    /// vendor receives redacted worksheet text and holding the only access to its key. Kept
+    /// separate from <see cref="CanUseAiWorksheetExtraction"/> (using the feature day to day)
+    /// and from <see cref="CanImportQcWorksheetTemplates"/> (importing at all); configuring
+    /// this is a different authority from either.
+    /// </summary>
+    public const string CanManageAiWorksheetExtractionSettings = "CanManageAiWorksheetExtractionSettings";
+
     // Specifications
     public const string CanViewQcSpecifications = "CanViewQcSpecifications";
     public const string CanCreateQcSpecification = "CanCreateQcSpecification";
     public const string CanEditQcSpecification = "CanEditQcSpecification";
     public const string CanApproveQcSpecification = "CanApproveQcSpecification";
     public const string CanSupersedeQcSpecification = "CanSupersedeQcSpecification";
+
+    // Specification proposals (build brief 08). Storing a set is part of the import action
+    // itself, so it reuses CanImportQcWorksheetTemplates; reviewing, applying and dismissing
+    // are three different acts and each gets its own key.
+    public const string CanViewQcSpecificationProposals = "CanViewQcSpecificationProposals";
+
+    /// <summary>
+    /// Builds the draft plan and applies it. Applying only ever produces a Draft Specification
+    /// (plus the sampling point groups it needs), which still goes through the full M2 review.
+    /// </summary>
+    public const string CanApplyQcSpecificationProposals = "CanApplyQcSpecificationProposals";
+
+    public const string CanDismissQcSpecificationProposals = "CanDismissQcSpecificationProposals";
 
     // Sampling Point Groups
 

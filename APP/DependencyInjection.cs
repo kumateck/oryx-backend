@@ -5,6 +5,8 @@ using APP.Repository;
 using APP.Repository.QcWorksheets;
 using APP.Services;
 using APP.Services.QcWorksheets;
+using APP.Services.QcWorksheets.WorksheetDocxImport;
+using APP.Services.QcWorksheets.WorksheetDocxImport.AiExtraction;
 using APP.Services.Background;
 using APP.Services.Email;
 using APP.Services.Formulas;
@@ -25,6 +27,7 @@ using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SHARED.Provider;
 using SHARED.Services.Identity;
@@ -172,10 +175,38 @@ public static class DependencyInjection
         services.AddScoped<IQcReauthContext, QcReauthContext>();
         services.AddScoped<IQcSignatureService, QcSignatureService>();
         services.AddScoped<IStpDocxImportService, StpDocxImportService>();
+        services.AddScoped<IWorksheetImportCatalogLoader, WorksheetImportCatalogLoader>();
+        services.AddScoped<IWorksheetDocxImportService, WorksheetDocxImportService>();
+
+        // Build brief 10/11 — the AI fallback extractor, now routed by active provider rather
+        // than hard-wired to Anthropic. Both providers' HttpClients stay named ("AnthropicClient",
+        // "OpenAiClient") for build brief 11's AiWorksheetExtractorFactory to fetch by name at
+        // dispatch time, with the key/model resolved fresh from the DB on every call — never a
+        // redeploy-only settings singleton. AnthropicWorksheetExtractor/OpenAiWorksheetExtractor
+        // are intentionally not resolved from the container as IAiWorksheetExtractor themselves;
+        // AiWorksheetExtractorRouter is the only IAiWorksheetExtractor registered, matching
+        // IWorksheetDocxImportService's unchanged constructor dependency.
+        services.AddHttpClient("AnthropicClient", client =>
+        {
+            client.BaseAddress = new Uri("https://api.anthropic.com/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+        services.AddHttpClient("OpenAiClient", client =>
+        {
+            client.BaseAddress = new Uri("https://api.openai.com/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+        services.AddScoped<IAiWorksheetExtractorFactory, AiWorksheetExtractorFactory>();
+        services.AddScoped<IAiWorksheetExtractor, AiWorksheetExtractorRouter>();
+
+        // Build brief 11 — provider/key management, backing AiWorksheetExtractorRouter above.
+        services.AddScoped<IAiExtractionSettingsService, AiExtractionSettingsService>();
+
         services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
         services.AddScoped<IWorksheetTemplateRepository, WorksheetTemplateRepository>();
         services.AddScoped<ISpecificationRepository, SpecificationRepository>();
         services.AddScoped<ISamplingPointGroupRepository, SamplingPointGroupRepository>();
+        services.AddScoped<ISpecificationProposalRepository, SpecificationProposalRepository>();
         services.AddScoped<ITestRequestRepository, TestRequestRepository>();
         services.AddScoped<IWorksheetInstanceRepository, WorksheetInstanceRepository>();
         services.AddScoped<IQcApprovalRepository, QcApprovalRepository>();

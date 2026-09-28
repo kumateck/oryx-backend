@@ -97,9 +97,22 @@ public class QcWorksheetCoexistenceTests
         // splits off because reading reference data is a different concern from administering it.
         // CanViewQcApprovalHistory is likewise a distinct read boundary: the self-scoped pending
         // queue needs no key, but the arbitrary-entity signature trail does.
+        //
+        // Build brief 07 adds CanImportQcWorksheetTemplates, mirroring CanImportQcStp: turning the
+        // ARD Word worksheets into proposals is a migration-scale activity restricted separately
+        // from everyday template authoring.
+        //
+        // Build brief 08 adds three Specification proposal keys — view, apply and dismiss. Storing
+        // a proposal set is the save step of the import itself and reuses the import key.
+        //
+        // Build brief 11 adds CanManageAiWorksheetExtractionSettings, gating the AI provider/key
+        // management screen separately from CanUseAiWorksheetExtraction (using the feature) and
+        // CanImportQcWorksheetTemplates (importing at all) — choosing the vendor and holding the
+        // only access to its key is a different authority from either.
         Assert.Equal(
         [
             "CanActivateQcWaterQualityPeriod",
+            "CanApplyQcSpecificationProposals",
             "CanApproveQcSpecification",
             "CanApproveQcStp",
             "CanApproveWorksheetTemplate",
@@ -112,6 +125,7 @@ public class QcWorksheetCoexistenceTests
             "CanCreateScheduledQcTestRequest",
             "CanCreateUnscheduledQcTestRequest",
             "CanCreateWorksheetTemplate",
+            "CanDismissQcSpecificationProposals",
             "CanDispositionQcOosCase",
             "CanEditMonitoringProgram",
             "CanEditQcSpecification",
@@ -121,8 +135,10 @@ public class QcWorksheetCoexistenceTests
             "CanEnterMicrobialWorksheetResult",
             "CanHoldQcWaterQualityPeriod",
             "CanImportQcStp",
+            "CanImportQcWorksheetTemplates",
             "CanInvestigateQcOosCase",
             "CanIssueQcCertificate",
+            "CanManageAiWorksheetExtractionSettings",
             "CanManageSamplingPointGroups",
             "CanManageSamplingPoints",
             "CanPauseMonitoringProgram",
@@ -140,10 +156,12 @@ public class QcWorksheetCoexistenceTests
             "CanSupersedeQcSpecification",
             "CanSupersedeQcStp",
             "CanSupersedeWorksheetTemplate",
+            "CanUseAiWorksheetExtraction",
             "CanViewMonitoringPrograms",
             "CanViewQcApprovalHistory",
             "CanViewQcCertificate",
             "CanViewQcOosCases",
+            "CanViewQcSpecificationProposals",
             "CanViewQcSpecifications",
             "CanViewQcStps",
             "CanViewQcTestRequests",

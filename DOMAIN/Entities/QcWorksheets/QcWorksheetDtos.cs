@@ -123,6 +123,10 @@ public class WorksheetFieldDto : BaseDto
     public string ConstantValue { get; set; }
     public string FormulaExpression { get; set; }
     public string ColumnDefinitions { get; set; }
+
+    /// <summary>JSON string array; null when the field carries no options.</summary>
+    public string OptionsJson { get; set; }
+
     public Guid? ReferencedResultSourceTemplateId { get; set; }
     public string ReferencedResultSourceFieldKey { get; set; }
     public string ReferencedResultResolutionFieldKey { get; set; }
@@ -141,6 +145,7 @@ public class WorksheetFieldRevisionDto : BaseDto
     public string ConstantValue { get; set; }
     public string FormulaExpression { get; set; }
     public string ColumnDefinitions { get; set; }
+    public string OptionsJson { get; set; }
     public int Order { get; set; }
 }
 
@@ -174,6 +179,13 @@ public class CreateWorksheetFieldRequest
     public string ConstantValue { get; set; }
     public string FormulaExpression { get; set; }
     public string ColumnDefinitions { get; set; }
+
+    /// <summary>
+    /// Required (at least two distinct, non-blank strings) for Select, MultiSelect and
+    /// GrowthObservation; refused on every other type. Stored trimmed and de-duplicated.
+    /// </summary>
+    public string OptionsJson { get; set; }
+
     public Guid? ReferencedResultSourceTemplateId { get; set; }
     [StringLength(100)] public string ReferencedResultSourceFieldKey { get; set; }
     [StringLength(100)] public string ReferencedResultResolutionFieldKey { get; set; }

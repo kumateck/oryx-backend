@@ -92,6 +92,31 @@ public static class QcWorksheetErrors
             "QcWorksheetTemplate.ConstantValueRequired",
             $"The constant field '{fieldKey}' requires a value.");
 
+    /// <summary>
+    /// A choice field with fewer than two real choices cannot be answered by choosing.
+    /// <paramref name="fieldKey"/> is a FieldKey, or <c>tableKey.columnKey</c> for a table column.
+    /// </summary>
+    public static Error OptionsRequired(string fieldKey) =>
+        Error.Validation(
+            "QcWorksheetTemplate.OptionsRequired",
+            $"The field '{fieldKey}' requires at least two distinct, non-blank options, given as a "
+            + "JSON array of strings.");
+
+    public static Error OptionsNotAllowed(string fieldKey, string type) =>
+        Error.Validation(
+            "QcWorksheetTemplate.OptionsNotAllowed",
+            $"The field '{fieldKey}' is {type} and cannot carry options. Only Select, MultiSelect "
+            + "and GrowthObservation fields (and table columns of those types) have a choice list.");
+
+    /// <summary>
+    /// A table's fixed columns together define its row count, so they must agree, and a table
+    /// is either wholly fixed-row or wholly open-ended.
+    /// </summary>
+    public static Error FixedRowCountMismatch(string fieldKey, string reason) =>
+        Error.Validation(
+            "QcWorksheetTemplate.FixedRowCountMismatch",
+            $"Table '{fieldKey}' has an inconsistent fixed-row layout: {reason}");
+
     public static Error TemplateHasNoSections =>
         Error.Validation("QcWorksheetTemplate.NoSections", "A worksheet template must have at least one section");
 
@@ -366,6 +391,20 @@ public static class QcWorksheetErrors
             "QcWorksheetInstance.RowHeaderNotEnterable",
             $"Column '{columnKey}' of table '{fieldKey}' contains template row headers and cannot be entered by an analyst.");
 
+    public static Error ValueNotAnOption(
+        string fieldKey, string label, string value, IEnumerable<string> options) =>
+        Error.Validation(
+            "QcWorksheetInstance.ValueNotAnOption",
+            $"'{label}' ({fieldKey}): '{value}' is not one of its options "
+            + $"({string.Join(", ", options)}).");
+
+    public static Error CellValueNotAnOption(
+        string fieldKey, string columnKey, int? rowIndex, string value, IEnumerable<string> options) =>
+        Error.Validation(
+            "QcWorksheetInstance.ValueNotAnOption",
+            $"Table '{fieldKey}', column '{columnKey}', row {(rowIndex ?? 0) + 1}: '{value}' is not "
+            + $"one of the column's options ({string.Join(", ", options)}).");
+
     public static Error ReferencedResultIsNotEnterable(string fieldKey) =>
         Error.Validation(
             "QcWorksheetInstance.ReferencedResultNotEnterable",
@@ -411,6 +450,27 @@ public static class QcWorksheetErrors
             "QcWorksheetInstance.CalculatedFieldNotEnterable",
             $"Field '{fieldKey}' is calculated. Its value is computed from the worksheet's own "
             + "entries at submission and cannot be typed in.");
+
+    /// <summary>
+    /// <see cref="CalculatedFieldUnevaluatable"/> for one cell of a per-row calculated table
+    /// column. Same code; the message names the table, column and 1-based row in the same form
+    /// as <see cref="CellValueNotAnOption"/> so a client can pin it to the cell.
+    /// </summary>
+    public static Error CalculatedCellUnevaluatable(
+        string fieldKey, string columnKey, int? rowIndex, string reason) =>
+        Error.Validation(
+            "QcWorksheetInstance.CalculatedFieldUnevaluatable",
+            $"Table '{fieldKey}', column '{columnKey}', row {(rowIndex ?? 0) + 1}: could not be "
+            + $"calculated: {reason} A calculated cell must produce a value before the worksheet can "
+            + "be submitted.");
+
+    /// <summary><see cref="CalculatedFieldIsNotEnterable"/> for a calculated table column.</summary>
+    public static Error CalculatedColumnIsNotEnterable(string fieldKey, string columnKey, int? rowIndex) =>
+        Error.Validation(
+            "QcWorksheetInstance.CalculatedFieldNotEnterable",
+            $"Table '{fieldKey}', column '{columnKey}', row {(rowIndex ?? 0) + 1}: this column is "
+            + "calculated. Its values are computed from each row's entries at submission and cannot "
+            + "be typed in.");
 
     // --- Hard instrument / reagent gates ----------------------------------
 
@@ -754,4 +814,91 @@ public static class QcWorksheetErrors
             $"Water use can only be recorded against an Active period. This period is {status}. "
             + "Recording use against a period that covers nothing would assert coverage that was "
             + "never granted.");
+
+    // -----------------------------------------------------------------------
+    // Build brief 08 — Specification proposals from worksheet import
+    // -----------------------------------------------------------------------
+
+    public static Error SpecificationProposalSetNotFound(Guid id) =>
+        Error.NotFound(
+            "QcSpecificationProposal.NotFound",
+            $"The specification proposal set with the Id: {id} was not found");
+
+    /// <summary>Media and certificates carry no Specification: media limits stay on the sheet (brief 07).</summary>
+    public static Error SpecificationProposalFamilyNotSupported(ArdFamily? family) =>
+        Error.Validation(
+            "QcSpecificationProposal.FamilyNotSupported",
+            $"Only product, purified water and environmental monitoring worksheets and raw-material "
+            + $"Specification documents propose a Specification. '{family?.ToString() ?? "none"}' does not.");
+
+    /// <summary>A proposal set with no characteristics is never stored.</summary>
+    public static Error SpecificationProposalHasNoCharacteristics =>
+        Error.Validation(
+            "QcSpecificationProposal.NoCharacteristics",
+            "The proposal set has no specification characteristics, so there is nothing to review.");
+
+    public static Error SpecificationProposalSetsRequired =>
+        Error.Validation(
+            "QcSpecificationProposal.SetsRequired",
+            "Select at least one proposal set.");
+
+    public static Error SpecificationProposalPlanRequired =>
+        Error.Validation(
+            "QcSpecificationProposal.PlanRequired",
+            "The reviewed draft plan is required.");
+
+    /// <summary>Also the double-apply guard: a set already applied or dismissed cannot be applied again.</summary>
+    public static Error SpecificationProposalNotPending(string fileName, SpecificationProposalStatus status) =>
+        Error.Conflict(
+            "QcSpecificationProposal.NotPending",
+            $"The proposals from '{fileName}' are already {status}.");
+
+    public static Error SpecificationProposalMixedFamilies =>
+        Error.Validation(
+            "QcSpecificationProposal.MixedFamilies",
+            "All selected proposal sets must be of one family.");
+
+    public static Error SpecificationProposalProductSingleSet =>
+        Error.Validation(
+            "QcSpecificationProposal.ProductSingleSet",
+            "A product or raw-material Specification is drafted from exactly one proposal set.");
+
+    public static Error SpecificationProposalTemplateMismatch =>
+        Error.Validation(
+            "QcSpecificationProposal.TemplateMismatch",
+            "The selected proposal sets bind to different worksheet templates, so they cannot "
+            + "share one Specification.");
+
+    public static Error SpecificationProposalTierConflict(string groupName) =>
+        Error.Validation(
+            "QcSpecificationProposal.TierConflict",
+            $"The plan has more than one row for the limit tier '{groupName}'. Keep one row per tier.");
+
+    public static Error SpecificationProposalGroupNotInPlan(string groupName) =>
+        Error.Validation(
+            "QcSpecificationProposal.GroupNotInPlan",
+            $"The limit tier '{groupName}' is neither an existing sampling point group nor one of "
+            + "the plan's groups.");
+
+    /// <summary>The import screen normally creates the points; if it did not, the reviewer creates them first.</summary>
+    public static Error SpecificationProposalSamplingPointNotFound(string code) =>
+        Error.Validation(
+            "QcSpecificationProposal.SamplingPointNotFound",
+            $"There is no sampling point with the code '{code}'. Create it first.");
+
+    /// <summary>
+    /// Moving a point between tiers is a limit change, so it is done deliberately in the
+    /// sampling-point master data rather than as a side effect of applying an import.
+    /// </summary>
+    public static Error SpecificationProposalSamplingPointGroupChange(
+        string code, string currentGroup, string proposedGroup) =>
+        Error.Validation(
+            "QcSpecificationProposal.SamplingPointGroupChange",
+            $"Sampling point '{code}' is already in the group '{currentGroup}', not '{proposedGroup}'. "
+            + "Move it in the sampling point master data if that is intended.");
+
+    public static Error SpecificationProposalDismissReasonRequired =>
+        Error.Validation(
+            "QcSpecificationProposal.DismissReasonRequired",
+            "A reason is required to dismiss a proposal set.");
 }
