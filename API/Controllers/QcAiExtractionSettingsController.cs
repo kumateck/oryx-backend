@@ -32,7 +32,12 @@ public class QcAiExtractionSettingsController(IAiExtractionSettingsService setti
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    /// <summary>Saves (or rotates) a provider's model and key. Rejects an empty/whitespace key.</summary>
+    /// <summary>
+    /// Saves (or rotates) a provider's model and key. An empty/whitespace <c>apiKey</c> keeps
+    /// the provider's current key and updates only the model — a key is write-only, so the
+    /// Settings screen's key field is always blank; leaving it blank on an existing provider
+    /// changes only the model. Rejects an empty/whitespace key when that provider has none yet.
+    /// </summary>
     [HttpPut("{provider}/key")]
     [Authorize(QcWorksheetPermissionKeys.CanManageAiWorksheetExtractionSettings)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AiExtractionSettingsDto))]

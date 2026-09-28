@@ -37,17 +37,16 @@ public sealed class AiExtractionSettingsService : IAiExtractionSettingsService
     public async Task<Result<AiExtractionSettingsDto>> SaveProviderKeyAsync(
         AiExtractionProvider provider, string model, string apiKey, Guid actorId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(apiKey))
-            return Result.Failure<AiExtractionSettingsDto>(WorksheetImportErrors.AiExtractionKeyRequired);
-
-        // Computed before encryption, per the brief: the last 4 characters of the real key,
-        // never more.
-        var trimmedKey = apiKey.Trim();
-        var keyPreview = trimmedKey.Length <= 4 ? trimmedKey : trimmedKey[^4..];
-        var encryptedKey = protector.Protect(trimmedKey);
-
         var row = await context.QcAiExtractionSettings
             .FirstOrDefaultAsync(item => item.Provider == provider, cancellationToken);
+
+        // A blank key means "keep the current key" for a provider that already has one — the
+        // Settings screen's key field is always blank on load (a key is write-only), so the
+        // reviewer can change just the model without re-entering the key. A provider with no
+        // key saved yet has nothing to keep, so a blank key there is still refused.
+        var keepsExistingKey = string.IsNullOrWhiteSpace(apiKey) && row is { EncryptedApiKey: not null };
+        if (string.IsNullOrWhiteSpace(apiKey) && !keepsExistingKey)
+            return Result.Failure<AiExtractionSettingsDto>(WorksheetImportErrors.AiExtractionKeyRequired);
 
         if (row is null)
         {
@@ -55,9 +54,16 @@ public sealed class AiExtractionSettingsService : IAiExtractionSettingsService
             context.QcAiExtractionSettings.Add(row);
         }
 
+        if (!keepsExistingKey)
+        {
+            // Computed before encryption, per the brief: the last 4 characters of the real
+            // key, never more.
+            var trimmedKey = apiKey.Trim();
+            row.KeyPreview = trimmedKey.Length <= 4 ? trimmedKey : trimmedKey[^4..];
+            row.EncryptedApiKey = protector.Protect(trimmedKey);
+        }
+
         row.Model = model;
-        row.EncryptedApiKey = encryptedKey;
-        row.KeyPreview = keyPreview;
         row.UpdatedById = actorId;
         row.UpdatedAt = DateTime.UtcNow;
 

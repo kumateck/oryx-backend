@@ -18,7 +18,14 @@ public interface IAiExtractionSettingsService
     Task<Result<AiExtractionSettingsDto>> SetActiveProviderAsync(
         AiExtractionProvider provider, Guid actorId, CancellationToken cancellationToken);
 
-    /// <summary>Refuses with <see cref="WorksheetImportErrors.AiExtractionKeyRequired"/> for an empty/whitespace key.</summary>
+    /// <summary>
+    /// Saves a provider's model and key. An empty/whitespace <paramref name="apiKey"/> keeps
+    /// that provider's current key unchanged (only the model is updated) when it already has
+    /// one — the Settings screen never re-displays a saved key, so this is how "leave blank to
+    /// keep the current key" is honored without asking the reviewer to re-enter it. Refuses
+    /// with <see cref="WorksheetImportErrors.AiExtractionKeyRequired"/> for an empty/whitespace
+    /// key on a provider with no key saved yet.
+    /// </summary>
     Task<Result<AiExtractionSettingsDto>> SaveProviderKeyAsync(
         AiExtractionProvider provider, string model, string apiKey, Guid actorId, CancellationToken cancellationToken);
 

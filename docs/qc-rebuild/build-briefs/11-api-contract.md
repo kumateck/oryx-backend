@@ -57,17 +57,24 @@ interface AiExtractionSettingsDto {
   { "model": "claude-opus-5-5", "apiKey": "sk-ant-...." }
   ```
   - `model`: free text, stored as-is (no validation beyond non-null).
-  - `apiKey`: required, non-empty after trimming whitespace.
+  - `apiKey`: **optional.** Non-empty after trimming → the key is (re)encrypted and
+    replaces whatever was stored; `model` is updated either way. Empty/whitespace/omitted
+    **and the provider already has a key saved** → the existing key is left exactly as
+    it was (ciphertext untouched) and only `model` is updated — this is how "leave blank
+    to keep the current key" is honored, since the key field is always blank on load.
+    Empty/whitespace on a provider with **no** key saved yet is refused (nothing to
+    keep).
 - **Response 200**: `AiExtractionSettingsDto` (reflecting the saved provider's new
   `hasKey: true`, `keyPreview`, `updatedById`/`updatedByName`/`updatedAt`; `apiKey` is
-  never echoed back).
+  never echoed back). `keyPreview` is unchanged when the key itself was kept.
 - **Response 400** (`ProblemDetails`, from `Result.ToProblemDetails()`):
-  - `apiKey` empty/whitespace → error code `QcWorksheetTemplate.AiExtractionKeyRequired`,
-    message "An API key is required."
+  - `apiKey` empty/whitespace on a provider with no key saved yet → error code
+    `QcWorksheetTemplate.AiExtractionKeyRequired`, message "An API key is required."
 - **Behavior**: saving a key does **not** activate the provider — `PUT /active` is a
   separate, explicit step. Saving again for the same provider overwrites its key/model
-  (rotation); the other provider's row is untouched, so switching back to it later never
-  requires re-entering its key.
+  (rotation) unless `apiKey` is blank, in which case only the model changes; the other
+  provider's row is untouched, so switching back to it later never requires re-entering
+  its key.
 
 ## `PUT /api/v{version}/qc/ai-extraction-settings/active`
 
@@ -101,12 +108,9 @@ Settings → AI Extraction: two provider cards (Anthropic, OpenAi), each showing
 key preview or "Not configured", model, last updated by/at, an **Activate** button
 (disabled when `hasKey` is false), and a **Set key** form (provider fixed per card,
 model text input, password-style API key input always blank on load, "leave blank to
-keep the current key" helper text — **note**: the current backend `PUT .../key` request
-always requires a non-empty `apiKey` and always overwrites; there is no
-partial-update/"leave blank" support on the backend today. If the frontend needs true
-"leave blank to keep the current key" semantics, that requires either a backend change
-(optional `apiKey` in the request, kept as-is when omitted) or client-side omission of
-the PUT call entirely when the key field is left blank and only `model` changed — flag
-this back if the product behavior must match the brief's "leave blank" copy literally).
-The active provider gets a badge, matching the Draft/Effective pattern elsewhere in the
-module. No changes to the import screen itself.
+keep the current key" helper text — shown only when `hasKey` is already true for that
+card). The frontend can send `apiKey: ""` (or omit it) whenever the field was left
+blank; the backend now honors that as "keep the current key" per the endpoint's
+updated behavior above — no client-side special-casing needed. The active provider
+gets a badge, matching the Draft/Effective pattern elsewhere in the module. No changes
+to the import screen itself.

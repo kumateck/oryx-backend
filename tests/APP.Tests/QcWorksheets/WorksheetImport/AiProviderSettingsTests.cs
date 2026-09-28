@@ -120,6 +120,31 @@ public class AiProviderSettingsTests
     }
 
     [Fact]
+    public async Task SaveProviderKeyAsync_with_a_blank_key_keeps_the_existing_key_and_only_updates_the_model()
+    {
+        await using var context = CreateContext();
+        var service = CreateService(context);
+        var actorId = Guid.NewGuid();
+
+        await service.SaveProviderKeyAsync(
+            AiExtractionProvider.Anthropic, "claude-opus-5-5", "sk-ant-aaaa1111", actorId, CancellationToken.None);
+        var originalCiphertext = (await context.QcAiExtractionSettings
+                .SingleAsync(item => item.Provider == AiExtractionProvider.Anthropic))
+            .EncryptedApiKey;
+
+        var second = await service.SaveProviderKeyAsync(
+            AiExtractionProvider.Anthropic, "claude-opus-5-6", "   ", actorId, CancellationToken.None);
+
+        Assert.True(second.IsSuccess);
+        var status = second.Value.Providers.Single(item => item.Provider == AiExtractionProvider.Anthropic);
+        Assert.Equal("claude-opus-5-6", status.Model);
+        Assert.Equal("1111", status.KeyPreview);
+        var row = await context.QcAiExtractionSettings
+            .SingleAsync(item => item.Provider == AiExtractionProvider.Anthropic);
+        Assert.Equal(originalCiphertext, row.EncryptedApiKey);
+    }
+
+    [Fact]
     public async Task SetActiveProviderAsync_refuses_a_provider_with_no_key_saved_yet()
     {
         await using var context = CreateContext();
