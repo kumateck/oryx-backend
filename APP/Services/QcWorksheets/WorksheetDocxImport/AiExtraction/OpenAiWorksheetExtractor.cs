@@ -12,21 +12,24 @@ using SHARED;
 namespace APP.Services.QcWorksheets.WorksheetDocxImport.AiExtraction;
 
 /// <summary>
-/// Calls the Anthropic Messages API to extract a worksheet template from a document that no
-/// deterministic recognizer matched (build brief 10). Structured output only — a tool-use call
-/// whose schema is <see cref="WorksheetExtractionSchema"/> (build brief 11: shared with
-/// <see cref="OpenAiWorksheetExtractor"/>, not a hand-maintained copy), with a required
-/// <c>sourceQuote</c> per field. The response is deserialized strictly by
-/// <see cref="WorksheetExtractionResponseParser"/>: anything that doesn't validate, or whose
-/// <c>sourceQuote</c> isn't verbatim in the redacted text, is refused — never partially accepted.
-/// Confidence and the <see cref="WorksheetImportFlagCodes.AiExtracted"/> flag are forced there,
-/// unconditionally, regardless of anything the model itself reports.
+/// Calls the OpenAI Chat Completions API (build brief 11) to extract a worksheet template from a
+/// document that no deterministic recognizer matched, exactly as <see cref="AnthropicWorksheetExtractor"/>
+/// does for Anthropic. Structured outputs only — <c>response_format: { type: "json_schema",
+/// json_schema: {...}, strict: true }</c> using the identical <see cref="WorksheetExtractionSchema"/>
+/// (build brief 11: one shared schema-building helper, not a second hand-maintained copy), with a
+/// required <c>sourceQuote</c> per field. The response is deserialized and grounded by the same
+/// <see cref="WorksheetExtractionResponseParser"/> the Anthropic extractor uses: anything that
+/// doesn't validate, or whose <c>sourceQuote</c> isn't verbatim in the redacted text, is refused —
+/// never partially accepted. Confidence and the <see cref="WorksheetImportFlagCodes.AiExtracted"/>
+/// flag are forced there, unconditionally, regardless of anything the model itself reports. Same
+/// one-retry-on-transient/no-retry-on-4xx-or-schema-failure rule as Anthropic.
 /// </summary>
-public sealed class AnthropicWorksheetExtractor(
+public sealed class OpenAiWorksheetExtractor(
     HttpClient httpClient,
-    AnthropicSettings settings,
-    ILogger<AnthropicWorksheetExtractor> logger) : IAiWorksheetExtractor
+    OpenAiSettings settings,
+    ILogger<OpenAiWorksheetExtractor> logger) : IAiWorksheetExtractor
 {
+    private const string SchemaName = "worksheet_extraction";
     private static readonly JsonSerializerOptions JsonOptions = WorksheetExtractionResponseParser.JsonOptions;
 
     public async Task<Result<AiExtractionResult>> ExtractAsync(
@@ -43,12 +46,11 @@ public sealed class AnthropicWorksheetExtractor(
         {
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, "v1/messages")
+                using var request = new HttpRequestMessage(HttpMethod.Post, "v1/chat/completions")
                 {
                     Content = JsonContent.Create(requestBody, options: JsonOptions)
                 };
-                request.Headers.Add("x-api-key", settings.ApiKey);
-                request.Headers.Add("anthropic-version", "2023-06-01");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
                 response = await httpClient.SendAsync(request, cancellationToken);
@@ -79,16 +81,16 @@ public sealed class AnthropicWorksheetExtractor(
             {
                 // No retry on a 4xx (bad request/auth); already gave the one transient retry above.
                 logger.LogWarning(
-                    "AI worksheet extraction: Anthropic API returned {Status}.", (int)response.StatusCode);
+                    "AI worksheet extraction: OpenAI API returned {Status}.", (int)response.StatusCode);
                 return response.StatusCode == HttpStatusCode.TooManyRequests
                     ? Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiExtractionUnavailable)
                     : Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiExtractionUnavailable);
             }
 
-            AnthropicMessageResponse? envelope;
+            OpenAiChatCompletionResponse? envelope;
             try
             {
-                envelope = await response.Content.ReadFromJsonAsync<AnthropicMessageResponse>(
+                envelope = await response.Content.ReadFromJsonAsync<OpenAiChatCompletionResponse>(
                     JsonOptions, cancellationToken);
             }
             catch (JsonException)
@@ -96,20 +98,27 @@ public sealed class AnthropicWorksheetExtractor(
                 return Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiResponseUngrounded);
             }
 
-            var toolUse = envelope?.Content?.FirstOrDefault(block =>
-                string.Equals(block.Type, "tool_use", StringComparison.Ordinal) &&
-                string.Equals(block.Name, WorksheetExtractionSchema.ToolName, StringComparison.Ordinal));
-            if (toolUse?.Input is null)
+            var content = envelope?.Choices?.FirstOrDefault()?.Message?.Content;
+            if (string.IsNullOrWhiteSpace(content))
                 return Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiResponseUngrounded);
 
-            var inputTokens = envelope?.Usage?.InputTokens ?? 0;
-            var outputTokens = envelope?.Usage?.OutputTokens ?? 0;
+            JsonElement toolInput;
+            try
+            {
+                toolInput = JsonDocument.Parse(content).RootElement.Clone();
+            }
+            catch (JsonException)
+            {
+                return Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiResponseUngrounded);
+            }
+
+            var inputTokens = envelope?.Usage?.PromptTokens ?? 0;
+            var outputTokens = envelope?.Usage?.CompletionTokens ?? 0;
             logger.LogInformation(
                 "AI worksheet extraction: {InputTokens} input / {OutputTokens} output tokens.",
                 inputTokens, outputTokens);
 
-            return WorksheetExtractionResponseParser.Parse(
-                toolUse.Input.Value, document.FullText, inputTokens, outputTokens);
+            return WorksheetExtractionResponseParser.Parse(toolInput, document.FullText, inputTokens, outputTokens);
         }
     }
 
@@ -121,42 +130,44 @@ public sealed class AnthropicWorksheetExtractor(
         return new
         {
             model = settings.Model,
-            max_tokens = 8000,
-            tools = new[]
-            {
-                new
-                {
-                    name = WorksheetExtractionSchema.ToolName,
-                    description = "Propose a worksheet template and specification characteristics grounded in the supplied document.",
-                    input_schema = WorksheetExtractionSchema.Schema
-                }
-            },
-            tool_choice = new { type = "tool", name = WorksheetExtractionSchema.ToolName },
             messages = new[]
             {
                 new { role = "user", content = instructions }
+            },
+            response_format = new
+            {
+                type = "json_schema",
+                json_schema = new
+                {
+                    name = SchemaName,
+                    strict = true,
+                    schema = WorksheetExtractionSchema.Schema
+                }
             }
         };
     }
 
-    // --- Anthropic API response envelope ---
+    // --- OpenAI Chat Completions response envelope ---
 
-    private sealed class AnthropicMessageResponse
+    private sealed class OpenAiChatCompletionResponse
     {
-        [JsonPropertyName("content")] public List<AnthropicContentBlock>? Content { get; set; }
-        [JsonPropertyName("usage")] public AnthropicUsage? Usage { get; set; }
+        [JsonPropertyName("choices")] public List<OpenAiChoice>? Choices { get; set; }
+        [JsonPropertyName("usage")] public OpenAiUsage? Usage { get; set; }
     }
 
-    private sealed class AnthropicContentBlock
+    private sealed class OpenAiChoice
     {
-        [JsonPropertyName("type")] public string? Type { get; set; }
-        [JsonPropertyName("name")] public string? Name { get; set; }
-        [JsonPropertyName("input")] public JsonElement? Input { get; set; }
+        [JsonPropertyName("message")] public OpenAiMessage? Message { get; set; }
     }
 
-    private sealed class AnthropicUsage
+    private sealed class OpenAiMessage
     {
-        [JsonPropertyName("input_tokens")] public int InputTokens { get; set; }
-        [JsonPropertyName("output_tokens")] public int OutputTokens { get; set; }
+        [JsonPropertyName("content")] public string? Content { get; set; }
+    }
+
+    private sealed class OpenAiUsage
+    {
+        [JsonPropertyName("prompt_tokens")] public int PromptTokens { get; set; }
+        [JsonPropertyName("completion_tokens")] public int CompletionTokens { get; set; }
     }
 }

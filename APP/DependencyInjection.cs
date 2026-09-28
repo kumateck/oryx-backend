@@ -178,20 +178,28 @@ public static class DependencyInjection
         services.AddScoped<IWorksheetImportCatalogLoader, WorksheetImportCatalogLoader>();
         services.AddScoped<IWorksheetDocxImportService, WorksheetDocxImportService>();
 
-        // Build brief 10 — the AI fallback extractor. A named HttpClient ("AnthropicClient"),
-        // matching the FormulaCalculationClient pattern above; the API key is read from
-        // configuration (Anthropic:ApiKey, environment-overridable, never checked in).
-        services.AddSingleton(provider =>
-            AnthropicSettings.Load(provider.GetRequiredService<IConfiguration>()));
-        services.AddHttpClient<IAiWorksheetExtractor, AnthropicWorksheetExtractor>(
-            "AnthropicClient",
-            (provider, client) =>
-            {
-                var settings = provider.GetRequiredService<AnthropicSettings>();
-                client.BaseAddress = new Uri("https://api.anthropic.com/");
-                client.Timeout = settings.Timeout;
-            });
-        // Build brief 11 — provider/key management, backing AiWorksheetExtractorRouter below.
+        // Build brief 10/11 — the AI fallback extractor, now routed by active provider rather
+        // than hard-wired to Anthropic. Both providers' HttpClients stay named ("AnthropicClient",
+        // "OpenAiClient") for build brief 11's AiWorksheetExtractorFactory to fetch by name at
+        // dispatch time, with the key/model resolved fresh from the DB on every call — never a
+        // redeploy-only settings singleton. AnthropicWorksheetExtractor/OpenAiWorksheetExtractor
+        // are intentionally not resolved from the container as IAiWorksheetExtractor themselves;
+        // AiWorksheetExtractorRouter is the only IAiWorksheetExtractor registered, matching
+        // IWorksheetDocxImportService's unchanged constructor dependency.
+        services.AddHttpClient("AnthropicClient", client =>
+        {
+            client.BaseAddress = new Uri("https://api.anthropic.com/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+        services.AddHttpClient("OpenAiClient", client =>
+        {
+            client.BaseAddress = new Uri("https://api.openai.com/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+        services.AddScoped<IAiWorksheetExtractorFactory, AiWorksheetExtractorFactory>();
+        services.AddScoped<IAiWorksheetExtractor, AiWorksheetExtractorRouter>();
+
+        // Build brief 11 — provider/key management, backing AiWorksheetExtractorRouter above.
         services.AddScoped<IAiExtractionSettingsService, AiExtractionSettingsService>();
 
         services.AddScoped<IStandardTestProcedureRepository, StandardTestProcedureRepository>();
