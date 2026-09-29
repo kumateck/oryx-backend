@@ -129,6 +129,45 @@ public sealed partial class FormulaDefinitionService(
             return Result.Failure<FormulaRevisionDto>(validation.Errors);
         if (!FormulaDefinitionDraft.IsValid(validation.Value, revision!))
             return FormulaDefinitionErrors.ValidationFailed;
+
+        var configuredStages = await context.ApprovalStages.AsNoTracking()
+            .CountAsync(stage => stage.Approval.ItemType == "FormulaRevision", cancellationToken);
+        if (configuredStages == 0)
+        {
+            await using var transaction = context.Database.IsRelational()
+                ? await context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable, cancellationToken) : null;
+            var now = DateTime.UtcNow;
+            var active = await context.FormulaRevisions.SingleOrDefaultAsync(item =>
+                item.FormulaDefinitionId == revision!.FormulaDefinitionId &&
+                item.Status == FormulaRevisionStatus.Approved && item.Id != revision.Id,
+                cancellationToken);
+            if (active is not null)
+            {
+                active.Status = FormulaRevisionStatus.Retired;
+                active.RetiredAt = now;
+                context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
+                    active, FormulaRevisionStatus.Approved, active.Status, "Superseded",
+                    request.Reason.Trim(), actorId, correlationId));
+            }
+            revision!.Status = FormulaRevisionStatus.Approved;
+            revision.ApprovedAt = now;
+            revision.EffectiveAt = now;
+            context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
+                revision, FormulaRevisionStatus.Draft, revision.Status, "SystemAutoApproved",
+                "No FormulaRevision approval stages configured. Trigger: " + request.Reason.Trim(),
+                actorId, correlationId));
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+                if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+            }
+            catch (DbUpdateException) { return FormulaDefinitionErrors.Conflict; }
+            return await ToDtoAsync(revision, cancellationToken);
+        }
+
+        if (configuredStages != 2) return FormulaDefinitionErrors.InvalidApprovalConfiguration;
+
         revision!.Status = FormulaRevisionStatus.InReview;
         context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
             revision, FormulaRevisionStatus.Draft, revision.Status, "SubmittedForReview",
@@ -146,6 +185,8 @@ public sealed partial class FormulaDefinitionService(
                 revision, FormulaRevisionStatus.InReview, request))
             return revision is null ? FormulaDefinitionErrors.NotFound : FormulaDefinitionErrors.Conflict;
         if (revision!.CreatedById == actorId) return FormulaDefinitionErrors.SegregationOfDuties;
+        if (!await FormulaApprovalAssignment.AllowsAsync(context, actorId, false, cancellationToken))
+            return FormulaDefinitionErrors.NotAssigned;
         if (revision.ReviewedById.HasValue) return FormulaDefinitionErrors.Conflict;
         revision.ReviewedById = actorId;
         revision.ReviewedAt = DateTime.UtcNow;
@@ -171,6 +212,8 @@ public sealed partial class FormulaDefinitionService(
         if (!revision!.ReviewedById.HasValue || revision.CreatedById == actorId ||
             revision.ReviewedById == actorId)
             return FormulaDefinitionErrors.SegregationOfDuties;
+        if (!await FormulaApprovalAssignment.AllowsAsync(context, actorId, true, cancellationToken))
+            return FormulaDefinitionErrors.NotAssigned;
         var now = DateTime.UtcNow;
         var active = await context.FormulaRevisions.SingleOrDefaultAsync(item =>
             item.FormulaDefinitionId == revision.FormulaDefinitionId &&
