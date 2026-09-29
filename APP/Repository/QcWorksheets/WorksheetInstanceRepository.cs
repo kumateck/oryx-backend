@@ -387,10 +387,6 @@ public class WorksheetInstanceRepository(
         // QC opts out of the approval engine's silent auto-approval fallback, so a worksheet
         // cannot be submitted into a queue that has no reviewer defined — it would otherwise
         // become Reviewed with nobody having signed for it.
-        if (!await HasConfiguredApprovalChain())
-            return Result.Failure<WorksheetInstanceDetailDto>(
-                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
-
         var fields = await LoadFieldsWithValues(instance);
 
         // Defence in depth: calibration data can change between entry and submission, so the
@@ -489,6 +485,8 @@ public class WorksheetInstanceRepository(
                 instance.Id,
                 userId);
 
+        await using var approvalTransaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync() : null;
         instance.Status = WorksheetInstanceStatus.Submitted;
         instance.SubmittedAt = DateTime.UtcNow;
         instance.UpdatedAt = DateTime.UtcNow;
@@ -498,7 +496,7 @@ public class WorksheetInstanceRepository(
 
         // Puts it into the reviewer's pending-approvals queue through the same engine every
         // other module uses. No QcApproval row is signed here — that happens on review.
-        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id);
+        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id, userId);
 
         // Automatic OOS detection (Milestone 4): every Result field is judged against the
         // Characteristic bound to it on the round's pinned Specification version. An Action
@@ -511,6 +509,7 @@ public class WorksheetInstanceRepository(
         await oosDetection.DetectOnSubmitAsync(id, userId);
 
         await RecalculateRoundStatus(instance.TestRequestSubjectId);
+        if (approvalTransaction is not null) await approvalTransaction.CommitAsync();
 
         return await GetWorksheetInstance(id);
     }

@@ -2,6 +2,7 @@ using APP.IRepository;
 using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -318,18 +319,15 @@ public class SpecificationRepository(
             return Result.Failure<SpecificationDetailDto>(
                 QcWorksheetErrors.SubmitRequiresDraft(specification.Status));
 
-        // QC opts out of the engine's silent auto-approval fallback: without a configured
-        // chain there is nobody to sign, so this fails rather than self-approving.
-        if (!await HasConfiguredApprovalChain())
-            return Result.Failure<SpecificationDetailDto>(
-                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
-
+        await using var approvalTransaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync() : null;
         specification.Status = QcDocumentStatus.UnderReview;
         specification.UpdatedAt = DateTime.UtcNow;
         specification.LastUpdatedById = userId;
         await context.SaveChangesAsync();
 
-        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id);
+        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id, userId);
+        if (approvalTransaction is not null) await approvalTransaction.CommitAsync();
 
         return await GetSpecification(id);
     }
@@ -420,25 +418,29 @@ public class SpecificationRepository(
             return Result.Failure<SpecificationDetailDto>(QcWorksheetErrors.ReasonForChangeRequired);
 
         var approval = await context.Approvals.FirstOrDefaultAsync(item => item.ItemType == ModelType);
-        if (approval is null)
-            return Result.Failure<SpecificationDetailDto>(
-                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
-
-        var verified = await signatureService.VerifyAsync(userId, request.Password);
-        if (!verified.IsSuccess)
-            return Result.Failure<SpecificationDetailDto>(verified.Error);
-
-        var recorded = await QcApprovalHandler.RecordSignedActionAsync(
-            context,
-            reauthContext,
-            ModelType,
-            id,
-            approval.Id,
-            userId,
-            request.Comments);
-
-        if (!recorded.IsSuccess)
-            return Result.Failure<SpecificationDetailDto>(recorded.Error);
+        var configured = approval is not null && await context.ApprovalStages
+            .AnyAsync(stage => stage.ApprovalId == approval.Id);
+        if (configured)
+        {
+            var verified = await signatureService.VerifyAsync(userId, request.Password);
+            if (!verified.IsSuccess)
+                return Result.Failure<SpecificationDetailDto>(verified.Error);
+            var recorded = await QcApprovalHandler.RecordSignedActionAsync(
+                context, reauthContext, ModelType, id, approval!.Id, userId, request.Comments);
+            if (!recorded.IsSuccess)
+                return Result.Failure<SpecificationDetailDto>(recorded.Error);
+        }
+        else
+        {
+            context.ApprovalActionLogs.Add(new ApprovalActionLog
+            {
+                ModelId = id,
+                UserId = null,
+                Status = ApprovalStatus.Approved,
+                Comments = $"SystemAutoApproved {ModelType} supersession; triggered by {userId}. " +
+                    request.Comments.Trim(),
+            });
+        }
 
         specification.Status = QcDocumentStatus.Superseded;
         specification.UpdatedAt = DateTime.UtcNow;

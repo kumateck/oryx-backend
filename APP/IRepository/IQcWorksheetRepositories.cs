@@ -263,7 +263,7 @@ public interface IQcApprovalRepository
     /// The centralized QC approvals queue: every pending QcApproval across every EntityType,
     /// which is the point of keeping them in one table.
     /// </summary>
-    Task<Result<List<QcPendingApprovalDto>>> GetPendingApprovals(Guid userId, List<Guid> roleIds);
+    Task<Result<List<QcPendingApprovalDto>>> GetPendingApprovals(Guid userId, List<Guid> roleIds, string? approvalDocument = null);
 
     /// <summary>The full signature trail for one QC document.</summary>
     Task<Result<List<QcApprovalDto>>> GetApprovalsForEntity(string entityType, Guid entityId);

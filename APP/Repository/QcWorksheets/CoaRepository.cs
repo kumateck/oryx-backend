@@ -2,6 +2,7 @@ using APP.IRepository;
 using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -270,13 +271,9 @@ public class CoaRepository(
         if (!hold.Satisfied)
             return Result.Failure<CoaDetailDto>(QcWorksheetErrors.CoaGenerationHeld(hold.Reason));
 
-        // QC's standing opt-out of the approval engine's silent auto-approval fallback: without a
-        // configured Approval row there is nothing for the signature to hang off, and a QC
-        // signature is never recorded without one.
         var approval = await context.Approvals.FirstOrDefaultAsync(item => item.ItemType == ModelType);
-        if (approval is null)
-            return Result.Failure<CoaDetailDto>(
-                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
+        var configured = approval is not null && await context.ApprovalStages
+            .AnyAsync(stage => stage.ApprovalId == approval.Id);
 
         // Built before the signature is taken but deliberately not persisted yet: the signer is
         // signing for a document that exists, and a signature is never recorded against a
@@ -286,24 +283,28 @@ public class CoaRepository(
             return Result.Failure<CoaDetailDto>(QcWorksheetErrors.CoaGenerationHeld(
                 "The round's data could not be assembled into a certificate."));
 
-        // The meaning-of-signature gate. Nothing above this line has written anything, so a wrong
-        // or missing password simply refuses: the original stays Issued, no QcApproval row is
-        // recorded, and no revision exists.
-        var verified = await signatureService.VerifyAsync(userId, request.Password);
-        if (!verified.IsSuccess)
-            return Result.Failure<CoaDetailDto>(verified.Error);
-
-        var recorded = await QcApprovalHandler.RecordSignedActionAsync(
-            context,
-            reauthContext,
-            ModelType,
-            original.Id,
-            approval.Id,
-            userId,
-            request.Reason.Trim());
-
-        if (!recorded.IsSuccess)
-            return Result.Failure<CoaDetailDto>(recorded.Error);
+        if (configured)
+        {
+            var verified = await signatureService.VerifyAsync(userId, request.Password);
+            if (!verified.IsSuccess)
+                return Result.Failure<CoaDetailDto>(verified.Error);
+            var recorded = await QcApprovalHandler.RecordSignedActionAsync(
+                context, reauthContext, ModelType, original.Id,
+                approval!.Id, userId, request.Reason.Trim());
+            if (!recorded.IsSuccess)
+                return Result.Failure<CoaDetailDto>(recorded.Error);
+        }
+        else
+        {
+            context.ApprovalActionLogs.Add(new ApprovalActionLog
+            {
+                ModelId = original.Id,
+                UserId = null,
+                Status = ApprovalStatus.Approved,
+                Comments = $"SystemAutoApproved COA revision; triggered by {userId}. " +
+                    request.Reason.Trim(),
+            });
+        }
 
         revision.SupersedesId = original.Id;
         revision.RevisionNumber = original.RevisionNumber + 1;

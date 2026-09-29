@@ -24,13 +24,13 @@ public class QcWorksheetApprovalController(IQcApprovalRepository repository) : C
     /// <summary>Every QC approval currently awaiting the calling user, across all QC entity types.</summary>
     [HttpGet("my-pending")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<QcPendingApprovalDto>))]
-    public async Task<IResult> GetMyPending()
+    public async Task<IResult> GetMyPending([FromQuery] string? approvalDocument)
     {
         var userId = (string)HttpContext.Items["Sub"];
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
         if (userId is null) return TypedResults.Unauthorized();
 
-        var result = await repository.GetPendingApprovals(Guid.Parse(userId), roleIds ?? []);
+        var result = await repository.GetPendingApprovals(Guid.Parse(userId), roleIds ?? [], approvalDocument);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

@@ -2,6 +2,7 @@ using APP.IRepository;
 using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -299,11 +300,7 @@ public class OosCaseRepository(
             return Result.Failure<OosCaseDetailDto>(
                 QcWorksheetErrors.EscalateRequiresInvestigationInProgress(oosCase.Status));
 
-        // Same opt-out of the approval engine's silent auto-approval fallback that Milestones
-        // 1-3 take: a batch must never be rejected or released with nobody having signed for it.
-        if (!await HasConfiguredApprovalChain())
-            return Result.Failure<OosCaseDetailDto>(
-                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
+        var hasApprovalChain = await HasConfiguredApprovalChain();
 
         oosCase.Status = OosCaseStatus.PendingQaDisposition;
         oosCase.UpdatedAt = DateTime.UtcNow;
@@ -314,7 +311,8 @@ public class OosCaseRepository(
 
         await context.SaveChangesAsync();
 
-        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id);
+        if (hasApprovalChain)
+            await approvalRepository.CreateInitialApprovalsAsync(ModelType, id);
 
         return await GetOosCase(id);
     }
@@ -359,6 +357,32 @@ public class OosCaseRepository(
         var readiness = await CheckReadiness(oosCase);
         if (!readiness.IsSuccess)
             return Result.Failure<OosCaseDetailDto>(readiness.Error);
+
+        if (!await HasConfiguredApprovalChain())
+        {
+            // The user selected the exact outcome above; the system applies it without
+            // pretending that a human reauthenticated or signed an approval stage.
+            await using var transaction = context.Database.IsRelational()
+                ? await context.Database.BeginTransactionAsync() : null;
+            oosCase.DispositionOutcome = outcome;
+            oosCase.DispositionById = userId;
+            oosCase.DispositionAt = DateTime.UtcNow;
+            oosCase.DispositionComments = request.DispositionComments?.Trim();
+            oosCase.Approved = true;
+            oosCase.UpdatedAt = DateTime.UtcNow;
+            oosCase.LastUpdatedById = userId;
+            context.ApprovalActionLogs.Add(new ApprovalActionLog
+            {
+                ModelId = id,
+                UserId = null,
+                Status = ApprovalStatus.Approved,
+                Comments = $"SystemAutoApproved OOS outcome {outcome}; triggered by {userId}. " +
+                    (request.DispositionComments?.Trim() ?? string.Empty),
+            });
+            await CloseAsync(oosCase, outcome, userId);
+            if (transaction is not null) await transaction.CommitAsync();
+            return await GetOosCase(id);
+        }
 
         // Recorded before signing, so the signature is taken against a stated decision rather
         // than the decision being backfilled onto an anonymous approval.
@@ -614,6 +638,7 @@ public class OosCaseRepository(
     private async Task<OosCaseDetailDto> ToDetailDto(OosCase oosCase)
     {
         var dto = Fill(new OosCaseDetailDto(), oosCase);
+        dto.RequiresApprovalSignature = await HasConfiguredApprovalChain();
 
         var instance = oosCase.WorksheetInstance;
         var round = instance?.TestRequestSubject?.TestRequest;
