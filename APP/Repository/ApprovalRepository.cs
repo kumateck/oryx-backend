@@ -3328,669 +3328,741 @@ public class ApprovalRepository(
         string modelType
     )
     {
+        if (string.IsNullOrWhiteSpace(modelType)) modelType = null;
         var entitiesRequiringApproval = new List<ApprovalEntity>();
 
         // 1. Get Purchase Orders requiring approval
-        var purchaseOrders = await context
-            .PurchaseOrders.AsSplitQuery()
-            .Include(po => po.Approvals)
-                .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Where(po =>
-                po.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var po in purchaseOrders)
+        if (modelType is null or "PurchaseOrder")
         {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(PurchaseOrder),
-                    Id = po.Id,
-                    CreatedAt = po.CreatedAt,
-                    Department = mapper.Map<DepartmentDto>(po.CreatedBy?.Department),
-                    Code = po.Code,
-                    RequestedBy = mapper.Map<UserDto>(po.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(po.Id),
-                }
-            );
+            var purchaseOrders = await context
+                .PurchaseOrders.AsSplitQuery()
+                .Include(po => po.Approvals)
+                    .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Where(po =>
+                    po.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var po in purchaseOrders)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(PurchaseOrder),
+                        Id = po.Id,
+                        CreatedAt = po.CreatedAt,
+                        Department = mapper.Map<DepartmentDto>(po.CreatedBy?.Department),
+                        Code = po.Code,
+                        RequestedBy = mapper.Map<UserDto>(po.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(po.Id),
+                    }
+                );
+            }
+
         }
 
         // 2. Get Requisitions requiring approval
-        var requisitions = await context
-            .Requisitions.AsSplitQuery()
-            .Include(p => p.Department)
-            .Include(p => p.CreatedBy)
-            .Include(po => po.Approvals)
-                .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Where(po =>
-                po.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var r in requisitions)
+        if (modelType is null or "StockRequisition" or "TrialRequisition" or "PurchaseRequisition")
         {
-            if (r.RequisitionType == RequisitionType.Stock)
+            var requisitions = await context
+                .Requisitions.AsSplitQuery()
+                .Include(p => p.Department)
+                .Include(p => p.CreatedBy)
+                .Include(po => po.Approvals)
+                    .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Where(po =>
+                    po.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var r in requisitions)
             {
-                entitiesRequiringApproval.Add(
-                    new ApprovalEntity
-                    {
-                        ModelType = "StockRequisition",
-                        Id = r.Id,
-                        CreatedAt = r.CreatedAt,
-                        Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
-                        Code = r.Code,
-                        RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
-                        ApprovalLogs = GetApprovalLogs(r.Id),
-                    }
-                );
+                if (r.RequisitionType == RequisitionType.Stock)
+                {
+                    entitiesRequiringApproval.Add(
+                        new ApprovalEntity
+                        {
+                            ModelType = "StockRequisition",
+                            Id = r.Id,
+                            CreatedAt = r.CreatedAt,
+                            Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
+                            Code = r.Code,
+                            RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
+                            ApprovalLogs = GetApprovalLogs(r.Id),
+                        }
+                    );
+                }
+                else if (r.RequisitionType == RequisitionType.Trial)
+                {
+                    entitiesRequiringApproval.Add(
+                        new ApprovalEntity
+                        {
+                            ModelType = "TrialRequisition",
+                            Id = r.Id,
+                            CreatedAt = r.CreatedAt,
+                            Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
+                            Code = r.Code,
+                            RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
+                            ApprovalLogs = GetApprovalLogs(r.Id),
+                        }
+                    );
+                }
+                else
+                {
+                    entitiesRequiringApproval.Add(
+                        new ApprovalEntity
+                        {
+                            ModelType = "PurchaseRequisition",
+                            Id = r.Id,
+                            CreatedAt = r.CreatedAt,
+                            Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
+                            Code = r.Code,
+                            RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
+                        }
+                    );
+                }
             }
-            else if (r.RequisitionType == RequisitionType.Trial)
-            {
-                entitiesRequiringApproval.Add(
-                    new ApprovalEntity
-                    {
-                        ModelType = "TrialRequisition",
-                        Id = r.Id,
-                        CreatedAt = r.CreatedAt,
-                        Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
-                        Code = r.Code,
-                        RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
-                        ApprovalLogs = GetApprovalLogs(r.Id),
-                    }
-                );
-            }
-            else
-            {
-                entitiesRequiringApproval.Add(
-                    new ApprovalEntity
-                    {
-                        ModelType = "PurchaseRequisition",
-                        Id = r.Id,
-                        CreatedAt = r.CreatedAt,
-                        Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
-                        Code = r.Code,
-                        RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
-                    }
-                );
-            }
+
         }
 
         // 3. Get Billing Sheets requiring approval
-        var billingSheets = await context
-            .BillingSheets.AsSplitQuery()
-            .Include(bs => bs.Approvals)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var bs in billingSheets)
+        if (modelType is null or "BillingSheet")
         {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(BillingSheet),
-                    Id = bs.Id,
-                    Code = bs.Code,
-                    Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
-                    CreatedAt = bs.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(bs.Id),
-                }
-            );
-        }
-
-        var overtimeRequests = await context
-            .OvertimeRequests.AsSplitQuery()
-            .Include(bs => bs.Approvals)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
+            var billingSheets = await context
+                .BillingSheets.AsSplitQuery()
+                .Include(bs => bs.Approvals)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
                 )
-            )
-            .ToListAsync();
+                .ToListAsync();
 
-        foreach (var bs in overtimeRequests)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(OvertimeRequest),
-                    Id = bs.Id,
-                    Code = "",
-                    Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
-                    CreatedAt = bs.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(bs.Id),
-                }
-            );
-        }
-
-        var leaveRequests = await context
-            .LeaveRequests.AsSplitQuery()
-            .Include(bs => bs.Approvals)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Include(a => a.Employee)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var bs in leaveRequests)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(LeaveRequest),
-                    Id = bs.Id,
-                    Code = "",
-                    Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
-                    CreatedAt = bs.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(bs.Id),
-                }
-            );
-        }
-
-        var payrollRuns = await context
-            .PayrollRuns.AsSplitQuery()
-            .Include(bs => bs.Approvals)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var bs in payrollRuns)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(PayrollRun),
-                    Id = bs.Id,
-                    Code = "",
-                    Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
-                    CreatedAt = bs.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(bs.Id),
-                }
-            );
-        }
-
-        var performanceReviews = await context
-            .PerformanceReviews.AsSplitQuery()
-            .Include(bs => bs.Approvals)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Include(a => a.Employee)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var bs in performanceReviews)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(PerformanceReview),
-                    Id = bs.Id,
-                    Code = "",
-                    Department = mapper.Map<DepartmentDto>(bs.Employee?.Department),
-                    CreatedAt = bs.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(bs.Id),
-                }
-            );
-        }
-
-        var responses = await context
-            .Responses.AsSplitQuery()
-            .Include(bs => bs.Approvals)
-            .Include(po => po.CreatedBy)
-                .ThenInclude(po => po.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    a.ApprovalRound == bs.Approvals.Max(item => item.ApprovalRound)
-                    &&
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var bs in responses)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(Response),
-                    Id = bs.Id,
-                    Code = "",
-                    Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
-                    CreatedAt = bs.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
-                    MaterialBatchId = bs.MaterialBatchId,
-                    BatchManufacturingRecordId = bs.BatchManufacturingRecordId,
-                    ProductionActivityStepId = bs.ProductionActivityStepId,
-                    ApprovalLogs = GetApprovalLogs(bs.Id),
-                }
-            );
-        }
-
-        var proformaInvoices = await context
-            .ProformaInvoices.AsSplitQuery()
-            .Include(a => a.Approvals)
-            .Include(a => a.CreatedBy)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var proformaInvoice in proformaInvoices)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(ProformaInvoice),
-                    Id = proformaInvoice.Id,
-                    Code = proformaInvoice.Code,
-                    Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
-                    CreatedAt = proformaInvoice.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(proformaInvoice.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(proformaInvoice.Id),
-                }
-            );
-        }
-
-        var shipmentDocuments = await context
-            .ShipmentDocuments.AsSplitQuery()
-            .Include(a => a.Approvals)
-            .Include(a => a.CreatedBy)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var shipmentDocument in shipmentDocuments)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(ShipmentDocument),
-                    Id = shipmentDocument.Id,
-                    Code = shipmentDocument.Code,
-                    Department = mapper.Map<DepartmentDto>(shipmentDocument.CreatedBy?.Department),
-                    CreatedAt = shipmentDocument.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(shipmentDocument.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(shipmentDocument.Id),
-                }
-            );
-        }
-
-        var jobRequests = await context
-            .JobRequests.AsSplitQuery()
-            .Include(a => a.Approvals)
-            .Include(a => a.CreatedBy)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var jobRequest in jobRequests)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(JobRequest),
-                    Id = jobRequest.Id,
-                    Code = jobRequest.Code,
-                    Department = mapper.Map<DepartmentDto>(jobRequest.CreatedBy?.Department),
-                    CreatedAt = jobRequest.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(jobRequest.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(jobRequest.Id),
-                }
-            );
-        }
-
-        var productExtraPackings = await context
-            .ProductionExtraPackings.AsSplitQuery()
-            .Include(a => a.Approvals)
-            .Include(a => a.CreatedBy)
-                .ThenInclude(a => a.Department)
-            .Include(productionExtraPacking => productionExtraPacking.ProductionScheduleProduct)
-                .ThenInclude(productionScheduleProduct =>
-                    productionScheduleProduct.ProductionSchedule
-                )
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var productExtraPacking in productExtraPackings)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(ProductionExtraPacking),
-                    Id = productExtraPacking.Id,
-                    Code = productExtraPacking.ProductionScheduleProduct.ProductionSchedule.Code,
-                    Department = mapper.Map<DepartmentDto>(
-                        productExtraPacking.CreatedBy?.Department
-                    ),
-                    CreatedAt = productExtraPacking.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(productExtraPacking.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(productExtraPacking.Id),
-                }
-            );
-        }
-
-        var fgtns = await context
-            .FinishedGoodsTransferNotes.AsSplitQuery()
-            .Include(a => a.Approvals)
-            .Include(a => a.CreatedBy)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var fgtn in fgtns)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(FinishedGoodsTransferNote),
-                    Id = fgtn.Id,
-                    Code = fgtn.TransferNoteNumber,
-                    Department = mapper.Map<DepartmentDto>(fgtn.CreatedBy?.Department),
-                    CreatedAt = fgtn.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(fgtn.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(fgtn.Id),
-                }
-            );
-        }
-
-        var stockAdjustments = await context
-            .StockAdjustments.AsSplitQuery()
-            .Include(a => a.Approvals)
-            .Include(a => a.CreatedBy)
-                .ThenInclude(a => a.Department)
-            .Where(bs =>
-                bs.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
-                )
-            )
-            .ToListAsync();
-
-        foreach (var sa in stockAdjustments)
-        {
-            entitiesRequiringApproval.Add(
-                new ApprovalEntity
-                {
-                    ModelType = nameof(StockAdjustment),
-                    Id = sa.Id,
-                    Code = sa.AdjustmentNumber,
-                    Department = mapper.Map<DepartmentDto>(sa.CreatedBy?.Department),
-                    CreatedAt = sa.CreatedAt,
-                    RequestedBy = mapper.Map<UserDto>(sa.CreatedBy),
-                    ApprovalLogs = GetApprovalLogs(sa.Id),
-                }
-            );
-        }
-
-        var allocations = await context.AllocateProductionOrders
-            .AsSplitQuery()
-            .Include(item => item.Approvals)
-            .Include(item => item.CreatedBy)
-                .ThenInclude(user => user.Department)
-            .Include(item => item.ProductionOrder)
-            .Where(item => item.Approvals.Any(stage =>
-                (stage.UserId == userId
-                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                && stage.Status == ApprovalStatus.Pending
-                && stage.ActivatedAt.HasValue))
-            .ToListAsync();
-
-        foreach (var allocation in allocations)
-        {
-            entitiesRequiringApproval.Add(new ApprovalEntity
+            foreach (var bs in billingSheets)
             {
-                ModelType = nameof(AllocateProductionOrder),
-                Id = allocation.Id,
-                Code = allocation.ProductionOrder?.Code ?? string.Empty,
-                Department = mapper.Map<DepartmentDto>(allocation.CreatedBy?.Department),
-                CreatedAt = allocation.CreatedAt,
-                RequestedBy = mapper.Map<UserDto>(allocation.CreatedBy),
-                ApprovalLogs = GetApprovalLogs(allocation.Id),
-            });
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(BillingSheet),
+                        Id = bs.Id,
+                        Code = bs.Code,
+                        Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                        CreatedAt = bs.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(bs.Id),
+                    }
+                );
+            }
         }
 
-        var customerQuotations = await context.CustomerQuotations
-            .AsSplitQuery()
-            .Include(item => item.Approvals)
-            .Include(item => item.CreatedBy)
-                .ThenInclude(user => user.Department)
-            .Where(item => item.Status == CustomerQuotationStatus.Sent
-                && item.Approvals.Any(stage =>
-                    stage.ActivatedAt.HasValue
+        if (modelType is null or "OvertimeRequest")
+        {
+            var overtimeRequests = await context
+                .OvertimeRequests.AsSplitQuery()
+                .Include(bs => bs.Approvals)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var bs in overtimeRequests)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(OvertimeRequest),
+                        Id = bs.Id,
+                        Code = "",
+                        Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                        CreatedAt = bs.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(bs.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "LeaveRequest")
+        {
+            var leaveRequests = await context
+                .LeaveRequests.AsSplitQuery()
+                .Include(bs => bs.Approvals)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Include(a => a.Employee)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var bs in leaveRequests)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(LeaveRequest),
+                        Id = bs.Id,
+                        Code = "",
+                        Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                        CreatedAt = bs.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(bs.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "PayrollRun")
+        {
+            var payrollRuns = await context
+                .PayrollRuns.AsSplitQuery()
+                .Include(bs => bs.Approvals)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var bs in payrollRuns)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(PayrollRun),
+                        Id = bs.Id,
+                        Code = "",
+                        Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                        CreatedAt = bs.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(bs.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "PerformanceReview")
+        {
+            var performanceReviews = await context
+                .PerformanceReviews.AsSplitQuery()
+                .Include(bs => bs.Approvals)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Include(a => a.Employee)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var bs in performanceReviews)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(PerformanceReview),
+                        Id = bs.Id,
+                        Code = "",
+                        Department = mapper.Map<DepartmentDto>(bs.Employee?.Department),
+                        CreatedAt = bs.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(bs.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "Response")
+        {
+            var responses = await context
+                .Responses.AsSplitQuery()
+                .Include(bs => bs.Approvals)
+                .Include(po => po.CreatedBy)
+                    .ThenInclude(po => po.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        a.ApprovalRound == bs.Approvals.Max(item => item.ApprovalRound)
+                        &&
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var bs in responses)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(Response),
+                        Id = bs.Id,
+                        Code = "",
+                        Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
+                        CreatedAt = bs.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
+                        MaterialBatchId = bs.MaterialBatchId,
+                        BatchManufacturingRecordId = bs.BatchManufacturingRecordId,
+                        ProductionActivityStepId = bs.ProductionActivityStepId,
+                        ApprovalLogs = GetApprovalLogs(bs.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "ProformaInvoice")
+        {
+            var proformaInvoices = await context
+                .ProformaInvoices.AsSplitQuery()
+                .Include(a => a.Approvals)
+                .Include(a => a.CreatedBy)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var proformaInvoice in proformaInvoices)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(ProformaInvoice),
+                        Id = proformaInvoice.Id,
+                        Code = proformaInvoice.Code,
+                        Department = mapper.Map<DepartmentDto>(proformaInvoice.CreatedBy?.Department),
+                        CreatedAt = proformaInvoice.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(proformaInvoice.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(proformaInvoice.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "ShipmentDocument")
+        {
+            var shipmentDocuments = await context
+                .ShipmentDocuments.AsSplitQuery()
+                .Include(a => a.Approvals)
+                .Include(a => a.CreatedBy)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var shipmentDocument in shipmentDocuments)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(ShipmentDocument),
+                        Id = shipmentDocument.Id,
+                        Code = shipmentDocument.Code,
+                        Department = mapper.Map<DepartmentDto>(shipmentDocument.CreatedBy?.Department),
+                        CreatedAt = shipmentDocument.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(shipmentDocument.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(shipmentDocument.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "JobRequest")
+        {
+            var jobRequests = await context
+                .JobRequests.AsSplitQuery()
+                .Include(a => a.Approvals)
+                .Include(a => a.CreatedBy)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var jobRequest in jobRequests)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(JobRequest),
+                        Id = jobRequest.Id,
+                        Code = jobRequest.Code,
+                        Department = mapper.Map<DepartmentDto>(jobRequest.CreatedBy?.Department),
+                        CreatedAt = jobRequest.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(jobRequest.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(jobRequest.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "ProductionExtraPacking")
+        {
+            var productExtraPackings = await context
+                .ProductionExtraPackings.AsSplitQuery()
+                .Include(a => a.Approvals)
+                .Include(a => a.CreatedBy)
+                    .ThenInclude(a => a.Department)
+                .Include(productionExtraPacking => productionExtraPacking.ProductionScheduleProduct)
+                    .ThenInclude(productionScheduleProduct =>
+                        productionScheduleProduct.ProductionSchedule
+                    )
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var productExtraPacking in productExtraPackings)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(ProductionExtraPacking),
+                        Id = productExtraPacking.Id,
+                        Code = productExtraPacking.ProductionScheduleProduct.ProductionSchedule.Code,
+                        Department = mapper.Map<DepartmentDto>(
+                            productExtraPacking.CreatedBy?.Department
+                        ),
+                        CreatedAt = productExtraPacking.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(productExtraPacking.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(productExtraPacking.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "FinishedGoodsTransferNote")
+        {
+            var fgtns = await context
+                .FinishedGoodsTransferNotes.AsSplitQuery()
+                .Include(a => a.Approvals)
+                .Include(a => a.CreatedBy)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var fgtn in fgtns)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(FinishedGoodsTransferNote),
+                        Id = fgtn.Id,
+                        Code = fgtn.TransferNoteNumber,
+                        Department = mapper.Map<DepartmentDto>(fgtn.CreatedBy?.Department),
+                        CreatedAt = fgtn.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(fgtn.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(fgtn.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "StockAdjustment")
+        {
+            var stockAdjustments = await context
+                .StockAdjustments.AsSplitQuery()
+                .Include(a => a.Approvals)
+                .Include(a => a.CreatedBy)
+                    .ThenInclude(a => a.Department)
+                .Where(bs =>
+                    bs.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
+                )
+                .ToListAsync();
+
+            foreach (var sa in stockAdjustments)
+            {
+                entitiesRequiringApproval.Add(
+                    new ApprovalEntity
+                    {
+                        ModelType = nameof(StockAdjustment),
+                        Id = sa.Id,
+                        Code = sa.AdjustmentNumber,
+                        Department = mapper.Map<DepartmentDto>(sa.CreatedBy?.Department),
+                        CreatedAt = sa.CreatedAt,
+                        RequestedBy = mapper.Map<UserDto>(sa.CreatedBy),
+                        ApprovalLogs = GetApprovalLogs(sa.Id),
+                    }
+                );
+            }
+        }
+
+        if (modelType is null or "AllocateProductionOrder")
+        {
+            var allocations = await context.AllocateProductionOrders
+                .AsSplitQuery()
+                .Include(item => item.Approvals)
+                .Include(item => item.CreatedBy)
+                    .ThenInclude(user => user.Department)
+                .Include(item => item.ProductionOrder)
+                .Where(item => item.Approvals.Any(stage =>
+                    (stage.UserId == userId
+                        || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
                     && stage.Status == ApprovalStatus.Pending
-                    && (stage.UserId == userId
-                        || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
-            .ToListAsync();
+                    && stage.ActivatedAt.HasValue))
+                .ToListAsync();
 
-        foreach (var quotation in customerQuotations)
-        {
-            entitiesRequiringApproval.Add(new ApprovalEntity
+            foreach (var allocation in allocations)
             {
-                ModelType = nameof(CustomerQuotation),
-                Id = quotation.Id,
-                Code = quotation.Code,
-                Department = mapper.Map<DepartmentDto>(quotation.CreatedBy?.Department),
-                CreatedAt = quotation.CreatedAt,
-                RequestedBy = mapper.Map<UserDto>(quotation.CreatedBy),
-                ApprovalLogs = GetApprovalLogs(quotation.Id),
-            });
+                entitiesRequiringApproval.Add(new ApprovalEntity
+                {
+                    ModelType = nameof(AllocateProductionOrder),
+                    Id = allocation.Id,
+                    Code = allocation.ProductionOrder?.Code ?? string.Empty,
+                    Department = mapper.Map<DepartmentDto>(allocation.CreatedBy?.Department),
+                    CreatedAt = allocation.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(allocation.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(allocation.Id),
+                });
+            }
         }
 
-        var supplierAgreements = await context.SupplierPricingAgreements
-            .AsSplitQuery().Include(item => item.Approvals)
-            .Include(item => item.Supplier).Include(item => item.Material)
-            .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
-            .Where(item => item.Status == SupplierPricingAgreementStatus.Pending
-                && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
-                    && stage.Status == ApprovalStatus.Pending
-                    && (stage.UserId == userId
-                        || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
-            .ToListAsync();
-        foreach (var agreement in supplierAgreements)
-            entitiesRequiringApproval.Add(new ApprovalEntity {
-                ModelType = nameof(SupplierPricingAgreement), Id = agreement.Id,
-                SupplierId = agreement.SupplierId,
-                Code = $"{agreement.Supplier?.Name} · {agreement.Material?.Name}",
-                Department = mapper.Map<DepartmentDto>(agreement.CreatedBy?.Department),
-                CreatedAt = agreement.CreatedAt,
-                RequestedBy = mapper.Map<UserDto>(agreement.CreatedBy),
-                ApprovalLogs = GetApprovalLogs(agreement.Id),
-            });
-
-        var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
-
-        foreach (var payment in payments)
+        if (modelType is null or "CustomerQuotation")
         {
-            entitiesRequiringApproval.Add(new ApprovalEntity
+            var customerQuotations = await context.CustomerQuotations
+                .AsSplitQuery()
+                .Include(item => item.Approvals)
+                .Include(item => item.CreatedBy)
+                    .ThenInclude(user => user.Department)
+                .Where(item => item.Status == CustomerQuotationStatus.Sent
+                    && item.Approvals.Any(stage =>
+                        stage.ActivatedAt.HasValue
+                        && stage.Status == ApprovalStatus.Pending
+                        && (stage.UserId == userId
+                            || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+                .ToListAsync();
+
+            foreach (var quotation in customerQuotations)
             {
-                ModelType = nameof(Payment),
-                Id = payment.Id,
-                Code = payment.Reference,
-                Department = mapper.Map<DepartmentDto>(payment.RecordedBy?.Department),
-                CreatedAt = payment.CreatedAt,
-                RequestedBy = mapper.Map<UserDto>(payment.RecordedBy),
-                ApprovalLogs = GetApprovalLogs(payment.Id),
-            });
+                entitiesRequiringApproval.Add(new ApprovalEntity
+                {
+                    ModelType = nameof(CustomerQuotation),
+                    Id = quotation.Id,
+                    Code = quotation.Code,
+                    Department = mapper.Map<DepartmentDto>(quotation.CreatedBy?.Department),
+                    CreatedAt = quotation.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(quotation.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(quotation.Id),
+                });
+            }
         }
 
-        var rndProjects = await context
-            .RndProjects.AsSplitQuery()
-            .Include(item => item.Approvals)
-                .ThenInclude(stage => stage.ApprovedBy)
-            .Include(item => item.RequestedBy)
-                .ThenInclude(user => user.Department)
-            .Include(item => item.Department)
-            .Where(item =>
-                item.Approvals.Any(a =>
-                    (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                    && a.Status == ApprovalStatus.Pending
-                    && a.ActivatedAt.HasValue
+        if (modelType is null or "SupplierPricingAgreement")
+        {
+            var supplierAgreements = await context.SupplierPricingAgreements
+                .AsSplitQuery().Include(item => item.Approvals)
+                .Include(item => item.Supplier).Include(item => item.Material)
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .Where(item => item.Status == SupplierPricingAgreementStatus.Pending
+                    && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
+                        && stage.Status == ApprovalStatus.Pending
+                        && (stage.UserId == userId
+                            || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+                .ToListAsync();
+            foreach (var agreement in supplierAgreements)
+                entitiesRequiringApproval.Add(new ApprovalEntity {
+                    ModelType = nameof(SupplierPricingAgreement), Id = agreement.Id,
+                    SupplierId = agreement.SupplierId,
+                    Code = $"{agreement.Supplier?.Name} · {agreement.Material?.Name}",
+                    Department = mapper.Map<DepartmentDto>(agreement.CreatedBy?.Department),
+                    CreatedAt = agreement.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(agreement.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(agreement.Id),
+                });
+        }
+
+        if (modelType is null or "Payment")
+        {
+            var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
+
+            foreach (var payment in payments)
+            {
+                entitiesRequiringApproval.Add(new ApprovalEntity
+                {
+                    ModelType = nameof(Payment),
+                    Id = payment.Id,
+                    Code = payment.Reference,
+                    Department = mapper.Map<DepartmentDto>(payment.RecordedBy?.Department),
+                    CreatedAt = payment.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(payment.RecordedBy),
+                    ApprovalLogs = GetApprovalLogs(payment.Id),
+                });
+            }
+        }
+
+        if (modelType is null or "RndProject")
+        {
+            var rndProjects = await context
+                .RndProjects.AsSplitQuery()
+                .Include(item => item.Approvals)
+                    .ThenInclude(stage => stage.ApprovedBy)
+                .Include(item => item.RequestedBy)
+                    .ThenInclude(user => user.Department)
+                .Include(item => item.Department)
+                .Where(item =>
+                    item.Approvals.Any(a =>
+                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
+                        && a.Status == ApprovalStatus.Pending
+                        && a.ActivatedAt.HasValue
+                    )
                 )
-            )
-            .ToListAsync();
+                .ToListAsync();
 
-        foreach (var rndProject in rndProjects)
-        {
-            entitiesRequiringApproval.Add(new ApprovalEntity
+            foreach (var rndProject in rndProjects)
             {
-                ModelType = nameof(RndProject),
-                Id = rndProject.Id,
-                CreatedAt = rndProject.CreatedAt,
-                Department = mapper.Map<DepartmentDto>(rndProject.Department),
-                Code = rndProject.Code,
-                RequestedBy = mapper.Map<UserDto>(rndProject.RequestedBy),
-                ApprovalLogs = GetApprovalLogs(rndProject.Id),
-            });
+                entitiesRequiringApproval.Add(new ApprovalEntity
+                {
+                    ModelType = nameof(RndProject),
+                    Id = rndProject.Id,
+                    CreatedAt = rndProject.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(rndProject.Department),
+                    Code = rndProject.Code,
+                    RequestedBy = mapper.Map<UserDto>(rndProject.RequestedBy),
+                    ApprovalLogs = GetApprovalLogs(rndProject.Id),
+                });
+            }
         }
 
-        var rndFormulations = await context.RndFormulations.AsSplitQuery()
-            .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
-            .Include(item => item.RndProject).ThenInclude(project => project.Department)
-            .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
-            .Where(item => item.Status == RndFormulationStatus.InReview && item.Approvals.Any(stage =>
-                stage.ActivatedAt.HasValue && stage.Status == ApprovalStatus.Pending
-                && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
-            .ToListAsync();
-        entitiesRequiringApproval.AddRange(rndFormulations.Select(item => new ApprovalEntity
+        if (modelType is null or "RndFormulation")
         {
-            ModelType = nameof(RndFormulation), Id = item.Id,
-            Code = $"{item.RndProject.Code} · V{item.Version}", CreatedAt = item.CreatedAt,
-            Department = mapper.Map<DepartmentDto>(item.RndProject.Department),
-            RequestedBy = mapper.Map<UserDto>(item.RndProject.RequestedBy),
-            ApprovalLogs = GetApprovalLogs(item.Id),
-        }));
-
-        var rndTransfers = await context.RndTechnologyTransfers.AsSplitQuery()
-            .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
-            .Include(item => item.RndProject).ThenInclude(project => project.Department)
-            .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
-            .Where(item => item.Status == RndTechnologyTransferStatus.ProtocolInReview
-                && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
-                    && stage.Status == ApprovalStatus.Pending
+            var rndFormulations = await context.RndFormulations.AsSplitQuery()
+                .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
+                .Include(item => item.RndProject).ThenInclude(project => project.Department)
+                .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
+                .Where(item => item.Status == RndFormulationStatus.InReview && item.Approvals.Any(stage =>
+                    stage.ActivatedAt.HasValue && stage.Status == ApprovalStatus.Pending
                     && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
-            .ToListAsync();
-        entitiesRequiringApproval.AddRange(rndTransfers.Select(item => new ApprovalEntity
-        {
-            ModelType = nameof(RndTechnologyTransfer), Id = item.Id,
-            Code = $"{item.RndProject.Code} · Transfer", CreatedAt = item.CreatedAt,
-            Department = mapper.Map<DepartmentDto>(item.RndProject.Department),
-            RequestedBy = mapper.Map<UserDto>(item.RndProject.RequestedBy),
-            ApprovalLogs = GetApprovalLogs(item.Id),
-        }));
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(rndFormulations.Select(item => new ApprovalEntity
+            {
+                ModelType = nameof(RndFormulation), Id = item.Id,
+                Code = $"{item.RndProject.Code} · V{item.Version}", CreatedAt = item.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(item.RndProject.Department),
+                RequestedBy = mapper.Map<UserDto>(item.RndProject.RequestedBy),
+                ApprovalLogs = GetApprovalLogs(item.Id),
+            }));
+        }
 
-        var staffRequisitions = await context.StaffRequisitions
-            .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
-            .Include(item => item.Approvals)
-            .Where(item => item.Approvals.Any(stage =>
-                (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
-            .ToListAsync();
-        entitiesRequiringApproval.AddRange(staffRequisitions.Select(item => new ApprovalEntity
+        if (modelType is null or "RndTechnologyTransfer")
         {
-            ModelType = nameof(StaffRequisition), Id = item.Id,
-            Code = item.Id.ToString(), CreatedAt = item.CreatedAt,
-            Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
-            RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
-            ApprovalLogs = GetApprovalLogs(item.Id),
-        }));
+            var rndTransfers = await context.RndTechnologyTransfers.AsSplitQuery()
+                .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
+                .Include(item => item.RndProject).ThenInclude(project => project.Department)
+                .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
+                .Where(item => item.Status == RndTechnologyTransferStatus.ProtocolInReview
+                    && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
+                        && stage.Status == ApprovalStatus.Pending
+                        && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(rndTransfers.Select(item => new ApprovalEntity
+            {
+                ModelType = nameof(RndTechnologyTransfer), Id = item.Id,
+                Code = $"{item.RndProject.Code} · Transfer", CreatedAt = item.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(item.RndProject.Department),
+                RequestedBy = mapper.Map<UserDto>(item.RndProject.RequestedBy),
+                ApprovalLogs = GetApprovalLogs(item.Id),
+            }));
+        }
 
-        var productionOrders = await context.ProductionOrders
-            .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
-            .Include(item => item.Approvals)
-            .Where(item => item.Approvals.Any(stage =>
-                (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
-            .ToListAsync();
-        entitiesRequiringApproval.AddRange(productionOrders.Select(item => new ApprovalEntity
+        if (modelType is null or "StaffRequisition")
         {
-            ModelType = nameof(ProductionOrder), Id = item.Id,
-            Code = item.Code, CreatedAt = item.CreatedAt,
-            Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
-            RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
-            ApprovalLogs = GetApprovalLogs(item.Id),
-        }));
+            var staffRequisitions = await context.StaffRequisitions
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .Include(item => item.Approvals)
+                .Where(item => item.Approvals.Any(stage =>
+                    (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
+                    && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(staffRequisitions.Select(item => new ApprovalEntity
+            {
+                ModelType = nameof(StaffRequisition), Id = item.Id,
+                Code = item.Id.ToString(), CreatedAt = item.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
+                RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(item.Id),
+            }));
+        }
+
+        if (modelType is null or "ProductionOrder")
+        {
+            var productionOrders = await context.ProductionOrders
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .Include(item => item.Approvals)
+                .Where(item => item.Approvals.Any(stage =>
+                    (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
+                    && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(productionOrders.Select(item => new ApprovalEntity
+            {
+                ModelType = nameof(ProductionOrder), Id = item.Id,
+                Code = item.Code, CreatedAt = item.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
+                RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(item.Id),
+            }));
+        }
 
         if (!string.IsNullOrEmpty(modelType))
         {
@@ -4598,7 +4670,7 @@ public class ApprovalRepository(
         return result;
     }
 
-    public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId)
+    public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId, Guid? triggeringActorId = null)
     {
         var configurationType = ApprovalDocumentPolicy.ConfigurationTypeFor(modelType);
         var approval = await context.Approvals.FirstOrDefaultAsync(item =>
@@ -4611,25 +4683,22 @@ public class ApprovalRepository(
                 .OrderBy(stage => stage.Order)
                 .ToListAsync();
 
-        // QC deliberately opts out of the automatic-approval fallback below. Every other
-        // module treats "no workflow configured" as "approve it automatically"; for a QC
-        // controlled document that would produce an approved record with no identified
-        // approver and no re-authenticated signature, which is exactly what
-        // meaning-of-signature forbids. QC fails loudly instead.
-        if (QcWorksheetModelTypes.IsQcWorksheetModelType(modelType)
-            && (approval is null || stages.Count == 0))
-        {
+        // OOS disposition and COA withdrawal require a selected outcome/action and are
+        // handled at their resource endpoints rather than through this generic fallback.
+        if (modelType is QcWorksheetModelTypes.OosCase or QcWorksheetModelTypes.Coa &&
+            (approval is null || stages.Count == 0))
             throw new InvalidOperationException(
-                $"No approval workflow is configured for '{configurationType}'. A QC document "
-                + "cannot be submitted for review until an administrator defines its approval "
-                + "stages, because QC documents may never be automatically approved.");
-        }
+                $"Automatic approval for '{modelType}' requires its resource-specific action.");
 
         if (approval is null || stages.Count == 0)
         {
-            var reason = approval is null
-                ? $"System auto-approved because no {configurationType} approval workflow is configured."
-                : $"System auto-approved because the {configurationType} approval workflow has no stages.";
+            var explanation = approval is null
+                ? $"No {configurationType} workflow configured"
+                : $"{configurationType} workflow has no stages";
+            var reason = $"SystemAutoApproved: {explanation}; ModelType={modelType}; " +
+                $"WorkflowId={approval?.Id.ToString() ?? "none"}; StageCount={stages.Count}; " +
+                $"TriggeredBy={triggeringActorId?.ToString() ?? "unknown"}; " +
+                $"EventCorrelationId={Guid.NewGuid()}.";
             logger.LogInformation(
                 "Applying automatic approval for {ModelType} {ModelId}: {Reason}",
                 modelType,

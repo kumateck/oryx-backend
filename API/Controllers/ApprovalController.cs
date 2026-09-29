@@ -67,7 +67,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a specific approval by its ID.
     /// </summary>
-    [HttpGet("{approvalId}")]
+    [HttpGet("{approvalId:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -77,7 +77,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    [HttpGet("{modelType}/{modelId}")]
+    [HttpGet("{modelType}/{modelId:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalEntity))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -92,7 +92,7 @@ public class ApprovalController(IApprovalRepository repository) : ControllerBase
     }
 
     /// <summary>Details of a document in the caller's active pending queue.</summary>
-    [HttpGet("my-pending/{modelType}/{modelId}")]
+    [HttpGet("my-pending/{modelType}/{modelId:guid}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalEntity))]
     public async Task<IResult> GetMyPendingApprovalDetail(string modelType, Guid modelId)
