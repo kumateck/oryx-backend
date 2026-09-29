@@ -1,22 +1,3 @@
-# Approval fallback and review (2026-09-29)
-
-A shared approval with configured stages remains manual. Formula revisions
-require exactly two stages (review, approval); another nonzero stage count
-returns a configuration error. With no formula stages, a validated Draft is
-automatically approved and a `SystemAutoApproved` formula audit is written.
-Full Procedures area policy counts as configured, preserving independent
-review and publish/approve gates.
-
-With no QC approval stages, validated STP, worksheet template, specification,
-and worksheet-instance submissions use the generic automatic approval audit.
-QC document supersession and COA revision write explicit system approval
-action logs. QC submission wraps the status write, approval creation or automatic
-completion, and worksheet OOS detection in one database transaction. The
-generic automatic audit reason includes workflow ID, stage count, initiating
-actor when supplied, and an event correlation ID. An OOS case remains pending until an authorized actor selects a
-valid outcome; then the system approval log and batch disposition are committed
-together. Configured QC workflows retain signed actions.
-
 # Workflow behavior
 
 ## QC worksheet choice options and fixed columns (2026-09-24)
@@ -468,12 +449,3 @@ Calculation Question authoring now validates the exact Published source
 revision selected by the caller. A superseded source cannot silently change
 the new Question's calculation snapshot. Existing ID-only callers retain the
 previous lookup behavior until migrated.
-
-Documentation updated for this task: `README.md`, `docs/services.md`,
-`docs/workflows.md`, and `docs/approval-unification-design.md` describe
-the endpoint, fallback behavior, and deployment limits.
-
-My Pending Approvals selects one ApprovalDocument tab at a time. The backend
-list methods avoid materializing other document types; a separate actor-scoped
-count response supplies tab badges. Documentation updated for this filter
-change: `docs/services.md` and `docs/workflows.md`.

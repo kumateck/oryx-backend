@@ -200,10 +200,26 @@ public class QcOosDetectionService(
 
         await context.SaveChangesAsync();
 
-        // With no stages, the case stays pending until a QA actor selects an outcome.
-        // The disposition endpoint then records the system approval and applies it.
+        // The case advances either way: the retest is finished, so "awaiting QA" is simply the
+        // truth, and the case must keep blocking release whether or not a chain exists.
+        //
+        // Opening the disposition round is attempted separately and never allowed to fail the
+        // reviewer's own action. Their review is a completed, re-authenticated signature on a
+        // different entity, and throwing here would discard it because an administrator has not
+        // yet configured an unrelated approval chain. A missing chain is logged as the operator
+        // error it is, and the case simply cannot be disposed until it is fixed — the same
+        // refusal to ever auto-approve that QC takes everywhere else, not a silent pass.
         if (!await HasConfiguredDispositionChain())
+        {
+            logger.LogError(
+                "No approval chain is configured for '{ModelType}', so the QA disposition round "
+                + "could not be opened for {Count} OOS case(s) whose retest has just been "
+                + "reviewed. They are awaiting QA disposition and continue to block release, but "
+                + "cannot be disposed until an administrator defines the approval stages.",
+                QcWorksheetModelTypes.OosCase, waiting.Count);
+
             return;
+        }
 
         // Opens the QA disposition round through the same approval engine every other QC
         // approval point uses. No signature is taken here — that happens at /disposition.

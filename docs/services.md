@@ -1,21 +1,3 @@
-# Unified pending revision approvals (2026-09-29)
-
-`GET /api/v1/approval/my-pending/revisions` is authenticated and returns
-`revisionId`, `resourceId`, `resourceType`, `action`, `label`, `contentHash`,
-`createdAt`, and `resourcePath` for currently actionable formula, Full
-Procedures, and unconfigured OOS disposition work. It filters by permission,
-formula stage assignment, area role grants, and independent actor rules.
-The existing generic and QC pending endpoints remain active.
-`GET /api/v1/approval/my-pending/document-counts` returns the current actor's
-pending counts keyed by ApprovalDocument. List requests specify one document:
-generic approvals use `modelType`; QC and revision queues use
-`approvalDocument`. The OOS document may query both QC stages and the
-no-workflow disposition read model. Decisions use their resource endpoints.
-The generic detail routes constrain `modelId` and `approvalId` to GUIDs so
-`my-pending/revisions` and `my-pending/document-counts` cannot be interpreted
-as detail identifiers. Both new routes require the backend release containing
-these controllers; an older deployment returns a `modelId` validation error.
-
 # Service contracts
 
 ## Full Procedure Definitions (2026-09-16)

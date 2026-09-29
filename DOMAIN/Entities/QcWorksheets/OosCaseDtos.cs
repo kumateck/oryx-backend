@@ -43,8 +43,6 @@ public class OosCaseSummaryDto : BaseDto
 /// </summary>
 public class OosCaseDetailDto : OosCaseSummaryDto
 {
-    public bool RequiresApprovalSignature { get; set; }
-
     /// <summary>
     /// The pinned Specification version the limit came from — the version the round runs
     /// against, never whichever version is Effective at read time.

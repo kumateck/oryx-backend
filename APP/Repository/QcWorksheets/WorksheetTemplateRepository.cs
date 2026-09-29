@@ -3,7 +3,6 @@ using APP.IRepository;
 using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
-using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -194,15 +193,16 @@ public class WorksheetTemplateRepository(
             return Result.Failure<WorksheetTemplateDetailDto>(
                 QcWorksheetErrors.SubmitRequiresDraft(template.Status));
 
-        await using var approvalTransaction = context.Database.IsRelational()
-            ? await context.Database.BeginTransactionAsync() : null;
+        if (!await HasConfiguredApprovalChain())
+            return Result.Failure<WorksheetTemplateDetailDto>(
+                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
+
         template.Status = QcDocumentStatus.UnderReview;
         template.UpdatedAt = DateTime.UtcNow;
         template.LastUpdatedById = userId;
         await context.SaveChangesAsync();
 
-        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id, userId);
-        if (approvalTransaction is not null) await approvalTransaction.CommitAsync();
+        await approvalRepository.CreateInitialApprovalsAsync(ModelType, id);
 
         return await GetTemplate(id);
     }
@@ -292,29 +292,19 @@ public class WorksheetTemplateRepository(
             return Result.Failure<WorksheetTemplateDetailDto>(QcWorksheetErrors.ReasonForChangeRequired);
 
         var approval = await context.Approvals.FirstOrDefaultAsync(item => item.ItemType == ModelType);
-        var configured = approval is not null && await context.ApprovalStages
-            .AnyAsync(stage => stage.ApprovalId == approval.Id);
-        if (configured)
-        {
-            var verified = await signatureService.VerifyAsync(userId, request.Password);
-            if (!verified.IsSuccess)
-                return Result.Failure<WorksheetTemplateDetailDto>(verified.Error);
-            var recorded = await QcApprovalHandler.RecordSignedActionAsync(
-                context, reauthContext, ModelType, id, approval!.Id, userId, request.Comments);
-            if (!recorded.IsSuccess)
-                return Result.Failure<WorksheetTemplateDetailDto>(recorded.Error);
-        }
-        else
-        {
-            context.ApprovalActionLogs.Add(new ApprovalActionLog
-            {
-                ModelId = id,
-                UserId = null,
-                Status = ApprovalStatus.Approved,
-                Comments = $"SystemAutoApproved {ModelType} supersession; triggered by {userId}. " +
-                    request.Comments.Trim(),
-            });
-        }
+        if (approval is null)
+            return Result.Failure<WorksheetTemplateDetailDto>(
+                QcWorksheetErrors.NoApprovalWorkflowConfigured(ModelType));
+
+        var verified = await signatureService.VerifyAsync(userId, request.Password);
+        if (!verified.IsSuccess)
+            return Result.Failure<WorksheetTemplateDetailDto>(verified.Error);
+
+        var recorded = await QcApprovalHandler.RecordSignedActionAsync(
+            context, reauthContext, ModelType, id, approval.Id, userId, request.Comments);
+
+        if (!recorded.IsSuccess)
+            return Result.Failure<WorksheetTemplateDetailDto>(recorded.Error);
 
         template.Status = QcDocumentStatus.Superseded;
         template.UpdatedAt = DateTime.UtcNow;

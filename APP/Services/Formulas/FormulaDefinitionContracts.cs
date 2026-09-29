@@ -130,11 +130,6 @@ public static class FormulaDefinitionErrors
         "This formula revision is no longer editable. Reload the question and create a new draft revision.");
     public static readonly Error ValidationFailed = Error.Validation(
         "FormulaDefinition.ValidationFailed", "The formula definition did not pass validation.");
-    public static readonly Error InvalidApprovalConfiguration = Error.Validation(
-        "FormulaDefinition.InvalidApprovalConfiguration",
-        "A configured formula workflow must have exactly two stages: review and approval.");
-    public static readonly Error NotAssigned = Error.Forbidden(
-        "FormulaDefinition.NotAssigned", "You are not assigned to this formula approval stage.");
     public static readonly Error SegregationOfDuties = Error.Conflict(
         "FormulaDefinition.SegregationOfDuties",
         "Formula authoring, review, and approval must be performed by different users.");

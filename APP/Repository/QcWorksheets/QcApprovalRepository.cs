@@ -18,19 +18,13 @@ namespace APP.Repository.QcWorksheets;
 public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) : IQcApprovalRepository
 {
     public async Task<Result<List<QcPendingApprovalDto>>> GetPendingApprovals(
-        Guid userId, List<Guid> roleIds, string? approvalDocument = null)
+        Guid userId, List<Guid> roleIds)
     {
         roleIds ??= [];
-        var entityType = approvalDocument is not null &&
-            QcWorksheetModelTypes.IsQcWorksheetModelType(approvalDocument)
-            ? QcApprovalEntityTypes.FromModelType(approvalDocument) : null;
-        if (approvalDocument is not null && entityType is null)
-            return Result.Success(new List<QcPendingApprovalDto>());
 
         var candidates = await context.QcApprovals
             .Include(item => item.User)
-            .Where(item => (entityType == null || item.EntityType == entityType)
-                           && item.Status == ApprovalStatus.Pending
+            .Where(item => item.Status == ApprovalStatus.Pending
                            && item.ActivatedAt != null
                            && (item.UserId == userId
                                || (item.RoleId.HasValue && roleIds.Contains(item.RoleId.Value))))
@@ -41,7 +35,6 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
 
         // Only the current round of each document is actionable.
         var latestRounds = await context.QcApprovals
-            .Where(item => entityType == null || item.EntityType == entityType)
             .GroupBy(item => new { item.EntityType, item.EntityId })
             .Select(group => new
             {
