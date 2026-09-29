@@ -1,3 +1,11 @@
+# Approval queue integration (2026-09-29)
+
+The API exposes an authenticated revision read model at
+`/api/v1/approval/my-pending/revisions`. It complements the existing generic
+and QC queues. Resource services retain authority for review, approval,
+publication, disposition and audit. See `docs/services.md`,
+`docs/workflows.md`, and `docs/approval-unification-design.md`.
+
 # Oryx ERP
 
 Full Procedures template scope update (2026-09-28): all five template creation
