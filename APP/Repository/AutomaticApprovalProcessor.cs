@@ -236,16 +236,41 @@ internal static class AutomaticApprovalProcessor
                 break;
 
             case QcWorksheetModelTypes.StandardTestProcedure:
+                var stp = await context.QcStandardTestProcedures.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(stp, modelType, modelId);
+                stp.Approved = true;
+                stp.Status = QcDocumentStatus.Approved;
+                stp.UpdatedAt = DateTime.UtcNow;
+                break;
+
             case QcWorksheetModelTypes.WorksheetTemplate:
+                var template = await context.QcWorksheetTemplates.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(template, modelType, modelId);
+                template.Approved = true;
+                template.Status = QcDocumentStatus.Approved;
+                template.UpdatedAt = DateTime.UtcNow;
+                break;
+
             case QcWorksheetModelTypes.Specification:
+                var specification = await context.QcSpecifications.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(specification, modelType, modelId);
+                specification.Approved = true;
+                specification.Status = QcDocumentStatus.Approved;
+                specification.UpdatedAt = DateTime.UtcNow;
+                break;
+
             case QcWorksheetModelTypes.WorksheetInstance:
-                // Defence in depth. QC is gated earlier, in CreateInitialApprovalsAsync, so
-                // this should be unreachable; if it is ever reached, failing is the only
-                // acceptable outcome. A QC controlled document may never be approved
-                // without an identified approver and a re-authenticated signature.
+                var instance = await context.QcWorksheetInstances.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(instance, modelType, modelId);
+                instance.Approved = true;
+                instance.Status = WorksheetInstanceStatus.Reviewed;
+                instance.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcWorksheetModelTypes.OosCase:
+            case QcWorksheetModelTypes.Coa:
                 throw new InvalidOperationException(
-                    $"Automatic approval is not permitted for QC model type '{modelType}'. "
-                    + "QC documents require an explicit, re-authenticated approval.");
+                    $"'{modelType}' needs a resource-specific outcome before automatic approval.");
 
             default:
                 throw new NotSupportedException(

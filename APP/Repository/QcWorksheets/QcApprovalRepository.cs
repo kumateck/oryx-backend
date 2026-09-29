@@ -85,6 +85,20 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
             .Where(item => specificationIds.Contains(item.Id))
             .ToListAsync();
 
+        var instanceIds = actionable
+            .Where(item => item.EntityType == QcApprovalEntityTypes.WorksheetInstance)
+            .Select(item => item.EntityId).Distinct().ToList();
+        var instances = await context.QcWorksheetInstances
+            .Include(item => item.WorksheetTemplate)
+            .Include(item => item.CreatedBy)
+            .Where(item => instanceIds.Contains(item.Id)).ToListAsync();
+
+        var oosIds = actionable
+            .Where(item => item.EntityType == QcApprovalEntityTypes.OosCase)
+            .Select(item => item.EntityId).Distinct().ToList();
+        var oosCases = await context.QcOosCases
+            .Where(item => oosIds.Contains(item.Id)).ToListAsync();
+
         var results = new List<QcPendingApprovalDto>();
 
         foreach (var stage in actionable)
@@ -145,6 +159,35 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
                         Order = stage.Order,
                         ApprovalRound = stage.ApprovalRound,
                         ResourcePath = $"qc/worksheets/specifications/{specification.Id}"
+                    });
+                    break;
+                case QcApprovalEntityTypes.WorksheetInstance:
+                    var instance = instances.FirstOrDefault(item => item.Id == stage.EntityId);
+                    if (instance is null) continue;
+                    results.Add(new QcPendingApprovalDto
+                    {
+                        EntityType = stage.EntityType, EntityId = instance.Id,
+                        Code = instance.Id.ToString(),
+                        Name = instance.WorksheetTemplate?.Name ?? "Worksheet review",
+                        Version = instance.WorksheetTemplateVersion,
+                        Status = QcDocumentStatus.UnderReview,
+                        CreatedAt = instance.CreatedAt,
+                        CreatedBy = mapper.Map<UserDto>(instance.CreatedBy),
+                        Order = stage.Order, ApprovalRound = stage.ApprovalRound,
+                        ResourcePath = $"qc/worksheets/review/{instance.Id}"
+                    });
+                    break;
+                case QcApprovalEntityTypes.OosCase:
+                    var oos = oosCases.FirstOrDefault(item => item.Id == stage.EntityId);
+                    if (oos is null) continue;
+                    results.Add(new QcPendingApprovalDto
+                    {
+                        EntityType = stage.EntityType, EntityId = oos.Id,
+                        Code = oos.Id.ToString(), Name = $"OOS: {oos.FieldKey}",
+                        Version = 1, Status = QcDocumentStatus.UnderReview,
+                        CreatedAt = oos.CreatedAt,
+                        Order = stage.Order, ApprovalRound = stage.ApprovalRound,
+                        ResourcePath = $"qc/worksheets/oos-cases/{oos.Id}"
                     });
                     break;
             }
