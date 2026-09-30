@@ -449,3 +449,12 @@ Calculation Question authoring now validates the exact Published source
 revision selected by the caller. A superseded source cannot silently change
 the new Question's calculation snapshot. Existing ID-only callers retain the
 previous lookup behavior until migrated.
+
+## QC worksheet AI fallback (2026-09-29)
+
+An unknown ARD is redacted before the permitted AI fallback calls its active
+provider. OpenAI's strict output schema now carries nullable optional values;
+grounding, Low confidence, human review, and the existing save/approval gates
+are unchanged. Provider and key-ring failures return distinct flags on the
+read-only import proposal, with no silent fallback to another provider. See
+[`qc-rebuild/ai-import-provider-diagnostics.md`](qc-rebuild/ai-import-provider-diagnostics.md).

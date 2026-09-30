@@ -65,6 +65,22 @@ public static class WorksheetImportErrors
         "QcWorksheetTemplate.AiExtractionUnavailable",
         "AI extraction is not available: no API key is configured for the active provider.");
 
+    public static readonly Error AiKeyUnreadable = Error.Failure(
+        "QcWorksheetTemplate.AiKeyUnreadable",
+        "The saved AI provider key cannot be decrypted. Ask an administrator to save it again.");
+
+    public static readonly Error AiProviderRejectedRequest = Error.Failure(
+        "QcWorksheetTemplate.AiProviderRejectedRequest",
+        "The AI provider rejected the extraction request. Check the configured key, model, and provider logs.");
+
+    public static readonly Error AiProviderRateLimited = Error.Failure(
+        "QcWorksheetTemplate.AiProviderRateLimited",
+        "The AI provider rate limited the extraction request. Try again later.");
+
+    public static readonly Error AiProviderUnreachable = Error.Failure(
+        "QcWorksheetTemplate.AiProviderUnreachable",
+        "The AI provider could not be reached or is unavailable. Try again later.");
+
     /// <summary>Build brief 11: <c>SaveProviderKeyAsync</c> rejects an empty/whitespace key.</summary>
     public static readonly Error AiExtractionKeyRequired = Error.Validation(
         "QcWorksheetTemplate.AiExtractionKeyRequired",

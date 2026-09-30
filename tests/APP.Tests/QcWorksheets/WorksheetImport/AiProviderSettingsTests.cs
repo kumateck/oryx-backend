@@ -169,6 +169,32 @@ public class AiProviderSettingsTests
     }
 
     [Fact]
+    public async Task A_saved_key_from_another_key_ring_is_reported_as_unreadable_and_can_be_replaced()
+    {
+        await using var context = CreateContext();
+        var original = CreateService(context);
+        var actorId = Guid.NewGuid();
+
+        await original.SaveProviderKeyAsync(
+            AiExtractionProvider.OpenAi, "gpt-5.1", "sk-old-key", actorId, CancellationToken.None);
+        await original.SetActiveProviderAsync(AiExtractionProvider.OpenAi, actorId, CancellationToken.None);
+
+        var restored = CreateService(context);
+        var status = await restored.GetAsync(CancellationToken.None);
+        Assert.True(status.Value.Providers.Single(item => item.Provider == AiExtractionProvider.OpenAi).HasKey);
+
+        var unresolved = await restored.ResolveActiveAsync(CancellationToken.None);
+        Assert.True(unresolved.IsFailure);
+        Assert.Equal(WorksheetImportErrors.AiKeyUnreadable, unresolved.Error);
+
+        await restored.SaveProviderKeyAsync(
+            AiExtractionProvider.OpenAi, "gpt-5.1", "sk-new-key", actorId, CancellationToken.None);
+        var resolved = await restored.ResolveActiveAsync(CancellationToken.None);
+        Assert.True(resolved.IsSuccess);
+        Assert.Equal("sk-new-key", resolved.Value.ApiKey);
+    }
+
+    [Fact]
     public async Task Switching_the_active_provider_back_does_not_require_re_entering_its_key()
     {
         await using var context = CreateContext();
