@@ -15,6 +15,9 @@ public class MaterialSampling : BaseEntity
     public DateTime? IssuedAt { get; set; }
     public Guid GrnId { get; set; }
     public Grn Grn { get; set; }
+    public Guid? ChemicalArdId { get; set; }
+    public Guid? MicrobialArdId { get; set; }
+    public bool MicrobialRequired { get; set; }
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public decimal SampleQuantity { get; set; }

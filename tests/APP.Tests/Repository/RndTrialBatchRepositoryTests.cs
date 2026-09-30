@@ -3,6 +3,7 @@ using APP.Repository;
 using AutoMapper;
 using DOMAIN.Entities.RndFormulations;
 using DOMAIN.Entities.RndProjects;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.RndTrialBatches;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -138,6 +139,45 @@ public class RndTrialBatchRepositoryTests
         Assert.Equal($"TRB-{year}-0001", firstBatch.BatchCode);
         Assert.Equal($"TRB-{year}-0002", secondBatch.BatchCode);
         Assert.Equal(RndTrialBatchStatus.Planned, firstBatch.Status);
+    }
+
+    [Fact]
+    public async Task Complete_waits_for_linked_routine_quality_work()
+    {
+        await using var context = CreateContext();
+        var (project, formulation, _) = await SeedTwoProjects(context);
+        var repository = CreateRepository(context);
+        var created = await repository.CreateTrialBatch(project.Id,
+            new CreateRndTrialBatchRequest
+            {
+                RndFormulationId = formulation.Id, BatchSize = 1
+            }, Guid.NewGuid());
+        var routine = new RoutineExecution
+        {
+            Id = Guid.NewGuid(), RoutineCode = "RUT/RND/TEST",
+            Type = RoutineType.Water, Origin = RoutineOrigin.Emergency,
+            RoutineDate = DateTime.UtcNow, RndTrialBatchId = created.Value,
+            Status = RoutineStatus.InProgress
+        };
+        context.RoutineExecutions.Add(routine);
+        await context.SaveChangesAsync();
+
+        var pending = await repository.UpdateStatus(created.Value,
+            new UpdateRndTrialBatchStatusRequest
+            {
+                Status = RndTrialBatchStatus.Completed
+            }, Guid.NewGuid());
+        Assert.True(pending.IsFailure);
+        Assert.Equal("RndTrialBatch.RoutineQualityPending", pending.Error.Code);
+
+        routine.Status = RoutineStatus.Approved;
+        await context.SaveChangesAsync();
+        var completed = await repository.UpdateStatus(created.Value,
+            new UpdateRndTrialBatchStatusRequest
+            {
+                Status = RndTrialBatchStatus.Completed
+            }, Guid.NewGuid());
+        Assert.True(completed.IsSuccess);
     }
 
     [Fact]

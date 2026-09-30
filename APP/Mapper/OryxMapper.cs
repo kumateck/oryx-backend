@@ -56,6 +56,7 @@ using DOMAIN.Entities.Procurement.Distribution;
 using DOMAIN.Entities.Procurement.Manufacturers;
 using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.ProductAnalyticalRawData;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
@@ -699,6 +700,7 @@ public class OryxMapper : Profile
         #region BinCardInformation
 
         CreateMap<BinCardInformation, BinCardInformationDto>()
+            .ForMember(dest => dest.WarehouseName, opt => opt.MapFrom(src => src.Warehouse.Name))
             .ForMember(
                 dest => dest.Supplier,
                 opt =>
@@ -1289,9 +1291,13 @@ public class OryxMapper : Profile
 
         #region Material Analytical Raw Data
 
-        CreateMap<CreateMaterialAnalyticalRawDataRequest, MaterialAnalyticalRawData>();
+        CreateMap<CommercialCoaItemRequest, CommercialCoaItem>();
+        CreateMap<CommercialCoaItem, CommercialCoaItemRequest>();
+        CreateMap<CreateMaterialAnalyticalRawDataRequest, MaterialAnalyticalRawData>()
+            .ForMember(dest => dest.CoaItems, opt => opt.Ignore());
         CreateMap<MaterialAnalyticalRawDataDto, MaterialAnalyticalRawData>()
-            .ForMember(dest => dest.MaterialStandardTestProcedure, opt => opt.Ignore());
+            .ForMember(dest => dest.MaterialStandardTestProcedure, opt => opt.Ignore())
+            .ForMember(dest => dest.CoaItems, opt => opt.Ignore());
 
         CreateMap<MaterialAnalyticalRawData, MaterialAnalyticalRawDataDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
@@ -1299,9 +1305,11 @@ public class OryxMapper : Profile
         #endregion
 
         #region Product Analytical Raw Data
-        CreateMap<CreateProductAnalyticalRawDataRequest, ProductAnalyticalRawData>();
+        CreateMap<CreateProductAnalyticalRawDataRequest, ProductAnalyticalRawData>()
+            .ForMember(dest => dest.CoaItems, opt => opt.Ignore());
         CreateMap<ProductAnalyticalRawDataDto, ProductAnalyticalRawData>()
-            .ForMember(dest => dest.ProductStandardTestProcedure, opt => opt.Ignore());
+            .ForMember(dest => dest.ProductStandardTestProcedure, opt => opt.Ignore())
+            .ForMember(dest => dest.CoaItems, opt => opt.Ignore());
 
         CreateMap<ProductAnalyticalRawData, ProductAnalyticalRawDataDto>()
             .ForMember(dest => dest.Attachments, opt => opt.MapFrom<AttachmentsResolver>());
@@ -1649,7 +1657,8 @@ public class OryxMapper : Profile
         CreateMap<UpdateServiceQuotationRequest, ServiceQuotation>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         CreateMap<ServiceQuotation, ServiceQuotationDto>()
-            .ForMember(dest => dest.Service, opt => opt.MapFrom(src => src.JobOrder.Service));
+            .ForMember(dest => dest.Service, opt => opt.MapFrom(src => src.JobOrder.Service))
+            .ForMember(dest => dest.JobOrderStatus, opt => opt.MapFrom(src => src.JobOrder.Status));
         CreateMap<ServiceQuotation, ServiceQuotationReducedDto>()
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src => src.JobOrder.Service));
         CreateMap<CreateServiceCharge, ServiceCharge>();

@@ -145,7 +145,12 @@ public static class MenuConfig
                 new(PermissionSubmodules.MaterialArd, [PermissionKeys.CanViewRawMaterialArds, PermissionKeys.CanCreateRawMaterialArd, PermissionKeys.CanViewPackagingMaterialArds, PermissionKeys.CanCreatePackagingMaterialArd], route: "/quality-control/material-ard", order: 5),
                 new(PermissionSubmodules.ProductStp, [PermissionKeys.CanViewProductStps, PermissionKeys.CanCreateProductStp], route: "/quality-control/product-stp", order: 6),
                 new(PermissionSubmodules.ProductArd, [PermissionKeys.CanViewProductArds, PermissionKeys.CanCreateProductArd], route: "/quality-control/product-ard", order: 7),
-                new(PermissionSubmodules.ProductSpecification, [PermissionKeys.CanViewProductSpecifications, PermissionKeys.CanCreateProductSpecification], route: "/quality-control/product-specification", order: 8)
+                new(PermissionSubmodules.ProductSpecification, [PermissionKeys.CanViewProductSpecifications, PermissionKeys.CanCreateProductSpecification], route: "/quality-control/product-specification", order: 8),
+                new(PermissionSubmodules.RoutineTests, [PermissionKeys.CanViewRoutineTests, PermissionKeys.CanCreateRoutineTest], route: "/qc/routines", order: 9),
+                new(PermissionSubmodules.RoutineSetup, [PermissionKeys.CanViewRoutineSetup, PermissionKeys.CanManageRoutineSetup], route: "/qc/routines/setup", order: 10),
+                new(PermissionSubmodules.MicrobialRequirements, [PermissionKeys.CanManageMicrobialRequirements], route: "/qc/routines/setup", order: 11),
+                new(PermissionSubmodules.WaterQuality, [PermissionKeys.CanViewWaterQuality, PermissionKeys.CanManageWaterQuality], route: "/qc/routines/water-quality", order: 12),
+                new(PermissionSubmodules.QualityCertificates, [PermissionKeys.CanViewQualityCertificates, PermissionKeys.CanGenerateQualityCertificate], route: "/qc/routines", order: 13)
             ]
         ),
 

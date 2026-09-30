@@ -22,6 +22,8 @@ public interface ISupplierRelationshipRepository
     Task<Result> DeleteBankDetail(Guid supplierId, Guid id, Guid userId);
 
     Task<Result<List<SupplierPricingAgreementDto>>> GetPricingAgreements(Guid supplierId);
+    Task<Result<SupplierPricingAgreementDto>> GetPricingAgreementProposal(Guid supplierId, Guid id,
+        Guid userId, List<Guid> roleIds);
     Task<Result<Guid>> CreatePricingAgreement(Guid supplierId, SupplierPricingAgreementRequest request, Guid userId);
     Task<Result> UpdatePricingAgreement(Guid supplierId, Guid id, SupplierPricingAgreementRequest request, Guid userId);
     Task<Result> DeletePricingAgreement(Guid supplierId, Guid id, Guid userId);

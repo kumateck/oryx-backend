@@ -31,7 +31,12 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
         if (batch is null)
             return Error.NotFound("MaterialBatchId.NotFound", "MaterialBatch not found");
 
+        var selection = await QualityAnalysisSnapshot.ForMaterialAsync(context, batch.MaterialId);
+        if (selection.IsFailure) return selection.Errors;
         var request = mapper.Map<MaterialSampling>(materialSamplingRequest);
+        request.ChemicalArdId = selection.Value.ChemicalArdId;
+        request.MicrobialArdId = selection.Value.MicrobialArdId;
+        request.MicrobialRequired = selection.Value.MicrobialRequired;
 
         await context.MaterialSamplings.AddAsync(request);
         batch.Status = BatchStatus.Sampled;

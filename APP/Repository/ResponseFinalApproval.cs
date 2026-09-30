@@ -19,23 +19,49 @@ internal static class ResponseFinalApproval
         response.Approved = true;
         response.Rejected = false;
         BatchManufacturingRecord productBatchToApprove = null;
+        if (response.RoutineTrackId.HasValue)
+        {
+            var track = await context.RoutineTracks
+                .Include(item => item.RoutineSample).ThenInclude(item => item.RoutineExecution)
+                .FirstOrDefaultAsync(item => item.Id == response.RoutineTrackId);
+            if (track is null)
+                return Error.NotFound("Response.RoutineTrack", "Routine track was not found.");
+            var sampleIds = await context.RoutineSamples
+                .Where(item => item.RoutineExecutionId == track.RoutineSample.RoutineExecutionId)
+                .Select(item => item.Id).ToListAsync();
+            var otherResponses = await context.Responses
+                .Where(item => item.RoutineTrackId.HasValue &&
+                    sampleIds.Contains(item.RoutineTrack.RoutineSampleId) &&
+                    item.Id != response.Id).ToListAsync();
+            var trackCount = await context.RoutineTracks
+                .CountAsync(item => sampleIds.Contains(item.RoutineSampleId));
+            if (sampleIds.Count > 0 && otherResponses.Count + 1 == trackCount &&
+                otherResponses.All(item => item.Approved && !item.Rejected))
+            {
+                track.RoutineSample.RoutineExecution.Status =
+                    DOMAIN.Entities.QualityRoutines.RoutineStatus.Approved;
+                track.RoutineSample.RoutineExecution.DoneById ??= releasedById;
+                track.RoutineSample.RoutineExecution.DoneAt = DateTime.UtcNow;
+                context.RoutineAuditEvents.Add(new DOMAIN.Entities.QualityRoutines.RoutineAuditEvent
+                {
+                    Id = Guid.NewGuid(), RoutineExecutionId = track.RoutineSample.RoutineExecutionId,
+                    ActorId = releasedById ?? response.CreatedById ?? Guid.Empty,
+                    OccurredAt = DateTime.UtcNow, Action = "Approved",
+                    Detail = "All required routine analysis tracks approved."
+                });
+            }
+        }
 
         if (response.MaterialBatchId.HasValue)
         {
-            var rawDataExists = await context.MaterialAnalyticalRawData
-                .AnyAsync(item => item.MaterialStandardTestProcedure.MaterialId
-                    == response.MaterialBatch.MaterialId);
-            if (!rawDataExists)
-                return Error.NotFound(
-                    "Response.MaterialAnalyticalRawDataNotFound",
-                    $"Analytical raw data for material batch {response.MaterialBatchId} was not found.");
-
-            if (response.MaterialBatch is null)
-                return Error.NotFound(
-                    "Response.BatchNotFound",
-                    $"Response batch {response.MaterialBatchId} was not found.");
-
-            response.MaterialBatch.Status = BatchStatus.Approved;
+            var batch = response.MaterialBatch ?? await context.MaterialBatches
+                .FirstOrDefaultAsync(item => item.Id == response.MaterialBatchId);
+            if (batch is null)
+                return Error.NotFound("Response.BatchNotFound", "Material batch was not found.");
+            var readiness = await QualityAnalysisReadiness.MaterialAsync(
+                context, response.MaterialBatchId.Value);
+            if (readiness.IsFailure) return readiness.Errors;
+            if (readiness.Value) batch.Status = BatchStatus.Approved;
         }
 
         if (response.BatchManufacturingRecordId.HasValue)
@@ -44,14 +70,6 @@ internal static class ResponseFinalApproval
                 return Error.NotFound(
                     "Response.BmrNotFound",
                     $"Response BMR {response.BatchManufacturingRecordId} was not found.");
-
-            var rawDataExists = await context.ProductAnalyticalRawData
-                .AnyAsync(item => item.ProductStandardTestProcedure.ProductId
-                    == response.BatchManufacturingRecord.ProductionScheduleProduct.ProductId);
-            if (!rawDataExists)
-                return Error.NotFound(
-                    "Response.ProductAnalyticalRawDataNotFound",
-                    $"Analytical raw data for BMR {response.BatchManufacturingRecordId} was not found.");
 
             productBatchToApprove = response.BatchManufacturingRecord;
         }
@@ -73,6 +91,10 @@ internal static class ResponseFinalApproval
                     "Response.Atr",
                     $"Analytical test request for step {response.ProductionActivityStepId} was not found.");
 
+            var readiness = await QualityAnalysisReadiness.ProductStageAsync(context, atr);
+            if (readiness.IsFailure) return readiness.Errors;
+            if (!readiness.Value) return Result.Success();
+
             productionActivityStep.CompletedAt = DateTime.UtcNow;
             productionActivityStep.Status = ProductionStatus.Completed;
             atr.ReleasedAt = DateTime.UtcNow;
@@ -88,7 +110,11 @@ internal static class ResponseFinalApproval
         }
         else if (productBatchToApprove is not null)
         {
-            productBatchToApprove.Status = BatchManufacturingStatus.Approved;
+            var hasUnreleasedStage = await context.AnalyticalTestRequests.AnyAsync(item =>
+                item.BatchManufacturingRecordId == response.BatchManufacturingRecordId
+                && item.Status != AnalyticalTestStatus.Released);
+            if (!hasUnreleasedStage)
+                productBatchToApprove.Status = BatchManufacturingStatus.Approved;
         }
 
         return Result.Success();

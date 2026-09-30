@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using DOMAIN.Entities.Alerts;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
@@ -71,6 +72,7 @@ using DOMAIN.Entities.PurchaseOrders;
 using DOMAIN.Entities.RecoverableItemsReports;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.ShiftAssignments;
@@ -102,8 +104,17 @@ namespace INFRASTRUCTURE.Context;
 public class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
     ICurrentUserService currentUserService
-) : IdentityDbContext<User, Role, Guid>(options)
+) : IdentityDbContext<User, Role, Guid>(options), IDataProtectionKeyContext
 {
+    // Build brief 11: persists the Data Protection key ring to the database (see
+    // AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>() in Program.cs) rather
+    // than the framework's default local-filesystem key ring, which would make a key encrypted
+    // on one instance undecryptable after a restart or on any other instance behind a load
+    // balancer. Required by Microsoft.AspNetCore.DataProtection.EntityFrameworkCore's
+    // IDataProtectionKeyContext contract.
+    public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys { get; set; }
+
+
     #region Auth
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -308,6 +319,7 @@ public class ApplicationDbContext(
     public DbSet<SupplierContact> SupplierContacts { get; set; }
     public DbSet<SupplierBankDetail> SupplierBankDetails { get; set; }
     public DbSet<SupplierPricingAgreement> SupplierPricingAgreements { get; set; }
+    public DbSet<SupplierPricingAgreementApproval> SupplierPricingAgreementApprovals { get; set; }
     public DbSet<SupplierPerformanceRecord> SupplierPerformanceRecords { get; set; }
     public DbSet<Manufacturer> Manufacturers { get; set; }
     public DbSet<ManufacturerMaterial> ManufacturerMaterials { get; set; }
@@ -451,6 +463,20 @@ public class ApplicationDbContext(
 
     public DbSet<QcEquipment> QcEquipments { get; set; }
     public DbSet<QcEquipmentCategory> QcEquipmentCategories { get; set; }
+
+    public DbSet<MicrobialRequirement> MicrobialRequirements => Set<MicrobialRequirement>();
+    public DbSet<CommercialCoaItem> CommercialCoaItems => Set<CommercialCoaItem>();
+    public DbSet<CommercialCertificate> CommercialCertificates => Set<CommercialCertificate>();
+    public DbSet<RoutineArd> RoutineArds => Set<RoutineArd>();
+    public DbSet<RoutineCoaItem> RoutineCoaItems => Set<RoutineCoaItem>();
+    public DbSet<RoutineDefinition> RoutineDefinitions => Set<RoutineDefinition>();
+    public DbSet<RoutineExecution> RoutineExecutions => Set<RoutineExecution>();
+    public DbSet<RoutineSample> RoutineSamples => Set<RoutineSample>();
+    public DbSet<RoutineTrack> RoutineTracks => Set<RoutineTrack>();
+    public DbSet<RoutineAuditEvent> RoutineAuditEvents => Set<RoutineAuditEvent>();
+    public DbSet<RoutineCertificate> RoutineCertificates => Set<RoutineCertificate>();
+    public DbSet<WaterQualityPeriod> WaterQualityPeriods => Set<WaterQualityPeriod>();
+    public DbSet<WaterUseRecord> WaterUseRecords => Set<WaterUseRecord>();
 
     #endregion
 
@@ -817,6 +843,117 @@ public class ApplicationDbContext(
     #region Threshold
 
     public DbSet<Threshold> Threshold => Set<Threshold>();
+
+    #endregion
+
+    #region QcWorksheets
+
+    // Rebuilt QC module (additive). Coexists with, and does not touch, the live
+    // Material/Product/Packaging QC tables. Mapped by
+    // INFRASTRUCTURE/EntityConfigurations/QcWorksheets/.
+    public DbSet<DOMAIN.Entities.QcWorksheets.QcApproval> QcApprovals { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.StandardTestProcedure> QcStandardTestProcedures { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.StpStep> QcStpSteps { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetTemplate> QcWorksheetTemplates { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetSection> QcWorksheetSections { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetField> QcWorksheetFields { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldRevision> QcWorksheetFieldRevisions { get; set; }
+
+    // Milestone 2. QcSamplingPointGroups is shared master data: Milestone 6's
+    // MonitoringProgram references this same table rather than duplicating the concept.
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPointGroup> QcSamplingPointGroups { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.Specification> QcSpecifications { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationWorksheetLink> QcSpecificationWorksheetLinks { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationCharacteristic> QcSpecificationCharacteristics { get; set; }
+
+    /// <summary>Build brief 08 — import proposals awaiting review into a Draft Specification.</summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.SpecificationProposalSet> QcSpecificationProposalSets { get; set; }
+
+    // Milestone 3 — the execution layer. A round (TestRequest) covers many Subjects, each
+    // carrying one WorksheetInstance per worksheet link on the round's pinned Specification.
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequest> QcTestRequests { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.TestRequestSubject> QcTestRequestSubjects { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstance> QcWorksheetInstances { get; set; }
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetFieldValue> QcWorksheetFieldValues { get; set; }
+
+    /// <summary>
+    /// A plain audit log, deliberately not an approval table: reassigning a worksheet is an
+    /// administrative action rather than an electronic signature.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceReassignment> QcWorksheetInstanceReassignments { get; set; }
+
+    /// <summary>
+    /// Every correction cycle a worksheet went through. A log rather than a summary, for the
+    /// same reason reassignments are: keeping only the latest return would discard the earlier
+    /// ones, and the history is the record.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WorksheetInstanceCorrectionReturn> QcWorksheetInstanceCorrectionReturns { get; set; }
+
+    /// <summary>
+    /// Milestone 4 — the formal OOS/OOT workflow, one case per failing FieldKey.
+    /// <para>
+    /// Coexists with, and does not modify, the live <c>OosInvestigations</c> table. The one
+    /// place the rebuilt QC module writes to a pre-existing live entity is this workflow's
+    /// disposition, which updates <c>MaterialBatch.Status</c> and
+    /// <c>BatchManufacturingRecord.Status</c> — an application-level status update through the
+    /// existing columns, with no schema change to either table.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.OosCase> QcOosCases { get; set; }
+
+    /// <summary>
+    /// Milestone 5 — certificates. Two new tables, <c>QcCoas</c> and <c>QcCoaRows</c>.
+    /// <para>
+    /// Entirely additive and entirely separate from the live certificate path: nothing here reads
+    /// or writes <c>CommercialCertificates</c>, <c>CommercialCoaItems</c> or
+    /// <c>RoutineCertificates</c>, which keep running unchanged. The name <c>Coa</c> is the
+    /// rebuilt module's own entity and is not a rename of any of them.
+    /// </para>
+    /// <para>
+    /// Every value a certificate prints is stored on these two tables, snapshotted at generation
+    /// time. Nothing joins forward to the Specification or the WorksheetInstances to render an
+    /// issued document.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.Coa> Coas { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.CoaRow> CoaRows { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — scheduled routine testing. <c>QcSamplingPoints</c> turns what the old system
+    /// only ever held as a loose string into master data, and <c>QcMonitoringPrograms</c> is the
+    /// per-point schedule the daily due-date scan reads.
+    /// <para>
+    /// Entirely additive. Nothing here reads or writes <c>RoutineDefinitions</c>,
+    /// <c>RoutineExecutions</c>, <c>RoutineSamples</c> or <c>RoutineTracks</c> — the shelved
+    /// routine implementation's tables stay untouched, exactly like every other do-not-touch
+    /// boundary in this module.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.SamplingPoint> QcSamplingPoints { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.MonitoringProgram> QcMonitoringPrograms { get; set; }
+
+    /// <summary>
+    /// Milestone 6 — water validity windows and the uses booked against them.
+    /// <para>
+    /// New tables, and deliberately not a reuse of any existing water-adjacent table: nothing here
+    /// touches the live water stock path this module coexists with.
+    /// </para>
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterQualityPeriod> QcWaterQualityPeriods { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.WaterUseRecord> QcWaterUseRecords { get; set; }
+
+    /// <summary>
+    /// Build brief 11 — provider selection and key management for the AI fallback extractor
+    /// (build brief 10). Two rows max in <see cref="AiExtractionSettings"/> (one per
+    /// <see cref="DOMAIN.Entities.QcWorksheets.AiExtractionProvider"/> value) plus a singleton
+    /// active-provider row; additive only.
+    /// </summary>
+    public DbSet<DOMAIN.Entities.QcWorksheets.AiExtractionSettings> QcAiExtractionSettings { get; set; }
+
+    public DbSet<DOMAIN.Entities.QcWorksheets.AiExtractionActiveProvider> QcAiExtractionActiveProvider { get; set; }
 
     #endregion
 
@@ -2420,6 +2557,15 @@ public class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.MaterialId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<SupplierPricingAgreement>().HasOne(item => item.UoM)
             .WithMany().HasForeignKey(item => item.UoMId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SupplierPricingAgreementApproval>()
+            .HasOne(item => item.SupplierPricingAgreement)
+            .WithMany(item => item.Approvals)
+            .HasForeignKey(item => item.SupplierPricingAgreementId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SupplierPricingAgreementApproval>()
+            .HasOne(item => item.Approval)
+            .WithMany().HasForeignKey(item => item.ApprovalId)
+            .OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<SupplierPerformanceRecord>().HasOne(item => item.Supplier)
             .WithMany(item => item.PerformanceRecords).HasForeignKey(item => item.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);

@@ -1,5 +1,193 @@
 # Service contracts
 
+## QC worksheet AI import diagnostics (2026-09-29)
+
+`POST /api/v1/qc/worksheets/templates/import` still returns one read-only
+proposal per uploaded file. If an unknown ARD reaches the permitted AI fallback,
+provider failures are returned as distinct proposal flags instead of all being
+reported as a missing key. The settings endpoint's `hasKey` only reports stored
+ciphertext, not provider acceptance or decryptability. See
+[`qc-rebuild/ai-import-provider-diagnostics.md`](qc-rebuild/ai-import-provider-diagnostics.md)
+for the flag contract. No request shape or success DTO changed.
+
+## Full Procedure Definitions (2026-09-16)
+
+`/api/v1/procedures` provides stable Procedure identities and immutable
+revisions. A revision pins one exact Published Workflow revision and content
+hash, declares product/site applicability for Trial, Validation, Commercial or
+Scale Up batches, and assigns every Activity node to exactly one Manufacturing,
+Packaging, Shared or Development record scope. Production-purpose Procedures
+cannot use Development scope.
+
+Reads, create, draft edit, validation, submission, review, approval and
+retirement use distinct Procedure permission keys plus area assignment. Draft
+writes and lifecycle commands are reasoned and hash-fenced. Approval rechecks
+the Workflow/hash, complete Activity scope coverage and active Product/Site
+dependencies; approving a replacement retires the previous Approved revision
+transactionally. Validation is side-effect-free. This service does not create a
+BMR/BPR master, release bundle, effective assignment, issued batch or run. See
+[`full-procedure-definitions.md`](full-procedure-definitions.md).
+
+## Full Procedures Template Adoption (2026-09-16)
+
+`POST /api/v1/template-adoptions/from-grant/{grantId}` consumes one current
+Active sharing grant and creates a new Draft owned by the target area. The
+request must map every source dependency exactly to a compatible target
+revision; Activity adoption additionally maps performer/checker/approver roles.
+Question, Section, Form, Activity and Workflow adoption are supported.
+
+The operation rechecks the exact Published source revision and hash, target
+Author assignment and both active areas. In one serializable transaction it
+creates the Draft through the existing kind-specific service, increments the
+grant version, appends an `Adopted` grant audit and stores immutable lineage.
+Source approvals, actors, responses, evidence and consumers are not copied.
+`GET /api/v1/template-adoptions/{adoptionId}` is scoped to the target area's view
+authority. See
+[`full-procedures-template-adoption.md`](full-procedures-template-adoption.md).
+
+## Full Procedures Template Sharing (2026-09-16)
+
+`/api/v1/template-sharing` governs the approval record for cross-area adoption
+of one exact Published
+Question, Section, Form, Activity or Workflow revision. A source Publisher or
+target Author may request access; a different actor assigned to the other area
+must approve or reject it. Approval rechecks the revision hash, Published state,
+and target purpose/subject support. Revocation is version-checked and requires a
+Publisher in either participating area.
+
+Area listings and usage-impact reads require global view permission plus area
+assignment. Usage returns direct definition-reference and active-grant counts
+only; it does not query or expose completed responses, evidence, signatures, or
+subject records. An Active grant does not itself authorize a direct cross-area
+reference; the separate adoption command creates a target-owned Draft. See
+[`full-procedures-template-sharing.md`](full-procedures-template-sharing.md).
+
+## Full Procedures Template Workflows (2026-09-16)
+
+`/api/v1/template-workflows` provides an immutable, versioned graph of typed
+nodes (Start, End, Activity, Branch, Fork/Join, Wait/IPC, Hold/Resume,
+Rework) and edges. Reads use `CanViewQuestionTemplates`; drafting/submission
+uses `CanManageWorkflowTemplateRevision`; review and publication use separate
+keys. Area assignment and active state are always rechecked.
+
+Activity nodes bind an exact Published Activity revision in the same
+area/purpose/subject context. The graph must have exactly one Start, at least
+one End, every node reachable, fork/join and hold/resume keys paired
+one-to-one, and no cycle outside the explicit, attempt-capped Rework
+back-reference. Node layout (position) is persisted separately from this
+governed content and does not affect its hash. Node labels and node/edge order
+are governed semantic content and do affect the hash. Non-finite layout
+coordinates are rejected. See
+[`full-procedures-workflow-revisions.md`](full-procedures-workflow-revisions.md).
+
+## Full Procedures Template Activities (2026-09-16)
+
+`/api/v1/template-activities` provides immutable Activity definitions. Reads use
+`CanViewQuestionTemplates`; drafting/submission uses
+`CanManageActivityTemplateRevision`; review and publication use separate keys.
+Area assignment and active state are always rechecked.
+
+Requests bind exact Published Forms, ordered typed actions and role sets,
+configured resource capabilities, typed data inputs/outputs and completion
+rules. The service validates segregation, action/capability compatibility and
+rule coverage, then rechecks references at publication. It does not dispatch an
+action. See [`full-procedures-activity-revisions.md`](full-procedures-activity-revisions.md).
+
+## Full Procedures Template Sections and Forms (2026-09-16)
+
+`/api/v1/template-sections` and `/api/v1/template-forms` provide the next two
+immutable definition layers. Reads require `CanViewQuestionTemplates`. Draft
+create/change and submission use the kind-specific manage permission; review
+and publication use separate review/publish permissions. Every command also
+checks the active area and the actor's area grant.
+
+Sections order exact Published Question revisions and contain only local,
+backward-looking conditions. Forms order exact Published Section revisions,
+carry required/evidence/signature declarations, and can condition a later
+Section on an exact Question revision in an earlier pinned Section. Both APIs
+reject unpublished, mismatched, cross-context and missing dependencies,
+hash-fence changes, and revalidate dependencies before publication. See
+[`full-procedures-section-revisions.md`](full-procedures-section-revisions.md)
+and [`full-procedures-form-revisions.md`](full-procedures-form-revisions.md).
+
+## Full Procedures Template Questions (2026-09-16)
+
+`/api/v1/template-questions` now provides area-scoped stable questions with
+immutable revisions. List/detail require `CanViewQuestionTemplates`; draft
+create/change and submission require `CanManageQuestionRevision`; review and
+publication require their separate review/publish keys. The service additionally
+checks the actor's exact area grant and active area state. Expected SHA-256
+content hashes fence draft edits and every lifecycle transition.
+
+Calculation inputs are resolved server-side to both a stable question ID and
+the exact Published source revision ID in the same area. Published content is
+never updated in place; Reviewers can return In Review content to Draft for
+correction, while Publishers can explicitly retire a Published revision. A
+replacement starts a new Draft and publication retires the prior Published
+revision transactionally. See
+[`full-procedures-question-revisions.md`](full-procedures-question-revisions.md).
+
+## Full Procedures Template Areas (2026-09-16)
+
+`/api/v1/template-areas` provides the persistent, deployment-configured area
+registry. Catalog/list/detail reads require `CanViewQuestionTemplates`;
+create/update/activation require `CanManageTemplateAreas`. The service also
+checks owner-role or area-role assignment, so a global permission alone cannot
+read or administer an unrelated area. Requests use expected versions and
+reasoned changes; 403, 404 and 409 outcomes remain distinct. See
+[`full-procedures-template-areas.md`](full-procedures-template-areas.md) for the
+endpoint, data, audit and migration contract.
+
+## Full Procedures permission catalog (2026-09-16)
+
+`FullProcedurePermissionKeys` defines the stable capability strings and
+`FullProcedurePermissionCatalog` adds each one exactly once to
+`PermissionUtils.GeneratePermissions()`. They appear in role administration
+with no access types until an administrator explicitly grants them. Catalog
+membership is not resource authorization: endpoints must also validate
+company/deployment context, area, assignment, qualification, lifecycle state,
+and segregation of duties. The Template Area, Question, Section, Form, Activity,
+Workflow, Sharing, Adoption and Procedure endpoints now enforce the area
+and assignment boundary; other future endpoints must do the same.
+`CanManageTemplateAreas` and `CanReviewTemplateRevision` are separate from
+authoring and publishing. The Template Question, Section and Form endpoints now enforce these
+separate lifecycle capabilities and actor segregation. `TemplateAreaPolicy` validates reviewed descriptor and
+owner-group references; `TemplateAreaAuthorization` requires both the operation
+key and resource assignment. The DI-registered Template Area service persists
+that policy. It does not authorize Procedure execution.
+
+## Service quotation stage and SMTP configuration (2026-09-16)
+
+`GET /api/v1/service-quotations` returns the related numeric `jobOrderStatus` in each `ServiceQuotationDto`. Optional `jobOrderStatus` and `proformaPending` query parameters filter before pagination; the latter includes comparison-ready orders and only the selected quotation on an order awaiting proforma. This is derived from the persisted job order, not a second quotation state. `POST /api/v1/job-orders/select-quotation` accepts comparison-ready orders, returns success for an identical already-selected quotation, and rejects any transition after selection has advanced to proforma or later stages. This prevents rollback of governed state. SMTP send requires explicit `SMTP_HOST`, `SMTP_USERNAME`, and `SMTP_PASSWORD`; optional `SMTP_FROM` defaults to the authenticated username. A 535 authentication error remains a deployment credential/account issue; failed sends do not mark vendor requests as sent.
+
+## Chemical, Microbial, Routine QC, and water coverage (2026-09-15)
+
+The delivered entities, endpoint contracts, migrations, validation rules, and remaining
+boundaries are documented in
+[`quality-ard-routine-microbiology-2026-09-15.md`](quality-ard-routine-microbiology-2026-09-15.md).
+Routine and commercial certificates use explicit immutable endpoints. Water quality
+coverage remains separate from the unlimited water inventory batch.
+
+## Full Procedures Phase-0 service boundary (2026-09-15)
+
+`APP.Services.FullProcedures.ProcedureRuntimeSpike` is a side-effect-free proof,
+not a DI-registered service or endpoint. It checks graph/content pinning and
+transition eligibility but does not validate actor authority, approved QC
+receipts, BMR/BPR releases or inventory effects. No API contract has changed.
+`ProcedureSqlSpikeStore` and `ProcedureSqlOutboxSpike` are likewise unregistered
+and refuse any database name other than `oryx_procedure_spike_test`. Their
+disposable PostgreSQL proof writes
+state/audit/outbox atomically and deduplicates local effect receipts. A leased
+retry test uses a fake idempotent adapter and proves one fake effect after a
+forced post-effect failure. A separate test-only worker is killed before or
+after its fake effect/local receipt, then a new process reclaims the event;
+neither sends real outbox events or executes domain effects. See
+`full-procedures-phase-0-backend.md` for the remaining runtime decision.
+`ProcedureActionContractSpike` is also unregistered: it snapshots exact action
+contract content and interpreter versions at prototype issue, then blocks an
+unknown/missing version at interpretation. Its hash is not approval evidence,
+and it does not authenticate an actor, select BMR/BPR masters or perform effects.
+
 ## Template drafting and ARD readiness boundary (2026-09-08)
 
 - `POST /api/v1/form` permits a form section/test whose `fields` collection is empty so template
@@ -349,3 +537,45 @@ server-scoped to their own department; non-production and R&D callers default to
 production departments and may select one active production department. The response
 is a lean `MaterialReadyForChecklistDto[]` projection rather than a full distributed
 material entity graph. See [the report contract](materials-ready-for-checklist-report.md).
+
+## Job request assignment delivery (2026-09-16)
+
+- `POST /api/v1/job-requests/assign-internal` still accepts the existing employee, assigner, request, and notes contract.
+- The selected employee must map by email to an active ERP user. A missing or disabled account returns `Employee.UserAccountUnavailable` before assignment records are created.
+- A successful assignment creates the job execution and then sends an in-app `JobRequestAssigned` notification directly to that user. The notification uses the existing persisted notification and activity-log service.
+- Service quotation selection remains the prerequisite mutation for `POST /api/v1/service-proforma-invoices/request`; no request payload shape changed.
+
+## Assigned approval queue (2026-09-27)
+
+`GET /api/v1/approval/my-pending` is scoped to the authenticated user. A mismatched `userId` returns 403. Only active pending stages are returned, including staff requisitions and production orders. The dedicated `GET /api/v1/approval/my-pending/{modelType}/{modelId}` and generic approval actions check that the caller has the document in their assigned queue. The preexisting generic detail endpoint remains available for historical views. The QC queue at `GET /api/v1/qc/worksheets/approvals/my-pending` now includes worksheet instances and OOS cases with detail routes. QC decisions continue through signed domain actions.
+
+## Full Procedures template scope (2026-09-28)
+
+Question, Section, Form, Activity, and Workflow create endpoints validate the
+Area's purpose and subject against the same catalog that defines allowed
+template kinds. A purpose/subject pair outside the catalog, or a template kind
+not allowed by that purpose, returns the existing invalid-template result
+before any draft or audit row is written. The request and response shapes are
+unchanged. See `docs/full-procedures-template-scope-2026-09-28.md`.
+
+## Exact calculation input revisions (2026-09-28)
+
+`POST /api/v1/template-questions`, its new-revision endpoint, and its draft
+update endpoint accept `calculationReferences` pairs containing `questionId`
+and `revisionId`. The server requires each exact revision to be Published in
+the same Area; stale and mismatched references fail validation. The existing
+`calculationQuestionIds` field remains available to existing callers, but may
+not be combined with the exact-pair field. Adoption maps exact target revision
+IDs through the same path.
+
+## Production stock issue bin cards (2026-09-30)
+
+`POST /api/v1/requisition/issue-stock-requisition/{stockRequisitionId}` now
+rejects a previously issued requisition, duplicate material lines, mismatched
+reservations, and insufficient source shelf quantities. New issue rows returned
+by `GET /api/v1/warehouse/bincardinformation/{materialId}/{departmentId}`
+include nullable `requisitionId`, `requisitionCode`, and `productBatchNumber`.
+The response also provides `warehouseName`, filters rows to the requested
+warehouse department, and orders newest first. The outbound requisition code
+is distinct from an inbound waybill. See
+`docs/warehouse-stock-issue-reconciliation.md` for the migration and review rules.

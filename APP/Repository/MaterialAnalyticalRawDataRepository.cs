@@ -21,9 +21,12 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         CreateMaterialAnalyticalRawDataRequest request
     )
     {
+        if (!Enum.IsDefined(request.AnalysisType))
+            return Error.Validation("MaterialArd.AnalysisType", "Invalid analysis type.");
         var form = await context
             .Forms.Include(item => item.Sections)
                 .ThenInclude(section => section.Fields)
+                .ThenInclude(field => field.Question)
             .FirstOrDefaultAsync(item => item.Id == request.FormId);
 
         if (form == null)
@@ -47,7 +50,23 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             );
         }
 
+        if (await context.MaterialAnalyticalRawData.AnyAsync(item =>
+            item.MaterialStandardTestProcedure.MaterialId == request.MaterialId &&
+            item.AnalysisType == request.AnalysisType))
+            return Error.Conflict("MaterialArd.Exists",
+                "This material already has an ARD for the requested analysis type.");
+        if (!form.Sections.Any(section =>
+            section.AnalysisType == null || section.AnalysisType == request.AnalysisType))
+            return Error.Validation("MaterialArd.Worksheet",
+                "The worksheet form has no sections configured for the requested analysis type.");
         var analyticalRawData = mapper.Map<MaterialAnalyticalRawData>(request);
+        analyticalRawData.Id = Guid.NewGuid();
+        var coaItems = CommercialCoaConfiguration.Build(
+            form, request.AnalysisType, request.CoaItems,
+            materialArdId: analyticalRawData.Id,
+            productArdId: null);
+        if (coaItems.IsFailure) return coaItems.Errors;
+        analyticalRawData.CoaItems = coaItems.Value;
 
         await context.MaterialAnalyticalRawData.AddAsync(analyticalRawData);
         await context.SaveChangesAsync();
@@ -67,6 +86,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     {
         var query = context
             .MaterialAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
@@ -107,6 +127,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     {
         var analyticalRawData = await context
             .MaterialAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
@@ -127,10 +148,12 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
     {
         var analyticalRawData = await context
             .MaterialAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
-            .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == id);
+            .FirstOrDefaultAsync(ad => ad.MaterialStandardTestProcedure.MaterialId == id
+                && ad.AnalysisType == DOMAIN.Entities.QualityRoutines.AnalysisType.Chemical);
 
         if (analyticalRawData is null)
             return Error.NotFound(
@@ -157,11 +180,13 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         var analyticalRawData = await context
             .MaterialAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .Include(ad => ad.MaterialStandardTestProcedure)
                 .ThenInclude(ad => ad.Material)
             .Include(ad => ad.Form)
             .FirstOrDefaultAsync(ad =>
                 ad.MaterialStandardTestProcedure.MaterialId == batch.MaterialId
+                && ad.AnalysisType == DOMAIN.Entities.QualityRoutines.AnalysisType.Chemical
             );
 
         if (analyticalRawData is null)
@@ -206,6 +231,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         var materialArd = await context
             .MaterialAnalyticalRawData.AsSplitQuery()
+            .Include(ad => ad.CoaItems)
             .IgnoreQueryFilters()
             .Include(ad => ad.MaterialStandardTestProcedure)
             .Where(ad=>ad.DeletedAt==null)
@@ -257,6 +283,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             );
         }
 
+        if (request.AnalysisType != analyticalRawData.AnalysisType)
+            return Error.Conflict("MaterialArd.AnalysisType",
+                "An existing ARD cannot change analysis type; create a governed revision.");
         mapper.Map(request, analyticalRawData);
 
         context.MaterialAnalyticalRawData.Update(analyticalRawData);

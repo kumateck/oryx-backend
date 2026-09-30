@@ -4,8 +4,10 @@ using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.MaterialSpecifications;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductSpecifications;
 using DOMAIN.Entities.Users;
@@ -54,6 +56,9 @@ public class FormSection : BaseEntity
     [StringLength(1000000)]
     public string GroupName { get; set; }
     public bool Complies { get; set; }
+
+    // Null means the section applies to every analysis type (shared); a set value restricts it to that one.
+    public AnalysisType? AnalysisType { get; set; }
 }
 
 public class FormField : BaseEntity
@@ -79,8 +84,12 @@ public class Response : BaseEntity, IRequireApproval
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
+    public DOMAIN.Entities.MaterialSampling.MaterialSampling MaterialSampling { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
+    public Guid? RoutineTrackId { get; set; }
+    public RoutineTrack RoutineTrack { get; set; }
     public List<FormResponse> FormResponses { get; set; } = [];
     public List<ResponseApproval> Approvals { get; set; } = [];
     public Guid? CheckedById { get; set; }
@@ -112,9 +121,13 @@ public class FormAssignee : BaseEntity
     public BatchManufacturingRecord BatchManufacturingRecord { get; set; }
     public Guid? MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
+    public DOMAIN.Entities.MaterialSampling.MaterialSampling MaterialSampling { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public TestStage? Stage { get; set; }
+    public Guid? RoutineTrackId { get; set; }
+    public RoutineTrack RoutineTrack { get; set; }
     public List<FormFieldAssignee> FieldAssignees { get; set; } = [];
 }
 

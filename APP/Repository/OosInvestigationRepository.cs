@@ -99,6 +99,27 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
 
         if (request.Approve)
         {
+            if (investigation.AnalyticalTestRequestId.HasValue)
+            {
+                var targetAtr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(
+                    item => item.Id == investigation.AnalyticalTestRequestId);
+                if (targetAtr is null)
+                    return Error.NotFound("OosInvestigation.Atr", "Linked ATR was not found.");
+                var readiness = await QualityAnalysisReadiness.ProductStageAsync(context, targetAtr);
+                if (readiness.IsFailure) return readiness.Errors;
+                if (!readiness.Value)
+                    return Error.Conflict("OosInvestigation.QcPending",
+                        "Required analysis remains incomplete.");
+            }
+            if (investigation.MaterialBatchId.HasValue)
+            {
+                var readiness = await QualityAnalysisReadiness.MaterialAsync(
+                    context, investigation.MaterialBatchId.Value);
+                if (readiness.IsFailure) return readiness.Errors;
+                if (!readiness.Value)
+                    return Error.Conflict("OosInvestigation.QcPending",
+                        "Required analysis remains incomplete.");
+            }
             investigation.Status = OosInvestigationStatus.QaApproved;
 
             if (investigation.AnalyticalTestRequestId.HasValue)

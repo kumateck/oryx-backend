@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.AnalyticalTestRequests;
+using DOMAIN.Entities.QualityRoutines;
 
 namespace DOMAIN.Entities.Forms.Request;
 
@@ -24,6 +25,7 @@ public class CreateFormSectionRequest
     public Guid? InstrumentId { get; set; }
     public List<CreateFormFieldRequest> Fields { get; set; } = [];
     public string GroupName { get; set; }
+    public AnalysisType? AnalysisType { get; set; }
 }
 
 public class CreateFormFieldRequest
@@ -39,9 +41,11 @@ public class CreateResponseRequest
     public Guid FormId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
     public Guid? MaterialSpecificationId { get; set; }
     public Guid? ProductSpecificationId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public Guid? RoutineTrackId { get; set; }
     public List<CreateFormResponseRequest> FormResponses { get; set; } = [];
 }
 
@@ -57,9 +61,11 @@ public class CreateFormAssigneeRequest
     public Guid? BatchManufacturingRecordId { get; set; }
     public TestStage? Stage { get; set; }
     public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
     public Guid? MaterialSpecificationId { get; set; }
     public Guid? ProductSpecificationId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public Guid? RoutineTrackId { get; set; }
     public List<CreateFormFieldAssigneeRequest> FormFieldAssignees { get; set; } = [];
 
     [StringLength(100, ErrorMessage = "Issue number cannot be longer than 100 characters.")]
@@ -85,9 +91,12 @@ public class SubmitFormSectionValue
 
 public class GetResponseIdRequest
 {
+    public Guid? FormId { get; set; }
     public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public Guid? RoutineTrackId { get; set; }
 }
 
 public class SaveResponseDraftRequest
@@ -97,18 +106,22 @@ public class SaveResponseDraftRequest
     public Guid FormFieldId { get; set; }
     public string Value { get; set; }
     public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? MaterialSpecificationId { get; set; }
     public Guid? ProductSpecificationId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    public Guid? RoutineTrackId { get; set; }
 }
 
 public class SaveFormAssigneeDraftRequest
 {
+    public Guid? RoutineTrackId { get; set; }
     public Guid? FormAssigneeId { get; set; }
     public Guid FormId { get; set; }
     public Guid FormFieldId { get; set; }
     public Guid? MaterialBatchId { get; set; }
+    public Guid? MaterialSamplingId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public TestStage? Stage { get; set; }

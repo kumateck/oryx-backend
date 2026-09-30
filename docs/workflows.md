@@ -1,5 +1,64 @@
 # Workflow behavior
 
+## QC worksheet choice options and fixed columns (2026-09-24)
+
+Worksheet fields gain a nullable `OptionsJson` (a JSON string array) on the field and on its
+revisions (brief 07, Phase A).
+
+- **Template create and update:** Select, MultiSelect and GrowthObservation fields must have
+  two or more distinct options, and other types must have none. A table's `fixedValues`
+  columns must all be the same length. `rowHeader` needs `fixedValues`.
+- **`SaveValues` and submit:** both refuse a choice that is not an option
+  (`ValueNotAnOption`) before anything is written.
+- **Existing templates:** a template with no options is not checked at runtime, so existing
+  Effective templates keep working. An existing Draft must add options the next time it is
+  saved.
+- **Unchanged:** approval, instance status and every other workflow.
+
+- **Calculated columns:** a table column with `"mode": "Calculated"` is computed per row at
+  submit and stored like an entered cell. An unevaluatable row blocks submit with a
+  cell-targeted `CalculatedFieldUnevaluatable`. `SaveValues` refuses writes to these columns.
+
+See `docs/qc-rebuild/field-catalog.md` for the column contract.
+
+## QC worksheet table row headers (2026-09-22)
+
+A template table may define one row-header column with fixed labels. These are
+template content, not analyst entries: `SaveValues` rejects a value addressed
+to that column, and formula validation excludes it from table aggregates.
+Other table columns remain normal result inputs. The frontend uses the number
+of configured labels as the fixed row count; tables without headers retain
+open-ended rows. No approval or instance status changes are implied.
+
+## QC worksheet template constants (2026-09-22)
+
+Creating or updating a worksheet template validates that each Constant-mode
+field has a nonblank `ConstantValue`. Heading fields are exempt because their
+label is the displayed heading. The template stores the fixed value, includes
+it in the detail and worksheet instance DTOs, and worksheet execution renders
+it as read-only method text. This validation happens before a template write,
+so rejected drafts create no template or field revisions.
+
+## Full Procedures Phase-0 backend semantics (2026-09-15)
+
+The isolated `APP/Services/FullProcedures/ProcedureRuntimeSpike.cs` proves graph
+transition gates in tests only. It does not change existing Route activity status,
+approval, QC, inventory or dispatch workflows. Its QC receipt is not verified,
+JSON restore is not durable recovery, and Abort has no disposition/closeout
+adapter. See `full-procedures-phase-0-backend.md` before connecting any live flow.
+The disposable PostgreSQL spike proves rollback and retry of state/audit/outbox
+without changing any existing approval, stock or release workflow. A test-only
+leased outbox worker survives a simulated failure after a fake idempotent
+adapter effect: two attempts produce one fake effect. A separate test worker is
+also killed at three windows around the fake effect and local receipt; a new
+process resumes the lease-expired event while restoring the committed run. It
+has no production dispatcher or
+real domain adapter; this cannot prevent duplicate physical work.
+The isolated action-contract proof retains issue-time action content rather than
+consulting newer catalog drafts. An unsupported runtime/action version yields a
+blocked code; it does not silently substitute another version or change any
+existing operator workflow.
+
 ## Collaborative template drafting and ARD creation (2026-09-08)
 
 1. A template author may save a named test with zero questions as an incomplete draft.
@@ -365,3 +424,47 @@ orders exist the rate is null rather than a fabricated zero.
 4. Apply optional material-kind and inclusive timestamp filters to pending receipts.
 5. Return an empty report when no receipt matches; warehouse configuration is not an
    error for consolidated QC reporting.
+
+## QC worksheet draft edit recovery (2026-09-22)
+
+When editing a Draft worksheet template, fields are matched by their worksheet-wide keys so
+their identities and revision histories survive edits. If older overlapping saves left duplicate
+stored keys, the edit keeps the oldest field and its history and removes the duplicate rows.
+Incoming duplicate keys remain invalid; this recovery applies only to already-stored draft data.
+
+## My Pending Approvals (2026-09-27)
+
+The legacy approval stage lookup considers every role held by the reviewer and refuses inactive stages. Completing a stage activates the next configured stage regardless of which user or role is assigned to it.
+
+The authenticated approver sees only active pending stages. Staff requisitions and production orders now advance through assigned stages on approve or reject and record the actor, time, decision, and comments in `ApprovalActionLog`. Rejected requests do not activate later stages. The dedicated My Pending Approval detail route and generic approval actions verify assignment before returning or mutating a document. QC worksheet instances and OOS cases are listed in the QC queue and open their specialized detail pages. Missing or empty-stage approval configurations still produce an audited system approval for non-QC documents. Controlled QC documents require an explicit configured signer and reauthentication.
+
+## Full Procedures authoring scope (2026-09-28)
+
+All five template kinds now apply the catalog's purpose/subject and allowed-kind
+rules on draft creation. Invalid combinations cannot enter the Draft → In Review
+→ Published lifecycle. Existing approved records and legacy Routes are not
+rewritten. See `docs/full-procedures-template-scope-2026-09-28.md`.
+
+Calculation Question authoring now validates the exact Published source
+revision selected by the caller. A superseded source cannot silently change
+the new Question's calculation snapshot. Existing ID-only callers retain the
+previous lookup behavior until migrated.
+
+## QC worksheet AI fallback (2026-09-29)
+
+An unknown ARD is redacted before the permitted AI fallback calls its active
+provider. OpenAI's strict output schema now carries nullable optional values;
+grounding, Low confidence, human review, and the existing save/approval gates
+are unchanged. Provider and key-ring failures return distinct flags on the
+read-only import proposal, with no silent fallback to another provider. See
+[`qc-rebuild/ai-import-provider-diagnostics.md`](qc-rebuild/ai-import-provider-diagnostics.md).
+
+## Production stock issue reconciliation (2026-09-30)
+
+The approved stock requisition and its active batch reservations must agree
+exactly before warehouse issue. Issuing moves the reserved quantities and writes
+source warehouse bin card and movement records once, in one serializable
+transaction. Product Preparation consumes raw material reservations after issue;
+Final Packing consumes packaging reservations. Historical apparent repeats are
+reviewed against requisitions and movements before any compensating correction.
+See `docs/warehouse-stock-issue-reconciliation.md`.

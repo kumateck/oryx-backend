@@ -16,6 +16,16 @@ public partial class SupplierController
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [HttpGet("{supplierId:guid}/pricing-agreements/proposals/{id:guid}")]
+    [Authorize]
+    public async Task<IResult> GetPricingAgreementProposal([FromRoute] Guid supplierId, [FromRoute] Guid id)
+    {
+        if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
+        var roleIds = HttpContext.Items["Roles"] as List<Guid> ?? [];
+        var result = await repository.GetPricingAgreementProposal(supplierId, id, userId, roleIds);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     [HttpGet("{supplierId:guid}/pricing-agreements/active")]
     [Authorize(PermissionKeys.CanManageSupplierContracts)]
     public async Task<IResult> GetActivePricingAgreement(

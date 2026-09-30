@@ -27,6 +27,9 @@ public record Error
     public static Error Conflict(string code, string description) =>
         new(code, description, ErrorType.Conflict);
 
+    public static Error Forbidden(string code, string description) =>
+        new(code, description, ErrorType.Forbidden);
+
     public static Error Failure(string code, string description) =>
         new(code, description, ErrorType.Failure);
 }
@@ -37,5 +40,6 @@ public enum ErrorType
     Validation,
     NotFound,
     Conflict,
-    Failure
+    Failure,
+    Forbidden
 }

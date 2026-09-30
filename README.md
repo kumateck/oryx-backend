@@ -1,6 +1,113 @@
 # Oryx ERP
 
+QC worksheet AI import fix (2026-09-29): OpenAI extraction now sends a schema
+valid for strict structured output and reports provider, rate-limit, network,
+and unreadable-key failures separately from an unconfigured key. The importer
+still returns reviewable proposals without saving or approving them. See
+`docs/qc-rebuild/ai-import-provider-diagnostics.md`.
+
+Documentation updated for this task: `README.md`, `docs/services.md`,
+`docs/workflows.md`, and `docs/qc-rebuild/ai-import-provider-diagnostics.md`.
+
+Full Procedures template scope update (2026-09-28): all five template creation
+services now enforce the catalog's allowed kind and purpose/subject pairing.
+See `docs/full-procedures-template-scope-2026-09-28.md`.
+
 ## Recent Updates
+
+- Chemical/Microbial and Routine QC (2026-09-15): typed commercial ARDs,
+  microbial applicability, separate worksheets, aggregate release readiness, immutable
+  combined/single certificates, scheduled/event-triggered Water and Environmental
+  routines, water quality coverage/use records, and linked R&D completion gates are
+  implemented. Four migrations are generated and not applied. See
+  `docs/quality-ard-routine-microbiology-2026-09-15.md`.
+
+- Full Procedures Phase-0 backend proof (2026-09-15): an isolated .NET graph/run
+  transition model and six focused tests cover version/content pinning, QC waits,
+  parallel joins, IPC due time, abort, optimistic versioning, retry and serialized
+  restart. A separate disposable PostgreSQL spike proves transactional state,
+  audit and outbox rollback, fresh-connection recovery, competing writers and
+  local effect-receipt deduplication. A test-only leased outbox worker retries
+  after a forced post-effect failure using a fake idempotent adapter. A separate
+  test worker is killed at three points around the fake effect/receipt, and a
+  new process resumes after lease expiry; all 15 focused tests pass with a
+  disposable PostgreSQL URL. Neither spike is registered in an API or live
+  batch path. Database restart, durable timer and real-effect recovery,
+  real outbox delivery, QC authority and material effects remain unproved; see
+  `docs/full-procedures-phase-0-backend.md`.
+  A separate action-contract issue snapshot now pins exact action/interpreter
+  versions and blocks unknown versions. One shared no-database focused run
+  passed 13 tests and skipped eight PostgreSQL tests; a later combined database
+  run could not build during unrelated concurrent Routine QC edits. Re-run it
+  when that build is stable. No new Procedure API or live batch path was added.
+  The reviewed Full Procedures capability keys are now emitted by the backend
+  permission catalog under dedicated submodules. This is fail-closed: no role is
+  granted a key automatically, and no Procedure endpoint or resource authority
+  is created by catalog registration.
+  Area management and template review have distinct keys. The Template Area
+  registry now validates and persists dynamic area descriptors, owner roles,
+  role grants, expected versions and hashed audit snapshots behind scoped API
+  guards. Migration `20260916064646_AddFullProcedureTemplateAreas` is additive;
+  it was SQL-reviewed but not applied automatically. The first immutable
+  Template Question revision backend is now also implemented: Draft → In Review
+  → reviewed → Published governance, expected-hash concurrency, exact published
+  calculation-source revision pins, append-only audit snapshots and automatic
+  retirement of the prior Published revision, plus controlled return-for-change
+  and explicit retirement commands. Migration
+  `20260916072607_AddFullProcedureQuestionRevisions` contains only its five
+  additive tables and both lifecycle uniqueness indexes. It was SQL-reviewed
+  and applied to the configured local development database; it was not deployed
+  to production. Legacy Questions, Routes and
+  Procedure execution remain unchanged. See
+  `docs/full-procedures-question-revisions.md`.
+  Immutable Template Section and Form revisions now extend that hierarchy.
+  Sections pin exact Published Question revisions; Forms pin exact Published
+  Section revisions and validate earlier-section conditions against exact source
+  Question revisions. Migrations
+  `20260916074547_AddFullProcedureSectionRevisions` and
+  `20260916123348_AddFullProcedureFormRevisions` were SQL-reviewed and applied
+  only to the configured local development database. The focused suites pass
+  9/9 and 6/6; the complete Full Procedures run reports 54 passed, 10
+  intentionally gated skips and zero failures. This governs definitions, not
+  response access or Procedure execution. See
+  `docs/full-procedures-section-revisions.md` and
+  `docs/full-procedures-form-revisions.md`.
+  Immutable Activity revisions now add exact Published Form pins, typed action
+  occurrences, independent role assignments, controlled resource capabilities,
+  typed inputs/outputs and explicit completion rules. The focused Activity suite
+  passes 6/6. Its migration remains isolated from the separately generated
+  `20260916132115_AddAnalysisTypeToFormSection` migration, and EF reports no
+  pending model changes. The local database was unavailable for an apply check.
+  See `docs/full-procedures-activity-revisions.md`.
+  Immutable Workflow revisions now compose exact Published Activity revisions
+  into validated Start/End, Branch, Fork/Join, Wait/IPC, Hold/Resume and bounded
+  Rework graphs. React Flow layout is stored separately from semantic content;
+  governed labels and ordering are hash-protected while layout-only moves are
+  not. Workflow tests pass 12/12 and the aggregate Full Procedures run is
+  72 passed, 10 gated skips, zero failures. See
+  `docs/full-procedures-workflow-revisions.md`.
+  Governed cross-area definition sharing now pins one exact Published Question,
+  Section, Form, Activity or Workflow revision. Two-area approval, actor
+  segregation, optimistic versions, reasoned hashed audit snapshots, aggregate
+  definition-only usage counts and revocation are API-wired. Migration
+  `20260916174624_AddFullProcedureTemplateSharing` is model-clean and unapplied;
+  six focused tests pass. Sharing exposes no responses or evidence. Target-owned
+  adoption is now API-wired for all five template kinds through migration
+  `20260916234752_AddFullProcedureTemplateAdoption`; it creates a new Draft with
+  immutable lineage and explicit dependency/role translations without copying
+  source approvals or responses. Seven adoption tests pass and the aggregate run
+  after the Procedure-definition slice is 91 passed, 10 gated skips, zero
+  failures. The sharing and adoption migrations remain unapplied.
+  See `docs/full-procedures-template-sharing.md` and
+  `docs/full-procedures-template-adoption.md`.
+  Immutable Procedure definitions now pin one exact Published Workflow and hash,
+  declare product/site applicability for Trial, Validation, Commercial or Scale
+  Up batches, and map every Activity node to Manufacturing, Packaging, Shared or
+  Development record scope. Hash-fenced review/approval, dependency revalidation,
+  actor segregation and transactional supersession are API-wired through migration
+  `20260916234859_AddFullProcedureDefinitions`; six focused tests pass. This is a
+  governed definition only: it creates no BMR/BPR master, release bundle, batch
+  issue or runtime execution. See `docs/full-procedure-definitions.md`.
 
 - Collaborative template drafting (2026-09-08): forms may persist tests before questions are
   available. Product and material ARD creation remains fail-closed and returns `Form.Question` if
@@ -120,6 +227,14 @@ the changelog above live in [`docs/`](docs/):
   analysis and the Codex backend prompts for the three modules, in
   implementation order (Cashflow → SRM → CRM).
 - [Service contracts](docs/services.md) — cashflow endpoints and permissions.
+- [Full Procedures Template Areas](docs/full-procedures-template-areas.md) —
+  dynamic area configuration, role scope, audit/version rules and migration boundary.
+- [Full Procedures Section revisions](docs/full-procedures-section-revisions.md) —
+  immutable exact Question-revision composition and governance.
+- [Full Procedures Form revisions](docs/full-procedures-form-revisions.md) —
+  immutable exact Section-revision composition and conditional-display governance.
+- [Full Procedures Activity revisions](docs/full-procedures-activity-revisions.md) —
+  exact Form pins, typed actions, roles, resources, data and completion governance.
 - [Workflow behavior](docs/workflows.md) — payment approval, balance, due-date,
   and exchange-rate rules.
 - [Cashflow production migration](docs/cashflow-production-migration.md) —
@@ -173,8 +288,24 @@ recursion/availability mitigation for the advisory reported against the retained
 
 ## Contributing
 
+## Job request assignment delivery and proforma prerequisite (2026-09-16)
+
+Internal job assignment now requires the selected employee to have an active ERP user account and sends that user an auditable in-app assignment notification after the job execution is created. The frontend explicitly persists an already chosen service quotation before requesting its proforma invoice, repairing legacy job orders whose quotation flag and workflow status were out of sync.
+
+Documentation updated for this task: `README.md`, `docs/services.md`, and `docs/workflows.md`.
+
 Guidelines for contributing to the project.
 
 ## License
 
 Details about the project's license.
+# SMTP delivery configuration
+
+Email delivery now requires `SMTP_HOST`, `SMTP_USERNAME`, and `SMTP_PASSWORD` in the deployed environment. Set optional `SMTP_PORT` (default 587) and `SMTP_FROM` (default SMTP_USERNAME) for the authorized sender. A 535 authentication failure must be resolved by verifying the deployed account and secret with the mail provider; do not log the password or mark a vendor request as sent after failure.
+
+The unified My Pending Approvals interface uses the self-scoped generic and QC queues. Generic detail and action endpoints require an active assigned stage; staff requisitions and production orders now support audited decisions. See [approval workflow documentation](docs/workflows.md).
+
+Full Procedures Question authoring accepts exact `calculationReferences`
+(`questionId`, `revisionId`) and rejects a stale or mismatched Published source.
+Legacy `calculationQuestionIds` callers remain supported. Documentation updated:
+this README, `docs/services.md`, and `docs/workflows.md`.

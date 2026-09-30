@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using DOMAIN.Entities.QualityRoutines;
 
 namespace DOMAIN.Entities.Forms.Request;
 
@@ -23,6 +24,7 @@ public class UpdateFormSectionRequest
 
     [StringLength(1000000)]
     public string GroupName { get; set; }
+    public AnalysisType? AnalysisType { get; set; }
 }
 
 public class UpdateFormFieldRequest

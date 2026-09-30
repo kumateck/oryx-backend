@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Products.Equipments;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Users;
 using SHARED;
 
@@ -26,6 +27,7 @@ public class FormSectionDto : BaseDto
     public string Value { get; set; }
     public string GroupName { get; set; }
     public bool Complies { get; set; }
+    public AnalysisType? AnalysisType { get; set; }
 }
 
 public class FormFieldDto : BaseDto

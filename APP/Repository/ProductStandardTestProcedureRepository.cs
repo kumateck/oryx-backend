@@ -2,8 +2,10 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.ProductStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -313,12 +315,18 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
 
     public async Task<
         Result<Paginateable<IEnumerable<ProductStandardTestProcedureDto>>>
-    > GetProductStandardTestProceduresNotLinkedToArd(int page, int pageSize, string searchQuery)
+    > GetProductStandardTestProceduresNotLinkedToArd(
+        int page, int pageSize, string searchQuery, TestStage stage, AnalysisType analysisType
+    )
     {
         var query = context
             .ProductStandardTestProcedures.AsSplitQuery()
             .Include(stp => stp.Product)
-            .Where(stp => !context.ProductAnalyticalRawData.Any(ard => ard.StpId == stp.Id))
+            .Where(stp => !context.ProductAnalyticalRawData.Any(ard =>
+                ard.ProductStandardTestProcedure.ProductId == stp.ProductId
+                && ard.Stage == stage
+                && ard.AnalysisType == analysisType
+            ))
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

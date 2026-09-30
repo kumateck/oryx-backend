@@ -72,6 +72,19 @@ public class RndTrialBatchRepository(ApplicationDbContext context, IMapper mappe
                 $"This trial batch is already {trialBatch.Status} and cannot change status further."
             );
 
+        if (request.Status == RndTrialBatchStatus.Completed)
+        {
+            var linkedRoutineStatuses = await context.RoutineExecutions
+                .Where(item => item.RndTrialBatchId == trialBatch.Id)
+                .Select(item => item.Status).ToListAsync();
+            if (linkedRoutineStatuses.Any(status =>
+                status != DOMAIN.Entities.QualityRoutines.RoutineStatus.Approved))
+                return Error.Conflict(
+                    "RndTrialBatch.RoutineQualityPending",
+                    "Every Water or Environmental routine linked to this R&D batch must be approved before completion."
+                );
+        }
+
         trialBatch.Status = request.Status;
         trialBatch.Observations = request.Observations;
         trialBatch.LastUpdatedById = userId;

@@ -54,6 +54,7 @@ public enum ApprovalStatus
 public class ApprovalEntity
 {
     public Guid Id { get; set; }
+    public Guid? SupplierId { get; set; }
     public string Code { get; set; }
     public string ModelType { get; set; }
     public DepartmentDto Department { get; set; }

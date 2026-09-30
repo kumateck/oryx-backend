@@ -357,10 +357,16 @@ public class FormRepository(
 
     public async Task<Result<Guid?>> GetResponseId(GetResponseIdRequest request)
     {
+        var sample = await MaterialSampleBinding.ResolveAsync(
+            context, request.MaterialBatchId, request.MaterialSamplingId);
+        if (sample.IsFailure) return sample.Errors;
         var response = await context.Responses.FirstOrDefaultAsync(r =>
             r.MaterialBatchId == request.MaterialBatchId
+            && r.MaterialSamplingId == sample.Value
             && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
             && r.ProductionActivityStepId == request.ProductionActivityStepId
+            && r.RoutineTrackId == request.RoutineTrackId
+            && (!request.FormId.HasValue || r.FormId == request.FormId)
         );
 
         return Result.Success<Guid?>(response?.Id);
@@ -368,10 +374,16 @@ public class FormRepository(
 
     public async Task<Result<Guid?>> GetFormAssigneeId(GetResponseIdRequest request)
     {
+        var sample = await MaterialSampleBinding.ResolveAsync(
+            context, request.MaterialBatchId, request.MaterialSamplingId);
+        if (sample.IsFailure) return sample.Errors;
         var formAssignee = await context.FormAssignees.FirstOrDefaultAsync(r =>
             r.MaterialBatchId == request.MaterialBatchId
+            && r.MaterialSamplingId == sample.Value
             && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
             && r.ProductionActivityStepId == request.ProductionActivityStepId
+            && r.RoutineTrackId == request.RoutineTrackId
+            && (!request.FormId.HasValue || r.FormId == request.FormId)
         );
 
         return formAssignee?.Id;
@@ -379,6 +391,10 @@ public class FormRepository(
 
     public async Task<Result<Guid>> SaveFormResponseDraft(SaveResponseDraftRequest request, Guid userId)
     {
+        var sample = await MaterialSampleBinding.ResolveAsync(
+            context, request.MaterialBatchId, request.MaterialSamplingId);
+        if (sample.IsFailure) return sample.Errors;
+        var boundSampleId = sample.Value;
         var response = await context
             .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
@@ -389,13 +405,19 @@ public class FormRepository(
         if (response is not null &&
             (response.FormId != request.FormId
              || response.MaterialBatchId != request.MaterialBatchId
+             || response.MaterialSamplingId != boundSampleId
              || response.BatchManufacturingRecordId != request.BatchManufacturingRecordId
-             || response.ProductionActivityStepId != request.ProductionActivityStepId))
+             || response.ProductionActivityStepId != request.ProductionActivityStepId
+             || response.RoutineTrackId != request.RoutineTrackId))
             return Error.Conflict(
                 "Response.ContextMismatch",
                 "The response does not belong to the requested form, batch, and production step."
             );
 
+        if (request.RoutineTrackId.HasValue &&
+            await context.RoutineTracks.AnyAsync(item => item.Id == request.RoutineTrackId &&
+                item.WorksheetFinalizedAt.HasValue))
+            return Error.Conflict("Response.RoutineFinalized", "Finalized routine worksheet is immutable.");
         if (response is not null &&
             (response.CheckedAt.HasValue || response.Approved || response.Rejected ||
              response.FormRevisionId.HasValue &&
@@ -434,6 +456,7 @@ public class FormRepository(
             {
                 var existingMaterialBatchResponse = await context.Responses.FirstOrDefaultAsync(r =>
                     r.MaterialBatchId == request.MaterialBatchId.Value && r.FormId == request.FormId
+                    && r.MaterialSamplingId == boundSampleId
                 );
 
                 if (existingMaterialBatchResponse != null)
@@ -445,13 +468,23 @@ public class FormRepository(
                     );
                 }
             }
+            if (request.RoutineTrackId.HasValue)
+            {
+                var track = await context.RoutineTracks.FirstOrDefaultAsync(item =>
+                    item.Id == request.RoutineTrackId && item.FormId == request.FormId);
+                if (track is null) return Error.Validation("Response.RoutineTrack", "Routine track and form do not match.");
+                if (await context.Responses.AnyAsync(item => item.RoutineTrackId == request.RoutineTrackId))
+                    return Error.Conflict("Response.RoutineTrack", "A worksheet already exists for this routine track.");
+            }
             // Create a new draft if not yet started
             response = new Response
             {
                 FormId = request.FormId,
                 MaterialBatchId = request.MaterialBatchId,
+                MaterialSamplingId = boundSampleId,
                 BatchManufacturingRecordId = request.BatchManufacturingRecordId,
                 ProductionActivityStepId = request.ProductionActivityStepId,
+                RoutineTrackId = request.RoutineTrackId,
                 FormRevisionId = formRevisionId,
                 CreatedById = userId,
                 FormResponses = [],
@@ -488,10 +521,15 @@ public class FormRepository(
         var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
             a.FormFieldId == formField.Id
             && a.FormAssignee.MaterialBatchId == request.MaterialBatchId
+            && a.FormAssignee.MaterialSamplingId == boundSampleId
             && a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId
             && a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId
+            && a.FormAssignee.RoutineTrackId == request.RoutineTrackId
         );
 
+        if (request.RoutineTrackId.HasValue && fieldAssignee is null)
+            return Error.Validation("Response.RoutineAssignment",
+                "Routine worksheet field has not been assigned.");
         if (fieldAssignee != null && fieldAssignee.AssigneeId != userId)
             return Error.Validation(
                 "Response.Unauthorized",
@@ -696,6 +734,16 @@ public class FormRepository(
             context.ProductSpecifications.Update(productSpec);
         }
 
+        if (response.RoutineTrackId.HasValue)
+        {
+            var track = await context.RoutineTracks.FirstAsync(item =>
+                item.Id == response.RoutineTrackId);
+            if (track.WorksheetFinalizedAt.HasValue)
+                return Error.Conflict("Response.RoutineFinalized", "Routine worksheet already finalized.");
+            track.FormRevisionId = response.FormRevisionId;
+            track.WorksheetFinalizedAt = DateTime.UtcNow;
+            track.WorksheetFinalizedById = userId;
+        }
         await context.SaveChangesAsync();
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success("Form successfully submitted and finalized.");
@@ -706,6 +754,10 @@ public class FormRepository(
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable)
             : null;
+        var sample = await MaterialSampleBinding.ResolveAsync(
+            context, request.MaterialBatchId, request.MaterialSamplingId);
+        if (sample.IsFailure) return sample.Errors;
+        var boundSampleId = sample.Value;
         var requestedFieldIds = request.FormResponses
             .Select(item => item.FormFieldId)
             .Distinct()
@@ -729,12 +781,22 @@ public class FormRepository(
             context, request.FormId);
         if (revisionSelection.IsFailure) return revisionSelection.Errors;
         var effectiveFormRevisionId = revisionSelection.Value;
+        if (request.RoutineTrackId.HasValue)
+        {
+            var track = await context.RoutineTracks.FirstOrDefaultAsync(item =>
+                item.Id == request.RoutineTrackId && item.FormId == request.FormId);
+            if (track is null) return Error.Validation("Response.RoutineTrack", "Routine track and form do not match.");
+            if (await context.Responses.AnyAsync(item => item.RoutineTrackId == request.RoutineTrackId))
+                return Error.Conflict("Response.RoutineTrack", "A worksheet already exists for this routine track.");
+        }
         var newResponse = new Response
         {
             FormId = request.FormId,
             MaterialBatchId = request.MaterialBatchId,
+            MaterialSamplingId = boundSampleId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             ProductionActivityStepId = request.ProductionActivityStepId,
+            RoutineTrackId = request.RoutineTrackId,
             FormRevisionId = effectiveFormRevisionId,
             FormResponses = [],
             CreatedById = userId,
@@ -773,10 +835,15 @@ public class FormRepository(
             var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
                 a.FormFieldId == formField.Id
                 && a.FormAssignee.MaterialBatchId == request.MaterialBatchId
+                && a.FormAssignee.MaterialSamplingId == boundSampleId
                 && a.FormAssignee.BatchManufacturingRecordId == request.BatchManufacturingRecordId
                 && a.FormAssignee.ProductionActivityStepId == request.ProductionActivityStepId
+                && a.FormAssignee.RoutineTrackId == request.RoutineTrackId
             );
 
+            if (request.RoutineTrackId.HasValue && fieldAssignee is null)
+                return Error.Validation("Response.RoutineAssignment",
+                    "Routine worksheet field has not been assigned.");
             if (fieldAssignee != null && fieldAssignee.AssigneeId != userId)
                 return Error.Validation(
                     "Response.Unauthorized",
@@ -896,6 +963,14 @@ public class FormRepository(
             context.ProductSpecifications.Update(productSpecification);
         }
 
+        if (request.RoutineTrackId.HasValue)
+        {
+            var track = await context.RoutineTracks.FirstAsync(item =>
+                item.Id == request.RoutineTrackId);
+            track.FormRevisionId = newResponse.FormRevisionId;
+            track.WorksheetFinalizedAt = DateTime.UtcNow;
+            track.WorksheetFinalizedById = userId;
+        }
         await context.SaveChangesAsync();
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
@@ -962,10 +1037,20 @@ public class FormRepository(
         Guid userId
     )
     {
+        var sample = await MaterialSampleBinding.ResolveAsync(
+            context, request.MaterialBatchId, request.MaterialSamplingId);
+        if (sample.IsFailure) return sample.Errors;
+        var boundSampleId = sample.Value;
         var formAssignee = await context
             .FormAssignees.Include(r => r.FieldAssignees)
             .FirstOrDefaultAsync(r => r.Id == request.FormAssigneeId);
 
+        if (formAssignee is not null && (formAssignee.FormId != request.FormId ||
+            formAssignee.RoutineTrackId != request.RoutineTrackId))
+            return Error.Conflict("FormAssignee.Context", "Assignment context cannot be changed.");
+        if (request.RoutineTrackId.HasValue && !await context.RoutineTracks.AnyAsync(item =>
+            item.Id == request.RoutineTrackId && item.FormId == request.FormId))
+            return Error.Validation("FormAssignee.RoutineTrack", "Routine track and form do not match.");
         if (formAssignee is null)
         {
             // Create a new draft if not yet started
@@ -973,8 +1058,10 @@ public class FormRepository(
             {
                 FormId = request.FormId,
                 MaterialBatchId = request.MaterialBatchId,
+                MaterialSamplingId = boundSampleId,
                 BatchManufacturingRecordId = request.BatchManufacturingRecordId,
                 ProductionActivityStepId = request.ProductionActivityStepId,
+                RoutineTrackId = request.RoutineTrackId,
                 CreatedById = userId,
                 Stage = request.Stage,
                 FieldAssignees = [],
@@ -1007,9 +1094,11 @@ public class FormRepository(
                     fr.FormFieldId == formField.Id
                     && fr.Response.FormId == formAssignee.FormId
                     && fr.Response.MaterialBatchId == formAssignee.MaterialBatchId
+                    && fr.Response.MaterialSamplingId == boundSampleId
                     && fr.Response.BatchManufacturingRecordId
                         == formAssignee.BatchManufacturingRecordId
                     && fr.Response.ProductionActivityStepId == formAssignee.ProductionActivityStepId
+                    && fr.Response.RoutineTrackId == formAssignee.RoutineTrackId
                 );
 
                 if (hasResponse)
@@ -1100,13 +1189,19 @@ public class FormRepository(
 
     public async Task<Result> SubmitFormAssignee(CreateFormAssigneeRequest request, Guid userId)
     {
+        var sample = await MaterialSampleBinding.ResolveAsync(
+            context, request.MaterialBatchId, request.MaterialSamplingId);
+        if (sample.IsFailure) return sample.Errors;
+        var boundSampleId = sample.Value;
         if (
             await context.FormAssignees.AnyAsync(f =>
                 f.FormId == request.FormId
                 && f.MaterialBatchId == request.MaterialBatchId
+                && f.MaterialSamplingId == boundSampleId
                 && f.BatchManufacturingRecordId == request.BatchManufacturingRecordId
                 && f.Stage == request.Stage
                 && f.ProductionActivityStepId == request.ProductionActivityStepId
+                && f.RoutineTrackId == request.RoutineTrackId
             )
         )
             return Error.Validation(
@@ -1114,12 +1209,17 @@ public class FormRepository(
                 $"FormAssignee {request.FormId} for {request.MaterialBatchId} batch already assigned"
             );
 
+        if (request.RoutineTrackId.HasValue && !await context.RoutineTracks.AnyAsync(item =>
+            item.Id == request.RoutineTrackId && item.FormId == request.FormId))
+            return Error.Validation("FormAssignee.RoutineTrack", "Routine track and form do not match.");
         var formAssignee = new FormAssignee
         {
             FormId = request.FormId,
             MaterialBatchId = request.MaterialBatchId,
+            MaterialSamplingId = boundSampleId,
             BatchManufacturingRecordId = request.BatchManufacturingRecordId,
             ProductionActivityStepId = request.ProductionActivityStepId,
+            RoutineTrackId = request.RoutineTrackId,
             Stage = request.Stage,
             FieldAssignees = [],
             CreatedById = userId,

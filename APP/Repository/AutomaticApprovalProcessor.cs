@@ -2,6 +2,7 @@ using APP.Services.ProductionActivityStepEventPublisher;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Procurement.Suppliers;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.JobRequests;
 using DOMAIN.Entities.LeaveRequests;
@@ -13,6 +14,7 @@ using DOMAIN.Entities.ProductionOrders;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.RndProjects;
 using DOMAIN.Entities.RndFormulations;
@@ -160,6 +162,16 @@ internal static class AutomaticApprovalProcessor
                 quotation.Status = CustomerQuotationStatus.Accepted;
                 break;
 
+            case nameof(SupplierPricingAgreement):
+                var agreement = await context.SupplierPricingAgreements
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(agreement, modelType, modelId);
+                var activation = await SupplierPricingAgreementApprovalHandler
+                    .ActivateAsync(context, agreement, null);
+                if (!activation.IsSuccess)
+                    throw new InvalidOperationException(activation.Errors.First().Description);
+                break;
+
             case nameof(RndProject):
                 var rndProject = await context.RndProjects
                     .SingleOrDefaultAsync(item => item.Id == modelId);
@@ -222,6 +234,43 @@ internal static class AutomaticApprovalProcessor
                 performanceReview.Approved = true;
                 performanceReview.Status = PerformanceReviewStatus.Completed;
                 break;
+
+            case QcWorksheetModelTypes.StandardTestProcedure:
+                var stp = await context.QcStandardTestProcedures.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(stp, modelType, modelId);
+                stp.Approved = true;
+                stp.Status = QcDocumentStatus.Approved;
+                stp.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcWorksheetModelTypes.WorksheetTemplate:
+                var template = await context.QcWorksheetTemplates.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(template, modelType, modelId);
+                template.Approved = true;
+                template.Status = QcDocumentStatus.Approved;
+                template.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcWorksheetModelTypes.Specification:
+                var specification = await context.QcSpecifications.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(specification, modelType, modelId);
+                specification.Approved = true;
+                specification.Status = QcDocumentStatus.Approved;
+                specification.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcWorksheetModelTypes.WorksheetInstance:
+                var instance = await context.QcWorksheetInstances.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(instance, modelType, modelId);
+                instance.Approved = true;
+                instance.Status = WorksheetInstanceStatus.Reviewed;
+                instance.UpdatedAt = DateTime.UtcNow;
+                break;
+
+            case QcWorksheetModelTypes.OosCase:
+            case QcWorksheetModelTypes.Coa:
+                throw new InvalidOperationException(
+                    $"'{modelType}' needs a resource-specific outcome before automatic approval.");
 
             default:
                 throw new NotSupportedException(

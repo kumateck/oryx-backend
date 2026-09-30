@@ -16,7 +16,9 @@ internal static class SupplierRelationshipTestContext
     }
 
     public static SupplierRelationshipRepository CreateRepository(ApplicationDbContext context)
-        => new(context, NullLogger<SupplierRelationshipRepository>.Instance);
+        => new(context, NullLogger<SupplierRelationshipRepository>.Instance,
+            new ApprovalRepository(context, null, null, null,
+                NullLogger<ApprovalRepository>.Instance, null, null));
 
     private sealed class SupplierRelationshipCurrentUser : ICurrentUserService
     {

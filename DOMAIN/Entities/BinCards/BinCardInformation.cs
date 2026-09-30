@@ -25,6 +25,9 @@ public class BinCardInformation : BaseEntity
     public Guid? ProductId { get; set; }
     public Guid? WarehouseId { get; set; }
     public Warehouse Warehouse { get; set; }
+    public Guid? RequisitionId { get; set; }
+    [StringLength(255)] public string RequisitionCode { get; set; }
+    [StringLength(255)] public string ProductBatchNumber { get; set; }
 }
 
 public class BinCardInformationDto
@@ -42,6 +45,10 @@ public class BinCardInformationDto
     public decimal BalanceQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public ProductListDto Product { get; set; }
+    public string WarehouseName { get; set; }
+    public Guid? RequisitionId { get; set; }
+    public string RequisitionCode { get; set; }
+    public string ProductBatchNumber { get; set; }
 }
 
 public class ProductBinCardInformation : BaseEntity

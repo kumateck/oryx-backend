@@ -1,6 +1,7 @@
 using DOMAIN.Entities.Attachments;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.MaterialStandardTestProcedures;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.UniformityOfWeights;
 using DOMAIN.Entities.Users;
 using SHARED;
@@ -9,12 +10,14 @@ namespace DOMAIN.Entities.MaterialARD;
 
 public class MaterialAnalyticalRawDataDto : WithAttachment
 {
+    public DOMAIN.Entities.QualityRoutines.AnalysisType AnalysisType { get; set; }
     public string SpecNumber { get; set; }
     public string Description { get; set; }
     public MaterialStandardTestProcedureDto MaterialStandardTestProcedure { get; set; }
     public CollectionItemDto Form { get; set; }
     public UniformityOfWeightDto UniformityOfWeight { get; set; }
     public bool IsVerified { get; set; }
+    public List<CommercialCoaItemRequest> CoaItems { get; set; } = [];
 }
 
 public class MaterialBatchArd

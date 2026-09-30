@@ -21,6 +21,7 @@ using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductsSampling;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
+using DOMAIN.Entities.QualityRoutines;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Services;
 using DOMAIN.Entities.Shipments;
@@ -365,6 +366,11 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                 return await context
                     .AnalyticalTestRequests.IgnoreQueryFilters()
                     .Where(b => b.IssueNumber.StartsWith(prefix))
+                    .CountAsync();
+
+            case nameof(RoutineExecution):
+                return await context
+                    .RoutineExecutions.Where(m => m.RoutineCode.StartsWith(prefix))
                     .CountAsync();
 
             default:
