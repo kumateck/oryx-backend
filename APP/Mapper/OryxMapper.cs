@@ -700,6 +700,7 @@ public class OryxMapper : Profile
         #region BinCardInformation
 
         CreateMap<BinCardInformation, BinCardInformationDto>()
+            .ForMember(dest => dest.WarehouseName, opt => opt.MapFrom(src => src.Warehouse.Name))
             .ForMember(
                 dest => dest.Supplier,
                 opt =>

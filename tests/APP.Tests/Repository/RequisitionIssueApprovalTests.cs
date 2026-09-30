@@ -53,6 +53,26 @@ public class RequisitionIssueApprovalTests
     }
 
     [Fact]
+    public async Task IssueStockRequisition_RejectsCompletedRequisitionBeforeMovingStock()
+    {
+        await using var context = CreateContext();
+        var requisition = CreateStockRequisition(approved: true);
+        requisition.Status = RequestStatus.Completed;
+        context.Requisitions.Add(requisition);
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).IssueStockRequisition(
+            requisition.Id,
+            Guid.NewGuid()
+        );
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Stock.AlreadyIssued", result.Error.Code);
+        Assert.Empty(context.MaterialBatchEvents);
+        Assert.Empty(context.BinCardInformation);
+    }
+
+    [Fact]
     public async Task LegacyRequisitionApproval_CannotBypassConfiguredWorkflow()
     {
         await using var context = CreateContext();

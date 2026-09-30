@@ -458,3 +458,13 @@ grounding, Low confidence, human review, and the existing save/approval gates
 are unchanged. Provider and key-ring failures return distinct flags on the
 read-only import proposal, with no silent fallback to another provider. See
 [`qc-rebuild/ai-import-provider-diagnostics.md`](qc-rebuild/ai-import-provider-diagnostics.md).
+
+## Production stock issue reconciliation (2026-09-30)
+
+The approved stock requisition and its active batch reservations must agree
+exactly before warehouse issue. Issuing moves the reserved quantities and writes
+source warehouse bin card and movement records once, in one serializable
+transaction. Product Preparation consumes raw material reservations after issue;
+Final Packing consumes packaging reservations. Historical apparent repeats are
+reviewed against requisitions and movements before any compensating correction.
+See `docs/warehouse-stock-issue-reconciliation.md`.

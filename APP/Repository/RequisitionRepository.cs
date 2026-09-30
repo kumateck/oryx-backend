@@ -657,6 +657,18 @@ public class RequisitionRepository(
                 "Only stock requisitions can be issued through this operation."
             );
 
+        if (stockRequisition.Status == RequestStatus.Completed)
+            return Error.Validation(
+                "Stock.AlreadyIssued",
+                "This stock requisition has already been issued."
+            );
+
+        if (stockRequisition.Items.Any(item => item.Status == RequestStatus.Completed))
+            return Error.Validation(
+                "Stock.AlreadyIssued",
+                "This stock requisition contains material that has already been issued."
+            );
+
         var approvalGate = stockRequisition.EnsureApprovedForProgression(
             "Stock requisition",
             RequisitionErrors.ApprovalRequired.Code
@@ -739,20 +751,9 @@ public class RequisitionRepository(
             .GroupBy(r => r.MaterialBatch.MaterialId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // Validate that all requisition items have reserved quantities before starting mutations
-        foreach (var item in stockRequisition.Items)
-        {
-            if (
-                !reservedBatchesByMaterial.TryGetValue(item.MaterialId, out var batches)
-                || batches.Count == 0
-            )
-            {
-                return Error.Validation(
-                    "Stock.Requisition",
-                    $"No reserved quantities to issue for {item.Material?.Name ?? "item"}"
-                );
-            }
-        }
+        var quantityValidation = StockIssueQuantityValidator.Validate(stockRequisition, reservedBatches);
+        if (quantityValidation.IsFailure)
+            return quantityValidation;
 
         var allBatchIds = reservedBatches.Select(b => b.MaterialBatchId).Distinct().ToList();
 
@@ -789,6 +790,26 @@ public class RequisitionRepository(
             .GroupBy(sb => sb.MaterialBatchId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        foreach (var reservedBatch in reservedBatches.GroupBy(reservation =>
+                     new { reservation.MaterialBatchId, reservation.MaterialBatch.Material.Kind }))
+        {
+            if (!materialBatchesMap.ContainsKey(reservedBatch.Key.MaterialBatchId))
+                return Error.Validation("Stock.BatchMissing", "A reserved material batch was not found.");
+
+            var sourceWarehouseId = reservedBatch.Key.Kind == MaterialKind.Raw
+                ? rawWarehouse.Id
+                : packingWarehouse.Id;
+            var availableOnShelf = shelfBatchesByBatchId
+                .GetValueOrDefault(reservedBatch.Key.MaterialBatchId, [])
+                .Where(shelf => shelf.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == sourceWarehouseId)
+                .Sum(shelf => shelf.Quantity);
+            if (availableOnShelf < reservedBatch.Sum(reservation => reservation.Quantity))
+                return Error.Validation(
+                    "Stock.InsufficientShelfQuantity",
+                    $"The source shelf no longer has the reserved quantity for {reservedBatch.First().MaterialBatch.BatchNumber}."
+                );
+        }
+
         var samplings = await context
             .MaterialSamplings.Where(s => allBatchIds.Contains(s.MaterialBatchId))
             .OrderByDescending(s => s.CreatedAt)
@@ -798,6 +819,24 @@ public class RequisitionRepository(
         var latestArNumberByBatchId = samplings
             .GroupBy(s => s.MaterialBatchId)
             .ToDictionary(g => g.Key, g => g.First().ArNumber);
+
+        var importedArNumbers = await context.BinCardInformation.IgnoreQueryFilters()
+            .Where(card => allBatchIds.Contains(card.MaterialBatchId!.Value)
+                && card.QuantityReceived > 0
+                && card.ArNumber != null
+                && card.ArNumber != ""
+                && card.ArNumber != "N/A")
+            .Select(card => new { card.MaterialBatchId, card.ArNumber })
+            .ToListAsync();
+        var uniqueImportedArNumbers = importedArNumbers
+            .GroupBy(card => card.MaterialBatchId!.Value)
+            .Where(group => group.Select(card => card.ArNumber).Distinct().Count() == 1)
+            .ToDictionary(group => group.Key, group => group.First().ArNumber);
+
+        var productionProduct = await context.ProductionScheduleProducts
+            .Where(product => product.Id == stockRequisition.ProductionScheduleProductId.Value)
+            .Select(product => new { product.ProductId, product.BatchNumber })
+            .SingleAsync();
 
         // Pre-compute initial bin card balances via targeted queries per Material & Warehouse
         var materialWarehousePairs = stockRequisition
@@ -830,9 +869,21 @@ public class RequisitionRepository(
             runningBalances[(pair.MaterialId, pair.WarehouseId)] = initialBalance;
         }
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable
+        );
         try
         {
+            var currentStatus = await context.Requisitions.AsNoTracking()
+                .Where(requisition => requisition.Id == stockRequisitionId)
+                .Select(requisition => requisition.Status)
+                .SingleAsync();
+            if (currentStatus == RequestStatus.Completed)
+                return Error.Validation(
+                    "Stock.AlreadyIssued",
+                    "This stock requisition has already been issued."
+                );
+
             var movementsToAdd = new List<MassMaterialBatchMovement>();
             var batchEventsToAdd = new List<MaterialBatchEvent>();
             var binCardsToAdd = new List<BinCardInformation>();
@@ -914,6 +965,8 @@ public class RequisitionRepository(
                     runningBalances[balanceKey] = currentBalance;
 
                     latestArNumberByBatchId.TryGetValue(materialBatch.Id, out var arNumber);
+                    if (string.IsNullOrWhiteSpace(arNumber))
+                        uniqueImportedArNumbers.TryGetValue(materialBatch.Id, out arNumber);
                     var supplier = materialBatch.Checklist?.Supplier?.Name;
                     var manufacturer = materialBatch.Checklist?.Manufacturer?.Name;
 
@@ -923,8 +976,8 @@ public class RequisitionRepository(
                             MaterialBatchId = materialBatch.Id,
                             MaterialBatch = materialBatch,
                             Description = appropriateWarehouse.Name,
-                            WayBill = "N/A",
-                            ArNumber = arNumber ?? "N/A",
+                            WayBill = null,
+                            ArNumber = arNumber,
                             Supplier = supplier,
                             Manufacturer = manufacturer,
                             QuantityReceived = 0,
@@ -933,6 +986,10 @@ public class RequisitionRepository(
                             UoMId = materialBatch.UoMId,
                             CreatedAt = now,
                             WarehouseId = appropriateWarehouse.Id,
+                            ProductId = productionProduct.ProductId,
+                            RequisitionId = stockRequisition.Id,
+                            RequisitionCode = stockRequisition.Code,
+                            ProductBatchNumber = productionProduct.BatchNumber,
                         }
                     );
 
@@ -1022,6 +1079,27 @@ public class RequisitionRepository(
             }
 
             return Result.Success();
+        }
+        catch (DbUpdateException error) when (
+            error.InnerException is Npgsql.PostgresException postgres
+            && postgres.SqlState == Npgsql.PostgresErrorCodes.SerializationFailure
+        )
+        {
+            await transaction.RollbackAsync();
+            return Error.Conflict(
+                "Stock.ConcurrentIssue",
+                "The stock requisition changed while it was being issued. Refresh and retry."
+            );
+        }
+        catch (Npgsql.PostgresException error) when (
+            error.SqlState == Npgsql.PostgresErrorCodes.SerializationFailure
+        )
+        {
+            await transaction.RollbackAsync();
+            return Error.Conflict(
+                "Stock.ConcurrentIssue",
+                "The stock requisition changed while it was being issued. Refresh and retry."
+            );
         }
         catch
         {
