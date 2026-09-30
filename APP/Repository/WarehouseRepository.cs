@@ -1512,12 +1512,14 @@ public class WarehouseRepository(
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(c => c.Manufacturer)
             .Include(bci => bci.Product)
+            .Include(bci => bci.Warehouse)
             .Include(bci => bci.UoM)
             .Where(bci =>
                 bci.MaterialBatch.MaterialId == materialId
-                && bci.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
+                && bci.Warehouse.DepartmentId == departmentId
             )
-            .OrderBy(b => b.CreatedAt)
+            .OrderByDescending(b => b.CreatedAt)
+            .ThenByDescending(b => b.Id)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchQuery))

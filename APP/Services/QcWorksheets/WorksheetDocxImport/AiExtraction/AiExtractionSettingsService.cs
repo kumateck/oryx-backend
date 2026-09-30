@@ -117,10 +117,9 @@ public sealed class AiExtractionSettingsService : IAiExtractionSettingsService
         }
         catch (CryptographicException)
         {
-            // The key ring changed underneath a stored ciphertext (e.g. a restore onto a
-            // different key ring) — treat exactly like "no key configured", never throw out to
-            // the caller.
-            return Result.Failure<(AiExtractionProvider, string, string)>(WorksheetImportErrors.AiExtractionUnavailable);
+            // A restored key ring can leave a saved ciphertext unreadable. Keep the failure
+            // distinct from a missing key so the administrator can repair it by saving again.
+            return Result.Failure<(AiExtractionProvider, string, string)>(WorksheetImportErrors.AiKeyUnreadable);
         }
 
         return Result.Success((row.Provider, row.Model, apiKey));

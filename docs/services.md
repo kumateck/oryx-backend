@@ -1,5 +1,15 @@
 # Service contracts
 
+## QC worksheet AI import diagnostics (2026-09-29)
+
+`POST /api/v1/qc/worksheets/templates/import` still returns one read-only
+proposal per uploaded file. If an unknown ARD reaches the permitted AI fallback,
+provider failures are returned as distinct proposal flags instead of all being
+reported as a missing key. The settings endpoint's `hasKey` only reports stored
+ciphertext, not provider acceptance or decryptability. See
+[`qc-rebuild/ai-import-provider-diagnostics.md`](qc-rebuild/ai-import-provider-diagnostics.md)
+for the flag contract. No request shape or success DTO changed.
+
 ## Full Procedure Definitions (2026-09-16)
 
 `/api/v1/procedures` provides stable Procedure identities and immutable
@@ -557,3 +567,15 @@ the same Area; stale and mismatched references fail validation. The existing
 `calculationQuestionIds` field remains available to existing callers, but may
 not be combined with the exact-pair field. Adoption maps exact target revision
 IDs through the same path.
+
+## Production stock issue bin cards (2026-09-30)
+
+`POST /api/v1/requisition/issue-stock-requisition/{stockRequisitionId}` now
+rejects a previously issued requisition, duplicate material lines, mismatched
+reservations, and insufficient source shelf quantities. New issue rows returned
+by `GET /api/v1/warehouse/bincardinformation/{materialId}/{departmentId}`
+include nullable `requisitionId`, `requisitionCode`, and `productBatchNumber`.
+The response also provides `warehouseName`, filters rows to the requested
+warehouse department, and orders newest first. The outbound requisition code
+is distinct from an inbound waybill. See
+`docs/warehouse-stock-issue-reconciliation.md` for the migration and review rules.

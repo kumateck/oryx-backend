@@ -1,5 +1,14 @@
 # Oryx ERP
 
+QC worksheet AI import fix (2026-09-29): OpenAI extraction now sends a schema
+valid for strict structured output and reports provider, rate-limit, network,
+and unreadable-key failures separately from an unconfigured key. The importer
+still returns reviewable proposals without saving or approving them. See
+`docs/qc-rebuild/ai-import-provider-diagnostics.md`.
+
+Documentation updated for this task: `README.md`, `docs/services.md`,
+`docs/workflows.md`, and `docs/qc-rebuild/ai-import-provider-diagnostics.md`.
+
 Full Procedures template scope update (2026-09-28): all five template creation
 services now enforce the catalog's allowed kind and purpose/subject pairing.
 See `docs/full-procedures-template-scope-2026-09-28.md`.

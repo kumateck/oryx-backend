@@ -50,7 +50,7 @@ public static class WorksheetExtractionResponseParser
             Code = parsed.Template.Code,
             Name = parsed.Template.Name,
             Department = parsed.Template.Department,
-            Category = parsed.Template.Category,
+            Category = parsed.Template.Category ?? default,
             Sections = []
         };
 
@@ -88,7 +88,7 @@ public static class WorksheetExtractionResponseParser
                     FieldKey = field.FieldKey,
                     Label = field.Label,
                     Type = field.Type,
-                    Mode = field.Mode,
+                    Mode = field.Mode ?? default,
                     Unit = field.Unit,
                     Analyte = field.Analyte,
                     ConstantValue = field.ConstantValue,
@@ -159,7 +159,7 @@ public static class WorksheetExtractionResponseParser
         public string Code { get; set; }
         public string Name { get; set; }
         public string Department { get; set; }
-        public WorksheetCategory Category { get; set; }
+        public WorksheetCategory? Category { get; set; }
         public List<AiSection> Sections { get; set; }
     }
 
@@ -174,7 +174,7 @@ public static class WorksheetExtractionResponseParser
         public string FieldKey { get; set; }
         public string Label { get; set; }
         public WorksheetFieldType Type { get; set; }
-        public WorksheetFieldMode Mode { get; set; }
+        public WorksheetFieldMode? Mode { get; set; }
         public string Unit { get; set; }
         public string Analyte { get; set; }
         public string ConstantValue { get; set; }

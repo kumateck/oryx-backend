@@ -72,7 +72,7 @@ public sealed class OpenAiWorksheetExtractor(
         if (transientFailure is not null || response is null)
         {
             logger.LogWarning(transientFailure, "AI worksheet extraction: request failed after retry.");
-            return Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiExtractionUnavailable);
+            return Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiProviderUnreachable);
         }
 
         using (response)
@@ -82,9 +82,12 @@ public sealed class OpenAiWorksheetExtractor(
                 // No retry on a 4xx (bad request/auth); already gave the one transient retry above.
                 logger.LogWarning(
                     "AI worksheet extraction: OpenAI API returned {Status}.", (int)response.StatusCode);
-                return response.StatusCode == HttpStatusCode.TooManyRequests
-                    ? Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiExtractionUnavailable)
-                    : Result.Failure<AiExtractionResult>(WorksheetImportErrors.AiExtractionUnavailable);
+                return Result.Failure<AiExtractionResult>(response.StatusCode switch
+                {
+                    HttpStatusCode.TooManyRequests => WorksheetImportErrors.AiProviderRateLimited,
+                    >= HttpStatusCode.InternalServerError => WorksheetImportErrors.AiProviderUnreachable,
+                    _ => WorksheetImportErrors.AiProviderRejectedRequest
+                });
             }
 
             OpenAiChatCompletionResponse? envelope;
@@ -141,7 +144,7 @@ public sealed class OpenAiWorksheetExtractor(
                 {
                     name = SchemaName,
                     strict = true,
-                    schema = WorksheetExtractionSchema.Schema
+                    schema = OpenAiWorksheetSchema.Schema
                 }
             }
         };
