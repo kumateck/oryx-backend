@@ -13,5 +13,5 @@ public interface IRoleRepository
     Task<Result> CreateRole(CreateRoleRequest request, Guid userId);
     Task<Result> UpdateRole(UpdateRoleRequest request, Guid id, Guid userid);
     Task<Result> DeleteRole(Guid id, Guid userId);
-    Task<Result<dynamic>> CheckRole(Guid id);
+    Task<Result<RoleUsageDto>> CheckRole(Guid id);
 }
