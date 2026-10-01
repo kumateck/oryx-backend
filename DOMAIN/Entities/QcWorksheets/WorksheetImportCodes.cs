@@ -129,8 +129,20 @@ public static class WorksheetImportFlagCodes
     /// <summary>A calculated field whose formula was read from the printed formula; the reviewer confirms it.</summary>
     public const string FormulaFromPrint = "FormulaFromPrint";
 
-    /// <summary>A calculated field left with an empty formula (titration/HPLC assay, "Calculation:" blank); never guessed.</summary>
+    /// <summary>A calculated field left with an empty formula ("Calculation:" blank on a test with no definition); never guessed.</summary>
     public const string FormulaNeedsReview = "FormulaNeedsReview";
+
+    /// <summary>
+    /// Brief 12: a calculated field whose formula comes from the test's definition, in the variant
+    /// the sheet prints. Medium confidence, never High; the reviewer confirms it.
+    /// </summary>
+    public const string FormulaFromDefinition = "FormulaFromDefinition";
+
+    /// <summary>Brief 12: an input the test's definition requires but the sheet does not print; it was added.</summary>
+    public const string DefinitionInputAdded = "DefinitionInputAdded";
+
+    /// <summary>Brief 12: a printed line (or nested table) the test's definition does not know; it was kept as a field.</summary>
+    public const string DefinitionExtraLine = "DefinitionExtraLine";
 
     /// <summary>A Specification characteristic that matches no field of the already-saved RM-NNN template.</summary>
     public const string FieldNotOnTemplate = "FieldNotOnTemplate";

@@ -9,16 +9,16 @@ namespace APP.Tests.QcWorksheets.WorksheetImport;
 /// <summary>The 7 raw-material worksheet / Specification pairs (brief 09). Runs only with <c>QC_RM_CORPUS_DIR</c> set.</summary>
 public class RmCorpusTests(ITestOutputHelper output)
 {
-    /// <summary>Per worksheet: numbered tests, Instrument fields, W1/W2/W3 results, titration, peak areas, formulas left for review.</summary>
-    private static readonly Dictionary<string, (int Tests, int Instruments, string[] Crucible, bool Titration, bool PeakAreas, int NeedsReview)> Worksheets = new()
+    /// <summary>Per worksheet: numbered tests, Instrument fields, W1/W2/W3 results, titration, peak areas.</summary>
+    private static readonly Dictionary<string, (int Tests, int Instruments, string[] Crucible, bool Titration, bool PeakAreas)> Worksheets = new()
     {
-        ["012"] = (7, 7, ["Sulfated Ash"], false, true, 1),
-        ["017"] = (11, 7, ["Sulfated Ash"], true, false, 2),
-        ["021"] = (11, 5, [], false, false, 0),
-        ["024"] = (9, 4, ["Loss on Drying", "Sulfated Ash"], false, false, 0),
-        ["167"] = (7, 7, ["Sulfated Ash"], false, true, 1),
-        ["179"] = (6, 5, ["Sulfated Ash", "Loss on Drying"], true, false, 1),
-        ["193"] = (8, 2, ["Loss on Drying"], false, false, 0)
+        ["012"] = (7, 7, ["Sulfated Ash"], false, true),
+        ["017"] = (11, 7, ["Sulfated Ash"], true, false),
+        ["021"] = (11, 5, [], false, false),
+        ["024"] = (9, 4, ["Loss on Drying", "Sulfated Ash"], false, false),
+        ["167"] = (7, 7, ["Sulfated Ash"], false, true),
+        ["179"] = (6, 5, ["Sulfated Ash", "Loss on Drying"], true, false),
+        ["193"] = (8, 2, ["Loss on Drying"], false, false)
     };
 
     /// <summary>Per Specification: characteristics, MICROBIAL ones, and sections added to the worksheet for it.</summary>
@@ -81,24 +81,35 @@ public class RmCorpusTests(ITestOutputHelper output)
                 Assert.True(APP.Services.QcWorksheets.QcFormulaEvaluator.Analyze(result.FormulaExpression).IsValid);
             }
 
-            // Isopropyl alcohol prints its pycnometer and residue formulas instead of the crucible one.
-            Assert.Equal(expected.Crucible.Length > 0 || key == "021", proposal.Flags.Any(flag => flag.Code == WorksheetImportFlagCodes.FormulaFromPrint));
+            // Brief 12: a loss on drying takes its definition's formula; every Sulfated Ash sheet prints
+            // the loss arrangement (W2 − W3) instead of the residue, so there the printed formula wins.
+            foreach (var name in expected.Crucible)
+            {
+                var code = name == "Loss on Drying" ? WorksheetImportFlagCodes.FormulaFromDefinition : WorksheetImportFlagCodes.FormulaFromPrint;
+                Assert.Contains(proposal.Flags, flag => flag.Code == code && flag.Message.StartsWith($"{name} /"));
+            }
 
             var titration = fields.SingleOrDefault(field => field.FieldKey.EndsWith("_titration"));
             Assert.Equal(expected.Titration, titration is not null);
             if (titration is not null)
             {
-                Assert.Contains("\"fixedValues\":[\"Blank\",\"Sample 1\",\"Sample 2\"]", titration.ColumnDefinitions);
+                // One row per sample; the blank's readings are fields, because each row's assay subtracts the same blank titre.
+                Assert.Contains("\"fixedValues\":[\"Sample 1\",\"Sample 2\"]", titration.ColumnDefinitions);
                 Assert.Contains("\"formula\":\"{finalVolume} - {initialVolume}\"", titration.ColumnDefinitions);
-                Assert.Contains(fields, field => field.Label == "Factor of Volumetric Solution" && field.Type == WorksheetFieldType.Number);
+                Assert.Contains("\"key\":\"assay\"", titration.ColumnDefinitions);
+                Assert.Contains(fields, field => field.FieldKey.EndsWith("_blank_titre") && field.Mode == WorksheetFieldMode.Calculated);
+                Assert.Contains(fields, field => field.FieldKey.EndsWith("_factor") && field.Type == WorksheetFieldType.Number);
                 Assert.Contains(fields, field => field.Label == "Equivalence" && field.Mode == WorksheetFieldMode.Constant);
-                var assay = fields.Single(field => field.Label == "% Assay");
-                Assert.Equal((WorksheetFieldMode.Calculated, (string?)null), (assay.Mode, assay.FormulaExpression));
+                var assay = fields.Single(field => field.FieldKey.EndsWith("titration_result"));
+                Assert.Equal((WorksheetFieldMode.Calculated, $"AVG({{{titration.FieldKey}.assay}})"), (assay.Mode, assay.FormulaExpression));
             }
 
             Assert.Equal(expected.PeakAreas, fields.Any(field => field.FieldKey.EndsWith("_peak_areas")));
-            Assert.Equal(expected.NeedsReview, proposal.Flags.Count(flag => flag.Code == WorksheetImportFlagCodes.FormulaNeedsReview));
-            Assert.Equal(expected.NeedsReview, fields.Count(field => field.Mode == WorksheetFieldMode.Calculated && field.FormulaExpression is null));
+
+            // Every test of these seven sheets has a definition, so no formula is left for review.
+            Assert.DoesNotContain(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaNeedsReview);
+            Assert.All(fields.Where(field => field.Mode == WorksheetFieldMode.Calculated),
+                field => Assert.True(APP.Services.QcWorksheets.QcFormulaEvaluator.Analyze(field.FormulaExpression).IsValid, field.FieldKey));
             Assert.Empty(proposal.SpecificationProposals);
 
             // Every test has something a Specification characteristic can bind to.
@@ -221,7 +232,7 @@ public class RmCorpusTests(ITestOutputHelper output)
         // Spot checks of the name matching: synonyms, sub-tests, and a broader section name.
         Assert.Equal("sulfated_ash_result", Bound(files, "024", "Sulphated Ash"));
         Assert.Equal("sulfated_ash_result", Bound(files, "167", "Residue on Ignition"));
-        Assert.Equal("identity_test_ir_result", Bound(files, "017", "Identification Tests", "IR"));
+        Assert.Equal("identity_test_ir_observation", Bound(files, "017", "Identification Tests", "IR"));
         Assert.Equal("specific_optical_rotation_result", Bound(files, "017", "Identification Tests", "Specific Optical Rotation"));
         Assert.Equal("description_appearance_result", Bound(files, "193", "Description"));
         Assert.Equal("assay_titration_result", Bound(files, "179", "Assay"));
