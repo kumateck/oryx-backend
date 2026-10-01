@@ -120,7 +120,8 @@ internal sealed partial class RawMaterialSectionBody
         columns.Add(new GridColumn
         {
             Key = "assay", Label = assay.Label, Type = WorksheetFieldType.Number, Unit = assay.Unit,
-            Mode = WorksheetFieldMode.Calculated, Formula = valid ? formula : null, Confidence = valid ? ImportConfidence.Medium : ImportConfidence.Low,
+            Mode = WorksheetFieldMode.Calculated, Formula = valid ? formula : null,
+            Confidence = valid && !PrintUnread(read?.Text) ? ImportConfidence.Medium : ImportConfidence.Low,
             Reason = valid ? Provenance(read?.Text) : "The definition's formula could not be completed from this sheet; enter it before saving",
             FlagCode = valid ? WorksheetImportFlagCodes.FormulaFromDefinition : WorksheetImportFlagCodes.FormulaNeedsReview
         });

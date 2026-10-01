@@ -539,20 +539,25 @@ internal sealed partial class RawMaterialSectionBody
             FieldKey = $"{prefix}_{key}", Label = label,
             Type = isResult ? WorksheetFieldType.Result : WorksheetFieldType.CalculatedValue,
             Mode = WorksheetFieldMode.Calculated, FormulaExpression = valid ? formula : null, Unit = unit
-        }, location, valid ? ImportConfidence.Medium : ImportConfidence.Low, reason);
+        }, location, valid && !PrintUnread(printedText) ? ImportConfidence.Medium : ImportConfidence.Low, reason);
 
         _calculated[key] = field.FieldKey;
         builder.Flag(valid ? flag : WorksheetImportFlagCodes.FormulaNeedsReview, $"{sectionName} / {label}: {reason}.", location);
         return field;
     }
 
+    /// <summary>
+    /// True when the sheet prints a formula that the definition's terms could not read. The base
+    /// formula is still proposed, at Low confidence, and its provenance says so.
+    /// </summary>
+    private bool PrintUnread(string printedText) => printedText is null && _printed.Fractions.Count > 0 && Definition.Terms.Count > 0;
+
     /// <summary>Where a definition formula came from: the definition, its variants, and the formula text the sheet prints.</summary>
     private string Provenance(string printedText)
     {
         var variants = _variantNames.Distinct().ToList();
         var source = $"Formula from the '{Definition.Title}' definition" + (variants.Count == 0 ? string.Empty : $", variant: {string.Join(", ", variants)}");
-        var unread = printedText is null && _printed.Fractions.Count > 0 && Definition.Terms.Count > 0;
-        if (unread)
+        if (PrintUnread(printedText))
             return $"{source}. The sheet prints '{_printed.Fractions[0].Text}', which the definition could not read; its base formula is used (reviewer confirms)";
         return printedText is null ? $"{source}; no formula is printed on the sheet (reviewer confirms)" : $"{source}; printed: '{printedText}' (reviewer confirms)";
     }

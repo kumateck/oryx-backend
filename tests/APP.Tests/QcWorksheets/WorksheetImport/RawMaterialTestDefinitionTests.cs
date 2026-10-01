@@ -742,7 +742,8 @@ public class RawMaterialTestDefinitionTests
         // The base formula is used, and the provenance says the print could not be read.
         Assert.Contains("* 20.00 * 100 / {wtTaken}\"", Field(proposal, "assay_titration_titration").ColumnDefinitions);
         Assert.Contains(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaFromDefinition && flag.Message.Contains("which the definition could not read"));
-        Assert.Null(PrintedTerms.Scan("Factor x Mystery", AssayDefinitions.Titration.Terms, []));
+        Assert.Equal(ImportConfidence.Low, proposal.FieldProvenance.Single(item => item.FieldKey == "assay_titration_result").Confidence);
+        Assert.Null(PrintedTerms.Scan("Factor x Mystery", RawMaterialTestDefinitions.Find("assay_titration").Terms, []));
     }
 
     [Fact]
