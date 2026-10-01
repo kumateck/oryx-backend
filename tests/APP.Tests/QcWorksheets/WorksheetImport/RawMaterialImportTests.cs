@@ -122,9 +122,10 @@ public class RawMaterialImportTests
         Assert.Equal("description_appearance_result", Assert.Single(template.Sections[0].Fields).FieldKey);
 
         var ph = template.Sections[2].Fields.ToDictionary(field => field.FieldKey);
-        Assert.Equal((WorksheetFieldType.Number, "g"), (ph["ph_weight_of_sample_taken"].Type, ph["ph_weight_of_sample_taken"].Unit));
+        Assert.Equal((WorksheetFieldType.Number, "g"), (ph["ph_weight"].Type, ph["ph_weight"].Unit));
         Assert.Equal(WorksheetFieldType.LongText, ph["ph_preparation"].Type);
-        Assert.Equal("({ph_determination_i} + {ph_determination_ii}) / 2", ph["ph_determination_mean"].FormulaExpression);
+        Assert.Equal("({ph_reading_1} + {ph_reading_2}) / 2", ph["ph_result"].FormulaExpression);
+        Assert.Equal(["description", "sulfated_ash", "ph", "assay_titration", "loss_on_drying"], template.Sections.Select(section => section.TestDefinition));
 
         // Sign-off and header run data never become fields or constants.
         var texts = Fields(proposal).SelectMany(field => new[] { field.Label, field.ConstantValue ?? string.Empty }).ToList();
@@ -133,7 +134,7 @@ public class RawMaterialImportTests
     }
 
     [Fact]
-    public void The_crucible_formula_is_read_from_the_print()
+    public void The_crucible_formula_is_checked_against_the_print()
     {
         var proposal = Worksheet();
         var ash = proposal.Template.Sections.Single(section => section.Name == "Sulfated Ash").Fields;
@@ -145,11 +146,14 @@ public class RawMaterialImportTests
         Assert.Equal("(({sulfated_ash_w2} - {sulfated_ash_w3}) * 100) / ({sulfated_ash_w2} - {sulfated_ash_w1})", result.FormulaExpression);
         Assert.True(QcFormulaEvaluator.Analyze(result.FormulaExpression).IsValid);
         Assert.Equal(ImportConfidence.Medium, proposal.FieldProvenance.Single(item => item.FieldKey == result.FieldKey).Confidence);
-        Assert.Equal(2, proposal.Flags.Count(flag => flag.Code == WorksheetImportFlagCodes.FormulaFromPrint));
+
+        // The sheet prints the loss arrangement under Sulfated Ash: it differs from the definition's residue, so the print wins.
+        Assert.Contains("differs", Assert.Single(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaFromPrint).Message);
+        Assert.Contains(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaFromDefinition && flag.Message.StartsWith("Loss on Drying /"));
     }
 
     [Fact]
-    public void A_titration_is_a_fixed_row_table_and_its_assay_formula_is_never_guessed()
+    public void A_titration_is_a_sample_row_table_whose_assay_comes_from_the_definition()
     {
         var proposal = Worksheet();
         var fields = proposal.Template.Sections.Single(section => section.Name == "Assay – Titration").Fields;
@@ -160,13 +164,18 @@ public class RawMaterialImportTests
         Assert.Equal((WorksheetFieldMode.Constant, "1 mL of 0.1 M NaOH is equivalent to 10.00 mg of X"), (equivalence.Mode, equivalence.ConstantValue));
 
         var table = fields.Single(field => field.Type == WorksheetFieldType.Table);
-        Assert.Contains("\"fixedValues\":[\"Blank\",\"Sample 1\",\"Sample 2\"]", table.ColumnDefinitions);
+        Assert.Contains("\"fixedValues\":[\"Sample 1\",\"Sample 2\"]", table.ColumnDefinitions);
         Assert.Contains("\"key\":\"titreObtained\",\"label\":\"Titre obtained\",\"type\":\"Number\",\"unit\":\"mL\",\"mode\":\"Calculated\",\"formula\":\"{finalVolume} - {initialVolume}\"",
             table.ColumnDefinitions);
 
-        var assay = fields.Single(field => field.Label == "% Assay");
-        Assert.Equal((WorksheetFieldType.Result, WorksheetFieldMode.Calculated, (string?)null), (assay.Type, assay.Mode, assay.FormulaExpression));
-        Assert.Contains(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaNeedsReview && flag.Message.Contains("% Assay"));
+        // No formula is printed (only the blank worked sum), so the definition's base formula is used: Medium, flagged, never High.
+        Assert.Contains("\"key\":\"assay\",\"label\":\"% Assay\",\"type\":\"Number\",\"unit\":\"%\",\"mode\":\"Calculated\","
+                        + "\"formula\":\"({titreObtained} - {assay_titration_blank_titre}) * {assay_titration_factor} * 10.00 * 100 / {wtTaken}\"", table.ColumnDefinitions);
+        var assay = fields.Single(field => field.Type == WorksheetFieldType.Result);
+        Assert.Equal((WorksheetFieldMode.Calculated, "AVG({assay_titration_titration.assay})"), (assay.Mode, assay.FormulaExpression));
+        Assert.Equal(ImportConfidence.Medium, proposal.FieldProvenance.Single(item => item.FieldKey == assay.FieldKey && item.ColumnKey is null).Confidence);
+        Assert.Contains(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaFromDefinition && flag.Message.Contains("% Assay"));
+        Assert.DoesNotContain(proposal.Flags, flag => flag.Code == WorksheetImportFlagCodes.FormulaNeedsReview);
     }
 
     [Fact]
@@ -225,7 +234,7 @@ public class RawMaterialImportTests
         Assert.Equal((RawMaterialPairingStatus.InUpload, "901 - Testocaine.docx"), (specification.RawMaterial.Pairing!.Value, specification.RawMaterial.PairedFileName));
         Assert.Equal("description_appearance_result", Bound("Description"));
         Assert.Equal("sulfated_ash_result", Bound("Sulphated Ash"));
-        Assert.Equal("ph_determination_mean", Bound("pH"));
+        Assert.Equal("ph_result", Bound("pH"));
         Assert.Equal("assay_titration_result", Bound("Assay"));
 
         // Appearance of Solution, Identification (IR, Chlorides), Related/Organic Impurities,

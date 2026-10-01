@@ -1,15 +1,21 @@
+using APP.Services.QcWorksheets.WorksheetDocxImport.TestDefinitions;
 using DOMAIN.Entities.QcWorksheets;
 
 namespace APP.Services.QcWorksheets.WorksheetDocxImport;
 
 /// <summary>
-/// The body of one numbered test of a raw-material worksheet (brief 09): its "Label: ____"
-/// lines, printed W1/W2/W3 formulas, replicate determinations, nested titration and peak-area
-/// grids, and unprinted calculations. Run data is never captured; formulas are read from the
-/// print or left empty for review, never guessed.
+/// The body of one test of a raw-material worksheet. Its cells are buffered until the next test
+/// starts; then the test is identified (brief 12) and its <see cref="RawMaterialTestDefinition"/>
+/// applied, or — for a test with no definition — the layout is read as in brief 09: "Label: ____"
+/// lines, printed W1/W2/W3 formulas, replicate determinations, nested grids, and calculations left
+/// for review. Run data is never captured.
 /// </summary>
-internal sealed partial class RawMaterialSectionBody(ImportProposalBuilder builder, string sectionName, string prefix)
+internal sealed partial class RawMaterialSectionBody(ImportProposalBuilder builder, string sectionName, string prefix, ImportSourceLocation titleLocation)
 {
+    /// <summary>One body cell: its lines and the grids nested in it. A nested layout table is flattened into these.</summary>
+    private sealed record BodyCell(IReadOnlyList<string> Lines, IReadOnlyList<DocxTable> Tables, ImportSourceLocation Location);
+
+    private readonly List<BodyCell> _cells = [];
     private readonly bool _solubility = ImportText.Canonical(sectionName).StartsWith("solubility");
     private readonly Dictionary<string, string> _variables = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _conditions = [];
@@ -19,9 +25,72 @@ internal sealed partial class RawMaterialSectionBody(ImportProposalBuilder build
     private ImportSourceLocation _shellWeightsLocation;
     private string _shellWeightsTable;
 
-    public void ReadCell(DocxBlock block, int row, DocxCell cell)
+    public ProposedWorksheetSection Section { get; } = builder.CurrentSection;
+
+    /// <summary>The definition applied to this test; null when the layout was read instead.</summary>
+    public RawMaterialTestDefinition Definition { get; private set; }
+
+    public bool HasBodyRows => _cells.Count > 0;
+
+    public bool IsSolubility => _solubility;
+
+    public void ReadCell(DocxBlock block, int row, DocxCell cell) =>
+        Buffer(cell, ImportProposalBuilder.At(block, row, cell.Column));
+
+    private void Buffer(DocxCell cell, ImportSourceLocation location)
     {
-        var location = ImportProposalBuilder.At(block, row, cell.Column);
+        var grids = new List<DocxTable>();
+        _cells.Add(new BodyCell(cell.Lines, grids, location));
+
+        foreach (var table in cell.NestedTables)
+        {
+            if (!IsLayoutTable(table))
+            {
+                grids.Add(table);
+                continue;
+            }
+
+            // A table used only to lay the test out: its cells are body cells.
+            foreach (var inner in table.Rows.SelectMany(row => row).Where(inner => !inner.IsContinuation))
+                Buffer(inner, location);
+        }
+    }
+
+    private static bool IsLayoutTable(DocxTable table) =>
+        !TitrationGrid.IsTitration(table) && ReadingsGrid.Read(table) is null
+        && table.Rows.SelectMany(row => row).Any(cell => cell.NestedTables.Count > 0 || cell.Lines.Count > 2);
+
+    /// <summary>Reads the buffered cells, by definition or by layout. A section with nothing to bind a Specification to gets a Result.</summary>
+    public void Complete(ImportSourceLocation location)
+    {
+        Definition = RawMaterialTestDefinitions.Resolve(sectionName,
+            _cells.SelectMany(cell => cell.Lines).ToList(), _cells.SelectMany(cell => cell.Tables).ToList());
+
+        if (Definition is null)
+        {
+            foreach (var cell in _cells)
+                ReadByLayout(cell);
+        }
+        else
+            ApplyDefinition();
+
+        FlushConditions();
+        var section = builder.CurrentSection;
+        if (section is null || RawMaterialResultField.Choose(section) is not null)
+            return;
+
+        var empty = section.Fields.All(field => field.Type == WorksheetFieldType.Instrument);
+        builder.AddField(new ProposedWorksheetField
+        {
+            FieldKey = $"{prefix}_result", Label = "Result", Type = WorksheetFieldType.LongText, Mode = WorksheetFieldMode.Entry
+        }, location ?? titleLocation, empty ? ImportConfidence.High : ImportConfidence.Medium,
+            empty ? "Empty observation cell: the analyst writes the result here"
+                : "No result line is printed; added so the Specification can bind to this test");
+    }
+
+    private void ReadByLayout(BodyCell cell)
+    {
+        var location = cell.Location;
         var lines = cell.Lines;
         var tablesRead = false;
 
@@ -40,7 +109,7 @@ internal sealed partial class RawMaterialSectionBody(ImportProposalBuilder build
             if (RawMaterialLines.IsCalculationLabel(line.TrimEnd(':', '=', ' ')))
             {
                 // The printed skeleton after "Calculations:" is an explanation, not a formula.
-                ReadTables(block, row, cell);
+                ReadTables(cell);
                 tablesRead = true;
                 AddUnprintedCalculation(location, line);
                 break;
@@ -57,24 +126,7 @@ internal sealed partial class RawMaterialSectionBody(ImportProposalBuilder build
 
         FlushShellWeights();
         if (!tablesRead)
-            ReadTables(block, row, cell);
-    }
-
-    /// <summary>A section with nothing to bind a Specification to gets a Result the analyst writes.</summary>
-    public void Complete(ImportSourceLocation location)
-    {
-        FlushConditions();
-        var section = builder.CurrentSection;
-        if (section is null || RawMaterialResultField.Choose(section) is not null)
-            return;
-
-        var empty = section.Fields.All(field => field.Type == WorksheetFieldType.Instrument);
-        builder.AddField(new ProposedWorksheetField
-        {
-            FieldKey = $"{prefix}_result", Label = "Result", Type = WorksheetFieldType.LongText, Mode = WorksheetFieldMode.Entry
-        }, location, empty ? ImportConfidence.High : ImportConfidence.Medium,
-            empty ? "Empty observation cell: the analyst writes the result here"
-                : "No result line is printed; added so the Specification can bind to this test");
+            ReadTables(cell);
     }
 
     private string ReadInstruments(string line, ImportSourceLocation location)
@@ -139,7 +191,7 @@ internal sealed partial class RawMaterialSectionBody(ImportProposalBuilder build
             else if (_conditions.Count > 0)
                 AddCondition(line, location);
             else if (!RawMaterialLines.IsCaption(line))
-                builder.Flag(WorksheetImportFlagCodes.UnrecognizedContent, $"{sectionName}: '{line}' was not turned into a field.", location);
+                AddBareLine(line, location);
             return;
         }
 

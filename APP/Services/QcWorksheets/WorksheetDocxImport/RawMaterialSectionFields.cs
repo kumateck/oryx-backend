@@ -183,7 +183,7 @@ internal sealed partial class RawMaterialSectionBody
             "The calculation is not printed as a formula; enter it before saving", WorksheetImportFlagCodes.FormulaNeedsReview);
     }
 
-    private void AddCalculated(
+    private ProposedWorksheetField AddCalculated(
         string key, string label, string formula, bool isResult, string unit, ImportSourceLocation location, string reason, string flag)
     {
         var field = builder.AddField(new ProposedWorksheetField
@@ -195,6 +195,41 @@ internal sealed partial class RawMaterialSectionBody
 
         if (flag is not null)
             builder.Flag(flag, $"{sectionName} / {label}: {reason}.", location);
+        return field;
+    }
+
+    /// <summary>
+    /// A printed line with no blank of its own: a bare label ("Observation", "Weight of sample") is
+    /// that label's blank; anything else is kept as a printed note, so nothing on the sheet is dropped.
+    /// </summary>
+    private void AddBareLine(string line, ImportSourceLocation location)
+    {
+        var (label, unit) = BareLabel(line);
+        var canonical = ImportText.Canonical(label);
+        if (LongTextLabels.Contains(canonical) || canonical.StartsWith("weight") || canonical.StartsWith("wt") || canonical.StartsWith("vol"))
+        {
+            AddBlank(new LineBlank(label, unit), location);
+            return;
+        }
+
+        AddNote(line, location);
+    }
+
+    private void AddNote(string line, ImportSourceLocation location) =>
+        builder.AddField(new ProposedWorksheetField
+        {
+            FieldKey = $"{prefix}_{ImportText.SnakeKey(line, 30)}_note", Label = line.Length > 80 ? line[..80].TrimEnd() + "…" : line,
+            Type = WorksheetFieldType.Instructions, Mode = WorksheetFieldMode.Constant, ConstantValue = line
+        }, location, ImportConfidence.Medium, "Printed line with no blank of its own, kept as a note");
+
+    /// <summary>"Volume of solution S taken ____ ml" → ("Volume of solution S taken", "mL").</summary>
+    private static (string Label, string Unit) BareLabel(string line)
+    {
+        var text = ImportText.StripLeaders(line).Trim().TrimEnd(':', '=', '.', ' ');
+        var unit = Regex.Match(text, @"\s(g|mg|m[lL]|%|[˚°]\s*C)$");
+        return unit.Success
+            ? (text[..unit.Index].TrimEnd(':', '=', ' '), unit.Groups[1].Value.Replace("ml", "mL").Replace("˚", "°").Replace(" ", string.Empty))
+            : (text, null);
     }
 
     private bool ReadShellWeights(string line, ImportSourceLocation location)
