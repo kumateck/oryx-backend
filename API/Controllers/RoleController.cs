@@ -13,6 +13,7 @@ namespace API.Controllers;
 public class RoleController(IRoleRepository repo) : ControllerBase
 {
     [HttpGet]
+    [Authorize(PermissionKeys.CanViewRoles)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<RoleDto>))]
     public async Task<IResult> GetRoles()
     {
@@ -21,6 +22,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
     }
 
     [HttpGet("with-permissions")]
+    [Authorize(PermissionKeys.CanViewRoles)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RolePermissionDto>>))]
     public async Task<IResult> GetRolesWithPermissions([FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
@@ -32,6 +34,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
 
     //[Authorize]
     [HttpGet("{id}")]
+    [Authorize(PermissionKeys.CanViewRoles)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RolePermissionDto))]
     public async Task<IResult> GetRole(Guid id)
     {
@@ -60,6 +63,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
 
     //[Authorize]
     [HttpPut("{id}")]
+    [Authorize(PermissionKeys.CanEditRole)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> UpdateRole(UpdateRoleRequest request, Guid id)
     {
@@ -79,6 +83,8 @@ public class RoleController(IRoleRepository repo) : ControllerBase
 
     //[Authorize]
     [HttpGet("check/{id}")]
+    [Authorize(PermissionKeys.CanDeleteRole)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RoleUsageDto))]
     public async Task<IResult> CheckRole(Guid id)
     {
         var response = await repo.CheckRole(id);
@@ -87,6 +93,7 @@ public class RoleController(IRoleRepository repo) : ControllerBase
 
     //[Authorize]
     [HttpDelete("{id}")]
+    [Authorize(PermissionKeys.CanDeleteRole)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> DeleteRole(Guid id)
     {

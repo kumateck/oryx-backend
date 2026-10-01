@@ -9,5 +9,6 @@ public class RolePermissionDto
     public string DisplayName { get; set; }
     public string Name { get; set; }
     public DepartmentType Type { get; set; }
+    public bool IsManager { get; set; }
     public List<PermissionModuleDto> Permissions { get; set; } = [];
 }

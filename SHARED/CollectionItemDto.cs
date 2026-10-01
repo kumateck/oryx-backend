@@ -7,6 +7,7 @@ public class CollectionItemDto
     public string Code { get; set; }
     public string Description { get; set; }
     public string Symbol { get; set; }
+    public string Uom { get; set; }
 
     public override bool Equals(object obj)
     {
