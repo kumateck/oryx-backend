@@ -72,7 +72,7 @@ public sealed partial class RawMaterialChemicalRecognizer : IArdFamilyRecognizer
 
             var text = cell.Text;
             var canonical = ImportText.Canonical(text);
-            if (canonical.Contains("testobservations") || canonical.StartsWith("testsobservations"))
+            if (canonical is "testobservation" or "testobservations" or "testsobservations" or "testsobservation" || canonical.Contains("testobservations"))
                 continue;
 
             // "Analysed by: checked by: Date:" — review and approval cover the sign-off.
