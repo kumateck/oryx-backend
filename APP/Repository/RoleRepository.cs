@@ -52,7 +52,9 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
 
     public async Task<Result<RolePermissionDto>> GetRole(Guid id)
     {
-        var role = mapper.Map<RolePermissionDto>(await context.Roles.FirstOrDefaultAsync(item => item.Id == id));
+        var entity = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
+        if (entity is null) return RoleErrors.NotFound(id);
+        var role = mapper.Map<RolePermissionDto>(entity);
         role.Permissions = await permissionRepository.GetPermissionByRole(role.Id);
         return role;
     }
@@ -71,6 +73,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         if (!await IsValidRoleName(request.Name))
             return RoleErrors.InvalidRoleName(request.Name);
 
+        await using var transaction = await context.Database.BeginTransactionAsync();
         var result = await roleManager.CreateAsync(newRole);
 
         if (!result.Succeeded)
@@ -78,7 +81,9 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
             return Error.Failure("Role.Create", $"{result.Errors.First()}");
         }
 
-        await permissionRepository.UpdateRolePermissions(request.Permissions, newRole.Id);
+        var permissionResult = await permissionRepository.UpdateRolePermissions(request.Permissions, newRole.Id);
+        if (permissionResult.IsFailure) return permissionResult;
+        await transaction.CommitAsync();
         return Result.Success();
     }
 
@@ -100,19 +105,21 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
         return Result.Success();
     }
 
-    public async Task<Result<dynamic>> CheckRole(Guid id)
+    public async Task<Result<RoleUsageDto>> CheckRole(Guid id)
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
-        if (role is null) RoleErrors.NotFound(id);
+        if (role is null) return RoleErrors.NotFound(id);
 
         var usersWithRole = await userManager.GetUsersInRoleAsync(role.Name);
-        return new { HasUsers = usersWithRole.Count != 0 };
+        return new RoleUsageDto(usersWithRole.Count != 0);
     }
 
     public async Task<Result> DeleteRole(Guid id, Guid userId)
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == id);
         if (role == null) return RoleErrors.NotFound(id);
+
+        if (role.IsManager) return RoleErrors.IsManager;
         
         if(await context.UserRoles.AnyAsync(r => r.RoleId == role.Id))
             return Error.Validation("Role.Delete", 
