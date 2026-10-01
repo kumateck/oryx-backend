@@ -145,5 +145,6 @@ public static partial class StackedFractions
         return !IsWorded(text) || (!text.Contains('=') && !text.EndsWith(':') && !ImportText.HasLeader(text));
     }
 
-    private static string Clean(string line) => ImportText.Normalize(line).TrimStart(':', ' ').TrimEnd('.', ' ');
+    /// <summary>The line without the ":" that leads a numerator or the stray " ." that ends one.</summary>
+    private static string Clean(string line) => Regex.Replace(ImportText.Normalize(line).TrimStart(':', ' '), @"\s+\.$", string.Empty).Trim();
 }
