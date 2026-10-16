@@ -15,12 +15,17 @@ public static partial class RawMaterialLines
     [GeneratedRegex(@"(?<label>(?:Instrument|Balance|Equipment)\s*ID)\.?\s*:?\s*(?<code>[A-Z]{2,}(?:/[A-Z0-9-]+)+)?", RegexOptions.IgnoreCase)]
     public static partial Regex InstrumentRegex();
 
-    [GeneratedRegex(@"\((?:i{1,3}|iv)\)")]
+    // "(i) (ii)", and "(1) (2)" on the sheets that number their replicates.
+    [GeneratedRegex(@"\((?:i{1,3}|iv|[1-3])\)")]
     private static partial Regex ReplicateRegex();
 
     // A leader and/or a unit at the start of the text after a label: "__________ g Weight of sample".
     [GeneratedRegex(@"^(?<value>(?:_{2,}|…+|\.{3,}|\s)*(?:(?:g/ml|g/mL|mg|ml|mL|g|%|[˚°]\s*C)(?![A-Za-z]))?)\s*(?<next>.*)$")]
     private static partial Regex LeaderUnitRegex();
+
+    // A unit standing alone at the start or end of a replicate tail.
+    [GeneratedRegex(@"^(?:g|mg|m[lL]|%|[˚°]\s*C)(?=\s|$)\s*|\s+(?:[˚°]\s*C)$")]
+    private static partial Regex TailUnitRegex();
 
     [GeneratedRegex(@"^\d+\s*nm$", RegexOptions.IgnoreCase)]
     public static partial Regex WavelengthRegex();
@@ -56,10 +61,15 @@ public static partial class RawMaterialLines
     /// "Determination (i): (ii) mean:", "wt of Std taken: wt of Spl taken (i) (ii)": the labels
     /// before the replicate base, the base, its markers and the averaging label after them.
     /// </summary>
-    public static bool TryReplicates(string line, out List<string> leading, out string baseLabel, out List<string> markers, out string average)
+    public static bool TryReplicates(string line, out List<string> leading, out string baseLabel, out List<string> markers, out string average) =>
+        TryReplicates(line, out leading, out baseLabel, out markers, out average, out _);
+
+    /// <param name="tail">What is printed after the last marker when it is not the averaging label ("Std wt g").</param>
+    public static bool TryReplicates(
+        string line, out List<string> leading, out string baseLabel, out List<string> markers, out string average, out string tail)
     {
         leading = [];
-        baseLabel = average = null;
+        baseLabel = average = tail = null;
         markers = ReplicateRegex().Matches(line).Select(match => match.Value).ToList();
         if (markers.Count == 0)
             return false;
@@ -71,10 +81,13 @@ public static partial class RawMaterialLines
         if (parts[^1].Length == 0 && leading.Count > 0)
             leading.RemoveAt(leading.Count - 1);
 
+        // "(ii) ˚C mean ˚C", "(ii) g Std wt g": the unit of the last replicate comes before what follows it.
         var last = ReplicateRegex().Matches(line)[^1];
-        var tail = line[(last.Index + last.Length)..].Trim(' ', ':');
-        if (Regex.IsMatch(tail, @"^(mean|average)\b", RegexOptions.IgnoreCase))
-            average = tail;
+        var rest = TailUnitRegex().Replace(ImportText.StripLeaders(line[(last.Index + last.Length)..]).Trim(' ', ':', ','), string.Empty).Trim(' ', ':', ',');
+        if (Regex.IsMatch(rest, @"^(mean|average|avg)\b", RegexOptions.IgnoreCase))
+            average = TailUnitRegex().Replace(rest.TrimEnd(' ', ':', '='), string.Empty) is { Length: > 0 } label ? label.Trim() : rest;
+        else if (rest.Length > 0)
+            tail = rest;
         return baseLabel is not null;
     }
 

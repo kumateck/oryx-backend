@@ -288,6 +288,7 @@ public class ApplicationDbContext(
     public DbSet<Approval> Approvals { get; set; }
     public DbSet<ApprovalStage> ApprovalStages { get; set; }
     public DbSet<ApprovalActionLog> ApprovalActionLogs { get; set; }
+    public DbSet<ApprovalDelegation> ApprovalDelegations { get; set; }
 
     #endregion
 

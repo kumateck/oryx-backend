@@ -1,3 +1,4 @@
+using APP.Services.QcWorksheets.WorksheetDocxImport.TestDefinitions;
 using DOMAIN.Entities.QcWorksheets;
 
 namespace APP.Services.QcWorksheets.WorksheetDocxImport;
@@ -5,20 +6,72 @@ namespace APP.Services.QcWorksheets.WorksheetDocxImport;
 /// <summary>The grids nested in a raw-material test cell: the titration table and the HPLC peak areas.</summary>
 internal sealed partial class RawMaterialSectionBody
 {
-    private void ReadTables(DocxBlock block, int row, DocxCell cell)
+    private void ReadTables(BodyCell cell)
     {
-        var location = ImportProposalBuilder.At(block, row, cell.Column);
-        foreach (var table in cell.NestedTables)
+        foreach (var table in cell.Tables)
+            ReadTable(table, cell.Location);
+    }
+
+    /// <summary>A grid read by its layout: titration, peak areas or other readings, else kept as a generic table (never dropped).</summary>
+    private void ReadTable(DocxTable table, ImportSourceLocation location)
+    {
+        var labels = Enumerable.Range(0, table.Rows.Count).Select(index => ImportText.Canonical(table.Resolved(index, 0))).ToList();
+        if (TitrationGrid.IsTitration(table))
+            AddTitration(table, location);
+        else if (labels.Contains("injection"))
+            AddPeakAreas(table, labels.IndexOf("injection"), location);
+        else if (ReadingsGrid.Read(table) is { } grid)
+            AddReadings(grid, "readings", grid.IsAbsorbance ? "Absorbance" : "Readings", location, summaries: true);
+        else
+            AddGenericTable(table, location);
+    }
+
+    private void AddGenericTable(DocxTable table, ImportSourceLocation location)
+    {
+        var columns = DataGrid.Read(table).Columns;
+        if (columns.Count == 0)
+            return;
+        var title = ParameterTable.Title(table);
+        builder.AddTable($"{prefix}_{(title is null ? "table" : ImportText.SnakeKey(title, 30))}", title ?? "Table", columns, location,
+            "Nested table kept as printed (reviewer confirms its columns)");
+    }
+
+    /// <summary>
+    /// One column per solution and one fixed row per reading; the Average / SD / RSD rows are
+    /// calculated fields over each column. Returns the table key and, per solution, the key of its average.
+    /// </summary>
+    private (string TableKey, List<(string Solution, string AverageKey)> Averages) AddReadings(
+        ReadingsGrid grid, string key, string label, ImportSourceLocation location, bool summaries, bool alwaysAverage = false)
+    {
+        var columns = new List<GridColumn>
         {
-            var labels = Enumerable.Range(0, table.Rows.Count).Select(index => ImportText.Canonical(table.Resolved(index, 0))).ToList();
-            if (labels.Any(label => label.StartsWith("titre")) || (labels.Any(label => label.StartsWith("final")) && labels.Any(label => label.StartsWith("initial"))))
-                AddTitration(table, location);
-            else if (labels.Contains("injection"))
-                AddPeakAreas(table, labels.IndexOf("injection"), location);
-            else
-                builder.Flag(WorksheetImportFlagCodes.UnrecognizedContent,
-                    $"{sectionName}: a nested table ('{DocxDocumentReader.Describe(table)}') was not turned into fields.", location);
+            new() { Key = "reading", Label = grid.RowHeader, Type = WorksheetFieldType.ShortText, FixedValues = grid.Readings.ToList(), RowHeader = true, Reason = "Printed reading numbers" }
+        };
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "reading" };
+        foreach (var solution in grid.Solutions)
+        {
+            var columnKey = ImportText.CamelKey(solution);
+            for (var suffix = 2; !used.Add(columnKey); suffix++)
+                columnKey = $"{ImportText.CamelKey(solution)}{suffix}";
+            columns.Add(new GridColumn { Key = columnKey, Label = solution, Type = WorksheetFieldType.Number, Reason = grid.IsAbsorbance ? "Absorbance" : "Peak area" });
         }
+
+        var tableKey = builder.AddTable($"{prefix}_{key}", label, columns, location, $"{label}: one column per solution, fixed reading rows").FieldKey;
+        var averages = new List<(string, string)>();
+        foreach (var column in columns.Skip(1))
+        {
+            var name = ImportText.SnakeKey(column.Label, 20);
+            var reference = $"{{{tableKey}.{column.Key}}}";
+            if (alwaysAverage || (summaries && grid.HasAverage))
+                averages.Add((column.Label, AddCalculated($"{name}_average", $"Average – {column.Label}", $"AVG({reference})", false, null, location,
+                    grid.HasAverage ? "Printed average row" : "Average of the readings, which the assay formula uses", null).FieldKey));
+            if (summaries && grid.HasSd)
+                AddCalculated($"{name}_sd", $"SD – {column.Label}", $"RSD({reference}) * AVG({reference}) / 100", false, null, location, "Printed 'SD' row", null);
+            if (summaries && grid.HasRsd)
+                AddCalculated($"{name}_rsd", $"RSD – {column.Label}", $"RSD({reference})", false, "%", location, "Printed 'RSD' row", null);
+        }
+
+        return (tableKey, averages);
     }
 
     /// <summary>

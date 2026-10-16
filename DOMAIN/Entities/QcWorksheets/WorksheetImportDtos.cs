@@ -77,6 +77,17 @@ public class ProposedWorksheetSection
     public int Order { get; set; }
     public string Name { get; set; }
     public Guid? InstrumentId { get; set; }
+
+    /// <summary>
+    /// Raw-material worksheets (brief 12): the key of the test definition this section was read
+    /// with ("assay_titration", "loss_on_drying"); null when no definition matched and the layout
+    /// was read instead.
+    /// </summary>
+    public string TestDefinition { get; set; }
+
+    /// <summary>The definition's alternatives the sheet selected ("back titration", "dried basis (100 − LOD)").</summary>
+    public List<string> TestDefinitionVariants { get; set; }
+
     public List<ProposedWorksheetField> Fields { get; set; } = [];
 }
 

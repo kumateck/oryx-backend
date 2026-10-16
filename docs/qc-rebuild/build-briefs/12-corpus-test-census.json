@@ -1,0 +1,4796 @@
+{
+ "description": {
+  "files": 318,
+  "names": [
+   [
+    "Description / Appearance",
+    313
+   ],
+   [
+    "Description/Appearance",
+    3
+   ],
+   [
+    "DESCRIPTION",
+    1
+   ],
+   [
+    "Description",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Solubility",
+    1
+   ],
+   [
+    "Water: Ethanol (#%): Dichloromethane:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "solubility": {
+  "files": 263,
+  "names": [
+   [
+    "Solubility",
+    262
+   ],
+   [
+    "SOLUBILITY",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Water: Ethanol (#%):",
+    80
+   ],
+   [
+    "Water: Ethanol:",
+    27
+   ],
+   [
+    "Water: Anhydrous Ethanol:",
+    27
+   ],
+   [
+    "Water: Ethanol #%:",
+    15
+   ],
+   [
+    "Water: __",
+    9
+   ],
+   [
+    "Water: Methylene Chloride:",
+    8
+   ],
+   [
+    "Water:",
+    8
+   ],
+   [
+    "Methylene Chloride:",
+    8
+   ],
+   [
+    "Acetone: Methylene Chloride:",
+    8
+   ],
+   [
+    "Water: Acetonitrile:",
+    7
+   ],
+   [
+    "Water: Methanol:",
+    6
+   ],
+   [
+    "Absolute Ethanol: Acetone:",
+    6
+   ],
+   [
+    "Toluene: #g/L of NaOH:",
+    6
+   ],
+   [
+    "Anhydrous Ethanol: __",
+    6
+   ],
+   [
+    "Acetone: __",
+    6
+   ],
+   [
+    "Toluene: __",
+    6
+   ],
+   [
+    "#M HCl: __",
+    6
+   ],
+   [
+    "#% NaOH Solution: __",
+    6
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "identityir": {
+  "files": 90,
+  "names": [
+   [
+    "Identity Test: IR",
+    74
+   ],
+   [
+    "Identity Test A \u2013 FTIR",
+    6
+   ],
+   [
+    "Identity Test - IR",
+    3
+   ],
+   [
+    "Identity Test \u2013 IR",
+    2
+   ],
+   [
+    "Identity Test B - IR",
+    2
+   ],
+   [
+    "Identity Test: FTIR",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Balance ID:",
+    88
+   ],
+   [
+    "Attach Print Out",
+    88
+   ],
+   [
+    "Weight of KBr: __ g Weight of sample: __ g",
+    87
+   ],
+   [
+    "Preparation:",
+    26
+   ],
+   [
+    "Observation:",
+    22
+   ],
+   [
+    "Inference:",
+    9
+   ],
+   [
+    "Determination: (i) (ii) Average:",
+    7
+   ],
+   [
+    "Test solution:",
+    4
+   ],
+   [
+    "Weight of sample taken: __g",
+    4
+   ],
+   [
+    "Identity Test B \u2013 Melting Point Equipment ID:",
+    4
+   ],
+   [
+    "Reaction for Chlorides (A):",
+    4
+   ],
+   [
+    "Weight of sample taken: g",
+    4
+   ],
+   [
+    "__",
+    4
+   ],
+   [
+    "Identity Test B \u2013 pH Instrument ID:",
+    3
+   ],
+   [
+    "pH =",
+    3
+   ],
+   [
+    "Chlorides",
+    3
+   ],
+   [
+    "Measurement: (i) (ii) Average:",
+    3
+   ],
+   [
+    "Solution S was used",
+    2
+   ]
+  ],
+  "formula": [
+   [
+    "Absorbance A#/ A# =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Sample @ 235, Sample @ 274",
+    1
+   ]
+  ]
+ },
+ "appearanceofsolution": {
+  "files": 118,
+  "names": [
+   [
+    "Appearance of Solution",
+    88
+   ],
+   [
+    "Appearance of Solution (Solution S)",
+    14
+   ],
+   [
+    "Appearance of Solution (S)",
+    4
+   ],
+   [
+    "Appearance of Solution (solution S)",
+    3
+   ],
+   [
+    "Appearance of Solution ( Solution S)",
+    2
+   ],
+   [
+    "Colour of Solution",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    113
+   ],
+   [
+    "Preparation:",
+    106
+   ],
+   [
+    "Weight of sample taken: __g",
+    54
+   ],
+   [
+    "Weight of sample taken: g",
+    33
+   ],
+   [
+    "Weight of sample taken:",
+    5
+   ],
+   [
+    "Solution S Preparation:",
+    4
+   ],
+   [
+    "Preparation",
+    2
+   ],
+   [
+    "Weight of Sample taken:",
+    1
+   ],
+   [
+    "Observation",
+    1
+   ],
+   [
+    "Absorbance @ #nm:",
+    1
+   ],
+   [
+    "Wt of sample taken: g",
+    1
+   ],
+   [
+    "Standard Suspension",
+    1
+   ],
+   [
+    "Use Solution S",
+    1
+   ],
+   [
+    "Wt. of Sample taken:",
+    1
+   ],
+   [
+    "Volume of sample taken:",
+    1
+   ],
+   [
+    "Weight of sample:",
+    1
+   ],
+   [
+    "Preparation: __",
+    1
+   ],
+   [
+    "Observation: __",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "specificopticalrotation": {
+  "files": 54,
+  "names": [
+   [
+    "Specific Optical Rotation",
+    27
+   ],
+   [
+    "Optical Rotation",
+    21
+   ],
+   [
+    "Identity Test: Specific Optical Rotation",
+    3
+   ],
+   [
+    "Identity Test: Optical Rotation",
+    3
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    40
+   ],
+   [
+    "Calculation:",
+    24
+   ],
+   [
+    "Weight of sample taken: __g",
+    23
+   ],
+   [
+    "Determination (i): (ii) mean:",
+    9
+   ],
+   [
+    "Weight of sample taken: g",
+    7
+   ],
+   [
+    "Measurement #: Measurement #: Average:",
+    5
+   ],
+   [
+    "Optical Rotation =",
+    4
+   ],
+   [
+    "Observation:",
+    4
+   ],
+   [
+    "Specific Optical Rotation =",
+    3
+   ],
+   [
+    "Solution S was used",
+    2
+   ],
+   [
+    "Identity Test A \u2013 Melting Point Instrument ID:",
+    2
+   ],
+   [
+    "Determination: (i) (ii) Average:",
+    2
+   ],
+   [
+    "Angle of rotation =",
+    2
+   ],
+   [
+    "Angle of Rotation obtained =",
+    1
+   ],
+   [
+    "Specific optical rotation =",
+    1
+   ],
+   [
+    "Optical Rotation:",
+    1
+   ],
+   [
+    "Preperation:",
+    1
+   ],
+   [
+    "Measurement (i) (ii) Average:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Specific Optical Rotation = \uab64 x #",
+    1
+   ]
+  ],
+  "nested": []
+ },
+ "other:impuritye": {
+  "files": 3,
+  "names": [
+   [
+    "Impurity E",
+    3
+   ]
+  ],
+  "lines": [
+   [
+    "Test solution:",
+    3
+   ],
+   [
+    "Reference solution:",
+    3
+   ],
+   [
+    "Inference:",
+    3
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "sulfatedash": {
+  "files": 149,
+  "names": [
+   [
+    "Sulfated Ash",
+    143
+   ],
+   [
+    "Residue on Ignition",
+    4
+   ],
+   [
+    "Sulphated Ash",
+    1
+   ],
+   [
+    "SULFATED ASH",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "(W#-W#)",
+    148
+   ],
+   [
+    "-",
+    62
+   ],
+   [
+    "( \u2013 ) x x x",
+    6
+   ],
+   [
+    "Assay \u2013 Titration Balance ID:",
+    3
+   ],
+   [
+    "Factor of Volumetric Solution =",
+    3
+   ],
+   [
+    "Content Calculations:",
+    3
+   ],
+   [
+    "Weight of sample x (# \u2013 LoD)",
+    3
+   ],
+   [
+    "X",
+    3
+   ],
+   [
+    "x",
+    3
+   ],
+   [
+    "Average %Assay =",
+    3
+   ],
+   [
+    "Equivalence = # mL of # M HClO# is equivalent to #mg of C#H#N#O#",
+    2
+   ],
+   [
+    "(Sample Titre \u2013 Blank Titre) x Factor x Equiv. x #",
+    2
+   ],
+   [
+    "Weight of crucible + sample before drying (W#)",
+    2
+   ],
+   [
+    "x x",
+    2
+   ],
+   [
+    "% Assay(i) = ---------------------------------------------------------",
+    2
+   ],
+   [
+    "x x (# - )",
+    2
+   ],
+   [
+    "Equivalence = # mL of # M NaOH is equivalent to # mg of C#H#NO#",
+    1
+   ],
+   [
+    "(Blank Titre \u2013 Sample Titre) x Factor x Equiv. x #",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "= __ - __ x #% =",
+    141
+   ],
+   [
+    "Sulfated Ash = (W#-W#) x# %",
+    134
+   ],
+   [
+    "Weight of empty crucible (W#) =",
+    128
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    128
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    126
+   ],
+   [
+    "Weight of empty crucible (W#) = __",
+    12
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) = __",
+    12
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) = __",
+    12
+   ]
+  ],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    3
+   ],
+   [
+    "Peak Areas  ROWS: Injection, 1, 2, 3, 4, 5",
+    1
+   ]
+  ]
+ },
+ "assaytitration": {
+  "files": 88,
+  "names": [
+   [
+    "Assay \u2013 Titration",
+    81
+   ],
+   [
+    "Assay: Titration",
+    4
+   ],
+   [
+    "Assay - Titration",
+    1
+   ],
+   [
+    "Assay: Titrimetry",
+    1
+   ],
+   [
+    "ASSAY \u2013 NON AQUEOUS TITRATION (Potentiometric",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "( \u2013 ) x x x",
+    133
+   ],
+   [
+    "x",
+    95
+   ],
+   [
+    "Content Calculations:",
+    88
+   ],
+   [
+    "Factor of Volumetric Solution =",
+    78
+   ],
+   [
+    "Average %Assay =",
+    77
+   ],
+   [
+    "(Sample Titre \u2013 Blank Titre) x Factor x Equiv. x #",
+    61
+   ],
+   [
+    "Balance ID.:",
+    44
+   ],
+   [
+    "Weight of sample",
+    27
+   ],
+   [
+    "% Assay (#) = --------------------------------------------------------",
+    26
+   ],
+   [
+    "( \u2013 ) x x",
+    25
+   ],
+   [
+    "Weight of sample x (# \u2013 L.O.D)",
+    23
+   ],
+   [
+    "X",
+    16
+   ],
+   [
+    "% Assay = ------------------------------------------------------------",
+    15
+   ],
+   [
+    "Weight of sample x (# \u2013 Water)",
+    14
+   ],
+   [
+    "Weight of sample x (# \u2013 LOD)",
+    12
+   ],
+   [
+    "Equivalence = # mL of # M perchloric acid is equivalent to # mg of C#H",
+    11
+   ],
+   [
+    "(Sample Titre \u2013 Blank Titre) x Factor x Equiv.",
+    9
+   ],
+   [
+    "Average =",
+    6
+   ]
+  ],
+  "formula": [
+   [
+    "% Assay = ---------------------------------------------------------------------- x #",
+    63
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------------------ x #",
+    58
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------------- x #",
+    57
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------ x #",
+    10
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------------ x #",
+    4
+   ],
+   [
+    "% Assay (#) = --------------------------------------------------------------------------- x #",
+    2
+   ],
+   [
+    "% Assay = ------------------------------------------------------------------- x #",
+    2
+   ],
+   [
+    "% Assay = ----------------------------------------------------------------------------------- x #",
+    2
+   ]
+  ],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    87
+   ],
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Phenolphthalein Ti, Methyl orange Titr, Titre obtained",
+    1
+   ]
+  ]
+ },
+ "ph": {
+  "files": 71,
+  "names": [
+   [
+    "pH",
+    70
+   ],
+   [
+    "pH [4.5 \u2013 6.0]",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    41
+   ],
+   [
+    "Measurement (i): (ii) Average:",
+    21
+   ],
+   [
+    "Determination (i): (ii) mean:",
+    17
+   ],
+   [
+    "Weight of sample taken: __g",
+    15
+   ],
+   [
+    "Measurement i: ii. Average pH:",
+    9
+   ],
+   [
+    "Preparation: __",
+    7
+   ],
+   [
+    "pH = __",
+    7
+   ],
+   [
+    "Wt of sample taken: g vol of water used:",
+    6
+   ],
+   [
+    "Weight of sample: vol of water used:",
+    5
+   ],
+   [
+    "Determination: (i) (ii) Average:",
+    5
+   ],
+   [
+    "Weight taken:",
+    3
+   ],
+   [
+    "Measurement (i) (ii) Average:",
+    2
+   ],
+   [
+    "wt of sample taken: vol of water:",
+    2
+   ],
+   [
+    "pH: pH: Avg pH:",
+    2
+   ],
+   [
+    "Solution S was used",
+    2
+   ],
+   [
+    "Wt of sample taken",
+    2
+   ],
+   [
+    "Using Solution S:",
+    1
+   ],
+   [
+    "Result (i): (ii) mean",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "chlorides": {
+  "files": 46,
+  "names": [
+   [
+    "Chlorides",
+    36
+   ],
+   [
+    "Chloride",
+    4
+   ],
+   [
+    "Identity Test: Reaction of Chlorides",
+    2
+   ],
+   [
+    "Sodium Chloride &amp; Sodium Sulfate",
+    1
+   ],
+   [
+    "Test for Sodium Chloride",
+    1
+   ],
+   [
+    "Identity Test A: Chloride Test A",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    24
+   ],
+   [
+    "Reference solution:",
+    23
+   ],
+   [
+    "Preparation:",
+    20
+   ],
+   [
+    "Test solution:",
+    18
+   ],
+   [
+    "Inference:",
+    17
+   ],
+   [
+    "__",
+    8
+   ],
+   [
+    "Reference Solution:",
+    5
+   ],
+   [
+    "Weight of sample taken: __g",
+    2
+   ],
+   [
+    "Volume of solution S taken ml",
+    2
+   ],
+   [
+    "Test solution",
+    2
+   ],
+   [
+    "Observation",
+    2
+   ],
+   [
+    "Factor of Volumetric Solution =",
+    2
+   ],
+   [
+    "Content Calculations:",
+    2
+   ],
+   [
+    "% Assay = ------------------------------------------------------------",
+    2
+   ],
+   [
+    "Weight of sample",
+    2
+   ],
+   [
+    "( \u2013 ) x x #",
+    2
+   ],
+   [
+    "( \u2013 ) x x x",
+    2
+   ],
+   [
+    "% Assay (#) = --------------------------------------------------------",
+    2
+   ]
+  ],
+  "formula": [],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    2
+   ]
+  ]
+ },
+ "lossonignition": {
+  "files": 8,
+  "names": [
+   [
+    "Loss on Ignition",
+    8
+   ]
+  ],
+  "lines": [
+   [
+    "(W#-W#)",
+    8
+   ],
+   [
+    "-",
+    5
+   ],
+   [
+    "Analyzed by: checked by:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "= __ - __ x #% =",
+    8
+   ],
+   [
+    "Weight of empty crucible (W#) =",
+    7
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    7
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    7
+   ],
+   [
+    "L.O.I = (W#-W#) x # %",
+    2
+   ],
+   [
+    "Loss on Ignition = (W#-W#) x # %",
+    2
+   ],
+   [
+    "Loss on Ignition =(W#-W#) x# %",
+    1
+   ],
+   [
+    "Sulfated Ash = (W#-W#) x# %",
+    1
+   ]
+  ],
+  "nested": []
+ },
+ "identitycolour": {
+  "files": 87,
+  "names": [
+   [
+    "Identity Test: Colour Test",
+    19
+   ],
+   [
+    "Identity Test A",
+    9
+   ],
+   [
+    "Identity Test A \u2013 Colour Test",
+    6
+   ],
+   [
+    "Identity Test A: Colour Test",
+    5
+   ],
+   [
+    "Identity Test: Colour test",
+    5
+   ],
+   [
+    "Identity Test A \u2013 pH",
+    3
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    101
+   ],
+   [
+    "Preparation:",
+    99
+   ],
+   [
+    "Observation",
+    17
+   ],
+   [
+    "Weight of sample taken: __g",
+    14
+   ],
+   [
+    "Weight of sample taken: g",
+    13
+   ],
+   [
+    "Weight of sample taken:",
+    8
+   ],
+   [
+    "Weight taken:",
+    8
+   ],
+   [
+    "Preparation: __",
+    8
+   ],
+   [
+    "Volume of sample taken:",
+    7
+   ],
+   [
+    "Preparation",
+    7
+   ],
+   [
+    "wt of sample: vol. of iodinated ZnCl# used:",
+    7
+   ],
+   [
+    "Observation: __",
+    7
+   ],
+   [
+    "Volume of solution S used:",
+    6
+   ],
+   [
+    "Measurement (i): (ii) Average:",
+    5
+   ],
+   [
+    "Identity Test B \u2013 Colour Test",
+    4
+   ],
+   [
+    "Identity Test C \u2013 Colour Test",
+    3
+   ],
+   [
+    "Identity Test B: Balance ID:",
+    3
+   ],
+   [
+    "Identity Test C: Reaction of Sodium",
+    3
+   ]
+  ],
+  "formula": [
+   [
+    "A#/A#-# =",
+    1
+   ],
+   [
+    "A#/A# =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Sample",
+    1
+   ],
+   [
+    "Wavelength | Absorbance | Mean Abs  ROWS: A278, A361, A547, A559",
+    1
+   ]
+  ]
+ },
+ "lossondrying": {
+  "files": 174,
+  "names": [
+   [
+    "Loss on Drying",
+    173
+   ],
+   [
+    "LOSS ON DRYING",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "(W#-W#)",
+    176
+   ],
+   [
+    "-",
+    171
+   ],
+   [
+    "% Assay(i) = ---------------------------------------------------------",
+    4
+   ],
+   [
+    "Sulfated Ash Instrument ID:",
+    3
+   ],
+   [
+    "( \u2013 ) x x x",
+    2
+   ],
+   [
+    "x",
+    2
+   ],
+   [
+    "Assay: Equipment ID:",
+    2
+   ],
+   [
+    "Chromatographic Conditions: Balance ID:",
+    2
+   ],
+   [
+    "wt of Std taken: wt of Spl taken (i) (ii)",
+    2
+   ],
+   [
+    "Dilution:",
+    2
+   ],
+   [
+    "Calculations:",
+    2
+   ],
+   [
+    "std peak conc spl (# \u2013 LoD)",
+    2
+   ],
+   [
+    "x x x #",
+    2
+   ],
+   [
+    "x x (# - )",
+    2
+   ],
+   [
+    "Average % assay:",
+    2
+   ],
+   [
+    "x x x",
+    2
+   ],
+   [
+    "X x (# - )",
+    2
+   ],
+   [
+    "Balance ID:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "= __ - __ x #% =",
+    176
+   ],
+   [
+    "Weight of empty crucible (W#) =",
+    157
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    157
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    157
+   ],
+   [
+    "Loss on Drying = (W#-W#) x # %",
+    55
+   ],
+   [
+    "LoD = (W#-W#) x # %",
+    29
+   ],
+   [
+    "Sulfated Ash = (W#-W#) x # %",
+    28
+   ],
+   [
+    "LOD = (W#-W#) x # %",
+    25
+   ]
+  ],
+  "nested": [
+   [
+    "Peak Areas  ROWS: Injection, 1, 2, 3, 4, 5",
+    2
+   ],
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    1
+   ]
+  ]
+ },
+ "assay": {
+  "files": 46,
+  "names": [
+   [
+    "Assay",
+    39
+   ],
+   [
+    "Assay: Chlorpheniramine Maleate",
+    2
+   ],
+   [
+    "Assay \u2013 FTIR",
+    1
+   ],
+   [
+    "Assay: Ferrous Fumarate",
+    1
+   ],
+   [
+    "Assay: Folic Acid",
+    1
+   ],
+   [
+    "Assay: Pyridoxine Hydrochloride",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Average % assay:",
+    32
+   ],
+   [
+    "Calculations:",
+    28
+   ],
+   [
+    "x x x #",
+    26
+   ],
+   [
+    "x x (# - )",
+    26
+   ],
+   [
+    "% Assay(i) = ---------------------------------------------------------",
+    23
+   ],
+   [
+    "x",
+    21
+   ],
+   [
+    "wt of Std taken: wt of Spl taken (i) (ii)",
+    21
+   ],
+   [
+    "Dilution:",
+    21
+   ],
+   [
+    "( \u2013 ) x x x",
+    20
+   ],
+   [
+    "x x #",
+    19
+   ],
+   [
+    "X x (# - )",
+    18
+   ],
+   [
+    "% Assay(ii) = --------------------------------------------------------",
+    17
+   ],
+   [
+    "Content Calculations:",
+    16
+   ],
+   [
+    "Chromatographic Conditions: Balance ID:",
+    15
+   ],
+   [
+    "x x",
+    14
+   ],
+   [
+    "Average %Assay =",
+    13
+   ],
+   [
+    "Diluent: Mobile Phase",
+    13
+   ],
+   [
+    ": spl peak x conc std x # x % Purity",
+    12
+   ]
+  ],
+  "formula": [
+   [
+    "% Assay = ---------------------------------------------------------------------- x #",
+    11
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------------------ x #",
+    10
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------------- x #",
+    8
+   ],
+   [
+    "% Assay(i) = ------------------------------------------------------------------ x #",
+    7
+   ],
+   [
+    "% Assay(ii) = ------------------------------------------------------------------ x #",
+    5
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------------------------------------- x #",
+    2
+   ],
+   [
+    "% Assay = (Sample Titre \u2013 Blank Titre) x Factor x Equiv. x # x #",
+    2
+   ],
+   [
+    "Dilution:__[ %w/v] \u03bb=#nm",
+    2
+   ]
+  ],
+  "nested": [
+   [
+    "Peak Areas  ROWS: Injection, 1, 2, 3, 4, 5",
+    17
+   ],
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    14
+   ],
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Sample 1, Sample 2",
+    5
+   ],
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Std, Sample 1, Sample 2",
+    3
+   ],
+   [
+    "Reading | Sample 1 | Sample 2 | STD  ROWS: 1, 2, Average, , ",
+    2
+   ]
+  ]
+ },
+ "water": {
+  "files": 58,
+  "names": [
+   [
+    "Water",
+    52
+   ],
+   [
+    "Water Soluble Substances",
+    2
+   ],
+   [
+    "Water Soluble Salts",
+    1
+   ],
+   [
+    "Water soluble Substances",
+    1
+   ],
+   [
+    "Water-soluble substances",
+    1
+   ],
+   [
+    "Water-soluble acid or alkaline substances",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample taken: (i) (ii)",
+    39
+   ],
+   [
+    "Determinations: (i) (ii) Average %:",
+    18
+   ],
+   [
+    "Average %:",
+    8
+   ],
+   [
+    "Determinations: (i) (ii)",
+    8
+   ],
+   [
+    "Preparation:",
+    7
+   ],
+   [
+    "Results(i) Results(ii) Average %:",
+    7
+   ],
+   [
+    "Observations: (i) (ii) mean:",
+    5
+   ],
+   [
+    "Weight of sample taken: g",
+    2
+   ],
+   [
+    "Water content (%) (i): water content % (ii): Average (%):",
+    2
+   ],
+   [
+    "wt of sample taken: (i)",
+    2
+   ],
+   [
+    "Weight of sample taken: __g",
+    2
+   ],
+   [
+    "Weight taken:",
+    2
+   ],
+   [
+    "Measurement:",
+    2
+   ],
+   [
+    "Weight of sample taken:",
+    2
+   ],
+   [
+    "Water content (i) (ii) Average %:",
+    2
+   ],
+   [
+    "Measurement (i) (ii) Average %:",
+    1
+   ],
+   [
+    "Determinations: (i)",
+    1
+   ],
+   [
+    "Result:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "conductivity": {
+  "files": 24,
+  "names": [
+   [
+    "Conductivity",
+    24
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    13
+   ],
+   [
+    "Preparation:",
+    8
+   ],
+   [
+    "Measurement: , mean:",
+    6
+   ],
+   [
+    "Preparation: __",
+    6
+   ],
+   [
+    "Conductivity = __",
+    6
+   ],
+   [
+    "Weight of sample taken: g",
+    2
+   ],
+   [
+    "Conductivity of the solution (C#)",
+    2
+   ],
+   [
+    "Conductivity of the water used for preparing the solution (C#) :",
+    2
+   ],
+   [
+    "Conductivity = C# \u2013 #C#",
+    2
+   ],
+   [
+    "Determination (C#): (C#)",
+    2
+   ],
+   [
+    "Calculation: C# \u2013 #C#",
+    2
+   ],
+   [
+    "Determination (i) (ii) Average:",
+    2
+   ],
+   [
+    "Measurement (i) (ii) Avg",
+    1
+   ],
+   [
+    "Conductivity =",
+    1
+   ],
+   [
+    "Measurement",
+    1
+   ],
+   [
+    "Volume of sample taken: __ml",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ],
+   [
+    "wt of sample taken: g",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "meltingpoint": {
+  "files": 24,
+  "names": [
+   [
+    "Identity Test A \u2013 Melting Point",
+    11
+   ],
+   [
+    "Identity Test: Melting Point",
+    5
+   ],
+   [
+    "Identity Test \u2013 Melting Point",
+    3
+   ],
+   [
+    "Melting Point",
+    3
+   ],
+   [
+    "Melting Point Determination",
+    1
+   ],
+   [
+    "Identity Test A\u2013 Melting point",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Determination: (i) (ii) Average:",
+    17
+   ],
+   [
+    "Preparation:",
+    11
+   ],
+   [
+    "Balance ID:",
+    10
+   ],
+   [
+    "Weight of KBr: __ g Weight of sample: __ g",
+    9
+   ],
+   [
+    "Attach Print Out",
+    9
+   ],
+   [
+    "Observation:",
+    8
+   ],
+   [
+    "Measurement (i): (ii) Average:",
+    4
+   ],
+   [
+    "Identity Test B - IR Instrument ID:",
+    3
+   ],
+   [
+    "Identity Test: IR Equipment ID:",
+    3
+   ],
+   [
+    "Identity Test D \u2013 Reaction of Sodium Equipment ID:",
+    2
+   ],
+   [
+    "Identity Test B \u2013 FTIR Instrument ID:",
+    2
+   ],
+   [
+    "Determination (i): \u02daC (ii) \u02daC mean \u02daC",
+    2
+   ],
+   [
+    "Identity Test \u2013 IR: Equipment ID:",
+    2
+   ],
+   [
+    "Weight of sample taken: __g",
+    2
+   ],
+   [
+    "Identity Test B \u2013 Reactions of Benzoates",
+    1
+   ],
+   [
+    "Identity Test - Bromide Test A Balance ID:",
+    1
+   ],
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Determination (i): (ii) mean:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:carbonisablesubstance": {
+  "files": 1,
+  "names": [
+   [
+    "Carbonisable Substance",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:oxidisablesubstance": {
+  "files": 1,
+  "names": [
+   [
+    "Oxidisable Substance",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "heavymetals": {
+  "files": 68,
+  "names": [
+   [
+    "Heavy Metals",
+    68
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    34
+   ],
+   [
+    "__",
+    32
+   ],
+   [
+    "Reference solution used:",
+    27
+   ],
+   [
+    "Reference solution:",
+    27
+   ],
+   [
+    "Test solution:",
+    25
+   ],
+   [
+    "Inference:",
+    25
+   ],
+   [
+    "wt of sample taken: vol of solution:",
+    16
+   ],
+   [
+    "Test solution: __",
+    8
+   ],
+   [
+    "Reference solution: __",
+    8
+   ],
+   [
+    "Inference: __",
+    8
+   ],
+   [
+    "Preparation:",
+    6
+   ],
+   [
+    "Wt of sample taken: vol of solution:",
+    4
+   ],
+   [
+    "vol of solution:",
+    3
+   ],
+   [
+    "Reference Solution:",
+    2
+   ],
+   [
+    "sample preparation:",
+    2
+   ],
+   [
+    "Volume of solution S used:",
+    1
+   ],
+   [
+    "Weight of sample: Vol of solution:",
+    1
+   ],
+   [
+    "Test Solution:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "acidityalkalinity": {
+  "files": 64,
+  "names": [
+   [
+    "Acidity or Alkalinity",
+    34
+   ],
+   [
+    "Acidity",
+    14
+   ],
+   [
+    "Acidity / Alkalinity",
+    5
+   ],
+   [
+    "Acidity/Alkalinity",
+    4
+   ],
+   [
+    "Alkalinity",
+    3
+   ],
+   [
+    "Acidity/ Alkalinity",
+    3
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    58
+   ],
+   [
+    "Preparation:",
+    58
+   ],
+   [
+    "Weight of sample taken: g",
+    13
+   ],
+   [
+    "Volume of sample taken:",
+    8
+   ],
+   [
+    "Weight of sample taken: __g",
+    6
+   ],
+   [
+    "Volume of solution S:",
+    3
+   ],
+   [
+    "Observation",
+    3
+   ],
+   [
+    "vol of sample taken: __g",
+    2
+   ],
+   [
+    "Preparation",
+    2
+   ],
+   [
+    "wt of sample taken: vol of solution:",
+    1
+   ],
+   [
+    "pH reading (#): pH reading (#): Average pH:",
+    1
+   ],
+   [
+    "Weight of sample taken: g vol of water used:",
+    1
+   ],
+   [
+    "Identity Test C - Colour Test",
+    1
+   ],
+   [
+    "Weight of sample taken: g vol of acetic anhydride used:",
+    1
+   ],
+   [
+    "vol of pyridine used:",
+    1
+   ],
+   [
+    "Identity Test D \u2013 Colour Test",
+    1
+   ],
+   [
+    "wt of sample taken: g vol of #M NaOH used:",
+    1
+   ],
+   [
+    "vol of CaCl# solution used:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Weight of empty crucible (W#) =",
+    1
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    1
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    1
+   ],
+   [
+    "Sulfated Ash = (W#-W#) x# %",
+    1
+   ],
+   [
+    "= __ - __ x #% =",
+    1
+   ]
+  ],
+  "nested": []
+ },
+ "other:readilycarbonisablesubsta": {
+  "files": 4,
+  "names": [
+   [
+    "Readily Carbonisable Substances",
+    4
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    4
+   ],
+   [
+    "wt of sample taken: vol of H#SO# used:",
+    2
+   ],
+   [
+    "Reference solution used:",
+    2
+   ],
+   [
+    "Preparation:",
+    2
+   ],
+   [
+    "Weight of sample taken: g",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:oxalicacid": {
+  "files": 2,
+  "names": [
+   [
+    "Oxalic Acid",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample taken:",
+    2
+   ],
+   [
+    "Reference solution used:",
+    2
+   ],
+   [
+    "Observation:",
+    2
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "sulfates": {
+  "files": 46,
+  "names": [
+   [
+    "Sulfates",
+    26
+   ],
+   [
+    "Identity Test: Sulfates Test",
+    7
+   ],
+   [
+    "Identity Test A: Sulfate Test",
+    3
+   ],
+   [
+    "Sulfate",
+    2
+   ],
+   [
+    "Identity Test: Reaction of Sulphates",
+    2
+   ],
+   [
+    "Sodium Sulfate",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    39
+   ],
+   [
+    "Preparation:",
+    37
+   ],
+   [
+    "Test solution:",
+    12
+   ],
+   [
+    "Reference solution:",
+    12
+   ],
+   [
+    "Inference:",
+    11
+   ],
+   [
+    "Reference Solution:",
+    9
+   ],
+   [
+    "wt of sample taken Balance ID:",
+    5
+   ],
+   [
+    "Weight of sample taken:",
+    5
+   ],
+   [
+    "Volume of Solution S:",
+    4
+   ],
+   [
+    "__",
+    4
+   ],
+   [
+    "Using Solution S:",
+    3
+   ],
+   [
+    "wt of sample taken:",
+    2
+   ],
+   [
+    "Reference solution used:",
+    2
+   ],
+   [
+    "Reference solution",
+    2
+   ],
+   [
+    "Factor of Volumetric Solution =",
+    2
+   ],
+   [
+    "Content Calculations:",
+    2
+   ],
+   [
+    "% Assay = ------------------------------------------------------------",
+    2
+   ],
+   [
+    "Weight of sample",
+    2
+   ]
+  ],
+  "formula": [
+   [
+    "Weight of empty crucible (W#) = __",
+    1
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) = __",
+    1
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) = __",
+    1
+   ],
+   [
+    "Sulfated Ash = (W#-W#) x # %",
+    1
+   ],
+   [
+    "= __ - __ x #% =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    2
+   ],
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, 1st inflexion poin, 2nd inflexion poin, Titre obtained",
+    1
+   ]
+  ]
+ },
+ "assayhplc": {
+  "files": 11,
+  "names": [
+   [
+    "Assay \u2013 HPLC",
+    6
+   ],
+   [
+    "Assay: HPLC",
+    3
+   ],
+   [
+    "Assay :HPLC",
+    1
+   ],
+   [
+    "Assay : HPLC",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "x x x #",
+    10
+   ],
+   [
+    "x x (# - )",
+    10
+   ],
+   [
+    "x x",
+    10
+   ],
+   [
+    "Calculations:",
+    9
+   ],
+   [
+    "% Assay(i) = ---------------------------------------------------------",
+    8
+   ],
+   [
+    "Average % assay:",
+    8
+   ],
+   [
+    "Dilution:",
+    7
+   ],
+   [
+    "wt of Std taken: wt of Spl taken (i) (ii)",
+    6
+   ],
+   [
+    "X x",
+    6
+   ],
+   [
+    ": spl peak x conc std x # x % Purity",
+    5
+   ],
+   [
+    "% Assay(ii) = --------------------------------------------------------",
+    5
+   ],
+   [
+    "std peak conc spl (# \u2013 LoD)",
+    5
+   ],
+   [
+    "Chromatographic Conditions: Balance ID:",
+    5
+   ],
+   [
+    "std peak conc spl (# \u2013 Water)",
+    4
+   ],
+   [
+    "Chromatographic Conditions:",
+    4
+   ],
+   [
+    "X x (# - )",
+    4
+   ],
+   [
+    "Balance ID.:",
+    3
+   ],
+   [
+    "Detection \u03bb: # nm Injection volume: #\u03bcl Temperature: #oC",
+    3
+   ]
+  ],
+  "formula": [
+   [
+    "% Assay(i) = ------------------------------------------------ x #",
+    3
+   ],
+   [
+    "% Assay(ii) = ---------------------------------------------- x #",
+    3
+   ],
+   [
+    "Assay = __ x __ x __ x % Purity",
+    1
+   ],
+   [
+    "i. = __ x __ x __ x =",
+    1
+   ],
+   [
+    "ii. = __ x __ x __ x =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "Peak Areas  ROWS: Injection, 1, 2, 3, 4, 5",
+    8
+   ],
+   [
+    "Peak Areas  ROWS: Injection, , 1, 2, 3, 4",
+    2
+   ],
+   [
+    "Chromatographic Co  ROWS: Mobile Phase Compo, wt of Std taken: w",
+    1
+   ],
+   [
+    " | Peak Areas  ROWS: , 1, 2, 3, 4, 5",
+    1
+   ]
+  ]
+ },
+ "other:nndimethylaniline": {
+  "files": 1,
+  "names": [
+   [
+    "N,N-Dimethylaniline",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Test solution:",
+    1
+   ],
+   [
+    "Reference solution:",
+    1
+   ],
+   [
+    "Inference:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "iron": {
+  "files": 14,
+  "names": [
+   [
+    "Iron",
+    14
+   ]
+  ],
+  "lines": [
+   [
+    "Observation:",
+    9
+   ],
+   [
+    "Preparation:",
+    8
+   ],
+   [
+    "Reference solution:",
+    7
+   ],
+   [
+    "Test solution:",
+    5
+   ],
+   [
+    "Inference:",
+    5
+   ],
+   [
+    "Wt of sample taken: volume of dil. HCl used:",
+    1
+   ],
+   [
+    "Using Solution S#:",
+    1
+   ],
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Volume of solution S taken __ ml",
+    1
+   ],
+   [
+    "Volume of solution S taken ml",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "relativedensity": {
+  "files": 33,
+  "names": [
+   [
+    "Relative Density",
+    20
+   ],
+   [
+    "Specific Gravity",
+    8
+   ],
+   [
+    "Identity Test: Relative Density",
+    5
+   ]
+  ],
+  "lines": [
+   [
+    "wt of pycnometer + water (w#):",
+    32
+   ],
+   [
+    "wt of pycnometer + sample (w#):",
+    32
+   ],
+   [
+    "wt of water (w# \u2013 w#):",
+    32
+   ],
+   [
+    "wt of sample (w# \u2013 w#):",
+    32
+   ],
+   [
+    "wt of empty pycnometer (w#): Temp: \u02daC",
+    28
+   ],
+   [
+    "(w# \u2013 w#) -",
+    23
+   ],
+   [
+    "= (w# \u2013 w#) = __-__ =",
+    13
+   ],
+   [
+    "= (w# \u2013 w#) = __-__",
+    10
+   ],
+   [
+    "(W# \u2013 W#) -",
+    10
+   ],
+   [
+    "Identity Test: Colour Test",
+    4
+   ],
+   [
+    "Preparation:",
+    4
+   ],
+   [
+    "Observation:",
+    4
+   ],
+   [
+    "wt of empty pycnometer (w#):",
+    4
+   ],
+   [
+    "Identity Test: Refractive Index Equipment ID:",
+    3
+   ],
+   [
+    "Determination: (i) (ii) Average:",
+    3
+   ],
+   [
+    "Volume of sample: ml",
+    1
+   ],
+   [
+    "Volume of sample taken:",
+    1
+   ],
+   [
+    "wt of empty pycnometer (W#): Temp: \u02daC",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "wt/ml = g/ml",
+    32
+   ],
+   [
+    "wt/ml = (W# \u2013 W#) = __-__",
+    5
+   ],
+   [
+    "wt/ml = (W# \u2013 W#) = __-__ =",
+    3
+   ],
+   [
+    "= (W# \u2013 W#) = __-__ =",
+    2
+   ]
+  ],
+  "nested": []
+ },
+ "absorbance": {
+  "files": 5,
+  "names": [
+   [
+    "Absorbance",
+    3
+   ],
+   [
+    "Specific Absorbance",
+    1
+   ],
+   [
+    "Absorbance : UV",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "#nm to #nm: max Abs :",
+    2
+   ],
+   [
+    "#nm to #nm: max Abs",
+    2
+   ],
+   [
+    "Observed Absorbance:",
+    1
+   ],
+   [
+    "#nm: #nm: #nm:",
+    1
+   ],
+   [
+    "#nm: #nm:",
+    1
+   ],
+   [
+    "wt of sample taken: g",
+    1
+   ],
+   [
+    "Dilution:",
+    1
+   ],
+   [
+    "Absorbance @ # nm: , mean Abs:",
+    1
+   ],
+   [
+    "Specific Absorbance =",
+    1
+   ],
+   [
+    "Weight of sample taken: BalanceID:",
+    1
+   ],
+   [
+    "Dilution:__[ %w/v]",
+    1
+   ],
+   [
+    "#nm: max Abs :",
+    1
+   ],
+   [
+    "#nm: max Abs",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Absorbance A#/ A# =",
+    2
+   ]
+  ],
+  "nested": [
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Sample @ 373, Sample @ 444, Sample @ 267",
+    1
+   ]
+  ]
+ },
+ "peroxide": {
+  "files": 1,
+  "names": [
+   [
+    "Peroxides",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparations:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:nonvolatilesubstances": {
+  "files": 2,
+  "names": [
+   [
+    "Non-volatile substances",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample (w#)",
+    1
+   ],
+   [
+    "wt after drying (w#)",
+    1
+   ],
+   [
+    "wt of sample (w#) :",
+    1
+   ],
+   [
+    "wt after drying (w#) :",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Result = W# \u2013 W# =",
+    2
+   ]
+  ],
+  "nested": []
+ },
+ "other:acidabsorbingcapacity": {
+  "files": 1,
+  "names": [
+   [
+    "Acid \u2013 absorbing capacity",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:oxidizingsubstance": {
+  "files": 1,
+  "names": [
+   [
+    "Oxidizing substance",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:barium": {
+  "files": 4,
+  "names": [
+   [
+    "Barium",
+    4
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    4
+   ],
+   [
+    "Observation:",
+    4
+   ],
+   [
+    "Reference solution:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "assayuv": {
+  "files": 11,
+  "names": [
+   [
+    "Assay \u2013 UV",
+    10
+   ],
+   [
+    "Assay: UV",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "x",
+    12
+   ],
+   [
+    "Calculations:",
+    9
+   ],
+   [
+    "x x #",
+    9
+   ],
+   [
+    "Average % assay:",
+    9
+   ],
+   [
+    "wt of sample taken (i) g (ii) g",
+    6
+   ],
+   [
+    "x x (# - )",
+    6
+   ],
+   [
+    "Dilution:__[ %w/v]",
+    6
+   ],
+   [
+    "x x",
+    5
+   ],
+   [
+    ": spl abs x dil factor x # x #",
+    4
+   ],
+   [
+    "X x (# - )",
+    4
+   ],
+   [
+    "% Assay(i) = ---------------------------------------------------------",
+    3
+   ],
+   [
+    "% Assay(ii) = --------------------------------------------------------",
+    3
+   ],
+   [
+    "A\u00a6 spl wt taken (# \u2013 L.o.D)",
+    2
+   ],
+   [
+    "A\u00a6=# , \u03bb=# nm",
+    2
+   ],
+   [
+    "A\u00a6 spl wt taken (# \u2013 LoD)",
+    2
+   ],
+   [
+    "wt of sample taken (i) g (ii) g Std wt g",
+    2
+   ],
+   [
+    "Std abs Spl conc",
+    2
+   ],
+   [
+    "X",
+    2
+   ]
+  ],
+  "formula": [
+   [
+    "% Assay(i) = ------------------------------------------------------------------ x #",
+    6
+   ],
+   [
+    "% Assay(ii) = ------------------------------------------------------------------ x #",
+    6
+   ],
+   [
+    "Dilution:__[ %w/v] A\u00a6=#, \u03bb=# nm",
+    2
+   ],
+   [
+    "Dilution:__[ %w/v] \u03bb=#nm",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Sample 1, Sample 2",
+    5
+   ],
+   [
+    "Solution | Absorbance | Mean Abs  ROWS: Std, Sample 1, Sample 2",
+    2
+   ],
+   [
+    " | SAMPLE 1 | SAMPLE 2  ROWS: Abs 1, Abs 2, Mean Abs",
+    1
+   ],
+   [
+    "Peak Areas  ROWS: Readings, 1, 2, Average",
+    1
+   ],
+   [
+    "Peak Areas  ROWS: Injection, 1, 2, 3, 4, 5",
+    1
+   ]
+  ]
+ },
+ "reducingsugars": {
+  "files": 9,
+  "names": [
+   [
+    "Reducing Sugars",
+    7
+   ],
+   [
+    "Sucrose &amp; reducing sugars",
+    1
+   ],
+   [
+    "Sucrose and Reducing Sugars",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    8
+   ],
+   [
+    "Observation:",
+    8
+   ],
+   [
+    "Weight of sample taken: g",
+    3
+   ],
+   [
+    "Volume of solution s taken: ml",
+    2
+   ],
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Preparations:",
+    1
+   ],
+   [
+    "Vol of # M sodium thiosulfate used:",
+    1
+   ],
+   [
+    "Weight of sample taken: __g",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "viscosity": {
+  "files": 2,
+  "names": [
+   [
+    "Viscosity",
+    1
+   ],
+   [
+    "Apparent Viscosity",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "acidvalue": {
+  "files": 11,
+  "names": [
+   [
+    "Acid Value",
+    8
+   ],
+   [
+    "Identity Test B \u2013 Acid Value",
+    3
+   ]
+  ],
+  "lines": [
+   [
+    "Titre x #",
+    11
+   ],
+   [
+    "Acid Value = -------------------------------",
+    11
+   ],
+   [
+    "Weight of sample",
+    11
+   ],
+   [
+    "x",
+    9
+   ],
+   [
+    "Acid Value = --------------------------------- =",
+    9
+   ],
+   [
+    "Weight of sample: Titre obtained:",
+    8
+   ],
+   [
+    "Weight of sample: g Titre obtained:",
+    3
+   ],
+   [
+    "Identity Test D:",
+    1
+   ],
+   [
+    "Weight of sample taken: g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Acid Value = ----------------x---------------- =",
+    2
+   ]
+  ],
+  "nested": []
+ },
+ "totalash": {
+  "files": 4,
+  "names": [
+   [
+    "Total Ash",
+    4
+   ]
+  ],
+  "lines": [
+   [
+    "(W#-W#)",
+    4
+   ],
+   [
+    "-",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "= __ - __ x #% =",
+    4
+   ],
+   [
+    "Weight of empty crucible (W#) =",
+    3
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    3
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    3
+   ],
+   [
+    "Total Ash = (W#-W#) x# %",
+    2
+   ],
+   [
+    "Weight of empty crucible (W#) = g",
+    1
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) = g",
+    1
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) = g",
+    1
+   ]
+  ],
+  "nested": []
+ },
+ "other:carbonates": {
+  "files": 4,
+  "names": [
+   [
+    "Carbonates",
+    4
+   ]
+  ],
+  "lines": [
+   [
+    "Content Calculations:",
+    2
+   ],
+   [
+    "Weight of sample",
+    2
+   ],
+   [
+    "( \u2013 ) x x",
+    2
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ],
+   [
+    "Factor of Volumetric Solution =",
+    1
+   ],
+   [
+    "Equivalence = # mL of # M hydrochloric acid used in the #nd part of th",
+    1
+   ],
+   [
+    "Average % assay:",
+    1
+   ],
+   [
+    "Balance ID.:",
+    1
+   ],
+   [
+    "Factor of Volumetric Solution = __",
+    1
+   ],
+   [
+    "Equivalence = __",
+    1
+   ],
+   [
+    "(Sample Titre \u2013 Blank Titre) x Factor x Equiv.",
+    1
+   ],
+   [
+    "Average =",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "% Carbonate (#) = -------------------------------------------------------------------- x #",
+    2
+   ],
+   [
+    "% Assay = (Sample Titre \u2013 Blank Titre) x Factor x Equiv. x #",
+    1
+   ],
+   [
+    "% Assay(i) = x x x =",
+    1
+   ],
+   [
+    "% Assay(ii) = x x x =",
+    1
+   ],
+   [
+    "% Carbonate = ---------------------------------------------------------------------- x #",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    1
+   ]
+  ]
+ },
+ "other:ammonium": {
+  "files": 2,
+  "names": [
+   [
+    "Ammonium",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "Test solution",
+    1
+   ],
+   [
+    "Reference solution",
+    1
+   ],
+   [
+    "Observation",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "refractiveindex": {
+  "files": 24,
+  "names": [
+   [
+    "Refractive Index",
+    14
+   ],
+   [
+    "Identity Test B \u2013 Refractive Index",
+    10
+   ]
+  ],
+  "lines": [
+   [
+    "Measurement (i): (ii) Average:",
+    12
+   ],
+   [
+    "Determination: (i) (ii) Average:",
+    12
+   ],
+   [
+    "Preparation:",
+    3
+   ],
+   [
+    "Identity Test: Relative Density Balance ID:",
+    2
+   ],
+   [
+    "wt of empty pycnometer (w#): Temp: \u02daC",
+    2
+   ],
+   [
+    "wt of pycnometer + water (w#):",
+    2
+   ],
+   [
+    "wt of pycnometer + sample (w#):",
+    2
+   ],
+   [
+    "wt of water (w# \u2013 w#):",
+    2
+   ],
+   [
+    "wt of sample (w# \u2013 w#):",
+    2
+   ],
+   [
+    "(w# \u2013 w#) -",
+    2
+   ],
+   [
+    "( \u2013 ) x x x",
+    2
+   ],
+   [
+    "% Assay (#) = --------------------------------------------------------",
+    2
+   ],
+   [
+    "Identity Test: Boiling Point",
+    1
+   ],
+   [
+    "= (w# \u2013 w#) = __-__",
+    1
+   ],
+   [
+    "wt of sample: (i) g Temp: \u02daC Balance ID:",
+    1
+   ],
+   [
+    "Identity Test: IR Equipment ID:",
+    1
+   ],
+   [
+    "Obervation:",
+    1
+   ],
+   [
+    "Attach Print Out",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "wt/ml = g/ml",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    1
+   ]
+  ]
+ },
+ "other:oxidizingsubstances": {
+  "files": 1,
+  "names": [
+   [
+    "Oxidizing Substances",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Titre Value obtained:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:alkanility": {
+  "files": 1,
+  "names": [
+   [
+    "Alkanility",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:nonesterifiedalcohols": {
+  "files": 1,
+  "names": [
+   [
+    "Non-esterified Alcohols",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observations:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:capcolour": {
+  "files": 24,
+  "names": [
+   [
+    "Cap Colour",
+    24
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:bodycolour": {
+  "files": 24,
+  "names": [
+   [
+    "Body Colour",
+    24
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:odour": {
+  "files": 34,
+  "names": [
+   [
+    "Odour",
+    34
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "disintegration": {
+  "files": 24,
+  "names": [
+   [
+    "Disintegration Time",
+    24
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "averageweight": {
+  "files": 24,
+  "names": [
+   [
+    "Average Weight",
+    24
+   ]
+  ],
+  "lines": [
+   [
+    "#) #) #) #)",
+    120
+   ],
+   [
+    "Weight of # Shells : :",
+    24
+   ],
+   [
+    "Average Weight of Shell :",
+    24
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:printingdetails": {
+  "files": 24,
+  "names": [
+   [
+    "Printing Details",
+    24
+   ]
+  ],
+  "lines": [
+   [
+    "CAP:",
+    5
+   ],
+   [
+    "BODY:",
+    5
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:purity": {
+  "files": 1,
+  "names": [
+   [
+    "Purity",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:sodiumglycollate": {
+  "files": 1,
+  "names": [
+   [
+    "Sodium Glycollate",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Test Solution",
+    1
+   ],
+   [
+    "Reference solution",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:solution": {
+  "files": 1,
+  "names": [
+   [
+    "Solution",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Ethanol (#%): Methylene Chloride:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:bromides": {
+  "files": 1,
+  "names": [
+   [
+    "Bromides",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:nitrites": {
+  "files": 1,
+  "names": [
+   [
+    "Nitrites",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:magnesiumandalkalineearth": {
+  "files": 1,
+  "names": [
+   [
+    "Magnesium and alkaline-earth metals",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:cloride": {
+  "files": 1,
+  "names": [
+   [
+    "Cloride",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Volume of solution S:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:oxalates": {
+  "files": 1,
+  "names": [
+   [
+    "Oxalates",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Reference Solution:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:esters": {
+  "files": 1,
+  "names": [
+   [
+    "Esters",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparations:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:sugars": {
+  "files": 1,
+  "names": [
+   [
+    "Sugars",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Test solution:",
+    1
+   ],
+   [
+    "Inference:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:residueonevaporation": {
+  "files": 3,
+  "names": [
+   [
+    "Residue on Evaporation",
+    2
+   ],
+   [
+    "Residue on evaporation",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample (w#) :",
+    1
+   ],
+   [
+    "wt after drying (w#) :",
+    1
+   ],
+   [
+    "(W#-W#)",
+    1
+   ],
+   [
+    "= __ - __ =",
+    1
+   ],
+   [
+    "-",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Result = W# \u2013 W# =",
+    1
+   ],
+   [
+    "Weight of empty crucible (W#) =",
+    1
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    1
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    1
+   ],
+   [
+    "R. O. E. = (W#-W#)",
+    1
+   ]
+  ],
+  "nested": []
+ },
+ "other:alkalineimpurities": {
+  "files": 2,
+  "names": [
+   [
+    "Alkaline Impurities",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: g",
+    2
+   ],
+   [
+    "Preparation:",
+    2
+   ],
+   [
+    "Observation(s):",
+    2
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:neutralizingcapacity": {
+  "files": 2,
+  "names": [
+   [
+    "Neutralizing Capacity",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: g Vol. of #M NaOH Used:",
+    2
+   ],
+   [
+    "Preparation:",
+    2
+   ],
+   [
+    "Observation:",
+    2
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:substancessolubleinlightp": {
+  "files": 1,
+  "names": [
+   [
+    "Substances soluble in light petroleum",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample taken: Drying Temp: \u02daC",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:solublesubstances": {
+  "files": 1,
+  "names": [
+   [
+    "Soluble substances",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:calcium": {
+  "files": 2,
+  "names": [
+   [
+    "Calcium",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    2
+   ],
+   [
+    "Observation:",
+    2
+   ],
+   [
+    "Reference Solution:",
+    1
+   ],
+   [
+    "Volume of solution S used:",
+    1
+   ],
+   [
+    "Reference solution:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:mineraloil": {
+  "files": 1,
+  "names": [
+   [
+    "Mineral Oil",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Reference solution:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:phenylatedcompounds": {
+  "files": 1,
+  "names": [
+   [
+    "Phenylated Compounds",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken:",
+    1
+   ],
+   [
+    "Preparation :",
+    1
+   ],
+   [
+    "Corrected Absorbance = B \u2013 C",
+    1
+   ],
+   [
+    "=",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": [
+   [
+    " | Abs1 | Abs 2 | Avg abs  ROWS: Absorbance @ 300nm, Max abs btn 250nm ",
+    1
+   ]
+  ]
+ },
+ "other:relatedsubstances": {
+  "files": 2,
+  "names": [
+   [
+    "Related Substances",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "wt of sample taken: Balance ID:",
+    1
+   ],
+   [
+    "Dilution:",
+    1
+   ],
+   [
+    "Absorbance(s):",
+    1
+   ],
+   [
+    "Content:",
+    1
+   ],
+   [
+    "(i): A# x V x #",
+    1
+   ],
+   [
+    "# x m",
+    1
+   ],
+   [
+    "(ii): x x #",
+    1
+   ],
+   [
+    "# x",
+    1
+   ],
+   [
+    "Average =",
+    1
+   ],
+   [
+    "Solution Preparation:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "A#/A# = A#/A# =",
+    1
+   ],
+   [
+    "A#/A# =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "\u03bb | Absorbances | Mean Abs  ROWS: 300nm, 326nm, 328nm",
+    1
+   ],
+   [
+    "Wavelength | Absorbance | Mean Abs  ROWS: A300, A326, A350, A370",
+    1
+   ]
+  ]
+ },
+ "other:relatedsubstance": {
+  "files": 1,
+  "names": [
+   [
+    "Related Substance",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Solution Preparation:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "A#/A# = A#/A# =",
+    1
+   ],
+   [
+    "A#/A# =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "Wavelength | Absorbance | Mean Abs  ROWS: A300, A326, A350, A370",
+    1
+   ]
+  ]
+ },
+ "other:activity": {
+  "files": 2,
+  "names": [
+   [
+    "Activity",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "# x m",
+    2
+   ],
+   [
+    "# x",
+    2
+   ],
+   [
+    "Balance ID:",
+    1
+   ],
+   [
+    "Wt of sample taken: vol (V):",
+    1
+   ],
+   [
+    "Absorbance @ #nm: , Mean Abs",
+    1
+   ],
+   [
+    "A# x V x #",
+    1
+   ],
+   [
+    "wt of sample taken: Balance ID:",
+    1
+   ],
+   [
+    "Dilution:",
+    1
+   ],
+   [
+    "Absorbance(s):",
+    1
+   ],
+   [
+    "Content: A# x V x #",
+    1
+   ],
+   [
+    "(i): x x #",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "= __x__x #",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "\u03bb | Absorbances | Mean Abs  ROWS: 326nm",
+    1
+   ]
+  ]
+ },
+ "other:3aminopropanol": {
+  "files": 1,
+  "names": [
+   [
+    "3- Aminopropanol",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Test Solution A:",
+    1
+   ],
+   [
+    "Test Solution B:",
+    1
+   ],
+   [
+    "Reference Solution A:",
+    1
+   ],
+   [
+    "Reference Solution B:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:iodides": {
+  "files": 1,
+  "names": [
+   [
+    "Iodides",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:foreignsugarssolublestarc": {
+  "files": 1,
+  "names": [
+   [
+    "Foreign sugars, soluble starch, dextrins",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:solutions": {
+  "files": 1,
+  "names": [
+   [
+    "Solution S",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:ferriccitrate": {
+  "files": 1,
+  "names": [
+   [
+    "Ferric Citrate",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Volume of solution S:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:freechlorinetest": {
+  "files": 1,
+  "names": [
+   [
+    "Free Chlorine Test",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:nonvolatilematter": {
+  "files": 2,
+  "names": [
+   [
+    "Non-Volatile Matter",
+    1
+   ],
+   [
+    "Non-volatile Matter",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "(W#-W#)",
+    1
+   ],
+   [
+    "Volume of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Weight of empty crucible (W#) =",
+    1
+   ],
+   [
+    "Weight of crucible + sample before drying (W#) =",
+    1
+   ],
+   [
+    "Weight of crucible + sample after drying (W#) =",
+    1
+   ],
+   [
+    "Weight of Residue = (W#-W#) x # %",
+    1
+   ],
+   [
+    "= __ - __ x #% =",
+    1
+   ]
+  ],
+  "nested": []
+ },
+ "other:zinc": {
+  "files": 1,
+  "names": [
+   [
+    "Zinc",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Volume of solution S taken __ ml",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:testforimpuritydandotherb": {
+  "files": 1,
+  "names": [
+   [
+    "Test for Impurity D and other basic impuritie",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    1
+   ],
+   [
+    "Volume of #M HClO# used:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:ferricions": {
+  "files": 2,
+  "names": [
+   [
+    "Ferric ions",
+    2
+   ]
+  ],
+  "lines": [
+   [
+    "( \u2013 ) x",
+    2
+   ],
+   [
+    "Weight of sample taken: g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ],
+   [
+    "Balance ID.:",
+    1
+   ],
+   [
+    "Factor of Volumetric Solution =",
+    1
+   ],
+   [
+    "Content Calculations:",
+    1
+   ],
+   [
+    "(Sample Titre \u2013 Blank Titre) x Factor",
+    1
+   ],
+   [
+    "Weight of sample",
+    1
+   ],
+   [
+    "Average %Assay =",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "% Assay = -------------------------------------------------- x #",
+    1
+   ],
+   [
+    "% Assay (#) = ----------------------------------------------- x #",
+    1
+   ],
+   [
+    "% Assay (#) = ------------------------------------------------ x #",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    " | Blank | Sample 1 | Sample 2  ROWS: Wt. taken, Final volume, Initial volume, Titre obtained",
+    1
+   ]
+  ]
+ },
+ "iodinevalue": {
+  "files": 3,
+  "names": [
+   [
+    "Iodine Value",
+    2
+   ],
+   [
+    "Identification Test: Iodine Value",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample: Titre obtained:",
+    3
+   ],
+   [
+    "Iodine Value = -------------------------------",
+    3
+   ],
+   [
+    "Weight of sample",
+    3
+   ],
+   [
+    "Titre x #",
+    2
+   ],
+   [
+    "# x (n# \u2013 n#)",
+    1
+   ],
+   [
+    "x ( - )",
+    1
+   ],
+   [
+    "Iodine Value = --------------------------------- =",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Iodine Value = ---------------x----------------- =",
+    2
+   ]
+  ],
+  "nested": []
+ },
+ "saponification": {
+  "files": 1,
+  "names": [
+   [
+    "Saponification Value",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample: Titre obtained:",
+    1
+   ],
+   [
+    "# x (n# \u2013 n#)",
+    1
+   ],
+   [
+    "Iodine Value = -------------------------------",
+    1
+   ],
+   [
+    "Weight of sample",
+    1
+   ],
+   [
+    "x",
+    1
+   ],
+   [
+    "Acid Value = --------------------------------- =",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:reducingsubstance": {
+  "files": 1,
+  "names": [
+   [
+    "Reducing Substance",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Weight of sample taken: __g",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Vol of dil. H#SO# used:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:reducingsubstances": {
+  "files": 1,
+  "names": [
+   [
+    "Reducing substances",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "vol of solution S used:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:mobilephasecomposition": {
+  "files": 1,
+  "names": [
+   [
+    "Mobile Phase Composition",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Sample #:",
+    2
+   ],
+   [
+    "Acetonitrile #% : #% Buffer pH #",
+    1
+   ],
+   [
+    "Balance ID.:",
+    1
+   ],
+   [
+    "wt of sample taken: #. __g #. __g",
+    1
+   ],
+   [
+    "wt of standard taken: __g",
+    1
+   ],
+   [
+    "Dilution:",
+    1
+   ],
+   [
+    "Standard:",
+    1
+   ],
+   [
+    "Peak Areas",
+    1
+   ],
+   [
+    "Calculations:",
+    1
+   ],
+   [
+    "Avg Spl Area Std wt Filled wt",
+    1
+   ],
+   [
+    "Avg Std Area Spl wt Claim",
+    1
+   ],
+   [
+    "Average % content =",
+    1
+   ]
+  ],
+  "formula": [
+   [
+    "Content = --------------------- x ------------------ x ------------- x Factor x Purity of Std =",
+    1
+   ],
+   [
+    "i. = --------------- x --------------- x -------------- x x =",
+    1
+   ],
+   [
+    "ii. = --------------- x --------------- x -------------- x x =",
+    1
+   ]
+  ],
+  "nested": [
+   [
+    "Peak Areas  ROWS: Injection, 1, 2, 3, 4, 5",
+    1
+   ]
+  ]
+ },
+ "other:taste": {
+  "files": 2,
+  "names": [
+   [
+    "Taste",
+    2
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:organicstabilisers": {
+  "files": 1,
+  "names": [
+   [
+    "Organic Stabilisers",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Volume of sample taken:",
+    1
+   ],
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:odoramptaste": {
+  "files": 2,
+  "names": [
+   [
+    "Odor &amp; Taste",
+    2
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:carbonatesandsubstancesin": {
+  "files": 1,
+  "names": [
+   [
+    "Carbonates and substances insoluble in acids",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Test solution:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:calciumampmagnesium": {
+  "files": 1,
+  "names": [
+   [
+    "Calcium &amp; Magnesium",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Preparation:",
+    1
+   ],
+   [
+    "Observation:",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:sulfides": {
+  "files": 1,
+  "names": [
+   [
+    "Sulfides",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Volume of Solution S used:",
+    1
+   ],
+   [
+    "Preparation",
+    1
+   ],
+   [
+    "Reference Solution:",
+    1
+   ],
+   [
+    "Observation",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:": {
+  "files": 1,
+  "names": [
+   [
+    "",
+    1
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:relatedsubstancestlc": {
+  "files": 1,
+  "names": [
+   [
+    "RELATED SUBSTANCES \u2013 TLC",
+    1
+   ]
+  ],
+  "lines": [
+   [
+    "Solution #: __",
+    4
+   ],
+   [
+    "Mobile Phase Composition:",
+    1
+   ],
+   [
+    "A mixture of # volumes of light petroleum, # volumes of ethyl acetate ",
+    1
+   ],
+   [
+    "Chromatographic Conditions:",
+    1
+   ],
+   [
+    "Detection: UV Detection wavelength: #nm Injection vol.: #\u00b5L",
+    1
+   ],
+   [
+    "Weight of sample taken: __ g",
+    1
+   ],
+   [
+    "Attach Chromatograms",
+    1
+   ]
+  ],
+  "formula": [],
+  "nested": []
+ },
+ "other:oxidisablesubstances": {
+  "files": 1,
+  "names": [
+   [
+    "Oxidisable substances",
+    1
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:calciumandmagnesium": {
+  "files": 1,
+  "names": [
+   [
+    "Calcium and magnesium",
+    1
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ },
+ "other:nitrate": {
+  "files": 1,
+  "names": [
+   [
+    "Nitrate",
+    1
+   ]
+  ],
+  "lines": [],
+  "formula": [],
+  "nested": []
+ }
+}

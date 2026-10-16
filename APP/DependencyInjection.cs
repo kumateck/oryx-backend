@@ -98,6 +98,7 @@ public static class DependencyInjection
         services.AddScoped<IMaterialRepository, MaterialRepository>();
         services.AddScoped<IRequisitionRepository, RequisitionRepository>();
         services.AddScoped<IApprovalRepository, ApprovalRepository>();
+        services.AddScoped<APP.Services.Approvals.IApprovalDelegationService, APP.Services.Approvals.ApprovalDelegationService>();
         services.AddScoped<IProcurementRepository, ProcurementRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<ISupplierRelationshipRepository, SupplierRelationshipRepository>();
