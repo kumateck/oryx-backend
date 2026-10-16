@@ -64,6 +64,8 @@ public class ApprovalEntity
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public UserDto RequestedBy { get; set; }
+    /// <summary>Set when the caller sees this only because its approver delegated to them: whose approval it is.</summary>
+    public CollectionItemDto OnBehalfOf { get; set; }
 }
 
 public class ApprovalRequestBody

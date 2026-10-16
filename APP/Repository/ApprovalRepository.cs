@@ -5421,15 +5421,6 @@ public class ApprovalRepository(
         }
     }
 
-    public Result DelegateApproval(DelegateApproval approval)
-    {
-        var user = userManager.FindByIdAsync(approval.EmployeeId.ToString());
-
-        return user.Result == null
-            ? Error.NotFound("User.Invalid", "User not found")
-            : Result.Success();
-    }
-
     private async Task ProcessRequisitionEscalations(
         Requisition requisition,
         TimeSpan escalationDuration,
