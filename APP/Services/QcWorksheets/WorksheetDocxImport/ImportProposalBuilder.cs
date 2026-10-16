@@ -80,6 +80,23 @@ public sealed class ImportProposalBuilder
         return field;
     }
 
+    /// <summary>Inserts a field into a section at a position, renumbering the fields after it.</summary>
+    public ProposedWorksheetField InsertField(
+        ProposedWorksheetSection section, int position, ProposedWorksheetField field, ImportSourceLocation location,
+        ImportConfidence confidence, string reason)
+    {
+        field.FieldKey = AllocateKey(field.FieldKey);
+        section.Fields.Insert(Math.Clamp(position, 0, section.Fields.Count), field);
+        for (var index = 0; index < section.Fields.Count; index++)
+            section.Fields[index].Order = index + 1;
+
+        Proposal.FieldProvenance.Add(new ImportFieldProvenance
+        {
+            FieldKey = field.FieldKey, Location = location, Confidence = confidence, Reason = reason
+        });
+        return field;
+    }
+
     /// <summary>Adds a field from a label/value decision; HeaderData adds nothing.</summary>
     public ProposedWorksheetField AddDecision(ParameterDecision decision, ImportSourceLocation location, string keyPrefix = null)
     {
