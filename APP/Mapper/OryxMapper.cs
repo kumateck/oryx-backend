@@ -1747,6 +1747,9 @@ public class OryxMapper : Profile
                         EstimatedDeliveryDate =
                             src.MarketRequisitionVendor?.EstimatedDeliveryDate ?? default,
                         CreatedAt = src.CreatedAt,
+                        PurchasedAt = src.PurchasedAt,
+                        VendorQuotationItemId = src.VendorQuotationItemId,
+                        MarketRequisitionVendorId = src.MarketRequisitionVendorId,
                     };
                     return dto;
                 }

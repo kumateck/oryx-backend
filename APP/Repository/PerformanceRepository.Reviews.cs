@@ -77,7 +77,7 @@ public partial class PerformanceRepository
             : mapper.Map<PerformanceReviewDto>(review);
     }
 
-    public async Task<Result> SubmitSelfAssessment(Guid id, SubmitSelfAssessmentRequest request)
+    public async Task<Result> SubmitSelfAssessment(Guid id, SubmitSelfAssessmentRequest request, Guid employeeId)
     {
         var review = await context.PerformanceReviews
             .Include(r => r.GoalRatings)
@@ -92,6 +92,10 @@ public partial class PerformanceRepository
         {
             return Error.Validation("PerformanceReview.InvalidStatus", "This review is not awaiting a self-assessment");
         }
+        if (review.EmployeeId != employeeId)
+            return Error.Validation("PerformanceReview.NotYours", "Only the employee being reviewed can submit the self-assessment.");
+        var ratings = await ValidRatings(review, request.GoalRatings);
+        if (ratings.IsFailure) return ratings;
 
         review.SelfAssessmentComments = request.Comments;
         review.SelfAssessmentSubmittedAt = DateTime.UtcNow;
@@ -105,7 +109,7 @@ public partial class PerformanceRepository
         return Result.Success();
     }
 
-    public async Task<Result> SubmitManagerReview(Guid id, SubmitManagerReviewRequest request, Guid userId)
+    public async Task<Result> SubmitManagerReview(Guid id, SubmitManagerReviewRequest request, Guid userId, Guid reviewerEmployeeId)
     {
         var review = await context.PerformanceReviews
             .Include(r => r.GoalRatings)
@@ -120,6 +124,11 @@ public partial class PerformanceRepository
         {
             return Error.Validation("PerformanceReview.InvalidStatus", "This review is not awaiting a manager assessment");
         }
+        if (review.ReviewerId != reviewerEmployeeId || review.EmployeeId == reviewerEmployeeId)
+            return Error.Validation("PerformanceReview.NotReviewer", "Only the review's assigned reviewer can submit the manager assessment.");
+        if (!Enum.IsDefined(request.OverallRating)) return Error.Validation("PerformanceReview.Rating", "Choose an overall rating.");
+        var ratings = await ValidRatings(review, request.GoalRatings);
+        if (ratings.IsFailure) return ratings;
 
         review.ManagerComments = request.Comments;
         review.OverallRating = request.OverallRating;

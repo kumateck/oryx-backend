@@ -36,26 +36,18 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
         return commit.IsFailure ? commit.Error : report.Id;
     }
 
-    public async Task<Result<Paginateable<IEnumerable<DamagedStockDto>>>> GetDamagedStocks(int page, int pageSize, string searchQuery)
+    public async Task<Result<Paginateable<IEnumerable<DamagedStockDto>>>> GetDamagedStocks(int page, int pageSize, string searchQuery,
+        IReadOnlyCollection<Store> readableStores, Store? store, DamageStatus? damageStatus)
     {
         var query = context.DamagedStocks
             .AsSplitQuery()
-            .Include(d => d.Item)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, q => q.Item.Name);
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            if (Enum.TryParse<Store>(searchQuery, true, out var damagedStore))
-            {
-                query = query.Where(q => q.Item.Store == damagedStore);
-            }
-        }
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, entity => mapper.Map<DamagedStockDto>(entity, opts =>
+            .Include(d => d.Item).ThenInclude(i => i.UnitOfMeasure)
+            .Include(d => d.CreatedBy)
+            .Where(d => readableStores.Contains(d.Item.Store));
+        if (store.HasValue) query = query.Where(d => d.Item.Store == store);
+        if (damageStatus.HasValue) query = query.Where(d => d.DamageStatus == damageStatus);
+        if (!string.IsNullOrWhiteSpace(searchQuery)) query = query.WhereSearch(searchQuery, q => q.Item.Name, q => q.Item.Code);
+        return await PaginationHelper.GetPaginatedResultAsync(query.OrderByDescending(d => d.CreatedAt), page, pageSize, entity => mapper.Map<DamagedStockDto>(entity, opts =>
             opts.Items[AppConstants.ModelType] = nameof(DamagedStock)));
     }
 
@@ -72,119 +64,57 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
 
     }
 
+    /// <summary>
+    /// Corrects a damage or missing record. The item cannot change; a larger quantity takes the difference from stock
+    /// and a smaller one gives it back, posted to the ledger as a debit or credit in the same atomic save.
+    /// </summary>
     public async Task<Result> UpdateDamagedStocks(Guid id, CreateDamagedStockRequest request, Guid userId)
     {
-        var damagedStock = await context.DamagedStocks
-            .Include(d => d.Item)
-            .FirstOrDefaultAsync(ds => ds.Id == id);
-
-        if (damagedStock == null)
-            return Error.NotFound("DamagedStock.NotFound", "Damaged stock not found");
-
-        var currentQtyDamaged = damagedStock.QuantityDamaged;
-        var newQtyDamaged = request.QuantityDamaged;
-        var difference = newQtyDamaged - currentQtyDamaged;
-
-        switch (difference)
+        var report = await context.DamagedStocks.Include(d => d.Item).FirstOrDefaultAsync(ds => ds.Id == id);
+        if (report == null) return Error.NotFound("DamagedStock.NotFound", "Damaged stock not found");
+        if (request.ItemId != report.ItemId)
+            return Error.Validation("DamagedStock.Item", "The item of a damage or missing record cannot be changed. Delete it and record the right item.");
+        if (!Enum.IsDefined(request.DamageStatus) || request.QuantityDamaged <= 0)
+            return Error.Validation("Quantity.Invalid", "Choose damage or missing, with a positive quantity.");
+        var difference = request.QuantityDamaged - report.QuantityDamaged;
+        if (difference > report.Item.AvailableQuantity)
+            return Error.Validation("DamagedStock.Invalid", "Not enough stock to increase the damaged or missing quantity.");
+        if (difference != 0)
         {
-            case < 0:
-                damagedStock.Item.AvailableQuantity += Math.Abs(difference);
-                break;
-            case > 0 when damagedStock.Item.AvailableQuantity < difference:
-                return Error.Validation("DamagedStock.Invalid", "Not enough stock to increase damage quantity.");
-            case > 0:
-                damagedStock.Item.AvailableQuantity -= difference;
-                break;
-        }
-
-        mapper.Map(request, damagedStock);
-
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
-        {
-            context.DamagedStocks.Update(damagedStock);
-            context.Items.Update(damagedStock.Item);
-
-            var lastTransaction = await context.ItemTransactionLogs
-                .Where(i => i.ItemCode == damagedStock.Item.Code)
-                .OrderByDescending(i => i.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            var previousBalance = lastTransaction?.TotalBalance ?? damagedStock.Item.AvailableQuantity + difference;
-
-            var itemTransactionLog = new ItemTransactionLog
+            var ledger = await APP.Services.Inventory.InventoryLedger.Balance(context, report.Item);
+            if (ledger.IsFailure) return ledger.Error;
+            report.Item.AvailableQuantity -= difference;
+            context.ItemTransactionLogs.Add(new ItemTransactionLog
             {
-                Id = Guid.NewGuid(),
-                ItemCode = damagedStock.Item.Code,
-                Credit = 0,
-                Debit = difference > 0 ? difference : 0,
-                TransactionType = request.DamageStatus == DamageStatus.Damage 
-                    ? TransactionType.Damaged : TransactionType.Missing,
-                TotalBalance = previousBalance - (difference > 0 ? difference : 0),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            context.ItemTransactionLogs.Add(itemTransactionLog);
-
-            await context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return Result.Success();
+                Id = Guid.NewGuid(), ItemCode = report.Item.Code,
+                TransactionType = request.DamageStatus == DamageStatus.Damage ? TransactionType.Damaged : TransactionType.Missing,
+                Debit = difference > 0 ? difference : 0, Credit = difference < 0 ? -difference : 0,
+                TotalBalance = report.Item.AvailableQuantity, CreatedById = userId
+            });
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return Error.Failure("DamagedStock.UpdateFailed", ex.Message);
-        }
+        report.DamageStatus = request.DamageStatus;
+        report.QuantityDamaged = request.QuantityDamaged;
+        report.Remarks = request.Remarks;
+        report.LastUpdatedById = userId;
+        return await APP.Services.Inventory.InventoryCommit.Save(context);
     }
+
+    /// <summary>Deletes a damage or missing record and gives its quantity back to stock in one atomic posting.</summary>
     public async Task<Result> DeleteDamagedStocks(Guid id, Guid userId)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
+        var report = await context.DamagedStocks.Include(ds => ds.Item).FirstOrDefaultAsync(ds => ds.Id == id);
+        if (report == null) return Error.NotFound("DamagedStock.NotFound", "Damaged stock not found");
+        var ledger = await APP.Services.Inventory.InventoryLedger.Balance(context, report.Item);
+        if (ledger.IsFailure) return ledger.Error;
+        report.Item.AvailableQuantity += report.QuantityDamaged;
+        report.LastDeletedById = userId;
+        report.DeletedAt = DateTime.UtcNow;
+        context.ItemTransactionLogs.Add(new ItemTransactionLog
         {
-            var damagedStock = await context.DamagedStocks
-                .Include(ds => ds.Item)
-                .FirstOrDefaultAsync(ds => ds.Id == id);
-
-            if (damagedStock == null)
-                return Error.NotFound("DamagedStock.NotFound", "Damaged stock not found");
-
-            damagedStock.Item.AvailableQuantity += damagedStock.QuantityDamaged;
-
-            context.Items.Update(damagedStock.Item);
-
-            damagedStock.LastDeletedById = userId;
-            damagedStock.DeletedAt = DateTime.UtcNow;
-            context.DamagedStocks.Update(damagedStock);
-
-            var lastTransaction = await context.ItemTransactionLogs
-                .OrderByDescending(i => i.CreatedAt) // make sure you sort by time or PK
-                .FirstOrDefaultAsync(i => i.ItemCode == damagedStock.Item.Code);
-
-            var newTransaction = new ItemTransactionLog
-            {
-                Id = Guid.NewGuid(),
-                ItemCode = damagedStock.Item.Code,
-                TransactionType = damagedStock.DamageStatus == DamageStatus.Damage ? 
-                    TransactionType.Damaged : TransactionType.Missing,
-                Credit = damagedStock.QuantityDamaged,
-                Debit = 0,
-                TotalBalance = (lastTransaction?.TotalBalance ?? 0) + damagedStock.QuantityDamaged,
-            };
-
-            await context.ItemTransactionLogs.AddAsync(newTransaction);
-
-            await context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return Error.Failure("DamagedStock.DeleteFailed", ex.Message);
-        }
+            Id = Guid.NewGuid(), ItemCode = report.Item.Code,
+            TransactionType = report.DamageStatus == DamageStatus.Damage ? TransactionType.Damaged : TransactionType.Missing,
+            Credit = report.QuantityDamaged, Debit = 0, TotalBalance = report.Item.AvailableQuantity, CreatedById = userId
+        });
+        return await APP.Services.Inventory.InventoryCommit.Save(context);
     }
 }

@@ -480,3 +480,7 @@ Contractor edits replace the complete verified Services association set. Missing
 ## Inventory definitions, receiving and stock integrity
 
 Item maintenance and stock receipts now validate history/ledger identity, current per-store database grants, known distinct receipt creators, atomic stock postings and optimistic concurrency. New item codes are globally unique while the legacy ledger is code-based; ambiguous historical ledgers require reconciliation. The stock envelope now includes creator/memo/unit/category references without changing its HTTP shape. These source repairs are not deployed. Damage edit/delete, returns, other writers and PostgreSQL/end-to-end acceptance remain; see [inventory-stock-integrity.md](inventory-stock-integrity.md).
+
+## Stores issue/return and service procurement integrity — 2026-10-22
+
+Issues are tracked per requisition line and cannot exceed the request. Returns are capped at the net issued quantity and restore stock, and damage edits and deletes post to the ledger. In service procurement, quotations close on selection. Each job order gets exactly one memo, for the approved proforma's quotation and provider, and only an issued memo can be paid. A service still in use cannot be deleted. Onboarding invitations work once and decide the email and employee type. See [`stores-services-hr-repair-2026-10-22.md`](stores-services-hr-repair-2026-10-22.md).

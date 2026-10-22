@@ -4,12 +4,13 @@ using APP.Utils;
 using DOMAIN.Entities.Vendors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
 
 namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/vendors")]
 [Authorize]
-public class VendorController(IVendorRepository repository) : ControllerBase
+public class VendorController(IVendorRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a vendor
@@ -19,6 +20,8 @@ public class VendorController(IVendorRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateVendor([FromBody] CreateVendorRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewVendors", "CanCreateVendor")) return TypedResults.Forbid();
+
         var result = await repository.CreateVendor(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -31,6 +34,8 @@ public class VendorController(IVendorRepository repository) : ControllerBase
     public async Task<IResult> GetVendors([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewVendors", "CanViewPurchaseRequisitionsSourcing")) return TypedResults.Forbid();
+
         var result = await repository.GetVendors(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -42,6 +47,8 @@ public class VendorController(IVendorRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VendorDto))]
     public async Task<IResult> GetVendor([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors")) return TypedResults.Forbid();
+
         var result = await repository.GetVendor(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -55,6 +62,8 @@ public class VendorController(IVendorRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateVendor([FromRoute] Guid id, [FromBody] CreateVendorRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewVendors", "CanCreateVendor")) return TypedResults.Forbid();
+
         var result = await repository.UpdateVendor(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -67,6 +76,8 @@ public class VendorController(IVendorRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteVendor([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewVendors", "CanDeleteVendor")) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -78,11 +89,14 @@ public class VendorController(IVendorRepository repository) : ControllerBase
     /// Retrieves a list of vendors based on an item
     /// </summary>
     [HttpGet("item/{id:guid}")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorDto>))]
     public async Task<IResult> GetItems([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewVendors", "CanViewPurchaseRequisitionsSourcing")) return TypedResults.Forbid();
+
         var result = await repository.GetVendorsByItem(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

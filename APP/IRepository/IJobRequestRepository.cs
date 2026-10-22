@@ -18,4 +18,5 @@ public interface IJobRequestRepository
     Task<Result<Paginateable<IEnumerable<JobRequestDto>>>> GetCompletedJobRequestsForInternalEmployees(int page, int pageSize,
         string searchQuery = null, Guid? employeeId = null);
     Task<Result> CompleteJobRequest(CompleteJobRequestRequest request, Guid userId);
+    Task<Result> ChangeJobRequestStatus(Guid id, JobRequestStatus target, Guid actor);
 }

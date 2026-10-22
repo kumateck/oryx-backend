@@ -11,26 +11,27 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/employee")]
 [ApiController]
 [Authorize]
-public class EmployeeController(IEmployeeRepository repository) : ControllerBase
+public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Sends emails to employees to fill in their details.
     /// </summary>
-    [AllowAnonymous]
     [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(PermissionKeys.CanRegisterEmployee)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeInvitationResult>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> OnboardEmployee([FromBody] OnboardEmployeeDto request)
     {
-        var result = await repository.OnboardEmployees(request);
-        return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        var result = await repository.OnboardEmployees(request, actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
     /// Creates a new employee.
     /// </summary>
-    [AllowAnonymous]
     [HttpPost]
+    [Authorize(PermissionKeys.CanRegisterEmployee)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
@@ -45,7 +46,7 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     [HttpPost("user")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [AllowAnonymous]
+    [Authorize(PermissionKeys.CanCreateUser)]
     public async Task<IResult> CreateUserFromEmployee([FromBody] EmployeeUserDto employeeUserDto)
     {
         var result = await repository.CreateEmployeeUser(employeeUserDto);
@@ -56,12 +57,13 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// <summary>
     /// Uploads an avatar image for a specific employee by their unique identifier.
     /// </summary>
-    [AllowAnonymous]
     [HttpPost("avatar/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UploadAnImage([FromBody] UploadFileRequest request, [FromRoute] Guid id)
     {
+        var keys = await APP.Services.Authorization.CurrentPermissionSet.Load(context, Actor());
+        if (!keys.Contains(PermissionKeys.CanRegisterEmployee) && !keys.Contains(PermissionKeys.CanUpdateEmployeeInfo)) return TypedResults.Forbid();
         await repository.UploadAvatar(request, id);
         return TypedResults.NoContent();
     }
@@ -86,7 +88,6 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
     /// Retrieves a list of employees based on their department.
     /// </summary>
     [HttpGet("departments/{id:guid}")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeDto>))]
     public async Task<IResult> GetEmployeesByDepartment([FromRoute] Guid id)
     {
@@ -225,4 +226,19 @@ public class EmployeeController(IEmployeeRepository repository) : ControllerBase
             ? TypedResults.NoContent()
             : result.ToProblemDetails();
     }
+
+    /// <summary>
+    /// The employee record linked to the signed-in account, if any.
+    /// </summary>
+    [HttpGet("me")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EmployeeDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMyEmployee()
+    {
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        var result = await repository.GetEmployeeForUser(actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

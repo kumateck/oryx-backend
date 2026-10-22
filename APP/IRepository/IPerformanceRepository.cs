@@ -23,6 +23,13 @@ public interface IPerformanceRepository
     Task<Result<Guid>> CreateReview(CreatePerformanceReviewRequest request, Guid userId);
     Task<Result<Paginateable<IEnumerable<PerformanceReviewDto>>>> GetReviews(Guid? employeeId, Guid? cycleId, int page, int pageSize);
     Task<Result<PerformanceReviewDto>> GetReview(Guid id);
-    Task<Result> SubmitSelfAssessment(Guid id, SubmitSelfAssessmentRequest request);
-    Task<Result> SubmitManagerReview(Guid id, SubmitManagerReviewRequest request, Guid userId);
+    Task<Result> SubmitSelfAssessment(Guid id, SubmitSelfAssessmentRequest request, Guid employeeId);
+    Task<Result> SubmitManagerReview(Guid id, SubmitManagerReviewRequest request, Guid userId, Guid reviewerEmployeeId);
+
+    // Ownership
+    Task<Guid?> EmployeeOf(Guid userId);
+    Task<bool> Reviews(Guid reviewerId, Guid employeeId, Guid cycleId);
+    Task<Guid?> GoalOwner(Guid goalId);
+    Task<(Guid EmployeeId, Guid? ReviewerId)?> ReviewParticipants(Guid reviewId);
+    Task<Result<Paginateable<IEnumerable<PerformanceReviewDto>>>> GetReviewsFor(Guid employeeId, int page, int pageSize);
 }

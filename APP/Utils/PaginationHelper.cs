@@ -3,7 +3,7 @@ using SHARED;
 
 namespace APP.Utils;
 
-public static class PaginationHelper
+public static partial class PaginationHelper
 {
     public static async Task<Paginateable<IEnumerable<TDto>>> GetPaginatedResultAsync<TEntity, TDto>(
         IQueryable<TEntity> query,

@@ -65,6 +65,9 @@ public class ItemStockRequisitionItemDto : BaseDto
     public Guid ItemId { get; set; }
     public Item Item { get; set; }
     public int QuantityRequested { get; set; }
+    /// <summary>Stock issued against this line so far.</summary>
+    public int QuantityIssued { get; set; }
+    public int QuantityRemaining => Math.Max(0, QuantityRequested - QuantityIssued);
 }
 
 public class ItemCategory : BaseEntity

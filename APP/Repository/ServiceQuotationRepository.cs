@@ -32,6 +32,13 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
             return Error.Validation("ServiceProvider.NotSentJobOrder",
                 "This service provider was not sent this job order");
 
+        if (jobOrder.Status is not (JobOrderStatus.SentToProviders or JobOrderStatus.QuotationsReceived))
+            return Error.Validation("JobOrder.QuotationsClosed", "A quotation has already been selected for this job order.");
+        if (await context.ServiceQuotations.AnyAsync(q => q.JobOrderId == request.JobOrderId && q.ServiceProviderId == request.ServiceProviderId))
+            return Error.Validation("ServiceQuotation.Exists", "This service provider's quotation has already been recorded. Edit it instead.");
+        if ((request.ServiceCharges ?? []).Any(c => string.IsNullOrWhiteSpace(c.Name) || c.Cost < 0))
+            return Error.Validation("ServiceQuotation.Charges", "Every service charge needs a name and a cost of zero or more.");
+
         var currency = await context.Currencies.AnyAsync(c => c.Id == request.CurrencyId);
         if (!currency) return Error.Validation("Currency.Invalid", "Invalid currency");
 
@@ -157,6 +164,8 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
         var quotation = await context.ServiceQuotations.FirstOrDefaultAsync(q => q.Id == id);
         if (quotation is null)
             return Error.NotFound("ServiceQuotation.NotFound", "Service quotation not found");
+        if (await context.JobOrders.AnyAsync(j => j.Id == quotation.JobOrderId && j.Status != JobOrderStatus.QuotationsReceived) || quotation.Status is QuotationStatus.Selected or QuotationStatus.Rejected)
+            return Error.Validation("ServiceQuotation.Closed", "A quotation has already been selected for this job order, so quotations can no longer change.");
 
         mapper.Map(request, quotation);
         context.ServiceQuotations.Update(quotation);
@@ -174,6 +183,8 @@ public class ServiceQuotationRepository(ApplicationDbContext context, IMapper ma
 
         if (quotation is null)
             return Error.NotFound("ServiceQuotation.NotFound", "Service quotation not found");
+        if (await context.JobOrders.AnyAsync(j => j.Id == quotation.JobOrderId && j.Status != JobOrderStatus.QuotationsReceived) || quotation.Status is QuotationStatus.Selected or QuotationStatus.Rejected)
+            return Error.Validation("ServiceQuotation.Closed", "A quotation has already been selected for this job order, so quotations can no longer change.");
 
         quotation.Status = QuotationStatus.Negotiating;
         quotation.NegotiatedServiceCharge = request.NegotiatedServiceCharge;

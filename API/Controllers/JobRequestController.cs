@@ -4,6 +4,8 @@ using APP.Utils;
 using DOMAIN.Entities.JobRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -65,7 +67,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/job-requests")]
 [Authorize]
 [Tags("Job Requests")]
-public class JobRequestController(IJobRequestRepository repository) : ControllerBase
+public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a new job request
@@ -127,6 +129,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> CreateJobRequest([FromBody] CreateJobRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.CreateJobRequest)) return TypedResults.Forbid();
+
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
@@ -224,6 +228,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         [FromQuery] JobRequestStatus? status = null,
         [FromQuery] JobHandlingType? handlingType = null)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
+
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
@@ -313,6 +319,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobRequest([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
+
         var result = await repository.GetJobRequest(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -326,6 +334,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobRequestInJobOrder()
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.ViewJobOrders)) return TypedResults.Forbid();
+
         var result = await repository.GetJobRequestsInJobOrders();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -404,6 +414,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateJobRequest([FromRoute] Guid id, [FromBody] UpdateJobRequestRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.EditJobRequest)) return TypedResults.Forbid();
+
         var result = await repository.UpdateJobRequest(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -452,6 +464,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> DeleteJobRequest([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.DeleteJobRequest)) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -525,6 +539,10 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> AssignInternalJob([FromBody] AssignInternalJobRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AssignJobRequest)) return TypedResults.Forbid();
+        if (Actor() is not { } assigner) return TypedResults.Unauthorized();
+        request.AssignedById = assigner;
+
         var result = await repository.AssignInternalJob(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -698,7 +716,20 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> UpdateJobRequestStatus([FromRoute] Guid id, [FromBody] UpdateJobRequestStatusRequest request)
     {
-        var result = await repository.UpdateJobRequestStatus(id, request.Status);
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        // Only these steps are set by hand; assignment, external handling and completion have their own actions.
+        var key = request.Status switch
+        {
+            JobRequestStatus.Acknowledged => ServiceKeys.AcknowledgeJobRequest,
+            JobRequestStatus.JobStarted => ServiceKeys.StartJobRequest,
+            JobRequestStatus.Cancelled => ServiceKeys.EditJobRequest,
+            _ => null
+        };
+        if (key == null)
+            return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: "JobRequest.Status",
+                detail: "Only acknowledging, starting and cancelling are set directly; other stages follow their own steps.");
+        if (!await ServiceWorkflowAccess.All(context, actor, ServiceKeys.ViewJobRequests, key)) return TypedResults.Forbid();
+        var result = await repository.ChangeJobRequestStatus(id, request.Status, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -772,6 +803,8 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? employeeId = null)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
+
         var result = await repository.GetCompletedJobRequestsForInternalEmployees(page, pageSize, searchQuery, employeeId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -863,10 +896,14 @@ public class JobRequestController(IJobRequestRepository repository) : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> CompleteJobRequest([FromBody] CompleteJobRequestRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.CompleteJobRequest)) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.CompleteJobRequest(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

@@ -15,12 +15,8 @@ public partial class PerformanceRepository
             return Error.NotFound("Employee.NotFound", "Employee not found");
         }
 
-        var cycle = await context.PerformanceCycles.FindAsync(request.CycleId);
-        if (cycle is null)
-        {
-            return Error.NotFound("PerformanceCycle.NotFound", "Performance cycle not found");
-        }
-
+        var valid = await ValidGoal(request.EmployeeId, request.CycleId, request.Title, request.Weight, request.TargetDate, null);
+        if (valid.IsFailure) return valid.Error;
         var goal = mapper.Map<Goal>(request);
         goal.CreatedById = userId;
 
@@ -32,12 +28,14 @@ public partial class PerformanceRepository
 
     public async Task<Result> UpdateGoal(Guid id, UpdateGoalRequest request)
     {
-        var goal = await context.Goals.FirstOrDefaultAsync(g => g.Id == id);
+        var goal = await context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.DeletedAt == null);
         if (goal is null)
         {
             return Error.NotFound("Goal.NotFound", "Goal not found");
         }
-
+        var valid = await ValidGoal(goal.EmployeeId, goal.CycleId, request.Title, request.Weight, request.TargetDate, goal.Id);
+        if (valid.IsFailure) return valid.Error;
+        if (request.ProgressPercentage is < 0 or > 100) return Error.Validation("Goal.Progress", "Progress must be between 0 and 100%.");
         mapper.Map(request, goal);
         context.Goals.Update(goal);
         await context.SaveChangesAsync();
@@ -47,12 +45,13 @@ public partial class PerformanceRepository
 
     public async Task<Result> DeleteGoal(Guid id, Guid userId)
     {
-        var goal = await context.Goals.FirstOrDefaultAsync(g => g.Id == id);
+        var goal = await context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.DeletedAt == null);
         if (goal is null)
         {
             return Error.NotFound("Goal.NotFound", "Goal not found");
         }
-
+        if (await context.GoalRatings.AnyAsync(r => r.GoalId == id))
+            return Error.Validation("Goal.Rated", "This goal has been rated in a review, so it cannot be deleted.");
         goal.DeletedAt = DateTime.UtcNow;
         goal.LastDeletedById = userId;
         context.Goals.Update(goal);
@@ -67,6 +66,7 @@ public partial class PerformanceRepository
         var query = context.Goals
             .Include(g => g.Employee)
             .Include(g => g.Cycle)
+            .Where(g => g.DeletedAt == null)
             .AsQueryable();
 
         if (employeeId.HasValue)
@@ -90,8 +90,7 @@ public partial class PerformanceRepository
         var goal = await context.Goals
             .Include(g => g.Employee)
             .Include(g => g.Cycle)
-            .FirstOrDefaultAsync(g => g.Id == id);
-
+            .FirstOrDefaultAsync(g => g.Id == id && g.DeletedAt == null);
         return goal is null
             ? Error.NotFound("Goal.NotFound", "Goal not found")
             : mapper.Map<GoalDto>(goal);
