@@ -30,6 +30,13 @@ public class MarketRequisitionDto
     public ItemDto Item { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
+    /// <summary>The purchase requisition the item came from.</summary>
+    public string RequisitionCode { get; set; }
+    public Guid? InventoryPurchaseRequisitionId { get; set; }
+    /// <summary>How many open-market quotes have been collected.</summary>
+    public int VendorCount { get; set; }
+    /// <summary>True once a vendor has been chosen for the item.</summary>
+    public bool Closed { get; set; }
 }
 
 public class CreateMarketRequisitionVendor
@@ -68,6 +75,7 @@ public class MarketRequisitionVendor : BaseEntity
 
 public class MarketRequisitionVendorDto : BaseDto
 {
+    public Guid MarketRequisitionId { get; set; }
     public string VendorName { get; set; }
     public string VendorAddress { get; set; }
     public string VendorPhoneNumber { get; set; }

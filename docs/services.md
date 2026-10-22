@@ -591,3 +591,7 @@ The existing service-provider update persists the requested service associations
 ## Inventory definitions, receiving and stock integrity
 
 Item maintenance and stock receipts now validate history/ledger identity, current per-store database grants, known distinct receipt creators, atomic stock postings and optimistic concurrency. New item codes are globally unique while the legacy ledger is code-based; ambiguous historical ledgers require reconciliation. The stock envelope now includes creator/memo/unit/category references without changing its HTTP shape. These source repairs are not deployed. Damage edit/delete, returns, other writers and PostgreSQL/end-to-end acceptance remain; see [inventory-stock-integrity.md](inventory-stock-integrity.md).
+
+## Stores, services and HR repair — 2026-10-22
+
+Per-store and per-action grant checks cover the stores and services workflows, and actors come from the token. There is a paged item choice endpoint, and proformas can be filtered with `memoPending`. `employee/me` and `performance/reviews/mine` are new. A reviewer may read the goals they are rating. Onboarding now uses tokens through `api/v1/onboarding/*`, the anonymous employee and user creation endpoints are gone, and the `CanViewFormulaBuilder` key is registered. The repair is local and undeployed. See [`stores-services-hr-repair-2026-10-22.md`](stores-services-hr-repair-2026-10-22.md).

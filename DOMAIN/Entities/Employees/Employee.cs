@@ -28,6 +28,8 @@ public class Employee : BaseEntity
     public Religion Religion { get; set; }
     [StringLength(100)] public string StaffNumber { get; set; }
     [StringLength(100)] public string Email { get; set; }
+    /// <summary>The user account of this employee, set when HR creates it. The authoritative account ↔ employee link.</summary>
+    public Guid? UserId { get; set; }
     [StringLength(20)] public string PhoneNumber { get; set; }
     [StringLength(100)] public string BankAccountNumber { get; set; }
     [StringLength(20)] public string SsnitNumber { get; set; }

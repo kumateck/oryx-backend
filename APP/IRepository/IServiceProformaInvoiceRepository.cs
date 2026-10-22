@@ -10,7 +10,7 @@ public interface IServiceProformaInvoiceRepository
     Task<Result> RespondServiceProformaInvoice(RespondServiceProformaInvoiceRequest request);
     Task<Result> ApproveServiceProformaInvoice(ApproveServiceProformaInvoiceRequest request);
     Task<Result<Paginateable<IEnumerable<ServiceProformaInvoiceDto>>>> GetServiceProformaInvoices(int page, int pageSize,
-        ServiceProformaInvoiceStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null);
+        ServiceProformaInvoiceStatus? status = null, Guid? jobOrderId = null, Guid? serviceProviderId = null, bool memoPending = false);
     Task<Result<ServiceProformaInvoiceDto>> GetServiceProformaInvoice(Guid id);
 }
 

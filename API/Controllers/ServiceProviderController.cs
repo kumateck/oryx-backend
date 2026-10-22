@@ -4,6 +4,7 @@ using APP.Utils;
 using DOMAIN.Entities.ServiceProviders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
 
 namespace API.Controllers;
 
@@ -19,7 +20,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/service-providers")]
 [Authorize]
 [Tags("Service Providers")]
-public class ServiceProviderController(IServiceProviderRepository repository) : ControllerBase
+public class ServiceProviderController(IServiceProviderRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a new service provider
@@ -37,6 +38,8 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateServiceProvider([FromBody] CreateServiceProviderRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewContractors", "CanCreateContractors")) return TypedResults.Forbid();
+
         var result = await repository.CreateServiceProvider(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -52,6 +55,8 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? serviceId = null)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewContractors", "CanCreateJobOrder", "CanEditJobOrder")) return TypedResults.Forbid();
+
         var result = await repository.GetServiceProviders(page, pageSize, searchQuery, serviceId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -63,6 +68,8 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceProviderDto))]
     public async Task<IResult> GetServiceProvider([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewContractors", "CanViewJobOrders")) return TypedResults.Forbid();
+
         var result = await repository.GetServiceProvider(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -74,6 +81,8 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceProviderDto))]
     public async Task<IResult> GetServiceProviderByService([FromRoute] Guid serviceId)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewContractors", "CanCreateJobOrder", "CanEditJobOrder")) return TypedResults.Forbid();
+
         var result = await repository.GetServiceProvidersByService(serviceId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -88,6 +97,8 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
     public async Task<IResult> UpdateServiceProvider([FromRoute] Guid id, 
         [FromBody] CreateServiceProviderRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewContractors", "CanEditContractors")) return TypedResults.Forbid();
+
         var result = await repository.UpdateServiceProvider(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -100,10 +111,14 @@ public class ServiceProviderController(IServiceProviderRepository repository) : 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteServiceProvider([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewContractors", "CanDeleteContractors")) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteServiceProvider(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

@@ -102,6 +102,7 @@ public static class PermissionSubmodules
     // Research & Development
     public const string RndProjects = "R&D Projects";
     public const string RndFormulations = "R&D Formulations";
+    public const string RndFormulaBuilder = "R&D Formula Builder";
     public const string RndTrialBatches = "R&D Trial Batches";
     public const string RndAnalyticalMethods = "R&D Analytical Methods";
     public const string RndStabilityStudies = "R&D Stability Studies";
@@ -511,6 +512,8 @@ public static class PermissionKeys
     public const string CanUpdateRndProjectStatus = "CanUpdateRndProjectStatus";
     public const string CanDeleteRndProject = "CanDeleteRndProject";
     public const string CanViewRndFormulations = "CanViewRndFormulations";
+    // A calculation scratchpad in the desktop app; it reads and writes nothing on the server.
+    public const string CanViewFormulaBuilder = "CanViewFormulaBuilder";
     public const string CanCreateRndFormulation = "CanCreateRndFormulation";
     public const string CanEditRndFormulation = "CanEditRndFormulation";
     public const string CanViewRndTrialBatches = "CanViewRndTrialBatches";
@@ -4512,6 +4515,11 @@ public static class PermissionUtils
             PermissionModules.ResearchAndDevelopment,
             PermissionSubmodules.RndFormulations,
             PermissionKeys.CanViewRndFormulations
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndFormulaBuilder,
+            PermissionKeys.CanViewFormulaBuilder
         );
         addPermission(
             PermissionModules.ResearchAndDevelopment,

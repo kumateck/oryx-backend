@@ -9,6 +9,10 @@ public class RecoverableItemReport : BaseEntity
     public Item Item { get; set; }
     public int Quantity { get; set; }
     public string Reason { get; set; }
+
+    /// <summary>The requisition line the returned stock was issued against. Older returns have none.</summary>
+    public Guid? ItemStockRequisitionItemId { get; set; }
+    public ItemStockRequisitionItem ItemStockRequisitionItem { get; set; }
 }
 
 public class RecoverableItemBatchReport : BaseEntity

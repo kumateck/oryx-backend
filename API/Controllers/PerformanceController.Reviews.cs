@@ -28,10 +28,28 @@ public partial class PerformanceController
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>The reviews the signed-in employee is reviewed in or reviews.</summary>
+    [HttpGet("reviews/mine")]
+    public async Task<IResult> GetMyReviews([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
+        if (!await Has(PermissionKeys.CanSubmitSelfAssessment) && !await Has(PermissionKeys.CanSubmitManagerReview)) return TypedResults.Forbid();
+        if (await repository.EmployeeOf(userId) is not { } own) return TypedResults.Forbid();
+        var result = await repository.GetReviewsFor(own, page, pageSize);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>A review, for HR reviewers or for the employee and reviewer taking part in it.</summary>
     [HttpGet("reviews/{id:guid}")]
-    [Authorize(PermissionKeys.CanViewPerformanceReviews)]
     public async Task<IResult> GetReview([FromRoute] Guid id)
     {
+        if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
+        if (await repository.ReviewParticipants(id) is not { } participants) return TypedResults.NotFound();
+        if (!await Has(PermissionKeys.CanViewPerformanceReviews))
+        {
+            var own = await repository.EmployeeOf(userId);
+            if (own == null || (own != participants.EmployeeId && own != participants.ReviewerId)) return TypedResults.Forbid();
+        }
         var result = await repository.GetReview(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -40,7 +58,10 @@ public partial class PerformanceController
     [Authorize(PermissionKeys.CanSubmitSelfAssessment)]
     public async Task<IResult> SubmitSelfAssessment([FromRoute] Guid id, [FromBody] SubmitSelfAssessmentRequest request)
     {
-        var result = await repository.SubmitSelfAssessment(id, request);
+        if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
+        if (await repository.EmployeeOf(userId) is not { } own)
+            return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Employee.NotLinked", detail: "Your account is not linked to an employee record.");
+        var result = await repository.SubmitSelfAssessment(id, request, own);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -53,7 +74,9 @@ public partial class PerformanceController
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
 
-        var result = await repository.SubmitManagerReview(id, request, userId);
+        if (await repository.EmployeeOf(userId) is not { } own)
+            return TypedResults.Problem(statusCode: StatusCodes.Status400BadRequest, title: "Employee.NotLinked", detail: "Your account is not linked to an employee record.");
+        var result = await repository.SubmitManagerReview(id, request, userId, own);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 }

@@ -19,6 +19,13 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == request.JobRequestId);
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", "Job request not found");
+        var approvalGate = jobRequest.EnsureApprovedForProgression("Job request");
+        if (approvalGate.IsFailure) return approvalGate.Error;
+        if (jobRequest.Status is not (JobRequestStatus.Pending or JobRequestStatus.Acknowledged) || jobRequest.HandlingType == JobHandlingType.Internal
+            || await context.JobOrders.AnyAsync(o => o.JobRequestId == jobRequest.Id))
+            return Error.Validation("JobRequest.AlreadyHandled", "This job request has already been assigned or sent out.");
+        if ((request.ServiceProviderIds ?? []).Count == 0 || request.ServiceProviderIds.Distinct().Count() != request.ServiceProviderIds.Count)
+            return Error.Validation("JobOrder.Providers", "Choose at least one service provider, each once.");
 
         if (request.ServiceId.HasValue)
         {
@@ -419,6 +426,8 @@ public class JobOrderRepository(ApplicationDbContext context, IMapper mapper, Us
 
         if (execution.Status != JobOrderExecutionStatus.VerifiedBySupervisor)
             return Error.Validation("JobOrderExecution.InvalidStatus", "Job order execution must be verified before approval");
+        if (execution.VerifiedById == request.ApprovedById)
+            return Error.Validation("JobOrderExecution.SegregationOfDuties", "The person who verified the work cannot also approve it.");
 
         var approvedBy = await userManager.FindByIdAsync(request.ApprovedById.ToString());
         if (approvedBy is null) return Error.Validation("User.Invalid", "User Invalid");

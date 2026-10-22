@@ -341,6 +341,8 @@ public class JobExecutionRepository(ApplicationDbContext context, IMapper mapper
 
         if (jobExecution.Status != JobExecutionStatus.VerifiedBySupervisor)
             return Error.Validation("JobExecution.InvalidStatus", "Job execution must be verified before approval");
+        if (jobExecution.VerifiedById == request.ApprovedById)
+            return Error.Validation("JobExecution.SegregationOfDuties", "The person who verified the work cannot also approve it.");
 
         var approvedBy = await userManager.FindByIdAsync(request.ApprovedById.ToString());
         if (approvedBy is null) return Error.Validation("User.Invalid", "User Invalid");

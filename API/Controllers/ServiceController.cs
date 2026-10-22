@@ -4,6 +4,7 @@ using APP.Utils;
 using DOMAIN.Entities.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
 
 namespace API.Controllers;
 
@@ -18,7 +19,7 @@ namespace API.Controllers;
 [Authorize]
 [Route("api/v{version:apiVersion}/services")]
 [Tags("Services")]
-public class ServiceController(IServiceRepository repository) : ControllerBase
+public class ServiceController(IServiceRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a new service
@@ -36,6 +37,8 @@ public class ServiceController(IServiceRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateService([FromBody] CreateServiceRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewServices", "CanCreateService")) return TypedResults.Forbid();
+
         var result = await repository.CreateService(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -49,6 +52,8 @@ public class ServiceController(IServiceRepository repository) : ControllerBase
         [FromQuery] string searchQuery = null, [FromQuery] bool? isActive = true, [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewServices", "CanCreateJobRequest", "CanEditJobRequest", "CanCreateJobOrder")) return TypedResults.Forbid();
+
         var result = await repository.GetServices(page, pageSize, searchQuery, isActive, startDate, endDate);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -60,6 +65,8 @@ public class ServiceController(IServiceRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceDto))]
     public async Task<IResult> GetService([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewServices", "CanViewJobRequests", "CanViewJobOrders")) return TypedResults.Forbid();
+
         var result = await repository.GetService(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -73,6 +80,8 @@ public class ServiceController(IServiceRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateService([FromRoute] Guid id, [FromBody] CreateServiceRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewServices", "CanEditService")) return TypedResults.Forbid();
+
         var result = await repository.UpdateService(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -85,10 +94,14 @@ public class ServiceController(IServiceRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteService([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewServices", "CanDeleteService")) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteService(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

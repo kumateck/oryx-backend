@@ -1106,6 +1106,7 @@ public partial class ApplicationDbContext(
         // Call base method
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
+        ConfigureEmployeeOnboarding(modelBuilder);
 
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);

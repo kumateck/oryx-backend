@@ -4,6 +4,8 @@ using APP.Utils;
 using DOMAIN.Entities.JobRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -24,7 +26,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/service-proforma-invoices")]
 [Authorize]
 [Tags("Service Proforma Invoices")]
-public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository repository) : ControllerBase
+public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Requests a proforma invoice from the selected contractor
@@ -64,6 +66,8 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RequestServiceProformaInvoice([FromBody] RequestServiceProformaInvoiceRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewProformaRequests, ServiceKeys.SendProformaRequest)) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -120,6 +124,8 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RespondServiceProformaInvoice([FromBody] RespondServiceProformaInvoiceRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewProformaResponses, ServiceKeys.SendProformaResponse)) return TypedResults.Forbid();
+
         var result = await repository.RespondServiceProformaInvoice(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -159,6 +165,8 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveServiceProformaInvoice([FromBody] ApproveServiceProformaInvoiceRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPurchaseOrders, ServiceKeys.CreatePurchaseOrder)) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -183,6 +191,7 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <param name="status">Filter by proforma invoice status</param>
     /// <param name="jobOrderId">Filter by job order ID</param>
     /// <param name="serviceProviderId">Filter by service provider ID</param>
+    /// <param name="memoPending">Only approved proformas whose job order has no service memo yet</param>
     /// <returns>Paginated list of proforma invoices</returns>
     /// <response code="200">Returns paginated list of proforma invoices</response>
     [HttpGet]
@@ -193,9 +202,12 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
         [FromQuery] int pageSize = 10,
         [FromQuery] ServiceProformaInvoiceStatus? status = null,
         [FromQuery] Guid? jobOrderId = null,
-        [FromQuery] Guid? serviceProviderId = null)
+        [FromQuery] Guid? serviceProviderId = null,
+        [FromQuery] bool memoPending = false)
     {
-        var result = await repository.GetServiceProformaInvoices(page, pageSize, status, jobOrderId, serviceProviderId);
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewProformaRequests, ServiceKeys.ViewProformaResponses, ServiceKeys.ViewPurchaseOrders, ServiceKeys.ViewMemo)) return TypedResults.Forbid();
+
+        var result = await repository.GetServiceProformaInvoices(page, pageSize, status, jobOrderId, serviceProviderId, memoPending);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -220,8 +232,11 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetServiceProformaInvoice([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewProformaRequests, ServiceKeys.ViewProformaResponses, ServiceKeys.ViewPurchaseOrders, ServiceKeys.ViewMemo)) return TypedResults.Forbid();
+
         var result = await repository.GetServiceProformaInvoice(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
-}
 
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
+}

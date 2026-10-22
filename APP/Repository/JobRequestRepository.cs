@@ -205,6 +205,8 @@ public class JobRequestRepository(ApplicationDbContext context,
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", "Job request not found");
+        if (jobRequest.Status is not (JobRequestStatus.Pending or JobRequestStatus.Acknowledged))
+            return Error.Validation("JobRequest.InProgress", "Work on this job request has begun, so it can no longer be changed.");
 
         if (request.EquipmentId.HasValue)
         {
@@ -232,6 +234,9 @@ public class JobRequestRepository(ApplicationDbContext context,
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
             return Error.NotFound("JobRequest.NotFound", "Job request not found");
+        if (jobRequest.Status is not (JobRequestStatus.Pending or JobRequestStatus.Acknowledged or JobRequestStatus.Cancelled)
+            || await context.JobExecutions.AnyAsync(e => e.JobRequestId == id) || await context.JobOrders.AnyAsync(o => o.JobRequestId == id))
+            return Error.Validation("JobRequest.InProgress", "Work on this job request has begun, so it cannot be deleted.");
 
         jobRequest.DeletedAt = DateTime.UtcNow;
         jobRequest.LastDeletedById = userId;
@@ -251,6 +256,8 @@ public class JobRequestRepository(ApplicationDbContext context,
         var approvalGate = jobRequest.EnsureApprovedForProgression("Job request");
         if (approvalGate.IsFailure)
             return approvalGate.Error;
+        if (jobRequest.Status is not (JobRequestStatus.Pending or JobRequestStatus.Acknowledged) || jobRequest.HandlingType == JobHandlingType.External)
+            return Error.Validation("JobRequest.AlreadyHandled", "This job request has already been assigned or sent out. Reassign its execution instead.");
 
         var employee = await context.Employees
             .FirstOrDefaultAsync(e => e.Id == request.AssignedToEmployeeId);
@@ -368,6 +375,9 @@ public class JobRequestRepository(ApplicationDbContext context,
         if (approvalGate.IsFailure)
             return approvalGate;
 
+        if (jobRequest.Status is not (JobRequestStatus.Assigned or JobRequestStatus.JobStarted))
+            return Error.Validation("JobRequest.NotInProgress", "Only an assigned or started job request can be completed.");
+
         // Verify job request is assigned internally
         if (jobRequest.HandlingType != JobHandlingType.Internal)
             return Error.Validation("JobRequest.InvalidHandlingType", "Job request must be assigned internally to be completed");
@@ -417,6 +427,44 @@ public class JobRequestRepository(ApplicationDbContext context,
 
         await context.SaveChangesAsync();
 
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// The steps set directly on a job request: acknowledging a pending request, the assignee starting assigned work, and
+    /// cancelling one that has not begun. Every other stage follows its own action.
+    /// </summary>
+    public async Task<Result> ChangeJobRequestStatus(Guid id, JobRequestStatus target, Guid actor)
+    {
+        var jobRequest = await context.JobRequests.Include(j => j.AssignedToEmployee).FirstOrDefaultAsync(j => j.Id == id);
+        if (jobRequest is null) return Error.NotFound("JobRequest.NotFound", $"Job request with ID '{id}' not found");
+        switch (target)
+        {
+            case JobRequestStatus.Acknowledged:
+                if (jobRequest.Status != JobRequestStatus.Pending) return Error.Validation("JobRequest.Status", "Only a pending job request can be acknowledged.");
+                break;
+            case JobRequestStatus.JobStarted:
+                if (jobRequest.Status != JobRequestStatus.Assigned || jobRequest.HandlingType != JobHandlingType.Internal)
+                    return Error.Validation("JobRequest.Status", "Only an internally assigned job request can be started.");
+                var user = await userManager.FindByIdAsync(actor.ToString());
+                if (user is null || string.IsNullOrWhiteSpace(user.Email) || !string.Equals(jobRequest.AssignedToEmployee?.Email, user.Email, StringComparison.OrdinalIgnoreCase))
+                    return Error.Validation("JobRequest.Unauthorized", "Only the assigned employee can start this job.");
+                break;
+            case JobRequestStatus.Cancelled:
+                if (jobRequest.Status is not (JobRequestStatus.Pending or JobRequestStatus.Acknowledged))
+                    return Error.Validation("JobRequest.Status", "Work on this job request has begun, so it cannot be cancelled.");
+                break;
+            default:
+                return Error.Validation("JobRequest.Status", "This stage follows its own step.");
+        }
+        if (target != JobRequestStatus.Cancelled)
+        {
+            var approvalGate = jobRequest.EnsureApprovedForProgression("Job request");
+            if (approvalGate.IsFailure) return approvalGate;
+        }
+        jobRequest.Status = target;
+        jobRequest.LastUpdatedById = actor;
+        await context.SaveChangesAsync();
         return Result.Success();
     }
 }

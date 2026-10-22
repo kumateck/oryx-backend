@@ -4,6 +4,8 @@ using APP.Utils;
 using DOMAIN.Entities.JobRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -24,7 +26,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/service-memos")]
 [Authorize]
 [Tags("Service Memos")]
-public class ServiceMemoController(IServiceMemoRepository repository) : ControllerBase
+public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a new service memo
@@ -78,6 +80,11 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateServiceMemo([FromBody] CreateServiceMemoRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreateMemo)) return TypedResults.Forbid();
+        if (Actor() is not { } issuer) return TypedResults.Unauthorized();
+        // The issuer is the signed-in user, never a value from the request.
+        request.IssuedById = issuer;
+
         var result = await repository.CreateServiceMemo(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -94,6 +101,8 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
         [FromQuery] Guid? jobOrderId = null,
         [FromQuery] Guid? serviceProviderId = null)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo)) return TypedResults.Forbid();
+
         var result = await repository.GetServiceMemos(page, pageSize, status, jobOrderId, serviceProviderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -106,6 +115,8 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetServiceMemo([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo)) return TypedResults.Forbid();
+
         var result = await repository.GetServiceMemo(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -119,6 +130,8 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateServiceMemo([FromRoute] Guid id, [FromBody] UpdateServiceMemoRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreateMemo)) return TypedResults.Forbid();
+
         var result = await repository.UpdateServiceMemo(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -132,6 +145,8 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> MarkServiceMemoAsPaid([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreatePurchaseOrder)) return TypedResults.Forbid();
+
         var result = await repository.MarkServiceMemoAsPaid(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -163,8 +178,11 @@ public class ServiceMemoController(IServiceMemoRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> IssueServiceMemo([FromBody] IssueServiceMemoRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreateMemo)) return TypedResults.Forbid();
+
         var result = await repository.IssueServiceMemo(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-}
 
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
+}

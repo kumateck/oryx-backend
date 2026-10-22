@@ -18,7 +18,9 @@ public partial class InventoryProcurementController
     {
         if (status is not (ApprovalStatus.Pending or ApprovalStatus.Approved or ApprovalStatus.Rejected)) return TypedResults.BadRequest();
         var operation = status == ApprovalStatus.Approved ? InventoryStockOperation.ViewAvailable : InventoryStockOperation.ViewReceiving;
-        if (!await InventoryStockAccess.Allows(context, StockActor(), store, operation)) return TypedResults.Forbid();
+        // Procurement follows what it bought through its purchase-order keys; stores through their stock keys.
+        var procurement = await Has("CanViewPurchaseOrdersForTrustedVendors") || await Has("CanViewOpenMarketPurchaseOrders");
+        if (!procurement && !await InventoryStockAccess.Allows(context, StockActor(), store, operation)) return TypedResults.Forbid();
         var result = await repository.GetStockEntries(status, page, pageSize, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

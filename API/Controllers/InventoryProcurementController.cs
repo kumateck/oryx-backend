@@ -9,6 +9,8 @@ using DOMAIN.Entities.StockEntries;
 using DOMAIN.Entities.VendorQuotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using APP.Services.Stores;
 
 namespace API.Controllers;
 
@@ -29,10 +31,9 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateInventoryPurchaseRequisition([FromBody] CreateInventoryPurchaseRequisition request)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.CreateInventoryPurchaseRequisition(request, Guid.Parse(userId));
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!await ForItems(request?.Items?.Select(i => i.ItemId), StoreWorkflowAction.Create)) return TypedResults.Forbid();
+        var result = await repository.CreateInventoryPurchaseRequisition(request, actor);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -48,7 +49,12 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpdateInventoryPurchaseRequisition(Guid id, [FromBody] CreateInventoryPurchaseRequisition request)
     {
-        var result = await repository.UpdateInventoryPurchaseRequisition(id, request);
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        var stores = await repository.PurchaseRequisitionStores(id);
+        if (stores.Count == 0) return TypedResults.NotFound();
+        if (!await StoreWorkflowAccess.AllowsAll(context, actor, stores, StoreWorkflow.PurchaseRequisitions, StoreWorkflowAction.Edit)
+            || !await ForItems(request?.Items?.Select(i => i.ItemId), StoreWorkflowAction.Edit)) return TypedResults.Forbid();
+        var result = await repository.UpdateInventoryPurchaseRequisition(id, request, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -63,7 +69,11 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> DeleteInventoryPurchaseRequisition(Guid id)
     {
-        var result = await repository.DeleteInventoryPurchaseRequisition(id);
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        var stores = await repository.PurchaseRequisitionStores(id);
+        if (stores.Count == 0) return TypedResults.NotFound();
+        if (!await StoreWorkflowAccess.AllowsAll(context, actor, stores, StoreWorkflow.PurchaseRequisitions, StoreWorkflowAction.Delete)) return TypedResults.Forbid();
+        var result = await repository.DeleteInventoryPurchaseRequisition(id, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -78,6 +88,10 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetInventoryPurchaseRequisition(Guid id)
     {
+        var stores = await repository.PurchaseRequisitionStores(id);
+        if (stores.Count == 0) return TypedResults.NotFound();
+        if (!await Has(Sourcing.View) && !await StoreWorkflowAccess.AllowsAll(context, Actor(), stores, StoreWorkflow.PurchaseRequisitions, StoreWorkflowAction.View))
+            return TypedResults.Forbid();
         var result = await repository.GetInventoryPurchaseRequisition(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -94,9 +108,15 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>))]
     public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] InventoryPurchaseRequisitionStatus status = InventoryPurchaseRequisitionStatus.Pending)
+        [FromQuery] InventoryPurchaseRequisitionStatus status = InventoryPurchaseRequisitionStatus.Pending, [FromQuery] bool anyStatus = false,
+        [FromQuery] Store? store = null)
     {
-        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery, status);
+        // Procurement sees every store's requisitions to source them; stores see their own.
+        var readable = await Has(Sourcing.View)
+            ? StoreWorkflowAccess.Stores.ToHashSet()
+            : await StoreWorkflowAccess.Readable(context, Actor(), StoreWorkflow.PurchaseRequisitions);
+        if (readable.Count == 0 || (store.HasValue && !readable.Contains(store.Value))) return TypedResults.Forbid();
+        var result = await repository.GetInventoryPurchaseRequisitions(page, pageSize, searchQuery, anyStatus ? null : status, readable, store);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -116,10 +136,9 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateSourceRequisition([FromBody] CreateSourceInventoryRequisition request)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.CreateSourceRequisition(request, Guid.Parse(userId));
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!await Has(Sourcing.View, Sourcing.Source)) return TypedResults.Forbid();
+        var result = await repository.CreateSourceRequisition(request, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -134,10 +153,9 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateMarketRequisition([FromBody] List<CreateMarketRequisition> requests)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.CreateMarketRequisition(requests);
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!await Has(Sourcing.View, Sourcing.Source)) return TypedResults.Forbid();
+        var result = await repository.CreateMarketRequisition(requests, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -150,9 +168,10 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [HttpGet("market")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MarketRequisitionDto>>))]
-    public async Task<IResult> GetMarketRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<IResult> GetMarketRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] bool? closed = null)
     {
-        var result = await repository.GetMarketRequisitions(page, pageSize);
+        if (!await Has(OpenMarket.ViewSheets)) return TypedResults.Forbid();
+        var result = await repository.GetMarketRequisitions(page, pageSize, closed);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
     /// <summary>
@@ -165,6 +184,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MarketRequisitionDto))]
     public async Task<IResult> GetMarketRequisitions([FromRoute] Guid id)
     {
+        if (!await Has(OpenMarket.ViewSheets)) return TypedResults.Forbid();
         var result = await repository.GetMarketRequisition(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -180,6 +200,8 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetPriceComparisonOfItem([FromQuery] InventoryRequisitionSource source)
     {
+        var key = source == InventoryRequisitionSource.OpenMarket ? OpenMarket.ViewPricing : Trusted.ViewPricing;
+        if (!await Has(key)) return TypedResults.Forbid();
         var result = await repository.GetPriceComparisonOfItem(source);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -200,10 +222,9 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ProcessOpenMarketMemo([FromBody] List<CreateMemoItem> memos)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.ProcessOpenMarketMemo(memos, Guid.Parse(userId));
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!await Has(OpenMarket.ViewPricing, OpenMarket.CreateMemo)) return TypedResults.Forbid();
+        var result = await repository.ProcessOpenMarketMemo(memos, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -218,10 +239,9 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ProcessTrustedVendorQuotationAndCreateMemo([FromBody] List<CreateMemoItem> memos)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
-
-        var result = await repository.ProcessTrustedVendorMemo(memos, Guid.Parse(userId));
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!await Has(Trusted.ViewPricing, Trusted.CreateMemo)) return TypedResults.Forbid();
+        var result = await repository.ProcessTrustedVendorMemo(memos, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -241,6 +261,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SendQuotationToVendor(Guid vendorId)
     {
+        if (!await Has(Trusted.ViewRequests, Trusted.CreateRequest)) return TypedResults.Forbid();
         var result = await repository.SendQuotationToVendor(vendorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -257,6 +278,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<VendorQuotationDto>>))]
     public async Task<IResult> GetVendorQuotations([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] bool received = false)
     {
+        if (!await Has(received ? Trusted.ViewResponses : Trusted.ViewRequests)) return TypedResults.Forbid();
         var result = await repository.GetVendorQuotations(page, pageSize, received);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -272,6 +294,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetVendorQuotation(Guid vendorQuotationId)
     {
+        if (!await Has(Trusted.ViewRequests) && !await Has(Trusted.ViewResponses)) return TypedResults.Forbid();
         var result = await repository.GetVendorQuotation(vendorQuotationId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -288,7 +311,9 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReceiveQuotationFromVendor([FromBody] List<VendorQuotationResponseDto> vendorQuotationResponse, Guid vendorQuotationId)
     {
-        var result = await repository.ReceiveQuotationFromVendor(vendorQuotationResponse, vendorQuotationId);
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!await Has(Trusted.ViewResponses, Trusted.SendResponse)) return TypedResults.Forbid();
+        var result = await repository.ReceiveQuotationFromVendor(vendorQuotationResponse, vendorQuotationId, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -307,9 +332,10 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [HttpGet("market/vendors")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MarketRequisitionVendorDto>>))]
-    public async Task<IResult> GetMarketRequisitionVendors([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] bool complete = false)
+    public async Task<IResult> GetMarketRequisitionVendors([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] bool complete = false, [FromQuery] Guid? marketRequisitionId = null)
     {
-        var result = await repository.GetMarketRequisitionVendors(page, pageSize, complete);
+        if (!await Has(OpenMarket.ViewSheets)) return TypedResults.Forbid();
+        var result = await repository.GetMarketRequisitionVendors(page, pageSize, complete, marketRequisitionId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -324,6 +350,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateMarketRequisitionVendor([FromBody] CreateMarketRequisitionVendor request)
     {
+        if (!await Has(OpenMarket.ViewSheets, OpenMarket.CreateSheet)) return TypedResults.Forbid();
         var result = await repository.CreateMarketRequisitionVendor(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -339,6 +366,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId)
     {
+        if (!await Has(OpenMarket.ViewPricing, OpenMarket.ApplyPricing)) return TypedResults.Forbid();
         var result = await repository.ConfirmMarketRequisitionVendor(marketRequisitionVendorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -363,6 +391,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
         [FromQuery] string searchQuery = null,
         [FromQuery] MemoStatus? status = null)
     {
+        if (!await Has(Trusted.ViewMemo) && !await Has(OpenMarket.ViewMemo)) return TypedResults.Forbid();
         var result = await repository.GetMemos(page, pageSize, searchQuery, status);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -378,6 +407,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMemo(Guid id)
     {
+        if (!await Has(Trusted.ViewMemo) && !await Has(OpenMarket.ViewMemo)) return TypedResults.Forbid();
         var result = await repository.GetMemo(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -394,7 +424,14 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> MarkMemoItemAsPaid(Guid id)
     {
-        var result = await repository.MarkMemoItemAsPaid(id);
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        var item = await context.MemoItems.AsNoTracking().Where(m => m.Id == id).Select(m => new { m.VendorQuotationItemId, m.MarketRequisitionVendorId }).FirstOrDefaultAsync();
+        if (item == null) return TypedResults.NotFound();
+        var allowed = item.MarketRequisitionVendorId.HasValue
+            ? await Has(OpenMarket.ViewMemo, OpenMarket.CreatePurchaseOrder)
+            : await Has(Trusted.ViewMemo, Trusted.CreatePurchaseOrder);
+        if (!allowed) return TypedResults.Forbid();
+        var result = await repository.MarkMemoItemAsPaid(id, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -411,6 +448,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
     public async Task<IResult> GenerateMemoCode()
     {
+        if (!await Has(Trusted.CreateMemo) && !await Has(OpenMarket.CreateMemo)) return TypedResults.Forbid();
         return TypedResults.Ok(await repository.GenerateMemoCode());
     }
 
@@ -420,10 +458,49 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadStockEntries([FromForm] ImportItemsRequest request)
     {
+        if (!await Has(Sourcing.View, Sourcing.Source)) return TypedResults.Forbid();
         var result = await repository.UploadStockItems(request);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
 
 
     #endregion
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
+
+    private async Task<bool> Has(params string[] keys)
+    {
+        var granted = await APP.Services.Authorization.CurrentPermissionSet.Load(context, Actor());
+        return keys.All(granted.Contains);
+    }
+
+    private async Task<bool> ForItems(IEnumerable<Guid> itemIds, StoreWorkflowAction action)
+    {
+        var ids = (itemIds ?? []).Distinct().ToList();
+        var stores = await context.Items.AsNoTracking().Where(i => ids.Contains(i.Id)).Select(i => i.Store).Distinct().ToListAsync();
+        if (stores.Count > 0) return await StoreWorkflowAccess.AllowsAll(context, Actor(), stores, StoreWorkflow.PurchaseRequisitions, action);
+        foreach (var store in StoreWorkflowAccess.Stores)
+            if (await StoreWorkflowAccess.Allows(context, Actor(), store, StoreWorkflow.PurchaseRequisitions, action)) return true;
+        return false;
+    }
+
+    private static class Sourcing
+    {
+        public const string View = "CanViewPurchaseRequisitionsSourcing", Source = "CanSourcePurchaseRequisitionSourcing";
+    }
+
+    private static class Trusted
+    {
+        public const string ViewRequests = "CanViewQuotationRequestsForTrustedVendors", CreateRequest = "CanCreateQuotationRequestForTrustedVendor",
+            ViewResponses = "CanViewQuotationResponsesForTrustedVendors", SendResponse = "CanSendQuotationResponseForTrustedVendor",
+            ViewPricing = "CanViewTrustedVendorPricingSelection", CreateMemo = "CanCreateMemoForTrustedVendor",
+            ViewMemo = "CanViewMemoForTrustedVendors", CreatePurchaseOrder = "CanCreatePurchaseOrderForTrustedVendor";
+    }
+
+    private static class OpenMarket
+    {
+        public const string ViewSheets = "CanViewOpenMarketQuotationSheets", CreateSheet = "CanCreateOpenMarketQuotationSheet",
+            ViewPricing = "CanViewOpenMarketPricingSelection", ApplyPricing = "CanApplyChangesForOpenMarketPricingSelection",
+            CreateMemo = "CanCreateOpenMarketMemo", ViewMemo = "CanViewOpenMarketMemo", CreatePurchaseOrder = "CanCreateOpenMarketPurchaseOrder";
+    }
 }
