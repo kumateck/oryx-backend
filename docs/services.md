@@ -579,3 +579,15 @@ The response also provides `warehouseName`, filters rows to the requested
 warehouse department, and orders newest first. The outbound requisition code
 is distinct from an inbound waybill. See
 `docs/warehouse-stock-issue-reconciliation.md` for the migration and review rules.
+
+## Session refresh ownership — 2026-10-21
+
+Refresh token issuance explicitly saves the authenticated `UserId`, allowing the existing refresh endpoint to restore that same account across requests and app restarts. Audit `CreatedById` is separate. Existing ownerless tokens require a new sign-in after the corrected server is running. See [session-refresh-ownership.md](session-refresh-ownership.md) for the regression test and deployment limit.
+
+## Contractor maintenance repair — 2026-10-21
+
+The existing service-provider update persists the requested service associations after verifying all service IDs. Deletion returns NotFound for a missing record and refuses current or historical job, execution, quotation, proforma invoice and memo references before audited soft deletion. Endpoint shapes are unchanged. See [service-provider-maintenance.md](service-provider-maintenance.md) for verification and deployment limits.
+
+## Inventory definitions, receiving and stock integrity
+
+Item maintenance and stock receipts now validate history/ledger identity, current per-store database grants, known distinct receipt creators, atomic stock postings and optimistic concurrency. New item codes are globally unique while the legacy ledger is code-based; ambiguous historical ledgers require reconciliation. The stock envelope now includes creator/memo/unit/category references without changing its HTTP shape. These source repairs are not deployed. Damage edit/delete, returns, other writers and PostgreSQL/end-to-end acceptance remain; see [inventory-stock-integrity.md](inventory-stock-integrity.md).

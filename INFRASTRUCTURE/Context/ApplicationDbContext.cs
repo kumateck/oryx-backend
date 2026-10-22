@@ -101,7 +101,7 @@ using ServiceProvider = DOMAIN.Entities.ServiceProviders.ServiceProvider;
 
 namespace INFRASTRUCTURE.Context;
 
-public class ApplicationDbContext(
+public partial class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
     ICurrentUserService currentUserService
 ) : IdentityDbContext<User, Role, Guid>(options), IDataProtectionKeyContext
@@ -1105,6 +1105,7 @@ public class ApplicationDbContext(
 
         // Call base method
         base.OnModelCreating(modelBuilder);
+        ConfigureInventoryConcurrency(modelBuilder);
 
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);

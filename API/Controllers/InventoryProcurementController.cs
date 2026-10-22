@@ -14,7 +14,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/procurement/inventory")]
 [ApiController]
-public class InventoryProcurementController(IInventoryProcurementRepository repository) : ControllerBase
+public partial class InventoryProcurementController(IInventoryProcurementRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     #region Inventory Purchase Requisition Management
 
@@ -399,34 +399,6 @@ public class InventoryProcurementController(IInventoryProcurementRepository repo
     }
 
     #endregion
-
-    [HttpGet("purchased-items")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
-    public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] Store store = Store.EquipmentStore)
-    {
-        var result = await repository.GetStockEntries(status, page, pageSize, store);
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
-    }
-
-    [HttpPost("items/{id:guid}/approve")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IResult> ApproveItem([FromRoute] Guid id)
-    {
-        var result = await repository.ApproveItem(id);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
-
-    [HttpPost("items/{id:guid}/reject")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IResult> RejectItem([FromRoute] Guid id)
-    {
-        var result = await repository.RejectItem(id);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
-    }
 
     #region Helper Methods
 

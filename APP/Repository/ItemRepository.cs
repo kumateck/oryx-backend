@@ -15,28 +15,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IItemRepository
+public partial class ItemRepository(ApplicationDbContext context, IMapper mapper) : IItemRepository
 {
-    public async Task<Result<Guid>> CreateItem(CreateItemsRequest request)
-    {
-        var item = await context.Items
-            .FirstOrDefaultAsync(i => (i.Code == request.Code || i.Name == request.Name)
-                                      && i.Store == request.Store);
-        if (item != null) return Error.Validation("Item.Exists", "Item already exists for this department");
-
-        if (request.ItemCategoryId.HasValue)
-        {
-            var itemCategory = await context.ItemCategories.FirstOrDefaultAsync(ic => ic.Id == request.ItemCategoryId);
-            if (itemCategory == null) return Error.NotFound("ItemCategory.NotFound", "Item category not found");
-
-        }
-
-        item = mapper.Map<Item>(request);
-        await context.Items.AddAsync(item);
-        await context.SaveChangesAsync();
-        return item.Id;
-    }
-
     public async Task<Result> UploadItems(ImportItemsRequest itemsRequest)
     {
         var file = itemsRequest.ItemFile;
@@ -269,52 +249,6 @@ public class ItemRepository(ApplicationDbContext context, IMapper mapper) : IIte
                 opts => opts.Items[AppConstants.ModelType] = nameof(Item));
     }
 
-
-    public async Task<Result> UpdateItem(Guid id, CreateItemsRequest request)
-    {
-        var item = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
-        if (item == null) return Error.NotFound("Item.NotFound", "Item not found");
-
-        mapper.Map(request, item);
-        context.Items.Update(item);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> DeleteItem(Guid id, Guid userId)
-    {
-        var item = await context.Items.FirstOrDefaultAsync(i => i.Id == id);
-        if (item == null) return Error.NotFound("Item.NotFound", "Item not found");
-
-        item.DeletedAt = DateTime.UtcNow;
-        item.LastDeletedById = userId;
-        item.IsActive = false;
-
-        context.Items.Update(item);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result<List<ItemTransactionLogDto>>> GetItemTransactions(
-        string itemCode,
-        string transactionType)
-
-    {
-        var query = context.ItemTransactionLogs
-            .Where(i => i.ItemCode == itemCode);
-
-        if (Enum.TryParse<TransactionType>(transactionType, out var transaction))
-        {
-            query = query.Where(i => i.TransactionType == transaction);
-        }
-        var transactions = await query
-            .OrderByDescending(i => i.CreatedAt)
-            .ToListAsync();
-
-        var result = mapper.Map<List<ItemTransactionLogDto>>(transactions);
-
-        return Result.Success(result);
-    }
 
     // ************* Item Shipment Invoice *************
 

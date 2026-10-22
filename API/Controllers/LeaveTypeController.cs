@@ -10,7 +10,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/leave-type")]
 [Authorize]
-public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBase
+public class LeaveTypeController(ILeaveTypeRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
 
     /// <summary>
@@ -21,6 +21,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBa
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveType([FromBody] CreateLeaveTypeRequest leaveType)
     {
+        if (!await HasAccess("CanViewLeaveType", "CanCreateLeaveType")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -38,6 +39,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBa
         [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] Guid? designationId = null)
     {
+        if (!await HasAccess("CanViewLeaveType", "CanViewLeaveType")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -54,6 +56,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBa
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveType([FromRoute] Guid id)
     {
+        if (!await HasAccess("CanViewLeaveType", "CanViewLeaveType")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -71,6 +74,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBa
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateLeaveType([FromRoute] Guid id, [FromBody] CreateLeaveTypeRequest leaveType)
     {
+        if (!await HasAccess("CanViewLeaveType", "CanEditLeaveType")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -88,10 +92,17 @@ public class LeaveTypeController(ILeaveTypeRepository repository) : ControllerBa
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveType([FromRoute] Guid id)
     {
+        if (!await HasAccess("CanViewLeaveType", "CanDeleteLeaveType")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteLeaveType(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    private async Task<bool> HasAccess(string read, string action)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return false;
+        var keys = await APP.Services.Authorization.CurrentPermissionSet.Load(context, actor);
+        return keys.Contains(read) && keys.Contains(action);
     }
 }

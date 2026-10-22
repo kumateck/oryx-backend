@@ -10,7 +10,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/designation")]
 [ApiController]
 [Authorize]
-public class DesignationController(IDesignationRepository repository) : ControllerBase
+public class DesignationController(IDesignationRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
 
     /// <summary>
@@ -21,6 +21,7 @@ public class DesignationController(IDesignationRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDesignation([FromBody] CreateDesignationRequest request)
     {
+        if (!await HasAccess("CanViewDesignation", "CanCreateDesignation")) return TypedResults.Forbid();
 
         var result = await repository.CreateDesignation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -34,6 +35,7 @@ public class DesignationController(IDesignationRepository repository) : Controll
     public async Task<IResult> GetDesignations([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null)
     {
+        if (!await HasAccess("CanViewDesignation", "CanViewDesignation")) return TypedResults.Forbid();
 
         var result = await repository.GetDesignations(page, pageSize, searchQuery, departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -47,6 +49,7 @@ public class DesignationController(IDesignationRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDesignation([FromRoute] Guid id)
     {
+        if (!await HasAccess("CanViewDesignation", "CanViewDesignation")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -60,6 +63,7 @@ public class DesignationController(IDesignationRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDesignationByDepartment([FromRoute] Guid id)
     {
+        if (!await HasAccess("CanViewDesignation", "CanViewDesignation")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -77,6 +81,7 @@ public class DesignationController(IDesignationRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateDesignation([FromRoute] Guid id, [FromBody] CreateDesignationRequest request)
     {
+        if (!await HasAccess("CanViewDesignation", "CanEditDesignation")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -93,10 +98,17 @@ public class DesignationController(IDesignationRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteDesignation([FromRoute] Guid id)
     {
+        if (!await HasAccess("CanViewDesignation", "CanDeleteDesignation")) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.DeleteDesignation(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+    private async Task<bool> HasAccess(string read, string action)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return false;
+        var keys = await APP.Services.Authorization.CurrentPermissionSet.Load(context, actor);
+        return keys.Contains(read) && keys.Contains(action);
     }
 }

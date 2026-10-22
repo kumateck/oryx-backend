@@ -468,3 +468,15 @@ transaction. Product Preparation consumes raw material reservations after issue;
 Final Packing consumes packaging reservations. Historical apparent repeats are
 reviewed against requisitions and movements before any compensating correction.
 See `docs/warehouse-stock-issue-reconciliation.md`.
+
+## Session refresh ownership — 2026-10-21
+
+Refresh token issuance explicitly saves the authenticated `UserId`, allowing the existing refresh endpoint to restore that same account across requests and app restarts. Audit `CreatedById` is separate. Existing ownerless tokens require a new sign-in after the corrected server is running. See [session-refresh-ownership.md](session-refresh-ownership.md) for the regression test and deployment limit.
+
+## Contractor maintenance repair — 2026-10-21
+
+Contractor edits replace the complete verified Services association set. Missing service IDs leave existing associations unchanged. Contractor removal preserves historical operational and financial references by refusing linked records, including soft-deleted history; eligible removal uses the existing soft-deletion audit fields. Nine isolated regression tests pass; this source repair has not been deployed. See [service-provider-maintenance.md](service-provider-maintenance.md).
+
+## Inventory definitions, receiving and stock integrity
+
+Item maintenance and stock receipts now validate history/ledger identity, current per-store database grants, known distinct receipt creators, atomic stock postings and optimistic concurrency. New item codes are globally unique while the legacy ledger is code-based; ambiguous historical ledgers require reconciliation. The stock envelope now includes creator/memo/unit/category references without changing its HTTP shape. These source repairs are not deployed. Damage edit/delete, returns, other writers and PostgreSQL/end-to-end acceptance remain; see [inventory-stock-integrity.md](inventory-stock-integrity.md).
