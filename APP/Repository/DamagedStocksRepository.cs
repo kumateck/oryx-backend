@@ -16,61 +16,24 @@ public class DamagedStocksRepository(ApplicationDbContext context, IMapper mappe
     public async Task<Result<Guid>> CreateDamagedStocks(CreateDamagedStockRequest request, Guid userId)
     {
         var item = await context.Items.FirstOrDefaultAsync(i => i.Id == request.ItemId);
-        if (item == null)
-            return Error.NotFound("Item.Invalid", "Invalid item");
-
-        if (request.QuantityDamaged <= 0)
-            return Error.Validation("Quantity.Invalid", "Quantity damaged must be greater than 0");
-
-        if (item.AvailableQuantity < request.QuantityDamaged)
-            return Error.Validation("Quantity.ExceedsStock", "Damaged quantity exceeds available stock");
-
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
-        {
-            // Reduce available quantity
-            item.AvailableQuantity -= request.QuantityDamaged;
-            context.Items.Update(item);
-
-            // Map damaged stock
-            var stock = mapper.Map<DamagedStock>(request);
-            stock.Id = Guid.NewGuid();
-            stock.CreatedAt = DateTime.UtcNow;
-
-            await context.DamagedStocks.AddAsync(stock);
-
-            await context.SaveChangesAsync();
-
-            var itemTransaction = await context.ItemTransactionLogs
-                .OrderByDescending(i => i.CreatedAt)
-                .FirstOrDefaultAsync(i => i.ItemCode == item.Code);
-
-            if (itemTransaction == null) return Error.Validation("Invalid.Action", "Item balance is not valid");
-
-            var itemTransactionLog = new ItemTransactionLog
-            {
-                Id = Guid.NewGuid(),
-                ItemCode = item.Code,
-                TransactionType = request.DamageStatus == DamageStatus.Damage ? 
-                    TransactionType.Damaged: TransactionType.Missing,
-                Credit = 0,
-                Debit = request.QuantityDamaged,
-                TotalBalance = itemTransaction.TotalBalance - request.QuantityDamaged
-            };
-
-            await context.ItemTransactionLogs.AddAsync(itemTransactionLog);
-            await context.SaveChangesAsync();
-
-            await transaction.CommitAsync();
-
-            return stock.Id;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return Error.Failure("DamagedStock.CreateFailed", ex.Message);
-        }
+        if (item == null) return Error.NotFound("Item.Invalid", "Invalid item.");
+        if (!Enum.IsDefined(request.DamageStatus) || request.QuantityDamaged <= 0 || request.QuantityDamaged > item.AvailableQuantity)
+            return Error.Validation("Quantity.Invalid", "Choose damage or missing, with a positive quantity no greater than current available stock.");
+        var ledger = await APP.Services.Inventory.InventoryLedger.Balance(context, item);
+        if (ledger.IsFailure) return ledger.Error;
+        var report = mapper.Map<DamagedStock>(request);
+        report.Id = Guid.NewGuid();
+        report.CreatedById = userId;
+        item.AvailableQuantity -= request.QuantityDamaged;
+        context.DamagedStocks.Add(report);
+        context.ItemTransactionLogs.Add(new ItemTransactionLog {
+            Id = Guid.NewGuid(), ItemCode = item.Code,
+            TransactionType = request.DamageStatus == DamageStatus.Damage ? TransactionType.Damaged : TransactionType.Missing,
+            Credit = 0, Debit = request.QuantityDamaged, TotalBalance = item.AvailableQuantity, CreatedById = userId
+        });
+        // The stock, report and ledger are one atomic SaveChanges transaction.
+        var commit = await APP.Services.Inventory.InventoryCommit.Save(context);
+        return commit.IsFailure ? commit.Error : report.Id;
     }
 
     public async Task<Result<Paginateable<IEnumerable<DamagedStockDto>>>> GetDamagedStocks(int page, int pageSize, string searchQuery)

@@ -20,7 +20,7 @@ using OfficeOpenXml;
 
 namespace APP.Repository;
 
-public class InventoryProcurementRepository(
+public partial class InventoryProcurementRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IPdfService pdfService,
@@ -722,7 +722,10 @@ public class InventoryProcurementRepository(
     public async Task<Result<Paginateable<IEnumerable<StockEntryDto>>>> GetStockEntries(ApprovalStatus status, int page, int pageSize, Store store)
     {
         var query = context.StockEntries
-            .Include(s => s.Item)
+            .Include(s => s.Item).ThenInclude(i => i.UnitOfMeasure)
+            .Include(s => s.Item).ThenInclude(i => i.ItemCategory)
+            .Include(s => s.Memo)
+            .Include(s => s.CreatedBy)
             .Where(s => s.Status == status && s.Item.Store == store).AsQueryable();
         return await PaginationHelper
             .GetPaginatedResultAsync(
@@ -934,58 +937,6 @@ public class InventoryProcurementRepository(
         await context.StockEntries.AddRangeAsync(stockEntries);
         await context.SaveChangesAsync();
 
-        return Result.Success();
-    }
-
-    public async Task<Result> ApproveItem(Guid stockEntryId)
-    {
-        var stockEntry = await context.StockEntries
-            .Include(se => se.Item)
-            .FirstOrDefaultAsync(se => se.Id == stockEntryId);
-
-        if (stockEntry == null)
-            return Error.NotFound("StockEntry", "Stock entry not found.");
-
-        if (stockEntry.Status == ApprovalStatus.Approved)
-            return Error.Validation("StockEntry", "Stock entry already approved.");
-
-        var lastTransaction = await context.ItemTransactionLogs
-            .Where(t => t.ItemCode == stockEntry.Item.Code)
-            .OrderByDescending(t => t.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        var previousBalance = lastTransaction?.TotalBalance ?? 0;
-        var newBalance = previousBalance + stockEntry.Quantity;
-
-        var transaction = new ItemTransactionLog
-        {
-            Id = Guid.NewGuid(),
-            ItemCode = stockEntry.Item.Code,
-            Credit = stockEntry.Quantity,
-            Debit = 0,
-            TransactionType = TransactionType.Purchased,
-            TotalBalance = newBalance,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        stockEntry.Quantity = newBalance;
-        stockEntry.Status = ApprovalStatus.Approved;
-        stockEntry.Item.AvailableQuantity = (int) newBalance;
-
-        await context.ItemTransactionLogs.AddAsync(transaction);
-        await context.SaveChangesAsync();
-
-        return Result.Success();
-    }
-
-    public async Task<Result> RejectItem(Guid stockEntryId)
-    {
-        var stockEntry = await context.StockEntries.FirstOrDefaultAsync(s => s.Id == stockEntryId);
-        if (stockEntry == null) return Error.NotFound("StockEntry", "Stock entry not found.");
-
-        stockEntry.Status = ApprovalStatus.Rejected;
-        context.StockEntries.Update(stockEntry);
-        await context.SaveChangesAsync();
         return Result.Success();
     }
 

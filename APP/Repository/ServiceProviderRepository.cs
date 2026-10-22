@@ -95,19 +95,20 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
 
     public async Task<Result> UpdateServiceProvider(Guid id, CreateServiceProviderRequest request)
     {
-        var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id);
+        var serviceProvider = await context.ServiceProviders.Include(sp => sp.Services)
+            .FirstOrDefaultAsync(sp => sp.Id == id);
         if (serviceProvider is null) return Error.NotFound("ServiceProvider.NotFound", "Service Provider not found");
 
-        var validServiceIds = await context.Services
+        var services = await context.Services
             .Where(s => request.ServiceIds.Contains(s.Id))
-            .Select(s => s.Id)
             .ToListAsync();
 
-        var missingIds = request.ServiceIds.Except(validServiceIds).ToList();
+        var missingIds = request.ServiceIds.Except(services.Select(s => s.Id)).ToList();
         if (missingIds.Count != 0)
             return Error.NotFound("Service.NotFound", $"Some services not found: {string.Join(", ", missingIds)}");
 
         mapper.Map(request, serviceProvider);
+        serviceProvider.Services = services;
         context.ServiceProviders.Update(serviceProvider);
         await context.SaveChangesAsync();
         return Result.Success();
@@ -116,7 +117,16 @@ public class ServiceProviderRepository(ApplicationDbContext context, IMapper map
     public async Task<Result> DeleteServiceProvider(Guid id, Guid userId)
     {
         var serviceProvider = await context.ServiceProviders.FirstOrDefaultAsync(sp => sp.Id == id);
-        if (serviceProvider != null) return Error.Validation("ServiceProvider.NotDeletable", "Service Provider is linked to inventory");
+        if (serviceProvider is null)
+            return Error.NotFound("ServiceProvider.NotFound", "Service Provider not found");
+
+        // Preserve references for historical job, quotation and financial reconciliation.
+        if (await context.JobOrderServiceProviders.IgnoreQueryFilters().AnyAsync(x => x.ServiceProviderId == id)
+            || await context.JobOrderExecutions.IgnoreQueryFilters().AnyAsync(x => x.ServiceProviderId == id)
+            || await context.ServiceQuotations.IgnoreQueryFilters().AnyAsync(x => x.ServiceProviderId == id)
+            || await context.ServiceProformaInvoices.IgnoreQueryFilters().AnyAsync(x => x.ServiceProviderId == id)
+            || await context.ServiceMemos.IgnoreQueryFilters().AnyAsync(x => x.ServiceProviderId == id))
+            return Error.Validation("ServiceProvider.NotDeletable", "Service Provider is linked to a job, quotation, invoice or service memo");
 
         serviceProvider.DeletedAt = DateTime.UtcNow;
         serviceProvider.LastDeletedById = userId;

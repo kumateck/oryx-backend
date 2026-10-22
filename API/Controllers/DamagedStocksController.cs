@@ -1,3 +1,5 @@
+using APP.Services.Inventory;
+using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -10,7 +12,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/damaged-goods")]
 [Authorize]
-public class DamagedStocksController(IDamagedStocksRepository repository) : ControllerBase
+public class DamagedStocksController(IDamagedStocksRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a damaged stock record
@@ -22,7 +24,11 @@ public class DamagedStocksController(IDamagedStocksRepository repository) : Cont
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
-        var result = await repository.CreateDamagedStocks(request, Guid.Parse(userId));
+        if (!Guid.TryParse(userId, out var actor)) return TypedResults.Unauthorized();
+        var item = await context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.Id == request.ItemId);
+        if (item == null || !await InventoryStockAccess.Allows(context, actor, item.Store, InventoryStockOperation.CreateDamage))
+            return TypedResults.Forbid();
+        var result = await repository.CreateDamagedStocks(request, actor);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
