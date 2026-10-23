@@ -595,3 +595,10 @@ Item maintenance and stock receipts now validate history/ledger identity, curren
 ## Stores, services and HR repair — 2026-10-22
 
 Per-store and per-action grant checks cover the stores and services workflows, and actors come from the token. There is a paged item choice endpoint, and proformas can be filtered with `memoPending`. `employee/me` and `performance/reviews/mine` are new. A reviewer may read the goals they are rating. Onboarding now uses tokens through `api/v1/onboarding/*`, the anonymous employee and user creation endpoints are gone, and the `CanViewFormulaBuilder` key is registered. The repair is local and undeployed. See [`stores-services-hr-repair-2026-10-22.md`](stores-services-hr-repair-2026-10-22.md).
+
+## Shipment invoice price-unit validation (2026-10-23)
+
+`POST /api/v1/procurement/shipment-invoice` resolves legacy price units from the
+awarded quotation and returns `Item.PriceUoM` validation before mutation if none
+is available. Request/response shapes remain unchanged. See
+[incident and contract notes](shipment-invoice-price-unit-2026-10-23.md).

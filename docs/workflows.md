@@ -484,3 +484,10 @@ Item maintenance and stock receipts now validate history/ledger identity, curren
 ## Stores issue/return and service procurement integrity — 2026-10-22
 
 Issues are tracked per requisition line and cannot exceed the request. Returns are capped at the net issued quantity and restore stock, and damage edits and deletes post to the ledger. In service procurement, quotations close on selection. Each job order gets exactly one memo, for the approved proforma's quotation and provider, and only an issued memo can be paid. A service still in use cannot be deleted. Onboarding invitations work once and decide the email and employee type. See [`stores-services-hr-repair-2026-10-22.md`](stores-services-hr-repair-2026-10-22.md).
+
+## Shipment invoice legacy pricing (2026-10-23)
+
+Creation validates every line before updating quantities/statuses. It freezes
+stored or authoritative awarded-quotation price units onto the new invoice,
+without rewriting legacy purchase-order pricing or disabling the save guard.
+See [validation, audit and rollout notes](shipment-invoice-price-unit-2026-10-23.md).
