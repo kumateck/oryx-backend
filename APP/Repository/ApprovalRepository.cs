@@ -4870,11 +4870,24 @@ public class ApprovalRepository(
         Approval approval
     )
     {
-        var exists = await context.PurchaseOrderApprovals.AnyAsync(a =>
-            a.PurchaseOrderId == orderId && a.ApprovalId == approval.Id
-        );
-        if (exists)
+        var previousRound = await context.PurchaseOrderApprovals
+            .Where(a => a.PurchaseOrderId == orderId)
+            .ToListAsync();
+
+        // A round still waiting on someone is the current one, so checking twice changes nothing.
+        if (previousRound.Any(a => a.Status == ApprovalStatus.Pending))
             return;
+
+        // Every step of an earlier round was decided (a revised order checked again, or a rejected one).
+        // Those rows would block the new round: approve picks the first undecided row of an order, and an
+        // old rejected row never becomes approved. Decisions stay in ApprovalActionLogs, so replace the rows.
+        if (previousRound.Count != 0)
+        {
+            context.PurchaseOrderApprovals.RemoveRange(previousRound);
+            var order = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == orderId);
+            if (order is not null)
+                order.Approved = false;
+        }
 
         var approvals = stages
             .Select(stage => new PurchaseOrderApproval

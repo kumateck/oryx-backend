@@ -1912,6 +1912,16 @@ public class RequisitionRepository(
             .GroupBy(s => s.Id)
             .ToDictionary(g => g.Key, g => g.Last());
 
+        // Every price must arrive with a unit the line can be costed in. Checked for the whole
+        // payload before anything changes, so a bad line never leaves the quotation half-priced.
+        foreach (var item in supplierQuotation.Items)
+        {
+            if (!responseLookup.TryGetValue(item.Id, out var response))
+                continue;
+            if (!UomConverter.CanPrice(item.UoM?.Symbol, response.PriceUoM))
+                return PriceUoMErrors.Unusable(item.Material?.Name, item.UoM?.Symbol, response.PriceUoM);
+        }
+
         foreach (var item in supplierQuotation.Items)
         {
             // Only touch items actually present in the payload. Assigning
@@ -1921,13 +1931,12 @@ public class RequisitionRepository(
                 continue;
 
             item.QuotedPrice = response.Price;
-            item.PriceUoM = response.PriceUoM;
+            item.PriceUoM = response.PriceUoM.Trim();
         }
 
+        // The quotation and its lines are tracked, so only what changed is written. Marking every
+        // line as updated would re-save untouched legacy lines, which the price guard refuses.
         supplierQuotation.ReceivedQuotation = true;
-        context.SupplierQuotations.Update(supplierQuotation);
-        context.SupplierQuotationItems.UpdateRange(supplierQuotation.Items);
-        // Save changes to the database
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -2097,7 +2106,10 @@ public class RequisitionRepository(
 
             foreach (var processSupplierQuote in quotation.Items)
             {
-                var awardedQuotationItem = await context.SupplierQuotationItems.FirstOrDefaultAsync(
+                var awardedQuotationItem = await context.SupplierQuotationItems
+                    .Include(s => s.UoM)
+                    .Include(s => s.Material)
+                    .FirstOrDefaultAsync(
                     s =>
                         s.SupplierQuotation.SupplierId == quotation.SupplierId
                         && s.MaterialId == processSupplierQuote.MaterialId
@@ -2113,12 +2125,12 @@ public class RequisitionRepository(
                     );
                 }
 
-                if (string.IsNullOrWhiteSpace(awardedQuotationItem.PriceUoM))
+                if (!UomConverter.CanPrice(awardedQuotationItem.UoM?.Symbol, awardedQuotationItem.PriceUoM))
                 {
-                    return Error.Validation(
-                        "SupplierQuotation.PriceUoM",
-                        "The selected quotation has no price UoM. Capture the price UoM on"
-                            + " the quotation before awarding it."
+                    return PriceUoMErrors.Unusable(
+                        awardedQuotationItem.Material?.Name,
+                        awardedQuotationItem.UoM?.Symbol,
+                        awardedQuotationItem.PriceUoM
                     );
                 }
 
@@ -2129,8 +2141,7 @@ public class RequisitionRepository(
                 awardedItems.Add((processSupplierQuote, awardedQuotationItem));
             }
 
-            var poId = (
-                await procurementRepository.CreatePurchaseOrder(
+            var created = await procurementRepository.CreatePurchaseOrder(
                     new CreatePurchaseOrderRequest
                     {
                         Code = await GeneratePurchaseOrderCode(),
@@ -2141,8 +2152,10 @@ public class RequisitionRepository(
                         Items = quotation.Items,
                     },
                     userId
-                )
-            ).Value;
+                );
+            if (created.IsFailure)
+                return created.Error;
+            var poId = created.Value;
 
             foreach (var (processSupplierQuote, supplierQuotationItem) in awardedItems)
             {

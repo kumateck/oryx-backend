@@ -378,6 +378,13 @@ public class ProcurementRepository(
         Guid userId
     )
     {
+        foreach (var item in request.Items)
+        {
+            var refusal = await PriceUoMRefusal(item.MaterialId, item.UomId, item.PriceUoM);
+            if (refusal is not null)
+                return refusal;
+        }
+
         var purchaseOrder = mapper.Map<PurchaseOrder>(request);
         purchaseOrder.CreatedById = userId;
         await context.PurchaseOrders.AddAsync(purchaseOrder);
@@ -570,6 +577,30 @@ public class ProcurementRepository(
             existingOrder.RevisedPurchaseOrders.Count != 0
                 ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
                 : 1;
+
+        // A line added or changed by a revision must still be costable: its price unit has to be
+        // given (or kept from the line) and convert to the line's unit. Checked for every revision
+        // before any is applied, so a refused revision leaves the order untouched.
+        foreach (var revision in revisions)
+        {
+            if (revision.Type == RevisedPurchaseOrderType.AddItem
+                && revision.MaterialId.HasValue && revision.UoMId.HasValue)
+            {
+                var refusal = await PriceUoMRefusal(revision.MaterialId.Value, revision.UoMId.Value, revision.PriceUoM);
+                if (refusal is not null)
+                    return refusal;
+            }
+            else if (revision.Type == RevisedPurchaseOrderType.UpdateItem)
+            {
+                var line = existingOrder.Items.FirstOrDefault(i => i.Id == revision.PurchaseOrderItemId);
+                if (line is null)
+                    continue;
+                var priceUoM = string.IsNullOrWhiteSpace(revision.PriceUoM) ? line.PriceUoM : revision.PriceUoM;
+                var refusal = await PriceUoMRefusal(line.MaterialId, revision.UoMId ?? line.UoMId, priceUoM);
+                if (refusal is not null)
+                    return refusal;
+            }
+        }
 
         var enrichedRevisions = new List<EnrichedRevision>();
 
@@ -897,11 +928,28 @@ public class ProcurementRepository(
         return Result.Success();
     }
 
+    /// <summary>
+    /// Null when a line of <paramref name="materialId"/> counted in <paramref name="uomId"/> can be
+    /// priced per <paramref name="priceUoM"/>; otherwise the refusal to return.
+    /// </summary>
+    private async Task<Error> PriceUoMRefusal(Guid materialId, Guid uomId, string priceUoM)
+    {
+        var symbol = await context.UnitOfMeasures.Where(u => u.Id == uomId).Select(u => u.Symbol).FirstOrDefaultAsync();
+        if (UomConverter.CanPrice(symbol, priceUoM))
+            return null;
+        var name = await context.Materials.Where(m => m.Id == materialId).Select(m => m.Name).FirstOrDefaultAsync();
+        return PriceUoMErrors.Unusable(name, symbol, priceUoM);
+    }
+
     public async Task<Result> CheckPurchaseOrder(Guid purchaseOrderId)
     {
-        var purchaseOrder = await context.PurchaseOrders.FirstOrDefaultAsync(po =>
-            po.Id == purchaseOrderId
-        );
+        var purchaseOrder = await context
+            .PurchaseOrders.AsSplitQuery()
+            .Include(po => po.Items)
+                .ThenInclude(i => i.UoM)
+            .Include(po => po.Items)
+                .ThenInclude(i => i.Material)
+            .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
         if (purchaseOrder is null)
         {
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
@@ -912,8 +960,20 @@ public class ProcurementRepository(
             return Error.Validation("PurchaseOrder.Validation", "Purchase order is linked");
         }
 
+        // Approvers decide on the order's value, so every line must be costable before it is sent
+        // to them. A line saved without a unit takes the awarded quotation's, as the order pages
+        // already show it, and keeps it from now on.
+        var priceUoMLookup = await context.BuildQuotationPriceUoMLookup([purchaseOrderId]);
+        foreach (var line in purchaseOrder.Items.Where(i => i.DeletedAt is null))
+        {
+            var priceUoM = priceUoMLookup.ResolvePriceUoM(line.PriceUoM, purchaseOrderId, line.MaterialId, line.UoMId);
+            if (!UomConverter.CanPrice(line.UoM?.Symbol, priceUoM))
+                return PriceUoMErrors.Unusable(line.Material?.Name, line.UoM?.Symbol, priceUoM);
+            if (string.IsNullOrWhiteSpace(line.PriceUoM))
+                line.PriceUoM = priceUoM.Trim();
+        }
+
         purchaseOrder.Status = PurchaseOrderStatus.Checked;
-        context.PurchaseOrders.Update(purchaseOrder);
         await context.SaveChangesAsync();
 
         await approvalRepository.CreateInitialApprovalsAsync(

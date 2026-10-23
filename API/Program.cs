@@ -172,10 +172,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(defaultDbCo
 // instance is undecryptable after a restart or on any other instance behind a load balancer.
 builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
 
-// Refuse to persist a price without the unit it was quoted in. Off by default so the
-// guard can be enabled only once fix_missing_price_uom.sql has repaired legacy rows.
-ApplicationDbContext.EnforcePriceUoM = builder.Configuration.GetValue<bool>(
-    "Procurement:EnforcePriceUoM"
+// Refuse to persist a price without the unit it was quoted in. On unless explicitly set to
+// false: it only judges writes of a price or its unit, so legacy rows do not trip it.
+ApplicationDbContext.EnforcePriceUoM = builder.Configuration.GetValue(
+    "Procurement:EnforcePriceUoM",
+    true
 );
 
 builder
