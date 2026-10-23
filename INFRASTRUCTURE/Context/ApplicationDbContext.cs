@@ -977,10 +977,10 @@ public partial class ApplicationDbContext(
     /// <summary>
     /// When true, <see cref="SaveChanges()"/> refuses to persist a price without the
     /// unit it was quoted in. Set once at startup from the
-    /// <c>Procurement:EnforcePriceUoM</c> setting so it can be switched off without a
-    /// redeploy if a legacy path trips it in production.
+    /// <c>Procurement:EnforcePriceUoM</c> setting, which defaults to on; it exists only as an
+    /// emergency switch if a legacy path trips it in production.
     /// </summary>
-    public static bool EnforcePriceUoM { get; set; }
+    public static bool EnforcePriceUoM { get; set; } = true;
 
     public override int SaveChanges()
     {
@@ -1047,7 +1047,17 @@ public partial class ApplicationDbContext(
                     continue;
             }
 
-            if (price > 0 && string.IsNullOrWhiteSpace(priceUoM))
+            // Only a write of the price or its unit is judged. A status change on a legacy line
+            // saved before units were required must not fail an unrelated action (an award marks
+            // every competing quote as not used).
+            var pricePropertyName = entry.Entity is SupplierQuotationItem
+                ? nameof(SupplierQuotationItem.QuotedPrice)
+                : nameof(PurchaseOrderItem.Price);
+            var writesPrice = entry.State == EntityState.Added
+                || entry.Property(pricePropertyName).IsModified
+                || entry.Property(nameof(PurchaseOrderItem.PriceUoM)).IsModified;
+
+            if (writesPrice && price > 0 && string.IsNullOrWhiteSpace(priceUoM))
             {
                 throw new InvalidOperationException(
                     $"{entityName} was saved with a price of {price} but no PriceUoM. "
