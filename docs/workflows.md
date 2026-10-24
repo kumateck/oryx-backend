@@ -517,3 +517,18 @@ batch-count semantics remain active. This read creates no tracked entities,
 inventory writes, quarantine/QC transitions or workflow events. Details and QC
 continue using their respective endpoints. See
 [GRN list projection](grn-list-projection-2026-10-24.md).
+
+### Test evidence in file drafts
+
+A file draft is successful only after its upload succeeds against a stable
+result-field ID. Existing assignment, context, revision, finalization and approval
+gates remain unchanged. Old orphan attachments require confirmed, audited
+recovery; no automatic reassignment is performed by this fix. See
+[draft attachment association](form-draft-attachment-association.md).
+
+## Supplier purchase-unit symbols (2026-10-24)
+
+Supplier purchase units now persist symbols and synchronize supplier edits,
+quotation responses and pricing approvals through shared validation/services.
+The global material lookup combines distinct units from all departments.
+See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).

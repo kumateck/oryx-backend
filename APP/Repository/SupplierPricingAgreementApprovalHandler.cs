@@ -1,4 +1,5 @@
 using System.Data;
+using APP.Services.Materials;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Procurement.Suppliers;
 using INFRASTRUCTURE.Context;
@@ -139,6 +140,7 @@ internal static class SupplierPricingAgreementApprovalHandler
                 target.LastUpdatedById = userId;
             }
         }
+        await SupplierPurchaseUnitSync.ApplyApproved(context, proposal, userId);
         proposal.Status = SupplierPricingAgreementStatus.Approved;
         return Result.Success();
     }

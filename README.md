@@ -13,6 +13,10 @@ Full Procedures template scope update (2026-09-28): all five template creation
 services now enforce the catalog's allowed kind and purpose/subject pairing.
 See `docs/full-procedures-template-scope-2026-09-28.md`.
 
+Purchase-unit symbols (2026-10-24): companion backend migration/API and desktop
+changes are implemented locally. See [controlled rollout and approval behavior](docs/supplier-purchase-unit-sync.md).
+The migration has not been applied to production.
+
 ## Recent Updates
 
 - Chemical/Microbial and Routine QC (2026-09-15): typed commercial ARDs,

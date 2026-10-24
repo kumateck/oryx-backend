@@ -55,5 +55,6 @@ public class SupplierManufacturer : BaseEntity
     public Material Material { get; set; }
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
+    [StringLength(20)] public string PurchaseUnit { get; set; }
     public bool Default { get; set; }
 }

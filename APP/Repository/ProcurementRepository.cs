@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
+using APP.Services.Materials;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Utils;
@@ -107,7 +108,7 @@ public class ProcurementRepository(
         Guid supplierId
     )
     {
-        return mapper.Map<List<SupplierManufacturerDto>>(
+        var rows = mapper.Map<List<SupplierManufacturerDto>>(
             await context
                 .SupplierManufacturers.AsSplitQuery()
                 .Include(m => m.Manufacturer)
@@ -116,13 +117,14 @@ public class ProcurementRepository(
                 .Where(m => m.MaterialId == materialId && m.SupplierId == supplierId)
                 .ToListAsync()
         );
+        return await SupplierPurchaseUnitReadModel.Apply(context, supplierId, rows);
     }
 
     public async Task<Result<List<SupplierManufacturerDto>>> GetSupplierManufacturersBySupplier(
         Guid supplierId
     )
     {
-        return mapper.Map<List<SupplierManufacturerDto>>(
+        var rows = mapper.Map<List<SupplierManufacturerDto>>(
             await context
                 .SupplierManufacturers.AsSplitQuery()
                 .Include(m => m.Manufacturer)
@@ -131,6 +133,7 @@ public class ProcurementRepository(
                 .Where(m => m.SupplierId == supplierId)
                 .ToListAsync()
         );
+        return await SupplierPurchaseUnitReadModel.Apply(context, supplierId, rows);
     }
 
     public async Task<Result> UpdateManufacturer(
@@ -180,6 +183,8 @@ public class ProcurementRepository(
 
     public async Task<Result<Guid>> CreateSupplier(CreateSupplierRequest request, Guid userId)
     {
+        var unitValidation = await SupplierPurchaseUnitPolicy.Normalize(context, request, null);
+        if (!unitValidation.IsSuccess) return unitValidation.Error;
         var existingSupplier = await context.Suppliers.FirstOrDefaultAsync(s =>
             s.Name == request.Name
         );
@@ -213,14 +218,17 @@ public class ProcurementRepository(
             .Suppliers.AsNoTracking()
             .AsSplitQuery()
             .Include(s => s.AssociatedManufacturers)
+                .ThenInclude(sm => sm.UoM)
+            .Include(s => s.AssociatedManufacturers)
                 .ThenInclude(sm => sm.Manufacturer)
             .Include(s => s.AssociatedManufacturers)
                 .ThenInclude(sm => sm.Material)
             .FirstOrDefaultAsync(s => s.Id == supplierId);
 
-        return supplier is null
-            ? Error.NotFound("Supplier.NotFound", "Supplier not found")
-            : mapper.Map<SupplierDto>(supplier);
+        if (supplier is null) return Error.NotFound("Supplier.NotFound", "Supplier not found");
+        var dto = mapper.Map<SupplierDto>(supplier);
+        dto.AssociatedManufacturers = await SupplierPurchaseUnitReadModel.Apply(context, supplierId, dto.AssociatedManufacturers);
+        return dto;
     }
 
     public async Task<Result<Paginateable<IEnumerable<SupplierDto>>>> GetSuppliers(
@@ -328,6 +336,8 @@ public class ProcurementRepository(
         Guid userId
     )
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
         var existingSupplier = await context
             .Suppliers.AsSplitQuery()
             .Include(supplier => supplier.AssociatedManufacturers)
@@ -347,11 +357,24 @@ public class ProcurementRepository(
                 "You have duplicate manufacturers supplying the same material"
             );
 
+        var unitValidation = await SupplierPurchaseUnitPolicy.Normalize(context, request, supplierId);
+        if (!unitValidation.IsSuccess) return unitValidation;
+        foreach (var group in request.AssociatedManufacturers.GroupBy(row => row.MaterialId))
+        {
+            if (!group.Key.HasValue) continue;
+            var synchronization = await SupplierPurchaseUnitSync.Request(context, approvalRepository,
+                supplierId, group.Key.Value, group.First().PurchaseUnit, userId);
+            if (!synchronization.IsSuccess) return synchronization;
+            var current = existingSupplier.AssociatedManufacturers.FirstOrDefault(row => row.MaterialId == group.Key);
+            if (current is not null)
+                foreach (var row in group) row.PurchaseUnit = current.PurchaseUnit ?? current.UoM?.Symbol;
+        }
         context.SupplierManufacturers.RemoveRange(existingSupplier.AssociatedManufacturers);
         mapper.Map(request, existingSupplier);
         existingSupplier.LastUpdatedById = userId;
         context.Suppliers.Update(existingSupplier);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 

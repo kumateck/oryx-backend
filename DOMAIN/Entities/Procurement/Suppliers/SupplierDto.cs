@@ -27,6 +27,8 @@ public class SupplierManufacturerDto
     public ManufacturerDto Manufacturer { get; set; }
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
+    public string PurchaseUnit { get; set; }
+    public string PendingPurchaseUnit { get; set; }
     public bool Default { get; set; }
 }
 

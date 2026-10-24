@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
+using APP.Services.Materials;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Services.ProductionActivityStepEventPublisher;
@@ -1877,69 +1878,9 @@ public class RequisitionRepository(
         return mapper.Map<SupplierQuotationDto>(supplierQuotation);
     }
 
-    public async Task<Result> ReceiveQuotationFromSupplier(
-        List<SupplierQuotationResponseDto> supplierQuotationResponse,
-        Guid supplierQuotationId
-    )
-    {
-        var supplierQuotation = await context
-            .SupplierQuotations.AsSplitQuery()
-            .Include(s => s.Items)
-                .ThenInclude(s => s.Material)
-            .Include(s => s.Items)
-                .ThenInclude(s => s.UoM)
-            .Include(s => s.Supplier)
-            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
-
-        if (supplierQuotation is null)
-        {
-            return Error.NotFound(
-                "Supplier.Quotation.NotFound",
-                "No supplier quotation was found for the specified quotation."
-            );
-        }
-
-        if (supplierQuotation.Items.Count == 0)
-        {
-            return Error.Validation(
-                "Supplier.Quotation",
-                "No items found to mark as quotation sent for the specified supplier."
-            );
-        }
-
-        var responseLookup = supplierQuotationResponse
-            .Where(s => s is not null)
-            .GroupBy(s => s.Id)
-            .ToDictionary(g => g.Key, g => g.Last());
-
-        // Every price must arrive with a unit the line can be costed in. Checked for the whole
-        // payload before anything changes, so a bad line never leaves the quotation half-priced.
-        foreach (var item in supplierQuotation.Items)
-        {
-            if (!responseLookup.TryGetValue(item.Id, out var response))
-                continue;
-            if (!UomConverter.CanPrice(item.UoM?.Symbol, response.PriceUoM))
-                return PriceUoMErrors.Unusable(item.Material?.Name, item.UoM?.Symbol, response.PriceUoM);
-        }
-
-        foreach (var item in supplierQuotation.Items)
-        {
-            // Only touch items actually present in the payload. Assigning
-            // unconditionally would wipe QuotedPrice and PriceUoM off every item a
-            // partial re-submit happens to omit.
-            if (!responseLookup.TryGetValue(item.Id, out var response))
-                continue;
-
-            item.QuotedPrice = response.Price;
-            item.PriceUoM = response.PriceUoM.Trim();
-        }
-
-        // The quotation and its lines are tracked, so only what changed is written. Marking every
-        // line as updated would re-save untouched legacy lines, which the price guard refuses.
-        supplierQuotation.ReceivedQuotation = true;
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task<Result> ReceiveQuotationFromSupplier(
+        List<SupplierQuotationResponseDto> responses, Guid supplierQuotationId, Guid? userId = null) =>
+        new SupplierQuotationPriceRecorder(context, approvalRepository).Record(responses, supplierQuotationId, userId);
 
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(
         SupplierType supplierType
