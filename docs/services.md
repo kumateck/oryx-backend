@@ -629,3 +629,17 @@ containing ID/supplier name preserve list counts and supplier display in desktop
 and Next. The public warehouse list no longer runs QC enrichment or per-batch
 resolvers. QC-list and detail endpoints retain their existing contracts. See
 [GRN list projection](grn-list-projection-2026-10-24.md).
+
+### Stable draft attachment field IDs
+
+SaveFormResponseDraft now delegates file storage to FormDraftAttachments, which
+assigns new field IDs before file keys are captured and propagates storage
+failures. Existing draft request/response and attachment-read contracts remain.
+See [draft attachment association](form-draft-attachment-association.md).
+
+## Supplier purchase-unit symbols (2026-10-24)
+
+Supplier purchase units now persist symbols and synchronize supplier edits,
+quotation responses and pricing approvals through shared validation/services.
+The global material lookup combines distinct units from all departments.
+See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).

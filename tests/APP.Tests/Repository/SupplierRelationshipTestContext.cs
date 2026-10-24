@@ -8,11 +8,11 @@ namespace APP.Tests.Repository;
 
 internal static class SupplierRelationshipTestContext
 {
-    public static ApplicationDbContext Create()
+    public static ApplicationDbContext Create(Guid? userId = null)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
-        return new ApplicationDbContext(options, new SupplierRelationshipCurrentUser());
+        return new ApplicationDbContext(options, new SupplierRelationshipCurrentUser(userId));
     }
 
     public static SupplierRelationshipRepository CreateRepository(ApplicationDbContext context)
@@ -20,9 +20,9 @@ internal static class SupplierRelationshipTestContext
             new ApprovalRepository(context, null, null, null,
                 NullLogger<ApprovalRepository>.Instance, null, null));
 
-    private sealed class SupplierRelationshipCurrentUser : ICurrentUserService
+    private sealed class SupplierRelationshipCurrentUser(Guid? userId) : ICurrentUserService
     {
-        public Guid? UserId => null;
+        public Guid? UserId => userId;
         public Guid? DepartmentId => null;
         public string DepartmentType => string.Empty;
     }

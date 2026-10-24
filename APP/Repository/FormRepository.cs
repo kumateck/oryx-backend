@@ -539,33 +539,9 @@ public class FormRepository(
         // Handle file-based questions
         if (formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload)
         {
-            var values = request.Value.Split("|");
-            var formResponse = response.FormResponses.FirstOrDefault(fr =>
-                fr.FormFieldId == formField.Id
-            );
-
-            if (formResponse == null)
-            {
-                formResponse = new FormResponse
-                {
-                    FormFieldId = formField.Id,
-                    FormFieldRevisionId = formFieldRevisionId,
-                    Value = "form response attachment.",
-                };
-                response.FormResponses.Add(formResponse);
-            }
-
-            foreach (var value in values)
-            {
-                var reference = Guid.NewGuid().ToString();
-                await fileRepository.SaveBlobItem(
-                    nameof(FormResponse),
-                    formResponse.Id,
-                    reference,
-                    value.ConvertFromBase64(),
-                    userId
-                );
-            }
+            var upload = await APP.Services.Forms.FormDraftAttachments.Save(
+                response, formField, formFieldRevisionId, request.Value, userId, fileRepository);
+            if (upload.IsFailure) return upload.Errors;
         }
         else
         {

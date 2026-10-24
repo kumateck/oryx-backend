@@ -1585,7 +1585,7 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<Supplier>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         modelBuilder
             .Entity<SupplierManufacturer>()
-            .HasQueryFilter(a => !a.Supplier.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<SupplierCertification>()
             .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.Supplier.DeletedAt.HasValue);
         modelBuilder.Entity<SupplierContact>()

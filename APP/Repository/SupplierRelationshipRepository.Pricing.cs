@@ -1,4 +1,5 @@
 using System.Data;
+using APP.Services.Materials;
 using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Procurement.Suppliers;
 using Microsoft.EntityFrameworkCore;
@@ -139,6 +140,7 @@ public partial class SupplierRelationshipRepository
     private async Task<Result> ValidatePricing(
         Guid supplierId, Guid? existingId, SupplierPricingAgreementRequest request)
     {
+        request.PriceUoM = PurchaseUnitSymbols.Normalize(request.PriceUoM);
         var supplier = await RequireSupplier(supplierId);
         if (!supplier.IsSuccess) return supplier.Error;
         if (request.AgreedPrice <= 0)
@@ -154,6 +156,9 @@ public partial class SupplierRelationshipRepository
                 && item.UoMId == request.UoMId))
             return Error.Validation("SupplierPricingAgreement.Association",
                 "Material and unit are not associated with this supplier.");
+        var quantityUnit = await context.UnitOfMeasures.Where(unit => unit.Id == request.UoMId).Select(unit => unit.Symbol).FirstAsync();
+        if (!UomConverter.CanPrice(quantityUnit, request.PriceUoM))
+            return PriceUoMErrors.Unusable("Supplier material", quantityUnit, request.PriceUoM);
         if (!await context.Currencies.AnyAsync(item => item.Id == request.CurrencyId))
             return Error.NotFound("Currency.NotFound", "Currency not found.");
         var overlaps = await context.SupplierPricingAgreements.AnyAsync(item =>

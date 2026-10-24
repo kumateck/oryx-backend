@@ -13126,6 +13126,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("MaterialId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("PurchaseUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
