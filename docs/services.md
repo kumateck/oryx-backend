@@ -620,3 +620,12 @@ existing page paths for quantities, departments, requisitions and invoice source
 labels/pricing remain; unused inventory, user and storage fields are omitted.
 See [read projection](material-distribution-read-projection-2026-10-24.md) for
 client compatibility and verification. URL/authentication are unchanged.
+
+### GRN list summary projection (2026-10-24)
+
+`GET /api/v1/warehouse/grns` now uses `GrnListReader` and `GrnSummaryDto` with at
+most three scoped reads. Existing header fields and `materialBatches` entries
+containing ID/supplier name preserve list counts and supplier display in desktop
+and Next. The public warehouse list no longer runs QC enrichment or per-batch
+resolvers. QC-list and detail endpoints retain their existing contracts. See
+[GRN list projection](grn-list-projection-2026-10-24.md).

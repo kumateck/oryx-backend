@@ -1269,58 +1269,9 @@ public class WarehouseRepository(
         return dtos.First();
     }
 
-    public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(
-        int page,
-        int pageSize,
-        string searchQuery,
-        MaterialKind? kind,
-        Status? status
-    )
-    {
-        var query = context
-            .Grns.AsSplitQuery()
-            .Include(c => c.MaterialBatches)
-                .ThenInclude(mb => mb.Checklist)
-                    .ThenInclude(cl => cl.Supplier)
-            .Include(c => c.MaterialBatches)
-                .ThenInclude(mb => mb.Checklist)
-                    .ThenInclude(cl => cl.Manufacturer)
-            .Include(c => c.CreatedBy)
-            .OrderByDescending(g => g.CreatedAt)
-            .AsQueryable();
-
-        if (kind.HasValue)
-        {
-            query = query.Where(q => q.MaterialBatches.Any(b => b.Material.Kind == kind));
-        }
-
-        if (status.HasValue)
-        {
-            query = query.Where(q => q.MaterialBatches.Any(b => b.Grn.Status == status));
-        }
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.WhereSearch(searchQuery, w => w.GrnNumber, w => w.CarrierName);
-        }
-
-        var paginatedResult = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize);
-        var grns = await paginatedResult.Data.ToListAsync();
-        var dtos = await MapGrnDtos<GrnListDto>(grns);
-
-        return Result.Success(
-            new Paginateable<IEnumerable<GrnListDto>>
-            {
-                Data = dtos,
-                PageIndex = paginatedResult.PageIndex,
-                PageCount = paginatedResult.PageCount,
-                TotalRecordCount = paginatedResult.TotalRecordCount,
-                NumberOfPagesToShow = paginatedResult.NumberOfPagesToShow,
-                StartPageIndex = paginatedResult.StartPageIndex,
-                StopPageIndex = paginatedResult.StopPageIndex,
-            }
-        );
-    }
+    public Task<Result<Paginateable<IEnumerable<GrnSummaryDto>>>> GetGrns(
+        int page, int pageSize, string searchQuery, MaterialKind? kind, Status? status
+    ) => new APP.Services.Grns.GrnListReader(context).Read(page, pageSize, searchQuery, kind, status);
 
     public async Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrnsForQc(
         int page,

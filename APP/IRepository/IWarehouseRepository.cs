@@ -109,7 +109,7 @@ public interface IWarehouseRepository
     Task<Result<ChecklistDto>> GetChecklistByDistributedMaterialId(Guid distributedMaterialId);
     Task<Result<Guid>> CreateGrn(CreateGrnRequest request, List<Guid> materialBatchIds);
     Task<Result<GrnDto>> GetGrn(Guid id);
-    Task<Result<Paginateable<IEnumerable<GrnListDto>>>> GetGrns(
+    Task<Result<Paginateable<IEnumerable<GrnSummaryDto>>>> GetGrns(
         int page,
         int pageSize,
         string searchQuery,
