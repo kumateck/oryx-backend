@@ -602,3 +602,21 @@ Per-store and per-action grant checks cover the stores and services workflows, a
 awarded quotation and returns `Item.PriceUoM` validation before mutation if none
 is available. Request/response shapes remain unchanged. See
 [incident and contract notes](shipment-invoice-price-unit-2026-10-23.md).
+
+## Material-distribution department query (2026-10-24)
+
+The distribution GET keeps its existing response contract. Its shared department
+lookup now targets the requesting department and reads warehouses/locations in
+split queries, suppressing unrelated creator and storage-tree AutoIncludes while
+preserving query filters. See
+[timeout analysis and verification](material-distribution-department-timeout-2026-10-24.md).
+
+### Material-distribution page projection (2026-10-24)
+
+The shipment material-distribution GET now returns `MaterialDistributionPageDto`
+through a focused read service with at most three scalar queries. Material and
+request loops perform no database calls or stock/specification mapping. The
+existing page paths for quantities, departments, requisitions and invoice source
+labels/pricing remain; unused inventory, user and storage fields are omitted.
+See [read projection](material-distribution-read-projection-2026-10-24.md) for
+client compatibility and verification. URL/authentication are unchanged.

@@ -1420,7 +1420,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <returns>Returns the material distribution details.</returns>
     [HttpGet("shipment-document/{shipmentDocumentId}/material-distribution")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionPageDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialDistribution([FromRoute] Guid shipmentDocumentId)
     {

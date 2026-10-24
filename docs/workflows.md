@@ -491,3 +491,19 @@ Creation validates every line before updating quantities/statuses. It freezes
 stored or authoritative awarded-quotation price units onto the new invoice,
 without rewriting legacy purchase-order pricing or disabling the save guard.
 See [validation, audit and rollout notes](shipment-invoice-price-unit-2026-10-23.md).
+
+## Distribution lookup timeout (2026-10-24)
+
+Reading a material-distribution breakdown no longer joins both the requisition
+creator's department storage tree and the requesting department's storage tree.
+Only returned department/warehouse/location fields are loaded, in split queries.
+Proportional allocation, FIFO attribution, approval gates and confirmation writes
+are unchanged. See [incident notes](material-distribution-department-timeout-2026-10-24.md).
+
+### Distribution detail read isolation (2026-10-24)
+
+Opening an arrived shipment now uses batched read projections and the existing
+allocation/FIFO calculation. This preview creates no tracked entities, inventory
+writes, status changes or new audit events. Confirmation retains its private
+read path, approval gates and existing audited write behavior. See
+[read projection](material-distribution-read-projection-2026-10-24.md).
