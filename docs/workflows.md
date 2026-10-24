@@ -507,3 +507,13 @@ allocation/FIFO calculation. This preview creates no tracked entities, inventory
 writes, status changes or new audit events. Confirmation retains its private
 read path, approval gates and existing audited write behavior. See
 [read projection](material-distribution-read-projection-2026-10-24.md).
+
+### GRN list read isolation (2026-10-24)
+
+Opening the warehouse GRN list now reads summary scalars and page batch IDs /
+supplier names without loading sampling, analysis, inventory or storage graphs.
+Existing department/deletion policy, kind/status/search filters, pagination and
+batch-count semantics remain active. This read creates no tracked entities,
+inventory writes, quarantine/QC transitions or workflow events. Details and QC
+continue using their respective endpoints. See
+[GRN list projection](grn-list-projection-2026-10-24.md).
