@@ -13,7 +13,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, INotificationService notificationService) : IAlertRepository
+public partial class AlertRepository(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager, INotificationService notificationService) : IAlertRepository
 {
     public async Task<Result<Guid>> CreateAlert(CreateAlertRequest request)
     {
@@ -128,107 +128,6 @@ public class AlertRepository(ApplicationDbContext context, IMapper mapper, UserM
         return Result.Success();
     }
 
-    public async Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null)
-    {
-        var alert = await context.Alerts
-            .AsSplitQuery()
-            .Include(alert => alert.Roles).ThenInclude(alertRole => alertRole.Role)
-            .Include(alert => alert.Users).ThenInclude(alertUser => alertUser.User)
-            .FirstOrDefaultAsync(item => item.NotificationType == notificationType && !item.IsDisabled);
-
-        if (alert is null) return;
-
-        List<User> users = [];
-        var roles = alert.Roles;
-        foreach (var role in roles)
-        {
-            if (string.IsNullOrEmpty(role.Role?.Name)) continue;
-
-            if (departmentId != null)
-            {
-                var roleDepartment = await context.RoleDepartments
-                    .FirstOrDefaultAsync(r => r.DepartmentId == departmentId && r.RoleId == role.RoleId);
-                if (roleDepartment is null) continue;
-            }
-            var user = await userManager.GetUsersInRoleAsync(role.Role.Name);
-            users.AddRange(user);
-        }
-        users.AddRange(alert.Users.Select(u => u.User));
-
-        if (departmentId != null)
-        {
-            users = users.Where(u => u.DepartmentId == departmentId).ToList();
-        }
-
-        if (assignedUsers != null && assignedUsers.Count != 0)
-        {
-            users.AddRange(assignedUsers);
-        }
-
-        users = users.Distinct().ToList();
-
-        if (users.Count == 0) return;
-
-        var notification = new NotificationDto
-        {
-            Id = Guid.NewGuid(),
-            Message = message,
-            Recipients = mapper.Map<List<UserDto>>(users),
-            Type = notificationType,
-            SentAt = DateTime.UtcNow,
-        };
-        await notificationService.SendNotification(notification, alert.AlertTypes);
-    }
-
-    public async Task<Result<List<NotificationDto>>> GetNotificationsForUser(Guid userId, bool unreadOnly)
-    {
-        var query = context.Notifications
-            .Where(n => n.Recipients.Contains(userId))
-            .AsQueryable();
-
-        if (unreadOnly)
-        {
-            query = query.Where(n =>
-                !context.NotificationReads.Any(r => r.UserId == userId && r.NotificationId == n.Id));
-        }
-
-        var notifications = await query
-            .OrderByDescending(n => n.SentAt)
-            .Select(n => new NotificationDto
-            {
-                Id = n.Id,
-                Message = n.Message,
-                Type = n.Type,
-            })
-            .ToListAsync();
-
-        return Result.Success(notifications);
-    }
-
-
-    public async Task<Result> MarkNotificationAsRead(Guid id, Guid userId)
-    {
-        var notification = await context.Notifications.FirstOrDefaultAsync(item => item.Id == id);
-        if (notification is null) return Error.NotFound("Notification", "Notification not found");
-
-        if (!notification.Recipients.Contains(userId))
-        {
-            return Error.Validation("Notification.User", "You do not have permission to read this notification");
-        }
-
-        if (context.NotificationReads.Any(r => r.UserId == userId && r.NotificationId == notification.Id))
-        {
-            return Error.Validation("Notification.User", "You are already read this notification");
-        }
-
-        await context.NotificationReads.AddAsync(new NotificationRead
-        {
-            NotificationId = notification.Id,
-            UserId = userId,
-            ReadAt = DateTime.UtcNow
-        });
-
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null) =>
+        new AlertProcessor(context, userManager, notificationService).Process(message, notificationType, departmentId, assignedUsers);
 }

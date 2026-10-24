@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using APP.IRepository;
+using APP.Services.NotificationService;
 using DOMAIN.Entities.ActivityLogs;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
@@ -9,7 +10,7 @@ using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace APP.Services.Background;
 public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue, ConcurrentQueue<(string message, NotificationType type, Guid? departmentId, List<User> users)> notificationQueue,
-    ConcurrentQueue<PrevStateCaptureRequest> prevStateQueue, ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo, IAlertRepository alertRepo)
+    ConcurrentQueue<PrevStateCaptureRequest> prevStateQueue, ILogger<BackgroundWorkerService> logger, IActivityLogRepository repo, ICollectionRepository collectionRepo, IAlertRepository alertRepo, AlertRequestStager alertStager)
     : IBackgroundWorkerService
 {
     // Method to enqueue logs for background processing
@@ -20,7 +21,7 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
 
     public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null, List<User> users = null)
     {
-        notificationQueue.Enqueue((message, type, departmentId, users ?? []));
+        alertStager.Stage(message, type, departmentId, users);
     }
 
     public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)
@@ -62,16 +63,17 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
             {
                 try
                 {
-                    await alertRepo.ProcessAlert(notification.message, notification.type);
+                    await alertRepo.ProcessAlert(notification.message, notification.type, notification.departmentId, notification.users);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error capturing notification.");
+                    logger.LogError(ex, "Error processing notification; returning it to the queue.");
+                    notificationQueue.Enqueue(notification);
                 }
             }
 
             // Delay to prevent excessive CPU usage
-            await Task.Delay(10000, stoppingToken); // Poll every second for new logs
+            await Task.Delay(notificationQueue.IsEmpty ? 1000 : 50, stoppingToken);
         }
     }
 

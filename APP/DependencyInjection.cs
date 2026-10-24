@@ -268,6 +268,12 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationDeliveryEffects, NotificationDeliveryEffects>();
+        services.AddScoped<NotificationDeliveryDispatcher>();
+        services.AddScoped<AlertRequestStager>();
+        services.AddScoped<AlertRequestDispatcher>();
+        services.AddHostedService<NotificationDeliveryWorker>();
+        services.AddHostedService<NotificationEmailWorker>();
         services.AddScoped<IProductionActivityStepEventPublisher, ProductionActivityStepEventPublisher>();
         //services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
