@@ -532,3 +532,7 @@ Supplier purchase units now persist symbols and synchronize supplier edits,
 quotation responses and pricing approvals through shared validation/services.
 The global material lookup combines distinct units from all departments.
 See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
+
+## Alert intent → delivery → reconciliation (2026-10-24)
+
+Business producers stage durable intent; authorized configuration resolves recipients; persisted notifications and channel work precede external delivery. A claimed intent completes with generated notification/outbox work in a PostgreSQL transaction. Delivery retries retain identity; read events synchronize recipient sessions. Available-batch expiry uses current UTC and a stable source key without changing stock status. See [remaining coverage and release gates](alert-reliability.md).

@@ -313,3 +313,7 @@ Full Procedures Question authoring accepts exact `calculationReferences`
 (`questionId`, `revisionId`) and rejects a stale or mismatched Published source.
 Legacy `calculationQuestionIds` callers remain supported. Documentation updated:
 this README, `docs/services.md`, and `docs/workflows.md`.
+
+## Alert delivery hardening
+
+Alert intents and channel delivery now use a persisted outbox. Apply `AddNotificationDeliveryOutbox` through the normal migration process before starting this version. See [alert reliability, coverage gaps, and acceptance gates](docs/alert-reliability.md).

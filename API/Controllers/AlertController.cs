@@ -16,7 +16,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Creates a new alert.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateNewAlerts)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateAlert([FromBody] CreateAlertRequest request)
@@ -29,7 +29,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Retrieves a specific alert by ID.
     /// </summary>
     [HttpGet("{alertId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewAlerts)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AlertDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAlert([FromRoute] Guid alertId)
@@ -42,7 +42,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Retrieves a paginated list of alerts.
     /// </summary>
     [HttpGet]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewAlerts)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<AlertDto>>))]
     public async Task<IResult> GetAlerts([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] bool withDisabled = false)
     {
@@ -54,7 +54,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Updates an existing alert.
     /// </summary>
     [HttpPut("{alertId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditAlerts)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,7 +71,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Toggles the disabled status of an alert.
     /// </summary>
     [HttpPut("{id}/toggle-disable")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEnableDisableAlerts)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ToggleDisable(Guid id)
@@ -84,7 +84,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Deletes a configurable alert
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteAlerts)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteAlert(Guid id)

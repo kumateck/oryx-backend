@@ -643,3 +643,7 @@ Supplier purchase units now persist symbols and synchronize supplier edits,
 quotation responses and pricing approvals through shared validation/services.
 The global material lookup combines distinct units from all departments.
 See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
+
+## Durable alert delivery (2026-10-24)
+
+AlertRequestStager/Dispatcher retain business audience and resolve active rule configurations. NotificationService writes records and delivery work atomically; independent hosted workers handle RabbitMQ and SMTP retries. The personal notification API excludes email records and returns stored timestamps; marking read stages a targeted NotificationReadEvent. Configuration actions enforce existing alert permissions. See [alert reliability](alert-reliability.md).
