@@ -18,6 +18,8 @@ public static class QcWorksheetPermissionCatalog
     public const string SamplingPointGroups = "QC Sampling Point Groups";
     public const string SamplingPoints = "QC Sampling Points";
     public const string TestRequests = "QC Test Requests";
+    public const string Retests = "QC Retests";
+    public const string Rework = "QC Rework";
     public const string TestRoom = "QC Test Room";
     public const string OosCases = "QC OOS Cases";
     public const string Certificates = "QC Certificates";
@@ -84,6 +86,26 @@ public static class QcWorksheetPermissionCatalog
         QcWorksheetPermissionKeys.CanAssignQcTestRequest
     ];
 
+    private static readonly HashSet<string> RetestKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewMaterialRetests,
+        QcWorksheetPermissionKeys.CanViewMaterialRetestDetail,
+        QcWorksheetPermissionKeys.CanRequestMaterialRetest,
+        QcWorksheetPermissionKeys.CanApproveMaterialRetest,
+        QcWorksheetPermissionKeys.CanRejectMaterialRetest,
+        QcWorksheetPermissionKeys.CanRecordMaterialRetestSample,
+        QcWorksheetPermissionKeys.CanAcknowledgeMaterialRetest,
+        QcWorksheetPermissionKeys.CanLinkMaterialRetestTestRequest
+    ];
+
+    private static readonly HashSet<string> ReworkKeys =
+    [
+        QcWorksheetPermissionKeys.CanViewResponseReworkTasks,
+        QcWorksheetPermissionKeys.CanViewResponseReworkTaskDetail,
+        QcWorksheetPermissionKeys.CanStartResponseReworkTask
+    ];
+
+
     private static readonly HashSet<string> TestRoomKeys =
     [
         QcWorksheetPermissionKeys.CanAssignWorksheet,
@@ -146,6 +168,8 @@ public static class QcWorksheetPermissionCatalog
         if (SpecificationKeys.Contains(key)) return Specifications;
         if (SpecificationProposalKeys.Contains(key)) return SpecificationProposals;
         if (TestRequestKeys.Contains(key)) return TestRequests;
+        if (RetestKeys.Contains(key)) return Retests;
+        if (ReworkKeys.Contains(key)) return Rework;
         if (TestRoomKeys.Contains(key)) return TestRoom;
         if (OosCaseKeys.Contains(key)) return OosCases;
         if (CertificateKeys.Contains(key)) return Certificates;

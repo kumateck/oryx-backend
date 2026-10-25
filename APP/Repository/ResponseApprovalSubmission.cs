@@ -25,6 +25,10 @@ internal static class ResponseApprovalSubmission
                 "Multiple response approval configurations exist.");
 
         var stages = configurations.SingleOrDefault()?.ApprovalStages ?? [];
+        if ((response.MaterialBatchId.HasValue || response.BatchManufacturingRecordId.HasValue)
+            && stages.Count == 0)
+            return Error.Conflict("Response.QaApprovalRequired",
+                "Material and product test responses require an assigned QA Response approval document.");
         if (stages.Any(item => !item.UserId.HasValue && !item.RoleId.HasValue))
             return Error.Validation("Response.ApprovalAssignment",
                 "Every response approval stage must be assigned to a user or role.");

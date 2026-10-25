@@ -61,7 +61,11 @@ public class ShipmentInvoice : BaseEntity
     public Currency Currency { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime? DueDate { get; set; }
+    public ShipmentInvoiceKind Kind { get; set; }
+    public Guid? FulfillmentRequestKey { get; set; }
 }
+
+public enum ShipmentInvoiceKind { Standard = 0, NoChargeShortageMakeUp = 1 }
 
 public class ShipmentInvoiceItem : BaseEntity
 {
@@ -88,6 +92,8 @@ public class ShipmentInvoiceItem : BaseEntity
     public decimal TotalCost { get; set; }
     public Guid? CurrencyId { get; set; }
     public Currency Currency { get; set; }
+    public Guid? FulfillsDiscrepancyItemId { get; set; }
+    public ShipmentDiscrepancyItem FulfillsDiscrepancyItem { get; set; }
 }
 
 public class DistributionShipmentInvoiceItemDto
@@ -100,11 +106,23 @@ public class DistributionShipmentInvoiceItemDto
 }
 
 
-public class ShipmentDiscrepancy : BaseEntity
+public class ShipmentDiscrepancy : BaseEntity, IRequireApproval
 {
     public Guid ShipmentDocumentId { get; set; }
     public ShipmentDocument ShipmentDocument { get; set; }
     public List<ShipmentDiscrepancyItem> Items { get; set; } = [];
+    public bool Approved { get; set; }
+    public List<ShipmentDiscrepancyApproval> Approvals { get; set; } = [];
+    public bool Rejected { get; set; }
+}
+
+public class ShipmentDiscrepancyApproval : ResponsibleApprovalStage
+{
+    public Guid Id { get; set; }
+    public Guid ShipmentDiscrepancyId { get; set; }
+    public ShipmentDiscrepancy ShipmentDiscrepancy { get; set; }
+    public Guid ApprovalId { get; set; }
+    public Approval Approval { get; set; }
 }
 
 public class ShipmentDiscrepancyItem : BaseEntity
@@ -116,6 +134,9 @@ public class ShipmentDiscrepancyItem : BaseEntity
     public Guid UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal ReceivedQuantity { get; set; }
+    public decimal DeclaredQuantitySnapshot { get; set; }
+    public Guid? ShipmentInvoiceItemId { get; set; }
+    public ShipmentInvoiceItem ShipmentInvoiceItem { get; set; }
     public Guid? TypeId { get; set; }
     public ShipmentDiscrepancyType Type { get; set; }
     [StringLength(255)] public string Reason { get; set; }

@@ -19,9 +19,9 @@ public class BackgroundWorkerService(ConcurrentQueue<CreateActivityLog> logQueue
         logQueue.Enqueue(log);
     }
 
-    public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null, List<User> users = null)
+    public void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null, List<User> users = null, Guid? shipmentDocumentId = null, string relatedEntityType = null, Guid? relatedEntityId = null, string relatedEntityCode = null, string relatedEntityName = null, string relatedEntityStatus = null, string relatedEntityPriority = null)
     {
-        alertStager.Stage(message, type, departmentId, users);
+        alertStager.Stage(message, type, departmentId, users, shipmentDocumentId: shipmentDocumentId, relatedEntityType: relatedEntityType, relatedEntityId: relatedEntityId, relatedEntityCode: relatedEntityCode, relatedEntityName: relatedEntityName, relatedEntityStatus: relatedEntityStatus, relatedEntityPriority: relatedEntityPriority);
     }
 
     public void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCapture)

@@ -71,6 +71,7 @@ public class ApprovalEntity
 public class ApprovalRequestBody
 {
     public string Comments { get; set; }
+    public DOMAIN.Entities.Forms.ResponseRejectionOutcome? ResponseRejectionOutcome { get; set; }
 }
 
 

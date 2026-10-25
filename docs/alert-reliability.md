@@ -55,7 +55,7 @@ These new business events are **not claimed implemented** by delivery hardening.
 
 ## Record links and remaining reliability gates
 
-The current Notification DTO has no event code, priority, source record type/id, occurrence key, or escalation/resolution state. Add versioned backend-owned metadata before routing a companion alert directly to a specific ERP record. Existing type-based links lead to module lists only. Do not parse record IDs from message text or reuse the notification ID as an ERP record ID.
+The Notification DTO now carries a nullable `ShipmentDocumentId` for shipment-arrival events, preserved in alert intent, persisted notification, unread API, and realtime payload. Other event types still need explicit source metadata before direct-record routing. Do not parse record IDs from message text or reuse the notification ID as an ERP record ID.
 
 Move legacy post-save enqueue calls inside the domain commit for strict business-event atomicity. Immediate intent persistence closes the background-queue loss window, but cannot remove a process crash between an already completed business save and the later enqueue call. Direct `ProcessAlert` callers must also migrate to staged transactional intents. Pending business callers must perform their normal save; disposing an unsaved scope intentionally discards both work and staged alert.
 
@@ -78,3 +78,14 @@ Run `dotnet test tests/APP.Tests/APP.Tests.csproj --filter FullyQualifiedName~AP
 - Documentation updated: this report, README, services and workflows here; Live Desktop companion/notification docs, README, services, workflows and plan.
 
 To reproduce the optional PostgreSQL test, provision the disposable tables using the generated migration SQL and the minimal Notifications/users prerequisites described by the test, then set `ORYX_ALERT_TEST_CONNECTION`. The test refuses any host/port/database other than the isolated local tuple above. Ordinary runs skip it when no connection is provided.
+
+
+Documentation update (2026-10-25): updated README migration guidance, the service contract, shipment-arrival workflow and this report for explicit shipment IDs across intent, persistence, API and realtime delivery. The desktop companion and notification guides describe all-alert rendering, scrolling, direct shipment navigation and read-state behavior.
+
+## Related record context for companion alerts (2026-10-25)
+
+Notifications now carry optional `RelatedEntityType`, `RelatedEntityId`, `RelatedEntityCode`, `RelatedEntityName`, `RelatedEntityStatus`, and `RelatedEntityPriority` fields through the staged request, durable notification, unread API response, and realtime delivery DTO. `RelatedEntityType` and `RelatedEntityId` must be supplied together; display fields are bounded to their database limits. Shipment IDs continue to be populated for compatibility and are mirrored into the generic context when older producers only supply that ID.
+
+The fields describe a record but do not change the recipient set or grant access. Existing recipient resolution remains based on the alert configuration and trusted explicit assignees; clients must still enforce their normal authorization before opening a record. Producers now attach available context for shipment arrivals, tickets, shift schedules, leave/overtime requests, staff requisitions, production tasks and batch records, expired material batches, and assigned job requests. Some alert categories have no durable source record at their producer and therefore leave related context null.
+
+Documentation updated: this alert reliability note, services API contract, and alert workflow behavior.

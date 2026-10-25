@@ -3043,42 +3043,18 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         return Result.Success();
     }
 
-    public async Task<Result> RequestRetest(Guid materialBatchId, RequestRetestDto request, Guid userId)
+    public Task<Result> RequestRetest(Guid materialBatchId, RequestRetestDto request, Guid userId)
     {
-        var batch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == materialBatchId);
-        if (batch is null)
-        {
-            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
-        }
-
-        batch.Status = BatchStatus.Retest;
-        batch.RetestDate = DateTime.UtcNow;
-        batch.RetestReason = request.Reason;
-        batch.UpdatedAt = DateTime.UtcNow;
-        batch.LastUpdatedById = userId;
-
-        context.MaterialBatches.Update(batch);
-        await context.SaveChangesAsync();
-        return Result.Success();
+        // This legacy route rewrote the scheduled retest date and bypassed the central
+        // approval chain. Requests now live in the QC material-retest workflow.
+        return Task.FromResult<Result>(Error.Conflict("MaterialRetest.UseWorkflow", "Use the governed QC material-retest request endpoint."));
     }
 
-    public async Task<Result> CompleteRetest(Guid materialBatchId, CompleteRetestDto request, Guid userId)
+    public Task<Result> CompleteRetest(Guid materialBatchId, CompleteRetestDto request, Guid userId)
     {
-        var batch = await context.MaterialBatches.FirstOrDefaultAsync(mb => mb.Id == materialBatchId);
-        if (batch is null)
-        {
-            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
-        }
-
-        batch.ExpiryDate = request.ExtendedExpiryDate;
-        batch.RetestNotes = request.Notes;
-        batch.Status = BatchStatus.Available;
-        batch.UpdatedAt = DateTime.UtcNow;
-        batch.LastUpdatedById = userId;
-
-        context.MaterialBatches.Update(batch);
-        await context.SaveChangesAsync();
-        return Result.Success();
+        // Expiry may change only when an issued, compliant COA completes a linked
+        // governed retest. A caller-supplied date is never sufficient evidence.
+        return Task.FromResult<Result>(Error.Conflict("MaterialRetest.UseWorkflow", "Expiry extension is completed by issuance of a compliant linked COA."));
     }
 
     public async Task<Result> CreateMaterialDepartment(

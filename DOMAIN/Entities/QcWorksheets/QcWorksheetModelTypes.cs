@@ -43,10 +43,11 @@ public static class QcWorksheetModelTypes
     /// </para>
     /// </summary>
     public const string Coa = "QcCoa";
+    public const string MaterialRetest = "QcMaterialRetest";
 
     public static bool IsQcWorksheetModelType(string modelType) =>
         modelType is StandardTestProcedure or WorksheetTemplate or Specification
-            or WorksheetInstance or OosCase or Coa;
+            or WorksheetInstance or OosCase or Coa or MaterialRetest;
 }
 
 /// <summary>
@@ -69,6 +70,7 @@ public static class QcApprovalEntityTypes
     /// from the one place every QC signature is queryable from.
     /// </summary>
     public const string Coa = "Coa";
+    public const string MaterialRetest = "MaterialRetest";
 
     /// <summary>
     /// Maps an approval-engine modelType to the EntityType recorded on the QcApproval row.
@@ -81,6 +83,7 @@ public static class QcApprovalEntityTypes
         QcWorksheetModelTypes.WorksheetInstance => WorksheetInstance,
         QcWorksheetModelTypes.OosCase => OosCase,
         QcWorksheetModelTypes.Coa => Coa,
+        QcWorksheetModelTypes.MaterialRetest => MaterialRetest,
         _ => null
     };
 }

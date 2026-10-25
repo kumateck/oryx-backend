@@ -1057,6 +1057,12 @@ public class WarehouseRepository(
         if (request.MaterialBatches.Count == 0)
             return Error.Validation("Material.Batches", "Must have at least one batch.");
 
+        var preparedReceipts = await APP.Services.Procurement.ShortageReceiptPreparation.Prepare(
+            context, request, userId);
+        if (preparedReceipts.IsFailure) return preparedReceipts.Error;
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync() : null;
+
         var checklist = mapper.Map<Checklist>(request);
         checklist.CreatedById = userId;
         await context.Checklists.AddAsync(checklist);
@@ -1080,7 +1086,14 @@ public class WarehouseRepository(
 
         distributedMaterial.Status = DistributedRequisitionMaterialStatus.Checked;
         distributedMaterial.CheckedAt = DateTime.UtcNow;
+        foreach (var receipt in preparedReceipts.Value)
+        {
+            receipt.ChecklistId = checklist.Id;
+            context.ShipmentShortageReceipts.Add(receipt);
+        }
         await context.SaveChangesAsync();
+
+        if (transaction is not null) await transaction.CommitAsync();
 
         return Result.Success(checklist.Id);
     }

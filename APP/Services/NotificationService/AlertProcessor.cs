@@ -10,7 +10,7 @@ namespace APP.Services.NotificationService;
 /// <summary>Every active configuration contributes recipients; overlapping configurations do not duplicate a channel.</summary>
 public class AlertProcessor(ApplicationDbContext context, UserManager<User> users, INotificationService notifications)
 {
-    public async Task Process(string message, NotificationType type, Guid? departmentId, List<User> assignedUsers)
+    public async Task Process(string message, NotificationType type, Guid? departmentId, List<User> assignedUsers, Guid? shipmentDocumentId, string relatedEntityType, Guid? relatedEntityId, string relatedEntityCode, string relatedEntityName, string relatedEntityStatus, string relatedEntityPriority)
     {
         var configurations = await context.Alerts.AsSplitQuery().Include(alert => alert.Roles).ThenInclude(item => item.Role)
             .Include(alert => alert.Users).ThenInclude(item => item.User)
@@ -39,7 +39,7 @@ public class AlertProcessor(ApplicationDbContext context, UserManager<User> user
         {
             if (audience.Count == 0) continue;
             await notifications.SendNotification(new NotificationDto {
-                Message = message, Type = type, SentAt = DateTime.UtcNow,
+                Message = message, Type = type, SentAt = DateTime.UtcNow, ShipmentDocumentId = shipmentDocumentId, RelatedEntityType = relatedEntityType, RelatedEntityId = relatedEntityId, RelatedEntityCode = relatedEntityCode, RelatedEntityName = relatedEntityName, RelatedEntityStatus = relatedEntityStatus, RelatedEntityPriority = relatedEntityPriority,
                 Recipients = audience.Keys.Select(id => new UserDto { Id = id }).ToList(),
             }, [channel]);
         }

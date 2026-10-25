@@ -864,7 +864,7 @@ public class ProductionScheduleRepository(
                             "You have been assigned a production task",
                             NotificationType.ProductionStageChanged,
                             null,
-                            nextStepUsers
+                            nextStepUsers, relatedEntityType: "ProductionActivityStep", relatedEntityId: nextStep.Id, relatedEntityStatus: nextStep.Status.ToString()
                         );
                     }
                 }
@@ -2038,7 +2038,7 @@ public class ProductionScheduleRepository(
 
         backgroundWorkerService.EnqueueNotification(
             "Batch manufacturing record created",
-            NotificationType.BmrBprRequested
+            NotificationType.BmrBprRequested, relatedEntityType: nameof(BatchManufacturingRecord), relatedEntityId: batchRecord.Id, relatedEntityCode: batchRecord.BatchNumber, relatedEntityStatus: batchRecord.Status.ToString()
         );
 
         return batchRecord.Id;
@@ -2989,7 +2989,7 @@ public class ProductionScheduleRepository(
         await context.SaveChangesAsync();
         backgroundWorkerService.EnqueueNotification(
             "Batch manufacturing issued",
-            NotificationType.BmrBprApproved
+            NotificationType.BmrBprApproved, relatedEntityType: nameof(BatchManufacturingRecord), relatedEntityId: batchRecord.Id, relatedEntityCode: batchRecord.BatchNumber, relatedEntityStatus: batchRecord.Status.ToString()
         );
         await stepEventPublisher.PublishStatusChanged(
             batchRecord.ProductionActivityStepId,
@@ -3117,7 +3117,7 @@ public class ProductionScheduleRepository(
 
         backgroundWorkerService.EnqueueNotification(
             "Batch packaging issued",
-            NotificationType.BmrBprApproved
+            NotificationType.BmrBprApproved, relatedEntityType: nameof(BatchPackagingRecord), relatedEntityId: batchRecord.Id, relatedEntityCode: batchRecord.BatchNumber
         );
         await stepEventPublisher.PublishStatusChanged(
             batchRecord.ProductionActivityStepId,

@@ -1,5 +1,6 @@
 using APP.Utils;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Users;
 using SHARED;
 
@@ -32,7 +33,8 @@ public interface IApprovalRepository
         Guid modelId,
         Guid userId,
         List<Guid> roleIds,
-        string comments = null
+        string comments = null,
+        ResponseRejectionOutcome? responseOutcome = null
     );
     Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(
         Guid userId,

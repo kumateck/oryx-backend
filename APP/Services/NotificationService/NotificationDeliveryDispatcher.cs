@@ -43,7 +43,7 @@ public class NotificationDeliveryDispatcher(ApplicationDbContext context, INotif
                 {
                     var payload = new NotificationDto {
                         Id = row.Notification.Id, Message = row.Notification.Message, Type = row.Notification.Type,
-                        SentAt = row.Notification.SentAt, Recipients = row.Notification.AlertType == AlertType.Email ? recipients : recipients.Select(user => new UserDto { Id = user.Id }).ToList(),
+                        SentAt = row.Notification.SentAt, ShipmentDocumentId = row.Notification.ShipmentDocumentId, RelatedEntityType = row.Notification.RelatedEntityType, RelatedEntityId = row.Notification.RelatedEntityId, RelatedEntityCode = row.Notification.RelatedEntityCode, RelatedEntityName = row.Notification.RelatedEntityName, RelatedEntityStatus = row.Notification.RelatedEntityStatus, RelatedEntityPriority = row.Notification.RelatedEntityPriority, Recipients = row.Notification.AlertType == AlertType.Email ? recipients : recipients.Select(user => new UserDto { Id = user.Id }).ToList(),
                     };
                     if (row.Notification.AlertType == AlertType.InApp) await effects.Publish(payload, timeout.Token);
                     else await effects.Email(payload, timeout.Token);

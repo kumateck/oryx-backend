@@ -3,6 +3,7 @@ using APP.Services.QcWorksheets;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.QcWorksheets;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -131,11 +132,45 @@ public class CoaRepository(
         if (coa.Status != CoaStatus.Draft)
             return Result.Failure<CoaDetailDto>(QcWorksheetErrors.IssueRequiresDraft(coa.Status));
 
+        var retest = await context.MaterialRetestRequests
+            .Include(item => item.MaterialBatch)
+            .SingleOrDefaultAsync(item => item.TestRequestId == coa.TestRequestId);
+        if (retest is not null && (retest.Status != MaterialRetestStatus.Testing
+            || !retest.Approved || !retest.ProposedExpiryDate.HasValue
+            || (coa.OverallComplies && retest.ProposedExpiryDate.Value.Date <= DateTime.UtcNow.Date)
+            || retest.MaterialBatch.ExpiryDate != retest.OriginalExpiryDate))
+            return Error.Conflict("MaterialRetest.CoaGate", "The linked retest is not ready for COA issuance or the batch expiry changed after request.");
+
         coa.Status = CoaStatus.Issued;
         coa.IssuedAt = DateTime.UtcNow;
         coa.IssuedById = userId;
         coa.UpdatedAt = DateTime.UtcNow;
         coa.LastUpdatedById = userId;
+
+        if (retest is not null)
+        {
+            retest.CoaId = coa.Id;
+            retest.CompletedAt = DateTime.UtcNow;
+            retest.CompletedById = userId;
+            retest.Status = coa.OverallComplies ? MaterialRetestStatus.Completed : MaterialRetestStatus.Rejected;
+            if (coa.OverallComplies)
+            {
+                coa.ExpiryDate = retest.ProposedExpiryDate;
+                retest.MaterialBatch.ExpiryDate = retest.ProposedExpiryDate;
+                retest.MaterialBatch.Status = BatchStatus.Available;
+                retest.MaterialBatch.UpdatedAt = DateTime.UtcNow;
+                retest.MaterialBatch.LastUpdatedById = userId;
+            }
+            context.MaterialRetestEvents.Add(new MaterialRetestEvent
+            {
+                Id = Guid.NewGuid(), MaterialRetestRequestId = retest.Id,
+                Action = coa.OverallComplies ? "ExpiryExtended" : "CoaFailed",
+                Detail = coa.OverallComplies
+                    ? $"Issued COA {coa.Id} approved expiry through {retest.ProposedExpiryDate:yyyy-MM-dd}."
+                    : $"Issued COA {coa.Id} did not comply; batch remains frozen.",
+                ActorId = userId, OccurredAt = DateTime.UtcNow
+            });
+        }
 
         // The predecessor moves to Superseded here and not at /revise: an unissued draft
         // supersedes nothing, and marking the live certificate obsolete before its replacement

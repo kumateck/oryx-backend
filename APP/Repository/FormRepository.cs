@@ -360,14 +360,15 @@ public class FormRepository(
         var sample = await MaterialSampleBinding.ResolveAsync(
             context, request.MaterialBatchId, request.MaterialSamplingId);
         if (sample.IsFailure) return sample.Errors;
-        var response = await context.Responses.FirstOrDefaultAsync(r =>
+        var response = await context.Responses.Where(r =>
             r.MaterialBatchId == request.MaterialBatchId
             && r.MaterialSamplingId == sample.Value
             && r.BatchManufacturingRecordId == request.BatchManufacturingRecordId
             && r.ProductionActivityStepId == request.ProductionActivityStepId
             && r.RoutineTrackId == request.RoutineTrackId
             && (!request.FormId.HasValue || r.FormId == request.FormId)
-        );
+        ).OrderByDescending(r => r.ReworkSequence).ThenByDescending(r => r.CreatedAt)
+            .FirstOrDefaultAsync();
 
         return Result.Success<Guid?>(response?.Id);
     }
@@ -613,6 +614,10 @@ public class FormRepository(
 
         if (response == null)
             return Error.NotFound("Response.NotFound", "Response not found");
+        if (response.CheckedAt.HasValue || response.Approved || response.Rejected)
+            return Error.Conflict("Response.Finalized", "Previous test records cannot be resubmitted for rework.");
+        var reworkTask = await context.ResponseReworkTasks
+            .SingleOrDefaultAsync(item => item.NewResponseId == response.Id);
 
         var hasForeignFields = await context.FormResponses.AnyAsync(item =>
             item.ResponseId == response.Id
@@ -650,7 +655,7 @@ public class FormRepository(
                 var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
                     b.Id == response.MaterialBatchId
                 );
-                if (batch != null)
+                if (batch != null && reworkTask is null)
                 {
                     batch.Status = BatchStatus.TestTaken;
                     context.MaterialBatches.Update(batch);
@@ -661,7 +666,7 @@ public class FormRepository(
                 var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
                     b.Id == response.BatchManufacturingRecordId
                 );
-                if (bmr != null)
+                if (bmr != null && reworkTask is null)
                 {
                     bmr.Status = BatchManufacturingStatus.TestTaken;
                     context.BatchManufacturingRecords.Update(bmr);
@@ -721,6 +726,11 @@ public class FormRepository(
             track.WorksheetFinalizedById = userId;
         }
         await context.SaveChangesAsync();
+        if (reworkTask is not null)
+        {
+            reworkTask.Status = ResponseReworkStatus.AwaitingQa;
+            await context.SaveChangesAsync();
+        }
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success("Form successfully submitted and finalized.");
     }
@@ -757,6 +767,14 @@ public class FormRepository(
             context, request.FormId);
         if (revisionSelection.IsFailure) return revisionSelection.Errors;
         var effectiveFormRevisionId = revisionSelection.Value;
+        if ((request.MaterialBatchId.HasValue || request.BatchManufacturingRecordId.HasValue)
+            && await context.Responses.AnyAsync(item => item.FormId == request.FormId
+                && item.MaterialBatchId == request.MaterialBatchId
+                && item.MaterialSamplingId == boundSampleId
+                && item.BatchManufacturingRecordId == request.BatchManufacturingRecordId
+                && item.ProductionActivityStepId == request.ProductionActivityStepId))
+            return Error.Conflict("Response.Existing",
+                "A test Response already exists for this form and batch. Use its draft ID or an approved rework task.");
         if (request.RoutineTrackId.HasValue)
         {
             var track = await context.RoutineTracks.FirstOrDefaultAsync(item =>
@@ -1282,9 +1300,10 @@ public class FormRepository(
     {
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
-        var response = await context.Responses.FirstOrDefaultAsync(r =>
-            r.MaterialBatchId == materialBatchId
-        );
+        var response = await context.Responses
+            .Where(r => r.MaterialBatchId == materialBatchId)
+            .OrderByDescending(r => r.ReworkSequence).ThenByDescending(r => r.CreatedAt)
+            .FirstOrDefaultAsync();
         if (response == null)
             return FormErrors.NotFound(materialBatchId);
 
@@ -1302,7 +1321,8 @@ public class FormRepository(
         response.LastUpdatedById = userId;
         context.Responses.Update(response);
 
-        batch.Status = BatchStatus.Checked;
+        if (!await context.ResponseReworkTasks.AnyAsync(item => item.NewResponseId == response.Id))
+            batch.Status = BatchStatus.Checked;
         context.MaterialBatches.Update(batch);
 
         if (complies is { Count: > 0 })
@@ -1349,10 +1369,11 @@ public class FormRepository(
     {
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
-        var response = await context.Responses.FirstOrDefaultAsync(r =>
-            r.BatchManufacturingRecordId == batchManufacturingRecordId
-            && r.ProductionActivityStepId == productionActivityStepId
-        );
+        var response = await context.Responses
+            .Where(r => r.BatchManufacturingRecordId == batchManufacturingRecordId
+                && r.ProductionActivityStepId == productionActivityStepId)
+            .OrderByDescending(r => r.ReworkSequence).ThenByDescending(r => r.CreatedAt)
+            .FirstOrDefaultAsync();
         if (response == null)
             return FormErrors.NotFound(batchManufacturingRecordId);
 
@@ -1390,7 +1411,8 @@ public class FormRepository(
         response.LastUpdatedById = userId;
         context.Responses.Update(response);
 
-        bmr.Status = BatchManufacturingStatus.Checked;
+        if (!await context.ResponseReworkTasks.AnyAsync(item => item.NewResponseId == response.Id))
+            bmr.Status = BatchManufacturingStatus.Checked;
         context.BatchManufacturingRecords.Update(bmr);
 
         if (complies is { Count: > 0 })
