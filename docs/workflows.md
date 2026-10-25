@@ -563,6 +563,19 @@ The due-date scan requests retesting on the selected `RetestDate`; an undated ba
 
 QA approval releases an accepted material or product Response. QA rejection with rework freezes the material batch or quarantines the product BMR and opens a QC task. Starting the task creates a new Response linked through source and root IDs; the earlier Response and values remain immutable. QA rejection without rework marks the batch rejected and creates no task. A later approved rework Response completes its task and follows the normal release readiness checks. QC rework view/start endpoints have distinct grantable policies; retest approval requires its own policy and the assigned signed stage. Expired materials use the separate Retest workflow.
 
+Permission grants are persisted before related authorization caches are cleared;
+each Response decision still requires its dedicated grant and assigned stage.
+Documentation updated: this workflow and `docs/services.md`.
+
 ## Warehouse and shipment discrepancies (2026-10-25)
 
 A stock discrepancy snapshots a shelf batch quantity and the reported physical count. It requires configured approval stages; reporter self-review is blocked. The report itself changes no stock. The separate reconciliation action requires approval and an unchanged shelf snapshot, then updates shelf and batch quantities in one transaction with bin card and inventory ledger evidence. It rejects a reduction below consumed, reserved, or assigned batch quantity. Reconciliation is idempotently blocked after posting. Supplier invoice discrepancies also require configured approval stages and capture exact invoice line identity and declared quantity. An approved shortage can reserve a no-charge make-up invoice against the same PO and supplier without incrementing PO invoiced quantity or creating a payable. Checklist physical counts are immutable receipt events; the balance separates shipped and confirmed quantities. Overages remain visible as reports and cannot create shortage make-up invoices. View, record, approval decisions and reconciliation use distinct permissions.
+## File drafts and shared charge references (2026-10-25)
+
+Saving image or signature evidence inserts its field answer before the file
+repository writes the attachment. A failed save remains an error, with no
+silent draft completion. Billing sheet charge payments can share a bank
+reference within one batch; each charge still creates its own payment and
+follows the configured approval workflow. Other payable types retain their
+unique reference check. Documentation updated: this workflow, `docs/services.md`,
+`docs/form-draft-attachment-association.md`, and `docs/payment-register.md`.

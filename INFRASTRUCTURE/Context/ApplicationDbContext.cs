@@ -2409,7 +2409,8 @@ public partial class ApplicationDbContext(
                 payment.PayableId,
                 payment.Reference,
             })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"PayableType\" <> 0");
 
         modelBuilder
             .Entity<InvoiceAmount>()

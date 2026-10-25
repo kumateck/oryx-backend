@@ -131,7 +131,7 @@ public class BillingSheetChargePaymentTests
     }
 
     [Fact]
-    public async Task MarkChargeAsPaid_RequiresUniqueReferencesBeforeWriting()
+    public async Task MarkChargeAsPaid_AllowsOneReferenceForSeveralCharges()
     {
         await using var context = CreateContext();
         var seeded = await SeedBillingSheet(context, 10m, 15m);
@@ -144,9 +144,11 @@ public class BillingSheetChargePaymentTests
             Guid.NewGuid()
         );
 
-        Assert.False(result.IsSuccess);
-        Assert.Empty(context.Payments);
-        Assert.All(context.BillingSheetCharges, charge => Assert.False(charge.Paid));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, context.Payments.Count());
+        Assert.Equal(2, context.Payments.Select(payment => payment.BillingSheetChargeId).Distinct().Count());
+        Assert.All(context.Payments, payment =>
+            Assert.Equal("BANK-DUPLICATE", payment.Reference, ignoreCase: true));
     }
 
     private static MarkBillingSheetChargePaymentsRequest CreateRequest(

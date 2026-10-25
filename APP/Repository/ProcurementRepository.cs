@@ -1485,8 +1485,6 @@ public class ProcurementRepository(
         var references = request.Charges.Select(item => item.Reference?.Trim()).ToList();
         if (references.Any(string.IsNullOrWhiteSpace))
             return Error.Validation("Payment.Reference", "A payment reference is required for every charge.");
-        if (references.Distinct(StringComparer.OrdinalIgnoreCase).Count() != references.Count)
-            return Error.Validation("Payment.Duplicate", "Each charge payment needs a unique reference.");
 
         await using var transaction = context.Database.IsRelational()
             && context.Database.CurrentTransaction is null

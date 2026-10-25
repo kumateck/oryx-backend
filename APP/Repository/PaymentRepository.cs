@@ -28,7 +28,8 @@ public partial class PaymentRepository(ApplicationDbContext context, IMapper map
         if (!await context.Currencies.AnyAsync(currency => currency.Id == request.CurrencyId))
             return Error.NotFound("Payment.Currency", "Currency not found.");
 
-        if (await context.Payments.AnyAsync(payment =>
+        if (request.PayableType != PayableType.BillingSheet &&
+            await context.Payments.AnyAsync(payment =>
                 payment.PayableType == request.PayableType
                 && payment.PayableId == request.PayableId
                 && payment.Reference == reference))

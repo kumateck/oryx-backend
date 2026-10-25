@@ -12,14 +12,11 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SHARED;
 using StackExchange.Redis;
-using Role = DOMAIN.Entities.Roles.Role;
 
 namespace APP.Repository;
 
 public class PermissionRepository(
     ApplicationDbContext context,
-    UserManager<User> userManager,
-    RoleManager<Role> roleManager,
     IMemoryCache cache,
     IDatabase redisCache,
     ILogger<PermissionRepository> logger
@@ -277,17 +274,22 @@ public class PermissionRepository(
             }))
             .ToList();
         await context.PermissionTypes.AddRangeAsync(newPermissionTypes);
+        // Authorization reads these rows after cache eviction. Persist them first
+        // so a concurrent request cannot cache an incomplete permission grant.
+        await context.SaveChangesAsync();
+
+        var userIds = await context.UserRoles.IgnoreQueryFilters()
+            .Where(item => item.RoleId == roleId)
+            .Select(item => item.UserId)
+            .ToListAsync();
+        foreach (var userId in userIds)
+            cache.Remove($"UserId_{userId}_Permissions");
 
         try
         {
             await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{roleId}");
-            // Clear the cache for users in the role
-            var usersInRole = await userManager.GetUsersInRoleAsync(role.Name ?? "");
-            foreach (var user in usersInRole)
-            {
-                cache.Remove($"UserId_{user.Id}_Permissions");
-                await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{user.Id}");
-            }
+            foreach (var userId in userIds)
+                await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{userId}");
         }
         catch (Exception exception)
         {
@@ -295,8 +297,6 @@ public class PermissionRepository(
             // permission change into a 500 response.
             logger.LogWarning(exception, "Unable to invalidate permission cache for role {RoleId}", roleId);
         }
-
-        await context.SaveChangesAsync();
         return Result.Success();
     }
 

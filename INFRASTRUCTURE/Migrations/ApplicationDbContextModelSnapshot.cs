@@ -12007,7 +12007,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("RecordedById");
 
                     b.HasIndex("PayableType", "PayableId", "Reference")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"PayableType\" <> 0");
 
                     b.ToTable("Payments");
                 });
