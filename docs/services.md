@@ -647,3 +647,11 @@ See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
 ## Durable alert delivery (2026-10-24)
 
 AlertRequestStager/Dispatcher retain business audience and resolve active rule configurations. NotificationService writes records and delivery work atomically; independent hosted workers handle RabbitMQ and SMTP retries. The personal notification API excludes email records and returns stored timestamps; marking read stages a targeted NotificationReadEvent. Configuration actions enforce existing alert permissions. See [alert reliability](alert-reliability.md).
+
+Supplier pricing request validation now permits positive sub-cent decimals, aligned with repository validation; zero and negative amounts remain invalid. No endpoint shape changed. See [supplier price approval validation](supplier-pricing-approvals.md).
+
+## Waybill code counts
+
+The code-configuration count endpoint accepts Waybill and counts the shared ShipmentDocuments code namespace, including archived records. Waybills are DocType.Waybill rows, not a separate Waybill table. Shared prefixes include shipment documents so a suggestion does not intentionally reuse their numbers. No endpoint shape changes or database migration.
+
+Waybill count regression test passed: shared-prefix shipment/waybill rows and archived waybills are counted; an unused prefix returns zero. The local backend patch requires deployment and no schema migration.
