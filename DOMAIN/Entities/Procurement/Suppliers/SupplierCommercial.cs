@@ -67,7 +67,8 @@ public class SupplierPricingAgreementRequest
 {
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }
-    [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
+    [Range(typeof(decimal), "0", "79228162514264337593543950335", MinimumIsExclusive = true,
+        ErrorMessage = "Agreed price must be greater than zero.")]
     public decimal AgreedPrice { get; set; }
     [Required, StringLength(100)] public string PriceUoM { get; set; }
     public Guid CurrencyId { get; set; }

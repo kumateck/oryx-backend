@@ -25,3 +25,9 @@ terms. Existing pricing audit headers remain required.
 Focused coverage: `SupplierPricingTests` verifies no-workflow audit logging,
 pending isolation and maker-checker review, and final revision activation;
 `SupplierPricingAssociationTests` checks the supplier/material/UoM boundary.
+
+## Positive prices below 0.01 (2026-10-24)
+
+Supplier pricing API model validation now accepts every strictly positive decimal instead of imposing a 0.01 minimum. This matches the repository and frontend positive-price rule, preserving legitimate per-unit fractional prices. Zero/negative prices still fail. Previously the API rejected these requests before any proposal/stage could be created, so even configured approvers saw an empty queue. Approval configuration, assignment, maker/checker guards and audit behavior remain unchanged. This is a backend deployment change; it does not create/retry failed live agreements automatically.
+
+Verification: 15 supplier-pricing tests pass, including API attribute validation for 0.0001/0.009/0.01, rejection of zero/negative values, and fractional-price auto-approval versus assigned-stage review. The PostgreSQL agreement amount column is unrestricted numeric, so no database migration is needed for this validation correction. Rebuild/deploy the backend before resubmitting the rejected proposal. No live prices, approval settings or decisions were changed. Documentation updated: supplier pricing approvals, services and workflows.

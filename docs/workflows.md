@@ -536,3 +536,7 @@ See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
 ## Alert intent → delivery → reconciliation (2026-10-24)
 
 Business producers stage durable intent; authorized configuration resolves recipients; persisted notifications and channel work precede external delivery. A claimed intent completes with generated notification/outbox work in a PostgreSQL transaction. Delivery retries retain identity; read events synchronize recipient sessions. Available-batch expiry uses current UTC and a stable source key without changing stock status. See [remaining coverage and release gates](alert-reliability.md).
+
+A rejected supplier-price HTTP request creates no pending approval. Positive prices below 0.01 now pass API validation and follow the existing no-workflow auto-approval or configured assigned-review path; failed historical submissions require explicit resubmission after deployment. See [supplier pricing approvals](supplier-pricing-approvals.md).
+
+Waybill creation uses its configured Waybill naming rule and shared logistics document prefix count. Previously the count request failed as an unsupported model type. Generation remains a suggestion and does not reserve a number; backend validation remains authoritative.

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace APP.Tests.Repository;
 
-public class SupplierPricingTests
+public partial class SupplierPricingTests
 {
     private static readonly DateTime Boundary = new(2026, 6, 30, 0, 0, 0, DateTimeKind.Utc);
 
