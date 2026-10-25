@@ -20,13 +20,15 @@ public class FormDraftAttachmentTests
         public Guid? DepartmentId => null;
         public string DepartmentType => "NonProduction";
     }
-    private sealed class Files(bool fail = false) : IFileRepository
+    private sealed class Files(bool fail = false, ApplicationDbContext? context = null) : IFileRepository
     {
         public List<Guid> ModelIds { get; } = [];
-        public Task<Result> SaveBlobItem(string type, Guid id, string reference, IFormFile file, Guid? user)
+        public async Task<Result> SaveBlobItem(string type, Guid id, string reference, IFormFile file, Guid? user)
         {
             ModelIds.Add(id);
-            return Task.FromResult(fail ? Result.Failure(Error.Failure("File.Upload", "Storage unavailable")) : Result.Success());
+            if (fail) return Result.Failure(Error.Failure("File.Upload", "Storage unavailable"));
+            if (context is not null) await context.SaveChangesAsync();
+            return Result.Success();
         }
         public Task<Result> SaveBlobItem(string type, Guid id, List<IFormFile> files, Guid? user) => throw new NotSupportedException();
         public Task<Result> DeleteAttachment(Guid id, Guid user) => throw new NotSupportedException();
@@ -45,10 +47,10 @@ public class FormDraftAttachmentTests
         var question = new Question { Id = Guid.NewGuid(), Type = type, Label = "Evidence file" };
         var field = new FormField { Id = Guid.NewGuid(), FormSectionId = section.Id, QuestionId = question.Id };
         context.AddRange(form, section, question, field); await context.SaveChangesAsync();
-        var files = new Files();
+        var files = new Files(context: context);
         var repo = new FormRepository(context, null!, files, null!, null!);
         var request = new SaveResponseDraftRequest { FormId = form.Id, FormFieldId = field.Id,
-            Value = "data:application/pdf;base64,QQ==" };
+            Value = "data:image/png;base64,QQ==" };
         var first = await repo.SaveFormResponseDraft(request, Guid.NewGuid());
         Assert.True(first.IsSuccess, first.IsFailure ? first.Error.Description : null);
         var answer = await context.FormResponses.SingleAsync();
@@ -65,12 +67,15 @@ public class FormDraftAttachmentTests
     [Fact]
     public async Task Failed_storage_does_not_report_a_successful_draft()
     {
+        await using var context = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, new Actor());
         var response = new Response { Id = Guid.NewGuid() };
         var field = new FormField { Id = Guid.NewGuid() };
         var files = new Files(true);
         var result = await APP.Services.Forms.FormDraftAttachments.Save(response, field, null,
-            "data:application/pdf;base64,QQ==", Guid.NewGuid(), files);
+            "data:application/pdf;base64,QQ==", Guid.NewGuid(), files, context);
         Assert.True(result.IsFailure);
         Assert.Equal("File.Upload", result.Error.Code);
+        Assert.Equal(EntityState.Added, context.Entry(Assert.Single(response.FormResponses)).State);
     }
 }

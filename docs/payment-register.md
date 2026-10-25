@@ -14,3 +14,14 @@ reads use `GET /api/v1/payments/{paymentId}/approval-details` with
 `ApprovalActionLog` in addition to updating the responsible stage.
 
 Validation: PaymentRegisterTests covers pagination, receipt/status/reference filtering, invalid pagination, effective date resolution, missing rates, base identity, and missing base currency. Existing PaymentApprovalTests and PaymentRepositoryTests cover approval and balances.
+## Shared references for billing sheet charges (2026-10-25)
+
+The bulk charge payment API accepts the same reference on several distinct
+charges. Charge IDs must remain unique and every selected charge must be
+unpaid, approved for progression, and free of an active payment. It creates a
+separate traceable payment for each charge. Migration
+`20261025160000_AllowSharedBillingChargeReference` narrows the unique
+`(PayableType, PayableId, Reference)` index to non-billing-sheet payables.
+Apply it before enabling the frontend copy control. Rolling it back requires
+reconciling any shared billing sheet references first. Documentation updated:
+this guide, `docs/services.md`, and `docs/workflows.md`.

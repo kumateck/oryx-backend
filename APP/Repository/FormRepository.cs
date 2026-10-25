@@ -541,7 +541,7 @@ public class FormRepository(
         if (formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload)
         {
             var upload = await APP.Services.Forms.FormDraftAttachments.Save(
-                response, formField, formFieldRevisionId, request.Value, userId, fileRepository);
+                response, formField, formFieldRevisionId, request.Value, userId, fileRepository, context);
             if (upload.IsFailure) return upload.Errors;
         }
         else

@@ -1,5 +1,15 @@
 # Form draft attachment association
 
+## Concurrency correction (2026-10-25)
+
+New FileUpload and Signature field answers are explicitly registered as `Added`
+in the shared EF context before `FileRepository.SaveBlobItem` flushes it.
+Assigning a stable UUID alone could make EF treat the new answer as an update,
+which produced the observed zero-row concurrency exception for image drafts.
+The request and response contract is unchanged. The regression test flushes
+the context from the file repository stub to exercise the real save order.
+Documentation updated: this note, `docs/services.md`, and `docs/workflows.md`.
+
 FileUpload/Signature draft answers now receive an explicit stable FormResponse
 ID before SaveBlobItem captures its model ID and blob path. Previously a newly
 created field answer could still have Guid.Empty at that boundary, leaving the

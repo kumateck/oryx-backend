@@ -668,8 +668,22 @@ Waybill count regression test passed: shared-prefix shipment/waybill rows and ar
 
 The existing QA `Response` approval rejects with `comments` and `responseRejectionOutcome` (`0` disposal, `1` rework) at `POST /api/v1/approval/reject/Response/{id}`. Response approve and reject require distinct `CanApproveResponse` and `CanRejectResponse` policies plus the assigned stage. `GET /api/v1/qc/rework-tasks` lists tasks, `GET /{id}` returns lineage and product step context, and `POST /{id}/start` creates a separate Response. These use distinct `CanViewResponseReworkTasks`, `CanViewResponseReworkTaskDetail`, and `CanStartResponseReworkTask` policies. Material and product COA submission requires assigned Response approval stages.
 
+Role permission updates commit the new permission-type rows before invalidating
+role and user permission caches. In-memory user entries are removed even if
+Redis invalidation fails, so subsequent reads see the committed grant.
+
 ## Inventory discrepancy contracts (2026-10-25)
 
 `POST /api/v1/stock-discrepancy` accepts `shelfMaterialBatchId`, nonnegative `physicalQuantity`, numeric `reasonCode`, and required `notes`; it returns a report ID. `GET /api/v1/stock-discrepancy` and `/{id}` return the system snapshot, physical count, signed variance, approval and reconciliation state. `POST /{id}/reconcile` posts an approved report only when current shelf quantity still equals the snapshot. Distinct `CanViewStockDiscrepancy`, `CanRecordStockDiscrepancy`, `CanApproveStockDiscrepancy`, `CanRejectStockDiscrepancy`, and `CanReconcileStockDiscrepancy` permissions guard each action.
 
 `POST /api/v1/procurement/shipment-discrepancy` accepts a shipment document and exact `shipmentInvoiceItemId` lines with physical count and reason. List/detail endpoints return immutable declared-quantity snapshots and approval status. `GET /shipment-discrepancy/line/{id}/balance` returns confirmed, in-flight, outstanding and available-to-ship quantities. `POST /shipment-invoice/shortage-make-up` accepts case line, positive quantity, invoice code and request key, returning a no-charge invoice ID. View, record, approve, reject, and create make-up invoice use distinct `CanViewShipmentDiscrepancy`, `CanRecordShipmentDiscrepancy`, `CanApproveShipmentDiscrepancy`, `CanRejectShipmentDiscrepancy`, and `CanCreateShortageMakeUpInvoice` permissions.
+## Draft attachments and billing charge references (2026-10-25)
+
+`POST /api/v1/form/responses/draft` now marks a new file answer as inserted
+before attachment storage flushes the shared context. The response ID, audit
+context, and authorization checks are unchanged. The billing sheet charge
+payment request still contains one reference per charge, but equal references
+are accepted for charges on the same billing sheet. A partial unique payment
+index retains reference uniqueness for other payable types. Each charge keeps
+its own payment, approval, and audit trail. See the draft attachment and payment
+workflow guides.
