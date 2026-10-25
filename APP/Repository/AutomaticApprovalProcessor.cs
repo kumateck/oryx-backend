@@ -267,6 +267,14 @@ internal static class AutomaticApprovalProcessor
                 instance.UpdatedAt = DateTime.UtcNow;
                 break;
 
+            case QcWorksheetModelTypes.MaterialRetest:
+                var retest = await context.MaterialRetestRequests.SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(retest, modelType, modelId);
+                retest.Approved = true;
+                retest.Status = MaterialRetestStatus.Authorized;
+                retest.UpdatedAt = DateTime.UtcNow;
+                break;
+
             case QcWorksheetModelTypes.OosCase:
             case QcWorksheetModelTypes.Coa:
                 throw new InvalidOperationException(

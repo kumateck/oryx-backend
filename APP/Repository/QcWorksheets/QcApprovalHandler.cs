@@ -1,6 +1,7 @@
 using APP.Services.QcWorksheets;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.QcWorksheets;
+using DOMAIN.Entities.Materials.Batch;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -219,7 +220,7 @@ internal static class QcApprovalHandler
         IReadOnlyCollection<Guid> roleIds)
     {
         return stages
-            .Where(item => item.Status == ApprovalStatus.Pending)
+            .Where(item => item.Status == ApprovalStatus.Pending && item.ActivatedAt.HasValue)
             .OrderByDescending(item => item.Required)
             .ThenBy(item => item.Order)
             .FirstOrDefault(item => item.UserId == userId
@@ -294,6 +295,13 @@ internal static class QcApprovalHandler
                 oosCase.Approved = true;
                 oosCase.UpdatedAt = DateTime.UtcNow;
                 break;
+            case QcApprovalEntityTypes.MaterialRetest:
+                var retest = await context.MaterialRetestRequests.SingleOrDefaultAsync(item => item.Id == entityId);
+                if (retest is null) return;
+                retest.Approved = true;
+                retest.Status = MaterialRetestStatus.Authorized;
+                retest.UpdatedAt = DateTime.UtcNow;
+                break;
         }
     }
 
@@ -356,6 +364,13 @@ internal static class QcApprovalHandler
                 oosCase.DispositionById = null;
                 oosCase.DispositionAt = null;
                 oosCase.UpdatedAt = DateTime.UtcNow;
+                break;
+            case QcApprovalEntityTypes.MaterialRetest:
+                var retest = await context.MaterialRetestRequests.SingleOrDefaultAsync(item => item.Id == entityId);
+                if (retest is null) return;
+                retest.Approved = false;
+                retest.Status = MaterialRetestStatus.Rejected;
+                retest.UpdatedAt = DateTime.UtcNow;
                 break;
         }
     }

@@ -99,6 +99,13 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
         var oosCases = await context.QcOosCases
             .Where(item => oosIds.Contains(item.Id)).ToListAsync();
 
+        var retestIds = actionable
+            .Where(item => item.EntityType == QcApprovalEntityTypes.MaterialRetest)
+            .Select(item => item.EntityId).Distinct().ToList();
+        var retests = await context.MaterialRetestRequests
+            .Include(item => item.MaterialBatch)
+            .Where(item => retestIds.Contains(item.Id)).ToListAsync();
+
         var results = new List<QcPendingApprovalDto>();
 
         foreach (var stage in actionable)
@@ -188,6 +195,20 @@ public class QcApprovalRepository(ApplicationDbContext context, IMapper mapper) 
                         CreatedAt = oos.CreatedAt,
                         Order = stage.Order, ApprovalRound = stage.ApprovalRound,
                         ResourcePath = $"qc/worksheets/oos-cases/{oos.Id}"
+                    });
+                    break;
+                case QcApprovalEntityTypes.MaterialRetest:
+                    var retest = retests.FirstOrDefault(item => item.Id == stage.EntityId);
+                    if (retest is null) continue;
+                    results.Add(new QcPendingApprovalDto
+                    {
+                        EntityType = stage.EntityType, EntityId = retest.Id,
+                        Code = retest.MaterialBatch?.BatchNumber ?? retest.Id.ToString(),
+                        Name = "Material retest request", Version = 1,
+                        Status = QcDocumentStatus.UnderReview,
+                        CreatedAt = retest.CreatedAt,
+                        Order = stage.Order, ApprovalRound = stage.ApprovalRound,
+                        ResourcePath = $"qc/material-retests/{retest.Id}"
                     });
                     break;
             }

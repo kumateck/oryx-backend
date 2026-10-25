@@ -49,7 +49,7 @@ public class StaffRequisitionRepository(
             staffRequisition.Id
         );
 
-        backgroundWorkerService.EnqueueNotification("Staff requisition created", NotificationType.StaffRequest);
+        backgroundWorkerService.EnqueueNotification("Staff requisition created", NotificationType.StaffRequest, relatedEntityType: nameof(StaffRequisition), relatedEntityId: staffRequisition.Id, relatedEntityStatus: staffRequisition.StaffRequisitionStatus.ToString());
 
         return staffRequisition.Id;
     }

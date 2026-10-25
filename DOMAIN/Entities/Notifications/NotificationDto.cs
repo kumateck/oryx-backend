@@ -8,6 +8,12 @@ public class NotificationDto
     public string Message { get; set; }
     public NotificationType Type { get; set; }
     public Guid? ShipmentDocumentId { get; set; }
+    public string RelatedEntityType { get; set; }
+    public Guid? RelatedEntityId { get; set; }
+    public string RelatedEntityCode { get; set; }
+    public string RelatedEntityName { get; set; }
+    public string RelatedEntityStatus { get; set; }
+    public string RelatedEntityPriority { get; set; }
     public List<UserDto> Recipients { get; set; } = [];
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
 }

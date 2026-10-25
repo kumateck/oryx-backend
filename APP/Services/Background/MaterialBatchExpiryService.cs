@@ -34,7 +34,7 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory) : Bac
                     var sourceKey = $"expired-batch:{batch.Id}:{batch.ExpiryDate:O}";
                     // Retained intent prevents daily repeats; a unique key also fences concurrent scanners.
                     if (!await dbContext.Set<AlertDispatchRequest>().AnyAsync(item => item.SourceKey == sourceKey, stoppingToken))
-                        stager.Stage(message, NotificationType.ExpiredMaterial, sourceKey: sourceKey);
+                        stager.Stage(message, NotificationType.ExpiredMaterial, sourceKey: sourceKey, relatedEntityType: "MaterialBatch", relatedEntityId: batch.Id, relatedEntityCode: batch.BatchNumber, relatedEntityStatus: batch.Status.ToString());
                 }
 
 

@@ -1132,6 +1132,16 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [HttpPost("shipment-invoice/shortage-make-up")]
+    [Authorize(PermissionKeys.CanCreateShortageMakeUpInvoice)]
+    public async Task<IResult> CreateShortageMakeUpInvoice([FromBody] CreateShortageMakeUpInvoice request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await repository.CreateShortageMakeUpInvoice(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Retrieves a shipment invoice by the ID.
     /// </summary>
@@ -1290,7 +1300,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Creates a new shipment discrepancy.
     /// </summary>
     [HttpPost("shipment-discrepancy")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordShipmentDiscrepancy)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShipmentDiscrepancy(
@@ -1305,11 +1315,27 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [HttpGet("shipment-discrepancy")]
+    [Authorize(PermissionKeys.CanViewShipmentDiscrepancy)]
+    public async Task<IResult> GetShipmentDiscrepancies()
+    {
+        var result = await repository.GetShipmentDiscrepancies();
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    [HttpGet("shipment-discrepancy/line/{discrepancyItemId}/balance")]
+    [Authorize(PermissionKeys.CanViewShipmentDiscrepancy)]
+    public async Task<IResult> GetShipmentShortageBalance(Guid discrepancyItemId)
+    {
+        var result = await repository.GetShipmentShortageBalance(discrepancyItemId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Retrieves a shipment discrepancy by its ID.
     /// </summary>
     [HttpGet("shipment-discrepancy/{shipmentDiscrepancyId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewShipmentDiscrepancy)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDiscrepancyDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId)

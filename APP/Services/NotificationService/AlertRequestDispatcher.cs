@@ -26,7 +26,7 @@ public class AlertRequestDispatcher(ApplicationDbContext context, IAlertReposito
                 throw new InvalidOperationException("Alert configuration missing");
             if (configurations.Count > 0)
             {
-                await alerts.ProcessAlert(row.Message, row.Type, row.DepartmentId, assigned, row.ShipmentDocumentId);
+                await alerts.ProcessAlert(row.Message, row.Type, row.DepartmentId, assigned, row.ShipmentDocumentId, row.RelatedEntityType, row.RelatedEntityId, row.RelatedEntityCode, row.RelatedEntityName, row.RelatedEntityStatus, row.RelatedEntityPriority);
                 if (configurations.Any(item => item.AlertTypes.Count > 0) && !context.ChangeTracker.Entries<Notification>().Any())
                     throw new InvalidOperationException("Alert has no eligible recipients");
             }

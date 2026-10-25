@@ -317,3 +317,15 @@ this README, `docs/services.md`, and `docs/workflows.md`.
 ## Alert delivery hardening
 
 Alert intents and channel delivery now use a persisted outbox. Apply `AddNotificationDeliveryOutbox` through the normal migration process before starting this version. Shipment-arrival notifications also preserve shipment codes and document IDs through the API and realtime event; apply `AddShipmentReferenceToNotifications` before deploying that contract. See [alert reliability, coverage gaps, and acceptance gates](docs/alert-reliability.md).
+
+## QC material retests
+
+Apply the `MaterialRetestWorkflow` migration before starting the API. The hosted scanner creates requests on the selected batch retest date; manual requests, approval, sampling, acknowledgement, testing and COA issuance use `/api/v1/qc/material-retests`. See [service contracts](docs/services.md) and [workflow](docs/workflows.md). Documentation updated for this feature: `README.md`, `docs/services.md`, and `docs/workflows.md`.
+
+## QC Response rework
+
+Apply the `ResponseReworkWorkflow` migration before using QA Response rework decisions. QC rework tasks create new linked Response cycles for material and product tests. See `docs/services.md` and `docs/workflows.md`. Documentation updated: `README.md`, `docs/services.md`, and `docs/workflows.md`.
+
+## Inventory discrepancy rollout
+
+Apply `ShipmentDiscrepancyReconciliation`, then `StockDiscrepancyApproval` migrations before enabling the separate warehouse and supplier discrepancy workflows. Configure required approval stages for `ShipmentDiscrepancy` and `StockDiscrepancy` and grant each view, record, decision, and reconciliation permission separately. See `docs/services.md` and `docs/workflows.md`. Documentation updated: this README and both workflow documents.

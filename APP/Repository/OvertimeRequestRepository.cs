@@ -78,7 +78,8 @@ public class OvertimeRequestRepository(
 
         backgroundWorkerService.EnqueueNotification(
             "New overtime request created",
-            NotificationType.OvertimeRequest
+            NotificationType.OvertimeRequest,
+            relatedEntityType: nameof(OvertimeRequest), relatedEntityId: overtimeRequestEntity.Id, relatedEntityCode: overtimeRequestEntity.Code, relatedEntityStatus: overtimeRequestEntity.Status.ToString()
         );
 
         return overtimeRequestEntity.Id;

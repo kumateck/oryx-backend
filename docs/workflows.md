@@ -550,3 +550,19 @@ Each successful shipment-arrival action stages durable notification intent for t
 ## Shipment arrival alerts (2026-10-25)
 
 Each successful shipment-arrival action stages durable notification intent for the affected departments and requisition creators. The shipment document code is included in the alert message and the document ID is persisted with both the intent and notification. The API and realtime event carry that ID so the client can open the exact shipment detail page without parsing message text. Viewing details does not mark the notification read.
+
+### Alert context for assigned recipients
+
+Alert recipient resolution remains unchanged: configured users/roles and explicit business assignees receive the alert. When the event producer has a source record, it stages that record's type and ID plus any available code, name, status, and priority. Dispatch preserves these fields in both the durable user notification and realtime event. This lets the companion present record context and choose a record route without inferring identifiers from message text. Alerts without a source record remain readable and actionable through their category destination.
+
+## Material retest workflow (2026-10-25)
+
+The due-date scan requests retesting on the selected `RetestDate`; an undated batch may be requested manually with a reason. Creating the request freezes the material batch and snapshots its expiry. A configured Retest approval document holds sampling for an assigned signed approval; if no document exists, the central approval policy autoapproves and the event trail records it. QC records the taken sample and proposed extended expiry, acknowledges it, then links a QC test request whose sole subject is that same material batch. Existing worksheet review and COA generation supply evidence. Only issuing a compliant linked COA updates the batch expiry to the proposal and releases the batch; an issued noncompliant COA records rejection and keeps it frozen. Legacy direct retest completion is blocked. Every transition is auditable through `MaterialRetestEvents`.
+
+## Response rejection and QC rework (2026-10-25)
+
+QA approval releases an accepted material or product Response. QA rejection with rework freezes the material batch or quarantines the product BMR and opens a QC task. Starting the task creates a new Response linked through source and root IDs; the earlier Response and values remain immutable. QA rejection without rework marks the batch rejected and creates no task. A later approved rework Response completes its task and follows the normal release readiness checks. QC rework view/start endpoints have distinct grantable policies; retest approval requires its own policy and the assigned signed stage. Expired materials use the separate Retest workflow.
+
+## Warehouse and shipment discrepancies (2026-10-25)
+
+A stock discrepancy snapshots a shelf batch quantity and the reported physical count. It requires configured approval stages; reporter self-review is blocked. The report itself changes no stock. The separate reconciliation action requires approval and an unchanged shelf snapshot, then updates shelf and batch quantities in one transaction with bin card and inventory ledger evidence. It rejects a reduction below consumed, reserved, or assigned batch quantity. Reconciliation is idempotently blocked after posting. Supplier invoice discrepancies also require configured approval stages and capture exact invoice line identity and declared quantity. An approved shortage can reserve a no-charge make-up invoice against the same PO and supplier without incrementing PO invoiced quantity or creating a payable. Checklist physical counts are immutable receipt events; the balance separates shipped and confirmed quantities. Overages remain visible as reports and cannot create shortage make-up invoices. View, record, approval decisions and reconciliation use distinct permissions.

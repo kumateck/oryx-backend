@@ -45,6 +45,7 @@ public class CreateShipmentDiscrepancy
 
 public class CreateShipmentDiscrepancyItem
 {
+    public Guid? ShipmentInvoiceItemId { get; set; }
     public Guid MaterialId { get; set; }
     public Guid UoMId { get; set; }
     public decimal ReceivedQuantity { get; set; }

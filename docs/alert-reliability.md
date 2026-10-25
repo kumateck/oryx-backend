@@ -81,3 +81,11 @@ To reproduce the optional PostgreSQL test, provision the disposable tables using
 
 
 Documentation update (2026-10-25): updated README migration guidance, the service contract, shipment-arrival workflow and this report for explicit shipment IDs across intent, persistence, API and realtime delivery. The desktop companion and notification guides describe all-alert rendering, scrolling, direct shipment navigation and read-state behavior.
+
+## Related record context for companion alerts (2026-10-25)
+
+Notifications now carry optional `RelatedEntityType`, `RelatedEntityId`, `RelatedEntityCode`, `RelatedEntityName`, `RelatedEntityStatus`, and `RelatedEntityPriority` fields through the staged request, durable notification, unread API response, and realtime delivery DTO. `RelatedEntityType` and `RelatedEntityId` must be supplied together; display fields are bounded to their database limits. Shipment IDs continue to be populated for compatibility and are mirrored into the generic context when older producers only supply that ID.
+
+The fields describe a record but do not change the recipient set or grant access. Existing recipient resolution remains based on the alert configuration and trusted explicit assignees; clients must still enforce their normal authorization before opening a record. Producers now attach available context for shipment arrivals, tickets, shift schedules, leave/overtime requests, staff requisitions, production tasks and batch records, expired material batches, and assigned job requests. Some alert categories have no durable source record at their producer and therefore leave related context null.
+
+Documentation updated: this alert reliability note, services API contract, and alert workflow behavior.

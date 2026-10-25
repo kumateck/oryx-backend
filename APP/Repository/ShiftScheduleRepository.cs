@@ -449,7 +449,7 @@ public class ShiftScheduleRepository(
         backgroundWorkerService.EnqueueNotification(
             $"{availableEmployees.Count} employee(s) assigned to {shiftType.ShiftName} ({shiftCategory.Name}) on {shiftSchedule.ScheduleName}.",
             NotificationType.ShiftAssigned,
-            shiftSchedule.DepartmentId);
+            shiftSchedule.DepartmentId, relatedEntityType: nameof(ShiftSchedule), relatedEntityId: shiftSchedule.Id, relatedEntityName: shiftSchedule.ScheduleName, relatedEntityStatus: shiftSchedule.ScheduleStatus.ToString());
 
         return Result.Success();
     }
@@ -600,7 +600,7 @@ public class ShiftScheduleRepository(
         backgroundWorkerService.EnqueueNotification(
             $"Shift assignment on {request.ScheduleDate:d} was swapped to a new employee.",
             NotificationType.ShiftAssigned,
-            assignment.ShiftSchedules?.DepartmentId);
+            assignment.ShiftSchedules?.DepartmentId, relatedEntityType: nameof(ShiftSchedule), relatedEntityId: assignment.ShiftScheduleId);
 
         return Result.Success();
     }
@@ -897,7 +897,7 @@ public class ShiftScheduleRepository(
             backgroundWorkerService.EnqueueNotification(
                 $"Shift schedule import for {department.Name}: {assignments.Count} assignments for {distinctEmployees} employees.",
                 NotificationType.ShiftAssigned,
-                departmentId);
+                departmentId, relatedEntityType: nameof(ShiftSchedule), relatedEntityId: shiftSchedule.Id, relatedEntityName: shiftSchedule.ScheduleName, relatedEntityStatus: shiftSchedule.ScheduleStatus.ToString());
 
             return Result.Success(message);
         }

@@ -143,6 +143,9 @@ public partial class ApplicationDbContext(
     public DbSet<Sr> Srs { get; set; }
 
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
+    public DbSet<MaterialRetestRequest> MaterialRetestRequests { get; set; }
+    public DbSet<MaterialRetestEvent> MaterialRetestEvents { get; set; }
+    public DbSet<ResponseReworkTask> ResponseReworkTasks { get; set; }
     public DbSet<MaterialBatchEvent> MaterialBatchEvents { get; set; }
     public DbSet<MassMaterialBatchMovement> MassMaterialBatchMovements { get; set; }
     public DbSet<DistributedRequisitionMaterial> DistributedRequisitionMaterials { get; set; }
@@ -386,10 +389,12 @@ public partial class ApplicationDbContext(
 
     public DbSet<ShipmentDocument> ShipmentDocuments { get; set; }
     public DbSet<ShipmentDocumentApproval> ShipmentDocumentApprovals { get; set; }
+    public DbSet<ShipmentDiscrepancyApproval> ShipmentDiscrepancyApprovals { get; set; }
     public DbSet<ShipmentInvoice> ShipmentInvoices { get; set; }
     public DbSet<ShipmentDiscrepancy> ShipmentDiscrepancies { get; set; }
     public DbSet<ShipmentDiscrepancyType> ShipmentDiscrepancyTypes { get; set; }
     public DbSet<ShipmentInvoiceItem> ShipmentInvoiceItems { get; set; }
+    public DbSet<ShipmentShortageReceipt> ShipmentShortageReceipts { get; set; }
 
     #endregion
 
@@ -800,6 +805,8 @@ public partial class ApplicationDbContext(
     public DbSet<StockAdjustment> StockAdjustments { get; set; }
     public DbSet<StockAdjustmentLine> StockAdjustmentLines { get; set; }
     public DbSet<StockAdjustmentApproval> StockAdjustmentApprovals { get; set; }
+    public DbSet<StockDiscrepancy> StockDiscrepancies { get; set; }
+    public DbSet<StockDiscrepancyApproval> StockDiscrepancyApprovals { get; set; }
     public DbSet<InventoryLedger> InventoryLedgers { get; set; }
     #endregion
 
@@ -1249,6 +1256,21 @@ public partial class ApplicationDbContext(
 
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.UoM).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.ShelfMaterialBatches).AutoInclude();
+        modelBuilder.Entity<MaterialRetestRequest>()
+            .HasIndex(item => item.SourceKey).IsUnique();
+        modelBuilder.Entity<MaterialRetestRequest>()
+            .HasOne(item => item.MaterialBatch).WithMany()
+            .HasForeignKey(item => item.MaterialBatchId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MaterialRetestRequest>()
+            .HasIndex(item => item.TestRequestId).IsUnique();
+        modelBuilder.Entity<MaterialRetestRequest>()
+            .HasIndex(item => item.CoaId).IsUnique();
+        modelBuilder.Entity<MaterialRetestRequest>()
+            .HasOne(item => item.TestRequest).WithMany()
+            .HasForeignKey(item => item.TestRequestId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MaterialRetestRequest>()
+            .HasOne(item => item.Coa).WithMany()
+            .HasForeignKey(item => item.CoaId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder
             .Entity<DistributedRequisitionMaterial>()
             .Navigation(p => p.DistributedRequisitionItems)
@@ -1280,6 +1302,19 @@ public partial class ApplicationDbContext(
         //modelBuilder.Entity<FormField>().Navigation(p => p.Question).AutoInclude();
 
         modelBuilder.Entity<Question>().Navigation(p => p.Options).AutoInclude();
+        modelBuilder.Entity<ResponseReworkTask>()
+            .HasIndex(item => item.SourceResponseId).IsUnique();
+        modelBuilder.Entity<ResponseReworkTask>()
+            .HasIndex(item => item.NewResponseId).IsUnique();
+        modelBuilder.Entity<ResponseReworkTask>()
+            .HasOne(item => item.SourceResponse).WithMany()
+            .HasForeignKey(item => item.SourceResponseId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ResponseReworkTask>()
+            .HasOne(item => item.RootResponse).WithMany()
+            .HasForeignKey(item => item.RootResponseId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ResponseReworkTask>()
+            .HasOne(item => item.NewResponse).WithMany()
+            .HasForeignKey(item => item.NewResponseId).OnDelete(DeleteBehavior.Restrict);
 
         #endregion
 
@@ -1824,12 +1859,34 @@ public partial class ApplicationDbContext(
             .Entity<ShipmentDiscrepancy>()
             .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.ShipmentDocument.DeletedAt.HasValue);
         modelBuilder.Entity<ShipmentInvoice>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentInvoice>()
+            .HasIndex(a => a.FulfillmentRequestKey).IsUnique();
         modelBuilder
             .Entity<ShipmentDiscrepancyItem>()
             .HasQueryFilter(a => !a.ShipmentDiscrepancy.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentDiscrepancyItem>()
+            .HasIndex(a => a.ShipmentInvoiceItemId);
+        modelBuilder.Entity<ShipmentDiscrepancyItem>()
+            .HasOne(a => a.ShipmentInvoiceItem).WithMany()
+            .HasForeignKey(a => a.ShipmentInvoiceItemId)
+            .OnDelete(DeleteBehavior.Restrict);
         modelBuilder
             .Entity<ShipmentInvoiceItem>()
             .HasQueryFilter(a => !a.ShipmentInvoice.DeletedAt.HasValue);
+        modelBuilder.Entity<ShipmentInvoiceItem>()
+            .HasOne(a => a.FulfillsDiscrepancyItem).WithMany()
+            .HasForeignKey(a => a.FulfillsDiscrepancyItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ShipmentShortageReceipt>()
+            .HasIndex(a => new { a.ShipmentInvoiceItemId, a.ChecklistId }).IsUnique();
+        modelBuilder.Entity<ShipmentShortageReceipt>()
+            .HasOne(a => a.ShipmentInvoiceItem).WithMany()
+            .HasForeignKey(a => a.ShipmentInvoiceItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<ShipmentShortageReceipt>()
+            .HasOne(a => a.Checklist).WithMany()
+            .HasForeignKey(a => a.ChecklistId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         #endregion
 
@@ -1850,7 +1907,7 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<Response>()
             .HasIndex(a => a.BatchManufacturingRecordId);
         modelBuilder.Entity<Response>()
-            .HasIndex(a => new { a.BatchManufacturingRecordId, a.ProductionActivityStepId })
+            .HasIndex(a => new { a.BatchManufacturingRecordId, a.ProductionActivityStepId, a.ReworkSequence })
             .IsUnique()
             .HasFilter(
                 "\"BatchManufacturingRecordId\" IS NOT NULL AND \"ProductionActivityStepId\" IS NOT NULL"
@@ -2488,6 +2545,18 @@ public partial class ApplicationDbContext(
                 a.RoleId,
             })
             .IsUnique();
+
+        modelBuilder.Entity<ShipmentDiscrepancyApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.ShipmentDiscrepancyId,
+                a.Order, a.UserId, a.RoleId }).IsUnique();
+
+        modelBuilder.Entity<StockDiscrepancy>()
+            .HasIndex(a => a.ShelfMaterialBatchId).IsUnique()
+            .HasFilter("\"Rejected\" = false AND \"ReconciledAt\" IS NULL AND \"DeletedAt\" IS NULL");
+        modelBuilder.Entity<StockDiscrepancyApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.StockDiscrepancyId,
+                a.Order, a.UserId, a.RoleId }).IsUnique()
+            .HasDatabaseName("IX_StockDiscrepancyApprovals_StageUnique");
 
         // Proforma Invoice Approvals
         modelBuilder

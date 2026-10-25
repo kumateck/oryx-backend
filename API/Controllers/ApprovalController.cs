@@ -12,7 +12,8 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/approval")]
 [ApiController]
-public class ApprovalController(IApprovalRepository repository, IApprovalDelegationService delegations) : ControllerBase
+public class ApprovalController(IApprovalRepository repository, IApprovalDelegationService delegations,
+    IAuthorizationService authorization) : ControllerBase
 {
     /// <summary>
     /// Gets all users that have a pending approval.
@@ -121,6 +122,12 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
+        if (modelType == "ShipmentDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanViewShipmentDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
+        if (modelType == "StockDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanViewStockDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
 
         var result = await repository.GetEntityRequiringApproval(modelType, modelId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -135,6 +142,12 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
+        if (modelType == "ShipmentDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanViewShipmentDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
+        if (modelType == "StockDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanViewStockDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
 
         var roleIds = (List<Guid>)HttpContext.Items["Roles"];
         var assigned = (await delegations.Pending(repository, Guid.Parse(userId), roleIds, modelType, DateTime.UtcNow))
@@ -223,6 +236,15 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
 
         if (userId == null)
             return TypedResults.Unauthorized();
+        if (modelType == "ShipmentDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanApproveShipmentDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
+        if (modelType == "StockDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanApproveStockDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
+        if (modelType == nameof(DOMAIN.Entities.Forms.Response) &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanApproveResponse)).Succeeded)
+            return TypedResults.Forbid();
 
         var actorId = Guid.Parse(userId);
         var comments = body.Comments;
@@ -271,6 +293,15 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
 
         if (userId == null)
             return TypedResults.Unauthorized();
+        if (modelType == "ShipmentDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanRejectShipmentDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
+        if (modelType == "StockDiscrepancy" &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanRejectStockDiscrepancy)).Succeeded)
+            return TypedResults.Forbid();
+        if (modelType == nameof(DOMAIN.Entities.Forms.Response) &&
+            !(await authorization.AuthorizeAsync(User, PermissionKeys.CanRejectResponse)).Succeeded)
+            return TypedResults.Forbid();
 
         var actorId = Guid.Parse(userId);
         var comments = body.Comments;
@@ -295,7 +326,8 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
             modelId,
             actorId,
             roleIds,
-            comments
+            comments,
+            body.ResponseRejectionOutcome
         );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

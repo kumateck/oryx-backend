@@ -225,7 +225,8 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         await approvalRepository.CreateInitialApprovalsAsync(nameof(LeaveRequest), entity.Id);
         backgroundWorkerService.EnqueueNotification(
             "New leave request created",
-            NotificationType.LeaveRequest
+            NotificationType.LeaveRequest,
+            relatedEntityType: nameof(LeaveRequest), relatedEntityId: entity.Id, relatedEntityStatus: entity.LeaveStatus.ToString()
         );
 
         return entity.Id;

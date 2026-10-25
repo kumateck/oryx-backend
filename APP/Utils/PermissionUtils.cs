@@ -273,6 +273,11 @@ public static class PermissionKeys
     public const string CanChangeShipmentDocumentStatus = "CanChangeShipmentDocumentStatus";
     public const string CanEditShipmentDocument = "CanEditShipmentDocument";
     public const string CanDeleteShipmentDocument = "CanDeleteShipmentDocument";
+    public const string CanViewShipmentDiscrepancy = "CanViewShipmentDiscrepancy";
+    public const string CanRecordShipmentDiscrepancy = "CanRecordShipmentDiscrepancy";
+    public const string CanCreateShortageMakeUpInvoice = "CanCreateShortageMakeUpInvoice";
+    public const string CanApproveShipmentDiscrepancy = "CanApproveShipmentDiscrepancy";
+    public const string CanRejectShipmentDiscrepancy = "CanRejectShipmentDiscrepancy";
     public const string CanCreateBillingSheet = "CanCreateBillingSheet";
     public const string CanViewBillingSheet = "CanViewBillingSheet";
     public const string CanEditBillingSheet = "CanEditBillingSheet";
@@ -363,6 +368,11 @@ public static class PermissionKeys
         "CanAssignPackagingMaterialStockTransfers";
     public const string CanViewMaterialStockAdjustment = "CanViewMaterialStockAdjustment";
     public const string CanCreateMaterialStockAdjustment = "CanCreateMaterialStockAdjustment";
+    public const string CanViewStockDiscrepancy = "CanViewStockDiscrepancy";
+    public const string CanRecordStockDiscrepancy = "CanRecordStockDiscrepancy";
+    public const string CanApproveStockDiscrepancy = "CanApproveStockDiscrepancy";
+    public const string CanRejectStockDiscrepancy = "CanRejectStockDiscrepancy";
+    public const string CanReconcileStockDiscrepancy = "CanReconcileStockDiscrepancy";
 
     // Production
     public const string CanViewRawMaterialRequisitionsForProduction =
@@ -490,6 +500,8 @@ public static class PermissionKeys
     public const string CanViewPendingApprovals = "CanViewPendingApprovals";
     public const string CanApprovePendingApproval = "CanApprovePendingApproval";
     public const string CanRejectPendingApproval = "CanRejectPendingApproval";
+    public const string CanApproveResponse = "CanApproveResponse";
+    public const string CanRejectResponse = "CanRejectResponse";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
 
     // Audit
@@ -1408,6 +1420,16 @@ public static class PermissionUtils
             PermissionSubmodules.ShipmentDocument,
             PermissionKeys.CanDeleteShipmentDocument
         );
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanViewShipmentDiscrepancy);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanRecordShipmentDiscrepancy);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice,
+            PermissionKeys.CanCreateShortageMakeUpInvoice);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanApproveShipmentDiscrepancy);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanRejectShipmentDiscrepancy);
         addPermission(
             PermissionModules.Logistics,
             PermissionSubmodules.BillingSheet,
@@ -1770,6 +1792,16 @@ public static class PermissionUtils
             PermissionSubmodules.StockAdjustment,
             PermissionKeys.CanCreateMaterialStockAdjustment
         );
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanViewStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanRecordStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanApproveStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanRejectStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanReconcileStockDiscrepancy);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.StockTransferIssues,
@@ -2274,6 +2306,10 @@ public static class PermissionUtils
             PermissionSubmodules.PendingApprovals,
             PermissionKeys.CanRejectPendingApproval
         );
+        addPermission(PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals, PermissionKeys.CanApproveResponse);
+        addPermission(PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectResponse);
         addPermission(
             PermissionModules.QualityAssurance,
             PermissionSubmodules.TransferApprovalRights,

@@ -78,8 +78,8 @@ public static class MenuConfig
             order: 3,
             children:
             [
-                new(PermissionSubmodules.ShipmentInvoice, [PermissionKeys.CanCreateShipmentInvoice, PermissionKeys.CanViewShipmentInvoice, PermissionKeys.CanEditShipmentInvoice, PermissionKeys.CanDeleteShipmentInvoice], route: "/logistics/shipment-invoice", order: 1),
-                new(PermissionSubmodules.ShipmentDocument, [PermissionKeys.CanCreateShipmentDocument, PermissionKeys.CanViewShipmentDocument, PermissionKeys.CanChangeShipmentDocumentStatus, PermissionKeys.CanEditShipmentDocument, PermissionKeys.CanDeleteShipmentDocument], route: "/logistics/shipment-document", order: 2),
+                new(PermissionSubmodules.ShipmentInvoice, [PermissionKeys.CanCreateShipmentInvoice, PermissionKeys.CanViewShipmentInvoice, PermissionKeys.CanEditShipmentInvoice, PermissionKeys.CanDeleteShipmentInvoice, PermissionKeys.CanCreateShortageMakeUpInvoice], route: "/logistics/shipment-invoice", order: 1),
+                new(PermissionSubmodules.ShipmentDocument, [PermissionKeys.CanCreateShipmentDocument, PermissionKeys.CanViewShipmentDocument, PermissionKeys.CanChangeShipmentDocumentStatus, PermissionKeys.CanEditShipmentDocument, PermissionKeys.CanDeleteShipmentDocument, PermissionKeys.CanViewShipmentDiscrepancy, PermissionKeys.CanRecordShipmentDiscrepancy, PermissionKeys.CanApproveShipmentDiscrepancy, PermissionKeys.CanRejectShipmentDiscrepancy], route: "/logistics/shipment-document", order: 2),
                 new(PermissionSubmodules.BillingSheet, [PermissionKeys.CanCreateBillingSheet, PermissionKeys.CanViewBillingSheet, PermissionKeys.CanEditBillingSheet], route: "/logistics/billing-sheet", order: 3),
                 new(PermissionSubmodules.Waybill, [PermissionKeys.CanCreateWaybill, PermissionKeys.CanViewWaybill, PermissionKeys.CanChangeWaybillStatus], route: "/logistics/waybill", order: 4),
                 new(PermissionSubmodules.AvailableStock, [PermissionKeys.CanViewRawMaterialStock, PermissionKeys.CanViewRawMaterialStock, PermissionKeys.CanViewPackingMaterialStock], route: "/logistics/available-stock", order: 5)
@@ -106,7 +106,8 @@ public static class MenuConfig
                 new(PermissionSubmodules.IssueStockRequisitions, [PermissionKeys.CanViewRawMaterialRequisitions, PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions], route: "/warehouse/issue-stock-requisitions", order: 8),
                 new(PermissionSubmodules.StockTransferIssues, [PermissionKeys.CanViewRawMaterialTransferList, PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanViewPackagingMaterialTransferList, PermissionKeys.CanIssuePackagingMaterialStockTransfers], route: "/warehouse/stock-transfer-issues", order: 9),
                 new(PermissionSubmodules.ExpiredMaterials, [PermissionKeys.CanViewExpiredMaterials, PermissionKeys.CanViewAboutToExpireMaterials], route: "/warehouse/expired-materials", order: 10),
-                new(PermissionSubmodules.Locations, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 11)
+                new(PermissionSubmodules.Locations, [PermissionKeys.CanViewRawMaterialLocationChartList, PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanViewPackagingMaterialLocationChartList, PermissionKeys.CanReassignPackagingMaterialStock], route: "/warehouse/location-chart-record", order: 11),
+                new(PermissionSubmodules.StockAdjustment, [PermissionKeys.CanViewStockDiscrepancy, PermissionKeys.CanRecordStockDiscrepancy, PermissionKeys.CanApproveStockDiscrepancy, PermissionKeys.CanRejectStockDiscrepancy, PermissionKeys.CanReconcileStockDiscrepancy], route: "/warehouse/stock-discrepancies", order: 12)
             ]
         ),
 

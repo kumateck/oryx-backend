@@ -45,7 +45,7 @@ public partial class TicketRepository(
 
         await alertRepository.ProcessAlert(
             $"New IT support ticket {ticket.TicketNumber} was raised: {ticket.Title}",
-            NotificationType.TicketCreated, departmentId);
+            NotificationType.TicketCreated, departmentId, relatedEntityType: nameof(Ticket), relatedEntityId: ticket.Id, relatedEntityCode: ticket.TicketNumber, relatedEntityName: ticket.Title, relatedEntityStatus: ticket.Status.ToString(), relatedEntityPriority: ticket.Priority.ToString());
 
         return ticket.Id;
     }
@@ -76,7 +76,7 @@ public partial class TicketRepository(
 
         await alertRepository.ProcessAlert(
             $"Ticket {ticket.TicketNumber} was assigned to you: {ticket.Title}",
-            NotificationType.TicketAssigned, ticket.DepartmentId, [assignee]);
+            NotificationType.TicketAssigned, ticket.DepartmentId, [assignee], relatedEntityType: nameof(Ticket), relatedEntityId: ticket.Id, relatedEntityCode: ticket.TicketNumber, relatedEntityName: ticket.Title, relatedEntityStatus: ticket.Status.ToString(), relatedEntityPriority: ticket.Priority.ToString());
 
         return Result.Success();
     }
@@ -127,7 +127,7 @@ public partial class TicketRepository(
         var reporter = await context.Users.FirstOrDefaultAsync(u => u.Id == ticket.ReportedById);
         await alertRepository.ProcessAlert(
             $"Ticket {ticket.TicketNumber} was marked done, awaiting your review: {ticket.Title}",
-            NotificationType.TicketStatusChanged, ticket.DepartmentId, reporter != null ? [reporter] : null);
+            NotificationType.TicketStatusChanged, ticket.DepartmentId, reporter != null ? [reporter] : null, relatedEntityType: nameof(Ticket), relatedEntityId: ticket.Id, relatedEntityCode: ticket.TicketNumber, relatedEntityName: ticket.Title, relatedEntityStatus: ticket.Status.ToString(), relatedEntityPriority: ticket.Priority.ToString());
 
         return Result.Success();
     }
@@ -153,7 +153,7 @@ public partial class TicketRepository(
         var reporter = await context.Users.FirstOrDefaultAsync(u => u.Id == ticket.ReportedById);
         await alertRepository.ProcessAlert(
             $"Ticket {ticket.TicketNumber} was closed: {ticket.Title}",
-            NotificationType.TicketStatusChanged, ticket.DepartmentId, reporter != null ? [reporter] : null);
+            NotificationType.TicketStatusChanged, ticket.DepartmentId, reporter != null ? [reporter] : null, relatedEntityType: nameof(Ticket), relatedEntityId: ticket.Id, relatedEntityCode: ticket.TicketNumber, relatedEntityName: ticket.Title, relatedEntityStatus: ticket.Status.ToString(), relatedEntityPriority: ticket.Priority.ToString());
 
         return Result.Success();
     }
@@ -184,7 +184,7 @@ public partial class TicketRepository(
             var assignee = await context.Users.FirstOrDefaultAsync(u => u.Id == ticket.AssignedToId.Value);
             await alertRepository.ProcessAlert(
                 $"Ticket {ticket.TicketNumber} was reopened: {reason}",
-                NotificationType.TicketStatusChanged, ticket.DepartmentId, assignee != null ? [assignee] : null);
+                NotificationType.TicketStatusChanged, ticket.DepartmentId, assignee != null ? [assignee] : null, relatedEntityType: nameof(Ticket), relatedEntityId: ticket.Id, relatedEntityCode: ticket.TicketNumber, relatedEntityName: ticket.Title, relatedEntityStatus: ticket.Status.ToString(), relatedEntityPriority: ticket.Priority.ToString());
         }
 
         return Result.Success();
@@ -206,7 +206,7 @@ public partial class TicketRepository(
             var users = await context.Users.Where(u => recipients.Contains(u.Id)).ToListAsync();
             await alertRepository.ProcessAlert(
                 $"New comment on ticket {ticket.TicketNumber}: {ticket.Title}",
-                NotificationType.TicketCommentAdded, ticket.DepartmentId, users);
+                NotificationType.TicketCommentAdded, ticket.DepartmentId, users, relatedEntityType: nameof(Ticket), relatedEntityId: ticket.Id, relatedEntityCode: ticket.TicketNumber, relatedEntityName: ticket.Title, relatedEntityStatus: ticket.Status.ToString(), relatedEntityPriority: ticket.Priority.ToString());
         }
 
         return activity.Id;

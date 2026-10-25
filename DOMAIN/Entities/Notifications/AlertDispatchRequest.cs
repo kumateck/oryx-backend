@@ -8,6 +8,12 @@ public class AlertDispatchRequest
     public string Message { get; set; }
     public NotificationType Type { get; set; }
     public Guid? ShipmentDocumentId { get; set; }
+    [System.ComponentModel.DataAnnotations.StringLength(80)] public string RelatedEntityType { get; set; }
+    public Guid? RelatedEntityId { get; set; }
+    [System.ComponentModel.DataAnnotations.StringLength(128)] public string RelatedEntityCode { get; set; }
+    [System.ComponentModel.DataAnnotations.StringLength(255)] public string RelatedEntityName { get; set; }
+    [System.ComponentModel.DataAnnotations.StringLength(64)] public string RelatedEntityStatus { get; set; }
+    [System.ComponentModel.DataAnnotations.StringLength(32)] public string RelatedEntityPriority { get; set; }
     public Guid? DepartmentId { get; set; }
     public List<Guid> AssignedUserIds { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -45,6 +45,8 @@ public partial class PaymentRepository
             .FirstOrDefaultAsync(item => item.Id == id);
         if (entity is null)
             return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found.");
+        if (entity.Kind == DOMAIN.Entities.Shipments.ShipmentInvoiceKind.NoChargeShortageMakeUp)
+            return Error.Validation("ShipmentInvoice.NoCharge", "A no-charge make-up invoice has no payable balance.");
         if (!entity.CurrencyId.HasValue)
             return Error.Validation(
                 "ShipmentInvoice.Currency",

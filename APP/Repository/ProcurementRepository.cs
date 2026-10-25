@@ -1597,6 +1597,12 @@ public class ProcurementRepository(
         Guid userId
     )
     {
+        if (!request.ShipmentInvoiceId.HasValue ||
+            !await context.ShipmentInvoices.AnyAsync(item => item.Id == request.ShipmentInvoiceId.Value))
+            return Error.Validation("ShipmentInvoice.Required", "Select an existing shipment invoice.");
+        if (await context.ShipmentDocuments.AnyAsync(item =>
+            item.ShipmentInvoiceId == request.ShipmentInvoiceId))
+            return Error.Validation("ShipmentInvoice.Used", "A shipment document already uses this invoice.");
         var exists = await context.ShipmentDocuments.AnyAsync(sd => sd.Code == request.Code);
         if (exists)
             return Error.Validation(
@@ -2006,17 +2012,30 @@ public class ProcurementRepository(
     public Task<Result<Guid>> CreateShipmentInvoice(CreateShipmentInvoice request, Guid userId)
         => APP.Services.Procurement.ShipmentInvoiceCreation.Create(context, mapper, request, userId);
 
+    public Task<Result<Guid>> CreateShortageMakeUpInvoice(CreateShortageMakeUpInvoice request, Guid userId)
+        => APP.Services.Procurement.ShortageMakeUpInvoiceCreation.Create(context, request, userId);
+
+    public async Task<Result<ShipmentShortageBalanceDto>> GetShipmentShortageBalance(Guid discrepancyItemId)
+        => await APP.Services.Procurement.ShipmentShortageBalance.Load(context, discrepancyItemId)
+            is { } balance ? balance : Error.NotFound("Discrepancy.NotFound", "Discrepancy line not found.");
+
+    public async Task<Result<List<ShipmentDiscrepancyDto>>> GetShipmentDiscrepancies()
+    {
+        var cases = await context.ShipmentDiscrepancies.AsNoTracking().AsSplitQuery()
+            .Include(item => item.ShipmentDocument)
+            .Include(item => item.Items).ThenInclude(item => item.Material)
+            .Include(item => item.Items).ThenInclude(item => item.UoM)
+            .OrderByDescending(item => item.CreatedAt).ToListAsync();
+        return mapper.Map<List<ShipmentDiscrepancyDto>>(cases);
+    }
+
     public async Task<Result<Guid>> CreateShipmentDiscrepancy(
         CreateShipmentDiscrepancy request,
         Guid userId
     )
     {
-        var shipmentDiscrepancy = mapper.Map<ShipmentDiscrepancy>(request);
-        shipmentDiscrepancy.CreatedById = userId;
-        await context.ShipmentDiscrepancies.AddAsync(shipmentDiscrepancy);
-        await context.SaveChangesAsync();
-
-        return shipmentDiscrepancy.Id;
+        return await APP.Services.Procurement.ShipmentDiscrepancyCreation.Create(
+            context, approvalRepository, request, userId);
     }
 
     // Read operations for ShipmentInvoice and ShipmentDiscrepancy
@@ -2030,6 +2049,7 @@ public class ProcurementRepository(
         var legacyItems = items
             .Where(i =>
                 i.PurchaseOrder?.Id != null
+                && i.FulfillsDiscrepancyItemId == null
                 && (i.Price == 0 || string.IsNullOrWhiteSpace(i.PriceUoM))
             )
             .ToList();
@@ -2283,6 +2303,12 @@ public class ProcurementRepository(
             return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
         }
 
+        if (existingShipmentInvoice.Kind == ShipmentInvoiceKind.NoChargeShortageMakeUp)
+            return Error.Validation("Invoice.NoCharge", "No-charge make-up invoices are immutable.");
+        if (await context.ShipmentDiscrepancies.AnyAsync(item =>
+            item.ShipmentDocument.ShipmentInvoiceId == shipmentInvoiceId))
+            return Error.Validation("Invoice.Discrepancy", "An invoice with reported discrepancies is immutable.");
+
         mapper.Map(request, existingShipmentInvoice);
         existingShipmentInvoice.LastUpdatedById = userId;
 
@@ -2304,6 +2330,9 @@ public class ProcurementRepository(
         {
             return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
         }
+
+        if (existingShipmentInvoice.Kind == ShipmentInvoiceKind.NoChargeShortageMakeUp)
+            return Error.Validation("Invoice.NoCharge", "No-charge make-up invoices cannot be marked paid.");
 
         var existingBillingSheet = await context.BillingSheets.FirstOrDefaultAsync(bs =>
             bs.InvoiceId == shipmentInvoiceId
@@ -2336,6 +2365,10 @@ public class ProcurementRepository(
             return Error.NotFound("ShipmentId.Empty", "No shipments ids were provided.");
         }
 
+        if (await context.ShipmentInvoices.AnyAsync(s => shipmentIds.Contains(s.Id) &&
+            s.Kind == ShipmentInvoiceKind.NoChargeShortageMakeUp))
+            return Error.Validation("Invoice.NoCharge", "No-charge make-up invoices cannot be marked paid.");
+
         await context
             .ShipmentInvoices.Where(s => shipmentIds.Contains(s.Id))
             .ExecuteUpdateAsync(setters =>
@@ -2361,20 +2394,9 @@ public class ProcurementRepository(
         Guid userId
     )
     {
-        var existingShipmentDiscrepancy = await context
-            .ShipmentDiscrepancies.Include(sd => sd.Items)
-            .FirstOrDefaultAsync(sd => sd.Id == shipmentDiscrepancyId);
-        if (existingShipmentDiscrepancy is null)
-        {
-            return Error.NotFound("ShipmentDiscrepancy.NotFound", "Shipment discrepancy not found");
-        }
-
-        mapper.Map(request, existingShipmentDiscrepancy);
-        existingShipmentDiscrepancy.LastUpdatedById = userId;
-
-        context.ShipmentDiscrepancies.Update(existingShipmentDiscrepancy);
-        await context.SaveChangesAsync();
-        return Result.Success();
+        return await Task.FromResult<Result>(Error.Validation(
+            "ShipmentDiscrepancy.Immutable",
+            "Submitted discrepancy observations cannot be overwritten. Reject and report a corrected case."));
     }
 
     // Delete operations for ShipmentInvoice and ShipmentDiscrepancy
@@ -2388,6 +2410,12 @@ public class ProcurementRepository(
             return Error.NotFound("ShipmentInvoice.NotFound", "Shipment invoice not found");
         }
 
+        if (shipmentInvoice.Kind == ShipmentInvoiceKind.NoChargeShortageMakeUp)
+            return Error.Validation("Invoice.NoCharge", "No-charge make-up invoices are immutable.");
+        if (await context.ShipmentDiscrepancies.AnyAsync(item =>
+            item.ShipmentDocument.ShipmentInvoiceId == shipmentInvoiceId))
+            return Error.Validation("Invoice.Discrepancy", "An invoice with reported discrepancies is immutable.");
+
         shipmentInvoice.DeletedAt = DateTime.UtcNow;
         shipmentInvoice.LastDeletedById = userId;
 
@@ -2398,20 +2426,9 @@ public class ProcurementRepository(
 
     public async Task<Result> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId, Guid userId)
     {
-        var shipmentDiscrepancy = await context.ShipmentDiscrepancies.FirstOrDefaultAsync(sd =>
-            sd.Id == shipmentDiscrepancyId
-        );
-        if (shipmentDiscrepancy is null)
-        {
-            return Error.NotFound("ShipmentDiscrepancy.NotFound", "Shipment discrepancy not found");
-        }
-
-        shipmentDiscrepancy.DeletedAt = DateTime.UtcNow;
-        shipmentDiscrepancy.LastDeletedById = userId;
-
-        context.ShipmentDiscrepancies.Update(shipmentDiscrepancy);
-        await context.SaveChangesAsync();
-        return Result.Success();
+        return await Task.FromResult<Result>(Error.Validation(
+            "ShipmentDiscrepancy.Immutable",
+            "Submitted discrepancy records cannot be deleted."));
     }
 
     public async Task<
@@ -2777,7 +2794,9 @@ public class ProcurementRepository(
                 $"Shipment {shipmentDocument.Code} for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
                 NotificationType.ShipmentArrived,
                 departmentId,
-                shipmentDocumentId: shipmentDocument.Id
+                shipmentDocumentId: shipmentDocument.Id,
+                relatedEntityType: nameof(ShipmentDocument), relatedEntityId: shipmentDocument.Id,
+                relatedEntityCode: shipmentDocument.Code, relatedEntityStatus: shipmentDocument.Status.ToString()
             );
         }
 
@@ -2786,7 +2805,8 @@ public class ProcurementRepository(
             NotificationType.ShipmentArrived,
             null,
             creators,
-            shipmentDocument.Id
+            shipmentDocument.Id,
+            nameof(ShipmentDocument), shipmentDocument.Id, shipmentDocument.Code, relatedEntityStatus: shipmentDocument.Status.ToString()
         );
 
         await approvalRepository.CreateInitialApprovalsAsync(

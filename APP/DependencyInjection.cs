@@ -280,6 +280,9 @@ public static class DependencyInjection
         services.AddHostedService<ServiceExpiryService>();
         services.AddHostedService<MaterialStockService>();
         services.AddHostedService<MaterialBatchExpiryService>();
+        services.AddScoped<APP.Services.Materials.IMaterialRetestService, APP.Services.Materials.MaterialRetestService>();
+        services.AddScoped<APP.Services.QcWorksheets.IResponseReworkService, APP.Services.QcWorksheets.ResponseReworkService>();
+        services.AddHostedService<MaterialRetestScanBackgroundService>();
         services.AddHostedService<EmployeeSuspensionService>();
         services.AddHostedService<WaterStockMaintenanceService>();
 

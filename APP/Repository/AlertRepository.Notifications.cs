@@ -26,7 +26,7 @@ public partial class AlertRepository
                 Message = n.Message,
                 Type = n.Type,
                 SentAt = n.SentAt,
-                ShipmentDocumentId = n.ShipmentDocumentId,
+                ShipmentDocumentId = n.ShipmentDocumentId, RelatedEntityType = n.RelatedEntityType, RelatedEntityId = n.RelatedEntityId, RelatedEntityCode = n.RelatedEntityCode, RelatedEntityName = n.RelatedEntityName, RelatedEntityStatus = n.RelatedEntityStatus, RelatedEntityPriority = n.RelatedEntityPriority,
             })
             .ToListAsync();
 

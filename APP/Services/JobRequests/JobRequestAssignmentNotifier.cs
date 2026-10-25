@@ -26,6 +26,7 @@ public class JobRequestAssignmentNotifier(INotificationService notificationServi
                 }
             ],
             Type = NotificationType.JobRequestAssigned,
+            RelatedEntityType = nameof(JobRequest), RelatedEntityId = jobRequest.Id, RelatedEntityCode = jobRequest.Code?.Length > 128 ? jobRequest.Code[..128] : jobRequest.Code, RelatedEntityStatus = jobRequest.Status.ToString(), RelatedEntityName = jobRequest.DescriptionOfWork?.Length > 255 ? jobRequest.DescriptionOfWork[..255] : jobRequest.DescriptionOfWork,
             SentAt = DateTime.UtcNow,
         };
 

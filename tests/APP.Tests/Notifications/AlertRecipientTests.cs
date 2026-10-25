@@ -37,7 +37,7 @@ public class AlertRecipientTests
         var first = User(); var second = User(); var disabled = User(disabled: true);
         context.Users.AddRange(first, second, disabled); context.Alerts.AddRange(Rule(first), Rule(first, second, disabled));
         await context.SaveChangesAsync(); var capture = new Capture();
-        await new AlertProcessor(context, null!, capture).Process("Actual event", NotificationType.BmrBprRequested, null, []);
+        await new AlertProcessor(context, null!, capture).Process("Actual event", NotificationType.BmrBprRequested, null, [], null, null, null, null, null, null, null);
         var sent = Assert.Single(capture.Sent);
         Assert.Equal(2, sent.Event.Recipients.Count);
         Assert.Contains(sent.Event.Recipients, user => user.Id == first.Id);
@@ -50,7 +50,7 @@ public class AlertRecipientTests
         var local = User(department); var elsewhere = User(Guid.NewGuid()); var assigned = User(Guid.NewGuid());
         context.Users.AddRange(local, elsewhere, assigned); context.Alerts.Add(Rule(local, elsewhere));
         await context.SaveChangesAsync(); var capture = new Capture();
-        await new AlertProcessor(context, null!, capture).Process("Assigned work", NotificationType.BmrBprRequested, department, [assigned]);
+        await new AlertProcessor(context, null!, capture).Process("Assigned work", NotificationType.BmrBprRequested, department, [assigned], null, null, null, null, null, null, null);
         var recipients = Assert.Single(capture.Sent).Event.Recipients;
         Assert.Contains(recipients, user => user.Id == local.Id);
         Assert.Contains(recipients, user => user.Id == assigned.Id);
