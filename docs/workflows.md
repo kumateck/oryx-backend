@@ -540,3 +540,13 @@ Business producers stage durable intent; authorized configuration resolves recip
 A rejected supplier-price HTTP request creates no pending approval. Positive prices below 0.01 now pass API validation and follow the existing no-workflow auto-approval or configured assigned-review path; failed historical submissions require explicit resubmission after deployment. See [supplier pricing approvals](supplier-pricing-approvals.md).
 
 Waybill creation uses its configured Waybill naming rule and shared logistics document prefix count. Previously the count request failed as an unsupported model type. Generation remains a suggestion and does not reserve a number; backend validation remains authoritative.
+
+
+## Shipment arrival alerts (2026-10-25)
+
+Each successful shipment-arrival action stages durable notification intent for the affected departments and requisition creators. The shipment document code is included in the message, and its ID is persisted on the intent and notification, then included in the in-app API/realtime payload for exact detail navigation. The frontend displays every unread alert and does not mark one read when opening its shipment.
+
+
+## Shipment arrival alerts (2026-10-25)
+
+Each successful shipment-arrival action stages durable notification intent for the affected departments and requisition creators. The shipment document code is included in the alert message and the document ID is persisted with both the intent and notification. The API and realtime event carry that ID so the client can open the exact shipment detail page without parsing message text. Viewing details does not mark the notification read.

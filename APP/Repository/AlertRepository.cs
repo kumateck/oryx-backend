@@ -128,6 +128,6 @@ public partial class AlertRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
-    public Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null) =>
-        new AlertProcessor(context, userManager, notificationService).Process(message, notificationType, departmentId, assignedUsers);
+    public Task ProcessAlert(string message, NotificationType notificationType, Guid? departmentId, List<User> assignedUsers = null, Guid? shipmentDocumentId = null) =>
+        new AlertProcessor(context, userManager, notificationService).Process(message, notificationType, departmentId, assignedUsers, shipmentDocumentId);
 }

@@ -7,6 +7,7 @@ public class AlertDispatchRequest
     public string SourceKey { get; set; }
     public string Message { get; set; }
     public NotificationType Type { get; set; }
+    public Guid? ShipmentDocumentId { get; set; }
     public Guid? DepartmentId { get; set; }
     public List<Guid> AssignedUserIds { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

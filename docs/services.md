@@ -646,7 +646,7 @@ See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
 
 ## Durable alert delivery (2026-10-24)
 
-AlertRequestStager/Dispatcher retain business audience and resolve active rule configurations. NotificationService writes records and delivery work atomically; independent hosted workers handle RabbitMQ and SMTP retries. The personal notification API excludes email records and returns stored timestamps; marking read stages a targeted NotificationReadEvent. Configuration actions enforce existing alert permissions. See [alert reliability](alert-reliability.md).
+AlertRequestStager/Dispatcher retain business audience and resolve active rule configurations. NotificationService writes records and delivery work atomically; independent hosted workers handle RabbitMQ and SMTP retries. Shipment arrival alerts retain their explicit shipment document ID through the durable request, notification API, and realtime payload so clients can open the exact shipment. The personal notification API excludes email records and returns stored timestamps; marking read stages a targeted NotificationReadEvent. Configuration actions enforce existing alert permissions. See [alert reliability](alert-reliability.md).
 
 Supplier pricing request validation now permits positive sub-cent decimals, aligned with repository validation; zero and negative amounts remain invalid. No endpoint shape changed. See [supplier price approval validation](supplier-pricing-approvals.md).
 

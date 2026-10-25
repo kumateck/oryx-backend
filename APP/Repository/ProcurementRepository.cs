@@ -2774,17 +2774,19 @@ public class ProcurementRepository(
         foreach (var departmentId in departmentIds)
         {
             backgroundWorkerService.EnqueueNotification(
-                $"Shipment for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
+                $"Shipment {shipmentDocument.Code} for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
                 NotificationType.ShipmentArrived,
-                departmentId
+                departmentId,
+                shipmentDocumentId: shipmentDocument.Id
             );
         }
 
         backgroundWorkerService.EnqueueNotification(
-            $"Shipment for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
+            $"Shipment {shipmentDocument.Code} for Invoice {shipmentDocument.ShipmentInvoice.Code} has arrived.",
             NotificationType.ShipmentArrived,
             null,
-            creators
+            creators,
+            shipmentDocument.Id
         );
 
         await approvalRepository.CreateInitialApprovalsAsync(

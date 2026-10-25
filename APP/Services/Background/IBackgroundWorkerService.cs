@@ -9,6 +9,6 @@ public interface IBackgroundWorkerService
     void EnqueueLog(CreateActivityLog log);
     void EnqueuePrevStateCapture(PrevStateCaptureRequest prevStateCaptureRequest);
     void EnqueueNotification(string message, NotificationType type, Guid? departmentId = null,
-        List<User> users = null);
+        List<User> users = null, Guid? shipmentDocumentId = null);
     Task DoWork(CancellationToken stoppingToken);
 }

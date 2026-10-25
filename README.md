@@ -316,4 +316,4 @@ this README, `docs/services.md`, and `docs/workflows.md`.
 
 ## Alert delivery hardening
 
-Alert intents and channel delivery now use a persisted outbox. Apply `AddNotificationDeliveryOutbox` through the normal migration process before starting this version. See [alert reliability, coverage gaps, and acceptance gates](docs/alert-reliability.md).
+Alert intents and channel delivery now use a persisted outbox. Apply `AddNotificationDeliveryOutbox` through the normal migration process before starting this version. Shipment-arrival notifications also preserve shipment codes and document IDs through the API and realtime event; apply `AddShipmentReferenceToNotifications` before deploying that contract. See [alert reliability, coverage gaps, and acceptance gates](docs/alert-reliability.md).

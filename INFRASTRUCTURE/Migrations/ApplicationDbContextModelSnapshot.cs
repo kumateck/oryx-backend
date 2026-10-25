@@ -11252,6 +11252,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ShipmentDocumentId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("LastErrorCode")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -11305,6 +11308,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ShipmentDocumentId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");

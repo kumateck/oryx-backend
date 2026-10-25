@@ -10,6 +10,7 @@ public class Notification
     [StringLength(100000)] public string Message { get; set; }
     public List<Guid> Recipients { get; set; } = [];
     public NotificationType Type { get; set; }
+    public Guid? ShipmentDocumentId { get; set; }
     public AlertType AlertType { get; set; }
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
 }

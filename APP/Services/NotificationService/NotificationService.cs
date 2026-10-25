@@ -19,7 +19,7 @@ public class NotificationService(ApplicationDbContext context) : INotificationSe
         foreach (var channel in channels)
         {
             var stored = new Notification {
-                Id = Guid.NewGuid(), Message = notification.Message, Type = notification.Type,
+                Id = Guid.NewGuid(), Message = notification.Message, Type = notification.Type, ShipmentDocumentId = notification.ShipmentDocumentId,
                 Recipients = recipients, AlertType = channel, SentAt = now,
             };
             context.Notifications.Add(stored);
