@@ -3,9 +3,11 @@ using APP.Repository;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -20,6 +22,119 @@ namespace APP.Tests.Repository;
 
 public class ProductionActivityBoardTests
 {
+    [Theory]
+    [InlineData(ProductionExtraPackingStatus.Pending)]
+    [InlineData(ProductionExtraPackingStatus.InProgress)]
+    public async Task Extra_material_blocks_completion_and_final_packing_until_issued(ProductionExtraPackingStatus status)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("outstanding-extra", fixture.Syrup, fixture.Secondary);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+        fixture.Extra(run, status);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+        var packing = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = step.Id
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.True(packing.IsFailure);
+        Assert.Equal(ProductionStatus.InProgress, step.Status);
+        Assert.Null(step.CompletedAt);
+        Assert.Null(run.CompletedAt);
+        Assert.Empty(run.ActivityLogs);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Completion_proceeds_with_no_extra_material_or_only_issued_material(bool hasExtra)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("issued-extra", fixture.Syrup, fixture.Secondary);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        if (hasExtra)
+        {
+            fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+            fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+        }
+        // Outstanding material belonging to a different batch does not block this batch.
+        fixture.Extra(fixture.Run("another-batch", fixture.Syrup, fixture.Secondary), ProductionExtraPackingStatus.Pending);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ProductionStatus.Completed, step.Status);
+        Assert.NotNull(step.CompletedAt);
+        Assert.Single(run.ActivityLogs);
+    }
+
+    [Fact]
+    public async Task Pending_extra_material_also_blocks_a_direct_start_without_changing_the_step()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("pending-extra", fixture.Syrup, fixture.Secondary);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        step.Status = ProductionStatus.New;
+        fixture.Extra(run, ProductionExtraPackingStatus.Pending);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.InProgress, Guid.NewGuid());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ProductionStatus.New, step.Status);
+        Assert.Null(step.StartedAt);
+        Assert.Empty(run.ActivityLogs);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Final_packing_can_complete_after_all_extra_material_has_been_issued(bool hasExtra)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("packing-issued", fixture.Syrup, fixture.Secondary);
+        if (hasExtra) fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ProductionStatus.Completed, run.Steps[0].Status);
+        Assert.Single(await fixture.Context.FinalPackings.ToListAsync());
+    }
+
+    [Fact]
+    public async Task A_different_batch_cannot_be_used_to_bypass_the_packing_issue_gate()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("packing-unissued", fixture.Syrup, fixture.Secondary);
+        fixture.Extra(run, ProductionExtraPackingStatus.InProgress);
+        var other = fixture.Run("different-batch", fixture.Syrup, fixture.Secondary);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = other.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ProductionStatus.InProgress, run.Steps[0].Status);
+        Assert.Null(run.Steps[0].CompletedAt);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
+    }
+
     [Fact]
     public async Task Includes_running_syrup_batches_whose_operations_are_outside_the_department_catalog()
     {
@@ -228,6 +343,19 @@ public class ProductionActivityBoardTests
                 OperationId = operation.Id, Operation = operation, Order = 2, Status = ProductionStatus.InProgress, IsCritical = true });
             Context.ProductionActivities.Add(run);
             return run;
+        }
+
+        public void Extra(ProductionActivity run, ProductionExtraPackingStatus status)
+        {
+            var material = new Material { Id = Guid.NewGuid(), Name = "Extra material", Code = Guid.NewGuid().ToString() };
+            Context.ProductionExtraPackings.Add(new ProductionExtraPacking
+            {
+                Id = Guid.NewGuid(), ProductionScheduleProductId = run.ProductionScheduleProductId,
+                ProductionScheduleProduct = run.ProductionScheduleProduct, Material = material, MaterialId = material.Id,
+                UoMId = Syrup.BaseUoM.Id, UoM = Syrup.BaseUoM, Quantity = 10, Status = status,
+                Approved = status != ProductionExtraPackingStatus.Pending,
+                IssuedAt = status == ProductionExtraPackingStatus.Approved ? DateTime.UtcNow : null
+            });
         }
 
         public void SetRequestContext()

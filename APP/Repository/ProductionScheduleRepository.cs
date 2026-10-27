@@ -673,6 +673,14 @@ public class ProductionScheduleRepository(
         if (status == ProductionStatus.InProgress && activityStep.Status == ProductionStatus.InProgress)
             return Result.Success();
 
+        if (status == ProductionStatus.Completed && await HasUnissuedExtraMaterial(activityStep.ProductionActivity.ProductionScheduleProductId))
+            return Error.Conflict("ProductActivity.ExtraMaterialOutstanding", "All extra material must be approved and issued before completing this step.");
+
+        if (status == ProductionStatus.InProgress && await context.ProductionExtraPackings.AnyAsync(extra =>
+                extra.ProductionScheduleProductId == activityStep.ProductionActivity.ProductionScheduleProductId
+                && extra.Status == ProductionExtraPackingStatus.Pending))
+            return Error.Conflict("ProductActivity.ExtraMaterialPending", "Extra material is waiting for approval. This step cannot be started yet.");
+
         activityStep.Status = status;
 
         switch (status)
@@ -3658,14 +3666,24 @@ public class ProductionScheduleRepository(
 
     public async Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request)
     {
+        var activityStep = request.ProductionActivityStepId.HasValue
+            ? await context.ProductionActivitySteps.Include(step => step.ProductionActivity)
+                .FirstOrDefaultAsync(step => step.Id == request.ProductionActivityStepId)
+            : null;
+        if (request.ProductionActivityStepId.HasValue && activityStep is null)
+            return Error.NotFound("ProductActivity.NotFound", "Activity step was not found");
+        if (activityStep is not null && activityStep.ProductionActivity.ProductionScheduleProductId != request.ProductionScheduleProductId)
+            return Error.Validation("ProductActivity.BatchMismatch", "The packing step does not belong to this batch.");
+
+        // Final packing also completes a step, so it must respect the same issue gate.
+        if (await HasUnissuedExtraMaterial(request.ProductionScheduleProductId))
+            return Error.Conflict("ProductActivity.ExtraMaterialOutstanding", "All extra material must be approved and issued before recording final packing.");
+
         var finalPacking = mapper.Map<FinalPacking>(request);
 
         await context.FinalPackings.AddAsync(finalPacking);
         await context.SaveChangesAsync();
 
-        var activityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
-            p.Id == request.ProductionActivityStepId
-        );
         if (activityStep is not null)
         {
             activityStep.Status = ProductionStatus.Completed;
@@ -3683,6 +3701,10 @@ public class ProductionScheduleRepository(
 
         return finalPacking.Id;
     }
+
+    // The legacy Approved enum value means warehouse issue is recorded; QA approval alone sets InProgress.
+    private Task<bool> HasUnissuedExtraMaterial(Guid batchId) => context.ProductionExtraPackings.AnyAsync(extra =>
+        extra.ProductionScheduleProductId == batchId && extra.Status != ProductionExtraPackingStatus.Approved);
 
     public async Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId)
     {
