@@ -22,6 +22,20 @@ namespace APP.Tests.Repository;
 
 public class ProductionActivityBoardTests
 {
+    [Fact]
+    public async Task Missing_final_packing_returns_not_found_instead_of_a_null_validation_error()
+    {
+        await using var fixture = await Fixture.Create();
+        var byId = await fixture.Repository.GetFinalPacking(Guid.NewGuid());
+        var byBatch = await fixture.Repository.GetFinalPackingByScheduleProduct(Guid.NewGuid());
+        foreach (var result in new[] { byId, byBatch })
+        {
+            Assert.True(result.IsFailure);
+            Assert.Equal("FinalPacking.NotFound",result.Error.Code);
+            Assert.Equal(ErrorType.NotFound,result.Error.Type);
+        }
+    }
+
     [Theory]
     [InlineData(ProductionExtraPackingStatus.Pending)]
     [InlineData(ProductionExtraPackingStatus.InProgress)]

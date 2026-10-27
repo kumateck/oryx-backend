@@ -205,11 +205,12 @@ public class AttendanceRepository(ApplicationDbContext context) : IAttendanceRep
                 }).ToList();
     }
 
-    public async Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport()
+    public async Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport(Guid? departmentId = null)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = (context.ReportAsOfUtc ?? DateTime.UtcNow).Date;
 
         var allEmployees = await context.Employees
+            .Where(employee => !departmentId.HasValue || employee.DepartmentId == departmentId.Value)
             .AsSplitQuery()
             .Include(e => e.Department)
             .ToListAsync();

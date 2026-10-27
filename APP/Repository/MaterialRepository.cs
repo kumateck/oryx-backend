@@ -751,6 +751,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context
             .ShelfMaterialBatches.IgnoreQueryFilters()
             .Where(m => !m.DeletedAt.HasValue)
+            .Where(stock => stock.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type == WarehouseType.RawMaterialStorage
+                || stock.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type == WarehouseType.PackagedStorage)
             .AsQueryable();
 
         if (departmentId.HasValue)

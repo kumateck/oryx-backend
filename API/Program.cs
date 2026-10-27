@@ -80,6 +80,7 @@ builder.Services.AddSwaggerGen(options =>
     );
     options.OperationFilter<ReApplyOptionalParameterFilter>();
     options.OperationFilter<SwaggerHeaderFilter>();
+    options.OperationFilter<ReportHistoryParameterFilter>();
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -103,7 +104,7 @@ builder.Services.AddCors(options =>
 
 //validate model state
 builder
-    .Services.AddControllers()
+    .Services.AddControllers(options => options.Filters.Add<API.Filters.ReportHistoryFilter>())
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>

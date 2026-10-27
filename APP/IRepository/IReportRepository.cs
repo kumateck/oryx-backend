@@ -139,7 +139,7 @@ public interface IReportRepository
 
     Task<Result<List<MaterialsStockBatchDetailDto>>> GetMaterialsStockBatchDetail(
         Guid? departmentId = null, MaterialKind? materialKind = null,
-        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null);
+        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null, Guid? materialId = null);
 
     Task<Result<List<ShelfUtilisationDetailDto>>> GetShelfUtilisationDetail(
         Guid? warehouseId = null, Guid? locationId = null, OccupancyStatus? occupancyStatus = null,

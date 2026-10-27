@@ -1,3 +1,4 @@
+using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -45,6 +46,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("{materialId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
     public async Task<IResult> GetMaterial(Guid materialId)
     {
         var result = await repository.GetMaterial(materialId);
@@ -64,6 +66,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDto>>)
     )]
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
     public async Task<IResult> GetMaterials(
         [FromQuery] MaterialKind kind,
         [FromQuery] int page = 1,
@@ -122,6 +125,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("all")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
     public async Task<IResult> GetMaterials()
     {
         var result = await repository.GetMaterials();
@@ -602,6 +606,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialCategoryId">The material category id.</param>
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
+    [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
     [HttpGet("department/approved-materials/v2")]
     [ProducesResponseType(
         StatusCodes.Status200OK,

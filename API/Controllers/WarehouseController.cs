@@ -1,3 +1,4 @@
+using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -65,6 +66,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <summary>
     /// Retrieves a paginated list of warehouses based on search criteria.
     /// </summary>
+    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet]
     [Authorize]
     [ProducesResponseType(
