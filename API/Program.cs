@@ -23,7 +23,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseSentry(o =>
+if (!args.Contains("--export-openapi")) builder.WebHost.UseSentry(o =>
 {
     o.Dsn =
         "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
@@ -244,6 +244,8 @@ builder
 builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 var app = builder.Build();
+
+if (API.Config.Swagger.ContractExport.TryExport(app, args)) return;
 
 app.SeedData();
 

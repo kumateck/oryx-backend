@@ -1,3 +1,4 @@
+using System.Data;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -14,39 +15,13 @@ namespace APP.Repository;
 public class OosInvestigationRepository(ApplicationDbContext context, IMapper mapper)
     : IOosInvestigationRepository
 {
-    public async Task<Result<Guid>> InitiateOosInvestigation(InitiateOosInvestigationRequest request, Guid userId)
-    {
-        var investigation = mapper.Map<OosInvestigation>(request);
-        investigation.CreatedById = userId;
-        investigation.Status = OosInvestigationStatus.Initiated;
-
-        if (request.AnalyticalTestRequestId.HasValue)
-        {
-            var atr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(a => a.Id == request.AnalyticalTestRequestId.Value);
-            if (atr != null)
-            {
-                atr.Status = AnalyticalTestStatus.Testing;
-                context.AnalyticalTestRequests.Update(atr);
-            }
-        }
-
-        if (request.MaterialBatchId.HasValue)
-        {
-            var batch = await context.MaterialBatches.FirstOrDefaultAsync(b => b.Id == request.MaterialBatchId.Value);
-            if (batch != null)
-            {
-                batch.Status = BatchStatus.Quarantine;
-                context.MaterialBatches.Update(batch);
-            }
-        }
-
-        await context.OosInvestigations.AddAsync(investigation);
-        await context.SaveChangesAsync();
-        return investigation.Id;
-    }
+    public Task<Result<Guid>> InitiateOosInvestigation(InitiateOosInvestigationRequest request, Guid userId) =>
+        OosInvestigationInitiation.Run(context, mapper, request, userId);
 
     public async Task<Result> UpdateOosInvestigation(Guid investigationId, UpdateOosInvestigationRequest request, Guid userId)
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
         var investigation = await context.OosInvestigations.FirstOrDefaultAsync(o => o.Id == investigationId);
         if (investigation == null)
             return Error.NotFound("OosInvestigation.NotFound", "OOS investigation not found.");
@@ -67,14 +42,22 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
 
         context.OosInvestigations.Update(investigation);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 
     public async Task<Result> SubmitToQa(Guid investigationId, Guid userId)
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
         var investigation = await context.OosInvestigations.FirstOrDefaultAsync(o => o.Id == investigationId);
         if (investigation == null)
             return Error.NotFound("OosInvestigation.NotFound", "OOS investigation not found.");
+
+        if (investigation.Status != OosInvestigationStatus.Initiated)
+            return Error.Conflict("OosInvestigation.State", "Only an initiated investigation may be submitted.");
+        if (!CompleteFindings(investigation))
+            return Error.Validation("OosInvestigation.Incomplete", "Complete root cause, corrective actions, preventive actions and investigation details first.");
 
         investigation.Status = OosInvestigationStatus.SubmittedToQa;
         investigation.SubmittedToQaAt = DateTime.UtcNow;
@@ -83,14 +66,24 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
 
         context.OosInvestigations.Update(investigation);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 
     public async Task<Result> ReviewByQa(Guid investigationId, ReviewOosInvestigationRequest request, Guid userId)
     {
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
         var investigation = await context.OosInvestigations.FirstOrDefaultAsync(o => o.Id == investigationId);
         if (investigation == null)
             return Error.NotFound("OosInvestigation.NotFound", "OOS investigation not found.");
+
+        if (investigation.Status != OosInvestigationStatus.SubmittedToQa)
+            return Error.Conflict("OosInvestigation.State", "Only an investigation submitted to QA may be decided.");
+        if (investigation.CreatedById == userId || investigation.SubmittedById == userId)
+            return Error.Forbidden("OosInvestigation.Separation", "The author or submitter cannot review their own investigation.");
+        if (string.IsNullOrWhiteSpace(request.Comments) || request.Comments.Length > 2000)
+            return Error.Validation("OosInvestigation.Comments", "Record a QA decision reason of at most 2000 characters.");
 
         investigation.QaReviewedAt = DateTime.UtcNow;
         investigation.QaReviewerId = userId;
@@ -99,6 +92,8 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
 
         if (request.Approve)
         {
+            if (!CompleteFindings(investigation))
+                return Error.Validation("OosInvestigation.Incomplete", "Complete findings are required before QA can approve an investigation.");
             if (investigation.AnalyticalTestRequestId.HasValue)
             {
                 var targetAtr = await context.AnalyticalTestRequests.FirstOrDefaultAsync(
@@ -170,6 +165,7 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
 
         context.OosInvestigations.Update(investigation);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 
@@ -177,6 +173,7 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
     {
         var investigation = await context.OosInvestigations
             .AsSplitQuery()
+            .Include(o => o.CreatedBy)
             .Include(o => o.SubmittedBy)
             .Include(o => o.QaReviewer)
             .FirstOrDefaultAsync(o => o.Id == id);
@@ -225,4 +222,10 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
             mapper.Map<OosInvestigationDto>
         );
     }
+
+    private static bool CompleteFindings(OosInvestigation investigation) =>
+        new[] { investigation.RootCauseAnalysis, investigation.CorrectiveActions,
+            investigation.PreventiveActions, investigation.InvestigationDetails }.All(value =>
+            !string.IsNullOrWhiteSpace(System.Net.WebUtility.HtmlDecode(
+                System.Text.RegularExpressions.Regex.Replace(value ?? "", "<[^>]*>", " ")).Replace('\u00a0', ' ')));
 }

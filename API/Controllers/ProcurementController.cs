@@ -1133,6 +1133,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     [HttpPost("shipment-invoice/shortage-make-up")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [Authorize(PermissionKeys.CanCreateShortageMakeUpInvoice)]
     public async Task<IResult> CreateShortageMakeUpInvoice([FromBody] CreateShortageMakeUpInvoice request)
     {
@@ -1316,6 +1317,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     [HttpGet("shipment-discrepancy")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShipmentDiscrepancyDto>))]
     [Authorize(PermissionKeys.CanViewShipmentDiscrepancy)]
     public async Task<IResult> GetShipmentDiscrepancies()
     {
@@ -1324,6 +1326,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     [HttpGet("shipment-discrepancy/line/{discrepancyItemId}/balance")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentShortageBalanceDto))]
     [Authorize(PermissionKeys.CanViewShipmentDiscrepancy)]
     public async Task<IResult> GetShipmentShortageBalance(Guid discrepancyItemId)
     {

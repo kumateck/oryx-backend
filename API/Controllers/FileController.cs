@@ -25,6 +25,8 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     public async Task<IResult> UploadFile(string modelType, Guid modelId,
         string reference, IFormFile file)
     {
+        if (string.Equals(modelType, "QcWorksheetInstance", StringComparison.OrdinalIgnoreCase))
+            return TypedResults.Forbid(); // Governed worksheets use their authenticated, assignee-checked file endpoint.
         var userIdString = (string)HttpContext.Items["Sub"];
         Guid? userId = null;
 
@@ -55,6 +57,8 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     public async Task<IResult> UploadFile(string modelType, Guid modelId,
       [FromForm] List<IFormFile> files)
     {
+        if (string.Equals(modelType, "QcWorksheetInstance", StringComparison.OrdinalIgnoreCase))
+            return TypedResults.Forbid(); // Governed worksheets use their authenticated, assignee-checked file endpoint.
         var userIdString = (string)HttpContext.Items["Sub"];
         Guid? userId = null;
 
@@ -117,6 +121,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [AllowAnonymous]
     public async Task<IResult> GetImage(string modelType, Guid modelId, string reference)
     {
+        if (string.Equals(modelType, "QcWorksheetInstance", StringComparison.OrdinalIgnoreCase)) return TypedResults.Forbid();
         try
         {
             var result = await blobStorageService.GetBlobAsync(modelType.ToLower(), $"{modelId}/{reference}");
@@ -144,6 +149,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [AllowAnonymous]
     public async Task<IResult> GetImage(string modelType, string reference)
     {
+        if (string.Equals(modelType, "QcWorksheetInstance", StringComparison.OrdinalIgnoreCase)) return TypedResults.Forbid();
         try
         {
             var result = await blobStorageService.GetBlobAsync(modelType.ToLower(), reference);

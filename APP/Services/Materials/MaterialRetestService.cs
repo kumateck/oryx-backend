@@ -1,3 +1,4 @@
+using System.Data;
 using APP.IRepository;
 using APP.Services.QcWorksheets;
 using DOMAIN.Entities.Materials.Batch;
@@ -17,6 +18,7 @@ public interface IMaterialRetestService
     Task<Result> RecordSampleAsync(Guid id, RecordMaterialRetestSample sample, Guid actorId);
     Task<Result> AcknowledgeAsync(Guid id, Guid actorId);
     Task<Result> LinkTestRequestAsync(Guid id, Guid testRequestId, Guid actorId);
+    Task<Result<TestRequestDetailDto>> CreateTestingAsync(Guid id, CreateTestRequestRequest body, Guid actorId);
     Task<int> ScanDueAsync(DateTime asOf, CancellationToken cancellationToken);
 }
 
@@ -48,7 +50,7 @@ public sealed record MaterialRetestEventDto(string Action, string Detail, Guid? 
 public sealed class MaterialRetestService(
     ApplicationDbContext context,
     IApprovalRepository approvals,
-    IQcSignatureService signatures) : IMaterialRetestService
+    IQcSignatureService signatures, ITestRequestRepository testing = null) : IMaterialRetestService
 {
     public async Task<Result<Guid>> RequestAsync(Guid batchId, string reason, Guid? actorId, bool scheduled, DateTime? asOf = null)
     {
@@ -113,7 +115,7 @@ public sealed class MaterialRetestService(
             .Include(item => item.MaterialBatch).ThenInclude(batch => batch.Material)
             .Include(item => item.Events).AsQueryable();
         if (batchId.HasValue) query = query.Where(item => item.MaterialBatchId == batchId.Value);
-        var rows = await query.OrderByDescending(item => item.CreatedAt).Take(200).ToListAsync();
+        var rows = await query.OrderByDescending(item => item.CreatedAt).ToListAsync();
         return rows.Select(ToDto).ToList();
     }
 
@@ -194,6 +196,29 @@ public sealed class MaterialRetestService(
         AddEvent(id, "TestingLinked", $"QC test request {testRequestId} linked.", actorId);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    public async Task<Result<TestRequestDetailDto>> CreateTestingAsync(Guid id, CreateTestRequestRequest body, Guid actorId)
+    {
+        if (testing is null) return Error.Conflict("MaterialRetest.TestingUnavailable", "Testing service is unavailable.");
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
+        var retest = await context.MaterialRetestRequests.Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
+            .SingleOrDefaultAsync(item => item.Id == id);
+        if (retest is null) return Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.");
+        if (retest.Status != MaterialRetestStatus.Acknowledged || retest.TestRequestId.HasValue)
+            return Error.Conflict("MaterialRetest.NotAcknowledged", "Only an acknowledged, unlinked retest can create testing.");
+        var kind = retest.MaterialBatch.Material.Kind == DOMAIN.Entities.Materials.MaterialKind.Raw
+            ? TestRequestType.RawMaterial : TestRequestType.PackagingMaterial;
+        if (body is null || body.Type != kind || body.ScheduleOrigin != TestRequestScheduleOrigin.Unscheduled ||
+            body.Subjects is not { Count: 1 } || body.Subjects[0].MaterialBatchId != retest.MaterialBatchId)
+            return Error.Validation("MaterialRetest.TestRequestMismatch", "Create an unscheduled test for this batch and material kind only.");
+        var result = await testing.CreateTestRequest(body, actorId);
+        if (result.IsFailure) return result.Errors;
+        var linked = await LinkTestRequestAsync(id, result.Value.Id, actorId);
+        if (linked.IsFailure) return linked.Errors;
+        if (transaction is not null) await transaction.CommitAsync();
+        return result.Value;
     }
 
     public async Task<int> ScanDueAsync(DateTime asOf, CancellationToken cancellationToken)

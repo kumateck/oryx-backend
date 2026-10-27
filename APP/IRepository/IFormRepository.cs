@@ -54,7 +54,8 @@ public interface IFormRepository
     Task<Result> GenerateCertificateOfAnalysis(
         Guid materialBatchId,
         Guid userId,
-        List<CertificateOfAnalysisComplies> complies
+        List<CertificateOfAnalysisComplies> complies,
+        Guid? expectedResponseId = null
     );
     Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByMaterialBatch(Guid materialBatchId);
     Task<Result<IEnumerable<FormResponseDto>>> GetFormResponseByBmr(
@@ -78,7 +79,8 @@ public interface IFormRepository
         Guid batchManufacturingRecordId,
         Guid productionActivityStepId,
         Guid userId,
-        List<CertificateOfAnalysisComplies> complies
+        List<CertificateOfAnalysisComplies> complies,
+        Guid? expectedResponseId = null
     );
 
     /// <summary>
