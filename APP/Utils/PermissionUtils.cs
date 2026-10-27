@@ -93,6 +93,7 @@ public static class PermissionSubmodules
     public const string IssueBmr = "Issue BMR";
     public const string AnalyticalTestRequests = "Analytical Test Requests";
     public const string PendingApprovals = "Pending Approvals";
+    public const string OosInvestigations = "OOS Investigations";
     public const string Verification = "Verification";
     public const string TransferApprovalRights = "Transfer Approval Rights";
 
@@ -503,6 +504,10 @@ public static class PermissionKeys
     public const string CanApproveResponse = "CanApproveResponse";
     public const string CanRejectResponse = "CanRejectResponse";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
+    public const string CanInitiateOosInvestigation = "CanInitiateOosInvestigation";
+    public const string CanViewOosInvestigations = "CanViewOosInvestigations";
+    public const string CanSubmitOosInvestigation = "CanSubmitOosInvestigation";
+    public const string CanReviewOosInvestigation = "CanReviewOosInvestigation";
 
     // Audit
     public const string CanViewQualityAudits = "CanViewQualityAudits";
@@ -2315,6 +2320,10 @@ public static class PermissionUtils
             PermissionSubmodules.TransferApprovalRights,
             PermissionKeys.CanTransferApprovalRights
         );
+
+        foreach (var key in new[] { PermissionKeys.CanInitiateOosInvestigation, PermissionKeys.CanViewOosInvestigations,
+                     PermissionKeys.CanSubmitOosInvestigation, PermissionKeys.CanReviewOosInvestigation })
+            addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.OosInvestigations, key);
 
         // Finished Goods Warehouse
         addPermission(

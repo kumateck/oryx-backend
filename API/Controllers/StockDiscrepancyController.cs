@@ -17,6 +17,7 @@ public class StockDiscrepancyController(ApplicationDbContext context,
     IApprovalRepository approvals) : ControllerBase
 {
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [Authorize(PermissionKeys.CanRecordStockDiscrepancy)]
     public async Task<IResult> Create([FromBody] CreateStockDiscrepancy request)
     {
@@ -27,6 +28,7 @@ public class StockDiscrepancyController(ApplicationDbContext context,
     }
 
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockDiscrepancyDto>))]
     [Authorize(PermissionKeys.CanViewStockDiscrepancy)]
     public async Task<IResult> List()
     {
@@ -36,6 +38,7 @@ public class StockDiscrepancyController(ApplicationDbContext context,
     }
 
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockDiscrepancyDto))]
     [Authorize(PermissionKeys.CanViewStockDiscrepancy)]
     public async Task<IResult> Detail(Guid id)
     {
@@ -45,6 +48,7 @@ public class StockDiscrepancyController(ApplicationDbContext context,
     }
 
     [HttpPost("{id:guid}/reconcile")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [Authorize(PermissionKeys.CanReconcileStockDiscrepancy)]
     public async Task<IResult> Reconcile(Guid id)
     {

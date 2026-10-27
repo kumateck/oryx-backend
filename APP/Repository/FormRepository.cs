@@ -1295,7 +1295,8 @@ public class FormRepository(
     public async Task<Result> GenerateCertificateOfAnalysis(
         Guid materialBatchId,
         Guid userId,
-        List<CertificateOfAnalysisComplies> complies
+        List<CertificateOfAnalysisComplies> complies,
+        Guid? expectedResponseId = null
     )
     {
         await using var transaction = context.Database.IsRelational()
@@ -1306,6 +1307,8 @@ public class FormRepository(
             .FirstOrDefaultAsync();
         if (response == null)
             return FormErrors.NotFound(materialBatchId);
+        if (expectedResponseId.HasValue && expectedResponseId != response.Id)
+            return Error.Conflict("Response.CycleChanged", "The current response differs from the reviewed rework cycle.");
 
         var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
             b.Id == response.MaterialBatchId
@@ -1364,7 +1367,8 @@ public class FormRepository(
         Guid batchManufacturingRecordId,
         Guid productionActivityStepId,
         Guid userId,
-        List<CertificateOfAnalysisComplies> complies
+        List<CertificateOfAnalysisComplies> complies,
+        Guid? expectedResponseId = null
     )
     {
         await using var transaction = context.Database.IsRelational()
@@ -1376,6 +1380,8 @@ public class FormRepository(
             .FirstOrDefaultAsync();
         if (response == null)
             return FormErrors.NotFound(batchManufacturingRecordId);
+        if (expectedResponseId.HasValue && expectedResponseId != response.Id)
+            return Error.Conflict("Response.CycleChanged", "The current response differs from the reviewed rework cycle.");
 
         var hasForeignFields = await context.FormResponses.AnyAsync(item =>
             item.ResponseId == response.Id

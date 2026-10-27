@@ -4,6 +4,9 @@ using APP.Utils;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
+using INFRASTRUCTURE.Context;
+using Microsoft.EntityFrameworkCore;
+using APP.Services.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -542,17 +545,25 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GenerateCertificateOfAnalysis(
         Guid materialBatchId,
-        List<CertificateOfAnalysisComplies> complies
+        List<CertificateOfAnalysisComplies> complies,
+        [FromServices] ApplicationDbContext context,
+        [FromQuery] Guid? expectedResponseId = null
     )
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
-
+        var kind = await context.MaterialBatches.Where(item => item.Id == materialBatchId)
+            .Select(item => (DOMAIN.Entities.Materials.MaterialKind?)item.Material.Kind).SingleOrDefaultAsync();
+        if (kind is null) return TypedResults.NotFound();
+        var grants = await CurrentPermissionSet.Load(context, Guid.Parse(userId));
+        var permission = kind == DOMAIN.Entities.Materials.MaterialKind.Raw
+            ? PermissionKeys.CanCheckRawMaterialTestResult : PermissionKeys.CanCheckPackagingMaterialTestResult;
+        if (!grants.Contains(permission)) return TypedResults.Forbid();
         var result = await repository.GenerateCertificateOfAnalysis(
             materialBatchId,
             Guid.Parse(userId),
-            complies
+            complies, expectedResponseId
         );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -573,18 +584,21 @@ public class FormController(IFormRepository repository) : ControllerBase
     public async Task<IResult> GenerateCertificateOfAnalysisForProduct(
         [FromRoute] Guid batchManufacturingRecordId,
         [FromRoute] Guid productionActivityStepId,
-        [FromBody] List<CertificateOfAnalysisComplies> complies
+        [FromBody] List<CertificateOfAnalysisComplies> complies,
+        [FromServices] ApplicationDbContext context,
+        [FromQuery] Guid? expectedResponseId = null
     )
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
-
+        var grants = await CurrentPermissionSet.Load(context, Guid.Parse(userId));
+        if (!grants.Contains(PermissionKeys.CanCheckProductTest)) return TypedResults.Forbid();
         var result = await repository.GenerateCertificateOfAnalysisForProduct(
             batchManufacturingRecordId,
             productionActivityStepId,
             Guid.Parse(userId),
-            complies
+            complies, expectedResponseId
         );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

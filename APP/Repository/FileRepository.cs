@@ -192,6 +192,8 @@ public class FileRepository(
             .Attachments.Where(item => item.ModelId == modelId)
             .ToListAsync();
 
+        if (attachments.Any(item => string.Equals(item.ModelType, "QcWorksheetInstance", StringComparison.OrdinalIgnoreCase)))
+            return Error.Forbidden("Worksheet.EvidenceImmutable", "Worksheet evidence cannot be deleted through the generic attachment endpoint.");
         attachments.ForEach(item =>
         {
             item.DeletedAt = DateTime.UtcNow;
@@ -210,6 +212,8 @@ public class FileRepository(
 
         if (attachment != null)
         {
+            if (string.Equals(attachment.ModelType, "QcWorksheetInstance", StringComparison.OrdinalIgnoreCase))
+                return Error.Forbidden("Worksheet.EvidenceImmutable", "Worksheet evidence cannot be deleted through the generic attachment endpoint.");
             attachment.DeletedAt = DateTime.UtcNow;
             attachment.LastDeletedById = userId;
             context.Attachments.Update(attachment);
