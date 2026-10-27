@@ -991,6 +991,7 @@ public partial class ApplicationDbContext(
 
     public override int SaveChanges()
     {
+        if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
         SaveEntity();
         ValidatePriceUoM();
@@ -999,6 +1000,7 @@ public partial class ApplicationDbContext(
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
         SaveEntity();
         ValidatePriceUoM();

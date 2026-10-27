@@ -1,3 +1,4 @@
+using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -47,6 +48,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a paginated list of products.
     /// </summary>
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewFgtnReport)]
     [HttpGet]
     [ProducesResponseType(
         StatusCodes.Status200OK,
