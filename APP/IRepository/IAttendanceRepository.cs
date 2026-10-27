@@ -9,7 +9,7 @@ public interface IAttendanceRepository
 
     Task<Result<List<AttendanceRecordDepartmentDto>>> DepartmentDailySummaryAttendance(string departmentName, DateTime date);
 
-    Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport();
+    Task<Result<GeneralAttendanceReportResponse>> GeneralAttendanceReport(Guid? departmentId = null);
 
     Task<Result<FileExportResult>> ExportAttendanceSummary(FileFormat format);
 
