@@ -8,50 +8,8 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) : ILeaveTypeRepository
+public partial class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) : ILeaveTypeRepository
 {
-    public async Task<Result<Guid>> CreateLeaveType(CreateLeaveTypeRequest leaveTypeDto)
-    {
-        var existingLeaveType = await context.LeaveTypes.FirstOrDefaultAsync(l => l.Name == leaveTypeDto.Name);
-
-        if (existingLeaveType != null)
-        {
-            return Error.Validation("LeaveType.Exists", "Leave Type already exists.");
-        }
-
-        var designations = await context.Designations
-            .Where(d => leaveTypeDto.DesignationList.Contains(d.Id)).Include(designation => designation.LeaveTypes)
-            .ToListAsync();
-
-        foreach (var designation in designations)
-        {
-            // new leave type days alone must not be more than the maximum allowed
-            if (leaveTypeDto.NumberOfDays > designation.MaximumLeaveDays && leaveTypeDto.Name != "Maternity Leave")
-            {
-                return Error.Validation("LeaveType.InvalidNumberOfDays",
-                    $"Leave days for designation '{designation.Name}' cannot exceed its maximum of {designation.MaximumLeaveDays} days.");
-            }
-
-            // new leave days and existing leave days must not exceed max
-            var existingTotal = designation.LeaveTypes.Sum(lt => lt.NumberOfDays);
-            var cumulative = existingTotal + leaveTypeDto.NumberOfDays;
-
-            if (cumulative > designation.MaximumLeaveDays)
-            {
-                return Error.Validation("LeaveType.CumulativeDaysExceeded",
-                    $"Total leave days for designation '{designation.Name}' would exceed its maximum of {designation.MaximumLeaveDays} days.");
-            }
-        }
-        var leaveType = mapper.Map<LeaveType>(leaveTypeDto);
-
-        leaveType.Designations = designations;
-
-        await context.LeaveTypes.AddAsync(leaveType);
-        await context.SaveChangesAsync();
-
-        return leaveType.Id;
-    }
-
     public async Task<Result<Paginateable<IEnumerable<LeaveTypeDto>>>> GetLeaveTypes(int page, int pageSize, string searchQuery = null,
         Guid? designationId = null)
     {
@@ -92,54 +50,4 @@ public class LeaveTypeRepository(ApplicationDbContext context, IMapper mapper) :
         return Result.Success(leaveTypeDto);
     }
 
-    public async Task<Result> UpdateLeaveType(Guid id, CreateLeaveTypeRequest request)
-    {
-        var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == id);
-
-        if (leaveType == null)
-        {
-            return Error.NotFound("LeaveType.NotFound", "LeaveType not found");
-        }
-
-        mapper.Map(request, leaveType);
-
-        var designations = await context.Designations
-            .Where(d => request.DesignationList.Contains(d.Id))
-            .ToListAsync();
-
-        if (designations.Count != request.DesignationList.Count)
-        {
-            return Error.Validation("LeaveType.InvalidDesignations", "One or more designation IDs are invalid.");
-        }
-
-        context.LeaveTypes.Update(leaveType);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> DeleteLeaveType(Guid id, Guid userId)
-    {
-        var leaveType = await context.LeaveTypes
-            .FirstOrDefaultAsync(l => l.Id == id && l.LastDeletedById == null);
-
-        if (leaveType == null)
-        {
-            return Error.NotFound("LeaveType.NotFound", "LeaveType not found");
-        }
-
-        var leaveRequest = await context.LeaveRequests
-            .Where(l => l.LeaveTypeId == id && l.EndDate <= DateTime.UtcNow).ToListAsync();
-        if (leaveRequest.Count > 0)
-        {
-            return Error.Validation("LeaveType.CannotDelete", "LeaveType cannot be deleted because it is currently in use.");
-        }
-
-        leaveType.DeletedAt = DateTime.UtcNow;
-        leaveType.LastDeletedById = userId;
-
-        context.LeaveTypes.Update(leaveType);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
 }

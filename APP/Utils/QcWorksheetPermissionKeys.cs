@@ -131,6 +131,17 @@ public static class QcWorksheetPermissionKeys
 
     // Test requests (the ARD / round)
     public const string CanViewQcTestRequests = "CanViewQcTestRequests";
+    public const string CanViewMaterialRetests = "CanViewMaterialRetests";
+    public const string CanViewMaterialRetestDetail = "CanViewMaterialRetestDetail";
+    public const string CanRequestMaterialRetest = "CanRequestMaterialRetest";
+    public const string CanApproveMaterialRetest = "CanApproveMaterialRetest";
+    public const string CanRejectMaterialRetest = "CanRejectMaterialRetest";
+    public const string CanRecordMaterialRetestSample = "CanRecordMaterialRetestSample";
+    public const string CanAcknowledgeMaterialRetest = "CanAcknowledgeMaterialRetest";
+    public const string CanLinkMaterialRetestTestRequest = "CanLinkMaterialRetestTestRequest";
+    public const string CanViewResponseReworkTasks = "CanViewResponseReworkTasks";
+    public const string CanViewResponseReworkTaskDetail = "CanViewResponseReworkTaskDetail";
+    public const string CanStartResponseReworkTask = "CanStartResponseReworkTask";
 
     /// <summary>
     /// Split from <see cref="CanCreateUnscheduledQcTestRequest"/> because the two are different

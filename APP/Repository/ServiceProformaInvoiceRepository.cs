@@ -141,6 +141,14 @@ public class ServiceProformaInvoiceRepository(
             return Error.Validation("ProformaInvoice.InvalidStatus",
                 "Proforma invoice has already been responded to");
 
+        foreach (var updated in request.UpdatedItems ?? [])
+        {
+            if (proformaInvoice.Items.All(i => i.Id != updated.ServiceProformaInvoiceItemId))
+                return Error.Validation("ProformaInvoice.UnknownItem", "A changed line does not belong to this proforma invoice.");
+            if (updated.UnitPrice is < 0 || updated.Quantity is <= 0)
+                return Error.Validation("ProformaInvoice.InvalidItem", "Line prices cannot be negative and quantities must be above zero.");
+        }
+
         proformaInvoice.InvoiceNumber = request.InvoiceNumber;
         proformaInvoice.ResponseReceivedDate = request.ResponseDate;
         proformaInvoice.ResponseNotes = request.ResponseNotes;
@@ -205,7 +213,8 @@ public class ServiceProformaInvoiceRepository(
         int pageSize,
         ServiceProformaInvoiceStatus? status = null, 
         Guid? jobOrderId = null, 
-        Guid? serviceProviderId = null)
+        Guid? serviceProviderId = null,
+        bool memoPending = false)
     {
         var query = context.ServiceProformaInvoices
             .AsSplitQuery()
@@ -234,6 +243,12 @@ public class ServiceProformaInvoiceRepository(
         if (serviceProviderId.HasValue)
         {
             query = query.Where(p => p.ServiceProviderId == serviceProviderId.Value);
+        }
+
+        // Approved proformas whose job order has no service memo yet.
+        if (memoPending)
+        {
+            query = query.Where(p => p.Status == ServiceProformaInvoiceStatus.Approved && p.JobOrder.ServiceMemoId == null);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize,

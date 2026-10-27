@@ -97,6 +97,9 @@ public interface IProcurementRepository
     Task<Result> DeleteShipmentInvoice(Guid shipmentInvoiceId, Guid userId);
 
     Task<Result<Guid>> CreateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid userId);
+    Task<Result<Guid>> CreateShortageMakeUpInvoice(CreateShortageMakeUpInvoice request, Guid userId);
+    Task<Result<ShipmentShortageBalanceDto>> GetShipmentShortageBalance(Guid discrepancyItemId);
+    Task<Result<List<ShipmentDiscrepancyDto>>> GetShipmentDiscrepancies();
     Task<Result<ShipmentDiscrepancyDto>> GetShipmentDiscrepancy(Guid shipmentDiscrepancyId);
     Task<Result> UpdateShipmentDiscrepancy(CreateShipmentDiscrepancy request, Guid shipmentDiscrepancyId, Guid userId);
     Task<Result> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId, Guid userId);
@@ -111,7 +114,7 @@ public interface IProcurementRepository
 
     Task<Result<Paginateable<IEnumerable<ShipmentDocumentDto>>>> GetArrivedShipments(int page, int pageSize,
         string searchQuery);
-    Task<Result<MaterialDistributionDto>> GetMaterialDistribution(Guid shipmentDocumentId);
+    Task<Result<MaterialDistributionPageDto>> GetMaterialDistribution(Guid shipmentDocumentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId, Guid materialId, Guid departmentId);
     Task<Result> ConfirmDistribution(Guid shipmentDocumentId);
     Task<Result> UpdateSupplierStatus(

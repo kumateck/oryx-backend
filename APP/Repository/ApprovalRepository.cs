@@ -1,3 +1,4 @@
+using System.Data;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Repository.QcWorksheets;
@@ -164,6 +165,12 @@ public class ApprovalRepository(
         string comments = null
     )
     {
+        if (modelType == nameof(StockDiscrepancy))
+            return await StockDiscrepancyApprovalHandler.ReviewAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
+        if (modelType == nameof(ShipmentDiscrepancy))
+            return await ShipmentDiscrepancyApprovalHandler.ReviewAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
         if (modelType == nameof(StaffRequisition))
             return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
@@ -2215,9 +2222,16 @@ public class ApprovalRepository(
         Guid modelId,
         Guid userId,
         List<Guid> roleIds,
-        string comments = null
+        string comments = null,
+        ResponseRejectionOutcome? responseOutcome = null
     )
     {
+        if (modelType == nameof(StockDiscrepancy))
+            return await StockDiscrepancyApprovalHandler.ReviewAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
+        if (modelType == nameof(ShipmentDiscrepancy))
+            return await ShipmentDiscrepancyApprovalHandler.ReviewAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
         if (modelType == nameof(StaffRequisition))
             return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
@@ -2769,6 +2783,13 @@ public class ApprovalRepository(
                 break;
 
             case nameof(Response):
+            {
+                if (string.IsNullOrWhiteSpace(comments) || comments.Length > 2000)
+                    return Error.Validation("Response.RejectionReason", "QA must record a reason of at most 2000 characters.");
+                if (responseOutcome.HasValue && !Enum.IsDefined(responseOutcome.Value))
+                    return Error.Validation("Response.RejectionOutcome", "Select rework or disposal.");
+                await using var responseDecision = context.Database.IsRelational()
+                    ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
                 var response = await context
                     .Responses.AsSplitQuery()
                     .Include(lr => lr.Approvals)
@@ -2779,6 +2800,12 @@ public class ApprovalRepository(
 
                 if (response is null)
                     return Error.Validation("Response.NotFound", $"Response {modelId} not found.");
+                if ((response.MaterialBatchId.HasValue || response.BatchManufacturingRecordId.HasValue)
+                    && !responseOutcome.HasValue)
+                    return Error.Validation("Response.RejectionOutcome", "Select rework or disposal.");
+                if (responseOutcome == ResponseRejectionOutcome.Rework
+                    && !response.MaterialBatchId.HasValue && !response.BatchManufacturingRecordId.HasValue)
+                    return Error.Validation("Response.ReworkSubject", "Rework requires a material or product batch.");
 
                 var currentResponseApprovals = ResponseApprovalRoundManager.Current(
                     response.Approvals
@@ -2825,80 +2852,86 @@ public class ApprovalRepository(
                 stageToApproveRe.ApprovedById = userId;
                 response.Approved = false;
                 response.Rejected = true;
-                await AddApprovalLogs(
-                    new CreateApprovalLog
-                    {
-                        UserId = userId,
-                        Comments = comments,
-                        Status = ApprovalStatus.Rejected,
-                        ModelId = response.Id,
-                    }
-                );
+                response.RejectionOutcome = responseOutcome ?? ResponseRejectionOutcome.Disposed;
 
                 if (response.MaterialBatchId.HasValue)
                 {
-                    var materialAnalyticalRawData = await context
-                        .MaterialAnalyticalRawData.AsSplitQuery()
-                        .Include(materialAnalyticalRawData =>
-                            materialAnalyticalRawData.MaterialStandardTestProcedure
-                        )
-                        .FirstOrDefaultAsync(m =>
-                            m.MaterialStandardTestProcedure.MaterialId
-                            == response.MaterialBatch.MaterialId
-                        );
-                    if (materialAnalyticalRawData is null)
-                        return Error.NotFound(
-                            "Response.MaterialAnalyticalRawDataNotFound",
-                            $"Response {response.MaterialBatchId} not found."
-                        );
-
                     var batch = response.MaterialBatch;
                     if (batch is null)
                         return Error.NotFound(
                             "Response.BatchNotFound",
                             $"Response batch in {response.MaterialBatchId} not found."
                         );
-                    batch.Status = BatchStatus.Rejected;
+                    batch.Status = response.RejectionOutcome == ResponseRejectionOutcome.Rework
+                        ? BatchStatus.Frozen : BatchStatus.Rejected;
                     context.MaterialBatches.Update(batch);
 
-                    await context.MaterialRejects.AddAsync(
-                        new MaterialReject
+                    if (response.RejectionOutcome == ResponseRejectionOutcome.Disposed)
+                        await context.MaterialRejects.AddAsync(new MaterialReject
                         {
                             MaterialBatchId = response.MaterialBatch.Id,
                             ResponseId = response.Id,
                             Reason = comments,
-                        }
-                    );
+                        });
                 }
 
                 if (response.BatchManufacturingRecordId.HasValue)
                 {
-                    var productAnalyticalRawData = await context
-                        .ProductAnalyticalRawData.AsSplitQuery()
-                        .Include(p => p.ProductStandardTestProcedure)
-                        .FirstOrDefaultAsync(p =>
-                            p.ProductStandardTestProcedure.ProductId
-                            == response.BatchManufacturingRecord.ProductionScheduleProduct.ProductId
-                        );
-
-                    if (productAnalyticalRawData is null)
-                        return Error.NotFound(
-                            "Response.ProductAnalyticalRawDataNotFound",
-                            $"Response {response.BatchManufacturingRecordId} not found."
-                        );
-
                     var bmr = response.BatchManufacturingRecord;
                     if (bmr is null)
                         return Error.NotFound(
                             "Response.BmrNotFound",
                             $"Response bmr in {response.MaterialBatchId} not found."
                         );
-                    bmr.Status = BatchManufacturingStatus.Rejected;
+                    bmr.Status = response.RejectionOutcome == ResponseRejectionOutcome.Rework
+                        ? BatchManufacturingStatus.Quarantine : BatchManufacturingStatus.Rejected;
                     context.BatchManufacturingRecords.Update(bmr);
                 }
 
+                if (response.RejectionOutcome == ResponseRejectionOutcome.Rework)
+                {
+                    var parent = await context.ResponseReworkTasks.AsNoTracking()
+                        .SingleOrDefaultAsync(item => item.NewResponseId == response.Id);
+                    context.ResponseReworkTasks.Add(new ResponseReworkTask
+                    {
+                        Id = Guid.NewGuid(), SourceResponseId = response.Id,
+                        RootResponseId = parent?.RootResponseId ?? response.Id,
+                        MaterialBatchId = response.MaterialBatchId,
+                        BatchManufacturingRecordId = response.BatchManufacturingRecordId,
+                        Reason = comments.Trim(), RequestedById = userId,
+                        RequestedAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow,
+                        CreatedById = userId
+                    });
+                    if (parent is not null)
+                    {
+                        var trackedParent = await context.ResponseReworkTasks.SingleAsync(item => item.Id == parent.Id);
+                        trackedParent.Status = ResponseReworkStatus.Rejected;
+                        trackedParent.CompletedAt = DateTime.UtcNow;
+                    }
+                }
+                else
+                {
+                    var parent = await context.ResponseReworkTasks
+                        .SingleOrDefaultAsync(item => item.NewResponseId == response.Id);
+                    if (parent is not null)
+                    {
+                        parent.Status = ResponseReworkStatus.Rejected;
+                        parent.CompletedAt = DateTime.UtcNow;
+                    }
+                }
+
+                context.ApprovalActionLogs.Add(new ApprovalActionLog
+                {
+                    UserId = userId,
+                    ModelId = response.Id,
+                    Status = ApprovalStatus.Rejected,
+                    CreatedAt = DateTime.UtcNow,
+                    Comments = comments,
+                });
                 await context.SaveChangesAsync();
+                if (responseDecision is not null) await responseDecision.CommitAsync();
                 break;
+            }
 
             case nameof(ProformaInvoice):
                 var proformaInvoice = await context
@@ -3330,6 +3363,51 @@ public class ApprovalRepository(
     {
         if (string.IsNullOrWhiteSpace(modelType)) modelType = null;
         var entitiesRequiringApproval = new List<ApprovalEntity>();
+
+        if (modelType is null or nameof(StockDiscrepancy))
+        {
+            var reports = await context.StockDiscrepancies.AsSplitQuery()
+                .Include(item => item.Approvals)
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
+                    stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
+                    (stage.UserId == userId ||
+                        (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))))
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(reports.Select(item => new ApprovalEntity
+            {
+                ModelType = nameof(StockDiscrepancy),
+                Id = item.Id,
+                Code = item.Id.ToString(),
+                CreatedAt = item.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
+                RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(item.Id),
+            }));
+        }
+
+        if (modelType is null or nameof(ShipmentDiscrepancy))
+        {
+            var discrepancies = await context.ShipmentDiscrepancies.AsSplitQuery()
+                .Include(item => item.Approvals)
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .Include(item => item.ShipmentDocument)
+                .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
+                    stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
+                    (stage.UserId == userId ||
+                        (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))))
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(discrepancies.Select(item => new ApprovalEntity
+            {
+                ModelType = nameof(ShipmentDiscrepancy),
+                Id = item.Id,
+                Code = item.ShipmentDocument?.Code ?? item.Id.ToString(),
+                CreatedAt = item.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(item.CreatedBy?.Department),
+                RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(item.Id),
+            }));
+        }
 
         // 1. Get Purchase Orders requiring approval
         if (modelType is null or "PurchaseOrder")
@@ -4100,6 +4178,8 @@ public class ApprovalRepository(
         await Collect(context.PurchaseOrderApprovals);
         await Collect(context.BillingSheetApprovals);
         await Collect(context.ShipmentDocumentApprovals);
+        await Collect(context.ShipmentDiscrepancyApprovals);
+        await Collect(context.StockDiscrepancyApprovals);
         await Collect(context.StaffRequisitionApprovals);
         await Collect(context.LeaveRequestApprovals);
         await Collect(context.OvertimeRequestApprovals);
@@ -4163,6 +4243,43 @@ public class ApprovalRepository(
         Guid modelId
     )
     {
+        if (modelType == nameof(StockDiscrepancy))
+        {
+            var report = await context.StockDiscrepancies
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .SingleOrDefaultAsync(item => item.Id == modelId);
+            if (report is null)
+                return Error.NotFound("StockDiscrepancy.NotFound", "Report not found.");
+            return new ApprovalEntity
+            {
+                ModelType = modelType,
+                Id = report.Id,
+                Code = report.Id.ToString(),
+                CreatedAt = report.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(report.CreatedBy?.Department),
+                RequestedBy = mapper.Map<UserDto>(report.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(report.Id),
+            };
+        }
+        if (modelType == nameof(ShipmentDiscrepancy))
+        {
+            var discrepancy = await context.ShipmentDiscrepancies
+                .Include(item => item.ShipmentDocument)
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .SingleOrDefaultAsync(item => item.Id == modelId);
+            if (discrepancy is null)
+                return Error.NotFound("ShipmentDiscrepancy.NotFound", "Shipment discrepancy not found.");
+            return new ApprovalEntity
+            {
+                ModelType = modelType,
+                Id = discrepancy.Id,
+                Code = discrepancy.ShipmentDocument?.Code ?? discrepancy.Id.ToString(),
+                CreatedAt = discrepancy.CreatedAt,
+                Department = mapper.Map<DepartmentDto>(discrepancy.CreatedBy?.Department),
+                RequestedBy = mapper.Map<UserDto>(discrepancy.CreatedBy),
+                ApprovalLogs = GetApprovalLogs(discrepancy.Id),
+            };
+        }
         switch (modelType)
         {
             case nameof(StaffRequisition):
@@ -4682,10 +4799,22 @@ public class ApprovalRepository(
                 .Where(stage => stage.ApprovalId == approval.Id)
                 .OrderBy(stage => stage.Order)
                 .ToListAsync();
+        if ((modelType is nameof(ShipmentDiscrepancy) or nameof(StockDiscrepancy)) &&
+            (approval is null || stages.Count == 0 || !stages.Any(stage => stage.Required)))
+            throw new InvalidOperationException(
+                "Shipment discrepancy requires a configured approval with required stages.");
+        if (modelType == nameof(Response) && stages.Count == 0)
+        {
+            var requiresQa = await context.Responses.AnyAsync(item => item.Id == modelId
+                && (item.MaterialBatchId.HasValue || item.BatchManufacturingRecordId.HasValue));
+            if (requiresQa)
+                throw new InvalidOperationException("Material and product Responses require assigned QA approval stages.");
+        }
 
-        // OOS disposition and COA withdrawal require a selected outcome/action and are
-        // handled at their resource endpoints rather than through this generic fallback.
-        if (modelType is QcWorksheetModelTypes.OosCase or QcWorksheetModelTypes.Coa &&
+        // QC documents require configured review except material retest, whose missing
+        // document follows the central autoapproval policy for sampling authorization.
+        if (QcWorksheetModelTypes.IsQcWorksheetModelType(modelType)
+            && modelType != QcWorksheetModelTypes.MaterialRetest &&
             (approval is null || stages.Count == 0))
             throw new InvalidOperationException(
                 $"Automatic approval for '{modelType}' requires its resource-specific action.");
@@ -4717,6 +4846,12 @@ public class ApprovalRepository(
 
         switch (modelType)
         {
+            case nameof(StockDiscrepancy):
+                await StockDiscrepancyApprovalHandler.CreateAsync(context, modelId, stages, approval!);
+                break;
+            case nameof(ShipmentDiscrepancy):
+                await ShipmentDiscrepancyApprovalHandler.CreateAsync(context, modelId, stages, approval!);
+                break;
             case "RawStockRequisition":
             case "PackageStockRequisition":
             case "PurchaseRequisition":
@@ -4795,6 +4930,7 @@ public class ApprovalRepository(
             case QcWorksheetModelTypes.Specification:
             case QcWorksheetModelTypes.WorksheetInstance:
             case QcWorksheetModelTypes.OosCase:
+            case QcWorksheetModelTypes.MaterialRetest:
                 await QcApprovalHandler.CreateAsync(context, modelType, modelId, stages, approval);
                 break;
             default:
@@ -4870,11 +5006,24 @@ public class ApprovalRepository(
         Approval approval
     )
     {
-        var exists = await context.PurchaseOrderApprovals.AnyAsync(a =>
-            a.PurchaseOrderId == orderId && a.ApprovalId == approval.Id
-        );
-        if (exists)
+        var previousRound = await context.PurchaseOrderApprovals
+            .Where(a => a.PurchaseOrderId == orderId)
+            .ToListAsync();
+
+        // A round still waiting on someone is the current one, so checking twice changes nothing.
+        if (previousRound.Any(a => a.Status == ApprovalStatus.Pending))
             return;
+
+        // Every step of an earlier round was decided (a revised order checked again, or a rejected one).
+        // Those rows would block the new round: approve picks the first undecided row of an order, and an
+        // old rejected row never becomes approved. Decisions stay in ApprovalActionLogs, so replace the rows.
+        if (previousRound.Count != 0)
+        {
+            context.PurchaseOrderApprovals.RemoveRange(previousRound);
+            var order = await context.PurchaseOrders.FirstOrDefaultAsync(po => po.Id == orderId);
+            if (order is not null)
+                order.Approved = false;
+        }
 
         var approvals = stages
             .Select(stage => new PurchaseOrderApproval
@@ -5421,15 +5570,6 @@ public class ApprovalRepository(
         }
     }
 
-    public Result DelegateApproval(DelegateApproval approval)
-    {
-        var user = userManager.FindByIdAsync(approval.EmployeeId.ToString());
-
-        return user.Result == null
-            ? Error.NotFound("User.Invalid", "User not found")
-            : Result.Success();
-    }
-
     private async Task ProcessRequisitionEscalations(
         Requisition requisition,
         TimeSpan escalationDuration,
@@ -5872,6 +6012,18 @@ public class ApprovalRepository(
                 )
                 .ToListAsync();
             foreach (var a in sdApprovals)
+                a.UserId = request.ToUserId;
+
+            var discrepancyApprovals = await context.ShipmentDiscrepancyApprovals
+                .Where(a => a.UserId == request.FromUserId &&
+                    a.Status == ApprovalStatus.Pending).ToListAsync();
+            foreach (var a in discrepancyApprovals)
+                a.UserId = request.ToUserId;
+
+            var stockDiscrepancyApprovals = await context.StockDiscrepancyApprovals
+                .Where(a => a.UserId == request.FromUserId &&
+                    a.Status == ApprovalStatus.Pending).ToListAsync();
+            foreach (var a in stockDiscrepancyApprovals)
                 a.UserId = request.ToUserId;
 
             // Staff Requisitions

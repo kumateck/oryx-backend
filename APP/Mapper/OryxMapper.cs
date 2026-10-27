@@ -644,7 +644,9 @@ public class OryxMapper : Profile
         CreateMap<Supplier, SupplierDto>();
         CreateMap<Supplier, SupplierListDto>();
         CreateMap<CreateSupplierManufacturerRequest, SupplierManufacturer>();
-        CreateMap<SupplierManufacturer, SupplierManufacturerDto>();
+        CreateMap<SupplierManufacturer, SupplierManufacturerDto>()
+            .ForMember(dto => dto.PurchaseUnit, options => options.MapFrom(row => row.PurchaseUnit ?? row.UoM.Symbol))
+            .ForMember(dto => dto.PendingPurchaseUnit, options => options.Ignore());
         CreateMap<CreateQuantityPerPackOption, QuantityPerPackOption>();
 
         //manufacturer
@@ -1747,6 +1749,9 @@ public class OryxMapper : Profile
                         EstimatedDeliveryDate =
                             src.MarketRequisitionVendor?.EstimatedDeliveryDate ?? default,
                         CreatedAt = src.CreatedAt,
+                        PurchasedAt = src.PurchasedAt,
+                        VendorQuotationItemId = src.VendorQuotationItemId,
+                        MarketRequisitionVendorId = src.MarketRequisitionVendorId,
                     };
                     return dto;
                 }

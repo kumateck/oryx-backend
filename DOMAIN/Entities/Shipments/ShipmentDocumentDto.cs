@@ -36,6 +36,7 @@ public class ShipmentInvoiceDto : BaseDto
     public decimal AmountPaid { get; set; }
     public decimal OutstandingBalance { get; set; }
     public bool IsUsed { get; set; }
+    public ShipmentInvoiceKind Kind { get; set; }
 }
 
 public class ShipmentInvoiceListDto : BaseDto
@@ -50,6 +51,7 @@ public class ShipmentInvoiceListDto : BaseDto
     public decimal AmountPaid { get; set; }
     public decimal OutstandingBalance { get; set; }
     public bool IsUsed { get; set; }
+    public ShipmentInvoiceKind Kind { get; set; }
 }
 
 
@@ -66,20 +68,28 @@ public class ShipmentInvoiceItemDto : BaseDto
     public decimal TotalCost { get; set; }
     public CurrencyDto Currency { get; set; }
     public string Reason { get; set; }
+    public Guid? FulfillsDiscrepancyItemId { get; set; }
 }
 
 
 public class ShipmentDiscrepancyDto
 {
+    public Guid Id { get; set; }
     public ShipmentDocumentDto ShipmentDocument { get; set; }
     public List<ShipmentDiscrepancyItemDto> Items { get; set; } = [];
+    public bool Approved { get; set; }
+    public bool Rejected { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class ShipmentDiscrepancyItemDto
 {
+    public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal ReceivedQuantity { get; set; }
+    public decimal DeclaredQuantitySnapshot { get; set; }
+    public Guid? ShipmentInvoiceItemId { get; set; }
     public CollectionItemDto Type { get; set; }
     public string Reason { get; set; }
     public bool Resolved { get; set; }

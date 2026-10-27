@@ -97,6 +97,8 @@ public class Response : BaseEntity, IRequireApproval
     public DateTime? CheckedAt { get; set; }
     public bool Approved { get; set; }
     public bool Rejected { get; set; }
+    public ResponseRejectionOutcome? RejectionOutcome { get; set; }
+    public int ReworkSequence { get; set; }
 }
 
 public class FormResponse : BaseEntity

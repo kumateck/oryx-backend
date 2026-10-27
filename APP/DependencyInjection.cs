@@ -96,8 +96,10 @@ public static class DependencyInjection
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
         services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
         services.AddScoped<IMaterialRepository, MaterialRepository>();
+        services.AddScoped<APP.Services.Materials.MaterialPurchaseUnitsReader>();
         services.AddScoped<IRequisitionRepository, RequisitionRepository>();
         services.AddScoped<IApprovalRepository, ApprovalRepository>();
+        services.AddScoped<APP.Services.Approvals.IApprovalDelegationService, APP.Services.Approvals.ApprovalDelegationService>();
         services.AddScoped<IProcurementRepository, ProcurementRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<ISupplierRelationshipRepository, SupplierRelationshipRepository>();
@@ -266,12 +268,21 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IMessagingService, MessagingService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationDeliveryEffects, NotificationDeliveryEffects>();
+        services.AddScoped<NotificationDeliveryDispatcher>();
+        services.AddScoped<AlertRequestStager>();
+        services.AddScoped<AlertRequestDispatcher>();
+        services.AddHostedService<NotificationDeliveryWorker>();
+        services.AddHostedService<NotificationEmailWorker>();
         services.AddScoped<IProductionActivityStepEventPublisher, ProductionActivityStepEventPublisher>();
         //services.AddHostedService<ApprovalEscalationService>();
         services.AddHostedService<LeaveExpiryService>();
         services.AddHostedService<ServiceExpiryService>();
         services.AddHostedService<MaterialStockService>();
         services.AddHostedService<MaterialBatchExpiryService>();
+        services.AddScoped<APP.Services.Materials.IMaterialRetestService, APP.Services.Materials.MaterialRetestService>();
+        services.AddScoped<APP.Services.QcWorksheets.IResponseReworkService, APP.Services.QcWorksheets.ResponseReworkService>();
+        services.AddHostedService<MaterialRetestScanBackgroundService>();
         services.AddHostedService<EmployeeSuspensionService>();
         services.AddHostedService<WaterStockMaintenanceService>();
 

@@ -4,13 +4,15 @@ using APP.Utils;
 using DOMAIN.Entities.JobRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/v{version:apiVersion}/job-executions")]
 [Authorize]
-public class JobExecutionController(IJobExecutionRepository repository) : ControllerBase
+public class JobExecutionController(IJobExecutionRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Retrieves a paginated list of job executions
@@ -24,6 +26,8 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
         [FromQuery] Guid? employeeId = null,
         [FromQuery] Guid? jobRequestId = null)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
+
         var result = await repository.GetJobExecutions(page, pageSize, status, employeeId, jobRequestId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -36,6 +40,8 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobExecution([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
+
         var result = await repository.GetJobExecution(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -48,6 +54,8 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AcknowledgeJobExecution([FromBody] AcknowledgeJobExecutionRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AcknowledgeJobRequest)) return TypedResults.Forbid();
+
         var result = await repository.AcknowledgeJobExecution(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -60,6 +68,8 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> StartJobExecution([FromBody] StartJobExecutionRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.StartJobRequest)) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -75,6 +85,10 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RecordJobActivity([FromRoute] Guid id, [FromBody] RecordJobActivityRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.StartJobRequest)) return TypedResults.Forbid();
+        if (Actor() is not { } performer) return TypedResults.Unauthorized();
+        request.PerformedById = performer;
+
         var result = await repository.RecordJobActivity(id, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -87,6 +101,8 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RecordConsumedItem([FromRoute] Guid id, [FromBody] RecordConsumedItemRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.StartJobRequest)) return TypedResults.Forbid();
+
         var result = await repository.RecordConsumedItem(id, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -99,6 +115,9 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CompleteJobExecution([FromBody] CompleteJobExecutionRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.CompleteJobRequest)) return TypedResults.Forbid();
+        foreach (var activity in request.AdditionalActivities ?? []) activity.PerformedById = Actor() ?? Guid.Empty;
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -114,6 +133,8 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReassignJobExecution([FromBody] ReassignJobExecutionRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AssignJobRequest)) return TypedResults.Forbid();
+
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -129,6 +150,10 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> VerifyJobExecution([FromBody] VerifyJobExecutionRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AssignJobRequest)) return TypedResults.Forbid();
+        if (Actor() is not { } verifier) return TypedResults.Unauthorized();
+        request.VerifiedById = verifier;
+
         var result = await repository.VerifyJobExecution(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -141,8 +166,22 @@ public class JobExecutionController(IJobExecutionRepository repository) : Contro
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveJobExecution([FromBody] ApproveJobExecutionRequest request)
     {
+        if (Actor() is not { } approver) return TypedResults.Unauthorized();
+        if (!await CanApproveAsRequester(request.JobExecutionId, approver)) return TypedResults.Forbid();
+        request.ApprovedById = approver;
+
         var result = await repository.ApproveJobExecution(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
-}
 
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
+
+    /// <summary>The requester approves the finished work; someone with job request edit rights may approve in their place.</summary>
+    private async Task<bool> CanApproveAsRequester(Guid executionId, Guid approver)
+    {
+        var requester = await context.JobExecutions.Where(e => e.Id == executionId).Select(e => e.JobRequest.IssuedById).Cast<Guid?>().FirstOrDefaultAsync();
+        if (requester == null) return false;
+        if (!await ServiceWorkflowAccess.All(context, approver, ServiceKeys.ViewJobRequests)) return false;
+        return requester == approver || await ServiceWorkflowAccess.All(context, approver, ServiceKeys.EditJobRequest);
+    }
+}

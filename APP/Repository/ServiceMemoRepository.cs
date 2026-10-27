@@ -41,6 +41,18 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         if (!quotation.IsSelected)
             return Error.Validation("Quotation.NotSelected", "This quotation has not been selected");
 
+        // One memo per job order, for the quotation its proforma was raised against.
+        if (jobOrder.ServiceMemoId.HasValue || await context.ServiceMemos.AnyAsync(m => m.JobOrderId == jobOrder.Id))
+            return Error.Validation("ServiceMemo.Exists", "This job order already has a service memo.");
+        if (quotation.JobOrderId != jobOrder.Id || jobOrder.ServiceProformaInvoice.ServiceQuotationId != quotation.Id)
+            return Error.Validation("Quotation.Mismatch", "The memo must use the quotation the approved proforma was raised against.");
+        if (quotation.ServiceProviderId != request.ServiceProviderId)
+            return Error.Validation("ServiceProvider.Mismatch", "The memo must go to the provider of the selected quotation.");
+        if (request.AgreedServiceCharge < 0 || request.AgreedMaterialsCost < 0)
+            return Error.Validation("ServiceMemo.InvalidAmount", "Agreed amounts cannot be negative.");
+        if (request.ExpectedCompletionDate < request.ExpectedStartDate)
+            return Error.Validation("ServiceMemo.InvalidDates", "The expected completion cannot be before the expected start.");
+
         var serviceProvider = await context.ServiceProviders.AnyAsync(sp => sp.Id == request.ServiceProviderId);
         if (!serviceProvider)
             return Error.Validation("ServiceProvider.Invalid", "Invalid service provider");
@@ -128,6 +140,10 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
 
         if (memo.Status != ServiceMemoStatus.Draft)
             return Error.Validation("ServiceMemo.InvalidStatus", "Only draft memos can be updated");
+        if (request.AgreedServiceCharge is < 0 || request.AgreedMaterialsCost is < 0)
+            return Error.Validation("ServiceMemo.InvalidAmount", "Agreed amounts cannot be negative.");
+        if ((request.ExpectedCompletionDate ?? memo.ExpectedCompletionDate) < (request.ExpectedStartDate ?? memo.ExpectedStartDate))
+            return Error.Validation("ServiceMemo.InvalidDates", "The expected completion cannot be before the expected start.");
 
         mapper.Map(request, memo);
         context.ServiceMemos.Update(memo);
@@ -141,7 +157,10 @@ public class ServiceMemoRepository(ApplicationDbContext context, IMapper mapper,
         var memo = await context.ServiceMemos.FirstOrDefaultAsync(m => m.Id == id);
         if (memo is null)
             return Error.NotFound("ServiceMemo.NotFound", "Service memo not found");
-        
+        if (memo.Paid) return Error.Validation("ServiceMemo.Paid", "This memo has already been paid.");
+        if (memo.Status != ServiceMemoStatus.Issued && memo.Status != ServiceMemoStatus.Completed)
+            return Error.Validation("ServiceMemo.NotIssued", "Issue the memo to the provider before paying it.");
+
         memo.Paid = true;
         await context.SaveChangesAsync();
 

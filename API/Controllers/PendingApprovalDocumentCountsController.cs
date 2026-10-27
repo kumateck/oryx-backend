@@ -12,7 +12,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/approval/my-pending/document-counts")]
 [Authorize]
 public sealed class PendingApprovalDocumentCountsController(
-    IApprovalRepository approvals, IQcApprovalRepository qcApprovals,
+    IApprovalRepository approvals, IApprovalDelegationService delegations, IQcApprovalRepository qcApprovals,
     ApplicationDbContext context, IAuthorizationService authorization) : ControllerBase
 {
     [HttpGet]
@@ -33,7 +33,9 @@ public sealed class PendingApprovalDocumentCountsController(
             await Can(FullProcedurePermissionKeys.CanApproveProcedureRevision),
             await Can(QcWorksheetPermissionKeys.CanDispositionQcOosCase));
 
-        var counts = await approvals.GetStatisticsOfEntitiesRequiringApproval(actorId, roleIds);
+        // Includes approvals delegated to the caller; QC and revision counts are the caller's own.
+        var counts = (await delegations.Pending(approvals, actorId, roleIds, null, DateTime.UtcNow))
+            .GroupBy(item => item.Entity.ModelType).ToDictionary(group => group.Key, group => group.Count());
         var qc = await qcApprovals.GetPendingApprovals(actorId, roleIds);
         if (!qc.IsSuccess) return qc.ToProblemDetails();
         foreach (var group in qc.Value.GroupBy(item => $"Qc{item.EntityType}"))

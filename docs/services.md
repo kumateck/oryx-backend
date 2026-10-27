@@ -579,3 +579,111 @@ The response also provides `warehouseName`, filters rows to the requested
 warehouse department, and orders newest first. The outbound requisition code
 is distinct from an inbound waybill. See
 `docs/warehouse-stock-issue-reconciliation.md` for the migration and review rules.
+
+## Session refresh ownership — 2026-10-21
+
+Refresh token issuance explicitly saves the authenticated `UserId`, allowing the existing refresh endpoint to restore that same account across requests and app restarts. Audit `CreatedById` is separate. Existing ownerless tokens require a new sign-in after the corrected server is running. See [session-refresh-ownership.md](session-refresh-ownership.md) for the regression test and deployment limit.
+
+## Contractor maintenance repair — 2026-10-21
+
+The existing service-provider update persists the requested service associations after verifying all service IDs. Deletion returns NotFound for a missing record and refuses current or historical job, execution, quotation, proforma invoice and memo references before audited soft deletion. Endpoint shapes are unchanged. See [service-provider-maintenance.md](service-provider-maintenance.md) for verification and deployment limits.
+
+## Inventory definitions, receiving and stock integrity
+
+Item maintenance and stock receipts now validate history/ledger identity, current per-store database grants, known distinct receipt creators, atomic stock postings and optimistic concurrency. New item codes are globally unique while the legacy ledger is code-based; ambiguous historical ledgers require reconciliation. The stock envelope now includes creator/memo/unit/category references without changing its HTTP shape. These source repairs are not deployed. Damage edit/delete, returns, other writers and PostgreSQL/end-to-end acceptance remain; see [inventory-stock-integrity.md](inventory-stock-integrity.md).
+
+## Stores, services and HR repair — 2026-10-22
+
+Per-store and per-action grant checks cover the stores and services workflows, and actors come from the token. There is a paged item choice endpoint, and proformas can be filtered with `memoPending`. `employee/me` and `performance/reviews/mine` are new. A reviewer may read the goals they are rating. Onboarding now uses tokens through `api/v1/onboarding/*`, the anonymous employee and user creation endpoints are gone, and the `CanViewFormulaBuilder` key is registered. The repair is local and undeployed. See [`stores-services-hr-repair-2026-10-22.md`](stores-services-hr-repair-2026-10-22.md).
+
+## Shipment invoice price-unit validation (2026-10-23)
+
+`POST /api/v1/procurement/shipment-invoice` resolves legacy price units from the
+awarded quotation and returns `Item.PriceUoM` validation before mutation if none
+is available. Request/response shapes remain unchanged. See
+[incident and contract notes](shipment-invoice-price-unit-2026-10-23.md).
+
+## Material-distribution department query (2026-10-24)
+
+The distribution GET keeps its existing response contract. Its shared department
+lookup now targets the requesting department and reads warehouses/locations in
+split queries, suppressing unrelated creator and storage-tree AutoIncludes while
+preserving query filters. See
+[timeout analysis and verification](material-distribution-department-timeout-2026-10-24.md).
+
+### Material-distribution page projection (2026-10-24)
+
+The shipment material-distribution GET now returns `MaterialDistributionPageDto`
+through a focused read service with at most three scalar queries. Material and
+request loops perform no database calls or stock/specification mapping. The
+existing page paths for quantities, departments, requisitions and invoice source
+labels/pricing remain; unused inventory, user and storage fields are omitted.
+See [read projection](material-distribution-read-projection-2026-10-24.md) for
+client compatibility and verification. URL/authentication are unchanged.
+
+### GRN list summary projection (2026-10-24)
+
+`GET /api/v1/warehouse/grns` now uses `GrnListReader` and `GrnSummaryDto` with at
+most three scoped reads. Existing header fields and `materialBatches` entries
+containing ID/supplier name preserve list counts and supplier display in desktop
+and Next. The public warehouse list no longer runs QC enrichment or per-batch
+resolvers. QC-list and detail endpoints retain their existing contracts. See
+[GRN list projection](grn-list-projection-2026-10-24.md).
+
+### Stable draft attachment field IDs
+
+SaveFormResponseDraft now delegates file storage to FormDraftAttachments, which
+assigns new field IDs before file keys are captured and propagates storage
+failures. Existing draft request/response and attachment-read contracts remain.
+See [draft attachment association](form-draft-attachment-association.md).
+
+## Supplier purchase-unit symbols (2026-10-24)
+
+Supplier purchase units now persist symbols and synchronize supplier edits,
+quotation responses and pricing approvals through shared validation/services.
+The global material lookup combines distinct units from all departments.
+See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
+
+## Durable alert delivery (2026-10-24)
+
+AlertRequestStager/Dispatcher retain business audience and resolve active rule configurations. NotificationService writes records and delivery work atomically; independent hosted workers handle RabbitMQ and SMTP retries. Shipment arrival alerts retain their explicit shipment document ID through the durable request, notification API, and realtime payload so clients can open the exact shipment. The personal notification API excludes email records and returns stored timestamps; marking read stages a targeted NotificationReadEvent. Configuration actions enforce existing alert permissions. See [alert reliability](alert-reliability.md).
+
+Supplier pricing request validation now permits positive sub-cent decimals, aligned with repository validation; zero and negative amounts remain invalid. No endpoint shape changed. See [supplier price approval validation](supplier-pricing-approvals.md).
+
+## Waybill code counts
+
+The code-configuration count endpoint accepts Waybill and counts the shared ShipmentDocuments code namespace, including archived records. Waybills are DocType.Waybill rows, not a separate Waybill table. Shared prefixes include shipment documents so a suggestion does not intentionally reuse their numbers. No endpoint shape changes or database migration.
+
+Waybill count regression test passed: shared-prefix shipment/waybill rows and archived waybills are counted; an unused prefix returns zero. The local backend patch requires deployment and no schema migration.
+
+### Notification related-record context
+
+`GET /api/v1/alert/notifications` and the realtime notification event include optional related-record metadata: `relatedEntityType`, `relatedEntityId`, `relatedEntityCode`, `relatedEntityName`, `relatedEntityStatus`, and `relatedEntityPriority`. These fields are nullable for alert sources without a record reference. The ID and type are emitted together; they identify the related record but do not authorize access. Shipment arrivals also retain `shipmentDocumentId` for compatibility.
+
+## QC material retest API (2026-10-25)
+
+`GET /api/v1/qc/material-retests` lists recent requests (optional `batchId`); `GET /{id}` returns status, material batch, proposed expiry, linked QC evidence, and events. The list and detail use separate `CanViewMaterialRetests` and `CanViewMaterialRetestDetail` policies. `POST /batches/{batchId}` creates a manual request with `reason` only when no retest date is set. The hosted due-date scan creates scheduled requests on or after the selected date and uses a unique source key for idempotency. `POST /{id}/approve` and `/reject` require distinct `CanApproveMaterialRetest` and `CanRejectMaterialRetest` policies, assigned approval, and reauthentication with `password` and `comments`. `POST /{id}/sample` takes `sampleQuantity`, `sampledContainers`, and `proposedExpiryDate`; `POST /{id}/acknowledge` records receipt; `POST /{id}/test-request` links a same-batch QC round. The configured `QcMaterialRetest` approval document routes to assigned users or roles; absence of the document uses central autoapproval. Issuing a compliant linked COA is the sole expiry extension path. Apply `MaterialRetestWorkflow` migration before enabling the scan.
+
+## QC Response rework (2026-10-25)
+
+The existing QA `Response` approval rejects with `comments` and `responseRejectionOutcome` (`0` disposal, `1` rework) at `POST /api/v1/approval/reject/Response/{id}`. Response approve and reject require distinct `CanApproveResponse` and `CanRejectResponse` policies plus the assigned stage. `GET /api/v1/qc/rework-tasks` lists tasks, `GET /{id}` returns lineage and product step context, and `POST /{id}/start` creates a separate Response. These use distinct `CanViewResponseReworkTasks`, `CanViewResponseReworkTaskDetail`, and `CanStartResponseReworkTask` policies. Material and product COA submission requires assigned Response approval stages.
+
+Role permission updates commit the new permission-type rows before invalidating
+role and user permission caches. In-memory user entries are removed even if
+Redis invalidation fails, so subsequent reads see the committed grant.
+
+## Inventory discrepancy contracts (2026-10-25)
+
+`POST /api/v1/stock-discrepancy` accepts `shelfMaterialBatchId`, nonnegative `physicalQuantity`, numeric `reasonCode`, and required `notes`; it returns a report ID. `GET /api/v1/stock-discrepancy` and `/{id}` return the system snapshot, physical count, signed variance, approval and reconciliation state. `POST /{id}/reconcile` posts an approved report only when current shelf quantity still equals the snapshot. Distinct `CanViewStockDiscrepancy`, `CanRecordStockDiscrepancy`, `CanApproveStockDiscrepancy`, `CanRejectStockDiscrepancy`, and `CanReconcileStockDiscrepancy` permissions guard each action.
+
+`POST /api/v1/procurement/shipment-discrepancy` accepts a shipment document and exact `shipmentInvoiceItemId` lines with physical count and reason. List/detail endpoints return immutable declared-quantity snapshots and approval status. `GET /shipment-discrepancy/line/{id}/balance` returns confirmed, in-flight, outstanding and available-to-ship quantities. `POST /shipment-invoice/shortage-make-up` accepts case line, positive quantity, invoice code and request key, returning a no-charge invoice ID. View, record, approve, reject, and create make-up invoice use distinct `CanViewShipmentDiscrepancy`, `CanRecordShipmentDiscrepancy`, `CanApproveShipmentDiscrepancy`, `CanRejectShipmentDiscrepancy`, and `CanCreateShortageMakeUpInvoice` permissions.
+## Draft attachments and billing charge references (2026-10-25)
+
+`POST /api/v1/form/responses/draft` now marks a new file answer as inserted
+before attachment storage flushes the shared context. The response ID, audit
+context, and authorization checks are unchanged. The billing sheet charge
+payment request still contains one reference per charge, but equal references
+are accepted for charges on the same billing sheet. A partial unique payment
+index retains reference uniqueness for other payable types. Each charge keeps
+its own payment, approval, and audit trail. See the draft attachment and payment
+workflow guides.

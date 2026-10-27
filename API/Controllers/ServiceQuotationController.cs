@@ -4,6 +4,8 @@ using APP.Utils;
 using DOMAIN.Entities.JobRequests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using APP.Services.Stores;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -25,7 +27,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/service-quotations")]
 [Authorize]
 [Tags("Service Quotations")]
-public class ServiceQuotationController(IServiceQuotationRepository repository) : ControllerBase
+public class ServiceQuotationController(IServiceQuotationRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Creates a new service quotation (Contractor submits quotation)
@@ -85,6 +87,8 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateServiceQuotation([FromBody] CreateServiceQuotationRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.SendQuotationResponse)) return TypedResults.Forbid();
+
         var result = await repository.CreateServiceQuotation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -103,6 +107,8 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
         [FromQuery] JobOrderStatus? jobOrderStatus = null,
         [FromQuery] bool proformaPending = false)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.ViewPricing, ServiceKeys.ViewProformaRequests)) return TypedResults.Forbid();
+
         var result = await repository.GetServiceQuotations(page, pageSize, status, jobOrderId,
             serviceProviderId, jobOrderStatus, proformaPending);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -116,6 +122,8 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetServiceQuotation([FromRoute] Guid id)
     {
+        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.ViewPricing, ServiceKeys.ViewProformaRequests)) return TypedResults.Forbid();
+
         var result = await repository.GetServiceQuotation(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -129,6 +137,8 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateServiceQuotation([FromRoute] Guid id, [FromBody] UpdateServiceQuotationRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.SendQuotationResponse)) return TypedResults.Forbid();
+
         var result = await repository.UpdateServiceQuotation(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -172,6 +182,8 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> NegotiateQuotation([FromBody] NegotiateQuotationRequest request)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPricing, ServiceKeys.ApplyPricing)) return TypedResults.Forbid();
+
         var result = await repository.NegotiateQuotation(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -210,7 +222,11 @@ public class ServiceQuotationController(IServiceQuotationRepository repository) 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CompareQuotations([FromRoute] Guid jobOrderId)
     {
+        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPricing)) return TypedResults.Forbid();
+
         var result = await repository.CompareQuotations(jobOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+
+    private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

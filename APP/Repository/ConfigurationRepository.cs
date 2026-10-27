@@ -189,9 +189,11 @@ public class ConfigurationRepository(ApplicationDbContext context, IMapper mappe
                     .Where(m => m.Code.StartsWith(prefix))
                     .CountAsync();
 
+            case nameof(DOMAIN.Entities.Waybills.Waybill):
             case nameof(ShipmentDocument):
+                // Logistics waybills are stored as ShipmentDocument rows. Both share the code namespace.
                 return await context
-                    .ShipmentDocuments.Where(m => m.Code.StartsWith(prefix))
+                    .ShipmentDocuments.IgnoreQueryFilters().Where(m => m.Code != null && m.Code.StartsWith(prefix))
                     .CountAsync();
 
             case nameof(PurchaseOrder):

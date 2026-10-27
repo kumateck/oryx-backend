@@ -18,6 +18,7 @@ public class CreateSupplierManufacturerRequest
     public Guid ManufacturerId { get; set; }
     public Guid? MaterialId { get; set; }
     public Guid? UoMId { get; set; }
+    public string PurchaseUnit { get; set; }
     public bool Default { get; set; }
 }
 

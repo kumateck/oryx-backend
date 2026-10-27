@@ -28,84 +28,11 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class EmployeeRepository(ApplicationDbContext context,
+public partial class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
     IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage,
     IHttpContextAccessor httpContextAccessor, IAuthRepository authRepository) : IEmployeeRepository
 {
-
-    public async Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDtos)
-    {
-        const int maxRetries = 3;
-
-        const string templatePath = "wwwroot/email/RegistrationEmail.html";
-
-        if (!File.Exists(templatePath))
-            throw new FileNotFoundException("Email template not found", templatePath);
-
-        var emailTemplate = await File.ReadAllTextAsync(templatePath);
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var jwtKey = configuration["JwtSettings:Key"] ?? "";
-        var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
-
-        foreach (var employee in employeeDtos.EmailList)
-        {
-            try
-            {
-
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity([
-                        new Claim("type", employee.EmployeeType.ToString())
-                    ]),
-                    Expires = DateTime.UtcNow.AddDays(7),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
-                };
-
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                var jwt = tokenHandler.WriteToken(token);
-
-                var partialUrl = httpContextAccessor.HttpContext?.Request.Headers.Origin;
-
-                var verificationLink = employee.EmployeeType == EmployeeType.Casual
-                    ? $"{partialUrl}/onboarding/0?token={jwt}"
-                    : $"{partialUrl}/onboarding/1?token={jwt}";
-
-                var emailBody = emailTemplate
-                    .Replace("{Email}", employee.Email)
-                    .Replace("{VerificationLink}", verificationLink);
-
-                // Send email with retry
-                var attempts = 0;
-                var sent = false;
-
-                while (attempts < maxRetries && !sent)
-                {
-                    try
-                    {
-                        emailService.SendMail(employee.Name, employee.Email, "Welcome to the team", emailBody, []);
-                        logger.LogInformation("Email sent to {EmployeeEmail}", employee.Email);
-                        sent = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        attempts++;
-                        logger.LogWarning("Failed attempt {Attempts} for {EmployeeEmail}: {ExMessage}", attempts, employee.Email, ex.Message);
-
-                        if (attempts == maxRetries)
-                            logger.LogError("Giving up on {EmployeeEmail} after {MaxRetries} attempts.", employee.Email, maxRetries);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error onboarding {EmployeeEmail}", employee.Email);
-            }
-        }
-
-        return Result.Success("Bulk onboarding completed.");
-    }
 
     public async Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId)
     {
@@ -194,6 +121,7 @@ public class EmployeeRepository(ApplicationDbContext context,
             var existingRoles = await userManager.GetRolesAsync(existingUser);
             await userManager.RemoveFromRolesAsync(existingUser, existingRoles);
             await userManager.AddToRoleAsync(existingUser, role.Name ?? string.Empty);
+            employee.UserId = existingUser.Id;
             await context.SaveChangesAsync();
 
             logger.LogInformation("Restored deleted user {UserId} and assigned role {Role}", existingUser.Id, role);
@@ -209,7 +137,8 @@ public class EmployeeRepository(ApplicationDbContext context,
             var newUser = mapper.Map<User>(employee);
             newUser.Email = newUser.UserName = employee.Email;
 
-            var createResult = await userManager.CreateAsync(newUser, password: "Pass123$1");
+            // No fixed password: the account is unusable until its owner sets one from the emailed link.
+            var createResult = await userManager.CreateAsync(newUser, password: APP.Services.Employees.OnboardingTokens.TemporaryPassword());
             if (!createResult.Succeeded)
             {
                 var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
@@ -219,6 +148,7 @@ public class EmployeeRepository(ApplicationDbContext context,
 
             await userManager.AddToRoleAsync(newUser, role.Name ?? string.Empty);
             logger.LogInformation("Assigned role {Role} to user {UserId}", role, newUser.Id);
+            employee.UserId = newUser.Id;
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();

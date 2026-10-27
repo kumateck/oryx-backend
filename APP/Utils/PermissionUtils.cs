@@ -93,6 +93,7 @@ public static class PermissionSubmodules
     public const string IssueBmr = "Issue BMR";
     public const string AnalyticalTestRequests = "Analytical Test Requests";
     public const string PendingApprovals = "Pending Approvals";
+    public const string OosInvestigations = "OOS Investigations";
     public const string Verification = "Verification";
     public const string TransferApprovalRights = "Transfer Approval Rights";
 
@@ -102,6 +103,7 @@ public static class PermissionSubmodules
     // Research & Development
     public const string RndProjects = "R&D Projects";
     public const string RndFormulations = "R&D Formulations";
+    public const string RndFormulaBuilder = "R&D Formula Builder";
     public const string RndTrialBatches = "R&D Trial Batches";
     public const string RndAnalyticalMethods = "R&D Analytical Methods";
     public const string RndStabilityStudies = "R&D Stability Studies";
@@ -272,6 +274,11 @@ public static class PermissionKeys
     public const string CanChangeShipmentDocumentStatus = "CanChangeShipmentDocumentStatus";
     public const string CanEditShipmentDocument = "CanEditShipmentDocument";
     public const string CanDeleteShipmentDocument = "CanDeleteShipmentDocument";
+    public const string CanViewShipmentDiscrepancy = "CanViewShipmentDiscrepancy";
+    public const string CanRecordShipmentDiscrepancy = "CanRecordShipmentDiscrepancy";
+    public const string CanCreateShortageMakeUpInvoice = "CanCreateShortageMakeUpInvoice";
+    public const string CanApproveShipmentDiscrepancy = "CanApproveShipmentDiscrepancy";
+    public const string CanRejectShipmentDiscrepancy = "CanRejectShipmentDiscrepancy";
     public const string CanCreateBillingSheet = "CanCreateBillingSheet";
     public const string CanViewBillingSheet = "CanViewBillingSheet";
     public const string CanEditBillingSheet = "CanEditBillingSheet";
@@ -362,6 +369,11 @@ public static class PermissionKeys
         "CanAssignPackagingMaterialStockTransfers";
     public const string CanViewMaterialStockAdjustment = "CanViewMaterialStockAdjustment";
     public const string CanCreateMaterialStockAdjustment = "CanCreateMaterialStockAdjustment";
+    public const string CanViewStockDiscrepancy = "CanViewStockDiscrepancy";
+    public const string CanRecordStockDiscrepancy = "CanRecordStockDiscrepancy";
+    public const string CanApproveStockDiscrepancy = "CanApproveStockDiscrepancy";
+    public const string CanRejectStockDiscrepancy = "CanRejectStockDiscrepancy";
+    public const string CanReconcileStockDiscrepancy = "CanReconcileStockDiscrepancy";
 
     // Production
     public const string CanViewRawMaterialRequisitionsForProduction =
@@ -489,7 +501,13 @@ public static class PermissionKeys
     public const string CanViewPendingApprovals = "CanViewPendingApprovals";
     public const string CanApprovePendingApproval = "CanApprovePendingApproval";
     public const string CanRejectPendingApproval = "CanRejectPendingApproval";
+    public const string CanApproveResponse = "CanApproveResponse";
+    public const string CanRejectResponse = "CanRejectResponse";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
+    public const string CanInitiateOosInvestigation = "CanInitiateOosInvestigation";
+    public const string CanViewOosInvestigations = "CanViewOosInvestigations";
+    public const string CanSubmitOosInvestigation = "CanSubmitOosInvestigation";
+    public const string CanReviewOosInvestigation = "CanReviewOosInvestigation";
 
     // Audit
     public const string CanViewQualityAudits = "CanViewQualityAudits";
@@ -511,6 +529,8 @@ public static class PermissionKeys
     public const string CanUpdateRndProjectStatus = "CanUpdateRndProjectStatus";
     public const string CanDeleteRndProject = "CanDeleteRndProject";
     public const string CanViewRndFormulations = "CanViewRndFormulations";
+    // A calculation scratchpad in the desktop app; it reads and writes nothing on the server.
+    public const string CanViewFormulaBuilder = "CanViewFormulaBuilder";
     public const string CanCreateRndFormulation = "CanCreateRndFormulation";
     public const string CanEditRndFormulation = "CanEditRndFormulation";
     public const string CanViewRndTrialBatches = "CanViewRndTrialBatches";
@@ -1405,6 +1425,16 @@ public static class PermissionUtils
             PermissionSubmodules.ShipmentDocument,
             PermissionKeys.CanDeleteShipmentDocument
         );
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanViewShipmentDiscrepancy);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanRecordShipmentDiscrepancy);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentInvoice,
+            PermissionKeys.CanCreateShortageMakeUpInvoice);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanApproveShipmentDiscrepancy);
+        addPermission(PermissionModules.Logistics, PermissionSubmodules.ShipmentDocument,
+            PermissionKeys.CanRejectShipmentDiscrepancy);
         addPermission(
             PermissionModules.Logistics,
             PermissionSubmodules.BillingSheet,
@@ -1767,6 +1797,16 @@ public static class PermissionUtils
             PermissionSubmodules.StockAdjustment,
             PermissionKeys.CanCreateMaterialStockAdjustment
         );
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanViewStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanRecordStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanApproveStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanRejectStockDiscrepancy);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.StockAdjustment,
+            PermissionKeys.CanReconcileStockDiscrepancy);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.StockTransferIssues,
@@ -2271,11 +2311,19 @@ public static class PermissionUtils
             PermissionSubmodules.PendingApprovals,
             PermissionKeys.CanRejectPendingApproval
         );
+        addPermission(PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals, PermissionKeys.CanApproveResponse);
+        addPermission(PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectResponse);
         addPermission(
             PermissionModules.QualityAssurance,
             PermissionSubmodules.TransferApprovalRights,
             PermissionKeys.CanTransferApprovalRights
         );
+
+        foreach (var key in new[] { PermissionKeys.CanInitiateOosInvestigation, PermissionKeys.CanViewOosInvestigations,
+                     PermissionKeys.CanSubmitOosInvestigation, PermissionKeys.CanReviewOosInvestigation })
+            addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.OosInvestigations, key);
 
         // Finished Goods Warehouse
         addPermission(
@@ -4512,6 +4560,11 @@ public static class PermissionUtils
             PermissionModules.ResearchAndDevelopment,
             PermissionSubmodules.RndFormulations,
             PermissionKeys.CanViewRndFormulations
+        );
+        addPermission(
+            PermissionModules.ResearchAndDevelopment,
+            PermissionSubmodules.RndFormulaBuilder,
+            PermissionKeys.CanViewFormulaBuilder
         );
         addPermission(
             PermissionModules.ResearchAndDevelopment,

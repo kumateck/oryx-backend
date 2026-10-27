@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
+using APP.Services.Materials;
 using APP.Services.Email;
 using APP.Services.Pdf;
 using APP.Services.ProductionActivityStepEventPublisher;
@@ -1877,60 +1878,9 @@ public class RequisitionRepository(
         return mapper.Map<SupplierQuotationDto>(supplierQuotation);
     }
 
-    public async Task<Result> ReceiveQuotationFromSupplier(
-        List<SupplierQuotationResponseDto> supplierQuotationResponse,
-        Guid supplierQuotationId
-    )
-    {
-        var supplierQuotation = await context
-            .SupplierQuotations.AsSplitQuery()
-            .Include(s => s.Items)
-                .ThenInclude(s => s.Material)
-            .Include(s => s.Items)
-                .ThenInclude(s => s.UoM)
-            .Include(s => s.Supplier)
-            .FirstOrDefaultAsync(s => s.Id == supplierQuotationId);
-
-        if (supplierQuotation is null)
-        {
-            return Error.NotFound(
-                "Supplier.Quotation.NotFound",
-                "No supplier quotation was found for the specified quotation."
-            );
-        }
-
-        if (supplierQuotation.Items.Count == 0)
-        {
-            return Error.Validation(
-                "Supplier.Quotation",
-                "No items found to mark as quotation sent for the specified supplier."
-            );
-        }
-
-        var responseLookup = supplierQuotationResponse
-            .Where(s => s is not null)
-            .GroupBy(s => s.Id)
-            .ToDictionary(g => g.Key, g => g.Last());
-
-        foreach (var item in supplierQuotation.Items)
-        {
-            // Only touch items actually present in the payload. Assigning
-            // unconditionally would wipe QuotedPrice and PriceUoM off every item a
-            // partial re-submit happens to omit.
-            if (!responseLookup.TryGetValue(item.Id, out var response))
-                continue;
-
-            item.QuotedPrice = response.Price;
-            item.PriceUoM = response.PriceUoM;
-        }
-
-        supplierQuotation.ReceivedQuotation = true;
-        context.SupplierQuotations.Update(supplierQuotation);
-        context.SupplierQuotationItems.UpdateRange(supplierQuotation.Items);
-        // Save changes to the database
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task<Result> ReceiveQuotationFromSupplier(
+        List<SupplierQuotationResponseDto> responses, Guid supplierQuotationId, Guid? userId = null) =>
+        new SupplierQuotationPriceRecorder(context, approvalRepository).Record(responses, supplierQuotationId, userId);
 
     public async Task<Result<List<SupplierPriceComparison>>> GetPriceComparisonOfMaterial(
         SupplierType supplierType
@@ -2097,7 +2047,10 @@ public class RequisitionRepository(
 
             foreach (var processSupplierQuote in quotation.Items)
             {
-                var awardedQuotationItem = await context.SupplierQuotationItems.FirstOrDefaultAsync(
+                var awardedQuotationItem = await context.SupplierQuotationItems
+                    .Include(s => s.UoM)
+                    .Include(s => s.Material)
+                    .FirstOrDefaultAsync(
                     s =>
                         s.SupplierQuotation.SupplierId == quotation.SupplierId
                         && s.MaterialId == processSupplierQuote.MaterialId
@@ -2113,12 +2066,12 @@ public class RequisitionRepository(
                     );
                 }
 
-                if (string.IsNullOrWhiteSpace(awardedQuotationItem.PriceUoM))
+                if (!UomConverter.CanPrice(awardedQuotationItem.UoM?.Symbol, awardedQuotationItem.PriceUoM))
                 {
-                    return Error.Validation(
-                        "SupplierQuotation.PriceUoM",
-                        "The selected quotation has no price UoM. Capture the price UoM on"
-                            + " the quotation before awarding it."
+                    return PriceUoMErrors.Unusable(
+                        awardedQuotationItem.Material?.Name,
+                        awardedQuotationItem.UoM?.Symbol,
+                        awardedQuotationItem.PriceUoM
                     );
                 }
 
@@ -2129,8 +2082,7 @@ public class RequisitionRepository(
                 awardedItems.Add((processSupplierQuote, awardedQuotationItem));
             }
 
-            var poId = (
-                await procurementRepository.CreatePurchaseOrder(
+            var created = await procurementRepository.CreatePurchaseOrder(
                     new CreatePurchaseOrderRequest
                     {
                         Code = await GeneratePurchaseOrderCode(),
@@ -2141,8 +2093,10 @@ public class RequisitionRepository(
                         Items = quotation.Items,
                     },
                     userId
-                )
-            ).Value;
+                );
+            if (created.IsFailure)
+                return created.Error;
+            var poId = created.Value;
 
             foreach (var (processSupplierQuote, supplierQuotationItem) in awardedItems)
             {

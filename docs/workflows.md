@@ -468,3 +468,114 @@ transaction. Product Preparation consumes raw material reservations after issue;
 Final Packing consumes packaging reservations. Historical apparent repeats are
 reviewed against requisitions and movements before any compensating correction.
 See `docs/warehouse-stock-issue-reconciliation.md`.
+
+## Session refresh ownership — 2026-10-21
+
+Refresh token issuance explicitly saves the authenticated `UserId`, allowing the existing refresh endpoint to restore that same account across requests and app restarts. Audit `CreatedById` is separate. Existing ownerless tokens require a new sign-in after the corrected server is running. See [session-refresh-ownership.md](session-refresh-ownership.md) for the regression test and deployment limit.
+
+## Contractor maintenance repair — 2026-10-21
+
+Contractor edits replace the complete verified Services association set. Missing service IDs leave existing associations unchanged. Contractor removal preserves historical operational and financial references by refusing linked records, including soft-deleted history; eligible removal uses the existing soft-deletion audit fields. Nine isolated regression tests pass; this source repair has not been deployed. See [service-provider-maintenance.md](service-provider-maintenance.md).
+
+## Inventory definitions, receiving and stock integrity
+
+Item maintenance and stock receipts now validate history/ledger identity, current per-store database grants, known distinct receipt creators, atomic stock postings and optimistic concurrency. New item codes are globally unique while the legacy ledger is code-based; ambiguous historical ledgers require reconciliation. The stock envelope now includes creator/memo/unit/category references without changing its HTTP shape. These source repairs are not deployed. Damage edit/delete, returns, other writers and PostgreSQL/end-to-end acceptance remain; see [inventory-stock-integrity.md](inventory-stock-integrity.md).
+
+## Stores issue/return and service procurement integrity — 2026-10-22
+
+Issues are tracked per requisition line and cannot exceed the request. Returns are capped at the net issued quantity and restore stock, and damage edits and deletes post to the ledger. In service procurement, quotations close on selection. Each job order gets exactly one memo, for the approved proforma's quotation and provider, and only an issued memo can be paid. A service still in use cannot be deleted. Onboarding invitations work once and decide the email and employee type. See [`stores-services-hr-repair-2026-10-22.md`](stores-services-hr-repair-2026-10-22.md).
+
+## Shipment invoice legacy pricing (2026-10-23)
+
+Creation validates every line before updating quantities/statuses. It freezes
+stored or authoritative awarded-quotation price units onto the new invoice,
+without rewriting legacy purchase-order pricing or disabling the save guard.
+See [validation, audit and rollout notes](shipment-invoice-price-unit-2026-10-23.md).
+
+## Distribution lookup timeout (2026-10-24)
+
+Reading a material-distribution breakdown no longer joins both the requisition
+creator's department storage tree and the requesting department's storage tree.
+Only returned department/warehouse/location fields are loaded, in split queries.
+Proportional allocation, FIFO attribution, approval gates and confirmation writes
+are unchanged. See [incident notes](material-distribution-department-timeout-2026-10-24.md).
+
+### Distribution detail read isolation (2026-10-24)
+
+Opening an arrived shipment now uses batched read projections and the existing
+allocation/FIFO calculation. This preview creates no tracked entities, inventory
+writes, status changes or new audit events. Confirmation retains its private
+read path, approval gates and existing audited write behavior. See
+[read projection](material-distribution-read-projection-2026-10-24.md).
+
+### GRN list read isolation (2026-10-24)
+
+Opening the warehouse GRN list now reads summary scalars and page batch IDs /
+supplier names without loading sampling, analysis, inventory or storage graphs.
+Existing department/deletion policy, kind/status/search filters, pagination and
+batch-count semantics remain active. This read creates no tracked entities,
+inventory writes, quarantine/QC transitions or workflow events. Details and QC
+continue using their respective endpoints. See
+[GRN list projection](grn-list-projection-2026-10-24.md).
+
+### Test evidence in file drafts
+
+A file draft is successful only after its upload succeeds against a stable
+result-field ID. Existing assignment, context, revision, finalization and approval
+gates remain unchanged. Old orphan attachments require confirmed, audited
+recovery; no automatic reassignment is performed by this fix. See
+[draft attachment association](form-draft-attachment-association.md).
+
+## Supplier purchase-unit symbols (2026-10-24)
+
+Supplier purchase units now persist symbols and synchronize supplier edits,
+quotation responses and pricing approvals through shared validation/services.
+The global material lookup combines distinct units from all departments.
+See [contract, workflow and controlled rollout](supplier-purchase-unit-sync.md).
+
+## Alert intent → delivery → reconciliation (2026-10-24)
+
+Business producers stage durable intent; authorized configuration resolves recipients; persisted notifications and channel work precede external delivery. A claimed intent completes with generated notification/outbox work in a PostgreSQL transaction. Delivery retries retain identity; read events synchronize recipient sessions. Available-batch expiry uses current UTC and a stable source key without changing stock status. See [remaining coverage and release gates](alert-reliability.md).
+
+A rejected supplier-price HTTP request creates no pending approval. Positive prices below 0.01 now pass API validation and follow the existing no-workflow auto-approval or configured assigned-review path; failed historical submissions require explicit resubmission after deployment. See [supplier pricing approvals](supplier-pricing-approvals.md).
+
+Waybill creation uses its configured Waybill naming rule and shared logistics document prefix count. Previously the count request failed as an unsupported model type. Generation remains a suggestion and does not reserve a number; backend validation remains authoritative.
+
+
+## Shipment arrival alerts (2026-10-25)
+
+Each successful shipment-arrival action stages durable notification intent for the affected departments and requisition creators. The shipment document code is included in the message, and its ID is persisted on the intent and notification, then included in the in-app API/realtime payload for exact detail navigation. The frontend displays every unread alert and does not mark one read when opening its shipment.
+
+
+## Shipment arrival alerts (2026-10-25)
+
+Each successful shipment-arrival action stages durable notification intent for the affected departments and requisition creators. The shipment document code is included in the alert message and the document ID is persisted with both the intent and notification. The API and realtime event carry that ID so the client can open the exact shipment detail page without parsing message text. Viewing details does not mark the notification read.
+
+### Alert context for assigned recipients
+
+Alert recipient resolution remains unchanged: configured users/roles and explicit business assignees receive the alert. When the event producer has a source record, it stages that record's type and ID plus any available code, name, status, and priority. Dispatch preserves these fields in both the durable user notification and realtime event. This lets the companion present record context and choose a record route without inferring identifiers from message text. Alerts without a source record remain readable and actionable through their category destination.
+
+## Material retest workflow (2026-10-25)
+
+The due-date scan requests retesting on the selected `RetestDate`; an undated batch may be requested manually with a reason. Creating the request freezes the material batch and snapshots its expiry. A configured Retest approval document holds sampling for an assigned signed approval; if no document exists, the central approval policy autoapproves and the event trail records it. QC records the taken sample and proposed extended expiry, acknowledges it, then links a QC test request whose sole subject is that same material batch. Existing worksheet review and COA generation supply evidence. Only issuing a compliant linked COA updates the batch expiry to the proposal and releases the batch; an issued noncompliant COA records rejection and keeps it frozen. Legacy direct retest completion is blocked. Every transition is auditable through `MaterialRetestEvents`.
+
+## Response rejection and QC rework (2026-10-25)
+
+QA approval releases an accepted material or product Response. QA rejection with rework freezes the material batch or quarantines the product BMR and opens a QC task. Starting the task creates a new Response linked through source and root IDs; the earlier Response and values remain immutable. QA rejection without rework marks the batch rejected and creates no task. A later approved rework Response completes its task and follows the normal release readiness checks. QC rework view/start endpoints have distinct grantable policies; retest approval requires its own policy and the assigned signed stage. Expired materials use the separate Retest workflow.
+
+Permission grants are persisted before related authorization caches are cleared;
+each Response decision still requires its dedicated grant and assigned stage.
+Documentation updated: this workflow and `docs/services.md`.
+
+## Warehouse and shipment discrepancies (2026-10-25)
+
+A stock discrepancy snapshots a shelf batch quantity and the reported physical count. It requires configured approval stages; reporter self-review is blocked. The report itself changes no stock. The separate reconciliation action requires approval and an unchanged shelf snapshot, then updates shelf and batch quantities in one transaction with bin card and inventory ledger evidence. It rejects a reduction below consumed, reserved, or assigned batch quantity. Reconciliation is idempotently blocked after posting. Supplier invoice discrepancies also require configured approval stages and capture exact invoice line identity and declared quantity. An approved shortage can reserve a no-charge make-up invoice against the same PO and supplier without incrementing PO invoiced quantity or creating a payable. Checklist physical counts are immutable receipt events; the balance separates shipped and confirmed quantities. Overages remain visible as reports and cannot create shortage make-up invoices. View, record, approval decisions and reconciliation use distinct permissions.
+## File drafts and shared charge references (2026-10-25)
+
+Saving image or signature evidence inserts its field answer before the file
+repository writes the attachment. A failed save remains an error, with no
+silent draft completion. Billing sheet charge payments can share a bank
+reference within one batch; each charge still creates its own payment and
+follows the configured approval workflow. Other payable types retain their
+unique reference check. Documentation updated: this workflow, `docs/services.md`,
+`docs/form-draft-attachment-association.md`, and `docs/payment-register.md`.

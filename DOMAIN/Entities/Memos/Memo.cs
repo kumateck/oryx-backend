@@ -57,6 +57,10 @@ public class MemoItem : BaseEntity
 
 public class MemoItemDto : BaseDto
 {
+    /// <summary>When the item was paid for; it is then in the store's receiving area.</summary>
+    public DateTime? PurchasedAt { get; set; }
+    public Guid? VendorQuotationItemId { get; set; }
+    public Guid? MarketRequisitionVendorId { get; set; }
     public CollectionItemDto Memo { get; set; }
     public CollectionItemDto Vendor { get; set; }
     public CollectionItemDto Item { get; set; }

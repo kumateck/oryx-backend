@@ -954,7 +954,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(Paginateable<IEnumerable<GrnListDto>>)
+        Type = typeof(Paginateable<IEnumerable<GrnSummaryDto>>)
     )]
     public async Task<IResult> GetGrns(
         [FromQuery] Status? status,

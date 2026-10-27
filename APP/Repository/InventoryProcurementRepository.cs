@@ -20,7 +20,7 @@ using OfficeOpenXml;
 
 namespace APP.Repository;
 
-public class InventoryProcurementRepository(
+public partial class InventoryProcurementRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IPdfService pdfService,
@@ -29,244 +29,40 @@ public class InventoryProcurementRepository(
 {
     // --- CRUD for InventoryPurchaseRequisition ---
 
-    public async Task<Result<Guid>> CreateInventoryPurchaseRequisition(CreateInventoryPurchaseRequisition request, Guid userId)
-    {
-        var requisition = mapper.Map<InventoryPurchaseRequisition>(request);
-        requisition.Status = InventoryPurchaseRequisitionStatus.Pending;
-        //requisition.Items = mapper.Map<List<InventoryPurchaseRequisitionItem>>(request.Items);
-        requisition.CreatedById = userId;
-
-        await context.InventoryPurchaseRequisitions.AddAsync(requisition);
-        await context.SaveChangesAsync();
-        return requisition.Id;
-    }
-
-    public async Task<Result> UpdateInventoryPurchaseRequisition(Guid id, CreateInventoryPurchaseRequisition request)
-    {
-        var requisition = await context.InventoryPurchaseRequisitions
-            .AsSplitQuery()
-            .Include(inventoryPurchaseRequisition => inventoryPurchaseRequisition.Items)
-            .FirstOrDefaultAsync(r => r.Id == id);
-        if (requisition == null)
-        {
-            return RequisitionErrors.NotFound(id);
-        }
-
-        context.InventoryPurchaseRequisitionItems.RemoveRange(requisition.Items);
-
-        mapper.Map(request, requisition);
-
-        context.InventoryPurchaseRequisitions.Update(requisition);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> DeleteInventoryPurchaseRequisition(Guid id)
-    {
-        var requisition = await context.InventoryPurchaseRequisitions.FirstOrDefaultAsync(r => r.Id == id);
-        if (requisition == null)
-        {
-            return RequisitionErrors.NotFound(id);
-        }
-
-        requisition.DeletedAt = DateTime.UtcNow;
-        context.InventoryPurchaseRequisitions.Update(requisition);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result<InventoryPurchaseRequisitionDto>> GetInventoryPurchaseRequisition(Guid id)
-    {
-        var requisition = await context.InventoryPurchaseRequisitions
-            .AsSplitQuery()
-            .Include(r => r.Items).ThenInclude(i => i.Item)
-            .Include(r => r.Items).ThenInclude(i => i.UoM)
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        if (requisition == null)
-        {
-            return RequisitionErrors.NotFound(id);
-        }
-        return mapper.Map<InventoryPurchaseRequisitionDto>(requisition);
-    }
-
-    public async Task<Result<Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>>> GetInventoryPurchaseRequisitions(int page, int pageSize,
-        string searchQuery, InventoryPurchaseRequisitionStatus status = InventoryPurchaseRequisitionStatus.Pending)
-    {
-        var query = context.InventoryPurchaseRequisitions
-            .AsSplitQuery()
-            .Include(r => r.Items)
-            .Where(r => r.DeletedAt == null && r.Status == status)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            query = query.Where(r => r.Code.Contains(searchQuery)); // Assuming Code is the search field
-        }
-
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<InventoryPurchaseRequisitionDto>);
-    }
-
-
     // --- Sourcing Logic ---
 
-    public async Task<Result> CreateSourceRequisition(
-        CreateSourceInventoryRequisition request,
-        Guid userId)
+    public async Task<Result<Paginateable<IEnumerable<MarketRequisitionDto>>>> GetMarketRequisitions(int page, int pageSize, bool? closed = null)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
-        {
-            var requisition = await context.InventoryPurchaseRequisitions
-                .AsSplitQuery()
-                .Include(r => r.Items)
-                .FirstOrDefaultAsync(r =>
-                    r.Id == request.InventoryPurchaseRequisitionId);
-
-            if (requisition is null)
-                return RequisitionErrors.NotFound(request.InventoryPurchaseRequisitionId);
-
-            var vendorGroupedItems = request.Items
-                .SelectMany(i => i.Vendors.Select(v => new { i, v }))
-                .GroupBy(x => x.v.VendorId);
-
-            foreach (var vendorGroup in vendorGroupedItems)
-            {
-                var vendorId = vendorGroup.Key;
-
-                var sourceRequisition = await context.SourceInventoryRequisitions
-                    .Include(sr => sr.Items)
-                    .Include(sr => sr.Vendor)
-                    .FirstOrDefaultAsync(sr =>
-                        sr.VendorId == vendorId &&
-                        sr.SentQuotationRequestAt == null);
-
-                if (sourceRequisition == null)
-                {
-                    sourceRequisition = new SourceInventoryRequisition
-                    {
-                        InventoryPurchaseRequisitionId = request.InventoryPurchaseRequisitionId,
-                        VendorId = vendorId,
-                        Items = vendorGroup.Select(x =>
-                            new SourceInventoryRequisitionItem
-                            {
-                                ItemId = x.i.ItemId,
-                                UoMId = x.i.UoMId,
-                                Quantity = x.i.Quantity
-                            }).ToList()
-                    };
-
-                    await context.SourceInventoryRequisitions.AddAsync(sourceRequisition);
-                }
-                else
-                {
-                    foreach (var gi in vendorGroup)
-                    {
-                        sourceRequisition.Items.Add(new SourceInventoryRequisitionItem
-                        {
-                            ItemId = gi.i.ItemId,
-                            UoMId = gi.i.UoMId,
-                            Quantity = gi.i.Quantity
-                        });
-                    }
-                }
-
-                await context.SaveChangesAsync();
-
-                var vendorQuotation = await context.VendorQuotations
-                    .Include(vq => vq.Items)
-                    .FirstOrDefaultAsync(vq => vq.SourceInventoryRequisitionId == sourceRequisition.Id);
-
-                if (vendorQuotation == null)
-                {
-                    vendorQuotation = new VendorQuotation
-                    {
-                        VendorId = vendorId,
-                        SourceInventoryRequisitionId = sourceRequisition.Id,
-                        Items = vendorGroup.Select(x => new VendorQuotationItem
-                        {
-                            ItemId = x.i.ItemId,
-                            UoMId = x.i.UoMId,
-                            Quantity = x.i.Quantity
-                        }).ToList()
-                    };
-
-                    await context.VendorQuotations.AddAsync(vendorQuotation);
-                }
-                else
-                {
-                    foreach (var gi in vendorGroup)
-                    {
-                        vendorQuotation.Items.Add(new VendorQuotationItem
-                        {
-                            ItemId = gi.i.ItemId,
-                            UoMId = gi.i.UoMId,
-                            Quantity = gi.i.Quantity
-                        });
-                    }
-                }
-
-                await context.SaveChangesAsync();
-            }
-
-            requisition.Status = InventoryPurchaseRequisitionStatus.Complete;
-            context.InventoryPurchaseRequisitions.Update(requisition);
-
-            await context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return Result.Success();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
-    }
-
-    public async Task<Result> CreateMarketRequisition(List<CreateMarketRequisition> requests)
-    {
-        var inventoryPurchaseRequisitionItemIds = requests
-            .Select(r => r.InventoryPurchaseRequisitionItemId).ToList();
-
-        var requisitionItems = await context.InventoryPurchaseRequisitionItems
-            .Where(item => inventoryPurchaseRequisitionItemIds.Contains(item.Id))
-            .ToListAsync();
-
-        if (requisitionItems.Count != inventoryPurchaseRequisitionItemIds.Count)
-            return Error.NotFound("Requisition.ItemNotFound",
-                "One or more requisition items were not found.");
-
-        var marketRequisitions = mapper.Map<List<MarketRequisition>>(requests);
-        
-        foreach (var inventoryPurchaseRequisitionItem in requisitionItems)
-        {
-            inventoryPurchaseRequisitionItem.Status = RequestStatus.Sourced;
-        }
-        
-        await context.MarketRequisitions.AddRangeAsync(marketRequisitions);
-        context.InventoryPurchaseRequisitionItems.UpdateRange(requisitionItems);
-
-        await context.SaveChangesAsync();
-
-        return Result.Success();
-    }
-
-    public async Task<Result<Paginateable<IEnumerable<MarketRequisitionDto>>>> GetMarketRequisitions(int page, int pageSize)
-    {
-        var query = context.MarketRequisitions
-            .AsSplitQuery()
-            .Include(mr => mr.Item)
-            .Include(mr => mr.UoM)
+        var query = context.MarketRequisitions.AsSplitQuery()
+            .Include(mr => mr.Item).Include(mr => mr.UoM)
+            .Include(mr => mr.InventoryPurchaseRequisitionItem).ThenInclude(i => i.InventoryPurchaseRequisition)
             .AsQueryable();
+        if (closed.HasValue)
+            query = query.Where(mr => context.MarketRequisitionVendors.Any(v => v.MarketRequisitionId == mr.Id && v.Complete) == closed.Value);
+        var result = await PaginationHelper.GetPaginatedResultAsync(query.OrderByDescending(mr => mr.CreatedAt), page, pageSize, mapper.Map<MarketRequisitionDto>);
+        // The page's rows are a deferred projection; materialize them so the added details are what is returned.
+        var rows = result.Data.ToList();
+        await DescribeMarket(rows);
+        result.Data = rows;
+        return result;
+    }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<MarketRequisitionDto>
-        );
+    private async Task DescribeMarket(List<MarketRequisitionDto> rows)
+    {
+        var ids = rows.Select(r => r.Id).ToList();
+        var vendors = await context.MarketRequisitionVendors.Where(v => ids.Contains(v.MarketRequisitionId))
+            .GroupBy(v => v.MarketRequisitionId).Select(g => new { g.Key, Count = g.Count(), Closed = g.Any(v => v.Complete) }).ToListAsync();
+        var requisitions = await context.MarketRequisitions.Where(m => ids.Contains(m.Id))
+            .Select(m => new { m.Id, m.InventoryPurchaseRequisitionItem.InventoryPurchaseRequisitionId, m.InventoryPurchaseRequisitionItem.InventoryPurchaseRequisition.Code }).ToListAsync();
+        foreach (var row in rows)
+        {
+            var v = vendors.FirstOrDefault(x => x.Key == row.Id);
+            row.VendorCount = v?.Count ?? 0;
+            row.Closed = v?.Closed ?? false;
+            var r = requisitions.FirstOrDefault(x => x.Id == row.Id);
+            row.RequisitionCode = r?.Code;
+            row.InventoryPurchaseRequisitionId = r?.InventoryPurchaseRequisitionId;
+        }
     }
 
     public async Task<Result<List<VendorPriceComparison>>> GetPriceComparisonOfItem(InventoryRequisitionSource source)
@@ -335,139 +131,6 @@ public class InventoryProcurementRepository(
     // }
 
     // --- Memo Creation Logic ---
-
-    public async Task<Result> ProcessOpenMarketMemo(List<CreateMemoItem> memos, Guid userId)
-    {
-        var memo = new Memo
-        {
-            Code = await GenerateMemoCode(),
-            Items = []
-        };
-
-        foreach (var itemRequest in memos)
-        {
-
-            if (itemRequest.MarketRequisitionVendorId.HasValue)
-            {
-                var marketRequisitionVendor = await context.MarketRequisitionVendors
-                    .AsSplitQuery()
-                    .Include(marketRequisitionVendor => marketRequisitionVendor.MarketRequisition).ThenInclude(mr => mr.Item)
-                    .Include(marketRequisitionVendor => marketRequisitionVendor.MarketRequisition).ThenInclude(mr => mr.UoM)
-                    .FirstOrDefaultAsync(mrv => mrv.Id == itemRequest.MarketRequisitionVendorId);
-
-                if (marketRequisitionVendor is null)
-                    return Error.Validation("MarketRequisitionVendor", $"marketRequisitionVendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
-
-
-                if (itemRequest.ItemId != marketRequisitionVendor.MarketRequisition.ItemId ||
-                    itemRequest.UoMId != marketRequisitionVendor.MarketRequisition.UoMId ||
-                    itemRequest.Quantity != marketRequisitionVendor.MarketRequisition.Quantity)
-                {
-                    return Error.Validation("ItemRequest", "Item request not matching open market requisitions.");
-                }
-
-
-                memo.Items.Add(new MemoItem
-                {
-                    MarketRequisitionVendorId = marketRequisitionVendor.Id,
-                    ItemId = itemRequest.ItemId,
-                    UoMId = itemRequest.UoMId,
-                    Quantity = itemRequest.Quantity
-                });
-            }
-
-            if (itemRequest.MarketRequisitionVendorId.HasValue)
-            {
-                var marketRequisitionVendor = await context.MarketRequisitionVendors
-                    .Include(mrv => mrv.MarketRequisition)
-                    .FirstOrDefaultAsync(mrv => mrv.Id == itemRequest.MarketRequisitionVendorId);
-
-                if (marketRequisitionVendor is null)
-                    return Error.Validation("MarketRequisitionVendor", $"Market requisition vendor with ID {itemRequest.MarketRequisitionVendorId} not found.");
-
-                memo.Items.Add(new MemoItem
-                {
-                    MarketRequisitionVendorId = marketRequisitionVendor.Id,
-                    ItemId = marketRequisitionVendor.MarketRequisition.ItemId,
-                    UoMId = marketRequisitionVendor.MarketRequisition.UoMId,
-                    Quantity = marketRequisitionVendor.MarketRequisition.Quantity,
-                    PricePerUnit = marketRequisitionVendor.PricePerUnit
-                });
-
-                marketRequisitionVendor.Complete = true;
-                context.MarketRequisitionVendors.Update(marketRequisitionVendor);
-            }
-
-        }
-        
-        var threshold = await context.Threshold.SingleOrDefaultAsync();
-        if (threshold != null)
-        {
-            if (memo.Items.Sum(i => i.Quantity * i.PricePerUnit) > threshold.MemoThreshold)
-            {
-                memo.Status = MemoStatus.PurchaseOrder;
-            }
-        }
-        
-        await context.Memos.AddAsync(memo);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> ProcessTrustedVendorMemo(List<CreateMemoItem> memos, Guid userId)
-    {
-        var memo = new Memo
-        {
-            Code = await GenerateMemoCode(),
-            Items = []
-        };
-
-        var vendorQuotationItemIds = memos.Select(m => m.VendorQuotationItemId).ToList();
-        var vendorQuotationItems = await context.VendorQuotationItems
-            .Where(vqi => vendorQuotationItemIds.Contains(vqi.Id))
-            .ToListAsync();
-
-        foreach (var itemRequest in memos)
-        {
-            var vendorQuotationItem = vendorQuotationItems
-                .FirstOrDefault(vqi => vqi.Id == itemRequest.VendorQuotationItemId);
-
-            if (vendorQuotationItem is null)
-                return Error.Validation("VendorQuotationItem", $"Vendor quotation item with ID {itemRequest.VendorQuotationItemId} not found.");
-            
-            if (itemRequest.ItemId != vendorQuotationItem.ItemId ||
-                itemRequest.UoMId != vendorQuotationItem.UoMId ||
-                itemRequest.Quantity != vendorQuotationItem.Quantity)
-            {
-                return Error.Validation("ItemRequest", $"Item request does not match vendor quotation for item {vendorQuotationItem.Id}.");
-            }
-
-            memo.Items.Add(new MemoItem
-            {
-                VendorQuotationItemId = vendorQuotationItem.Id,
-                ItemId = itemRequest.ItemId,
-                UoMId = itemRequest.UoMId,
-                Quantity = itemRequest.Quantity,
-                PricePerUnit = vendorQuotationItem.QuotedPrice ?? 0
-            });
-
-            vendorQuotationItem.Status = VendorQuotationItemStatus.Processed;
-        }
-        
-        var threshold = await context.Threshold.SingleOrDefaultAsync();
-        if (threshold != null)
-        {
-            if (memo.Items.Sum(i => i.Quantity * i.PricePerUnit) > threshold.MemoThreshold)
-            {
-                memo.Status = MemoStatus.PurchaseOrder;
-            }
-        }
-
-        await context.Memos.AddAsync(memo);
-        await context.SaveChangesAsync();
-
-        return Result.Success();
-    }
 
     // --- Trusted Vendor Specific ---
 
@@ -551,50 +214,6 @@ public class InventoryProcurementRepository(
         return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<VendorQuotationDto>);
     }
 
-    public async Task<Result> ReceiveQuotationFromVendor(
-        List<VendorQuotationResponseDto> vendorQuotationResponse,
-        Guid vendorQuotationId)
-    {
-        if (vendorQuotationResponse == null || vendorQuotationResponse.Count == 0)
-            return Error.Validation("Vendor.Quotation", "No quotation responses provided.");
-
-        // Get all VendorQuotationItems for this quotation
-        var items = await context.VendorQuotationItems
-            .Where(vqi => vqi.VendorQuotationId == vendorQuotationId)
-            .ToListAsync();
-
-        if (items.Count == 0)
-            return Error.Validation("Vendor.Quotation", "No items found for this quotation.");
-
-        var responseLookup = vendorQuotationResponse.ToDictionary(r => r.Id);
-
-        foreach (var item in items)
-        {
-            if (!responseLookup.TryGetValue(item.Id, out var response))
-            {
-                return Error.Validation(
-                    "Vendor.Quotation.MissingItem",
-                    $"Missing quoted price for item {item.ItemId}"
-                );
-            }
-
-            item.QuotedPrice = response.Price;
-   
-        }
-
-        var quotation = await context.VendorQuotations
-            .FirstOrDefaultAsync(vq => vq.Id == vendorQuotationId);
-
-        if (quotation == null)
-            return Error.NotFound("Vendor.Quotation", "Vendor quotation not found.");
-
-        quotation.ReceivedQuotation = true;
-
-        await context.SaveChangesAsync();
-
-        return Result.Success();
-    }
-
     public async Task<Result<VendorQuotationDto>> GetVendorQuotation(Guid vendorQuotationId)
     {
         var quotation = await context.VendorQuotations
@@ -613,14 +232,14 @@ public class InventoryProcurementRepository(
 
     // --- Open Market Specific ---
 
-    public async Task<Result<Paginateable<IEnumerable<MarketRequisitionVendorDto>>>> GetMarketRequisitionVendors(int page, int pageSize, bool complete)
+    public async Task<Result<Paginateable<IEnumerable<MarketRequisitionVendorDto>>>> GetMarketRequisitionVendors(int page, int pageSize, bool complete, Guid? marketRequisitionId = null)
     {
         var query = context.MarketRequisitionVendors
             .AsSplitQuery()
             .Include(mrv => mrv.MarketRequisition).ThenInclude(mr => mr.Item)
             .Include(mrv => mrv.MarketRequisition).ThenInclude(mr => mr.UoM)
             .Include(m => m.TermsOfPayment)
-            .Where(mrv => mrv.Complete == complete)
+            .Where(mrv => marketRequisitionId.HasValue ? mrv.MarketRequisitionId == marketRequisitionId : mrv.Complete == complete)
             .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -639,6 +258,11 @@ public class InventoryProcurementRepository(
         if (!marketRequisitionExists)
         {
             return RequisitionErrors.NotFound(request.MarketRequisitionId);
+        }
+
+        if (await context.MarketRequisitionVendors.AnyAsync(v => v.MarketRequisitionId == request.MarketRequisitionId && v.Complete))
+        {
+            return Error.Validation("MarketRequisition.Complete", "A vendor has already been chosen for this open-market item.");
         }
 
         if (request.Vendors == null || request.Vendors.Count == 0)
@@ -703,26 +327,13 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result> ConfirmMarketRequisitionVendor(Guid marketRequisitionVendorId)
-    {
-        var vendor = await context.MarketRequisitionVendors
-            .FirstOrDefaultAsync(v => v.Id == marketRequisitionVendorId);
-
-        if (vendor is null)
-        {
-            return RequisitionErrors.NotFound(marketRequisitionVendorId);
-        }
-
-        vendor.Complete = true;
-        context.MarketRequisitionVendors.Update(vendor);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
     public async Task<Result<Paginateable<IEnumerable<StockEntryDto>>>> GetStockEntries(ApprovalStatus status, int page, int pageSize, Store store)
     {
         var query = context.StockEntries
-            .Include(s => s.Item)
+            .Include(s => s.Item).ThenInclude(i => i.UnitOfMeasure)
+            .Include(s => s.Item).ThenInclude(i => i.ItemCategory)
+            .Include(s => s.Memo)
+            .Include(s => s.CreatedBy)
             .Where(s => s.Status == status && s.Item.Store == store).AsQueryable();
         return await PaginationHelper
             .GetPaginatedResultAsync(
@@ -789,53 +400,6 @@ public class InventoryProcurementRepository(
             pageSize,
             mapper.Map<MemoDto>
         );
-    }
-
-    public async Task<Result> MarkMemoItemAsPaid(
-        Guid memoItemId,
-        DateTime? purchasedAt = null)
-    {
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        var memoItem = await context.MemoItems
-            .Include(mi => mi.Memo)
-            .FirstOrDefaultAsync(mi => mi.Id == memoItemId);
-
-        if (memoItem is null)
-            return Error.NotFound("MemoItem", "Memo item not found.");
-
-        if (memoItem.PurchasedAt.HasValue)
-            return Error.Validation("MemoItem", "Memo item is already marked as paid.");
-
-        memoItem.PurchasedAt = purchasedAt ?? DateTime.UtcNow;
-
-        var stockEntryExists = await context.StockEntries.AnyAsync(se =>
-            se.MemoId == memoItem.MemoId &&
-            se.ItemId == memoItem.ItemId);
-
-        if (!stockEntryExists)
-        {
-            await context.StockEntries.AddAsync(new StockEntry
-            {
-                ItemId = memoItem.ItemId,
-                MemoId = memoItem.MemoId,
-                Quantity = memoItem.Quantity
-            });
-        }
-
-        var allItemsPaid = await context.MemoItems
-            .Where(mi => mi.MemoId == memoItem.MemoId)
-            .AllAsync(mi => mi.PurchasedAt.HasValue || mi.Id == memoItemId);
-
-        if (allItemsPaid && !memoItem.Memo.Paid)
-        {
-            memoItem.Memo.Paid = true;
-        }
-
-        await context.SaveChangesAsync();
-        await transaction.CommitAsync();
-
-        return Result.Success();
     }
 
     public async Task<Result> UploadStockItems(ImportItemsRequest itemsRequest)
@@ -937,58 +501,6 @@ public class InventoryProcurementRepository(
         return Result.Success();
     }
 
-    public async Task<Result> ApproveItem(Guid stockEntryId)
-    {
-        var stockEntry = await context.StockEntries
-            .Include(se => se.Item)
-            .FirstOrDefaultAsync(se => se.Id == stockEntryId);
-
-        if (stockEntry == null)
-            return Error.NotFound("StockEntry", "Stock entry not found.");
-
-        if (stockEntry.Status == ApprovalStatus.Approved)
-            return Error.Validation("StockEntry", "Stock entry already approved.");
-
-        var lastTransaction = await context.ItemTransactionLogs
-            .Where(t => t.ItemCode == stockEntry.Item.Code)
-            .OrderByDescending(t => t.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        var previousBalance = lastTransaction?.TotalBalance ?? 0;
-        var newBalance = previousBalance + stockEntry.Quantity;
-
-        var transaction = new ItemTransactionLog
-        {
-            Id = Guid.NewGuid(),
-            ItemCode = stockEntry.Item.Code,
-            Credit = stockEntry.Quantity,
-            Debit = 0,
-            TransactionType = TransactionType.Purchased,
-            TotalBalance = newBalance,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        stockEntry.Quantity = newBalance;
-        stockEntry.Status = ApprovalStatus.Approved;
-        stockEntry.Item.AvailableQuantity = (int) newBalance;
-
-        await context.ItemTransactionLogs.AddAsync(transaction);
-        await context.SaveChangesAsync();
-
-        return Result.Success();
-    }
-
-    public async Task<Result> RejectItem(Guid stockEntryId)
-    {
-        var stockEntry = await context.StockEntries.FirstOrDefaultAsync(s => s.Id == stockEntryId);
-        if (stockEntry == null) return Error.NotFound("StockEntry", "Stock entry not found.");
-
-        stockEntry.Status = ApprovalStatus.Rejected;
-        context.StockEntries.Update(stockEntry);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
     // --- Helper methods ---
     public async Task<string> GenerateMemoCode()
     {
@@ -1009,9 +521,13 @@ public class InventoryProcurementRepository(
 
     public async Task<Result<MarketRequisitionDto>> GetMarketRequisition(Guid id)
     {
-        var marketRequisition = await context.MarketRequisitions.FirstOrDefaultAsync(m => m.Id == id);
-        return marketRequisition is null ? 
-            Error.NotFound("MarketRequisition", "Market requisition not found.") : 
-            mapper.Map<MarketRequisitionDto>(marketRequisition);
+        var marketRequisition = await context.MarketRequisitions.AsSplitQuery()
+            .Include(mr => mr.Item).Include(mr => mr.UoM)
+            .Include(mr => mr.InventoryPurchaseRequisitionItem).ThenInclude(i => i.InventoryPurchaseRequisition)
+            .FirstOrDefaultAsync(m => m.Id == id);
+        if (marketRequisition is null) return Error.NotFound("MarketRequisition", "Market requisition not found.");
+        var dto = mapper.Map<MarketRequisitionDto>(marketRequisition);
+        await DescribeMarket([dto]);
+        return dto;
     }
 }

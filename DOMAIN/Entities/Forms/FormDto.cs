@@ -47,6 +47,7 @@ public class ResponseDto : BaseDto
 
 public class ResponseDetailDto : ResponseDto
 {
+    public Guid? MaterialSamplingId { get; set; }
     public CollectionItemDto BatchManufacturingRecord { get; set; }
     public CollectionItemDto MaterialBatch { get; set; }
     public Guid? ProductionActivityStepId { get; set; }

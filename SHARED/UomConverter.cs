@@ -69,6 +69,15 @@ public static class UomConverter
     }
 
     /// <summary>
+    /// True when a line counted in <paramref name="quantityUoM"/> can be priced per
+    /// <paramref name="priceUoM"/>: the price unit is given and the two convert. A blank or
+    /// unrelated price unit makes the line impossible to cost (650 kg at 1.2 per nothing was
+    /// costed as 650,000,000 mg x 1.2), so every write of a price checks this first.
+    /// </summary>
+    public static bool CanPrice(string quantityUoM, string priceUoM) =>
+        !string.IsNullOrWhiteSpace(priceUoM) && Convert(1m, quantityUoM, priceUoM).HasValue;
+
+    /// <summary>
     /// What <paramref name="quantity"/> of a material is worth at <paramref name="price"/>
     /// per <paramref name="priceUoM"/>. Null when the units cannot be reconciled.
     /// </summary>

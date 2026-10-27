@@ -9,53 +9,11 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class DesignationRepository(ApplicationDbContext context, IMapper mapper) : IDesignationRepository
+public partial class DesignationRepository(ApplicationDbContext context, IMapper mapper) : IDesignationRepository
 {
-    public async Task<Result<Guid>> CreateDesignation(CreateDesignationRequest request)
-    {
-        var requestedDeptIds = request.DepartmentIds.Distinct().ToList();
-
-        // Load existing designations with the same name
-        var existingDesignations = await context.Designations
-            .Include(d => d.Departments)
-            .Where(d => d.Name == request.Name)
-            .ToListAsync();
-
-        // Find conflicting departments
-        var conflictingDepartments = existingDesignations
-            .SelectMany(d => d.Departments)
-            .Where(dep => requestedDeptIds.Contains(dep.Id))
-            .Distinct()
-            .ToList();
-
-        if (conflictingDepartments.Count != 0)
-        {
-            var conflictNames = string.Join(", ", conflictingDepartments.Select(d => d.Name));
-
-            return Error.Validation(
-                "Designation.DepartmentConflict",
-                $"The following department(s) are already assigned to the designation '{request.Name}': {conflictNames}."
-            );
-        }
-
-        // Create a new designation
-        var designation = mapper.Map<Designation>(request);
-
-        var departments = await context.Departments
-            .Where(d => requestedDeptIds.Contains(d.Id))
-            .ToListAsync();
-
-        designation.Departments = departments;
-
-        await context.Designations.AddAsync(designation);
-        await context.SaveChangesAsync();
-
-        return designation.Id;
-    }
-
     public async Task<Result<Paginateable<IEnumerable<DesignationDto>>>> GetDesignations(int page, int pageSize, string searchQuery, Guid? departmentId = null)
     {
-        var query = context.Designations.AsQueryable();
+        var query = context.Designations.Include(d => d.Departments).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -76,7 +34,7 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
 
     public async Task<Result<DesignationDto>> GetDesignation(Guid id)
     {
-        var designation = await context.Designations.
+        var designation = await context.Designations.Include(d => d.Departments).
             FirstOrDefaultAsync(d => d.Id == id);
         return designation is null ?
             Error.NotFound("Designation.NotFound", "Designation not found") :
@@ -127,55 +85,4 @@ public class DesignationRepository(ApplicationDbContext context, IMapper mapper)
         return Result.Success(result);
     }
 
-    public async Task<Result> UpdateDesignation(Guid id, CreateDesignationRequest request)
-    {
-        var designation = await context.Designations.FirstOrDefaultAsync(d => d.Id == id);
-        if (designation is null)
-        {
-            return Error.NotFound("Designation.NotFound", "Designation not found");
-        }
-        mapper.Map(request, designation);
-
-        // Fetch the new Departments based on the request
-        var departments = await context.Departments
-            .Where(d => request.DepartmentIds.Contains(d.Id))
-            .ToListAsync();
-
-        if (departments.Count != request.DepartmentIds.Count)
-        {
-            return Error.Validation("Designation.InvalidDepartments", "One or more department IDs are invalid.");
-        }
-
-        designation.Departments.Clear();
-        designation.Departments = departments;
-
-        context.Designations.Update(designation);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> DeleteDesignation(Guid id, Guid userId)
-    {
-        var designation = await context.Designations
-            .FirstOrDefaultAsync(d => d.Id == id);
-        if (designation is null)
-        {
-            return Error.NotFound("Designation.NotFound", "Designation not found");
-        }
-
-        var employees = await context.Employees
-            .FirstOrDefaultAsync(e => e.DesignationId == id);
-
-        if (employees is not null)
-        {
-            return Error.Validation("Designation.InUse", "Designation is in use.");
-        }
-
-        designation.DeletedAt = DateTime.UtcNow;
-        designation.LastDeletedById = userId;
-
-        context.Designations.Update(designation);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
 }

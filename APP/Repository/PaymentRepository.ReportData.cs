@@ -37,6 +37,8 @@ public partial class PaymentRepository
             .Include(x => x.Currency).ToListAsync();
         foreach (var invoice in shipments)
         {
+            if (invoice.Kind == DOMAIN.Entities.Shipments.ShipmentInvoiceKind.NoChargeShortageMakeUp)
+                continue;
             if (!invoice.SupplierId.HasValue || !invoice.CurrencyId.HasValue)
             {
                 warnings.Add($"Shipment invoice {invoice.Code} is missing supplier or currency and was excluded.");

@@ -77,7 +77,11 @@ public class ServiceRepository(ApplicationDbContext context, IMapper mapper) : I
         var service = await context.Services.FirstOrDefaultAsync(s => s.Id == id);
         if (service == null) return Error.NotFound("Service.NotFound", "Service not found");
 
-        //TODO: add service linking validation
+        // A service still named on work or offered by a provider stays, so those records keep their meaning.
+        if (await context.JobRequests.AnyAsync(r => r.ServiceId == id && r.DeletedAt == null) || await context.JobOrders.AnyAsync(o => o.ServiceId == id && o.DeletedAt == null))
+            return Error.Validation("Service.InUse", "This service is named on job requests or job orders and cannot be deleted.");
+        if (await context.ServiceProviders.AnyAsync(p => p.DeletedAt == null && p.Services.Any(s => s.Id == id)))
+            return Error.Validation("Service.InUse", "Service providers still offer this service. Remove it from them first.");
 
         service.DeletedAt = DateTime.UtcNow;
         service.LastDeletedById = userId;

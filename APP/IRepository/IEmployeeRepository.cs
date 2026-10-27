@@ -8,7 +8,11 @@ namespace APP.IRepository;
 
 public interface IEmployeeRepository
 {
-    Task<Result> OnboardEmployees(OnboardEmployeeDto employeeDto);
+    Task<Result<List<EmployeeInvitationResult>>> OnboardEmployees(OnboardEmployeeDto request, Guid actor);
+    Task<Result<OnboardingInvitationDto>> GetOnboardingInvitation(string token);
+    Task<Result<Guid>> CompleteOnboarding(CompleteOnboardingRequest request);
+    Task<Result> UploadOnboardingAvatar(OnboardingAvatarRequest request);
+    Task<Result<EmployeeDto>> GetEmployeeForUser(Guid userId);
     Task<Result<Guid>> CreateEmployee(CreateEmployeeRequest request);
     Task<Result<Guid>> CreateEmployeeUser(EmployeeUserDto employeeUserDto);
     Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId);

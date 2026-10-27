@@ -864,7 +864,7 @@ public class ProductionScheduleRepository(
                             "You have been assigned a production task",
                             NotificationType.ProductionStageChanged,
                             null,
-                            nextStepUsers
+                            nextStepUsers, relatedEntityType: "ProductionActivityStep", relatedEntityId: nextStep.Id, relatedEntityStatus: nextStep.Status.ToString()
                         );
                     }
                 }
@@ -1139,96 +1139,57 @@ public class ProductionScheduleRepository(
         Result<List<ProductionActivityGroupResultDto>>
     > GetProductionActivityGroupedByOperation(Guid? departmentId)
     {
-        // Fetch all unique operation names in the correct order
+        var operationsQuery = context.Operations.AsNoTracking();
+        if (departmentId.HasValue)
+            operationsQuery = operationsQuery.Where(operation => operation.DepartmentId == departmentId);
 
-        var allOperations = departmentId.HasValue
-            ? await context
-                .Operations.OrderBy(o => o.Order)
-                .Where(o => o.DepartmentId == departmentId)
-                .Select(o => new OperationDto
-                {
-                    Id = o.Id,
-                    Name = o.Name,
-                    Description = o.Description,
-                    Order = o.Order,
-                })
-                .AsNoTracking()
-                .ToListAsync()
-            : await context
-                .Operations.OrderBy(o => o.Order)
-                .Select(o => new OperationDto
-                {
-                    Id = o.Id,
-                    Name = o.Name,
-                    Description = o.Description,
-                    Order = o.Order,
-                })
-                .AsNoTracking()
-                .ToListAsync();
-
-        // Fetch production activities with only necessary data
-        var productionActivities = await context
-            .ProductionActivities.AsSplitQuery()
-            .Include(pa => pa.ProductionScheduleProduct)
-                .ThenInclude(productionSchedule => productionSchedule.Product)
-            .Include(pa => pa.ProductionScheduleProduct)
-                .ThenInclude(p => p.ProductionSchedule)
-            .Include(pa => pa.Steps)
-                .ThenInclude(s => s.Operation)
-            .Include(pa => pa.Steps)
-                .ThenInclude(s => s.ResponsibleUsers)
-            .AsNoTracking()
+        var configuredOperations = await operationsQuery
+            .Select(operation => new OperationDto
+            {
+                Id = operation.Id,
+                Name = operation.Name,
+                Description = operation.Description,
+                Order = operation.Order,
+            })
             .ToListAsync();
 
-        // Process CurrentStep in memory
-        var productionActivityDtos = productionActivities
-            .Select(pa => new ProductionActivityGroupDto
+        // Filter by the product's department before materializing. Existing runs may still
+        // reference operations from an older or shared procedure; their history stays intact.
+        var rows = await ProductionActivityBoardQuery.ForDepartment(context, departmentId).ToListAsync();
+        var activities = rows
+            .Where(row => row.CurrentStep?.Operation != null)
+            .Select(row => new ProductionActivityGroupDto
             {
-                Id = pa.Id,
-                CreatedAt = pa.CreatedAt,
-                ProductionScheduleProduct = mapper.Map<ProductionScheduleProductDto>(
-                    pa.ProductionScheduleProduct
-                ),
-                Status = pa.Status,
-                StartedAt = pa.StartedAt,
-                CompletedAt = pa.CompletedAt,
-                BatchNumber =
-                    pa.ProductionScheduleProduct.BatchNumber
-                    ?? context
-                        .BatchManufacturingRecords.FirstOrDefault(b =>
-                            b.ProductionScheduleProductId == pa.ProductionScheduleProductId
-                        )
-                        ?.BatchNumber,
-                Quantity = pa.ProductionScheduleProduct?.Quantity ?? 0,
-                CurrentStep = mapper.Map<ProductionActivityStepDto>(
-                    pa.Steps.OrderBy(s => s.Order).FirstOrDefault(s => !s.CompletedAt.HasValue)
-                        ?? // First unfinished step
-                        pa.Steps.OrderBy(s => s.Order).LastOrDefault() // Fallback: last step
-                ),
-            })
-            .Where(p => p.CurrentStep?.Operation != null) // Ensure CurrentStep has an operation
-            .ToList();
-
-        // Group activities by operation
-        var groupedActivities = productionActivityDtos
-            .GroupBy(p => new CollectionItemDto
-            {
-                Id = p.CurrentStep.Operation.Id,
-                Name = p.CurrentStep.Operation.Name,
+                Id = row.Id,
+                CreatedAt = row.CreatedAt,
+                ProductionScheduleProduct = row.Batch,
+                Status = row.Status,
+                StartedAt = row.StartedAt,
+                BatchNumber = row.Batch.BatchNumber,
+                Quantity = row.Batch.Quantity,
+                // The small projected graph preserves the existing avatar URL mapper.
+                CurrentStep = mapper.Map<ProductionActivityStepDto>(row.CurrentStep),
             })
             .ToList();
 
-        // Construct response list
-        var result = allOperations
-            .Select(op => new ProductionActivityGroupResultDto
+        var groupedActivities = activities
+            .GroupBy(activity => activity.CurrentStep.Operation.Id)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        // Include actual active operations as well as configured empty columns, so a
+        // running batch cannot disappear when its operation is outside the configured list.
+        return configuredOperations
+            .Concat(activities.Select(activity => activity.CurrentStep.Operation))
+            .DistinctBy(operation => operation.Id)
+            .OrderBy(operation => operation.Order)
+            .ThenBy(operation => operation.Name)
+            .ThenBy(operation => operation.Id)
+            .Select(operation => new ProductionActivityGroupResultDto
             {
-                Operation = op,
-                Activities =
-                    groupedActivities.FirstOrDefault(g => g.Key.Id == op.Id)?.ToList() ?? [],
+                Operation = operation,
+                Activities = groupedActivities.GetValueOrDefault(operation.Id) ?? [],
             })
             .ToList();
-
-        return result;
     }
 
     public async Task<
@@ -2038,7 +1999,7 @@ public class ProductionScheduleRepository(
 
         backgroundWorkerService.EnqueueNotification(
             "Batch manufacturing record created",
-            NotificationType.BmrBprRequested
+            NotificationType.BmrBprRequested, relatedEntityType: nameof(BatchManufacturingRecord), relatedEntityId: batchRecord.Id, relatedEntityCode: batchRecord.BatchNumber, relatedEntityStatus: batchRecord.Status.ToString()
         );
 
         return batchRecord.Id;
@@ -2989,7 +2950,7 @@ public class ProductionScheduleRepository(
         await context.SaveChangesAsync();
         backgroundWorkerService.EnqueueNotification(
             "Batch manufacturing issued",
-            NotificationType.BmrBprApproved
+            NotificationType.BmrBprApproved, relatedEntityType: nameof(BatchManufacturingRecord), relatedEntityId: batchRecord.Id, relatedEntityCode: batchRecord.BatchNumber, relatedEntityStatus: batchRecord.Status.ToString()
         );
         await stepEventPublisher.PublishStatusChanged(
             batchRecord.ProductionActivityStepId,
@@ -3117,7 +3078,7 @@ public class ProductionScheduleRepository(
 
         backgroundWorkerService.EnqueueNotification(
             "Batch packaging issued",
-            NotificationType.BmrBprApproved
+            NotificationType.BmrBprApproved, relatedEntityType: nameof(BatchPackagingRecord), relatedEntityId: batchRecord.Id, relatedEntityCode: batchRecord.BatchNumber
         );
         await stepEventPublisher.PublishStatusChanged(
             batchRecord.ProductionActivityStepId,

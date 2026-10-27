@@ -23,7 +23,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseSentry(o =>
+if (!args.Contains("--export-openapi")) builder.WebHost.UseSentry(o =>
 {
     o.Dsn =
         "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
@@ -172,10 +172,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(defaultDbCo
 // instance is undecryptable after a restart or on any other instance behind a load balancer.
 builder.Services.AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>();
 
-// Refuse to persist a price without the unit it was quoted in. Off by default so the
-// guard can be enabled only once fix_missing_price_uom.sql has repaired legacy rows.
-ApplicationDbContext.EnforcePriceUoM = builder.Configuration.GetValue<bool>(
-    "Procurement:EnforcePriceUoM"
+// Refuse to persist a price without the unit it was quoted in. On unless explicitly set to
+// false: it only judges writes of a price or its unit, so legacy rows do not trip it.
+ApplicationDbContext.EnforcePriceUoM = builder.Configuration.GetValue(
+    "Procurement:EnforcePriceUoM",
+    true
 );
 
 builder
@@ -243,6 +244,8 @@ builder
 builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 var app = builder.Build();
+
+if (API.Config.Swagger.ContractExport.TryExport(app, args)) return;
 
 app.SeedData();
 

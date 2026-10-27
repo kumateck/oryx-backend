@@ -31,6 +31,13 @@ public class IssueItemStockRequisition : BaseEntity
     public Guid ItemStockRequisitionId { get; set; }
     public ItemStockRequisition ItemStockRequisition { get; set; }
 
+    /// <summary>
+    /// The requisition line this quantity was issued against. Issues recorded before lines were tracked
+    /// have none unless their requisition had a single line; such requisitions cannot be issued further.
+    /// </summary>
+    public Guid? ItemStockRequisitionItemId { get; set; }
+    public ItemStockRequisitionItem ItemStockRequisitionItem { get; set; }
+
     public int QuantityIssued { get; set; }
 }
 

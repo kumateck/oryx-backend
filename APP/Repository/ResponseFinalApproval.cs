@@ -18,6 +18,14 @@ internal static class ResponseFinalApproval
     {
         response.Approved = true;
         response.Rejected = false;
+        response.RejectionOutcome = null;
+        var completedRework = await context.ResponseReworkTasks
+            .SingleOrDefaultAsync(item => item.NewResponseId == response.Id);
+        if (completedRework is not null)
+        {
+            completedRework.Status = ResponseReworkStatus.Completed;
+            completedRework.CompletedAt = DateTime.UtcNow;
+        }
         BatchManufacturingRecord productBatchToApprove = null;
         if (response.RoutineTrackId.HasValue)
         {

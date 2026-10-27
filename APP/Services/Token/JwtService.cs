@@ -48,6 +48,7 @@ public class JwtService(ApplicationDbContext context, IConfiguration configurati
         var refreshToken = GenerateRefreshToken();
         context.RefreshTokens.Add(new RefreshToken
         {
+            UserId = userId,
             CreatedById = userId,
             Token = refreshToken,
             Expiry = DateTime.UtcNow.AddMonths(6)

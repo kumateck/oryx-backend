@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using APP.Services.NotificationService;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Notifications;
 using DOMAIN.Entities.Users;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace APP.Services.Background;
 
-public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory, ConcurrentQueue<(string message, NotificationType type, Guid? departmentId, List<User> users)> notificationQueue) : BackgroundService
+public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -20,24 +20,30 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory, Concu
                 using var scope = scopeFactory.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                var monthAgo = DateTime.UtcNow.AddMonths(-1);
+                var now = DateTime.UtcNow;
+                var stager = scope.ServiceProvider.GetRequiredService<AlertRequestStager>();
 
                 var expiredBatches = await dbContext.MaterialBatches
                     .Where(l => l.Status == BatchStatus.Available &&
-                                l.ExpiryDate.HasValue && l.ExpiryDate < monthAgo)
+                                l.ExpiryDate.HasValue && l.ExpiryDate < now)
                     .ToListAsync(stoppingToken);
 
                 foreach (var batch in expiredBatches)
                 {
-                    notificationQueue.Enqueue(($"Material batch {batch.BatchNumber} expires at {batch.ExpiryDate:dd MMMM yyyy}", NotificationType.ExpiredMaterial, null, []));
+                    var message = $"Material batch {batch.BatchNumber} expired at {batch.ExpiryDate:dd MMMM yyyy}";
+                    var sourceKey = $"expired-batch:{batch.Id}:{batch.ExpiryDate:O}";
+                    // Retained intent prevents daily repeats; a unique key also fences concurrent scanners.
+                    if (!await dbContext.Set<AlertDispatchRequest>().AnyAsync(item => item.SourceKey == sourceKey, stoppingToken))
+                        stager.Stage(message, NotificationType.ExpiredMaterial, sourceKey: sourceKey, relatedEntityType: "MaterialBatch", relatedEntityId: batch.Id, relatedEntityCode: batch.BatchNumber, relatedEntityStatus: batch.Status.ToString());
                 }
 
-                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Expiry alert scan failed ({e.GetType().Name}); retrying after the scan interval.");
             }
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
 }

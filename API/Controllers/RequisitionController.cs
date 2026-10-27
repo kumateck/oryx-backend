@@ -398,7 +398,9 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         [FromBody] List<SupplierQuotationResponseDto> supplierQuotationResponse,
         Guid supplierQuotationId)
     {
-        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierQuotationId);
+        var subject = HttpContext.Items["Sub"] as string;
+        if (!Guid.TryParse(subject, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.ReceiveQuotationFromSupplier(supplierQuotationResponse, supplierQuotationId, userId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
