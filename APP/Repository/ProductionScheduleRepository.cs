@@ -3719,6 +3719,9 @@ public class ProductionScheduleRepository(
             .Include(fp => fp.ProductPacking)
             .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
 
+        if (finalPacking is null)
+            return Error.NotFound("FinalPacking.NotFound", "Final packing has not been recorded for this batch.");
+
         return mapper.Map<FinalPackingDto>(finalPacking);
     }
 
@@ -3739,6 +3742,9 @@ public class ProductionScheduleRepository(
             .FirstOrDefaultAsync(fp =>
                 fp.ProductionScheduleProductId == productionScheduleProductId
             );
+
+        if (finalPacking is null)
+            return Error.NotFound("FinalPacking.NotFound", "Final packing has not been recorded for this batch.");
 
         return mapper.Map<FinalPackingDto>(finalPacking);
     }
