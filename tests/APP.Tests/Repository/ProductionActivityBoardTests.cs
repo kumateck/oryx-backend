@@ -23,6 +23,99 @@ namespace APP.Tests.Repository;
 public class ProductionActivityBoardTests
 {
     [Fact]
+    public async Task Syrup_reference_values_are_preloaded_from_product_and_style_without_a_received_weight()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("syrup-yield", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "syrup");
+        await fixture.Context.SaveChangesAsync();
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id,
+            AverageVolumeFilledPerBottle = 999, BatchSize = 1, TotalWeightReceived = 999,
+            YieldTotalQuantityPacked = 20_025, QualityControlAnalyticalSample = 3, RetainedSamples = 12,
+            TotalNumberOfBottles = 20_010, TotalQuantityPacked = 20_010, TotalGainOrLoss = 25,
+            NumberOfBottlesPerShipper = 30, NUmberOfFullShipperPacked = 667,
+        });
+        Assert.True(result.IsSuccess);
+        var stored = Assert.Single(await fixture.Context.FinalPackings.ToListAsync());
+        Assert.Equal(20_000m, stored.ExpectedYield);
+        Assert.Equal(3000m, stored.BatchSize);
+        Assert.Equal(150m, stored.AverageVolumeFilledPerBottle);
+        Assert.Equal(0m, stored.TotalWeightReceived);
+        Assert.Equal(20_010m, stored.TotalQuantityPacked);
+        Assert.Equal(25m, stored.TotalGainOrLoss);
+        var read = await fixture.Repository.GetFinalPackingByScheduleProduct(run.ProductionScheduleProductId);
+        Assert.True(read.IsSuccess);
+        Assert.Equal(20_000m, read.Value.ExpectedYield);
+    }
+
+    [Theory]
+    [InlineData("tube")]
+    [InlineData("capsules")]
+    [InlineData("tablet")]
+    [InlineData("dry powder")]
+    [InlineData("sachet")]
+    public async Task Weight_based_packing_saves_expected_yield_using_kg_and_mg(string category)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("weight-yield", fixture.Tablet, fixture.Secondary);
+        fixture.Packing(run, category);
+        await fixture.Context.SaveChangesAsync();
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId,
+            TotalWeightReceived = 120, AverageVolumeFilledPerBottle = 500,
+        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(240_000m, Assert.Single(await fixture.Context.FinalPackings.ToListAsync()).ExpectedYield);
+    }
+
+    [Fact]
+    public async Task Invalid_known_yield_measurements_do_not_save_or_complete_the_step()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("invalid-yield", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "syrup");
+        fixture.Syrup.BaseQuantity = 0;
+        await fixture.Context.SaveChangesAsync();
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id,
+            AverageVolumeFilledPerBottle = 0,
+        });
+        Assert.True(result.IsFailure);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
+        Assert.Equal(ProductionStatus.InProgress, run.Steps[0].Status);
+    }
+
+    [Fact]
+    public async Task Syrup_uses_full_product_batch_and_style_yield_and_invalid_setup_preserves_the_record()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("updated-yield", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "Bottle");
+        run.ProductionScheduleProduct.ProductPacking.ExpectedYield = 20_000;
+        run.ProductionScheduleProduct.Quantity = 1_500_000;
+        await fixture.Context.SaveChangesAsync();
+        var request = new CreateFinalPacking { ProductionScheduleProductId = run.ProductionScheduleProductId, AverageVolumeFilledPerBottle = 75 };
+        var created = await fixture.Repository.CreateFinalPacking(request);
+        Assert.True(created.IsSuccess);
+        var stored = Assert.Single(await fixture.Context.FinalPackings.ToListAsync());
+        Assert.Equal(20_000m, stored.ExpectedYield);
+        Assert.Equal(3000m, stored.BatchSize);
+        Assert.Equal(150m, stored.AverageVolumeFilledPerBottle);
+        run.ProductionScheduleProduct.ProductPacking.ExpectedYield = 19_980;
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Repository.UpdateFinalPacking(request, created.Value)).IsSuccess);
+        Assert.Equal(19_980m, stored.ExpectedYield);
+        fixture.Syrup.BaseQuantity = 0;
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Repository.UpdateFinalPacking(request, created.Value)).IsFailure);
+        Assert.Equal(19_980m, stored.ExpectedYield);
+    }
+
+    [Fact]
     public async Task Missing_final_packing_returns_not_found_instead_of_a_null_validation_error()
     {
         await using var fixture = await Fixture.Create();
@@ -116,6 +209,7 @@ public class ProductionActivityBoardTests
     {
         await using var fixture = await Fixture.Create();
         var run = fixture.Run("packing-issued", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "syrup");
         if (hasExtra) fixture.Extra(run, ProductionExtraPackingStatus.Approved);
         await fixture.Context.SaveChangesAsync();
 
@@ -325,13 +419,14 @@ public class ProductionActivityBoardTests
                 new BoardUser(SyrupDepartment.Id, productionUser ? nameof(DepartmentType.Production) : nameof(DepartmentType.NonProduction)));
             var services = new ServiceCollection();
             services.AddLogging();
+            services.AddSingleton(Context);
             var http = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
             http.HttpContext.Request.Host = new HostString("oryx.test");
             services.AddSingleton<IHttpContextAccessor>(http);
             services.AddAutoMapper(configuration => { }, typeof(OryxMapper));
             Services = services.BuildServiceProvider();
             var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Millilitre", Symbol = "ml" };
-            Syrup = new Product { Id = Guid.NewGuid(), Name = "Coldrilif Syrup", Code = "NL-020", DepartmentId = SyrupDepartment.Id, Department = SyrupDepartment, BaseUomId = unit.Id, BaseUoM = unit };
+            Syrup = new Product { Id = Guid.NewGuid(), Name = "Coldrilif Syrup", Code = "NL-020", FullBatchSize = 3_000_000, BaseQuantity = 150, DepartmentId = SyrupDepartment.Id, Department = SyrupDepartment, BaseUomId = unit.Id, BaseUoM = unit };
             Tablet = new Product { Id = Guid.NewGuid(), Name = "Other product", Code = "OTHER", DepartmentId = OtherDepartment.Id, Department = OtherDepartment };
             Configured = new Operation { Id = Guid.NewGuid(), Name = "Configured syrup operation", DepartmentId = SyrupDepartment.Id, Order = 1 };
             Secondary = new Operation { Id = Guid.NewGuid(), Name = "Secondary packing activity", DepartmentId = OtherDepartment.Id, Order = 11 };
@@ -370,6 +465,16 @@ public class ProductionActivityBoardTests
                 Approved = status != ProductionExtraPackingStatus.Pending,
                 IssuedAt = status == ProductionExtraPackingStatus.Approved ? DateTime.UtcNow : null
             });
+        }
+
+        public void Packing(ProductionActivity run, string category)
+        {
+            var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Name = category, Symbol = category };
+            var packing = new ProductPacking { Id = Guid.NewGuid(), Name = "Yield test style", Product = run.ProductionScheduleProduct.Product,
+                ProductId = run.ProductionScheduleProduct.ProductId, BasePackingUoM = unit, BasePackingUomId = unit.Id, ExpectedYield = category == "syrup" ? 20_000 : 1 };
+            run.ProductionScheduleProduct.ProductPacking = packing;
+            run.ProductionScheduleProduct.ProductPackingId = packing.Id;
+            Context.AddRange(unit, packing);
         }
 
         public void SetRequestContext()
