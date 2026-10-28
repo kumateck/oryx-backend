@@ -40,6 +40,10 @@ COPY tests/APP.Tests/ ./tests/APP.Tests/
 RUN dotnet publish API/API.csproj -c Release -o /app/out --no-restore \
     --disable-build-servers -m:1 -p:UseSharedCompilation=false
 
+# Read-only release gate: reject model drift before any customer maintenance window.
+RUN dotnet ef migrations has-pending-model-changes --no-build --configuration Release \
+    --project INFRASTRUCTURE/INFRASTRUCTURE.csproj --startup-project API/API.csproj
+
 # One-shot migration job. Compose supplies the same connectionString as the API.
 # The design-time factory constructs only the DbContext; it does not start the API or seed data.
 FROM build-env AS migration

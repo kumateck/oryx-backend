@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { createHash } from "node:crypto";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-interface Options { failure?: string; database?: string }
+interface Options { failure?: string; database?: string; apiContainer?: string; dbContainer?: string }
 interface Event { tool: string; args: string[] }
 function fixture(options: Options = {}) {
   const directory = mkdtempSync(join(tmpdir(), "oryx-backend-deploy-"));
@@ -46,12 +46,14 @@ test("customer command builds main, stops the API, verifies backup, migrates, de
     const result = f.run();
     assert.equal(result.status, 0, result.stderr);
     const events = f.events();
-    const index = (word: string) => events.findIndex(event => contains(event, word));
+    const index = (word: string) => events.findIndex(event => contains(event, word) && (word !== "run" || !event.args.includes("has-pending-model-changes")));
     assert.ok(index("build") < index("stop"));
     assert.ok(index("stop") < index("pg_restore"));
     assert.ok(index("pg_restore") < index("run"));
     assert.ok(index("run") < index("up"));
-    const migration = events.find(event => contains(event, "run"));
+    const preflight = events.findIndex(event => contains(event, "has-pending-model-changes"));
+    assert.ok(index("build") < preflight && preflight < index("stop"));
+    const migration = events.find(event => contains(event, "run") && !event.args.includes("has-pending-model-changes"));
     assert.ok(migration?.args.includes("--no-deps"));
     assert.ok(migration?.args.includes("--rm"));
     assert.ok(migration?.args.some(arg => arg.endsWith("migration.json")));
@@ -63,7 +65,7 @@ test("customer command builds main, stops the API, verifies backup, migrates, de
   } finally { f.close(); }
 });
 
-for (const failure of ["build", "backup", "backup-verify", "migration", "activate", "health"]) {
+for (const failure of ["build", "model", "backup", "backup-verify", "migration", "activate", "health"]) {
   test(`failure during ${failure} cannot mark the release successful or advance past failed migration`, { timeout: 20_000 }, () => {
     const f = fixture({ failure });
     try {
@@ -71,7 +73,11 @@ for (const failure of ["build", "backup", "backup-verify", "migration", "activat
       assert.notEqual(result.status, 0, `${result.stdout}\n${result.stderr}`);
       assert.equal(existsSync(join(f.state, "current")), false);
       assert.equal(existsSync(join(f.state, "blocked", f.sha)), true);
-      if (["build", "backup", "backup-verify", "migration"].includes(failure)) assert.equal(f.events().some(event => contains(event, "up")), false);
+      if (["build", "model", "backup", "backup-verify", "migration"].includes(failure)) assert.equal(f.events().some(event => contains(event, "up")), false);
+      if (failure === "model") {
+        assert.equal(f.events().some(event => contains(event, "stop") || contains(event, "start")), false);
+        assert.equal(existsSync(join(f.state, "pending")), false);
+      }
       if (["backup", "backup-verify"].includes(failure)) assert.ok(f.events().some(event => contains(event, "start")));
       if (["migration", "activate", "health"].includes(failure)) {
         assert.equal(f.events().some(event => contains(event, "start")), false);
@@ -115,9 +121,10 @@ test("a database ahead of main cannot be migrated or replaced by that older API"
   } finally { f.close(); }
 });
 
-for (const failure of ["success", "sql-apply", "tampered-sql"]) {
+for (const failure of ["success", "sql-apply", "tampered-sql", "missing-api", "wrong-db", "quoted-password", "custom-containers"]) {
   test(`standalone SQL package: ${failure}`, { timeout: 20_000 }, () => {
-    const f = fixture({ failure });
+    const custom = failure === "custom-containers";
+    const f = fixture({ failure, ...(custom ? { apiContainer: "customer-backend", dbContainer: "customer-postgres" } : {}) });
     const packageDir = join(f.directory, "package");
     mkdirSync(packageDir);
     copyFileSync(join(root, "deploy/apply-customer-migrations.sh"), join(packageDir, "apply.sh"));
@@ -128,16 +135,25 @@ for (const failure of ["success", "sql-apply", "tampered-sql"]) {
     try {
       const result = spawnSync("bash", [join(packageDir, "apply.sh"), f.repo], {
         cwd: f.repo, encoding: "utf8", timeout: 15_000,
-        env: { ...process.env, PATH: `${join(f.directory, "bin")}:${process.env.PATH ?? ""}`, ORYX_BACKEND_STATE: f.state },
+        env: { ...process.env, PATH: `${join(f.directory, "bin")}:${process.env.PATH ?? ""}`, ORYX_BACKEND_STATE: f.state,
+          ...(custom ? { ORYX_BACKEND_API_CONTAINER: "customer-backend", ORYX_BACKEND_DB_CONTAINER: "customer-postgres" } : {}) },
       });
-      assert.equal(result.status === 0, failure === "success", result.stderr);
+      const success = ["success", "quoted-password", "custom-containers"].includes(failure);
+      assert.equal(result.status === 0, success, result.stderr);
       assert.equal(f.events().some(event => contains(event, "build") || contains(event, "up") || contains(event, "start")), false);
       assert.equal(existsSync(join(f.state, "current")), false);
-      if (failure === "tampered-sql") assert.equal(f.events().some(event => contains(event, "stop")), false);
+      if (["tampered-sql", "missing-api", "wrong-db"].includes(failure)) {
+        assert.equal(f.events().some(event => contains(event, "stop") || contains(event, "exec")), false);
+        if (failure === "missing-api") {
+          assert.equal((result.stderr.match(/Migration preparation failed/g) ?? []).length, 1);
+          assert.match(result.stderr, /no migration SQL was executed/);
+        }
+      }
       else {
         assert.equal(existsSync(join(f.state, "pending")), true);
         assert.ok(f.events().some(event => contains(event, "pg_restore")));
-        if (failure === "success") assert.match(result.stdout, /All package migrations installed/);
+        if (success) assert.match(result.stdout, /All package migrations installed/);
+        if (custom) assert.ok(f.events().some(event => contains(event, "stop") && event.args.includes("customer-backend")));
       }
     } finally { f.close(); }
   });

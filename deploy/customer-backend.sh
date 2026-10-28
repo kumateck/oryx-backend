@@ -122,6 +122,8 @@ PY
 STAGE=building
 docker build --file "$SOURCE/deploy.Dockerfile" --target runtime --build-arg "RELEASE_SHA=$TARGET" --tag "oryx-api-customer:$TARGET" "$SOURCE" >>"$LOG" 2>&1
 docker build --file "$SOURCE/deploy.Dockerfile" --target migration --tag "oryx-api-customer-migration:$TARGET" "$SOURCE" >>"$LOG" 2>&1
+STAGE=model-consistency
+compose migration run --rm --no-deps --pull never -T --entrypoint dotnet app ef migrations has-pending-model-changes --no-build --configuration Release --project INFRASTRUCTURE/INFRASTRUCTURE.csproj --startup-project API/API.csproj >>"$LOG" 2>&1
 echo "Built backend main $TARGET. Preparing $DATABASE for migration."
 docker inspect --format '{{.Image}}' oryx_api > "$RELEASE/previous-image"
 printf '%s\n' "$TARGET" > "$STATE/pending"
