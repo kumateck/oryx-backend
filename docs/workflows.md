@@ -1,5 +1,15 @@
 # Workflow behavior
 
+## Test response submission requires complete saved drafts (2026-10-28)
+
+Analysts save each answer before selecting Submit results. Pending saves, failed
+saves, unsaved edits, cleared answers and incomplete calculations block submission.
+Every analyst's worksheet fields must be saved. Partial drafts remain available
+for later correction. Backend completeness validation runs before formula
+execution, test-taken transitions or routine finalization; a failed check does
+not advance workflow status. Existing approval, signing, audit, rework and
+release behavior follows successful finalization as before.
+
 ## QC worksheet choice options and fixed columns (2026-09-24)
 
 Worksheet fields gain a nullable `OptionsJson` (a JSON string array) on the field and on its

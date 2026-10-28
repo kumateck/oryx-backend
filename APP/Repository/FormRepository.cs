@@ -629,16 +629,17 @@ public class FormRepository(
                 "The response contains fields from another form and must be reconciled before submission."
             );
 
-        // Validate that all required fields are filled
+        // Reject missing or incomplete saved drafts before formula execution or workflow writes.
         var missingFields = await FormRevisionSelection.MissingRequiredFieldsAsync(
-            context, response);
+            context, response, requireAllFields: response.MaterialBatchId.HasValue
+                || response.BatchManufacturingRecordId.HasValue || response.RoutineTrackId.HasValue);
 
         if (missingFields.Count != 0)
         {
             var missingList = string.Join(", ", missingFields);
             return Error.Validation(
                 "Response.MissingFields",
-                $"Missing required fields: {missingList}"
+                $"Complete and save all worksheet answers before submitting. Missing or incomplete fields: {missingList}"
             );
         }
 
@@ -795,6 +796,19 @@ public class FormRepository(
             FormResponses = [],
             CreatedById = userId,
         };
+
+        // The legacy direct-submit endpoint must enforce the same completeness rule before uploads or writes.
+        newResponse.FormResponses = request.FormResponses.Select(item => new FormResponse
+        {
+            FormFieldId = item.FormFieldId, Value = item.Value
+        }).ToList();
+        var missingFields = await FormRevisionSelection.MissingRequiredFieldsAsync(context, newResponse,
+            requireAllFields: newResponse.MaterialBatchId.HasValue
+                || newResponse.BatchManufacturingRecordId.HasValue || newResponse.RoutineTrackId.HasValue);
+        if (missingFields.Count != 0)
+            return Error.Validation("Response.MissingFields",
+                $"Complete all worksheet answers before submitting. Missing or incomplete fields: {string.Join(", ", missingFields)}");
+        newResponse.FormResponses.Clear();
 
         foreach (var response in request.FormResponses)
         {

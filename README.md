@@ -1,5 +1,11 @@
 # Oryx ERP
 
+Customer-host backend deployment (2026-10-28): after merging to backend `main`,
+run `bash deploy.sh deploy` on the customer server. The command builds the exact
+main SHA, verifies a database backup, applies pending migrations in Docker, and
+starts only the API. `bash deploy.sh poll` supports Cron detection of new main
+commits. See [customer backend deployment](docs/customer-backend-deployment.md).
+
 QC worksheet AI import fix (2026-09-29): OpenAI extraction now sends a schema
 valid for strict structured output and reports provider, rate-limit, network,
 and unreadable-key failures separately from an unconfigured key. The importer
