@@ -1,5 +1,20 @@
 # Service contracts
 
+## Complete saved answers required for test submission (2026-10-28)
+
+`POST /api/v1/form/responses/finalize/{responseId}` validates saved answer values
+before formula execution or workflow writes. Material, product-batch and routine
+worksheets require every template field, including fields marked optional, to
+have a complete answer. Other forms retain required-field coverage. A response
+row with a null or blank value does not satisfy completeness.
+Formula inputs and configured table cells are checked for missing data; zero
+is valid input and optional metadata can remain empty. Governed formula
+execution remains the authority for calculations. Legacy direct submission
+applies the same completeness check before uploads or response creation.
+Failures return `Response.MissingFields` and retain existing drafts. API shapes,
+permissions, assignment, revision and approval gates are unchanged. No migration
+is needed; deploy with the desktop frontend's explicit draft-save requirement.
+
 ## QC worksheet AI import diagnostics (2026-09-29)
 
 `POST /api/v1/qc/worksheets/templates/import` still returns one read-only
