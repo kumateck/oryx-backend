@@ -31,17 +31,27 @@ internal static class FormRevisionSelection
 
     public static async Task<IReadOnlyList<Guid>> MissingRequiredFieldsAsync(
         ApplicationDbContext context, Response response,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool requireAllFields = false)
     {
-        var requiredIds = response.FormRevisionId.HasValue
+        var fields = response.FormRevisionId.HasValue
             ? await context.FormFieldRevisions.AsNoTracking()
-                .Where(field => field.FormRevisionId == response.FormRevisionId && field.Required)
-                .Select(field => field.FormFieldId).ToListAsync(cancellationToken)
+                .Where(field => field.FormRevisionId == response.FormRevisionId)
+                .Select(field => new { Id = field.FormFieldId, field.Required, field.Question.Type,
+                    Definition = field.Question.Options.Select(option => option.Name).FirstOrDefault() })
+                .ToListAsync(cancellationToken)
             : await context.FormFields.AsNoTracking()
-                .Where(field => field.FormSection.FormId == response.FormId && field.Required)
-                .Select(field => field.Id).ToListAsync(cancellationToken);
-        var answeredIds = response.FormResponses.Select(item => item.FormFieldId).ToHashSet();
-        return requiredIds.Where(id => !answeredIds.Contains(id)).ToList();
+                .Where(field => field.FormSection.FormId == response.FormId)
+                .Select(field => new { field.Id, field.Required, field.Question.Type,
+                    Definition = field.Question.Options.Select(option => option.Name).FirstOrDefault() })
+                .ToListAsync(cancellationToken);
+        var answers = response.FormResponses.GroupBy(item => item.FormFieldId)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CreatedAt).First());
+        return fields.Where(field => requireAllFields || field.Required).Where(field =>
+        {
+            var hasDraft = answers.TryGetValue(field.Id, out var answer);
+            if (!hasDraft) return requireAllFields || field.Required;
+            return !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, field.Type, field.Definition);
+        }).Select(field => field.Id).ToList();
     }
 
     public static Task<Guid?> EffectiveIdAsync(
