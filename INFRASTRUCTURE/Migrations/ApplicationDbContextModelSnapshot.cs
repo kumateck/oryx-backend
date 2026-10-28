@@ -7911,8 +7911,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("TotalBalance")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("TransactionType")
-                        .HasColumnType("integer");
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -23466,10 +23467,6 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("ApprovalId");
 
-                    b.HasIndex("ApprovalId", "StockDiscrepancyId", "Order", "UserId", "RoleId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_StockDiscrepancyApprovals_StageUnique");
-
                     b.HasIndex("ApprovedById");
 
                     b.HasIndex("RoleId");
@@ -23477,6 +23474,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("StockDiscrepancyId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("ApprovalId", "StockDiscrepancyId", "Order", "UserId", "RoleId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_StockDiscrepancyApprovals_StageUnique");
 
                     b.ToTable("StockDiscrepancyApprovals");
                 });

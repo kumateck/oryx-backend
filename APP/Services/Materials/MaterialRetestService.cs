@@ -100,7 +100,9 @@ public sealed class MaterialRetestService(
 
     public async Task<Result<MaterialRetestDetailDto>> GetAsync(Guid id)
     {
-        var item = await context.MaterialRetestRequests.AsNoTracking()
+        // Load only the retest evidence below; Material's automatic Batches include
+        // loops back to this batch and is invalid in a no-tracking read.
+        var item = await context.MaterialRetestRequests.AsNoTracking().IgnoreAutoIncludes()
             .Include(request => request.MaterialBatch).ThenInclude(batch => batch.Material)
             .Include(request => request.Events)
             .SingleOrDefaultAsync(request => request.Id == id);
@@ -111,7 +113,7 @@ public sealed class MaterialRetestService(
 
     public async Task<Result<List<MaterialRetestDetailDto>>> ListAsync(Guid? batchId)
     {
-        var query = context.MaterialRetestRequests.AsNoTracking()
+        var query = context.MaterialRetestRequests.AsNoTracking().IgnoreAutoIncludes()
             .Include(item => item.MaterialBatch).ThenInclude(batch => batch.Material)
             .Include(item => item.Events).AsQueryable();
         if (batchId.HasValue) query = query.Where(item => item.MaterialBatchId == batchId.Value);
