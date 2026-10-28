@@ -59,6 +59,8 @@ public class ApprovalRepository(
         var validation = ApprovalConfigurationValidator.Validate(request);
         if (!validation.IsSuccess)
             return Result.Failure<Guid>(validation.Errors);
+        var assignees = await ApprovalConfigurationValidator.ValidateAssignees(context, request);
+        if (assignees.IsFailure) return Result.Failure<Guid>(assignees.Errors);
 
         if (
             await context.Approvals.FirstOrDefaultAsync(a => a.ItemType == request.ItemType)
@@ -127,6 +129,8 @@ public class ApprovalRepository(
         var validation = ApprovalConfigurationValidator.Validate(request);
         if (!validation.IsSuccess)
             return validation;
+        var assignees = await ApprovalConfigurationValidator.ValidateAssignees(context, request);
+        if (assignees.IsFailure) return assignees;
 
         var existingApproval = await context.Approvals.FirstOrDefaultAsync(a => a.Id == approvalId);
         if (existingApproval is null)
