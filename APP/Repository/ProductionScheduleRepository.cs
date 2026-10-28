@@ -673,6 +673,14 @@ public class ProductionScheduleRepository(
         if (status == ProductionStatus.InProgress && activityStep.Status == ProductionStatus.InProgress)
             return Result.Success();
 
+        if (status == ProductionStatus.Completed && await HasUnissuedExtraMaterial(activityStep.ProductionActivity.ProductionScheduleProductId))
+            return Error.Conflict("ProductActivity.ExtraMaterialOutstanding", "All extra material must be approved and issued before completing this step.");
+
+        if (status == ProductionStatus.InProgress && await context.ProductionExtraPackings.AnyAsync(extra =>
+                extra.ProductionScheduleProductId == activityStep.ProductionActivity.ProductionScheduleProductId
+                && extra.Status == ProductionExtraPackingStatus.Pending))
+            return Error.Conflict("ProductActivity.ExtraMaterialPending", "Extra material is waiting for approval. This step cannot be started yet.");
+
         activityStep.Status = status;
 
         switch (status)
@@ -3658,14 +3666,27 @@ public class ProductionScheduleRepository(
 
     public async Task<Result<Guid>> CreateFinalPacking(CreateFinalPacking request)
     {
+        var activityStep = request.ProductionActivityStepId.HasValue
+            ? await context.ProductionActivitySteps.Include(step => step.ProductionActivity)
+                .FirstOrDefaultAsync(step => step.Id == request.ProductionActivityStepId)
+            : null;
+        if (request.ProductionActivityStepId.HasValue && activityStep is null)
+            return Error.NotFound("ProductActivity.NotFound", "Activity step was not found");
+        if (activityStep is not null && activityStep.ProductionActivity.ProductionScheduleProductId != request.ProductionScheduleProductId)
+            return Error.Validation("ProductActivity.BatchMismatch", "The packing step does not belong to this batch.");
+
+        // Final packing also completes a step, so it must respect the same issue gate.
+        if (await HasUnissuedExtraMaterial(request.ProductionScheduleProductId))
+            return Error.Conflict("ProductActivity.ExtraMaterialOutstanding", "All extra material must be approved and issued before recording final packing.");
+
+        var expected = await CalculateFinalPackingExpectedYield(request);
+        if (expected.IsFailure) return expected.Error;
         var finalPacking = mapper.Map<FinalPacking>(request);
+        ApplyFinalPackingYield(finalPacking, expected.Value);
 
         await context.FinalPackings.AddAsync(finalPacking);
         await context.SaveChangesAsync();
 
-        var activityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
-            p.Id == request.ProductionActivityStepId
-        );
         if (activityStep is not null)
         {
             activityStep.Status = ProductionStatus.Completed;
@@ -3684,6 +3705,60 @@ public class ProductionScheduleRepository(
         return finalPacking.Id;
     }
 
+    // The legacy Approved enum value means warehouse issue is recorded; QA approval alone sets InProgress.
+    private Task<bool> HasUnissuedExtraMaterial(Guid batchId) => context.ProductionExtraPackings.AnyAsync(extra =>
+        extra.ProductionScheduleProductId == batchId && extra.Status != ProductionExtraPackingStatus.Approved);
+
+    private sealed record FinalPackingYield(decimal Expected, decimal? FullBatchLitres = null, decimal? CompositionVolume = null);
+
+    private static void ApplyFinalPackingYield(FinalPacking packing, FinalPackingYield basis)
+    {
+        packing.ExpectedYield = basis.Expected;
+        if (basis.CompositionVolume is not { } composition) return;
+        packing.BatchSize = basis.FullBatchLitres.GetValueOrDefault();
+        packing.AverageVolumeFilledPerBottle = composition;
+        packing.TotalWeightReceived = 0;
+    }
+
+    // Syrup's three reference values come from the product/style, never manual measurements.
+    // The other five categories retain received-weight / average-weight calculations.
+    private async Task<Result<FinalPackingYield>> CalculateFinalPackingExpectedYield(CreateFinalPacking request)
+    {
+        var batch = await context.ProductionScheduleProducts
+            .Include(product => product.Product).ThenInclude(product => product.BaseUoM)
+            .Include(product => product.Product).ThenInclude(product => product.Category)
+            .Include(product => product.ProductPacking).ThenInclude(packing => packing.BasePackingUoM)
+            .FirstOrDefaultAsync(product => product.Id == request.ProductionScheduleProductId);
+        var recognized = new[] { "syrup", "tube", "capsules", "tablet", "dry powder", "sachet" };
+        var category = new[] { batch?.Product?.Category?.Name, batch?.ProductPacking?.BasePackingUoM?.Name }
+            .Select(name => name?.Trim().ToLowerInvariant()).FirstOrDefault(name => recognized.Contains(name));
+        var unit = batch?.Product?.BaseUoM?.Symbol?.Trim().ToLowerInvariant();
+        if (category is null && unit is "ml" or "l") category = "syrup";
+        if (category is null) return new FinalPackingYield(0m);
+        if (category == "syrup")
+        {
+            var product = batch.Product;
+            var expected = batch.ProductPacking?.ExpectedYield ?? 0;
+            if (unit is not ("ml" or "l") || product.FullBatchSize <= 0 || product.BaseQuantity <= 0 || expected <= 0)
+                return Error.Validation("FinalPacking.SyrupSetup", "Configure the syrup product's full batch size, composition volume, and packing-style expected yield.");
+            return new FinalPackingYield(expected, product.FullBatchSize / 1_000m, product.BaseQuantity);
+        }
+        if (request.AverageVolumeFilledPerBottle <= 0)
+            return Error.Validation("FinalPacking.AverageFill", "The average fill must be greater than zero.");
+        if (request.TotalWeightReceived <= 0)
+            return Error.Validation("FinalPacking.ReceivedWeight", "The received weight must be greater than zero.");
+        try
+        {
+            var bulk = UomConverter.Convert(request.TotalWeightReceived, "kg", "mg").GetValueOrDefault();
+            var expected = decimal.Round(bulk / request.AverageVolumeFilledPerBottle, 0, MidpointRounding.AwayFromZero);
+            return expected > 0 ? new FinalPackingYield(expected) : Error.Validation("FinalPacking.ExpectedYield", "The measurements must produce a positive expected yield.");
+        }
+        catch (OverflowException)
+        {
+            return Error.Validation("FinalPacking.ExpectedYield", "The yield measurements exceed the supported range.");
+        }
+    }
+
     public async Task<Result<FinalPackingDto>> GetFinalPacking(Guid finalPackingId)
     {
         var finalPacking = await context
@@ -3696,6 +3771,9 @@ public class ProductionScheduleRepository(
                 .ThenInclude(m => m.Material)
             .Include(fp => fp.ProductPacking)
             .FirstOrDefaultAsync(fp => fp.Id == finalPackingId);
+
+        if (finalPacking is null)
+            return Error.NotFound("FinalPacking.NotFound", "Final packing has not been recorded for this batch.");
 
         return mapper.Map<FinalPackingDto>(finalPacking);
     }
@@ -3717,6 +3795,9 @@ public class ProductionScheduleRepository(
             .FirstOrDefaultAsync(fp =>
                 fp.ProductionScheduleProductId == productionScheduleProductId
             );
+
+        if (finalPacking is null)
+            return Error.NotFound("FinalPacking.NotFound", "Final packing has not been recorded for this batch.");
 
         return mapper.Map<FinalPackingDto>(finalPacking);
     }
@@ -3764,9 +3845,12 @@ public class ProductionScheduleRepository(
             return Error.NotFound("FinalPacking.NotFound", "Final Packing record not found");
         }
 
+        var expected = await CalculateFinalPackingExpectedYield(request);
+        if (expected.IsFailure) return expected.Error;
         context.FinalPackingMaterials.RemoveRange(existingFinalPacking.Materials);
 
         mapper.Map(request, existingFinalPacking);
+        ApplyFinalPackingYield(existingFinalPacking, expected.Value);
 
         context.FinalPackings.Update(existingFinalPacking);
         await context.SaveChangesAsync();

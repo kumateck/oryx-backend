@@ -1,3 +1,5 @@
+using API.Filters;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.AttendanceRecords;
@@ -37,11 +39,12 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// <summary>
     /// Get a daily attendance record summary based on and the date.
     /// </summary>
+    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet("general-summary")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralAttendanceReportResponse))]
-    public async Task<IResult> GeneralDailySummary()
+    public async Task<IResult> GeneralDailySummary([FromQuery] Guid? departmentId = null)
     {
-        var result = await repository.GeneralAttendanceReport();
+        var result = await repository.GeneralAttendanceReport(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

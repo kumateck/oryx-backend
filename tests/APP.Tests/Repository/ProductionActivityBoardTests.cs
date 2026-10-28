@@ -3,9 +3,11 @@ using APP.Repository;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -20,6 +22,227 @@ namespace APP.Tests.Repository;
 
 public class ProductionActivityBoardTests
 {
+    [Fact]
+    public async Task Syrup_reference_values_are_preloaded_from_product_and_style_without_a_received_weight()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("syrup-yield", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "syrup");
+        await fixture.Context.SaveChangesAsync();
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id,
+            AverageVolumeFilledPerBottle = 999, BatchSize = 1, TotalWeightReceived = 999,
+            YieldTotalQuantityPacked = 20_025, QualityControlAnalyticalSample = 3, RetainedSamples = 12,
+            TotalNumberOfBottles = 20_010, TotalQuantityPacked = 20_010, TotalGainOrLoss = 25,
+            NumberOfBottlesPerShipper = 30, NUmberOfFullShipperPacked = 667,
+        });
+        Assert.True(result.IsSuccess);
+        var stored = Assert.Single(await fixture.Context.FinalPackings.ToListAsync());
+        Assert.Equal(20_000m, stored.ExpectedYield);
+        Assert.Equal(3000m, stored.BatchSize);
+        Assert.Equal(150m, stored.AverageVolumeFilledPerBottle);
+        Assert.Equal(0m, stored.TotalWeightReceived);
+        Assert.Equal(20_010m, stored.TotalQuantityPacked);
+        Assert.Equal(25m, stored.TotalGainOrLoss);
+        var read = await fixture.Repository.GetFinalPackingByScheduleProduct(run.ProductionScheduleProductId);
+        Assert.True(read.IsSuccess);
+        Assert.Equal(20_000m, read.Value.ExpectedYield);
+    }
+
+    [Theory]
+    [InlineData("tube")]
+    [InlineData("capsules")]
+    [InlineData("tablet")]
+    [InlineData("dry powder")]
+    [InlineData("sachet")]
+    public async Task Weight_based_packing_saves_expected_yield_using_kg_and_mg(string category)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("weight-yield", fixture.Tablet, fixture.Secondary);
+        fixture.Packing(run, category);
+        await fixture.Context.SaveChangesAsync();
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId,
+            TotalWeightReceived = 120, AverageVolumeFilledPerBottle = 500,
+        });
+        Assert.True(result.IsSuccess);
+        Assert.Equal(240_000m, Assert.Single(await fixture.Context.FinalPackings.ToListAsync()).ExpectedYield);
+    }
+
+    [Fact]
+    public async Task Invalid_known_yield_measurements_do_not_save_or_complete_the_step()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("invalid-yield", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "syrup");
+        fixture.Syrup.BaseQuantity = 0;
+        await fixture.Context.SaveChangesAsync();
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id,
+            AverageVolumeFilledPerBottle = 0,
+        });
+        Assert.True(result.IsFailure);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
+        Assert.Equal(ProductionStatus.InProgress, run.Steps[0].Status);
+    }
+
+    [Fact]
+    public async Task Syrup_uses_full_product_batch_and_style_yield_and_invalid_setup_preserves_the_record()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("updated-yield", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "Bottle");
+        run.ProductionScheduleProduct.ProductPacking.ExpectedYield = 20_000;
+        run.ProductionScheduleProduct.Quantity = 1_500_000;
+        await fixture.Context.SaveChangesAsync();
+        var request = new CreateFinalPacking { ProductionScheduleProductId = run.ProductionScheduleProductId, AverageVolumeFilledPerBottle = 75 };
+        var created = await fixture.Repository.CreateFinalPacking(request);
+        Assert.True(created.IsSuccess);
+        var stored = Assert.Single(await fixture.Context.FinalPackings.ToListAsync());
+        Assert.Equal(20_000m, stored.ExpectedYield);
+        Assert.Equal(3000m, stored.BatchSize);
+        Assert.Equal(150m, stored.AverageVolumeFilledPerBottle);
+        run.ProductionScheduleProduct.ProductPacking.ExpectedYield = 19_980;
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Repository.UpdateFinalPacking(request, created.Value)).IsSuccess);
+        Assert.Equal(19_980m, stored.ExpectedYield);
+        fixture.Syrup.BaseQuantity = 0;
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Repository.UpdateFinalPacking(request, created.Value)).IsFailure);
+        Assert.Equal(19_980m, stored.ExpectedYield);
+    }
+
+    [Fact]
+    public async Task Missing_final_packing_returns_not_found_instead_of_a_null_validation_error()
+    {
+        await using var fixture = await Fixture.Create();
+        var byId = await fixture.Repository.GetFinalPacking(Guid.NewGuid());
+        var byBatch = await fixture.Repository.GetFinalPackingByScheduleProduct(Guid.NewGuid());
+        foreach (var result in new[] { byId, byBatch })
+        {
+            Assert.True(result.IsFailure);
+            Assert.Equal("FinalPacking.NotFound",result.Error.Code);
+            Assert.Equal(ErrorType.NotFound,result.Error.Type);
+        }
+    }
+
+    [Theory]
+    [InlineData(ProductionExtraPackingStatus.Pending)]
+    [InlineData(ProductionExtraPackingStatus.InProgress)]
+    public async Task Extra_material_blocks_completion_and_final_packing_until_issued(ProductionExtraPackingStatus status)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("outstanding-extra", fixture.Syrup, fixture.Secondary);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+        fixture.Extra(run, status);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+        var packing = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = step.Id
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.True(packing.IsFailure);
+        Assert.Equal(ProductionStatus.InProgress, step.Status);
+        Assert.Null(step.CompletedAt);
+        Assert.Null(run.CompletedAt);
+        Assert.Empty(run.ActivityLogs);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Completion_proceeds_with_no_extra_material_or_only_issued_material(bool hasExtra)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("issued-extra", fixture.Syrup, fixture.Secondary);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        if (hasExtra)
+        {
+            fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+            fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+        }
+        // Outstanding material belonging to a different batch does not block this batch.
+        fixture.Extra(fixture.Run("another-batch", fixture.Syrup, fixture.Secondary), ProductionExtraPackingStatus.Pending);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ProductionStatus.Completed, step.Status);
+        Assert.NotNull(step.CompletedAt);
+        Assert.Single(run.ActivityLogs);
+    }
+
+    [Fact]
+    public async Task Pending_extra_material_also_blocks_a_direct_start_without_changing_the_step()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("pending-extra", fixture.Syrup, fixture.Secondary);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        step.Status = ProductionStatus.New;
+        fixture.Extra(run, ProductionExtraPackingStatus.Pending);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.InProgress, Guid.NewGuid());
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ProductionStatus.New, step.Status);
+        Assert.Null(step.StartedAt);
+        Assert.Empty(run.ActivityLogs);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Final_packing_can_complete_after_all_extra_material_has_been_issued(bool hasExtra)
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("packing-issued", fixture.Syrup, fixture.Secondary);
+        fixture.Packing(run, "syrup");
+        if (hasExtra) fixture.Extra(run, ProductionExtraPackingStatus.Approved);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ProductionStatus.Completed, run.Steps[0].Status);
+        Assert.Single(await fixture.Context.FinalPackings.ToListAsync());
+    }
+
+    [Fact]
+    public async Task A_different_batch_cannot_be_used_to_bypass_the_packing_issue_gate()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("packing-unissued", fixture.Syrup, fixture.Secondary);
+        fixture.Extra(run, ProductionExtraPackingStatus.InProgress);
+        var other = fixture.Run("different-batch", fixture.Syrup, fixture.Secondary);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = other.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id
+        });
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ProductionStatus.InProgress, run.Steps[0].Status);
+        Assert.Null(run.Steps[0].CompletedAt);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
+    }
+
     [Fact]
     public async Task Includes_running_syrup_batches_whose_operations_are_outside_the_department_catalog()
     {
@@ -196,13 +419,14 @@ public class ProductionActivityBoardTests
                 new BoardUser(SyrupDepartment.Id, productionUser ? nameof(DepartmentType.Production) : nameof(DepartmentType.NonProduction)));
             var services = new ServiceCollection();
             services.AddLogging();
+            services.AddSingleton(Context);
             var http = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
             http.HttpContext.Request.Host = new HostString("oryx.test");
             services.AddSingleton<IHttpContextAccessor>(http);
             services.AddAutoMapper(configuration => { }, typeof(OryxMapper));
             Services = services.BuildServiceProvider();
             var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Millilitre", Symbol = "ml" };
-            Syrup = new Product { Id = Guid.NewGuid(), Name = "Coldrilif Syrup", Code = "NL-020", DepartmentId = SyrupDepartment.Id, Department = SyrupDepartment, BaseUomId = unit.Id, BaseUoM = unit };
+            Syrup = new Product { Id = Guid.NewGuid(), Name = "Coldrilif Syrup", Code = "NL-020", FullBatchSize = 3_000_000, BaseQuantity = 150, DepartmentId = SyrupDepartment.Id, Department = SyrupDepartment, BaseUomId = unit.Id, BaseUoM = unit };
             Tablet = new Product { Id = Guid.NewGuid(), Name = "Other product", Code = "OTHER", DepartmentId = OtherDepartment.Id, Department = OtherDepartment };
             Configured = new Operation { Id = Guid.NewGuid(), Name = "Configured syrup operation", DepartmentId = SyrupDepartment.Id, Order = 1 };
             Secondary = new Operation { Id = Guid.NewGuid(), Name = "Secondary packing activity", DepartmentId = OtherDepartment.Id, Order = 11 };
@@ -228,6 +452,29 @@ public class ProductionActivityBoardTests
                 OperationId = operation.Id, Operation = operation, Order = 2, Status = ProductionStatus.InProgress, IsCritical = true });
             Context.ProductionActivities.Add(run);
             return run;
+        }
+
+        public void Extra(ProductionActivity run, ProductionExtraPackingStatus status)
+        {
+            var material = new Material { Id = Guid.NewGuid(), Name = "Extra material", Code = Guid.NewGuid().ToString() };
+            Context.ProductionExtraPackings.Add(new ProductionExtraPacking
+            {
+                Id = Guid.NewGuid(), ProductionScheduleProductId = run.ProductionScheduleProductId,
+                ProductionScheduleProduct = run.ProductionScheduleProduct, Material = material, MaterialId = material.Id,
+                UoMId = Syrup.BaseUoM.Id, UoM = Syrup.BaseUoM, Quantity = 10, Status = status,
+                Approved = status != ProductionExtraPackingStatus.Pending,
+                IssuedAt = status == ProductionExtraPackingStatus.Approved ? DateTime.UtcNow : null
+            });
+        }
+
+        public void Packing(ProductionActivity run, string category)
+        {
+            var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Name = category, Symbol = category };
+            var packing = new ProductPacking { Id = Guid.NewGuid(), Name = "Yield test style", Product = run.ProductionScheduleProduct.Product,
+                ProductId = run.ProductionScheduleProduct.ProductId, BasePackingUoM = unit, BasePackingUomId = unit.Id, ExpectedYield = category == "syrup" ? 20_000 : 1 };
+            run.ProductionScheduleProduct.ProductPacking = packing;
+            run.ProductionScheduleProduct.ProductPackingId = packing.Id;
+            Context.AddRange(unit, packing);
         }
 
         public void SetRequestContext()

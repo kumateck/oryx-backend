@@ -1,3 +1,4 @@
+using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -54,6 +55,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="type">The type of the department. (Product or Non Product Department)</param>
     /// <returns>Returns a paginated list of departments.</returns>
+    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentDto>>))]

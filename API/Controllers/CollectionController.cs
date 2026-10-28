@@ -1,3 +1,4 @@
+using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -36,6 +37,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <param name="itemType">The type of item to retrieve.</param>
     /// <param name="materialKind">The kind of material</param>
     /// <returns>Returns a collection of items.</returns>
+    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet("{itemType}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]

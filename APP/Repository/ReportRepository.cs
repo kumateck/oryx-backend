@@ -2074,6 +2074,13 @@ public partial class ReportRepository(
             {
                 Id = i.Id,
                 Name = i.Name,
+                Code = i.Code,
+                AvailableQuantity = i.AvailableQuantity,
+                MinimumLevel = i.MinimumLevel,
+                MaximumLevel = i.MaximumLevel,
+                ReorderLevel = i.ReorderLevel,
+                IsActive = i.IsActive,
+                Description = i.Description,
                 Store = i.Store,
                 Classification = i.Classification,
 
@@ -2093,6 +2100,7 @@ public partial class ReportRepository(
                         {
                             Id = i.UnitOfMeasure.Id,
                             Name = i.UnitOfMeasure.Name,
+                            Symbol = i.UnitOfMeasure.Symbol,
                         },
             })
             .ToListAsync();
@@ -5023,7 +5031,7 @@ public partial class ReportRepository(
 
     public async Task<Result<List<MaterialsStockBatchDetailDto>>> GetMaterialsStockBatchDetail(
         Guid? departmentId = null, MaterialKind? materialKind = null,
-        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null)
+        string batchNumber = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null, Guid? materialId = null)
     {
         var query = context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
             .Where(smb => !smb.DeletedAt.HasValue && smb.Quantity > 0
@@ -5034,6 +5042,9 @@ public partial class ReportRepository(
             query = query.Where(smb =>
                 smb.MaterialBatch.Material.Departments.Any(md =>
                     md.DepartmentId == departmentId.Value && !md.DeletedAt.HasValue));
+
+        if (materialId.HasValue)
+            query = query.Where(stock => stock.MaterialBatch.MaterialId == materialId.Value);
 
         if (materialKind.HasValue)
             query = query.Where(smb => smb.MaterialBatch.Material.Kind == materialKind.Value);
@@ -6457,7 +6468,7 @@ public partial class ReportRepository(
         Guid? materialId = null, DateTime? expiryDateFrom = null, DateTime? expiryDateTo = null,
         Guid? departmentId = null)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = (context.ReportAsOfUtc ?? DateTime.UtcNow).Date;
 
         var query = context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
             .Where(smb => !smb.DeletedAt.HasValue && smb.Quantity > 0
