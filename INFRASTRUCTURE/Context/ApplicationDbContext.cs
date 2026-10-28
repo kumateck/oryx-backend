@@ -1866,8 +1866,9 @@ public partial class ApplicationDbContext(
         modelBuilder
             .Entity<ShipmentDiscrepancyItem>()
             .HasQueryFilter(a => !a.ShipmentDiscrepancy.DeletedAt.HasValue);
+        // Multiple discrepancy records may reference one invoice line; keep the deployed nonunique index.
         modelBuilder.Entity<ShipmentDiscrepancyItem>()
-            .HasIndex(a => a.ShipmentInvoiceItemId);
+            .HasIndex(a => a.ShipmentInvoiceItemId).IsUnique(false);
         modelBuilder.Entity<ShipmentDiscrepancyItem>()
             .HasOne(a => a.ShipmentInvoiceItem).WithMany()
             .HasForeignKey(a => a.ShipmentInvoiceItemId)
@@ -2556,6 +2557,9 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<StockDiscrepancy>()
             .HasIndex(a => a.ShelfMaterialBatchId).IsUnique()
             .HasFilter("\"Rejected\" = false AND \"ReconciledAt\" IS NULL AND \"DeletedAt\" IS NULL");
+        // Preserve the deployed lookup index even though the compound index shares its prefix.
+        modelBuilder.Entity<StockDiscrepancyApproval>()
+            .HasIndex(a => a.ApprovalId);
         modelBuilder.Entity<StockDiscrepancyApproval>()
             .HasIndex(a => new { a.ApprovalId, a.StockDiscrepancyId,
                 a.Order, a.UserId, a.RoleId }).IsUnique()

@@ -1,5 +1,39 @@
 # Customer-host backend migration and deployment
 
+## Model consistency and overlapping pollers (2026-10-28)
+
+EF 9 rejected the first customer migration job with `PendingModelChangesWarning`.
+Generating a diagnostic model diff identified two differences from the deployed
+snapshot: an inferred unique index on the shipment discrepancy invoice-line
+reference, and a convention-removed standalone stock approval lookup index.
+Pin the invoice-line index as nonunique and explicitly retain the approval
+lookup index. This preserves the existing one-to-many workflow and the schema
+already installed by all 188 migrations. No new migration or schema change is
+required; the warning remains enabled. `DeploymentModelConsistencyTests` checks
+the current Npgsql model against the committed snapshot without a database.
+
+The image build now runs `dotnet ef migrations has-pending-model-changes`, and
+the customer pipeline repeats that read-only check before stopping the API or
+creating a pending activation marker. A new drift failure leaves the working
+API running. After merging this fix into backend main, update the stable
+deployment-tool checkout and use `bash deploy.sh deploy --retry` to resolve the
+existing failed deployment. `poll` intentionally cannot clear a failed/pending
+release by itself.
+
+Customer Cron inspection also found a legacy every-minute `~/redeploy.sh` job
+that touches both `oryx-backend` and `oryx-next` through Git/Docker Compose.
+Comment out only that legacy entry before enabling the new backend poller;
+otherwise it can bypass the new lock and maintenance state. Preserve the
+separate PostgreSQL backup and Oryx Live frontend poll entries. Disabling the
+legacy job pauses its Next updater, not the already-running Next container.
+If Next updates are still wanted, separate them from backend deployment before
+restoring that portion of the old job.
+
+The full failed customer log showed validation aborting before migration
+execution. Existing backups and failed-release markers must remain intact.
+Do not suppress the EF warning, fabricate migration history or downgrade the
+database to make activation pass.
+
 The customer server builds backend `origin/main` and applies migrations locally.
 The desktop `entrance-server` pipeline updates the frontend only. The backend's
 GitHub demo workflow updates its separate demo database.
@@ -79,8 +113,10 @@ bash /path/to/extracted-package/apply.sh /absolute/path/to/oryx-backend
 This verifies the checksum and database migration history, stops only the API,
 creates/verifies a backup, runs the SQL with PostgreSQL `ON_ERROR_STOP`, and
 verifies that every package migration is installed. It uses the existing
-Compose configuration to identify the database; no host SDK or image build
-is involved. It deliberately leaves the API stopped and a pending marker:
+running API container's private runtime configuration to identify the database;
+it verifies that the selected PostgreSQL container matches that host on a shared
+Docker network. No host SDK, Compose labels, or image build is involved. It
+deliberately leaves the API stopped and a pending marker:
 activate an API built from the package's source release or a newer main that
 contains all its migrations. `bash deploy.sh deploy --retry` performs that
 activation through the full pipeline once the deployment change is installed.
@@ -88,6 +124,16 @@ For interrupted SQL, inspect the log before using `apply.sh <checkout> --retry`.
 
 Do not pair an ahead-of-main database with an older API. This package applies
 schema only; it does not install the backend application or update the frontend.
+
+If the containers use other names, select them explicitly with
+`ORYX_BACKEND_API_CONTAINER=<api-name>` and
+`ORYX_BACKEND_DB_CONTAINER=<postgres-name>` before the `bash apply.sh` command.
+The default names are `oryx_api` and `postgres_db`. A missing API container is
+a preflight failure: no migration SQL is executed. First locate the actual API
+and its configured upstream; do not guess a database or rename containers just
+to make the check pass. API environment snapshots stay in protected logs and
+must not be pasted into chat. When the API runs as a host service or on another
+server, this container runner requires a different deployment path.
 
 ## Migration and recovery behavior
 

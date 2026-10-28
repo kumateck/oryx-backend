@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-interface Fixture { directory: string; sha: string; failure?: string; database?: string }
+interface Fixture { directory: string; sha: string; failure?: string; database?: string; apiContainer?: string; dbContainer?: string }
 const fixture: Fixture = JSON.parse(readFileSync(process.argv[2] ?? "", "utf8"));
 const tool = process.argv[3];
 const args = process.argv.slice(4);
@@ -22,7 +22,19 @@ if (tool === "git") {
   if (args[0] === "build") fail("build");
   if (args[0] === "inspect" && args.includes("--format")) {
     const format = args[args.indexOf("--format") + 1] ?? "";
-    if (format.includes("compose.project")) process.stdout.write("oryx-backend\n");
+    if (format === "{{json .}}") {
+      const name = args.at(-1);
+      const apiName = fixture.apiContainer ?? "oryx_api";
+      const dbName = fixture.dbContainer ?? "postgres_db";
+      if (name === apiName) {
+        if (fixture.failure === "missing-api") { process.stderr.write(`Error: no such object: ${name}\n`); process.exit(1); }
+        const host = fixture.failure === "wrong-db" ? "unrelated-db" : dbName;
+        const password = fixture.failure === "quoted-password" ? '"fixture;Host=unrelated-db;Database=wrong"' : "fixture";
+        process.stdout.write(JSON.stringify({ Name: `/${apiName}`, Config: { Env: [`connectionString=Host=${host};Port=5432;Username=test;Password=${password};Database=${fixture.database ?? "entrancedb"}`] }, State: { Running: true }, NetworkSettings: { Networks: { sail: {} } } }));
+      } else if (name === dbName) {
+        process.stdout.write(JSON.stringify({ Name: `/${dbName}`, Config: { Hostname: "db-host" }, State: { Running: true }, NetworkSettings: { Networks: { sail: { Aliases: [dbName], IPAddress: "172.18.0.2" } } } }));
+      } else { process.stderr.write(`Error: no such object: ${name}\n`); process.exit(1); }
+    } else if (format.includes("compose.project")) process.stdout.write("oryx-backend\n");
     else if (format.includes("compose.service")) process.stdout.write("app\n");
     else process.stdout.write(existsSync(join(fixture.directory, "active")) ? "new-image\n" : "old-image\n");
   }
@@ -31,7 +43,10 @@ if (tool === "git") {
     if (args.includes("config")) process.stdout.write(JSON.stringify({ services: { app: { environment: {
       connectionString: `Host=postgres_db;Port=5432;Username=test;Password=fixture;Database=${fixture.database ?? "entrancedb"}`,
     } } } }));
-    if (args.includes("run")) fail("migration");
+    if (args.includes("run")) {
+      if (args.includes("has-pending-model-changes")) fail("model");
+      else fail("migration");
+    }
     if (args.includes("up")) { fail("activate"); writeFileSync(join(fixture.directory, "active"), "new"); }
   }
   if (args[0] === "exec" && args.some(value => value.includes("exec pg_dump"))) { fail("backup"); process.stdout.write("PGDMPfixture"); }
