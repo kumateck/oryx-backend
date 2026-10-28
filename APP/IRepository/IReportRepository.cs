@@ -22,6 +22,8 @@ namespace APP.IRepository;
 
 public interface IReportRepository
 {
+    Task<Result<ProductionReadinessReportDto>> GetProductionReadinessReport(
+        ProductionReadinessFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId);
     Task<Result<List<MaterialWithStockDto>>> GetMaterialsBelowMinimumStockLevel(Guid departmentId);
     Task<Result<HrDashboardDto>> GetHumanResourceDashboardReport(MovementReportFilter filter, Guid? designationId, EmployeeType? employeeType, Gender? gender);

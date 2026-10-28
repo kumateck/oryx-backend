@@ -34,6 +34,24 @@ namespace API.Controllers;
 [Authorize]
 public class ReportController(IReportRepository repository) : ControllerBase
 {
+    /// <summary>Complete market-grouped production plan and current product configuration readiness.</summary>
+    [HttpGet("production-readiness", Name = "GetProductionReadinessReport")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReadinessReportDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IResult> GetProductionReadinessReport(
+        [FromQuery] ProductionReadinessFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId))
+            return TypedResults.Unauthorized();
+        var result = await repository.GetProductionReadinessReport(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     private bool TryGetAuthenticatedDepartment(out Guid departmentId)
     {
         var value = HttpContext.Items["Department"] as string;
