@@ -1027,9 +1027,6 @@ public class ProcurementRepository(
             return approvalGate;
 
         purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
-        purchaseOrder.Status = PurchaseOrderStatus.Completed;
-        context.PurchaseOrders.Update(purchaseOrder);
-        await context.SaveChangesAsync();
 
         var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
         var fileContent = pdfService.GeneratePdfFromHtml(
@@ -1049,8 +1046,15 @@ public class ProcurementRepository(
         }
         catch (Exception e)
         {
+            // Nothing has been saved, so the order stays approved and can be sent again.
             return Error.Validation("Supplier.Quotation", e.Message);
         }
+
+        // Marked sent only once the supplier has been emailed. Until then the order stays on
+        // the Approved purchase orders page.
+        purchaseOrder.Status = PurchaseOrderStatus.Completed;
+        context.PurchaseOrders.Update(purchaseOrder);
+        await context.SaveChangesAsync();
 
         return Result.Success();
     }
