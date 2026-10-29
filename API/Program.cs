@@ -7,6 +7,7 @@ using API.Database.Seeds;
 using APP;
 using APP.Mapper;
 using APP.Middlewares;
+using APP.Services.ErrorLogging;
 using Asp.Versioning;
 using AutoMapper.Internal;
 using DOMAIN.Entities.Roles;
@@ -23,17 +24,40 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (!args.Contains("--export-openapi")) builder.WebHost.UseSentry(o =>
+// Production error visibility:
+//  1. Every Error/Critical log is stored in this instance's own database (ErrorLogs table) with the
+//     request details, readable by IT users at GET /api/v1/error-log. Works on customer servers
+//     without any outside service. Settings: "ErrorLogging" section (env ErrorLogging__*).
+//  2. When ErrorLogging:CollectorUrl and CollectorApiKey are set, stored errors are also sent over
+//     HTTPS to the central Oryx Monitor (re-sent after outages), plus a heartbeat every few minutes.
+//  3. Console output carries UTC timestamps and the request's TraceId, for `docker logs`.
+//  4. Sentry, when enabled, gets the same errors tagged with this customer instance and release.
+builder.Services.AddErrorLogging(builder.Configuration);
+builder.Logging.AddSimpleConsole(o =>
 {
-    o.Dsn =
-        "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
-    // When configuring for the first time, to see what the SDK is doing:
-    o.Debug = false;
-    // Set TracesSampleRate to 1.0 to capture 100%
-    // of transactions for tracing.
-    // We recommend adjusting this value in production
-    o.TracesSampleRate = 0.2;
+    o.IncludeScopes = true;
+    o.UseUtcTimestamp = true;
+    o.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ ";
 });
+
+var errorLogOptions = builder.Configuration.GetSection(ErrorLogOptions.Section).Get<ErrorLogOptions>() ?? new ErrorLogOptions();
+const string defaultSentryDsn =
+    "https://a2211e70914a3e5d12bfc5840da8fc2f@o4507771832762368.ingest.de.sentry.io/4507771836301392";
+
+if (!args.Contains("--export-openapi") && builder.Configuration.GetValue("Sentry:Enabled", true))
+    builder.WebHost.UseSentry(o =>
+    {
+        var dsn = builder.Configuration["Sentry:Dsn"];
+        o.Dsn = string.IsNullOrWhiteSpace(dsn) ? defaultSentryDsn : dsn;
+        o.Debug = false;
+        // Separates customers in Sentry and ties each error to the deployed build.
+        o.Environment = errorLogOptions.ResolveInstance();
+        o.Release = errorLogOptions.ResolveRelease();
+        // Customer data (request bodies, user details) stays in the instance's own error log.
+        o.SendDefaultPii = false;
+        o.MaxRequestBodySize = Sentry.Extensibility.RequestSize.None;
+        o.TracesSampleRate = builder.Configuration.GetValue("Sentry:TracesSampleRate", 0.2);
+    });
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -97,7 +121,12 @@ builder.Services.AddCors(options =>
         "default",
         policyBuilder =>
         {
-            policyBuilder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+            policyBuilder
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                // Lets the web/desktop client read the error reference to show users.
+                .WithExposedHeaders(ExceptionHandlingMiddleware.TraceIdHeader);
         }
     );
 });

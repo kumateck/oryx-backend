@@ -36,6 +36,10 @@ public class ProductionScheduleRepository(
     IProductionActivityStepEventPublisher stepEventPublisher
 ) : IProductionScheduleRepository
 {
+    public Task<Result<ProductionStepRecordsDto>> GetProductionStepRecords(Guid activityId, Guid stepId,
+        Guid actorId, CancellationToken cancellationToken = default) =>
+        ProductionStepRecordsQuery.Read(context, mapper, activityId, stepId, actorId, cancellationToken);
+
     public async Task<Result<Guid>> CreateProductionSchedule(
         CreateProductionScheduleRequest request,
         Guid userId
@@ -3896,8 +3900,18 @@ public class ProductionScheduleRepository(
             ) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 
+        // Not raised yet is a normal state before stock is requested: answer 404, which clients read as "none yet".
+        if (requisition is null)
+            return StockRequisitionNotRaised("raw material");
+
         return mapper.Map<RequisitionDto>(requisition);
     }
+
+    private static Error StockRequisitionNotRaised(string kind) =>
+        Error.NotFound(
+            "StockRequisition.NotRaised",
+            $"No {kind} stock requisition has been raised for this product yet."
+        );
 
     public async Task<Result<RequisitionDto>> GetStockRequisitionForPackaging(
         Guid productionScheduleProductId
@@ -3918,6 +3932,9 @@ public class ProductionScheduleRepository(
                 && r.RequisitionType == RequisitionType.Stock
             ) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
+
+        if (requisition is null)
+            return StockRequisitionNotRaised("packaging material");
 
         return mapper.Map<RequisitionDto>(requisition);
     }

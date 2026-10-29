@@ -57,6 +57,8 @@ WORKDIR /app
 
 ARG RELEASE_SHA=unversioned
 LABEL org.opencontainers.image.revision=$RELEASE_SHA
+# Stamped on stored error logs and Sentry events so each error maps to the deployed commit.
+ENV ORYX_RELEASE=$RELEASE_SHA
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libgdiplus && \
