@@ -4,6 +4,11 @@ public record SmtpSettings(string Host, int Port, string Username, string Passwo
 {
     public static SmtpSettings FromEnvironment() => Read(Environment.GetEnvironmentVariable);
 
+    public static bool IsConfigured(Func<string, string?> env) => Missing(env).Count == 0;
+
+    private static List<string> Missing(Func<string, string?> env) =>
+        new[] { "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD" }.Where(name => string.IsNullOrWhiteSpace(env(name))).ToList();
+
     // Blank values count as unset: docker compose passes a setting missing from .env as "".
     public static SmtpSettings Read(Func<string, string?> env)
     {
@@ -14,10 +19,7 @@ public record SmtpSettings(string Host, int Port, string Username, string Passwo
         var password = Get("SMTP_PASSWORD");
         var sender = Get("SMTP_FROM") ?? username;
 
-        var missing = new List<string>();
-        if (host == null) missing.Add("SMTP_HOST");
-        if (username == null) missing.Add("SMTP_USERNAME");
-        if (password == null) missing.Add("SMTP_PASSWORD");
+        var missing = Missing(env);
         if (missing.Count > 0)
             throw new InvalidOperationException(
                 $"Email is not configured: {string.Join(", ", missing)} must be set in the API container before sending email");
