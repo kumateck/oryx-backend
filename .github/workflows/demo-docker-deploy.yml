@@ -191,7 +191,6 @@ jobs:
             --env ErrorLogging__CollectorApiKey=${{ secrets.ERROR_LOG_COLLECTOR_KEY }} \
             --env ErrorLogging__Instance=demo \
             --env ErrorLogging__Release=${{ github.sha }} \
-
             --volume "\$formula_secret_source:/run/secrets:ro" \
             "${DOCKER_IMAGE_NAME}:${{ github.sha }}"
 
