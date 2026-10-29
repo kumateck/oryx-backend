@@ -21,6 +21,19 @@ namespace API.Controllers;
 [ApiController]
 public class ProductionScheduleController(IProductionScheduleRepository repository) : ControllerBase
 {
+    /// <summary>Read action evidence for a selected step, including completed production.</summary>
+    [HttpGet("activity/{activityId:guid}/step/{stepId:guid}/records", Name = "GetProductionStepRecords")]
+    [Authorize(PermissionKeys.CanViewPlannedProducts)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionStepRecordsDto))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionStepRecords(Guid activityId, Guid stepId, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actorId)) return TypedResults.Unauthorized();
+        var result = await repository.GetProductionStepRecords(activityId, stepId, actorId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     #region Production Schedule
 
     /// <summary>

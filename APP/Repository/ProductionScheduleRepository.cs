@@ -36,6 +36,10 @@ public class ProductionScheduleRepository(
     IProductionActivityStepEventPublisher stepEventPublisher
 ) : IProductionScheduleRepository
 {
+    public Task<Result<ProductionStepRecordsDto>> GetProductionStepRecords(Guid activityId, Guid stepId,
+        Guid actorId, CancellationToken cancellationToken = default) =>
+        ProductionStepRecordsQuery.Read(context, mapper, activityId, stepId, actorId, cancellationToken);
+
     public async Task<Result<Guid>> CreateProductionSchedule(
         CreateProductionScheduleRequest request,
         Guid userId
