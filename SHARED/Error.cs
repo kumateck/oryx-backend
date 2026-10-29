@@ -32,6 +32,10 @@ public record Error
 
     public static Error Failure(string code, string description) =>
         new(code, description, ErrorType.Failure);
+
+    /// <summary>The server is missing something it needs (e.g. configuration); maps to HTTP 503.</summary>
+    public static Error Unavailable(string code, string description) =>
+        new(code, description, ErrorType.Unavailable);
 }
 
 public enum ErrorType
@@ -41,5 +45,6 @@ public enum ErrorType
     NotFound,
     Conflict,
     Failure,
-    Forbidden
+    Forbidden,
+    Unavailable
 }

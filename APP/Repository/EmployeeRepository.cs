@@ -636,10 +636,15 @@ public partial class EmployeeRepository(ApplicationDbContext context,
                 if (!updateResult.Succeeded)
                     return Error.Validation("User.Update", string.Join("; ", updateResult.Errors.Select(e => e.Description)));
 
-                await authRepository.ForgotPassword(new ForgotPasswordRequest
+                var resetResult = await authRepository.ForgotPassword(new ForgotPasswordRequest
                 {
                     Email = newEmail
                 });
+                if (!resetResult.IsSuccess)
+                {
+                    await transaction.RollbackAsync();
+                    return resetResult;
+                }
             }
 
             await transaction.CommitAsync();
