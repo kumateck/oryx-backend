@@ -9,7 +9,9 @@ public class MongoDbContext
 
     public MongoDbContext()
     {
-        var connectionString = Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION_STRING") ?? "mongodb://root:SNsiilzMRr9UCzz@164.90.142.68:27018";
+        // Compose passes an unset value as "", so blank also means "use the default".
+        var configured = Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION_STRING");
+        var connectionString = !string.IsNullOrWhiteSpace(configured) ? configured : "mongodb://root:SNsiilzMRr9UCzz@164.90.142.68:27018";
         var client = new MongoClient(connectionString);
         var environment = Environment.GetEnvironmentVariable("Environment");
         var dbName = environment == "dev" ? "logs" : "demo_logs";

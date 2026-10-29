@@ -7,6 +7,8 @@ services:
     image: oryx-api
     ports:
       - "8080:5001"
+    # Only settings listed here reach the API; a value in .env alone is ignored.
+    # SettingsContractTests fails when the code reads a setting missing from this list.
     environment:
       - connectionString=Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=${DB_DATABASE}
       - redisConnectionString=redis:6379,abortConnect=false
@@ -22,8 +24,17 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
       - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
       - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      # Activity logs. Blank keeps the built-in default.
+      - MONGO_DB_CONNECTION_STRING=${MONGO_DB_CONNECTION_STRING:-}
+      # Optional features: blank leaves them switched off.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}
+      - bitlyToken=${bitlyToken:-}
       - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
       - ONLYOFFICE_PUBLIC_URL=${ONLYOFFICE_PUBLIC_URL}
       - ONLYOFFICE_INTERNAL_URL=http://onlyoffice_documentserver
