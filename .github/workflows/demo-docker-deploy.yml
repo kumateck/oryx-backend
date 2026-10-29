@@ -187,6 +187,11 @@ jobs:
             --env FORMULA_SERVICE_BASE_URL=http://formula-calculation:3101/ \
             --env FORMULA_SERVICE_AUTH_SECRET_FILE=/run/secrets/formula-service-token \
             --env FORMULA_SERVICE_CLIENT_TIMEOUT_MS=2500 \
+            --env ErrorLogging__CollectorUrl=https://oryxmonitor.kumateck.com \
+            --env ErrorLogging__CollectorApiKey=${{ secrets.ERROR_LOG_COLLECTOR_KEY }} \
+            --env ErrorLogging__Instance=demo \
+            --env ErrorLogging__Release=${{ github.sha }} \
+
             --volume "\$formula_secret_source:/run/secrets:ro" \
             "${DOCKER_IMAGE_NAME}:${{ github.sha }}"
 

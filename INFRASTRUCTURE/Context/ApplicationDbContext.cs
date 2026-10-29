@@ -21,6 +21,7 @@ using DOMAIN.Entities.DamagedStocks;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Designations;
 using DOMAIN.Entities.EmployeeHistories;
+using DOMAIN.Entities.ErrorLogs;
 using DOMAIN.Entities.Employees;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Formulas;
@@ -442,6 +443,7 @@ public partial class ApplicationDbContext(
     public DbSet<ProductionActivityStepResource> ProductionActivityStepResources { get; set; }
     public DbSet<ProductionActivityStepWorkCenter> ProductionActivityStepWorkCenters { get; set; }
     public DbSet<ProductionActivityLog> ProductionActivityLogs { get; set; }
+    public DbSet<ErrorLog> ErrorLogs { get; set; }
 
     public DbSet<ProductionOrder> ProductionOrders { get; set; }
     public DbSet<ProductionOrderApprovals> ProductionOrderApprovals { get; set; }
