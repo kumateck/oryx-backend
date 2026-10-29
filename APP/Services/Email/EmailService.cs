@@ -7,6 +7,8 @@ namespace APP.Services.Email;
 
 public class EmailService(ILogger<EmailService> logger) : IEmailService
 {
+    public bool IsConfigured => SmtpSettings.IsConfigured(Environment.GetEnvironmentVariable);
+
     public void SendMail(string name, string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
         var smtp = SmtpSettings.FromEnvironment();
