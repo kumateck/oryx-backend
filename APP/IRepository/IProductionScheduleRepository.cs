@@ -16,6 +16,7 @@ namespace APP.IRepository;
 
 public interface IProductionScheduleRepository
 {
+    Task<Result<ProductionStepRecordsDto>> GetProductionStepRecords(Guid activityId, Guid stepId, Guid actorId, CancellationToken cancellationToken = default);
     Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId);
     Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId);
     Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(

@@ -7,6 +7,8 @@ services:
     image: oryx-api
     ports:
       - "8080:5001"
+    # Only settings listed here reach the API; a value in .env alone is ignored.
+    # SettingsContractTests fails when the code reads a setting missing from this list.
     environment:
       - connectionString=Host=postgres_db;Port=5432;Username=${DB_USERNAME};Password=${DB_PASSWORD};Database=${DB_DATABASE}
       - redisConnectionString=redis:6379,abortConnect=false
@@ -22,12 +24,41 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
       - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
       - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      # Activity logs. Blank keeps the built-in default.
+      - MONGO_DB_CONNECTION_STRING=${MONGO_DB_CONNECTION_STRING:-}
+      # Optional features: blank leaves them switched off.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}
+      - bitlyToken=${bitlyToken:-}
       - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
       - ONLYOFFICE_PUBLIC_URL=${ONLYOFFICE_PUBLIC_URL}
       - ONLYOFFICE_INTERNAL_URL=http://onlyoffice_documentserver
       - API_INTERNAL_BASE_URL=http://oryx_api:5001
+      # Error logging: the customer/server name shown on each stored error and in Sentry.
+      - ErrorLogging__Instance=${ORYX_INSTANCE_NAME:-}
+      - ErrorLogging__RetentionDays=${ERROR_LOG_RETENTION_DAYS:-90}
+      # Optional: send every error to the central Oryx Monitor over HTTPS (e.g. https://monitor.example.com)
+      # with this customer's API key. Entries are kept here and re-sent if the monitor is unreachable.
+      - ErrorLogging__CollectorUrl=${ERROR_LOG_COLLECTOR_URL:-}
+      - ErrorLogging__CollectorApiKey=${ERROR_LOG_COLLECTOR_KEY:-}
+      # Set to false to keep captured request bodies on this server only.
+      - ErrorLogging__ForwardRequestBody=${ERROR_LOG_FORWARD_BODY:-true}
+      # Set to false to send errors only to the monitor, best effort (the /error-log API then shows nothing).
+      - ErrorLogging__StoreInDatabase=${ERROR_LOG_STORE_IN_DATABASE:-true}
+      # Sentry: set SENTRY_ENABLED=false for customers whose errors must not leave the server.
+      - Sentry__Enabled=${SENTRY_ENABLED:-true}
+      - Sentry__Dsn=${SENTRY_DSN:-}
+    # Keeps `docker logs` output from filling the server disk.
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     volumes:
       - ./https:/https:ro
     networks:

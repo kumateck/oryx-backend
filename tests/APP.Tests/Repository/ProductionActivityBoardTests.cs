@@ -8,6 +8,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
+using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Routes;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -181,6 +182,70 @@ public class ProductionActivityBoardTests
         Assert.Equal(ProductionStatus.Completed, step.Status);
         Assert.NotNull(step.CompletedAt);
         Assert.Single(run.ActivityLogs);
+    }
+
+    [Fact]
+    public async Task The_step_before_final_packing_waits_until_packaging_is_requested_and_issued()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("no-packaging", fixture.Syrup, fixture.Secondary, packagingRequested: false);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        fixture.FinalPackingStep(run);
+        await fixture.Context.SaveChangesAsync();
+
+        var notRequested = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+        Assert.Equal("ProductActivity.PackagingNotIssued", notRequested.Errors.Single().Code);
+
+        var requisition = fixture.PackagingRequisition(run.ProductionScheduleProductId, issued: false);
+        await fixture.Context.SaveChangesAsync();
+        var notIssued = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+        Assert.Equal("ProductActivity.PackagingNotIssued", notIssued.Errors.Single().Code);
+        Assert.Equal(ProductionStatus.InProgress, step.Status);
+        Assert.Null(step.CompletedAt);
+
+        requisition.Status = RequestStatus.Completed;
+        await fixture.Context.SaveChangesAsync();
+        var completed = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+        Assert.True(completed.IsSuccess);
+        Assert.Equal(ProductionStatus.Completed, step.Status);
+    }
+
+    [Fact]
+    public async Task A_step_packaging_was_requested_from_is_completed_by_hand_once_it_is_issued()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("requested-here", fixture.Syrup, fixture.Secondary, packagingRequested: false);
+        var step = run.Steps[0];
+        step.IsCritical = false;
+        var requisition = fixture.PackagingRequisition(run.ProductionScheduleProductId, issued: false, stepId: step.Id);
+        await fixture.Context.SaveChangesAsync();
+
+        var pending = await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid());
+        Assert.Equal("ProductActivity.PackagingNotIssued", pending.Errors.Single().Code);
+        Assert.Equal(ProductionStatus.InProgress, step.Status);
+
+        requisition.Status = RequestStatus.Completed;
+        await fixture.Context.SaveChangesAsync();
+        Assert.True((await fixture.Repository.UpdateStatusOfProductionActivityStep(step.Id, ProductionStatus.Completed, Guid.NewGuid())).IsSuccess);
+        Assert.Equal(ProductionStatus.Completed, step.Status);
+    }
+
+    [Fact]
+    public async Task Final_packing_is_refused_until_packaging_is_issued()
+    {
+        await using var fixture = await Fixture.Create();
+        var run = fixture.Run("not-issued", fixture.Syrup, fixture.Secondary, packagingRequested: false);
+        fixture.PackagingRequisition(run.ProductionScheduleProductId, issued: false);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Repository.CreateFinalPacking(new CreateFinalPacking
+        {
+            ProductionScheduleProductId = run.ProductionScheduleProductId, ProductionActivityStepId = run.Steps[0].Id
+        });
+
+        Assert.Equal("FinalPacking.PackagingNotIssued", result.Errors.Single().Code);
+        Assert.Empty(await fixture.Context.FinalPackings.ToListAsync());
     }
 
     [Fact]
@@ -410,7 +475,7 @@ public class ProductionActivityBoardTests
         public Operation Secondary { get; }
         public Operation Sampling { get; }
         private ProductionSchedule Schedule { get; }
-        public ProductionScheduleRepository Repository => new(Context, Services.GetRequiredService<IMapper>(), null!, null!, null!, null!, new NoOpProductionActivityStepEventPublisher());
+        public ProductionScheduleRepository Repository => new(Context, Services.GetRequiredService<IMapper>(), null!, null!, new NoOpBackgroundWorker(), null!, new NoOpProductionActivityStepEventPublisher());
 
         private Fixture(bool productionUser)
         {
@@ -442,16 +507,39 @@ public class ProductionActivityBoardTests
             return fixture;
         }
 
-        public ProductionActivity Run(string? batchNumber, Product product, Operation operation)
+        public ProductionActivity Run(string? batchNumber, Product product, Operation operation, bool packagingRequested = true)
         {
             var batch = new ProductionScheduleProduct { Id = Guid.NewGuid(), ProductionScheduleId = Schedule.Id, ProductionSchedule = Schedule,
                 ProductId = product.Id, Product = product, BatchNumber = batchNumber!, Quantity = 3_000_000 };
+            if (packagingRequested) PackagingRequisition(batch.Id);
             var run = new ProductionActivity { Id = Guid.NewGuid(), Code = Guid.NewGuid().ToString(), ProductionScheduleProductId = batch.Id,
                 ProductionScheduleProduct = batch, StartedAt = DateTime.UtcNow };
             run.Steps.Add(new ProductionActivityStep { Id = Guid.NewGuid(), ProductionActivityId = run.Id, ProductionActivity = run,
                 OperationId = operation.Id, Operation = operation, Order = 2, Status = ProductionStatus.InProgress, IsCritical = true });
             Context.ProductionActivities.Add(run);
             return run;
+        }
+
+        public Requisition PackagingRequisition(Guid batchId, bool issued = true, Guid? stepId = null)
+        {
+            var requisition = new Requisition
+            {
+                Id = Guid.NewGuid(), Code = $"PM/N/26/{Guid.NewGuid():N}", RequisitionType = RequisitionType.Stock, ProductionScheduleProductId = batchId,
+                ProductionActivityStepId = stepId, Status = issued ? RequestStatus.Completed : RequestStatus.Pending,
+            };
+            Context.Requisitions.Add(requisition);
+            return requisition;
+        }
+
+        /// <summary>Adds a final packing step right after the run's first step.</summary>
+        public ProductionActivityStep FinalPackingStep(ProductionActivity run)
+        {
+            var operation = new Operation { Id = Guid.NewGuid(), Name = "Final Packing" };
+            var step = new ProductionActivityStep { Id = Guid.NewGuid(), ProductionActivityId = run.Id, ProductionActivity = run,
+                OperationId = operation.Id, Operation = operation, Order = run.Steps[0].Order + 1, Status = ProductionStatus.New };
+            run.Steps.Add(step);
+            Context.Add(operation);
+            return step;
         }
 
         public void Extra(ProductionActivity run, ProductionExtraPackingStatus status)
@@ -490,4 +578,14 @@ public class ProductionActivityBoardTests
             await Services.DisposeAsync();
         }
     }
+}
+
+file sealed class NoOpBackgroundWorker : APP.Services.Background.IBackgroundWorkerService
+{
+    public void EnqueueLog(DOMAIN.Entities.ActivityLogs.CreateActivityLog log) { }
+    public void EnqueuePrevStateCapture(DOMAIN.Entities.ActivityLogs.PrevStateCaptureRequest prevStateCaptureRequest) { }
+    public void EnqueueNotification(string message, DOMAIN.Entities.Notifications.NotificationType type, Guid? departmentId = null,
+        List<User> users = null!, Guid? shipmentDocumentId = null, string relatedEntityType = null!, Guid? relatedEntityId = null, string relatedEntityCode = null!,
+        string relatedEntityName = null!, string relatedEntityStatus = null!, string relatedEntityPriority = null!) { }
+    public Task DoWork(CancellationToken stoppingToken) => Task.CompletedTask;
 }
