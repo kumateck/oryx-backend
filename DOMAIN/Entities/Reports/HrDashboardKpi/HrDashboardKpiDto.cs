@@ -112,7 +112,20 @@ public class HrKpiFilterDto
     public Guid? DepartmentId { get; set; }
     public EmployeeType? EmployeeType { get; set; }
     public EmployeeStatus? Status { get; set; }
-    public DateTime? StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+
+    // Dates are compared with timestamptz columns, which Npgsql only accepts as UTC.
+    // Query dates such as ?date=2026-10-29 bind with no time zone, so they are read as UTC here.
+    private DateTime? startDate;
+    private DateTime? endDate;
+    public DateTime? StartDate { get => startDate; set => startDate = AsUtc(value); }
+    public DateTime? EndDate { get => endDate; set => endDate = AsUtc(value); }
     public int? Year { get; set; }
+
+    private static DateTime? AsUtc(DateTime? value) => value?.Kind switch
+    {
+        null => null,
+        DateTimeKind.Utc => value,
+        DateTimeKind.Local => value.Value.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(value.Value, DateTimeKind.Utc),
+    };
 }
