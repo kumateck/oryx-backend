@@ -52,6 +52,11 @@ SERVICE=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.se
 RELEASE="$STATE/releases/$TARGET"
 SOURCE="$STATE/sources/$TARGET"
 LOG="$STATE/logs/$TARGET-$(date -u +%Y%m%dT%H%M%SZ)-$$.log"
+# Discord alerts for the deployments that actually run; unchanged polls stay silent.
+source "$REPO/deploy/customer-backend-notify.sh"
+NOTIFY_WEBHOOK=$(discord_webhook)
+NOTIFY_ERROR_LOG="$STATE/logs/discord-last-error.log"
+NOTIFY_HOST=${ORYX_BACKEND_NAME:-$(hostname -s 2>/dev/null || hostname)}
 STAGE=preparing
 STOPPED=0
 MIGRATION_STARTED=0
@@ -67,6 +72,11 @@ failure() {
   if [[ "$MIGRATION_STARTED" = 1 ]]; then compose runtime stop app >>"$LOG" 2>&1; fi
   echo "Backend deployment failed during $STAGE. Log: $LOG" >&3
   if [[ "$MIGRATION_STARTED" = 1 ]]; then echo "The API is kept stopped for recovery; database backup: ${BACKUP:-not-created}. No schema downgrade was attempted." >&3; fi
+  local api_state='previous API still running'
+  if [[ "$MIGRATION_STARTED" = 1 ]]; then api_state='API STOPPED for recovery, backup kept'
+  elif [[ "$STOPPED" = 1 && "$RECOVERING" = 0 ]]; then api_state='previous API restarted'
+  elif [[ "$STOPPED" = 1 ]]; then api_state='API stopped (was recovering)'; fi
+  notify "🔴 ORYX Backend deployment FAILED | $NOTIFY_HOST | main ${TARGET:0:8} | stage: $STAGE | $api_state | run: bash deploy.sh deploy --retry after checking the log"
   exit "$result"
 }
 trap failure ERR
@@ -97,6 +107,9 @@ PY
 )
 docker inspect postgres_db >/dev/null 2>>"$LOG"
 STAGE=building
+START_NOTE=building
+if [[ ${2:-} = --retry ]]; then START_NOTE='building (retry)'; fi
+notify "🟡 ORYX Backend deployment STARTED | $NOTIFY_HOST | main ${TARGET:0:8} | $START_NOTE"
 if [[ -d "$SOURCE" ]]; then
   [[ $(git -C "$SOURCE" rev-parse HEAD) = "$TARGET" && -z $(git -C "$SOURCE" status --porcelain) ]] || { echo 'Interrupted build source is dirty or names another commit.' >&2; false; }
 else
@@ -155,3 +168,4 @@ mv "$STATE/current.tmp" "$STATE/current"
 rm -f "$STATE/pending" "$STATE/blocked/$TARGET"
 printf 'success %s\n' "$TARGET" > "$STATE/last-result"
 echo "Backend main $TARGET built, backed up, migrated and deployed. Backup: $BACKUP"
+notify "🟢 ORYX Backend deployment SUCCESS | $NOTIFY_HOST | main ${TARGET:0:8} | API healthy | backup: $(basename "$BACKUP")"
