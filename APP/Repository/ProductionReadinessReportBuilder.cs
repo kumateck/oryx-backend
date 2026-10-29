@@ -1,4 +1,5 @@
 using DOMAIN.Entities.ProductionSchedules;
+using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Reports;
 
 namespace APP.Repository;
@@ -19,6 +20,8 @@ internal sealed class ProductionReadinessSource
     public DateTime ScheduleEnd { get; set; }
     public decimal? ExpectedYield { get; set; }
     public int? PacksPerShipper { get; set; }
+    /// <summary>The packing style's unit quantities, outermost first.</summary>
+    public List<decimal> PackQuantities { get; set; } = [];
     public decimal? UnitPrice { get; set; }
     public string PriceUnit { get; set; }
     public bool Specification { get; set; }
@@ -56,16 +59,18 @@ internal static class ProductionReadinessReportBuilder
                 var yield = first.ExpectedYield is >= 0
                     ? decimal.Round(batches * first.ExpectedYield.Value, 0, MidpointRounding.AwayFromZero) : (decimal?)null;
                 var perShipper = first.PacksPerShipper is > 0 ? first.PacksPerShipper : null;
-                var shippers = yield.HasValue && perShipper.HasValue
-                    ? decimal.Floor(yield.Value / perShipper.Value) : (decimal?)null;
+                // Expected yield counts base units (tablets, bottles…); shippers hold packs, so make whole packs first.
+                var perPack = perShipper.HasValue ? PackingLayout.BaseUnitsPerPack(first.PackQuantities, perShipper.Value) : null;
+                var packs = yield.HasValue && perPack.HasValue ? PackingLayout.ToPacks(yield.Value, perPack.Value).Packs : (decimal?)null;
+                var split = packs.HasValue && perShipper.HasValue ? PackingLayout.ShipperSplit(packs.Value, perShipper.Value) : ((decimal, decimal)?)null;
                 return new ProductionReadinessRowDto
                 {
                     ProductId = first.ProductId, ProductName = first.ProductName, ProductCode = first.ProductCode,
                     ProductPackingId = first.PackingId, PackingStyle = first.PackingName ?? "No packing style",
                     ScheduleProductIds = group.Select(item => item.Id).Order().ToList(), Batches = batches,
                     UnitPrice = first.UnitPrice, PriceUnit = first.PriceUnit, ExpectedYield = yield,
-                    PacksPerShipper = perShipper, Shippers = shippers,
-                    LoosePacks = shippers.HasValue ? yield - shippers * perShipper : null,
+                    PacksPerShipper = perShipper, Packs = packs, Shippers = split?.Item1,
+                    LoosePacks = split?.Item2,
                     Configuration = configuration[first.ProductId]
                 };
             }).OrderBy(row => row.ProductName, StringComparer.Ordinal)
@@ -76,7 +81,7 @@ internal static class ProductionReadinessReportBuilder
         var allRows = markets.SelectMany(market => market.Rows).ToList();
         var warnings = new List<string>();
         if (allRows.Any(row => row.ExpectedYield is null || row.Shippers is null))
-            warnings.Add("Some selected packing definitions have no usable yield or packs per shipper. Affected values and totals are unavailable, not zero.");
+            warnings.Add("Some selected packing definitions have no usable yield or packs per shipper, or their units do not add up to packs per shipper. Affected values and totals are unavailable, not zero.");
         if (allRows.Any(row => row.UnitPrice is null))
             warnings.Add("Some products have no recorded unit price. Missing prices are not zero.");
         return new ProductionReadinessReportDto
@@ -105,6 +110,7 @@ internal static class ProductionReadinessReportBuilder
     {
         Batches = rows.Sum(row => row.Batches),
         ExpectedYield = rows.All(row => row.ExpectedYield.HasValue) ? rows.Sum(row => row.ExpectedYield) : null,
+        Packs = rows.All(row => row.Packs.HasValue) ? rows.Sum(row => row.Packs) : null,
         Shippers = rows.All(row => row.Shippers.HasValue) ? rows.Sum(row => row.Shippers) : null,
         LoosePacks = rows.All(row => row.LoosePacks.HasValue) ? rows.Sum(row => row.LoosePacks) : null
     };

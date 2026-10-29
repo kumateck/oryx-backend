@@ -65,6 +65,8 @@ public sealed class ProductionReadinessRowDto
     public string? PriceUnit { get; set; }
     public decimal? ExpectedYield { get; set; }
     public int? PacksPerShipper { get; set; }
+    /// <summary>Expected yield as whole packs. Null when the packing style's units do not add up to packs per shipper.</summary>
+    public decimal? Packs { get; set; }
     public decimal? Shippers { get; set; }
     public decimal? LoosePacks { get; set; }
     public ProductConfigurationDto Configuration { get; set; } = new();
@@ -74,6 +76,7 @@ public sealed class ProductionReadinessTotalsDto
 {
     public decimal Batches { get; set; }
     public decimal? ExpectedYield { get; set; }
+    public decimal? Packs { get; set; }
     public decimal? Shippers { get; set; }
     public decimal? LoosePacks { get; set; }
 }
