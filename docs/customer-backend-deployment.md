@@ -98,6 +98,30 @@ git pull --ff-only origin main
 bash deploy.sh resume
 ```
 
+## Discord alerts
+
+Deployments that actually run post to Discord: STARTED when a build begins,
+SUCCESS when the new API is healthy, and FAILED with the stage and whether the
+API is still running. Polls that find nothing new stay silent, as do polls
+refused because an earlier release failed (those wait for `deploy --retry`).
+
+The webhook is read from `~/.config/oryx-backend/notify.env`; when that file
+is absent, the `DISCORD_WEBHOOK_URL` already in the Oryx Live customer
+configuration (`~/.config/oryx-live/customer.env`) is reused. The file is
+parsed, never sourced, and must be mode 600 or 400. To use a separate channel:
+
+```bash
+mkdir -p ~/.config/oryx-backend
+printf 'DISCORD_WEBHOOK_URL=%s\n' 'https://discord.com/api/webhooks/<id>/<token>' > ~/.config/oryx-backend/notify.env
+chmod 600 ~/.config/oryx-backend/notify.env
+```
+
+Set `ORYX_BACKEND_NAME` in the Cron line to label messages with something
+other than the host name. A failed post is recorded in
+`~/.local/state/oryx-backend/logs/discord-last-error.log` and never changes a
+deployment's outcome. The alert code ships with main, so it takes effect after
+the deployment tooling is updated (pause, pull, resume above).
+
 ## Standalone SQL delivery
 
 For a customer machine that should not compile .NET, an exported release may
