@@ -21,6 +21,8 @@ public class RequisitionDto
     public DateTime? ExpectedDelivery { get; set; }
     public DateTime CreatedAt { get; set; }
     public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
+    /// <summary>The production step the requisition was raised from.</summary>
+    public Guid? ProductionActivityStepId { get; set; }
     public string Comments { get; set; }
 }
 

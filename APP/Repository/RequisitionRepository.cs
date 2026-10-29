@@ -1,3 +1,4 @@
+using APP.Services.Production;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
@@ -46,7 +47,8 @@ public class RequisitionRepository(
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
-        if (request.ProductionScheduleProductId.HasValue)
+        // Stock requisitions follow StockRequisitionRules (one raw and one packaging per batch), checked below.
+        if (request.ProductionScheduleProductId.HasValue && request.RequisitionType != RequisitionType.Stock)
         {
             var existingRequisition = await context
                 .Requisitions.AsSplitQuery()
@@ -54,13 +56,6 @@ public class RequisitionRepository(
                 .FirstOrDefaultAsync(r =>
                     r.ProductionScheduleProductId == request.ProductionScheduleProductId
                     && r.RequisitionType == request.RequisitionType
-                );
-
-            if (existingRequisition is { RequisitionType: RequisitionType.Stock })
-                return Error.Validation(
-                    "Requisition.Validation",
-                    $"A {request.RequisitionType.ToString()} requisition for "
-                        + $"this production schedule and product has already been created"
                 );
 
             if (
@@ -123,6 +118,10 @@ public class RequisitionRepository(
                     materials.Any(m => m.Id == i.MaterialId && m.Kind == MaterialKind.Package)
                 )
                 .ToList();
+
+            var allowed = await StockRequisitionRules.CanRaise(context,
+                request.ProductionScheduleProductId.Value, rawItems.Count > 0, packageItems.Count > 0);
+            if (allowed.IsFailure) return allowed;
 
             // Create Raw Material Requisition
             var rawStockRequisitionId = await CreateStockRequisition("RM", rawItems);
@@ -206,7 +205,10 @@ public class RequisitionRepository(
                 p => p.Id == request.ProductionActivityStepId
             );
 
-            if (productionActivityStep is not null)
+            // Packaging requested later from an ordinary step leaves that step to its own completion logic.
+            if (productionActivityStep is not null
+                && productionActivityStep.Status != ProductionStatus.Completed
+                && await StockRequisitionRules.DrivesStep(context, productionActivityStep.Id))
             {
                 productionActivityStep.StartedAt = DateTime.UtcNow;
                 productionActivityStep.Status = ProductionStatus.InProgress;
@@ -1028,7 +1030,10 @@ public class RequisitionRepository(
             }
 
             Guid? completedStepId = null;
-            if (stockRequisition.ProductionActivityStepId.HasValue)
+            // On the stock requisition step every requisition raised there (raw, and packaging when it was
+            // requested with it) must be issued first. Packaging requested later from another step never moves it.
+            if (stockRequisition.ProductionActivityStepId.HasValue
+                && await StockRequisitionRules.DrivesStep(context, stockRequisition.ProductionActivityStepId.Value))
             {
                 var anyOtherPendingItems = await context.RequisitionItems.AnyAsync(ri =>
                     ri.Requisition.ProductionActivityStepId
@@ -1044,7 +1049,7 @@ public class RequisitionRepository(
                             p.Id == stockRequisition.ProductionActivityStepId
                         );
 
-                    if (productionActivityStep is not null)
+                    if (productionActivityStep is { Status: not ProductionStatus.Completed })
                     {
                         productionActivityStep.Status = ProductionStatus.Completed;
                         productionActivityStep.CompletedAt = now;

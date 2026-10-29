@@ -1,3 +1,4 @@
+using APP.Services.Production;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
@@ -679,6 +680,13 @@ public class ProductionScheduleRepository(
 
         if (status == ProductionStatus.Completed && await HasUnissuedExtraMaterial(activityStep.ProductionActivity.ProductionScheduleProductId))
             return Error.Conflict("ProductActivity.ExtraMaterialOutstanding", "All extra material must be approved and issued before completing this step.");
+
+        if (status == ProductionStatus.Completed)
+        {
+            var packaging = await StockRequisitionRules.CanCompleteStep(context, activityStep.Id,
+                activityStep.ProductionActivityId, activityStep.Order, activityStep.ProductionActivity.ProductionScheduleProductId);
+            if (packaging.IsFailure) return packaging;
+        }
 
         if (status == ProductionStatus.InProgress && await context.ProductionExtraPackings.AnyAsync(extra =>
                 extra.ProductionScheduleProductId == activityStep.ProductionActivity.ProductionScheduleProductId
@@ -3682,6 +3690,10 @@ public class ProductionScheduleRepository(
         // Final packing also completes a step, so it must respect the same issue gate.
         if (await HasUnissuedExtraMaterial(request.ProductionScheduleProductId))
             return Error.Conflict("ProductActivity.ExtraMaterialOutstanding", "All extra material must be approved and issued before recording final packing.");
+        // Steps finished by their own record (an approved test, an issued requisition) skip the completion check, so check here too.
+        if (!await StockRequisitionRules.PackagingIssued(context, request.ProductionScheduleProductId))
+            return Error.Conflict("FinalPacking.PackagingNotIssued",
+                "The batch's packaging material has not been requested and issued. It must be issued before final packing is recorded.");
 
         var expected = await CalculateFinalPackingExpectedYield(request);
         if (expected.IsFailure) return expected.Error;
@@ -4274,6 +4286,11 @@ public class ProductionScheduleRepository(
     {
         if (extraPackings.Count == 0)
             return Error.Validation("Extra.Packing", "Empty list in extra packings");
+
+        var materialIds = extraPackings.Select(p => p.MaterialId).Distinct().ToList();
+        var kinds = await context.Materials.Where(m => materialIds.Contains(m.Id)).Select(m => m.Kind).ToListAsync();
+        var allowed = await StockRequisitionRules.CanRequestExtra(context, productionScheduleProductId, kinds);
+        if (allowed.IsFailure) return allowed;
 
         var extras = extraPackings
             .Select(p => new ProductionExtraPacking
