@@ -172,6 +172,7 @@ public class ProductionScheduleRepository(
                 .Include(s => s.Products)
                     .ThenInclude(s => s.ProductPacking)
                         .ThenInclude(p => p.PackingLists)
+                            .ThenInclude(l => l.Uom)
                 .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
                 .AsQueryable();
 
@@ -206,6 +207,7 @@ public class ProductionScheduleRepository(
                 .Include(s => s.Products)
                     .ThenInclude(s => s.ProductPacking)
                         .ThenInclude(p => p.PackingLists)
+                            .ThenInclude(l => l.Uom)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(searchQuery))
@@ -1047,6 +1049,7 @@ public class ProductionScheduleRepository(
             .Include(pa => pa.ProductionScheduleProduct)
                 .ThenInclude(pa => pa.ProductPacking)
                     .ThenInclude(p => p.PackingLists)
+                        .ThenInclude(l => l.Uom)
             .Include(pa => pa.ProductionScheduleProduct)
                 .ThenInclude(pa => pa.ProductionSchedule)
             .Include(pa => pa.Steps.OrderBy(p => p.Order))
@@ -2226,7 +2229,21 @@ public class ProductionScheduleRepository(
                 );
         }
 
+        // Finished goods are stored as yield. The note keeps the units in one pack as they are now, so
+        // later edits to the packing style cannot change what this transfer meant.
+        if (request.TotalQuantity <= 0)
+            return Error.Validation("TransferNote.Quantity", "The quantity to transfer must be above zero.");
+        var packing = await context.ProductPackings.AsSplitQuery()
+            .Include(p => p.PackingLists).ThenInclude(l => l.Uom)
+            .FirstOrDefaultAsync(p => p.Id == request.ProductPackingId);
+        if (packing is null)
+            return Error.Validation("TransferNote.Packing", "Choose the packing style the goods are packed in.");
+        var unitsPerPack = PackConversion.UnitsPerPack(packing);
+        if (unitsPerPack is null)
+            return Error.Validation("TransferNote.Packing", PackConversion.CannotConvert(packing));
+
         var transferNote = mapper.Map<FinishedGoodsTransferNote>(request);
+        transferNote.QuantityPerPack = unitsPerPack.Value;
         transferNote.ToWarehouseId = finishedGoodsWarehouse.Id;
         transferNote.FromWarehouseId = productionWarehouse.Id;
         context.FinishedGoodsTransferNotes.Add(transferNote);
@@ -2393,6 +2410,7 @@ public class ProductionScheduleRepository(
             .Include(b => b.ToWarehouse)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .AsQueryable();
@@ -2485,6 +2503,7 @@ public class ProductionScheduleRepository(
             .Include(b => b.ToWarehouse)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Include(b => b.CreatedBy)
@@ -2507,6 +2526,7 @@ public class ProductionScheduleRepository(
             .Include(b => b.ToWarehouse)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Include(b => b.CreatedBy)
@@ -2538,6 +2558,7 @@ public class ProductionScheduleRepository(
             .Include(b => b.ToWarehouse)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Where(f =>
@@ -2564,9 +2585,9 @@ public class ProductionScheduleRepository(
 
     public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)
     {
-        var transferNote = await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f =>
-            f.Id == id
-        );
+        var transferNote = await context.FinishedGoodsTransferNotes.AsSplitQuery()
+            .Include(f => f.ProductPacking).ThenInclude(p => p.PackingLists).ThenInclude(l => l.Uom)
+            .FirstOrDefaultAsync(f => f.Id == id);
 
         if (transferNote == null)
             return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
@@ -2576,6 +2597,24 @@ public class ProductionScheduleRepository(
         );
         if (approvalGate.IsFailure)
             return approvalGate;
+
+        if (transferNote.IsApproved)
+            return Error.Validation("TransferNote.Approved", "This transfer has already been received.");
+
+        // The store counts shippers and loose packs; what it received is stored as yield. It is either
+        // everything that was sent (which may end in units short of a pack) or a whole number of packs.
+        if (request.QuantityReceived <= 0)
+            return Error.Validation("TransferNote.Received", "Enter what was received.");
+        if (request.QuantityReceived > transferNote.TotalQuantity)
+            return Error.Validation("TransferNote.Received",
+                $"More was entered as received ({request.QuantityReceived}) than was sent ({transferNote.TotalQuantity}).");
+        var unitsPerPack = FinishedGoodsUnits.UnitsPerPack(transferNote);
+        if (unitsPerPack is null)
+            return Error.Validation("TransferNote.Packing", PackConversion.CannotConvert(transferNote.ProductPacking));
+        if (request.QuantityReceived != transferNote.TotalQuantity
+            && !PackConversion.IsWholePacks(request.QuantityReceived, unitsPerPack.Value))
+            return Error.Validation("TransferNote.Received",
+                $"What was received must be whole packs of {unitsPerPack.Value} units, or everything that was sent.");
 
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
@@ -2633,6 +2672,7 @@ public class ProductionScheduleRepository(
                     .ThenInclude(b => b.Product)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Where(p => p.IsApproved)
@@ -2671,8 +2711,10 @@ public class ProductionScheduleRepository(
                     .ThenInclude(b => b.Product)
                         .ThenInclude(p => p.Packings)
                             .ThenInclude(p => p.PackingLists)
+                                .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Where(p =>
@@ -2720,6 +2762,7 @@ public class ProductionScheduleRepository(
                 .ThenInclude(b => b.ProductionScheduleProduct)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Where(p =>
@@ -2877,6 +2920,7 @@ public class ProductionScheduleRepository(
                 .Include(p => p.ProductionScheduleProduct)
                     .ThenInclude(p => p.ProductPacking)
                         .ThenInclude(p => p.PackingLists)
+                            .ThenInclude(l => l.Uom)
                 .FirstOrDefaultAsync(b => b.Id == id)
         );
     }

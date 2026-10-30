@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Materials.Batch;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -120,6 +121,7 @@ public class ProductionOrderRepository(
             .Include(p => p.Products)
                 .ThenInclude(p => p.ProductPacking)
                     .ThenInclude(p => p.PackingLists)
+                        .ThenInclude(l => l.Uom)
             .Include(p => p.Products)
                 .ThenInclude(p => p.ProductPacking)
                     .ThenInclude(p => p.BasePackingUoM)
@@ -537,137 +539,6 @@ public class ProductionOrderRepository(
 
         return Result.Success();
     }
-
-    public async Task<Result> AllocateProduct(AllocateProductionOrderRequest request)
-    {
-        var productionOrder = await context
-            .ProductionOrders.AsSplitQuery()
-            .Include(p => p.Products)
-                .ThenInclude(p => p.FulfilledQuantities)
-            .FirstOrDefaultAsync(f => f.Id == request.ProductionOrderId);
-
-        if (productionOrder == null)
-            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
-
-        var approvalGate = productionOrder.EnsureApprovedForProgression("Production order");
-        if (approvalGate.IsFailure)
-            return approvalGate;
-
-        foreach (var product in request.Products)
-        {
-            var allocationProduct = productionOrder.Products.FirstOrDefault(p =>
-                p.ProductId == product.ProductId
-            );
-            if (allocationProduct == null)
-                return Error.NotFound(
-                    "ProductionOrder.ProductNotFound",
-                    $"Product {product.ProductId} not found in this production order"
-                );
-
-            if (allocationProduct.RemainingQuantity == 0)
-                return Error.Validation(
-                    "ProductionOrder.Product",
-                    $"Product {product.ProductId} has already been allocated completely."
-                );
-
-            if (allocationProduct.Fulfilled)
-                return Error.Validation(
-                    "ProductionOrder.Product",
-                    "Product has already been marked as fulfilled."
-                );
-
-            var totalToAllocate = product.FulfilledQuantities.Sum(q => q.Quantity);
-            if (totalToAllocate > allocationProduct.RemainingQuantity)
-            {
-                return Error.Validation(
-                    "ProductionOrder.Product",
-                    $"Allocation quantity {totalToAllocate} is more than what is left to be fulfilled {allocationProduct.RemainingQuantity}"
-                );
-            }
-
-            foreach (var quantityToFulfill in product.FulfilledQuantities)
-            {
-                var finishedGoodsTransferNote =
-                    await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f =>
-                        f.Id == quantityToFulfill.FinishedGoodsTransferNoteId
-                    );
-
-                if (finishedGoodsTransferNote is null)
-                    return Error.NotFound(
-                        "ProductionOrder.FinishedGoodsTransferNoteNotFound",
-                        $"Finished goods transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} not found."
-                    );
-
-                var transferApprovalGate = finishedGoodsTransferNote
-                    .EnsureApprovedForProgression("Finished goods transfer note");
-                if (transferApprovalGate.IsFailure)
-                    return transferApprovalGate;
-
-                if (finishedGoodsTransferNote.RemainingQuantity == 0)
-                    return Error.Validation(
-                        "ProductionOrder.FinishedGoodsTransferNoteValidation",
-                        $"The finished good transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} does not have any remaining quantity."
-                    );
-
-                if (quantityToFulfill.Quantity > finishedGoodsTransferNote.RemainingQuantity)
-                    return Error.Validation(
-                        "ProductionOrder.FinishedGoodsTransferNoteValidation",
-                        $"Trying to allocate {quantityToFulfill.Quantity}, "
-                            + $"but only {finishedGoodsTransferNote.RemainingQuantity} is left in transfer note {quantityToFulfill.FinishedGoodsTransferNoteId}."
-                    );
-
-                // Check if an allocation for this note already exists
-                var existingAllocationProductForNote =
-                    allocationProduct.FulfilledQuantities.FirstOrDefault(p =>
-                        p.FinishedGoodsTransferNoteId
-                        == quantityToFulfill.FinishedGoodsTransferNoteId
-                    );
-
-                if (existingAllocationProductForNote is not null)
-                {
-                    existingAllocationProductForNote.Quantity += quantityToFulfill.Quantity;
-                }
-                else
-                {
-                    allocationProduct.FulfilledQuantities.Add(
-                        new ProductionOrderProductQuantity
-                        {
-                            Quantity = quantityToFulfill.Quantity,
-                            FinishedGoodsTransferNoteId =
-                                quantityToFulfill.FinishedGoodsTransferNoteId,
-                        }
-                    );
-                }
-
-                finishedGoodsTransferNote.AllocatedQuantity += quantityToFulfill.Quantity;
-            }
-        }
-
-        // Save all changes once
-        await context.SaveChangesAsync();
-
-        // Mark products as fulfilled if no remaining quantity
-        foreach (var product in productionOrder.Products)
-        {
-            if (product.RemainingQuantity == 0 && !product.Fulfilled)
-            {
-                product.Fulfilled = true;
-            }
-        }
-
-        if (productionOrder.Products.All(p => p.Fulfilled))
-        {
-            productionOrder.Status = ProductionOrderStatus.FullPackingReady;
-        }
-        else if (productionOrder.Products.Any(p => p.Fulfilled))
-        {
-            productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
-        }
-
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
     public async Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id)
     {
         var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(p =>
@@ -815,101 +686,83 @@ public class ProductionOrderRepository(
         return Result.Success();
     }
 
+    /// <summary>
+    /// Creates a packing list: packs of each order line taken from approved transfer notes. Orders and
+    /// packing lists count packs; stock is held as yield, so each line is converted once, here, with the
+    /// note's units per pack, and both figures are saved. The order, the notes and the packing list are
+    /// saved together, so a failure leaves nothing half done.
+    /// </summary>
     public async Task<Result<Guid>> CreateProductOrderAllocation(
         AllocateProductionOrderRequest request
     )
     {
-        var validation = await ValidateProductAllocation(request);
+        var plan = await PlanProductAllocation(request);
+        if (plan.IsFailure)
+            return Result.Failure<Guid>(plan.Error);
 
-        if (!validation.IsSuccess)
-            return Result.Failure<Guid>(validation.Errors);
+        var (productionOrder, notes, lines) = plan.Value;
 
-        var allocationEntity = mapper.Map<AllocateProductionOrder>(request);
-        await context.AllocateProductionOrders.AddAsync(allocationEntity);
-        await context.SaveChangesAsync();
-
-        var productionOrder = await context
-            .ProductionOrders.AsSplitQuery()
-            .Include(p => p.Products)
-                .ThenInclude(p => p.FulfilledQuantities)
-            .FirstOrDefaultAsync(p => p.Id == request.ProductionOrderId);
-
-        if (productionOrder is null)
-            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
-
-        foreach (var reqProduct in request.Products)
+        var allocationEntity = new AllocateProductionOrder
         {
-            var allocationProduct = productionOrder.Products.FirstOrDefault(p =>
-                p.ProductId == reqProduct.ProductId
-            );
-
-            if (allocationProduct is null)
-                return Error.NotFound(
-                    "ProductionOrder.ProductNotFound",
-                    $"Product {reqProduct.ProductId} not found in this production order"
-                );
-
-            foreach (var quantityToFulfill in reqProduct.FulfilledQuantities)
-            {
-                var finishedGoodsTransferNote =
-                    await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f =>
-                        f.Id == quantityToFulfill.FinishedGoodsTransferNoteId
-                    );
-
-                if (finishedGoodsTransferNote is null)
-                    return Error.NotFound(
-                        "FinishedGoodsTransferNote.NotFound",
-                        $"Finished goods transfer note {quantityToFulfill.FinishedGoodsTransferNoteId} not found."
-                    );
-
-                // Update product fulfilled quantities
-                var existingAllocationProductForNote =
-                    allocationProduct.FulfilledQuantities.FirstOrDefault(p =>
-                        p.FinishedGoodsTransferNoteId
-                        == quantityToFulfill.FinishedGoodsTransferNoteId
-                    );
-
-                if (existingAllocationProductForNote is not null)
+            ProductionOrderId = productionOrder.Id,
+            Products = lines
+                .GroupBy(line => (line.OrderProduct.ProductId, line.OrderProduct.ProductPackingId))
+                .Select(group => new AllocateProductionOrderProduct
                 {
-                    existingAllocationProductForNote.Quantity += quantityToFulfill.Quantity;
-                }
-                else
-                {
-                    allocationProduct.FulfilledQuantities.Add(
-                        new ProductionOrderProductQuantity
+                    ProductId = group.Key.ProductId,
+                    ProductPackingId = group.Key.ProductPackingId,
+                    FulfilledQuantities = group
+                        .Select(line => new AllocateProductQuantity
                         {
-                            Quantity = quantityToFulfill.Quantity,
-                            FinishedGoodsTransferNoteId =
-                                quantityToFulfill.FinishedGoodsTransferNoteId,
-                        }
-                    );
-                }
+                            FinishedGoodsTransferNoteId = line.NoteId,
+                            Quantity = line.Packs,
+                            YieldQuantity = line.Yield,
+                            UnitsPerPack = line.UnitsPerPack,
+                        })
+                        .ToList(),
+                })
+                .ToList(),
+        };
 
-                // Update transfer note allocation
-                finishedGoodsTransferNote.AllocatedQuantity += quantityToFulfill.Quantity;
+        foreach (var line in lines)
+        {
+            var taken = line.OrderProduct.FulfilledQuantities.FirstOrDefault(q =>
+                q.FinishedGoodsTransferNoteId == line.NoteId
+            );
+            if (taken is null)
+            {
+                line.OrderProduct.FulfilledQuantities.Add(
+                    new ProductionOrderProductQuantity
+                    {
+                        FinishedGoodsTransferNoteId = line.NoteId,
+                        Quantity = line.Packs,
+                        YieldQuantity = line.Yield,
+                        UnitsPerPack = line.UnitsPerPack,
+                    }
+                );
             }
+            else
+            {
+                taken.Quantity += line.Packs;
+                taken.YieldQuantity += line.Yield;
+                taken.UnitsPerPack = line.UnitsPerPack;
+            }
+
+            notes[line.NoteId].AllocatedQuantity += line.Yield;
         }
 
-        foreach (
-            var product in productionOrder.Products.Where(product =>
-                product.RemainingQuantity == 0 && !product.Fulfilled
-            )
-        )
+        foreach (var product in productionOrder.Products.Where(product =>
+                     product.RemainingQuantity == 0 && !product.Fulfilled))
         {
             product.Fulfilled = true;
         }
 
         if (productionOrder.Products.All(p => p.Fulfilled))
-        {
             productionOrder.Status = ProductionOrderStatus.FullPackingReady;
-            context.ProductionOrders.Update(productionOrder);
-        }
         else if (productionOrder.Products.Any(p => p.Fulfilled))
-        {
             productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
-            context.ProductionOrders.Update(productionOrder);
-        }
 
+        await context.AllocateProductionOrders.AddAsync(allocationEntity);
         await context.SaveChangesAsync();
 
         await approvalRepository.CreateInitialApprovalsAsync(
@@ -983,6 +836,7 @@ public class ProductionOrderRepository(
                 .Include(a => a.Products)
                     .ThenInclude(p => p.ProductPacking)
                         .ThenInclude(p => p.PackingLists)
+                            .ThenInclude(l => l.Uom)
                 .Include(a => a.Products)
                     .ThenInclude(p => p.ProductPacking)
                         .ThenInclude(p => p.BasePackingUoM)
@@ -990,13 +844,43 @@ public class ProductionOrderRepository(
         );
     }
 
+    /// <summary>A packing list line, checked and converted: packs for the order, yield for the stock.</summary>
+    private sealed record PlannedAllocationLine(
+        ProductionOrderProducts OrderProduct,
+        Guid NoteId,
+        decimal Packs,
+        decimal UnitsPerPack,
+        decimal Yield
+    );
+
+    /// <summary>Checks a packing list without saving anything. Returns the problem, or success.</summary>
     public async Task<Result> ValidateProductAllocation(AllocateProductionOrderRequest request)
     {
-        // 1) Load the production order + products (as no-tracking; we're not persisting here)
+        var plan = await PlanProductAllocation(request);
+        return plan.IsFailure ? Result.Failure(plan.Error) : Result.Success();
+    }
+
+    /// <summary>
+    /// Every check a packing list must pass, and its lines converted to yield. Packs must be whole and
+    /// above zero; an order line cannot get more packs than it still needs; a transfer note must be
+    /// approved and received, hold the same product and packing style as the order line, and have the
+    /// yield left for every pack taken from it across the whole packing list.
+    /// </summary>
+    private async Task<
+        Result<(
+            ProductionOrder Order,
+            Dictionary<Guid, FinishedGoodsTransferNote> Notes,
+            List<PlannedAllocationLine> Lines
+        )>
+    > PlanProductAllocation(AllocateProductionOrderRequest request)
+    {
+        if (request?.Products is null || request.Products.Count == 0)
+            return Error.Validation("ProductionOrder.Allocation", "Add at least one product to the packing list.");
+
         var productionOrder = await context
-            .ProductionOrders.IgnoreQueryFilters()
+            .ProductionOrders.AsSplitQuery()
             .Include(po => po.Products)
-                .ThenInclude(p => p.FulfilledQuantities) // ensure RemainingQuantity is accurate if it's computed from these
+                .ThenInclude(p => p.FulfilledQuantities)
             .FirstOrDefaultAsync(po => po.Id == request.ProductionOrderId);
 
         if (productionOrder is null)
@@ -1004,129 +888,117 @@ public class ProductionOrderRepository(
 
         var approvalGate = productionOrder.EnsureApprovedForProgression("Production order");
         if (approvalGate.IsFailure)
-            return approvalGate;
+            return approvalGate.Error;
 
-        // Quick lookup of products on this order
-        var orderProductsById = productionOrder.Products.ToDictionary(
-            p => $"{p.ProductId},{p.ProductPackingId}",
-            p => p
-        );
-
-        // 2) Collect all FinishedGoodsTransferNote IDs in the request and fetch them in one go
-        var allNoteIds = request
-            .Products.SelectMany(p => p.FulfilledQuantities)
+        var noteIds = request
+            .Products.SelectMany(p => p.FulfilledQuantities ?? [])
             .Select(q => q.FinishedGoodsTransferNoteId)
             .Distinct()
             .ToList();
 
-        var notesById = await context
-            .FinishedGoodsTransferNotes.AsNoTracking()
-            .Where(n => allNoteIds.Contains(n.Id))
-            .ToDictionaryAsync(n => n.Id, n => n);
+        var notes = await context
+            .FinishedGoodsTransferNotes.AsSplitQuery()
+            .Include(n => n.BatchManufacturingRecord)
+                .ThenInclude(b => b.ProductionScheduleProduct)
+            .Include(n => n.ProductPacking)
+                .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
+            .Where(n => noteIds.Contains(n.Id))
+            .ToDictionaryAsync(n => n.Id);
 
-        // 3) Ensure all referenced notes exist
-        var missingNoteIds = allNoteIds.Where(id => !notesById.ContainsKey(id)).ToList();
-        if (missingNoteIds.Count != 0)
+        var missing = noteIds.Where(id => !notes.ContainsKey(id)).ToList();
+        if (missing.Count != 0)
             return Error.NotFound(
                 "FinishedGoodsTransferNote.NotFound",
-                $"These finished goods transfer notes were not found: {string.Join(", ", missingNoteIds)}"
+                $"These finished goods transfer notes were not found: {string.Join(", ", missing)}"
             );
 
-        // 4) Pre-compute the TOTAL requested per note across the whole request
-        var requestedPerNote = request
-            .Products.SelectMany(p => p.FulfilledQuantities)
-            .GroupBy(q => q.FinishedGoodsTransferNoteId)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
-
-        // 5) Validate each note has enough remaining for its total requested
-        foreach (var kv in requestedPerNote)
+        var lines = new List<PlannedAllocationLine>();
+        foreach (var requested in request.Products)
         {
-            var noteId = kv.Key;
-            var totalRequestedFromNote = kv.Value;
-            var note = notesById[noteId];
-
-            var transferApprovalGate = note.EnsureApprovedForProgression(
-                "Finished goods transfer note"
+            var orderProduct = productionOrder.Products.FirstOrDefault(p =>
+                p.ProductId == requested.ProductId && p.ProductPackingId == requested.ProductPackingId
             );
-            if (transferApprovalGate.IsFailure)
-                return transferApprovalGate;
-
-            if (totalRequestedFromNote <= 0)
-                return Error.Validation(
-                    "FinishedGoodsTransferNote.InvalidQuantity",
-                    $"Requested allocation from note {noteId} must be > 0."
-                );
-
-            if (note.RemainingQuantity <= 0)
-                return Error.Validation(
-                    "FinishedGoodsTransferNote.NoRemaining",
-                    $"Finished goods transfer note {noteId} has no remaining quantity."
-                );
-
-            if (totalRequestedFromNote > note.RemainingQuantity)
-                return Error.Validation(
-                    "FinishedGoodsTransferNote.OverAllocate",
-                    $"Requesting {totalRequestedFromNote} from note {noteId}, but only {note.RemainingQuantity} remains."
-                );
-        }
-
-        // 6) Per-product validations (membership, remaining, optional note↔product compatibility)
-        foreach (var reqProduct in request.Products)
-        {
-            if (
-                !orderProductsById.TryGetValue(
-                    $"{reqProduct.ProductId},{reqProduct.ProductPackingId}",
-                    out var orderProduct
-                )
-            )
-            {
+            if (orderProduct is null)
                 return Error.NotFound(
                     "ProductionOrder.ProductNotFound",
-                    $"Product {reqProduct.ProductId} and"
-                        + $" Product packing {reqProduct.ProductPackingId} not found in this production order"
+                    $"Product {requested.ProductId} in packing style {requested.ProductPackingId} is not on this order."
                 );
-            }
-
-            if (orderProduct.Fulfilled)
-                return Error.Validation(
-                    "ProductionOrder.ProductFulfilled",
-                    $"Product {reqProduct.ProductId} has already been marked as fulfilled."
-                );
-
-            if (orderProduct.RemainingQuantity == 0)
+            if (orderProduct.Fulfilled || orderProduct.RemainingQuantity <= 0)
                 return Error.Validation(
                     "ProductionOrder.ProductFullyAllocated",
-                    $"Product {reqProduct.ProductId} has already been allocated completely."
+                    $"Product {requested.ProductId} already has every pack it was ordered."
                 );
 
-            var totalToAllocateForProduct = reqProduct.FulfilledQuantities.Sum(q => q.Quantity);
-            if (totalToAllocateForProduct <= 0)
+            var quantities = requested.FulfilledQuantities ?? [];
+            if (quantities.Count == 0)
                 return Error.Validation(
                     "ProductionOrder.InvalidQuantity",
-                    $"Total allocation for product {reqProduct.ProductId} must be > 0."
+                    $"Choose the batches product {requested.ProductId} is packed from."
                 );
 
-            if (totalToAllocateForProduct > orderProduct.RemainingQuantity)
+            foreach (var group in quantities.GroupBy(q => q.FinishedGoodsTransferNoteId))
             {
-                return Error.Validation(
-                    "ProductionOrder.ProductOverAllocate",
-                    $"Allocation quantity {totalToAllocateForProduct} is more than remaining {orderProduct.RemainingQuantity} for product {reqProduct.ProductId}."
-                );
-            }
-
-            // Optional: if your FinishedGoodsTransferNote has a ProductId, ensure it matches this product
-            foreach (var q in reqProduct.FulfilledQuantities)
-            {
-                //var note = notesById[q.FinishedGoodsTransferNoteId];
-
-                if (q.Quantity <= 0)
+                var packs = group.Sum(q => q.Quantity);
+                if (group.Any(q => q.Quantity <= 0 || q.Quantity != decimal.Truncate(q.Quantity)))
                     return Error.Validation(
                         "FinishedGoodsTransferNote.InvalidQuantity",
-                        $"Quantity for note {q.FinishedGoodsTransferNoteId} must be > 0."
+                        $"Packs taken from transfer note {group.Key} must be a whole number above zero."
                     );
+
+                var note = notes[group.Key];
+                var noteGate = note.EnsureApprovedForProgression("Finished goods transfer note");
+                if (noteGate.IsFailure)
+                    return noteGate.Error;
+                if (!note.IsApproved)
+                    return Error.Validation(
+                        "FinishedGoodsTransferNote.NotReceived",
+                        $"Transfer note {note.TransferNoteNumber ?? note.Id.ToString()} has not been received into the store yet."
+                    );
+                if (note.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId != requested.ProductId)
+                    return Error.Validation(
+                        "FinishedGoodsTransferNote.WrongProduct",
+                        $"Transfer note {note.TransferNoteNumber ?? note.Id.ToString()} is for a different product."
+                    );
+                if (requested.ProductPackingId is not null && note.ProductPackingId != requested.ProductPackingId)
+                    return Error.Validation(
+                        "FinishedGoodsTransferNote.WrongPacking",
+                        $"Transfer note {note.TransferNoteNumber ?? note.Id.ToString()} is packed in a different packing style from the order."
+                    );
+
+                var unitsPerPack = FinishedGoodsUnits.UnitsPerPack(note);
+                if (unitsPerPack is null)
+                    return Error.Validation("FinishedGoodsTransferNote.Packing", PackConversion.CannotConvert(note.ProductPacking));
+
+                lines.Add(new PlannedAllocationLine(orderProduct, note.Id, packs, unitsPerPack.Value,
+                    PackConversion.ToYield(packs, unitsPerPack.Value)));
+            }
+
+            var packsForProduct = lines.Where(line => line.OrderProduct == orderProduct).Sum(line => line.Packs);
+            if (packsForProduct > orderProduct.RemainingQuantity)
+                return Error.Validation(
+                    "ProductionOrder.ProductOverAllocate",
+                    $"{packsForProduct} packs were put on the list, but the order needs only {orderProduct.RemainingQuantity} more."
+                );
+        }
+
+        // The same transfer note can feed several lines; its stock is checked once, for everything taken.
+        foreach (var byNote in lines.GroupBy(line => line.NoteId))
+        {
+            var note = notes[byNote.Key];
+            var yieldTaken = byNote.Sum(line => line.Yield);
+            if (yieldTaken > note.RemainingQuantity)
+            {
+                var unitsPerPack = byNote.First().UnitsPerPack;
+                var packsLeft = decimal.Floor(Math.Max(note.RemainingQuantity, 0) / unitsPerPack);
+                return Error.Validation(
+                    "FinishedGoodsTransferNote.OverAllocate",
+                    $"Transfer note {note.TransferNoteNumber ?? note.Id.ToString()} has {packsLeft} packs left; "
+                        + $"{byNote.Sum(line => line.Packs)} were put on the list."
+                );
             }
         }
 
-        return Result.Success();
+        return (productionOrder, notes, lines);
     }
 }

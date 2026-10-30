@@ -576,6 +576,7 @@ public static class PermissionKeys
     public const string CanViewFgtn = "CanViewFgtn";
     public const string CanApproveFgtn = "CanApproveFgtn";
     public const string CanViewApprovedProducts = "CanViewApprovedProducts";
+    public const string CanEditApprovedProductPackingStyle = "CanEditApprovedProductPackingStyle";
 
     // STORES
     public const string CanViewItemsInReagentStore = "CanViewItemsInReagentStore";
@@ -2440,6 +2441,11 @@ public static class PermissionUtils
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.ApprovedProducts,
             PermissionKeys.CanViewApprovedProducts
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ApprovedProducts,
+            PermissionKeys.CanEditApprovedProductPackingStyle
         );
 
         // STORES
