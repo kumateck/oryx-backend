@@ -13,7 +13,10 @@ public sealed record ArdClassification(ArdFamily Family, string Evidence);
 /// <item>culture media before water — every media sheet says "distilled water";</item>
 /// <item>EM before product — both are "RAW DATA" sheets;</item>
 /// <item>the raw-material worksheet and Specification document (brief 09) before the chemical
-/// "ANALYTICAL WORKSHEET" fallback, which stays Unknown for finished-product chemical sheets.</item>
+/// fallback, which stays Unknown for finished-product chemical sheets — these are headed either
+/// "ANALYTICAL WORKSHEET" (e.g. a raw material's own chemical sheet before it's reclassified
+/// above) or "ANALYTICAL RAW DATA" with no "MICROBIOLOGY" suffix (e.g. a finished product's
+/// Description/Identification/Dissolution/Assay sheet, confirmed against a real Lufart ARD).</item>
 /// </list>
 /// Marker comparison ignores case, spacing and punctuation: the EM header really reads
 /// "ENVIRONMENTAL MONITORING  RAW DATA" and COA headers run their words together.
@@ -66,7 +69,7 @@ public static partial class ArdFamilyClassifier
         if (header.Contains("standardtestprocedure"))
             return new ArdClassification(ArdFamily.Unknown, "STANDARD TEST PROCEDURE");
 
-        if (header.Contains("analyticalworksheet"))
+        if (header.Contains("analyticalworksheet") || header.Contains("analyticalrawdata"))
             return new ArdClassification(ArdFamily.Unknown, "ANALYTICAL WORKSHEET (chemical)");
 
         return new ArdClassification(ArdFamily.Unknown, null);
