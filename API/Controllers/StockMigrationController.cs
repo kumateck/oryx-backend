@@ -4,6 +4,7 @@ using APP.Utils;
 using DOMAIN.Entities.Materials.StockMigrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SHARED.Services.Identity;
 
 namespace API.Controllers;
 
@@ -15,7 +16,8 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/stock-migrations")]
 // Approving replaces a department's stock, so every endpoint needs the key that changes stock (the desktop gates on it too).
 [Authorize(PermissionKeys.CanCreateMaterialStockAdjustment)]
-public class StockMigrationController(IStockMigrationRepository repository) : ControllerBase
+// Someone signed in to a department acts only for that department; someone with no department may act for any.
+public class StockMigrationController(IStockMigrationRepository repository, ICurrentUserService user) : ControllerBase
 {
     /// <summary>
     /// Reads a stock-count workbook into a draft migration. Every tab with a material code and quantity
@@ -33,6 +35,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     {
         if (Actor() is not { } actor)
             return TypedResults.Unauthorized();
+        if (!MayActFor(departmentId))
+            return TypedResults.Forbid();
         var result = await repository.Upload(file, departmentId, massUnit, volumeUnit, actor);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -42,6 +46,12 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockMigrationDto>))]
     public async Task<IResult> List([FromQuery] Guid? departmentId)
     {
+        if (user.DepartmentId is { } own)
+        {
+            if (departmentId.HasValue && departmentId != own)
+                return TypedResults.Forbid();
+            departmentId = own;
+        }
         var result = await repository.List(departmentId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -52,6 +62,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> Get(Guid id)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.Get(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -62,6 +74,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLines(Guid id, [FromQuery] StockMigrationLineFilter filter)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.GetLines(id, filter);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -73,6 +87,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> UpdateLine(Guid id, Guid lineId, [FromBody] UpdateStockMigrationLineRequest request)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.UpdateLine(id, lineId, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -83,6 +99,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> BulkUpdate(Guid id, [FromBody] BulkUpdateStockMigrationLinesRequest request)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.BulkUpdate(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -93,6 +111,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpdateUnits(Guid id, [FromBody] UpdateStockMigrationUnitsRequest request)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.UpdateUnits(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -102,6 +122,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> Recheck(Guid id)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.Recheck(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -111,6 +133,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockMigrationComparisonDto>))]
     public async Task<IResult> Comparison(Guid id)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.Comparison(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -127,6 +151,8 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     {
         if (Actor() is not { } actor)
             return TypedResults.Unauthorized();
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.Approve(id, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -137,9 +163,19 @@ public class StockMigrationController(IStockMigrationRepository repository) : Co
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> Discard(Guid id)
     {
+        if (await Refusal(id) is { } refused)
+            return refused;
         var result = await repository.Discard(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
+
+    private bool MayActFor(Guid departmentId) => user.DepartmentId is not { } own || own == departmentId;
+
+    /// <summary>Not found, or forbidden when the migration belongs to another department; null when the user may go on.</summary>
+    private async Task<IResult> Refusal(Guid id) =>
+        await repository.DepartmentOf(id) is not { } department ? TypedResults.NotFound()
+        : MayActFor(department) ? null
+        : TypedResults.Forbid();
 
     private Guid? Actor() => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 }

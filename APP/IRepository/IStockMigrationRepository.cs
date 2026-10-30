@@ -9,6 +9,7 @@ public interface IStockMigrationRepository
 {
     Task<Result<Guid>> Upload(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, Guid userId);
     Task<Result<List<StockMigrationDto>>> List(Guid? departmentId);
+    Task<Guid?> DepartmentOf(Guid id);
     Task<Result<StockMigrationDto>> Get(Guid id);
     Task<Result<Paginateable<IEnumerable<StockMigrationLineDto>>>> GetLines(Guid id, StockMigrationLineFilter filter);
     Task<Result> UpdateLine(Guid id, Guid lineId, UpdateStockMigrationLineRequest request);

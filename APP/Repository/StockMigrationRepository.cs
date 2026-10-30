@@ -97,6 +97,9 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         return migrations;
     }
 
+    public async Task<Guid?> DepartmentOf(Guid id) =>
+        await context.StockMigrations.Where(m => m.Id == id).Select(m => (Guid?)m.DepartmentId).FirstOrDefaultAsync();
+
     public async Task<Result<StockMigrationDto>> Get(Guid id)
     {
         var list = await context
@@ -392,6 +395,14 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
         await using var transaction = await context.Database.BeginTransactionAsync();
 
+        // Claim the draft before touching stock: the row stays locked until commit, so a second approval made
+        // at the same moment waits here and then finds it no longer a draft.
+        var claimed = await context.StockMigrations
+            .Where(m => m.Id == migration.Id && m.Status == StockMigrationStatus.Draft)
+            .ExecuteUpdateAsync(set => set.SetProperty(m => m.Status, StockMigrationStatus.Approved));
+        if (claimed == 0)
+            return Error.Conflict("StockMigration.NotDraft", "This migration has already been approved or discarded.");
+
         // 1. Write off everything now on the department's shelves for the kinds being loaded.
         var current = await CurrentStock(storeIds, kinds)
             .Include(s => s.MaterialBatch)
@@ -515,9 +526,15 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             return NotFound;
         if (migration.Status != StockMigrationStatus.Draft)
             return Error.Conflict("StockMigration.NotDraft", "Only a migration that has not been approved can be discarded.");
-        migration.Status = StockMigrationStatus.Discarded;
-        await context.SaveChangesAsync();
-        return Result.Success();
+        // Only while still a draft, so a discard cannot overwrite an approval that committed in between.
+        var discarded = await context.StockMigrations
+            .Where(m => m.Id == id && m.Status == StockMigrationStatus.Draft)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(m => m.Status, StockMigrationStatus.Discarded)
+                .SetProperty(m => m.UpdatedAt, DateTime.UtcNow));
+        return discarded == 1
+            ? Result.Success()
+            : Error.Conflict("StockMigration.NotDraft", "Only a migration that has not been approved can be discarded.");
     }
 
     /// <summary>
