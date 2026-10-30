@@ -33357,6 +33357,12 @@ namespace INFRASTRUCTURE.Migrations
                                     b2.Property<decimal>("Quantity")
                                         .HasColumnType("numeric");
 
+                                    b2.Property<decimal>("UnitsPerPack")
+                                        .HasColumnType("numeric");
+
+                                    b2.Property<decimal>("YieldQuantity")
+                                        .HasColumnType("numeric");
+
                                     b2.HasKey("AllocateProductionOrderProductAllocateProductionOrderId", "AllocateProductionOrderProductId", "Id");
 
                                     b2.HasIndex("FinishedGoodsTransferNoteId");
@@ -33541,6 +33547,12 @@ namespace INFRASTRUCTURE.Migrations
                                         .HasColumnType("uuid");
 
                                     b2.Property<decimal>("Quantity")
+                                        .HasColumnType("numeric");
+
+                                    b2.Property<decimal>("UnitsPerPack")
+                                        .HasColumnType("numeric");
+
+                                    b2.Property<decimal>("YieldQuantity")
                                         .HasColumnType("numeric");
 
                                     b2.HasKey("ProductionOrderProductsProductionOrderId", "ProductionOrderProductsId", "Id");

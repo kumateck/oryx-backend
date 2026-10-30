@@ -151,7 +151,7 @@ internal static class ProductionStepRecordsQuery
                     { Id = item.ProductPacking.Id, Name = item.ProductPacking.Name },
                 TotalQuantity = item.TotalQuantity, QuantityReceived = item.QuantityReceived,
                 QuantityPerPack = item.QuantityPerPack, Loose = item.Loose,
-                AllocatedQuantity = item.AllocatedQuantity, RemainingQuantity = item.TotalQuantity - item.AllocatedQuantity,
+                AllocatedQuantity = item.AllocatedQuantity, RemainingQuantity = (item.IsApproved && item.QuantityReceived > 0 ? item.QuantityReceived : item.TotalQuantity) - item.AllocatedQuantity,
                 Approved = item.Approved, IsApproved = item.IsApproved, IsPartial = item.IsPartial,
                 IsFulfilled = item.IsFulfilled, QarNumber = item.QarNumber, Notes = item.Notes
             }).ToListAsync(token);
