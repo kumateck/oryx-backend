@@ -59,6 +59,10 @@ public class ProductionOrderProductsDto
 public class ProductionOrderProductQuantityDto
 {
     public decimal Quantity { get; set; }
+    /// <summary>The base units this took from the transfer note's stock.</summary>
+    public decimal YieldQuantity { get; set; }
+    /// <summary>The units in one pack used for the conversion.</summary>
+    public decimal UnitsPerPack { get; set; }
 }
 
 public class AllocateProductionOrderRequest
@@ -109,4 +113,8 @@ public class AllocateProductQuantityDto
     public FinishedGoodsTransferNoteDto FinishedGoodsTransferNote { get; set; }
     public BatchPackagingRecordDto BatchPackagingRecord { get; set; }
     public decimal Quantity { get; set; }
+    /// <summary>The base units this took from the transfer note's stock.</summary>
+    public decimal YieldQuantity { get; set; }
+    /// <summary>The units in one pack used for the conversion.</summary>
+    public decimal UnitsPerPack { get; set; }
 }

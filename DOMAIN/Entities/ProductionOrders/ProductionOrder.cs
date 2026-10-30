@@ -67,12 +67,19 @@ public class ProductionOrderProducts
     public decimal Loose { get; set; }
 }
 
+/// <summary>
+/// Packs of an order line taken from one transfer note. <see cref="Quantity"/> is packs, the order's
+/// unit; <see cref="YieldQuantity"/> is the base units taken out of the note's stock, worked out with
+/// <see cref="UnitsPerPack"/> as it was when the packs were allocated.
+/// </summary>
 [Owned]
 public class ProductionOrderProductQuantity
 {
     public Guid FinishedGoodsTransferNoteId { get; set; }
     public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
+    public decimal YieldQuantity { get; set; }
+    public decimal UnitsPerPack { get; set; }
 }
 
 
@@ -107,12 +114,19 @@ public class AllocateProductionOrderProduct
     public List<AllocateProductQuantity> FulfilledQuantities { get; set; } = [];
 }
 
+/// <summary>
+/// Packs a packing list takes from one transfer note. <see cref="Quantity"/> is packs, the order's
+/// unit; <see cref="YieldQuantity"/> is the base units it takes from the note's stock, worked out with
+/// <see cref="UnitsPerPack"/> when the packing list was created.
+/// </summary>
 [Owned]
 public class AllocateProductQuantity
 {
     public Guid FinishedGoodsTransferNoteId { get; set; }
     public FinishedGoodsTransferNote FinishedGoodsTransferNote { get; set; }
     public decimal Quantity { get; set; }
+    public decimal YieldQuantity { get; set; }
+    public decimal UnitsPerPack { get; set; }
 }
 
 public class AllocateProductionOrderApprovals : ResponsibleApprovalStage
