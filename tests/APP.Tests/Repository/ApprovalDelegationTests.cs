@@ -103,6 +103,39 @@ public class ApprovalDelegationTests
         Assert.Equal("Decided by Kofi Boateng on behalf of Ama Owusu (delegated). Fine", ApprovalDelegationService.OnBehalfComment("Kofi Boateng", delegated.OnBehalfOf, " Fine "));
     }
 
+    [Fact]
+    public async Task Statistics_deduplicate_own_and_multiple_delegated_queues_and_exclude_signed_Qc()
+    {
+        await using var context = Context();
+        var service = new ApprovalDelegationService(context);
+        await service.Delegate(Ama, Request(Kofi, 0, 5), Now);
+        await service.Delegate(Esi, Request(Kofi, 0, 5), Now);
+        var shared = Guid.NewGuid();
+        var delegated = Guid.NewGuid();
+        var sameIdDifferentType = Guid.NewGuid();
+        var queues = new Dictionary<Guid, List<ApprovalEntity>>
+        {
+            [Kofi] = [new() { Id = shared, ModelType = "PurchaseOrder" },
+                new() { Id = sameIdDifferentType, ModelType = QcWorksheetModelTypes.Coa }],
+            [Ama] = [new() { Id = shared, ModelType = "PurchaseOrder" },
+                new() { Id = delegated, ModelType = "LeaveRequest" },
+                new() { Id = Guid.NewGuid(), ModelType = QcWorksheetModelTypes.Coa }],
+            [Esi] = [new() { Id = delegated, ModelType = "LeaveRequest" },
+                new() { Id = sameIdDifferentType, ModelType = "PurchaseOrder" }],
+        };
+        var stats = await service.Statistics(FakeApprovals.For(queues), Kofi, [], Now.AddHours(1));
+        Assert.Equal(2, stats["PurchaseOrder"]);
+        Assert.Equal(1, stats["LeaveRequest"]);
+        Assert.Equal(1, stats[QcWorksheetModelTypes.Coa]);
+        Assert.Equal(4, stats.Values.Sum());
+
+        foreach (var item in await context.ApprovalDelegations.ToListAsync()) item.RevokedAt = Now;
+        await context.SaveChangesAsync();
+        var own = await service.Statistics(FakeApprovals.For(queues), Kofi, [], Now.AddHours(1));
+        Assert.Equal(2, own.Values.Sum());
+        Assert.False(own.ContainsKey("LeaveRequest"));
+    }
+
     /// <summary>Answers only the pending-queue query, from a table of queues per user.</summary>
     public class FakeApprovals : DispatchProxy
     {
@@ -114,9 +147,14 @@ public class ApprovalDelegationTests
             return proxy;
         }
         protected override object Invoke(MethodInfo targetMethod, object[] args) =>
-            targetMethod.Name == nameof(IApprovalRepository.GetEntitiesRequiringApproval)
-                ? Task.FromResult(queues.GetValueOrDefault((Guid)args[0]!, []).Select(item => new ApprovalEntity { Id = item.Id, ModelType = item.ModelType }).ToList())
-                : throw new NotSupportedException(targetMethod.Name);
+            targetMethod.Name switch
+            {
+                nameof(IApprovalRepository.GetEntitiesRequiringApproval) => Task.FromResult(
+                    queues.GetValueOrDefault((Guid)args[0]!, []).Select(item => new ApprovalEntity { Id = item.Id, ModelType = item.ModelType }).ToList()),
+                nameof(IApprovalRepository.GetPendingApprovalKeys) => Task.FromResult(
+                    queues.GetValueOrDefault((Guid)args[0]!, []).Select(item => new PendingApprovalKey(item.ModelType, item.Id)).ToList()),
+                _ => throw new NotSupportedException(targetMethod.Name),
+            };
     }
 
     private sealed class TestCurrentUser : ICurrentUserService

@@ -20,6 +20,7 @@ public interface IApprovalDelegationService
     Task<Result> Revoke(Guid delegationId, Guid userId, DateTime now);
     Task<List<ActingIdentity>> ActiveDelegators(Guid delegateId, DateTime now);
     Task<List<PendingForCaller>> Pending(IApprovalRepository approvals, Guid userId, List<Guid> roleIds, string modelType, DateTime now);
+    Task<Dictionary<string, int>> Statistics(IApprovalRepository approvals, Guid userId, List<Guid> roleIds, DateTime now);
     Task<string> NameOf(Guid userId);
 }
 
@@ -139,6 +140,19 @@ public sealed class ApprovalDelegationService(ApplicationDbContext context) : IA
             }
         }
         return result;
+    }
+
+    public async Task<Dictionary<string, int>> Statistics(
+        IApprovalRepository approvals, Guid userId, List<Guid> roleIds, DateTime now)
+    {
+        var keys = (await approvals.GetPendingApprovalKeys(userId, roleIds ?? [])).ToHashSet();
+        foreach (var delegator in await ActiveDelegators(userId, now))
+        {
+            foreach (var key in await approvals.GetPendingApprovalKeys(delegator.UserId, delegator.RoleIds))
+                if (CanBeDelegated(key.ModelType)) keys.Add(key);
+        }
+        return keys.GroupBy(key => key.ModelType)
+            .ToDictionary(group => group.Key, group => group.Count());
     }
 
     public async Task<string> NameOf(Guid userId) =>

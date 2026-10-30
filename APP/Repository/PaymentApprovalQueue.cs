@@ -11,18 +11,21 @@ internal static class PaymentApprovalQueue
         ApplicationDbContext context,
         Guid userId,
         IReadOnlyCollection<Guid> roleIds
-    ) => context.Payments
+    ) => Query(context, userId, roleIds)
         .AsNoTracking()
         .Include(payment => payment.Currency)
         .Include(payment => payment.RecordedBy)
             .ThenInclude(user => user.Department)
-        .Where(payment =>
+        .ToListAsync();
+
+    internal static IQueryable<Payment> Query(
+        ApplicationDbContext context, Guid userId, IReadOnlyCollection<Guid> roleIds
+    ) => context.Payments.Where(payment =>
             payment.Status == PaymentStatus.Pending
             && payment.RecordedById != userId
             && payment.Approvals.Any(stage =>
                 stage.ActivatedAt.HasValue
                 && stage.Status == ApprovalStatus.Pending
                 && (stage.UserId == userId
-                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
-        .ToListAsync();
+                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))));
 }
