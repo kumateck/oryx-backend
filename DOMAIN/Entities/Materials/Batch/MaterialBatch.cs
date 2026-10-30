@@ -192,7 +192,16 @@ public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
-    public decimal RemainingQuantity => TotalQuantity - AllocatedQuantity;
+    /// <summary>
+    /// Yield still free in the store: what the store received (or, until it is received or where no
+    /// count was recorded, what was sent), less what packing lists have taken. All quantities on a
+    /// transfer note are yield, the base units produced; <see cref="QuantityPerPack"/> is the units in
+    /// one pack when the note was raised.
+    /// </summary>
+    public decimal RemainingQuantity => StockQuantity - AllocatedQuantity;
+
+    /// <summary>The yield the store holds from this transfer: what it received once received, else what was sent.</summary>
+    public decimal StockQuantity => IsApproved && QuantityReceived > 0 ? QuantityReceived : TotalQuantity;
     public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
     public bool Approved { get; set; }
     public List<FinishedGoodsTransferNoteApproval> Approvals { get; set; } = [];

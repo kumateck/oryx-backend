@@ -538,6 +538,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Include(p => p.Material)
             .Include(s => s.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .FirstOrDefaultAsync(p => p.ProductId == productPackageId);
 
         if (productPackage == null)
@@ -557,6 +558,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .Include(p => p.Material)
             .Include(s => s.ProductPacking)
                 .ThenInclude(p => p.PackingLists)
+                    .ThenInclude(l => l.Uom)
             .Where(p => p.ProductId == productId)
             .ToListAsync();
 

@@ -10,16 +10,13 @@ public class PendingAllocatedQuantityResolver(ApplicationDbContext dbContext) : 
     public decimal Resolve(FinishedGoodsTransferNote source, FinishedGoodsTransferNoteDto destination, decimal destMember,
         ResolutionContext context)
     {
+        // Yield on packing lists still waiting for approval. It is already counted in AllocatedQuantity
+        // (stock is taken when a packing list is created), so this is shown, never subtracted again.
         return dbContext.AllocateProductionOrders
-            .AsSplitQuery()
-            .Include(a => a.Products)
-            .ThenInclude(p => p.FulfilledQuantities)
-            .Where(a => a.Products
-                .Any(pr => pr.FulfilledQuantities
-                    .Any(f => f.FinishedGoodsTransferNoteId == source.Id)))
+            .Where(a => !a.Approved)
             .SelectMany(a => a.Products)
             .SelectMany(p => p.FulfilledQuantities)
             .Where(f => f.FinishedGoodsTransferNoteId == source.Id)
-            .Sum(f => f.Quantity);
+            .Sum(f => f.YieldQuantity);
     }
 }

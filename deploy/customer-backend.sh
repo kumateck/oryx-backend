@@ -82,8 +82,15 @@ failure() {
 trap failure ERR
 trap cleanup EXIT
 mkdir -p "$RELEASE"
-# Freeze the installed Compose definition and settings, including relative bind paths.
-cp "$REPO/docker-compose.yml" "$RELEASE/compose.yml"
+if [[ -d "$SOURCE" ]]; then
+  [[ $(git -C "$SOURCE" rev-parse HEAD) = "$TARGET" && -z $(git -C "$SOURCE" status --porcelain) ]] || { echo 'Interrupted build source is dirty or names another commit.' >&2; false; }
+else
+  git -C "$REPO" worktree add --detach "$SOURCE" "$TARGET" >>"$LOG" 2>&1
+fi
+# Freeze the Compose definition of the commit being deployed (not the installed checkout's, which only
+# changes when the tooling is pulled) with this server's settings. Relative bind paths still resolve
+# against the installed checkout.
+cp "$SOURCE/docker-compose.yml" "$RELEASE/compose.yml"
 cp "$ENV_FILE" "$RELEASE/runtime.env"
 printf '{"services":{"app":{"image":"oryx-api-customer:%s","environment":{"Database__ApplyMigrationsOnStartup":"false"}}}}\n' "$TARGET" > "$RELEASE/runtime.json"
 printf '{"services":{"app":{"image":"oryx-api-customer-migration:%s","environment":{"Database__ApplyMigrationsOnStartup":"false"}}}}\n' "$TARGET" > "$RELEASE/migration.json"
@@ -106,14 +113,20 @@ print(database)
 PY
 )
 docker inspect postgres_db >/dev/null 2>>"$LOG"
+# Email (password resets, new-user setup) needs these in the API container. Reported, never blocking.
+MISSING_SETTINGS=$(python3 - "$RELEASE/resolved.json" <<'PY'
+import json,sys
+env=json.load(open(sys.argv[1]))["services"]["app"].get("environment") or {}
+print(", ".join(n for n in ("SMTP_HOST","SMTP_USERNAME","SMTP_PASSWORD") if not str(env.get(n) or "").strip()))
+PY
+) || MISSING_SETTINGS='(settings check could not run)'
 STAGE=building
 START_NOTE=building
 if [[ ${2:-} = --retry ]]; then START_NOTE='building (retry)'; fi
 notify "🟡 ORYX Backend deployment STARTED | $NOTIFY_HOST | main ${TARGET:0:8} | $START_NOTE"
-if [[ -d "$SOURCE" ]]; then
-  [[ $(git -C "$SOURCE" rev-parse HEAD) = "$TARGET" && -z $(git -C "$SOURCE" status --porcelain) ]] || { echo 'Interrupted build source is dirty or names another commit.' >&2; false; }
-else
-  git -C "$REPO" worktree add --detach "$SOURCE" "$TARGET" >>"$LOG" 2>&1
+if [[ -n "$MISSING_SETTINGS" ]]; then
+  echo "Warning: email will not work. Missing from $ENV_FILE: $MISSING_SETTINGS" >&3
+  notify "🟠 ORYX Backend settings WARNING | $NOTIFY_HOST | email will not work: $MISSING_SETTINGS missing from the backend .env"
 fi
 STAGE=migration-history
 cat > "$RELEASE/history.sql" <<'SQL'

@@ -1,7 +1,8 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-interface Fixture { directory: string; sha: string; failure?: string; database?: string; apiContainer?: string; dbContainer?: string }
+interface Fixture { directory: string; sha: string; failure?: string; smtp?: boolean; database?: string; apiContainer?: string; dbContainer?: string }
 const fixture: Fixture = JSON.parse(readFileSync(process.argv[2] ?? "", "utf8"));
 const tool = process.argv[3];
 const args = process.argv.slice(4);
@@ -16,6 +17,8 @@ if (tool === "git") {
     const migrations = join(command[3] ?? "", "INFRASTRUCTURE/Migrations");
     mkdirSync(migrations, { recursive: true });
     writeFileSync(join(migrations, "Initial.Designer.cs"), '[Migration("20260101000000_Initial")]');
+    // The deployed commit carries the repository's current Compose definition.
+    copyFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../docker-compose.yml"), join(command[3] ?? "", "docker-compose.yml"));
   }
   if (command[0] === "worktree" && command[1] === "remove") rmSync(command[3] ?? "", { recursive: true, force: true });
 } else if (tool === "docker") {
@@ -42,6 +45,7 @@ if (tool === "git") {
   if (args[0] === "compose") {
     if (args.includes("config")) process.stdout.write(JSON.stringify({ services: { app: { environment: {
       connectionString: `Host=postgres_db;Port=5432;Username=test;Password=fixture;Database=${fixture.database ?? "entrancedb"}`,
+      ...(fixture.smtp ? { SMTP_HOST: "mail.example.test", SMTP_USERNAME: "erp@example.test", SMTP_PASSWORD: "fixture" } : { SMTP_HOST: "" }),
     } } } }));
     if (args.includes("run")) {
       if (args.includes("has-pending-model-changes")) fail("model");

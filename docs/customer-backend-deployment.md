@@ -1,5 +1,18 @@
 # Customer-host backend migration and deployment
 
+## Compose comes from the deployed commit (2026-10-30)
+
+Deployments used to freeze `docker-compose.yml` from the installed checkout,
+which only changes when the tooling is pulled. A setting added to compose on
+main (such as `SMTP_HOST`) therefore never reached the API, and forgot-password
+kept failing after the fix shipped. The pipeline now freezes the compose file
+of the commit being deployed; the server's `.env` and bind paths are unchanged.
+Each deployment also warns (console and Discord) when `SMTP_HOST`,
+`SMTP_USERNAME` or `SMTP_PASSWORD` is missing, without blocking it.
+
+This change ships in the tooling itself, so pull it once on each server
+(pause, `git pull --ff-only origin main`, resume), then `bash deploy.sh deploy`.
+
 ## Model consistency and overlapping pollers (2026-10-28)
 
 EF 9 rejected the first customer migration job with `PendingModelChangesWarning`.

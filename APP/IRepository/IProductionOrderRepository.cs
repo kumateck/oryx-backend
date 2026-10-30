@@ -34,7 +34,6 @@ public interface IProductionOrderRepository
     Task<Result<InvoiceDto>> GetInvoice(Guid id);
     Task<Result> UpdateInvoice(Guid id, CreateInvoice request);
     Task<Result> DeleteInvoice(Guid id, Guid userId);
-    Task<Result> AllocateProduct(AllocateProductionOrderRequest request);
     Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id);
     Task<Result> CreateWaybillFromProductionOrder(CreateProductionOrderWaybill request, Guid id);
     Task<Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>> GetProductionOrderWaybills(

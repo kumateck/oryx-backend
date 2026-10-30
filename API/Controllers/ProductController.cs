@@ -256,6 +256,27 @@ public class ProductController(IProductRepository repository) : ControllerBase
     }
 
     /// <summary>
+    /// Saves a product's packing styles from the finished goods warehouse (approved products).
+    /// Same behaviour as the product packing save, behind its own permission.
+    /// </summary>
+    [HttpPost("{productId}/packing/approved-product")]
+    [Authorize(PermissionKeys.CanEditApprovedProductPackingStyle)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> SaveApprovedProductPacking(
+        [FromBody] List<CreateProductPacking> request,
+        Guid productId
+    )
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        var result = await repository.CreateProductPacking(request, productId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves packings lists for a product
     /// </summary>
     [HttpGet("{productId}/packing")]
