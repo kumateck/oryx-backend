@@ -34,8 +34,7 @@ public sealed class PendingApprovalDocumentCountsController(
             await Can(QcWorksheetPermissionKeys.CanDispositionQcOosCase));
 
         // Includes approvals delegated to the caller; QC and revision counts are the caller's own.
-        var counts = (await delegations.Pending(approvals, actorId, roleIds, null, DateTime.UtcNow))
-            .GroupBy(item => item.Entity.ModelType).ToDictionary(group => group.Key, group => group.Count());
+        var counts = await delegations.Statistics(approvals, actorId, roleIds, DateTime.UtcNow);
         var qc = await qcApprovals.GetPendingApprovals(actorId, roleIds);
         if (!qc.IsSuccess) return qc.ToProblemDetails();
         foreach (var group in qc.Value.GroupBy(item => $"Qc{item.EntityType}"))

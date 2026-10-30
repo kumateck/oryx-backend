@@ -372,7 +372,6 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var pending = await delegations.Pending(repository, Guid.Parse(userId), roleIds, null, DateTime.UtcNow);
-        return TypedResults.Ok(pending.GroupBy(item => item.Entity.ModelType).ToDictionary(group => group.Key, group => group.Count()));
+        return TypedResults.Ok(await delegations.Statistics(repository, Guid.Parse(userId), roleIds, DateTime.UtcNow));
     }
 }

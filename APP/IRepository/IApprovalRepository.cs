@@ -44,6 +44,8 @@ public interface IApprovalRepository
 
     Task<List<UserDto>> GetUsersWithPendingApprovals();
 
+    Task<List<PendingApprovalKey>> GetPendingApprovalKeys(Guid userId, List<Guid> roleIds);
+
     Task<Dictionary<string, int>> GetStatisticsOfEntitiesRequiringApproval(
         Guid userId,
         List<Guid> roleIds

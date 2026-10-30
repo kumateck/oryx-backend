@@ -3367,16 +3367,13 @@ public class ApprovalRepository(
     {
         if (string.IsNullOrWhiteSpace(modelType)) modelType = null;
         var entitiesRequiringApproval = new List<ApprovalEntity>();
+        var pending = new PendingApprovalQueries(context, userId, roleIds);
 
         if (modelType is null or nameof(StockDiscrepancy))
         {
-            var reports = await context.StockDiscrepancies.AsSplitQuery()
+            var reports = await pending.StockDiscrepancies.AsSplitQuery()
                 .Include(item => item.Approvals)
                 .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
-                .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
-                    stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
-                    (stage.UserId == userId ||
-                        (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))))
                 .ToListAsync();
             entitiesRequiringApproval.AddRange(reports.Select(item => new ApprovalEntity
             {
@@ -3392,14 +3389,10 @@ public class ApprovalRepository(
 
         if (modelType is null or nameof(ShipmentDiscrepancy))
         {
-            var discrepancies = await context.ShipmentDiscrepancies.AsSplitQuery()
+            var discrepancies = await pending.ShipmentDiscrepancies.AsSplitQuery()
                 .Include(item => item.Approvals)
                 .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
                 .Include(item => item.ShipmentDocument)
-                .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
-                    stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
-                    (stage.UserId == userId ||
-                        (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))))
                 .ToListAsync();
             entitiesRequiringApproval.AddRange(discrepancies.Select(item => new ApprovalEntity
             {
@@ -3416,19 +3409,11 @@ public class ApprovalRepository(
         // 1. Get Purchase Orders requiring approval
         if (modelType is null or "PurchaseOrder")
         {
-            var purchaseOrders = await context
-                .PurchaseOrders.AsSplitQuery()
+            var purchaseOrders = await pending.PurchaseOrders.AsSplitQuery()
                 .Include(po => po.Approvals)
                     .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
-                .Where(po =>
-                    po.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var po in purchaseOrders)
@@ -3452,21 +3437,13 @@ public class ApprovalRepository(
         // 2. Get Requisitions requiring approval
         if (modelType is null or "StockRequisition" or "TrialRequisition" or "PurchaseRequisition")
         {
-            var requisitions = await context
-                .Requisitions.AsSplitQuery()
+            var requisitions = await pending.Requisitions.AsSplitQuery()
                 .Include(p => p.Department)
                 .Include(p => p.CreatedBy)
                 .Include(po => po.Approvals)
                     .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
-                .Where(po =>
-                    po.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var r in requisitions)
@@ -3522,18 +3499,10 @@ public class ApprovalRepository(
         // 3. Get Billing Sheets requiring approval
         if (modelType is null or "BillingSheet")
         {
-            var billingSheets = await context
-                .BillingSheets.AsSplitQuery()
+            var billingSheets = await pending.BillingSheets.AsSplitQuery()
                 .Include(bs => bs.Approvals)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var bs in billingSheets)
@@ -3555,18 +3524,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "OvertimeRequest")
         {
-            var overtimeRequests = await context
-                .OvertimeRequests.AsSplitQuery()
+            var overtimeRequests = await pending.OvertimeRequests.AsSplitQuery()
                 .Include(bs => bs.Approvals)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var bs in overtimeRequests)
@@ -3588,20 +3549,12 @@ public class ApprovalRepository(
 
         if (modelType is null or "LeaveRequest")
         {
-            var leaveRequests = await context
-                .LeaveRequests.AsSplitQuery()
+            var leaveRequests = await pending.LeaveRequests.AsSplitQuery()
                 .Include(bs => bs.Approvals)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
                 .Include(a => a.Employee)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var bs in leaveRequests)
@@ -3623,18 +3576,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "PayrollRun")
         {
-            var payrollRuns = await context
-                .PayrollRuns.AsSplitQuery()
+            var payrollRuns = await pending.PayrollRuns.AsSplitQuery()
                 .Include(bs => bs.Approvals)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var bs in payrollRuns)
@@ -3656,20 +3601,12 @@ public class ApprovalRepository(
 
         if (modelType is null or "PerformanceReview")
         {
-            var performanceReviews = await context
-                .PerformanceReviews.AsSplitQuery()
+            var performanceReviews = await pending.PerformanceReviews.AsSplitQuery()
                 .Include(bs => bs.Approvals)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
                 .Include(a => a.Employee)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var bs in performanceReviews)
@@ -3691,20 +3628,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "Response")
         {
-            var responses = await context
-                .Responses.AsSplitQuery()
+            var responses = await pending.Responses.AsSplitQuery()
                 .Include(bs => bs.Approvals)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        a.ApprovalRound == bs.Approvals.Max(item => item.ApprovalRound)
-                        &&
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var bs in responses)
@@ -3729,18 +3656,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "ProformaInvoice")
         {
-            var proformaInvoices = await context
-                .ProformaInvoices.AsSplitQuery()
+            var proformaInvoices = await pending.ProformaInvoices.AsSplitQuery()
                 .Include(a => a.Approvals)
                 .Include(a => a.CreatedBy)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var proformaInvoice in proformaInvoices)
@@ -3762,18 +3681,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "ShipmentDocument")
         {
-            var shipmentDocuments = await context
-                .ShipmentDocuments.AsSplitQuery()
+            var shipmentDocuments = await pending.ShipmentDocuments.AsSplitQuery()
                 .Include(a => a.Approvals)
                 .Include(a => a.CreatedBy)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var shipmentDocument in shipmentDocuments)
@@ -3795,18 +3706,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "JobRequest")
         {
-            var jobRequests = await context
-                .JobRequests.AsSplitQuery()
+            var jobRequests = await pending.JobRequests.AsSplitQuery()
                 .Include(a => a.Approvals)
                 .Include(a => a.CreatedBy)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var jobRequest in jobRequests)
@@ -3828,8 +3731,7 @@ public class ApprovalRepository(
 
         if (modelType is null or "ProductionExtraPacking")
         {
-            var productExtraPackings = await context
-                .ProductionExtraPackings.AsSplitQuery()
+            var productExtraPackings = await pending.ProductionExtraPackings.AsSplitQuery()
                 .Include(a => a.Approvals)
                 .Include(a => a.CreatedBy)
                     .ThenInclude(a => a.Department)
@@ -3837,13 +3739,6 @@ public class ApprovalRepository(
                     .ThenInclude(productionScheduleProduct =>
                         productionScheduleProduct.ProductionSchedule
                     )
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var productExtraPacking in productExtraPackings)
@@ -3867,18 +3762,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "FinishedGoodsTransferNote")
         {
-            var fgtns = await context
-                .FinishedGoodsTransferNotes.AsSplitQuery()
+            var fgtns = await pending.FinishedGoodsTransferNotes.AsSplitQuery()
                 .Include(a => a.Approvals)
                 .Include(a => a.CreatedBy)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var fgtn in fgtns)
@@ -3900,18 +3787,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "StockAdjustment")
         {
-            var stockAdjustments = await context
-                .StockAdjustments.AsSplitQuery()
+            var stockAdjustments = await pending.StockAdjustments.AsSplitQuery()
                 .Include(a => a.Approvals)
                 .Include(a => a.CreatedBy)
                     .ThenInclude(a => a.Department)
-                .Where(bs =>
-                    bs.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var sa in stockAdjustments)
@@ -3933,17 +3812,11 @@ public class ApprovalRepository(
 
         if (modelType is null or "AllocateProductionOrder")
         {
-            var allocations = await context.AllocateProductionOrders
-                .AsSplitQuery()
+            var allocations = await pending.AllocateProductionOrders.AsSplitQuery()
                 .Include(item => item.Approvals)
                 .Include(item => item.CreatedBy)
                     .ThenInclude(user => user.Department)
                 .Include(item => item.ProductionOrder)
-                .Where(item => item.Approvals.Any(stage =>
-                    (stage.UserId == userId
-                        || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                    && stage.Status == ApprovalStatus.Pending
-                    && stage.ActivatedAt.HasValue))
                 .ToListAsync();
 
             foreach (var allocation in allocations)
@@ -3963,17 +3836,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "CustomerQuotation")
         {
-            var customerQuotations = await context.CustomerQuotations
-                .AsSplitQuery()
+            var customerQuotations = await pending.CustomerQuotations.AsSplitQuery()
                 .Include(item => item.Approvals)
                 .Include(item => item.CreatedBy)
                     .ThenInclude(user => user.Department)
-                .Where(item => item.Status == CustomerQuotationStatus.Sent
-                    && item.Approvals.Any(stage =>
-                        stage.ActivatedAt.HasValue
-                        && stage.Status == ApprovalStatus.Pending
-                        && (stage.UserId == userId
-                            || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
                 .ToListAsync();
 
             foreach (var quotation in customerQuotations)
@@ -3993,15 +3859,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "SupplierPricingAgreement")
         {
-            var supplierAgreements = await context.SupplierPricingAgreements
-                .AsSplitQuery().Include(item => item.Approvals)
+            var supplierAgreements = await pending.SupplierPricingAgreements.AsSplitQuery()
+                .Include(item => item.Approvals)
                 .Include(item => item.Supplier).Include(item => item.Material)
                 .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
-                .Where(item => item.Status == SupplierPricingAgreementStatus.Pending
-                    && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
-                        && stage.Status == ApprovalStatus.Pending
-                        && (stage.UserId == userId
-                            || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
                 .ToListAsync();
             foreach (var agreement in supplierAgreements)
                 entitiesRequiringApproval.Add(new ApprovalEntity {
@@ -4036,20 +3897,12 @@ public class ApprovalRepository(
 
         if (modelType is null or "RndProject")
         {
-            var rndProjects = await context
-                .RndProjects.AsSplitQuery()
+            var rndProjects = await pending.RndProjects.AsSplitQuery()
                 .Include(item => item.Approvals)
                     .ThenInclude(stage => stage.ApprovedBy)
                 .Include(item => item.RequestedBy)
                     .ThenInclude(user => user.Department)
                 .Include(item => item.Department)
-                .Where(item =>
-                    item.Approvals.Any(a =>
-                        (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
-                        && a.Status == ApprovalStatus.Pending
-                        && a.ActivatedAt.HasValue
-                    )
-                )
                 .ToListAsync();
 
             foreach (var rndProject in rndProjects)
@@ -4069,13 +3922,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "RndFormulation")
         {
-            var rndFormulations = await context.RndFormulations.AsSplitQuery()
+            var rndFormulations = await pending.RndFormulations.AsSplitQuery()
                 .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
                 .Include(item => item.RndProject).ThenInclude(project => project.Department)
                 .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
-                .Where(item => item.Status == RndFormulationStatus.InReview && item.Approvals.Any(stage =>
-                    stage.ActivatedAt.HasValue && stage.Status == ApprovalStatus.Pending
-                    && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
                 .ToListAsync();
             entitiesRequiringApproval.AddRange(rndFormulations.Select(item => new ApprovalEntity
             {
@@ -4089,14 +3939,10 @@ public class ApprovalRepository(
 
         if (modelType is null or "RndTechnologyTransfer")
         {
-            var rndTransfers = await context.RndTechnologyTransfers.AsSplitQuery()
+            var rndTransfers = await pending.RndTechnologyTransfers.AsSplitQuery()
                 .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
                 .Include(item => item.RndProject).ThenInclude(project => project.Department)
                 .Include(item => item.RndProject).ThenInclude(project => project.RequestedBy)
-                .Where(item => item.Status == RndTechnologyTransferStatus.ProtocolInReview
-                    && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
-                        && stage.Status == ApprovalStatus.Pending
-                        && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))
                 .ToListAsync();
             entitiesRequiringApproval.AddRange(rndTransfers.Select(item => new ApprovalEntity
             {
@@ -4110,12 +3956,9 @@ public class ApprovalRepository(
 
         if (modelType is null or "StaffRequisition")
         {
-            var staffRequisitions = await context.StaffRequisitions
+            var staffRequisitions = await pending.StaffRequisitions
                 .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
                 .Include(item => item.Approvals)
-                .Where(item => item.Approvals.Any(stage =>
-                    (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                    && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
                 .ToListAsync();
             entitiesRequiringApproval.AddRange(staffRequisitions.Select(item => new ApprovalEntity
             {
@@ -4129,12 +3972,9 @@ public class ApprovalRepository(
 
         if (modelType is null or "ProductionOrder")
         {
-            var productionOrders = await context.ProductionOrders
+            var productionOrders = await pending.ProductionOrders
                 .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
                 .Include(item => item.Approvals)
-                .Where(item => item.Approvals.Any(stage =>
-                    (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-                    && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue))
                 .ToListAsync();
             entitiesRequiringApproval.AddRange(productionOrders.Select(item => new ApprovalEntity
             {
@@ -4232,14 +4072,21 @@ public class ApprovalRepository(
         return mapper.Map<List<UserDto>>(users);
     }
 
+    public async Task<List<PendingApprovalKey>> GetPendingApprovalKeys(Guid userId, List<Guid> roleIds)
+    {
+        var keys = new List<PendingApprovalKey>();
+        foreach (var query in new PendingApprovalQueries(context, userId, roleIds ?? []).Keys())
+            keys.AddRange(await query.ToListAsync());
+        return keys;
+    }
+
     public async Task<Dictionary<string, int>> GetStatisticsOfEntitiesRequiringApproval(
         Guid userId,
         List<Guid> roleIds
     )
     {
-        var entities = await GetEntitiesRequiringApproval(userId, roleIds, null);
-
-        return entities.GroupBy(e => e.ModelType).ToDictionary(e => e.Key, e => e.Count());
+        var keys = await GetPendingApprovalKeys(userId, roleIds);
+        return keys.GroupBy(key => key.ModelType).ToDictionary(group => group.Key, group => group.Count());
     }
 
     public async Task<Result<ApprovalEntity>> GetEntityRequiringApproval(
