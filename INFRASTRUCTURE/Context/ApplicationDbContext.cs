@@ -316,6 +316,14 @@ public partial class ApplicationDbContext(
 
     #endregion
 
+    #region StockMigrations
+
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigration> StockMigrations { get; set; }
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationLine> StockMigrationLines { get; set; }
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationWriteOff> StockMigrationWriteOffs { get; set; }
+
+    #endregion
+
     #region Procurement
 
     public DbSet<Supplier> Suppliers { get; set; }
