@@ -176,6 +176,23 @@ public class ArdFamilyClassifierTests
     }
 
     [Fact]
+    public void A_finished_product_headed_analytical_raw_data_stays_unknown()
+    {
+        // The product-chemical pattern confirmed against a real Lufart ARD: headed just
+        // "ANALYTICAL RAW DATA" (no "MICROBIOLOGY" suffix, no "WORKSHEET"), pages of
+        // Description/Identification/Dissolution/Assay — never "analyticalworksheet", so the
+        // plain fallback below missed it until this case was added.
+        var document = Read(
+            [Grid(["No.", "Result / Observation", "Specification"])],
+            "ANALYTICAL RAW DATA\tBatch No.:\tProduct Name:");
+
+        var classification = ArdFamilyClassifier.Classify(document);
+
+        Assert.Equal(ArdFamily.Unknown, classification.Family);
+        Assert.Equal("ANALYTICAL WORKSHEET (chemical)", classification.Evidence);
+    }
+
+    [Fact]
     public void A_standard_test_procedure_is_named_as_such()
     {
         var document = Read([P("Purpose")], "STANDARD TEST PROCEDURE\tSTP No.: QCD/STP/FP/009");

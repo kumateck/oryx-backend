@@ -3965,6 +3965,7 @@ public partial class ReportRepository(
                         .ThenInclude(p => p.FinishedGoodsTransferNote)
                             .ThenInclude(p => p.BatchManufacturingRecord)
             .ToListAsync();
+        var priceOf = await InvoicePriceLookup(invoices);
 
         var query = invoices.SelectMany(invoice =>
             invoice.Products.Select(p => new
@@ -4003,7 +4004,7 @@ public partial class ReportRepository(
                     .Sum(q => q.Quantity),
 
                 Uom = x.Product.BaseUoM.Symbol,
-                UnitPrice = x.Product.Price,
+                UnitPrice = priceOf(x.Invoice, x.Product),
 
                 ProductName = x.Product.Name,
                 ProductCode = x.Product.Code,
@@ -4014,6 +4015,31 @@ public partial class ReportRepository(
             data[i].No = i + 1;
 
         return Result.Success(data);
+    }
+
+    /// <summary>
+    /// Prices invoiced lines the way the invoice itself does: the customer's agreed price per pack
+    /// for the product's packing style on the invoice date, else the product's list price.
+    /// </summary>
+    private async Task<Func<DOMAIN.Entities.ProformaInvoices.ProformaInvoice, Product, decimal>> InvoicePriceLookup(List<DOMAIN.Entities.ProformaInvoices.ProformaInvoice> invoices)
+    {
+        var customerIds = invoices
+            .Select(invoice => invoice.AllocateProductionOrder?.ProductionOrder?.CustomerId)
+            .OfType<Guid>()
+            .Distinct()
+            .ToList();
+        var agreements = await context.CustomerPricingAgreements.AsNoTracking()
+            .Where(item => customerIds.Contains(item.CustomerId))
+            .ToListAsync();
+        return (invoice, product) =>
+        {
+            var order = invoice.AllocateProductionOrder?.ProductionOrder;
+            var packingId = invoice.AllocateProductionOrder?.Products
+                .FirstOrDefault(item => item.ProductId == product.Id)?.ProductPackingId;
+            if (order is null || packingId is null) return product.Price;
+            var matches = CustomerPricingResolver.ActiveMatches(agreements, order.CustomerId, product.Id, packingId.Value, invoice.CreatedAt);
+            return CustomerPricingResolver.Resolve(matches, product.Price).UnitPrice;
+        };
     }
 
     public async Task<
@@ -4061,6 +4087,7 @@ public partial class ReportRepository(
                         .ThenInclude(p => p.FinishedGoodsTransferNote)
                             .ThenInclude(p => p.BatchManufacturingRecord)
             .ToListAsync();
+        var priceOf = await InvoicePriceLookup(invoices);
 
         var query = invoices.SelectMany(invoice =>
             invoice.Products.SelectMany(p =>
@@ -4103,7 +4130,7 @@ public partial class ReportRepository(
 
                 Uom = x.Product.BaseUoM.Symbol,
 
-                UnitPrice = x.Product.Price,
+                UnitPrice = priceOf(x.Invoice, x.Product),
 
                 AllocationStatus = x.Allocation.Status,
             })

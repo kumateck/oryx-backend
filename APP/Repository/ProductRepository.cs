@@ -647,6 +647,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
+        // Packs per shipper must match the unit breakdown at some level, or tablets and bottles cannot be counted as packs.
+        foreach (var incoming in request)
+        {
+            var units = incoming.PackingLists.OrderBy(unit => unit.Order).Select(unit => unit.Quantity).ToList();
+            if (units.Count > 0 && PackingLayout.BaseUnitsPerPack(units, incoming.PackPerShipper) is null)
+                return Error.Validation("ProductPacking.Units",
+                    $"Packing style '{incoming.Name}': the units do not add up to {incoming.PackPerShipper} packs per shipper at any level. "
+                    + "Packs per shipper must equal the quantities multiplied from the first unit down to the pack.");
+        }
+
         var existingPackings = await context
             .ProductPackings.IgnoreQueryFilters()
             .AsSplitQuery()
