@@ -705,25 +705,142 @@ public class ProductionOrderRepository(
         var allocationEntity = new AllocateProductionOrder
         {
             ProductionOrderId = productionOrder.Id,
-            Products = lines
-                .GroupBy(line => (line.OrderProduct.ProductId, line.OrderProduct.ProductPackingId))
-                .Select(group => new AllocateProductionOrderProduct
+            Products = AllocationProducts(lines),
+        };
+        TakeStock(productionOrder, notes, lines);
+
+        if (productionOrder.Products.All(p => p.Fulfilled))
+            productionOrder.Status = ProductionOrderStatus.FullPackingReady;
+        else if (productionOrder.Products.Any(p => p.Fulfilled))
+            productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
+
+        await context.AllocateProductionOrders.AddAsync(allocationEntity);
+        await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(
+            nameof(AllocateProductionOrder),
+            allocationEntity.Id
+        );
+
+        return allocationEntity.Id;
+    }
+
+    /// <summary>
+    /// Changes a packing list while it is still waiting for approval: nothing loaded, no proforma invoice,
+    /// no waybill. The stock and order packs its old lines took are given back first, then the new lines
+    /// pass every check a new packing list passes and take theirs. Approval starts again, because what
+    /// was being approved has changed. Everything is saved together, or nothing is.
+    /// </summary>
+    public async Task<Result> UpdateProductOrderAllocation(Guid id, AllocateProductionOrderRequest request)
+    {
+        var allocation = await context.AllocateProductionOrders
+            .AsSplitQuery()
+            .Include(a => a.Products)
+                .ThenInclude(p => p.FulfilledQuantities)
+            .Include(a => a.Approvals)
+            .FirstOrDefaultAsync(a => a.Id == id);
+        if (allocation is null)
+            return Error.NotFound("AllocateProductionOrder.NotFound", "Packing list not found.");
+        if (request is null || request.ProductionOrderId != allocation.ProductionOrderId)
+            return Error.Validation("AllocateProductionOrder.Order", "A packing list cannot be moved to another production order.");
+        if (allocation.Approved || allocation.Status != AllocateProductionOrderStatus.Pending)
+            return Error.Validation("AllocateProductionOrder.Locked", "Only a packing list that is still waiting for approval can be changed.");
+        if (await context.ProformaInvoices.AnyAsync(p => p.AllocateProductionOrderId == id))
+            return Error.Validation("AllocateProductionOrder.Invoiced", "This packing list already has a proforma invoice, so it cannot be changed.");
+        if (await context.ProductionOrderWaybills.AnyAsync(w => w.AllocateProductionOrderId == id))
+            return Error.Validation("AllocateProductionOrder.Waybill", "This packing list already has a waybill, so it cannot be changed.");
+
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync()
+            : null;
+
+        var productionOrder = await context.ProductionOrders
+            .AsSplitQuery()
+            .Include(po => po.Products)
+                .ThenInclude(p => p.FulfilledQuantities)
+            .FirstOrDefaultAsync(po => po.Id == allocation.ProductionOrderId);
+        if (productionOrder is null)
+            return Error.NotFound("ProductionOrder.NotFound", "Production order not found");
+
+        // Give back what the old lines took. The order and notes stay tracked, so the checks below see it.
+        var oldNoteIds = allocation.Products.SelectMany(p => p.FulfilledQuantities).Select(q => q.FinishedGoodsTransferNoteId).Distinct().ToList();
+        var oldNotes = await context.FinishedGoodsTransferNotes.Where(n => oldNoteIds.Contains(n.Id)).ToDictionaryAsync(n => n.Id);
+        foreach (var product in allocation.Products)
+        {
+            var orderProduct = productionOrder.Products.FirstOrDefault(p =>
+                p.ProductId == product.ProductId && p.ProductPackingId == product.ProductPackingId);
+            foreach (var line in product.FulfilledQuantities)
+            {
+                var taken = orderProduct?.FulfilledQuantities.FirstOrDefault(q => q.FinishedGoodsTransferNoteId == line.FinishedGoodsTransferNoteId);
+                if (taken is not null)
                 {
-                    ProductId = group.Key.ProductId,
-                    ProductPackingId = group.Key.ProductPackingId,
-                    FulfilledQuantities = group
-                        .Select(line => new AllocateProductQuantity
-                        {
-                            FinishedGoodsTransferNoteId = line.NoteId,
-                            Quantity = line.Packs,
-                            YieldQuantity = line.Yield,
-                            UnitsPerPack = line.UnitsPerPack,
-                        })
-                        .ToList(),
+                    taken.Quantity = Math.Max(0, taken.Quantity - line.Quantity);
+                    taken.YieldQuantity = Math.Max(0, taken.YieldQuantity - line.YieldQuantity);
+                }
+                if (oldNotes.TryGetValue(line.FinishedGoodsTransferNoteId, out var note))
+                    note.AllocatedQuantity = Math.Max(0, note.AllocatedQuantity - line.YieldQuantity);
+            }
+        }
+        foreach (var product in productionOrder.Products.Where(p => p.RemainingQuantity > 0))
+            product.Fulfilled = false;
+
+        var plan = await PlanProductAllocation(request);
+        if (plan.IsFailure)
+        {
+            // Nothing was saved; drop the give-backs so they cannot be saved by anything else in this request.
+            context.ChangeTracker.Clear();
+            return plan.Error;
+        }
+
+        var (_, notes, lines) = plan.Value;
+        TakeStock(productionOrder, notes, lines);
+        foreach (var product in productionOrder.Products)
+            foreach (var empty in product.FulfilledQuantities.Where(q => q.Quantity <= 0).ToList())
+            {
+                product.FulfilledQuantities.Remove(empty);
+                context.Remove(empty);
+            }
+        if (productionOrder.Products.All(p => p.Fulfilled))
+            productionOrder.Status = ProductionOrderStatus.FullPackingReady;
+        else if (productionOrder.Products.Any(p => p.Fulfilled || p.FulfilledQuantities.Count > 0))
+            productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
+        else
+            productionOrder.Status = ProductionOrderStatus.Pending;
+
+        allocation.Products = AllocationProducts(lines);
+        allocation.Approved = false;
+        context.AllocateProductionOrderApprovals.RemoveRange(allocation.Approvals);
+        allocation.Approvals = [];
+        await context.SaveChangesAsync();
+
+        await approvalRepository.CreateInitialApprovalsAsync(nameof(AllocateProductionOrder), allocation.Id);
+        if (transaction is not null)
+            await transaction.CommitAsync();
+        return Result.Success();
+    }
+
+    /// <summary>The packing list's lines: one entry per product and packing style, each batch with its packs and yield.</summary>
+    private static List<AllocateProductionOrderProduct> AllocationProducts(List<PlannedAllocationLine> lines) => lines
+        .GroupBy(line => (line.OrderProduct.ProductId, line.OrderProduct.ProductPackingId))
+        .Select(group => new AllocateProductionOrderProduct
+        {
+            ProductId = group.Key.ProductId,
+            ProductPackingId = group.Key.ProductPackingId,
+            FulfilledQuantities = group
+                .Select(line => new AllocateProductQuantity
+                {
+                    FinishedGoodsTransferNoteId = line.NoteId,
+                    Quantity = line.Packs,
+                    YieldQuantity = line.Yield,
+                    UnitsPerPack = line.UnitsPerPack,
                 })
                 .ToList(),
-        };
+        })
+        .ToList();
 
+    /// <summary>Takes planned lines from the order (packs) and from the transfer notes (yield), and marks finished order lines.</summary>
+    private static void TakeStock(ProductionOrder productionOrder, Dictionary<Guid, FinishedGoodsTransferNote> notes, List<PlannedAllocationLine> lines)
+    {
         foreach (var line in lines)
         {
             var taken = line.OrderProduct.FulfilledQuantities.FirstOrDefault(q =>
@@ -756,21 +873,6 @@ public class ProductionOrderRepository(
         {
             product.Fulfilled = true;
         }
-
-        if (productionOrder.Products.All(p => p.Fulfilled))
-            productionOrder.Status = ProductionOrderStatus.FullPackingReady;
-        else if (productionOrder.Products.Any(p => p.Fulfilled))
-            productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
-
-        await context.AllocateProductionOrders.AddAsync(allocationEntity);
-        await context.SaveChangesAsync();
-
-        await approvalRepository.CreateInitialApprovalsAsync(
-            nameof(AllocateProductionOrder),
-            allocationEntity.Id
-        );
-
-        return allocationEntity.Id;
     }
 
     public async Task<

@@ -294,6 +294,22 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     }
 
     /// <summary>
+    /// Changes a packing list that is still waiting for approval; approval starts again
+    /// </summary>
+    [HttpPut("allocate/{allocateProductionOrderId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateProductionOrderAllocation(
+        [FromRoute] Guid allocateProductionOrderId,
+        [FromBody] AllocateProductionOrderRequest request
+    )
+    {
+        var result = await repository.UpdateProductOrderAllocation(allocateProductionOrderId, request);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Get product allocations
     /// </summary>
     [HttpGet("allocate")]
