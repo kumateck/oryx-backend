@@ -57,6 +57,8 @@ public partial class ReportRepository
                 ScheduleEnd = item.ProductionSchedule.ScheduledEndTime,
                 ExpectedYield = (decimal?)item.ProductPacking.ExpectedYield,
                 PacksPerShipper = (int?)item.ProductPacking.PackPerShipper,
+                PackQuantities = item.ProductPacking.PackingLists.OrderBy(unit => unit.Order)
+                    .Select(unit => unit.Quantity).ToList(),
                 UnitPrice = item.Product.Prices.OrderByDescending(price => price.Date)
                     .Select(price => (decimal?)price.Price).FirstOrDefault(),
                 PriceUnit = item.Product.Prices.OrderByDescending(price => price.Date)

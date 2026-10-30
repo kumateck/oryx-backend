@@ -108,6 +108,25 @@ public class ProductionReadinessBuilderTests
 
     private static ProductionReadinessReportDto Build(List<ProductionReadinessSource> rows) =>
         ProductionReadinessReportBuilder.Build(Guid.NewGuid(), "Production", new(2026, 10, 28), new(2026, 10, 28), rows);
+    [Fact]
+    public void Expected_tablets_become_packs_before_filling_shippers()
+    {
+        var tablets = Source();
+        tablets.ExpectedYield = 1_000_000;
+        tablets.PacksPerShipper = 80;
+        tablets.PackQuantities = [80m, 20m, 10m];
+        var row = Build([tablets]).Markets.Single().Rows.Single();
+        Assert.Equal(5000m, row.Packs);
+        Assert.Equal(62m, row.Shippers);
+        Assert.Equal(40m, row.LoosePacks);
+
+        tablets.PacksPerShipper = 75;
+        var unknown = Build([tablets]);
+        Assert.Null(unknown.Markets.Single().Rows.Single().Shippers);
+        Assert.Null(unknown.Totals.Packs);
+        Assert.Contains(unknown.Warnings, warning => warning.Contains("units do not add up"));
+    }
+
     private static ProductionReadinessSource Source() => new()
     {
         Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), ProductName = "Product", ProductCode = "P-1",

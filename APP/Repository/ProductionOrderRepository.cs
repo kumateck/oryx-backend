@@ -382,20 +382,52 @@ public class ProductionOrderRepository(
             ? DateTime.UtcNow.Date.AddDays(dueDays)
             : null;
 
-        // Existing clients do not yet submit financial snapshots. Once a base currency
-        // is configured, freeze the current product prices at invoice creation so later
-        // product-price edits cannot rewrite historical receivables.
+        // Existing clients do not yet submit financial snapshots. Freeze the prices in effect
+        // at invoice creation so later price edits cannot rewrite historical receivables.
+        // Quantities are packs, and a customer's agreed price is per pack of its packing style,
+        // so each line is quantity x the agreed price, or the list price when there is none.
         if (invoice.Amounts.Count == 0)
         {
-            var baseCurrency = await context.Currencies.FirstOrDefaultAsync(currency => currency.IsBaseCurrency);
-            var total = proforma.Products.Sum(item => item.Quantity * item.Product.Price);
-            if (baseCurrency is not null && total > 0)
-                invoice.Amounts.Add(new InvoiceAmount { CurrencyId = baseCurrency.Id, Amount = total });
+            var amounts = await InvoiceAmountsAt(proforma, DateTime.UtcNow);
+            invoice.Amounts.AddRange(amounts);
         }
 
         await context.Invoices.AddAsync(invoice);
         await context.SaveChangesAsync();
         return invoice.Id;
+    }
+
+    /// <summary>
+    /// What a proforma's lines come to on a date, one amount per currency. A line uses the
+    /// customer's agreed price for its product and packing style (in the agreement's currency)
+    /// when one is in effect, else the product's list price in the base currency.
+    /// </summary>
+    private async Task<List<InvoiceAmount>> InvoiceAmountsAt(ProformaInvoice proforma, DateTime asOf)
+    {
+        var allocation = await context.AllocateProductionOrders.AsNoTracking()
+            .Include(item => item.ProductionOrder)
+            .Include(item => item.Products)
+            .FirstOrDefaultAsync(item => item.Id == proforma.AllocateProductionOrderId);
+        var baseCurrencyId = await context.Currencies
+            .Where(currency => currency.IsBaseCurrency)
+            .Select(currency => (Guid?)currency.Id)
+            .FirstOrDefaultAsync();
+
+        var totals = new Dictionary<Guid, decimal>();
+        foreach (var line in proforma.Products)
+        {
+            var packingId = allocation?.Products.FirstOrDefault(item => item.ProductId == line.ProductId)?.ProductPackingId;
+            var resolution = allocation?.ProductionOrder is { } order
+                ? await CustomerPricingResolver.ResolveAsync(context, order.CustomerId, line.ProductId, packingId, line.Product.Price, asOf)
+                : new CustomerPricingResolution(line.Product.Price, null, false, false);
+            var currencyId = resolution.CurrencyId ?? baseCurrencyId;
+            if (currencyId is null) continue;
+            totals[currencyId.Value] = totals.GetValueOrDefault(currencyId.Value) + line.Quantity * resolution.UnitPrice;
+        }
+
+        return totals.Where(item => item.Value > 0)
+            .Select(item => new InvoiceAmount { CurrencyId = item.Key, Amount = item.Value })
+            .ToList();
     }
 
     public async Task<Result<Paginateable<IEnumerable<InvoiceDto>>>> GetInvoices(

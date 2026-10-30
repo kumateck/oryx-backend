@@ -1,3 +1,4 @@
+using APP.Services.Documents;
 using APP.IRepository;
 using APP.Services.Email;
 using APP.Services.Pdf;
@@ -94,27 +95,21 @@ public class ServiceProformaInvoiceRepository(
         // Send email to service provider requesting proforma invoice
         try
         {
-            var emailBody = $@"
-                <html>
-                <body>
-                    <h2>Proforma Invoice Request</h2>
-                    <p>Dear {quotation.ServiceProvider.Name},</p>
-                    <p>We are requesting a proforma invoice for the following service:</p>
-                    <p><strong>Job Order:</strong> {jobOrder.Code}</p>
-                    <p><strong>Service:</strong> {jobOrder.Service?.Name ?? "N/A"}</p>
-                    <p><strong>Description:</strong> {jobOrder.Description}</p>
-                    <p>Please provide your proforma invoice at your earliest convenience.</p>
-                    {(!string.IsNullOrEmpty(request.Notes) ? $"<p><strong>Notes:</strong> {request.Notes}</p>" : "")}
-                    <p>Thank you.</p>
-                </body>
-                </html>";
+            // Laid out like every other procurement document, in the body and as a PDF.
+            var email = ProcurementDocuments.ServiceProformaInvoiceRequest(
+                jobOrder,
+                quotation.ServiceProvider,
+                proformaInvoice.ServiceCharge,
+                DocumentText.Currency(quotation.Currency?.Symbol, quotation.Currency?.Name),
+                request.Notes,
+                proformaInvoice.RequestedDate);
 
             emailService.SendMail(
                 quotation.ServiceProvider.Name,
                 quotation.ServiceProvider.Email,
-                $"Proforma Invoice Request - {jobOrder.Code}",
-                emailBody,
-                new List<(byte[] fileContent, string fileName, string fileType)>());
+                email.Subject,
+                email.RenderBody(),
+                email.Attachments(pdfService));
         }
         catch (Exception)
         {

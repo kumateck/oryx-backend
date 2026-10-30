@@ -80,6 +80,8 @@ public class AuthRepository(IEmailService emailService, ApplicationDbContext con
 
     public async Task<Result> ForgotPassword(ForgotPasswordRequest request)
     {
+        if (!emailService.IsConfigured) return AuthErrors.EmailNotConfigured;
+
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user == null)
         {
