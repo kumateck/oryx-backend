@@ -204,6 +204,95 @@ public class FinishedGoodsYieldTests
         Assert.Contains("has 900 packs left", result.Error.Description);
     }
 
+    // ---------------------------------------------------------------- editing a packing list
+
+    [Fact]
+    public async Task Editing_a_packing_list_gives_back_its_old_stock_and_takes_the_new()
+    {
+        await using var context = CreateContext();
+        var seed = await SeedAsync(context, orderedPacks: 1000, noteYield: 1_600_000m);
+        var created = await CreateOrders(context).CreateProductOrderAllocation(Request(seed, (seed.NoteId, 50m)));
+        Assert.True(created.IsSuccess, created.IsFailure ? created.Error.Description : null);
+        context.ChangeTracker.Clear();
+
+        var result = await CreateOrders(context).UpdateProductOrderAllocation(created.Value, Request(seed, (seed.NoteId, 30m)));
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        context.ChangeTracker.Clear();
+        Assert.Equal(6_000m, (await context.FinishedGoodsTransferNotes.SingleAsync()).AllocatedQuantity);
+        var order = await context.ProductionOrders.Include(o => o.Products).ThenInclude(p => p.FulfilledQuantities).SingleAsync();
+        var taken = Assert.Single(order.Products[0].FulfilledQuantities);
+        Assert.Equal((30m, 6_000m), (taken.Quantity, taken.YieldQuantity));
+        var list = await context.AllocateProductionOrders.Include(a => a.Products).ThenInclude(p => p.FulfilledQuantities).SingleAsync();
+        var line = Assert.Single(Assert.Single(list.Products).FulfilledQuantities);
+        Assert.Equal((30m, 6_000m), (line.Quantity, line.YieldQuantity));
+    }
+
+    [Fact]
+    public async Task An_edit_can_use_the_stock_its_own_old_lines_held()
+    {
+        await using var context = CreateContext();
+        // 1,000 packs in stock, all on the packing list, and the order wants exactly that.
+        var seed = await SeedAsync(context, orderedPacks: 1000, noteYield: 200_000m);
+        var created = await CreateOrders(context).CreateProductOrderAllocation(Request(seed, (seed.NoteId, 1000m)));
+        Assert.True(created.IsSuccess, created.IsFailure ? created.Error.Description : null);
+        context.ChangeTracker.Clear();
+
+        var same = await CreateOrders(context).UpdateProductOrderAllocation(created.Value, Request(seed, (seed.NoteId, 1000m)));
+        Assert.True(same.IsSuccess, same.IsFailure ? same.Error.Description : null);
+        context.ChangeTracker.Clear();
+
+        var fewer = await CreateOrders(context).UpdateProductOrderAllocation(created.Value, Request(seed, (seed.NoteId, 400m)));
+        Assert.True(fewer.IsSuccess, fewer.IsFailure ? fewer.Error.Description : null);
+        context.ChangeTracker.Clear();
+        var order = await context.ProductionOrders.Include(o => o.Products).ThenInclude(p => p.FulfilledQuantities).SingleAsync();
+        Assert.False(order.Products[0].Fulfilled);
+        Assert.Equal(600m, order.Products[0].RemainingQuantity);
+        Assert.Equal(ProductionOrderStatus.PartialPackingReady, order.Status);
+        Assert.Equal(80_000m, (await context.FinishedGoodsTransferNotes.SingleAsync()).AllocatedQuantity);
+    }
+
+    [Fact]
+    public async Task A_refused_edit_changes_nothing()
+    {
+        await using var context = CreateContext();
+        var seed = await SeedAsync(context, orderedPacks: 2000, noteYield: 200_000m);
+        var created = await CreateOrders(context).CreateProductOrderAllocation(Request(seed, (seed.NoteId, 50m)));
+        Assert.True(created.IsSuccess, created.IsFailure ? created.Error.Description : null);
+        context.ChangeTracker.Clear();
+
+        var result = await CreateOrders(context).UpdateProductOrderAllocation(created.Value, Request(seed, (seed.NoteId, 1001m)));
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("FinishedGoodsTransferNote.OverAllocate", result.Error.Code);
+        context.ChangeTracker.Clear();
+        Assert.Equal(10_000m, (await context.FinishedGoodsTransferNotes.SingleAsync()).AllocatedQuantity);
+        var order = await context.ProductionOrders.Include(o => o.Products).ThenInclude(p => p.FulfilledQuantities).SingleAsync();
+        Assert.Equal(50m, Assert.Single(order.Products[0].FulfilledQuantities).Quantity);
+        var list = await context.AllocateProductionOrders.Include(a => a.Products).ThenInclude(p => p.FulfilledQuantities).SingleAsync();
+        Assert.Equal(50m, Assert.Single(Assert.Single(list.Products).FulfilledQuantities).Quantity);
+    }
+
+    [Fact]
+    public async Task An_approved_packing_list_cannot_be_edited()
+    {
+        await using var context = CreateContext();
+        var seed = await SeedAsync(context, orderedPacks: 1000, noteYield: 1_600_000m);
+        var created = await CreateOrders(context).CreateProductOrderAllocation(Request(seed, (seed.NoteId, 50m)));
+        Assert.True(created.IsSuccess, created.IsFailure ? created.Error.Description : null);
+        var list = await context.AllocateProductionOrders.SingleAsync();
+        list.Approved = true;
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var result = await CreateOrders(context).UpdateProductOrderAllocation(created.Value, Request(seed, (seed.NoteId, 30m)));
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("AllocateProductionOrder.Locked", result.Error.Code);
+        context.ChangeTracker.Clear();
+        Assert.Equal(10_000m, (await context.FinishedGoodsTransferNotes.SingleAsync()).AllocatedQuantity);
+    }
+
     // ---------------------------------------------------------------- receiving a transfer
 
     [Fact]

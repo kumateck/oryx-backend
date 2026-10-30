@@ -46,6 +46,7 @@ public interface IProductionOrderRepository
     Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id);
 
     Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request);
+    Task<Result> UpdateProductOrderAllocation(Guid id, AllocateProductionOrderRequest request);
     Task<Result<Paginateable<IEnumerable<AllocateProductionOrderDto>>>> GetProductAllocations(
         bool? onlyApproved, int page,
         int pageSize, string searchQuery, Guid? productionOrderId);
