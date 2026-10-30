@@ -138,7 +138,8 @@ SELECT *,
            WHEN units_per_pack IS NULL THEN 'packing style cannot convert'
            WHEN units_per_pack = 1 THEN 'same either way'
            WHEN "QuantityPerPack" = units_per_pack THEN 'yield'
-           WHEN "QuantityPerPack" > 0 AND "QuantityPerPack" = fp_yield THEN 'packs'
+           -- A stamped yield alone is not proof: read as packs, the note must fit inside the batch.
+           WHEN "QuantityPerPack" > 0 AND "QuantityPerPack" = fp_yield AND "TotalQuantity" * units_per_pack <= fp_yield THEN 'packs'
            WHEN fp_available IS NOT NULL AND fp_after_samples > 0
                 AND fp_available * units_per_pack <= fp_after_samples
                 AND fp_available * units_per_pack > fp_after_samples - units_per_pack
