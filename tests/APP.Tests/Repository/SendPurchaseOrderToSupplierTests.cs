@@ -26,6 +26,7 @@ file class StubPdf : IPdfService
 
 file class StubEmail(bool fail) : IEmailService
 {
+    public bool IsConfigured => true;
     public int Sent { get; private set; }
 
     public void SendMail(string name, string to, string subject, string body,

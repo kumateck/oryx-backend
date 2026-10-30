@@ -1,3 +1,4 @@
+using APP.Services.Documents;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Background;
@@ -1012,7 +1013,11 @@ public class ProcurementRepository(
     )
     {
         var purchaseOrder = await context
-            .PurchaseOrders.Include(po => po.Supplier)
+            .PurchaseOrders.AsSplitQuery()
+            .Include(po => po.Supplier).ThenInclude(s => s.Currency)
+            .Include(po => po.Supplier).ThenInclude(s => s.Country)
+            .Include(po => po.DeliveryMode)
+            .Include(po => po.TermsOfPayment)
             .Include(po => po.Items)
                 .ThenInclude(i => i.Material)
             .Include(po => po.Items)
@@ -1028,20 +1033,17 @@ public class ProcurementRepository(
 
         purchaseOrder.ExpectedDeliveryDate = request.ExpectedDeliveryDate;
 
-        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(
-            PdfTemplate.PurchaseOrderTemplate(purchaseOrder)
-        );
-        mailAttachments.Add((fileContent, $"Purchase Order from Entrance", "application/pdf"));
+        // The same document the desktop app prints for this order, in the body and as a PDF.
+        var email = ProcurementDocuments.PurchaseOrder(purchaseOrder);
 
         try
         {
             emailService.SendMail(
                 purchaseOrder.Supplier.Name,
                 purchaseOrder.Supplier.Email,
-                "Purchase Order From Entrance",
-                "Please find attached to this email your final awarded quotation to draft a purchase order.",
-                mailAttachments
+                email.Subject,
+                email.RenderBody(),
+                email.Attachments(pdfService)
             );
         }
         catch (Exception e)
@@ -1062,7 +1064,11 @@ public class ProcurementRepository(
     public async Task<Result> SendProformaInvoiceToSupplier(Guid purchaseOrderId)
     {
         var purchaseOrder = await context
-            .PurchaseOrders.Include(po => po.Supplier)
+            .PurchaseOrders.AsSplitQuery()
+            .Include(po => po.Supplier).ThenInclude(s => s.Currency)
+            .Include(po => po.Supplier).ThenInclude(s => s.Country)
+            .Include(po => po.DeliveryMode)
+            .Include(po => po.TermsOfPayment)
             .Include(po => po.Items)
                 .ThenInclude(i => i.Material)
             .Include(po => po.Items)
@@ -1072,20 +1078,17 @@ public class ProcurementRepository(
         if (purchaseOrder is null)
             return Error.NotFound("PurchaseOrder.NotFound", "Purchase order not found");
 
-        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(
-            PdfTemplate.ProformaInvoiceTemplate(purchaseOrder)
-        );
-        mailAttachments.Add((fileContent, $"Proforma Invoice from Entrance", "application/pdf"));
+        // The same document the desktop app prints as the proforma invoice request.
+        var email = ProcurementDocuments.ProformaInvoiceRequest(purchaseOrder);
 
         try
         {
             emailService.SendMail(
                 purchaseOrder.Supplier.Name,
                 purchaseOrder.Supplier.Email,
-                "Proforma Invoice From Entrance",
-                "Please find attached a proforma invoice.",
-                mailAttachments
+                email.Subject,
+                email.RenderBody(),
+                email.Attachments(pdfService)
             );
         }
         catch (Exception e)
