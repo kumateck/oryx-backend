@@ -1,3 +1,4 @@
+using APP.Services.Documents;
 using APP.Services.Production;
 using APP.Extensions;
 using APP.IRepository;
@@ -1745,6 +1746,10 @@ public class RequisitionRepository(
         var sourceRequisition = await context
             .SourceRequisitions.AsSplitQuery()
             .Include(sr => sr.Supplier)
+                .ThenInclude(s => s.AssociatedManufacturers)
+                    .ThenInclude(m => m.Manufacturer)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.Currency)
+            .Include(sr => sr.Supplier).ThenInclude(s => s.Country)
             .Include(sr => sr.Items)
                 .ThenInclude(item => item.Material)
             .Include(sr => sr.Items)
@@ -1781,20 +1786,17 @@ public class RequisitionRepository(
             );
         }
 
-        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>();
-        var fileContent = pdfService.GeneratePdfFromHtml(
-            PdfTemplate.QuotationRequestTemplate(supplierQuotationDto)
-        );
-        mailAttachments.Add((fileContent, $"Quotation Request from Entrance", "application/pdf"));
+        // The same document the desktop app prints for this request, in the body and as a PDF.
+        var email = ProcurementDocuments.SupplierQuotationRequest(supplierQuotationDto, DateTime.UtcNow);
 
         try
         {
             emailService.SendMail(
                 supplierQuotationDto.Supplier.Name,
                 supplierQuotationDto.Supplier.Email,
-                "Sales Quote From Entrance",
-                "Please find attached to this email a sales quote from us.",
-                mailAttachments
+                email.Subject,
+                email.RenderBody(),
+                email.Attachments(pdfService)
             );
         }
         catch (Exception e)
