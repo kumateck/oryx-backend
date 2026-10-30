@@ -91,7 +91,10 @@ WITH packs_notes AS (
       AND u.units_per_pack > 1
       AND n."QuantityPerPack" <> u.units_per_pack
       AND (
-            (n."QuantityPerPack" > 0 AND n."QuantityPerPack" = f."YieldTotalQuantityPacked")
+            -- The stamped yield alone does not prove the quantities are packs: the same older desktop
+            -- also saved notes in yield. Read as packs, the note must still fit inside the batch.
+            (n."QuantityPerPack" > 0 AND n."QuantityPerPack" = f."YieldTotalQuantityPacked"
+             AND n."TotalQuantity" * u.units_per_pack <= f."YieldTotalQuantityPacked")
          OR (f."TotalNumberOfBottles" > 0
              AND f."TotalQuantityPacked" * u.units_per_pack <= f."TotalNumberOfBottles"
              AND f."TotalQuantityPacked" * u.units_per_pack > f."TotalNumberOfBottles" - u.units_per_pack
