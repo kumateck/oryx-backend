@@ -1,3 +1,4 @@
+using APP.Services.Documents;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Email;
@@ -138,7 +139,8 @@ public partial class InventoryProcurementRepository(
     {
         var sourceRequisition = await context.SourceInventoryRequisitions
             .AsSplitQuery()
-            .Include(sr => sr.Vendor)
+            .Include(sr => sr.Vendor).ThenInclude(v => v.Currency)
+            .Include(sr => sr.InventoryPurchaseRequisition)
             .Include(sr => sr.Items).ThenInclude(item => item.Item)
             .Include(sr => sr.Items).ThenInclude(item => item.UoM)
             .FirstOrDefaultAsync(s => s.VendorId == vendorId && !s.SentQuotationRequestAt.HasValue);
@@ -150,17 +152,14 @@ public partial class InventoryProcurementRepository(
         }
 
         var vendorQuotationDto = mapper.Map<VendorQuotationRequest>(sourceRequisition);
-        var fileContent = pdfService.GeneratePdfFromHtml(PdfTemplate.QuotationRequestTemplateVendor(vendorQuotationDto));
-        var mailAttachments = new List<(byte[] fileContent, string fileName, string fileType)>
-        {
-            (fileContent, "Quotation Request from Entrance.pdf", "application/pdf")
-        };
+        // The same document the desktop app prints for this request, in the body and as a PDF.
+        var email = ProcurementDocuments.VendorQuotationRequest(vendorQuotationDto,
+            sourceRequisition.InventoryPurchaseRequisition?.Code);
 
         try
         {
             emailService.SendMail(sourceRequisition.Vendor.Name, sourceRequisition.Vendor.Email,
-                "Sales Quote From Entrance", "Please find attached to this email a sales quote from us.",
-                mailAttachments);
+                email.Subject, email.RenderBody(), email.Attachments(pdfService));
         }
         catch (Exception e)
         {
