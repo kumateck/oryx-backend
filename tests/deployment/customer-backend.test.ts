@@ -8,7 +8,7 @@ import { test } from "node:test";
 import { createHash } from "node:crypto";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-interface Options { failure?: string; database?: string; apiContainer?: string; dbContainer?: string }
+interface Options { failure?: string; smtp?: boolean; database?: string; apiContainer?: string; dbContainer?: string }
 interface Event { tool: string; args: string[] }
 function fixture(options: Options = {}) {
   const directory = mkdtempSync(join(tmpdir(), "oryx-backend-deploy-"));
@@ -19,6 +19,7 @@ function fixture(options: Options = {}) {
   mkdirSync(join(repo, "deploy"), { recursive: true });
   mkdirSync(bin);
   copyFileSync(join(root, "deploy/customer-backend.sh"), join(repo, "deploy/customer-backend.sh"));
+  copyFileSync(join(root, "deploy/customer-backend-notify.sh"), join(repo, "deploy/customer-backend-notify.sh"));
   copyFileSync(join(root, "deploy.sh"), join(repo, "deploy.sh"));
   copyFileSync(join(root, "docker-compose.yml"), join(repo, "docker-compose.yml"));
   writeFileSync(join(repo, ".env"), "DB_DATABASE=entrancedb\n", { mode: 0o600 });
@@ -32,7 +33,7 @@ function fixture(options: Options = {}) {
     chmodSync(path, 0o755);
   }
   const run = (...args: string[]) => spawnSync("bash", [join(repo, "deploy.sh"), ...args], {
-    cwd: repo, encoding: "utf8", timeout: 15_000, env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ""}`, ORYX_BACKEND_STATE: state },
+    cwd: repo, encoding: "utf8", timeout: 15_000, env: { ...process.env, HOME: directory, PATH: `${bin}:${process.env.PATH ?? ""}`, ORYX_BACKEND_STATE: state },
   });
   const events = (): Event[] => existsSync(join(directory, "events.jsonl"))
     ? readFileSync(join(directory, "events.jsonl"), "utf8").trim().split("\n").map(line => JSON.parse(line)) : [];
@@ -91,6 +92,28 @@ for (const failure of ["build", "model", "backup", "backup-verify", "migration",
     } finally { f.close(); }
   });
 }
+
+test("deploys the Compose definition of the deployed commit, not the installed checkout's", () => {
+  const f = fixture({ smtp: true });
+  try {
+    writeFileSync(join(f.repo, "docker-compose.yml"), "services: {}\n");
+    const result = f.run("deploy");
+    assert.equal(result.status, 0, result.stderr);
+    const frozen = readFileSync(join(f.state, "releases", f.sha, "compose.yml"), "utf8");
+    assert.equal(frozen, readFileSync(join(root, "docker-compose.yml"), "utf8"));
+    assert.doesNotMatch(result.stderr, /email will not work/);
+  } finally { f.close(); }
+});
+
+test("missing email settings are reported but do not block the deployment", () => {
+  const f = fixture();
+  try {
+    const result = f.run("deploy");
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /email will not work\. Missing from .*: SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD/);
+    assert.equal(readFileSync(join(f.state, "current"), "utf8").trim(), f.sha);
+  } finally { f.close(); }
+});
 
 test("pause suppresses polling and an overlapping deployment exits before fetching or writing", () => {
   const f = fixture();
