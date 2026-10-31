@@ -321,13 +321,16 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return result;
     }
 
-    public async Task<Result> SwitchDepartment(Guid departmentId, Guid userId, string token)
+    public async Task<Result> SwitchDepartment(Guid? departmentId, Guid userId, string token)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null) return UserErrors.NotFound(userId);
 
-        var departmentExists = await context.Departments.AnyAsync(d => d.Id == departmentId);
-        if (!departmentExists) return Error.NotFound("Department.NotFound", "Department not found");
+        if (departmentId.HasValue)
+        {
+            var departmentExists = await context.Departments.AnyAsync(d => d.Id == departmentId.Value);
+            if (!departmentExists) return Error.NotFound("Department.NotFound", "Department not found");
+        }
 
         user.DepartmentId = departmentId;
         context.Users.Update(user);
