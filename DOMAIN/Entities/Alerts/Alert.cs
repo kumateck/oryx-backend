@@ -17,6 +17,13 @@ public class CreateAlertRequest
 
 }
 
+/// <summary>Replaces who receives an alert. Works for system alerts, whose event and delivery stay fixed.</summary>
+public class UpdateAlertRecipientsRequest
+{
+    public List<Guid> RoleIds { get; set; } = [];
+    public List<Guid> UserIds { get; set; } = [];
+}
+
 public class Alert : BaseEntity
 {
     [StringLength(255)]
