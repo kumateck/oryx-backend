@@ -848,6 +848,8 @@ public static class PermissionKeys
     public const string CanBlockUser = "CanBlockUser";
     public const string CanViewInactiveUser = "CanViewInactiveUser";
     public const string CanUnblockUser = "CanUnblockUser";
+    /// <summary>Lets a user move their own account to another production department.</summary>
+    public const string CanSwitchDepartment = "CanSwitchDepartment";
     public const string CanViewAuditTrail = "CanViewAuditTrail";
     public const string CanViewRoles = "CanViewRoles";
     public const string CanCreateRole = "CanCreateRole";
@@ -3534,6 +3536,11 @@ public static class PermissionUtils
             PermissionModules.ItSupport,
             PermissionSubmodules.UserManagement,
             PermissionKeys.CanUnblockUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanSwitchDepartment
         );
         addPermission(
             PermissionModules.ItSupport,
