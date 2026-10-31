@@ -23,5 +23,5 @@ public interface IUserRepository
     Task<Result> ToggleDisableUser(Guid id, Guid userId);
     Task<Result> UploadAvatar(UploadFileRequest request, Guid userId);
     Task<Result> UploadSignature(UploadFileRequest request, Guid userId);
-    Task<Result> SwitchDepartment(Guid departmentId, Guid userId, string token);
+    Task<Result> SwitchDepartment(Guid? departmentId, Guid userId, string token);
 }

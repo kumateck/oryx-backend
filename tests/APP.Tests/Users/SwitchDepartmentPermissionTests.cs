@@ -8,10 +8,12 @@ namespace APP.Tests.Users;
 
 public class SwitchDepartmentPermissionTests
 {
-    [Fact]
-    public void Switching_department_requires_the_permission_and_no_role()
+    [Theory]
+    [InlineData(nameof(UserController.SwitchDepartment))]
+    [InlineData(nameof(UserController.SetDepartment))]
+    public void Switching_department_requires_the_permission_and_no_role(string action)
     {
-        var authorize = Assert.Single(typeof(UserController).GetMethod(nameof(UserController.SwitchDepartment))!
+        var authorize = Assert.Single(typeof(UserController).GetMethod(action)!
             .GetCustomAttributes<AuthorizeAttribute>());
         Assert.Equal(PermissionKeys.CanSwitchDepartment, authorize.Policy);
         Assert.Null(authorize.Roles);
