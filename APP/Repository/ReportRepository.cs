@@ -3966,6 +3966,7 @@ public partial class ReportRepository(
                             .ThenInclude(p => p.BatchManufacturingRecord)
             .ToListAsync();
         var priceOf = await InvoicePriceLookup(invoices);
+        var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var query = invoices.SelectMany(invoice =>
             invoice.Products.Select(p => new
@@ -4004,7 +4005,8 @@ public partial class ReportRepository(
                     .Sum(q => q.Quantity),
 
                 Uom = x.Product.BaseUoM.Symbol,
-                UnitPrice = priceOf(x.Invoice, x.Product),
+                UnitPrice = priceOf(x.Invoice, x.Product).UnitPrice,
+                Currency = CustomerPricingResolver.Label(currencyLabels, priceOf(x.Invoice, x.Product).CurrencyId),
 
                 ProductName = x.Product.Name,
                 ProductCode = x.Product.Code,
@@ -4021,8 +4023,9 @@ public partial class ReportRepository(
     /// Prices invoiced lines the way the invoice itself does: the customer's agreed price per pack
     /// for the product's packing style on the invoice date, else the product's list price.
     /// </summary>
-    private async Task<Func<DOMAIN.Entities.ProformaInvoices.ProformaInvoice, Product, decimal>> InvoicePriceLookup(List<DOMAIN.Entities.ProformaInvoices.ProformaInvoice> invoices)
+    private async Task<Func<DOMAIN.Entities.ProformaInvoices.ProformaInvoice, Product, CustomerPricingResolution>> InvoicePriceLookup(List<DOMAIN.Entities.ProformaInvoices.ProformaInvoice> invoices)
     {
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
         var customerIds = invoices
             .Select(invoice => invoice.AllocateProductionOrder?.ProductionOrder?.CustomerId)
             .OfType<Guid>()
@@ -4036,9 +4039,10 @@ public partial class ReportRepository(
             var order = invoice.AllocateProductionOrder?.ProductionOrder;
             var packingId = invoice.AllocateProductionOrder?.Products
                 .FirstOrDefault(item => item.ProductId == product.Id)?.ProductPackingId;
-            if (order is null || packingId is null) return product.Price;
+            var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId);
+            if (order is null || packingId is null) return new CustomerPricingResolution(product.Price, listCurrencyId, false, false);
             var matches = CustomerPricingResolver.ActiveMatches(agreements, order.CustomerId, product.Id, packingId.Value, invoice.CreatedAt);
-            return CustomerPricingResolver.Resolve(matches, product.Price).UnitPrice;
+            return CustomerPricingResolver.Resolve(matches, product.Price, listCurrencyId);
         };
     }
 
@@ -4088,6 +4092,7 @@ public partial class ReportRepository(
                             .ThenInclude(p => p.BatchManufacturingRecord)
             .ToListAsync();
         var priceOf = await InvoicePriceLookup(invoices);
+        var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var query = invoices.SelectMany(invoice =>
             invoice.Products.SelectMany(p =>
@@ -4130,7 +4135,8 @@ public partial class ReportRepository(
 
                 Uom = x.Product.BaseUoM.Symbol,
 
-                UnitPrice = priceOf(x.Invoice, x.Product),
+                UnitPrice = priceOf(x.Invoice, x.Product).UnitPrice,
+                Currency = CustomerPricingResolver.Label(currencyLabels, priceOf(x.Invoice, x.Product).CurrencyId),
 
                 AllocationStatus = x.Allocation.Status,
             })

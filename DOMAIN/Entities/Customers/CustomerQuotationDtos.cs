@@ -26,6 +26,8 @@ public class ResolvedQuotationPriceDto
 {
     public decimal UnitPrice { get; set; }
     public bool FromAgreement { get; set; }
+    /// <summary>The currency the price is in: the agreement's, or the list price's.</summary>
+    public Guid? CurrencyId { get; set; }
 }
 
 public class CustomerQuotationDto : BaseDto

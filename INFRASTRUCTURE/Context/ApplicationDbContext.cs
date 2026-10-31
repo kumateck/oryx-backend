@@ -1190,6 +1190,9 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<Product>().Navigation(p => p.Equipment).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Department).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Prices).AutoInclude();
+        modelBuilder.Entity<Product>().OwnsMany(p => p.Prices, price =>
+            price.HasOne<Currency>().WithMany().HasForeignKey(item => item.CurrencyId)
+                .OnDelete(DeleteBehavior.Restrict));
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Substitutes).AutoInclude();
@@ -1949,7 +1952,7 @@ public partial class ApplicationDbContext(
             .HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
         modelBuilder
             .Entity<ProductionActivityStepUser>()
-            .HasQueryFilter(a => !a.User.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.User.DeletedAt.HasValue);
         modelBuilder
             .Entity<ProductionActivityLog>()
             .HasQueryFilter(a => a.ProductionActivity != null);

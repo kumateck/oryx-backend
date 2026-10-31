@@ -73,4 +73,24 @@ public class AuthController(IAuthRepository repo) : ControllerBase
         var result = await repo.ChangePassword(request, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
+    /// <summary>
+    /// Sets a new password for another user. Only dkadusei@kumateck.com may call this; everyone
+    /// else gets 403. The route sits under /auth so the activity-log middleware never stores the
+    /// request body (it contains the new password); the repository writes its own audit entry.
+    /// </summary>
+    [HttpPost("admin/user-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> AdminResetUserPassword([FromBody] AdminResetUserPasswordRequest request,
+        [FromServices] IUserPasswordAdminRepository passwordAdmin)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await passwordAdmin.ResetUserPassword(request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 }

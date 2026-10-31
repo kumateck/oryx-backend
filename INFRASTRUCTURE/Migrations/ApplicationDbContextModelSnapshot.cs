@@ -34688,6 +34688,9 @@ namespace INFRASTRUCTURE.Migrations
 
                             NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
 
+                            b1.Property<Guid?>("CurrencyId")
+                                .HasColumnType("uuid");
+
                             b1.Property<DateTime>("Date")
                                 .HasColumnType("timestamp with time zone");
 
@@ -34699,7 +34702,14 @@ namespace INFRASTRUCTURE.Migrations
 
                             b1.HasKey("ProductId", "Id");
 
+                            b1.HasIndex("CurrencyId");
+
                             b1.ToTable("ProductPrices");
+
+                            b1.HasOne("DOMAIN.Entities.Currencies.Currency", null)
+                                .WithMany()
+                                .HasForeignKey("CurrencyId")
+                                .OnDelete(DeleteBehavior.Restrict);
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId");

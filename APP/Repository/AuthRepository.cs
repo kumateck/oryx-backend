@@ -69,7 +69,9 @@ public class AuthRepository(IEmailService emailService, ApplicationDbContext con
 
     public async Task<Result<LoginResponse>> LoginWithRefreshToken(LoginWithRefreshToken request)
     {
-        var details = await context.RefreshTokens.FirstOrDefaultAsync(item => item.Token == request.RefreshToken);
+        // Deleting a refresh token is a soft delete; a deleted (revoked) token must not renew a session.
+        var details = await context.RefreshTokens.FirstOrDefaultAsync(item =>
+            item.Token == request.RefreshToken && !item.DeletedAt.HasValue);
 
         if (details == null)
             return Error.NotFound("Token.NotFound",

@@ -8,6 +8,8 @@ public class ProductionScheduleReportDto
     public ProductListDto Product { get; set; }
     public decimal UnitPrice { get; set; }
     public string PriceUoM { get; set; }
+    /// <summary>The currency the unit price and amounts are in; rows are never converted.</summary>
+    public DOMAIN.Entities.Currencies.CurrencyDto Currency { get; set; }
     public decimal BatchSize { get; set; }
     public decimal Batches { get; set; }
     public decimal ExpectedQuantity => BatchSize * Batches;
@@ -21,6 +23,8 @@ public class ProductionScheduleDetailedReportDto
 {
     public decimal UnitPrice { get; set; }
     public string PriceUoM { get; set; }
+    /// <summary>The currency the unit price and amounts are in; rows are never converted.</summary>
+    public DOMAIN.Entities.Currencies.CurrencyDto Currency { get; set; }
     public string BatchNumber { get; set; }
     public string PackageStyle { get; set; }
     public decimal ExpectedQuantity { get; set; }

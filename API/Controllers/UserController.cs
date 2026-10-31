@@ -181,10 +181,15 @@ public class UserController(IUserRepository repo) : ControllerBase
         }
     }
 
-    [Authorize(Roles = RoleUtils.WarehouseManger + "," + RoleUtils.AppRoleAdmin + "," + RoleUtils.AppRoleSuper)]
+    /// <summary>
+    /// Moves the signed-in user to another department. Requires the CanSwitchDepartment permission
+    /// (IT Support &gt; Manage User Directory); role names no longer grant it.
+    /// </summary>
+    [Authorize(PermissionKeys.CanSwitchDepartment)]
     [HttpPost("switch-department/{departmentId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> SwitchDepartment(Guid departmentId)
     {
