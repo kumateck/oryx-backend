@@ -87,6 +87,7 @@ public static class DependencyInjection
     public static void AddScopedServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IUserPasswordAdminRepository, UserPasswordAdminRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IBoMRepository, BoMRepository>();
