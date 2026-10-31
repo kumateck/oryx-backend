@@ -43,6 +43,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
+    services:
+      migration-postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: oryx_list_price_migration_test
+          POSTGRES_USER: oryx_fixture
+          POSTGRES_PASSWORD: oryx-fixture-only
+        ports:
+          - "127.0.0.1:5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U oryx_fixture -d oryx_list_price_migration_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -59,6 +74,14 @@ jobs:
 
       - name: Restore
         run: dotnet restore Oryx.sln
+
+      - name: Verify migration with deferred report-history triggers
+        env:
+          ORYX_LIST_PRICE_MIGRATION_TEST_CONNECTION: "Host=127.0.0.1;Port=5432;Database=oryx_list_price_migration_test;Username=oryx_fixture;Password=oryx-fixture-only"
+        run: >-
+          dotnet test tests/APP.Tests/APP.Tests.csproj --no-restore
+          --filter "FullyQualifiedName~ListPriceCurrencyMigrationPostgresTests|FullyQualifiedName~DeploymentModelConsistencyTests"
+          --verbosity minimal
 
       - name: Generate idempotent migration script
         run: |
