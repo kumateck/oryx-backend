@@ -55,9 +55,15 @@ public class CreateProductRequest
     public Guid? BasePackingUomId { get; set; }
     public Guid? DepartmentId { get; set; }
 
-    [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0")]
+    /// <summary>
+    /// Optional starting list price. List prices are set in Finance → Costing; 0 leaves the
+    /// product unpriced on create and keeps the current price on update.
+    /// </summary>
+    [Range(0, double.MaxValue, ErrorMessage = "Price cannot be negative")]
     public decimal Price { get; set; }
     public string PriceUoM { get; set; }
+    /// <summary>The currency the list price is in. Left empty: the base currency on create, the current one on update.</summary>
+    public Guid? PriceCurrencyId { get; set; }
     public Division Division { get; set; }
     public decimal ExpectedYield { get; set; }
 

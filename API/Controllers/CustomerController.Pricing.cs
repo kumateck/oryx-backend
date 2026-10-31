@@ -9,7 +9,9 @@ namespace API.Controllers;
 public partial class CustomerController
 {
     [HttpGet("{id:guid}/pricing-agreements")]
-    [Authorize(PermissionKeys.CanManageCustomerContracts)]
+    [Authorize(PermissionKeys.CanManageCosting)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CustomerPricingAgreementDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetPricingAgreements([FromRoute] Guid id)
     {
         var result = await repository.GetPricingAgreements(id);
@@ -17,7 +19,10 @@ public partial class CustomerController
     }
 
     [HttpGet("{id:guid}/pricing-agreements/active")]
-    [Authorize(PermissionKeys.CanManageCustomerContracts)]
+    [Authorize(PermissionKeys.CanManageCosting)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerPricingAgreementDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> GetActivePricingAgreement(
         [FromRoute] Guid id, [FromQuery] Guid productId, [FromQuery] Guid productPackingId, [FromQuery] DateTime asOf)
     {
@@ -26,7 +31,11 @@ public partial class CustomerController
     }
 
     [HttpPost("{id:guid}/pricing-agreements")]
-    [Authorize(PermissionKeys.CanManageCustomerContracts)]
+    [Authorize(PermissionKeys.CanManageCosting)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> CreatePricingAgreement([FromRoute] Guid id, [FromBody] CustomerPricingAgreementRequest request)
     {
         var userId = CurrentUserId();
@@ -36,7 +45,11 @@ public partial class CustomerController
     }
 
     [HttpPut("{id:guid}/pricing-agreements/{agreementId:guid}")]
-    [Authorize(PermissionKeys.CanManageCustomerContracts)]
+    [Authorize(PermissionKeys.CanManageCosting)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> UpdatePricingAgreement([FromRoute] Guid id, [FromRoute] Guid agreementId,
         [FromBody] CustomerPricingAgreementRequest request)
     {
@@ -47,7 +60,9 @@ public partial class CustomerController
     }
 
     [HttpDelete("{id:guid}/pricing-agreements/{agreementId:guid}")]
-    [Authorize(PermissionKeys.CanManageCustomerContracts)]
+    [Authorize(PermissionKeys.CanManageCosting)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeletePricingAgreement([FromRoute] Guid id, [FromRoute] Guid agreementId)
     {
         var userId = CurrentUserId();

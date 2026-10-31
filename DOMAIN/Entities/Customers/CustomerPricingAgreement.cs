@@ -36,7 +36,9 @@ public class CustomerPricingAgreementRequest
 public class CustomerPricingAgreementDto : BaseDto
 {
     public Guid CustomerId { get; set; }
+    public string CustomerName { get; set; }
     public Guid ProductId { get; set; }
+    public string ProductCode { get; set; }
     public string ProductName { get; set; }
     public Guid ProductPackingId { get; set; }
     public string ProductPackingName { get; set; }

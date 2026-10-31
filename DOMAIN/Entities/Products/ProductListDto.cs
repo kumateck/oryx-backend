@@ -30,6 +30,8 @@ public class ProductListDto
     public DateTime CreatedAt { get; set; }
     public decimal Price { get; set; }
     public string PriceUoM { get; set; }
+    /// <summary>The currency the list price is in.</summary>
+    public Guid? PriceCurrencyId { get; set; }
     public Division Division { get; set; }
     public string LabelClaim { get; set; }
     public bool IsVerified { get; set; }

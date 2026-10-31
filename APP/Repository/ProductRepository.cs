@@ -33,22 +33,43 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return Error.Validation("Product.Code", "Product with code already exists");
 
         if (request.Price < 0)
-            return Error.Validation("Product.Price", "Product Price must be greater than 0");
+            return Error.Validation("Product.Price", "Product price cannot be negative");
+
+        var priceCurrency = await ListPriceCurrency(request.PriceCurrencyId, null);
+        if (priceCurrency.Error is not null) return priceCurrency.Error;
 
         var product = mapper.Map<Product>(request);
         product.CreatedById = userId;
-        product.Prices.Add(
-            new ProductPrices
-            {
-                Price = request.Price,
-                PriceUoM = request.PriceUoM,
-                Date = DateTime.UtcNow,
-            }
-        );
+        // A product may be created unpriced; its list price is then set in Finance → Costing.
+        if (request.Price > 0)
+            product.Prices.Add(
+                new ProductPrices
+                {
+                    Price = request.Price,
+                    PriceUoM = request.PriceUoM,
+                    Date = DateTime.UtcNow,
+                    CurrencyId = priceCurrency.CurrencyId,
+                }
+            );
         await context.Products.AddAsync(product);
         await context.SaveChangesAsync();
 
         return product.Id;
+    }
+
+    /// <summary>
+    /// The currency a saved list price is in: the one chosen, else the current one, else the base
+    /// currency. Prices are recorded in that currency as entered, never converted.
+    /// </summary>
+    /// The currency may be empty when no base currency is configured; the result type cannot carry
+    /// a null value, so an unknown currency is reported as an error alongside it.
+    private async Task<(Error Error, Guid? CurrencyId)> ListPriceCurrency(Guid? requested, Guid? current)
+    {
+        if (requested.HasValue)
+            return await context.Currencies.AnyAsync(currency => currency.Id == requested.Value)
+                ? (null, requested)
+                : (Error.NotFound("Currency.NotFound", "The list price currency was not found."), null);
+        return (null, current ?? await CustomerPricingResolver.BaseCurrencyIdAsync(context));
     }
 
     public async Task<Result<ProductDto>> GetProduct(Guid productId)
@@ -148,7 +169,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return ProductErrors.NotFound(productId);
         }
 
-        if (existingProduct.Price != request.Price)
+        var priceCurrency = await ListPriceCurrency(request.PriceCurrencyId, existingProduct.PriceCurrencyId);
+        if (priceCurrency.Error is not null) return priceCurrency.Error;
+        // A request without a price (0) keeps the current list price; prices are set in Finance → Costing.
+        if (request.Price > 0
+            && (existingProduct.Price != request.Price || existingProduct.PriceCurrencyId != priceCurrency.CurrencyId))
         {
             existingProduct.Prices.Add(
                 new ProductPrices
@@ -156,6 +181,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     Price = request.Price,
                     PriceUoM = request.PriceUoM,
                     Date = DateTime.UtcNow,
+                    CurrencyId = priceCurrency.CurrencyId,
                 }
             );
         }

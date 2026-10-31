@@ -371,6 +371,9 @@ the legacy Product price fallback.
 Contacts and pricing agreements use soft deletion. A filtered unique index
 prevents multiple active primary contacts. Pricing windows cannot overlap for
 the same customer/product/UoM, and ambiguous legacy data returns a conflict.
+Pricing agreements and product list prices are managed from Finance costing,
+each in its own currency and never converted; see
+[finance-costing.md](finance-costing.md).
 
 Order history reads the existing ProductionOrder flow. On-time rate includes
 only orders with both promised and actual delivery dates; when no comparable
