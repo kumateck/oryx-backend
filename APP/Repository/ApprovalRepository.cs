@@ -3367,7 +3367,7 @@ public class ApprovalRepository(
     {
         if (string.IsNullOrWhiteSpace(modelType)) modelType = null;
         var entitiesRequiringApproval = new List<ApprovalEntity>();
-        var pending = new PendingApprovalQueries(context, userId, roleIds);
+        var pending = await PendingApprovalQueries.For(context, userId, roleIds ?? []);
 
         if (modelType is null or nameof(StockDiscrepancy))
         {
@@ -3878,7 +3878,7 @@ public class ApprovalRepository(
 
         if (modelType is null or "Payment")
         {
-            var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
+            var payments = await PaymentApprovalQueue.Include(pending.Payments).ToListAsync();
 
             foreach (var payment in payments)
             {
@@ -4075,7 +4075,7 @@ public class ApprovalRepository(
     public async Task<List<PendingApprovalKey>> GetPendingApprovalKeys(Guid userId, List<Guid> roleIds)
     {
         var keys = new List<PendingApprovalKey>();
-        foreach (var query in new PendingApprovalQueries(context, userId, roleIds ?? []).Keys())
+        foreach (var query in (await PendingApprovalQueries.For(context, userId, roleIds ?? [])).Keys())
             keys.AddRange(await query.ToListAsync());
         return keys;
     }

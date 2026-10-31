@@ -11,12 +11,13 @@ internal static class PaymentApprovalQueue
         ApplicationDbContext context,
         Guid userId,
         IReadOnlyCollection<Guid> roleIds
-    ) => Query(context, userId, roleIds)
+    ) => Include(Query(context, userId, roleIds)).ToListAsync();
+
+    internal static IQueryable<Payment> Include(IQueryable<Payment> query) => query
         .AsNoTracking()
         .Include(payment => payment.Currency)
         .Include(payment => payment.RecordedBy)
-            .ThenInclude(user => user.Department)
-        .ToListAsync();
+            .ThenInclude(user => user.Department);
 
     internal static IQueryable<Payment> Query(
         ApplicationDbContext context, Guid userId, IReadOnlyCollection<Guid> roleIds

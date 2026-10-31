@@ -56,4 +56,25 @@ public class AlertRecipientTests
         Assert.Contains(recipients, user => user.Id == assigned.Id);
         Assert.DoesNotContain(recipients, user => user.Id == elsewhere.Id);
     }
+    [Fact]
+    public async Task Production_alert_skips_other_production_departments_but_keeps_other_teams()
+    {
+        await using var context = Context();
+        var beta = new DOMAIN.Entities.Departments.Department { Id = Guid.NewGuid(), Name = "Beta", Type = SHARED.DepartmentType.Production };
+        var syrup = new DOMAIN.Entities.Departments.Department { Id = Guid.NewGuid(), Name = "Syrup", Type = SHARED.DepartmentType.Production };
+        var qa = new DOMAIN.Entities.Departments.Department { Id = Guid.NewGuid(), Name = "QA", Type = SHARED.DepartmentType.NonProduction };
+        var product = new DOMAIN.Entities.Products.Product { Id = Guid.NewGuid(), Name = "Amoxicillin", DepartmentId = beta.Id };
+        var batch = new DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct { Id = Guid.NewGuid(), ProductId = product.Id, Product = product };
+        var record = new DOMAIN.Entities.Products.Production.BatchManufacturingRecord { Id = Guid.NewGuid(), BatchNumber = "B-1", ProductionScheduleProductId = batch.Id, ProductionScheduleProduct = batch };
+        var own = User(beta.Id); var other = User(syrup.Id); var reviewer = User(qa.Id);
+        context.AddRange(beta, syrup, qa, product, batch, record);
+        context.Users.AddRange(own, other, reviewer); context.Alerts.Add(Rule(own, other, reviewer));
+        await context.SaveChangesAsync(); var capture = new Capture();
+        await new AlertProcessor(context, null!, capture).Process("Batch manufacturing record created", NotificationType.BmrBprRequested, null, [],
+            null, nameof(DOMAIN.Entities.Products.Production.BatchManufacturingRecord), record.Id, null, null, null, null);
+        var recipients = Assert.Single(capture.Sent).Event.Recipients;
+        Assert.Contains(recipients, user => user.Id == own.Id);
+        Assert.Contains(recipients, user => user.Id == reviewer.Id);
+        Assert.DoesNotContain(recipients, user => user.Id == other.Id);
+    }
 }

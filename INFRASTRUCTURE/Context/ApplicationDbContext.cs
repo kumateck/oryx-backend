@@ -1949,7 +1949,7 @@ public partial class ApplicationDbContext(
             .HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
         modelBuilder
             .Entity<ProductionActivityStepUser>()
-            .HasQueryFilter(a => !a.User.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.User.DeletedAt.HasValue);
         modelBuilder
             .Entity<ProductionActivityLog>()
             .HasQueryFilter(a => a.ProductionActivity != null);

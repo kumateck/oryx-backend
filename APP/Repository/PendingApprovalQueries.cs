@@ -29,84 +29,99 @@ namespace APP.Repository;
 /// Shared queue predicates for the list and statistics. Statistics project only document keys;
 /// entity AutoIncludes and audit history must never be loaded just to count a queue.
 /// </summary>
-internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid userId, List<Guid> roleIds)
+internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid userId, List<Guid> roleIds, ApprovalDepartmentScope scope = null)
 {
-    internal IQueryable<StockDiscrepancy> StockDiscrepancies => context.StockDiscrepancies
+    private readonly ApprovalDepartmentScope departmentScope = scope ?? ApprovalDepartmentScope.None;
+
+    /// <summary>Queries for this user, limited to their own production department where <see cref="ApprovalDepartmentScope"/> applies.</summary>
+    internal static async Task<PendingApprovalQueries> For(ApplicationDbContext context, Guid userId, List<Guid> roleIds) =>
+        new(context, userId, roleIds, await ApprovalDepartmentScope.For(context, userId, roleIds));
+
+    internal IQueryable<StockDiscrepancy> StockDiscrepancies => departmentScope.Apply(context.StockDiscrepancies
         .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
             stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
             (stage.UserId == userId ||
-                (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))));
+                (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<ShipmentDiscrepancy> ShipmentDiscrepancies => context.ShipmentDiscrepancies
+    internal IQueryable<ShipmentDiscrepancy> ShipmentDiscrepancies => departmentScope.Apply(context.ShipmentDiscrepancies
         .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
             stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
             (stage.UserId == userId ||
-                (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))));
+                (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<PurchaseOrder> PurchaseOrders => context.PurchaseOrders
+    internal IQueryable<PurchaseOrder> PurchaseOrders => departmentScope.Apply(context.PurchaseOrders
         .Where(po =>
             po.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<Requisition> Requisitions => context.Requisitions
+    internal IQueryable<Requisition> Requisitions => departmentScope.Apply(context.Requisitions
         .Where(po =>
             po.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<BillingSheet> BillingSheets => context.BillingSheets
+    internal IQueryable<BillingSheet> BillingSheets => departmentScope.Apply(context.BillingSheets
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<OvertimeRequest> OvertimeRequests => context.OvertimeRequests
+    internal IQueryable<OvertimeRequest> OvertimeRequests => departmentScope.Apply(context.OvertimeRequests
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<LeaveRequest> LeaveRequests => context.LeaveRequests
+    internal IQueryable<LeaveRequest> LeaveRequests => departmentScope.Apply(context.LeaveRequests
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<PayrollRun> PayrollRuns => context.PayrollRuns
+    internal IQueryable<PayrollRun> PayrollRuns => departmentScope.Apply(context.PayrollRuns
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<PerformanceReview> PerformanceReviews => context.PerformanceReviews
+    internal IQueryable<PerformanceReview> PerformanceReviews => departmentScope.Apply(context.PerformanceReviews
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.Employee.Department);
 
-    internal IQueryable<Response> Responses => context.Responses
+    internal IQueryable<Response> Responses => departmentScope.Apply(context.Responses
         .Where(bs =>
             bs.Approvals.Any(a =>
                 a.ApprovalRound == bs.Approvals.Max(item => item.ApprovalRound)
@@ -115,83 +130,93 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals.Where(a => a.ApprovalRound == x.Approvals.Max(i => i.ApprovalRound)), x => x.CreatedBy.Department);
 
-    internal IQueryable<ProformaInvoice> ProformaInvoices => context.ProformaInvoices
+    internal IQueryable<ProformaInvoice> ProformaInvoices => departmentScope.Apply(context.ProformaInvoices
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<ShipmentDocument> ShipmentDocuments => context.ShipmentDocuments
+    internal IQueryable<ShipmentDocument> ShipmentDocuments => departmentScope.Apply(context.ShipmentDocuments
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<JobRequest> JobRequests => context.JobRequests
+    internal IQueryable<JobRequest> JobRequests => departmentScope.Apply(context.JobRequests
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<ProductionExtraPacking> ProductionExtraPackings => context.ProductionExtraPackings
+    internal IQueryable<ProductionExtraPacking> ProductionExtraPackings => departmentScope.Apply(context.ProductionExtraPackings
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<FinishedGoodsTransferNote> FinishedGoodsTransferNotes => context.FinishedGoodsTransferNotes
+    internal IQueryable<FinishedGoodsTransferNote> FinishedGoodsTransferNotes => departmentScope.Apply(context.FinishedGoodsTransferNotes
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<StockAdjustment> StockAdjustments => context.StockAdjustments
+    internal IQueryable<StockAdjustment> StockAdjustments => departmentScope.Apply(context.StockAdjustments
         .Where(bs =>
             bs.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))
                 && a.Status == ApprovalStatus.Pending
                 && a.ActivatedAt.HasValue
             )
-        );
+        ),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<AllocateProductionOrder> AllocateProductionOrders => context.AllocateProductionOrders
+    internal IQueryable<AllocateProductionOrder> AllocateProductionOrders => departmentScope.Apply(context.AllocateProductionOrders
         .Where(item => item.Approvals.Any(stage =>
             (stage.UserId == userId
                 || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
             && stage.Status == ApprovalStatus.Pending
-            && stage.ActivatedAt.HasValue));
+            && stage.ActivatedAt.HasValue)),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<CustomerQuotation> CustomerQuotations => context.CustomerQuotations
+    internal IQueryable<CustomerQuotation> CustomerQuotations => departmentScope.Apply(context.CustomerQuotations
         .Where(item => item.Status == CustomerQuotationStatus.Sent
             && item.Approvals.Any(stage =>
                 stage.ActivatedAt.HasValue
                 && stage.Status == ApprovalStatus.Pending
                 && (stage.UserId == userId
-                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))));
+                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<SupplierPricingAgreement> SupplierPricingAgreements => context.SupplierPricingAgreements
+    internal IQueryable<SupplierPricingAgreement> SupplierPricingAgreements => departmentScope.Apply(context.SupplierPricingAgreements
         .Where(item => item.Status == SupplierPricingAgreementStatus.Pending
             && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
                 && stage.Status == ApprovalStatus.Pending
                 && (stage.UserId == userId
-                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))));
+                    || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
     internal IQueryable<RndProject> RndProjects => context.RndProjects
         .Where(item =>
@@ -213,15 +238,20 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
                 && stage.Status == ApprovalStatus.Pending
                 && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))));
 
-    internal IQueryable<StaffRequisition> StaffRequisitions => context.StaffRequisitions
+    internal IQueryable<StaffRequisition> StaffRequisitions => departmentScope.Apply(context.StaffRequisitions
         .Where(item => item.Approvals.Any(stage =>
             (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-            && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue));
+            && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue)),
+        x => x.Approvals, x => x.CreatedBy.Department);
 
-    internal IQueryable<ProductionOrder> ProductionOrders => context.ProductionOrders
+    internal IQueryable<ProductionOrder> ProductionOrders => departmentScope.Apply(context.ProductionOrders
         .Where(item => item.Approvals.Any(stage =>
             (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))
-            && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue));
+            && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue)),
+        x => x.Approvals, x => x.CreatedBy.Department);
+
+    internal IQueryable<Payment> Payments => departmentScope.Apply(PaymentApprovalQueue.Query(context, userId, roleIds),
+        x => x.Approvals, x => x.RecordedBy.Department);
 
     internal IEnumerable<IQueryable<PendingApprovalKey>> Keys()
     {
@@ -250,7 +280,6 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
         yield return RndTechnologyTransfers.Select(item => new PendingApprovalKey(nameof(RndTechnologyTransfer), item.Id));
         yield return StaffRequisitions.Select(item => new PendingApprovalKey(nameof(StaffRequisition), item.Id));
         yield return ProductionOrders.Select(item => new PendingApprovalKey(nameof(ProductionOrder), item.Id));
-        yield return PaymentApprovalQueue.Query(context, userId, roleIds)
-            .Select(item => new PendingApprovalKey(nameof(Payment), item.Id));
+        yield return Payments.Select(item => new PendingApprovalKey(nameof(Payment), item.Id));
     }
 }
