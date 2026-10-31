@@ -102,6 +102,32 @@ public partial class AlertRepository(ApplicationDbContext context, IMapper mappe
         return Result.Success();
     }
 
+    public async Task<Result> UpdateAlertRecipients(UpdateAlertRecipientsRequest request, Guid alertId)
+    {
+        var alert = await context.Alerts
+            .AsSplitQuery()
+            .Include(item => item.Roles)
+            .Include(item => item.Users)
+            .FirstOrDefaultAsync(item => item.Id == alertId);
+        if (alert == null) return Error.NotFound("Alert.NotFound", "Alert not found");
+
+        var roleIds = (request.RoleIds ?? []).Distinct().ToList();
+        var userIds = (request.UserIds ?? []).Distinct().ToList();
+        var knownRoles = await context.Roles.CountAsync(role => roleIds.Contains(role.Id));
+        if (knownRoles != roleIds.Count) return Error.Validation("Alert.UnknownRole", "One or more recipient roles do not exist");
+        var knownUsers = await context.Users.CountAsync(user => userIds.Contains(user.Id));
+        if (knownUsers != userIds.Count) return Error.Validation("Alert.UnknownUser", "One or more recipient users do not exist");
+
+        context.AlertRoles.RemoveRange(alert.Roles);
+        context.AlertUsers.RemoveRange(alert.Users);
+        alert.Roles.Clear();
+        alert.Users.Clear();
+        alert.Roles.AddRange(roleIds.Select(id => new AlertRole { RoleId = id }));
+        alert.Users.AddRange(userIds.Select(id => new AlertUser { UserId = id }));
+        await context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> ToggleDisable(Guid id)
     {
         var alert = await context.Alerts.FirstOrDefaultAsync(item => item.Id == id);

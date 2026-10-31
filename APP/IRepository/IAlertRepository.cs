@@ -13,6 +13,7 @@ public interface IAlertRepository
     Task<Result<Paginateable<IEnumerable<AlertDto>>>> GetAlerts(int page, int pageSize, string searchQuery,
         bool withDisabled = false);
     Task<Result> UpdateAlert(CreateAlertRequest request, Guid userId, Guid approvalId);
+    Task<Result> UpdateAlertRecipients(UpdateAlertRecipientsRequest request, Guid alertId);
     Task<Result> ToggleDisable(Guid id);
     Task<Result> DeleteAlert(Guid id, Guid userId);
     Task ProcessAlert(string message, NotificationType type, Guid? departmentId = null, List<User> assignedUsers = null, Guid? shipmentDocumentId = null, string relatedEntityType = null, Guid? relatedEntityId = null, string relatedEntityCode = null, string relatedEntityName = null, string relatedEntityStatus = null, string relatedEntityPriority = null);
