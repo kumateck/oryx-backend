@@ -17,19 +17,6 @@ namespace INFRASTRUCTURE.Migrations
                 type: "uuid",
                 nullable: true);
 
-            // Existing list prices were always read as the base currency by invoices, so record
-            // that explicitly. Amounts are not touched. Without a base currency the rows stay
-            // empty and are priced in the base currency once one is set. Down drops the column,
-            // which removes the backfill with it.
-            migrationBuilder.Sql("""
-                UPDATE "ProductPrices"
-                SET "CurrencyId" = (
-                    SELECT c."Id" FROM "Currencies" c
-                    WHERE c."IsBaseCurrency" AND c."DeletedAt" IS NULL
-                    ORDER BY c."CreatedAt" LIMIT 1)
-                WHERE "CurrencyId" IS NULL;
-                """);
-
             migrationBuilder.CreateIndex(
                 name: "IX_ProductPrices_CurrencyId",
                 table: "ProductPrices",
@@ -42,6 +29,20 @@ namespace INFRASTRUCTURE.Migrations
                 principalTable: "Currencies",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Restrict);
+
+            // Complete this table's DDL before writing rows. Report history installs a deferred
+            // capture trigger on ProductPrices; a backfill before CREATE INDEX/ADD CONSTRAINT
+            // leaves pending trigger events and PostgreSQL refuses that DDL in this transaction.
+            // Existing invoices read these amounts as the base currency. Keep the amounts and
+            // record that currency; without an active base currency the new values remain null.
+            migrationBuilder.Sql("""
+                UPDATE "ProductPrices"
+                SET "CurrencyId" = (
+                    SELECT c."Id" FROM "Currencies" c
+                    WHERE c."IsBaseCurrency" AND c."DeletedAt" IS NULL
+                    ORDER BY c."CreatedAt" LIMIT 1)
+                WHERE "CurrencyId" IS NULL;
+                """);
         }
 
         /// <inheritdoc />
