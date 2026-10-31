@@ -4771,13 +4771,19 @@ public class ProductionScheduleRepository(
 
         var productionSchedules = await query.ToListAsync();
         var pricingAgreements = await LoadPricingAgreements(productionSchedules);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var groupedData = productionSchedules
-            .Select(p => new ProductionScheduleReportDto
+            .Select(p =>
+            {
+                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId);
+                return new ProductionScheduleReportDto
             {
                 Product = mapper.Map<ProductListDto>(p.Product),
-                UnitPrice = ResolveScheduleUnitPrice(p, pricingAgreements),
+                UnitPrice = price.UnitPrice,
                 PriceUoM = p.Product.PriceUoM,
+                Currency = CustomerPricingResolver.Label(currencyLabels, price.CurrencyId),
                 BatchSize = productionSchedules.Sum(productScheduleProduct =>
                     productScheduleProduct.BatchSize == BatchSize.Full
                         ? productScheduleProduct.Product.FullBatchSize
@@ -4792,6 +4798,7 @@ public class ProductionScheduleRepository(
                         .FinalPackings.FirstOrDefault(f => f.ProductionScheduleProductId == p.Id)
                         ?.TotalNumberOfBottles
                     ?? 0m,
+            };
             })
             .ToList();
 
@@ -4831,11 +4838,14 @@ public class ProductionScheduleRepository(
 
         var productionSchedules = await query.ToListAsync();
         var pricingAgreements = await LoadPricingAgreements(productionSchedules);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var report = productionSchedules
             .Select(p =>
             {
-                var unitPrice = ResolveScheduleUnitPrice(p, pricingAgreements);
+                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId);
+                var unitPrice = price.UnitPrice;
                 var expectedQty =
                     p.BatchSize == BatchSize.Full
                         ? p.Product.FullBatchSize
@@ -4851,6 +4861,7 @@ public class ProductionScheduleRepository(
                     BatchNumber = p.BatchNumber,
                     UnitPrice = unitPrice,
                     PriceUoM = p.Product.PriceUoM,
+                    Currency = CustomerPricingResolver.Label(currencyLabels, price.CurrencyId),
                     PackageStyle = p.Product.PackageStyle,
                     ExpectedQuantity = expectedQty,
                     ActualQuantity = actualQty,
@@ -4863,7 +4874,7 @@ public class ProductionScheduleRepository(
 
     /// <summary>
     /// Bulk-fetches the pricing agreements that could apply to this batch of schedule rows, so
-    /// <see cref="ResolveScheduleUnitPrice"/> can price every row without a query each.
+    /// <see cref="ResolveSchedulePrice"/> can price every row without a query each.
     /// </summary>
     private async Task<List<DOMAIN.Entities.Customers.CustomerPricingAgreement>> LoadPricingAgreements(
         List<ProductionScheduleProduct> items
@@ -4895,15 +4906,17 @@ public class ProductionScheduleRepository(
     /// Prices a schedule row with the market/customer's active pricing agreement as of the
     /// scheduled production date, else the product's list price -- via
     /// <see cref="CustomerPricingResolver"/> so this can never disagree with quotation or
-    /// production order pricing.
+    /// production order pricing. The result carries the currency of the price it chose.
     /// </summary>
-    private static decimal ResolveScheduleUnitPrice(
+    private static CustomerPricingResolution ResolveSchedulePrice(
         ProductionScheduleProduct item,
-        List<DOMAIN.Entities.Customers.CustomerPricingAgreement> pricingAgreements
+        List<DOMAIN.Entities.Customers.CustomerPricingAgreement> pricingAgreements,
+        Guid? baseCurrencyId
     )
     {
+        var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(item.Product, baseCurrencyId);
         if (!item.MarketTypeId.HasValue || !item.ProductPackingId.HasValue)
-            return item.Product.Price;
+            return new CustomerPricingResolution(item.Product.Price, listCurrencyId, false, false);
 
         var matches = CustomerPricingResolver.ActiveMatches(
             pricingAgreements,
@@ -4912,7 +4925,7 @@ public class ProductionScheduleRepository(
             item.ProductPackingId.Value,
             item.ProductionSchedule.ScheduledStartTime
         );
-        return CustomerPricingResolver.Resolve(matches, item.Product.Price).UnitPrice;
+        return CustomerPricingResolver.Resolve(matches, item.Product.Price, listCurrencyId);
     }
 
     public async Task<Result<List<ForecastMaterialDto>>> ForecastProductionScheduleProduct(

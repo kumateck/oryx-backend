@@ -161,6 +161,75 @@ public class CustomerQuotationPricingTests
         Assert.Equal("CustomerPricing.Currency", result.Error.Code);
     }
 
+    [Fact]
+    public async Task ResolveQuotationUnitPrice_ReturnsTheListPriceCurrency()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context, listPrice: 10m);
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context)
+            .ResolveQuotationUnitPrice(ids.CustomerId, ids.ProductId, ids.ProductPackingId, AsOf);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ids.CurrencyId, result.Value.CurrencyId);
+    }
+
+    [Fact]
+    public async Task ResolveQuotationUnitPrice_Conflicts_WhenListPriceCurrencyDiffersFromCustomer()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context, listPrice: 10m);
+        var dollarId = Guid.NewGuid();
+        context.Currencies.Add(new Currency { Id = dollarId, Name = "Dollar", Symbol = "$" });
+        context.Products.Local.Single().Prices.Single().CurrencyId = dollarId;
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context)
+            .ResolveQuotationUnitPrice(ids.CustomerId, ids.ProductId, ids.ProductPackingId, AsOf);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("CustomerPricing.Currency", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task CreateQuotation_UsesListPriceCurrency_WhenCustomerHasNoPreferredCurrency()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context, listPrice: 10m);
+        var dollarId = Guid.NewGuid();
+        context.Currencies.Add(new Currency { Id = dollarId, Name = "Dollar", Symbol = "$" });
+        context.Customers.Local.Single().CurrencyId = null;
+        context.Products.Local.Single().Prices.Single().CurrencyId = dollarId;
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).CreateQuotation(ids.CustomerId, new CreateCustomerQuotationRequest
+        {
+            Code = "Q-LIST-CURRENCY", ValidUntil = DateTime.UtcNow.AddDays(7),
+            Items = [new CreateCustomerQuotationItemRequest { ProductId = ids.ProductId, ProductPackingId = ids.ProductPackingId, Quantity = 2 }],
+        }, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess);
+        var quotation = await context.CustomerQuotations.Include(item => item.Items).SingleAsync();
+        Assert.Equal(dollarId, quotation.CurrencyId);
+        Assert.Equal(10m, quotation.Items.Single().UnitPrice);
+    }
+
+    [Fact]
+    public async Task ResolveQuotationUnitPrice_RefusesAProductWithNoListPrice()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context, listPrice: 10m);
+        context.Products.Local.Single().Prices.Clear();
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context)
+            .ResolveQuotationUnitPrice(ids.CustomerId, ids.ProductId, ids.ProductPackingId, AsOf);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("CustomerQuotation.PriceRequired", result.Error.Code);
+    }
+
     private sealed class TestIds
     {
         public Guid CustomerId { get; init; } = Guid.NewGuid();

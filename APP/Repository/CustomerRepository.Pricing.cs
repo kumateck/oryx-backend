@@ -89,7 +89,7 @@ public partial class CustomerRepository
     }
 
     private IQueryable<CustomerPricingAgreement> PricingQuery(Guid customerId)
-        => context.CustomerPricingAgreements.AsNoTracking().Include(item => item.Product)
+        => context.CustomerPricingAgreements.AsNoTracking().Include(item => item.Customer).Include(item => item.Product)
             .Include(item => item.ProductPacking).Include(item => item.Currency)
             .Where(item => item.CustomerId == customerId);
 
@@ -101,10 +101,10 @@ public partial class CustomerRepository
         item.EffectiveTo = request.EffectiveTo; item.Notes = request.Notes?.Trim();
     }
 
-    private static CustomerPricingAgreementDto MapPricing(CustomerPricingAgreement item) => new()
+    internal static CustomerPricingAgreementDto MapPricing(CustomerPricingAgreement item) => new()
     {
-        Id = item.Id, CreatedAt = item.CreatedAt, CustomerId = item.CustomerId,
-        ProductId = item.ProductId, ProductName = item.Product?.Name, ProductPackingId = item.ProductPackingId,
+        Id = item.Id, CreatedAt = item.CreatedAt, CustomerId = item.CustomerId, CustomerName = item.Customer?.Name,
+        ProductId = item.ProductId, ProductCode = item.Product?.Code, ProductName = item.Product?.Name, ProductPackingId = item.ProductPackingId,
         ProductPackingName = item.ProductPacking?.Name, AgreedPrice = item.AgreedPrice,
         Currency = item.Currency is null ? null : new()
         { Id = item.Currency.Id, Name = item.Currency.Name, Symbol = item.Currency.Symbol },

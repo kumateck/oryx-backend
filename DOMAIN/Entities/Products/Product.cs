@@ -70,6 +70,9 @@ public class Product : BaseEntity, IVerifiable
     public List<Route> Routes { get; set; } = [];
     public decimal Price => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.Price ?? 0;
     public string PriceUoM => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.PriceUoM;
+
+    /// <summary>The currency the current list price is in; null only on rows saved before currencies were recorded.</summary>
+    public Guid? PriceCurrencyId => Prices.OrderByDescending(p => p.Date).FirstOrDefault()?.CurrencyId;
     public Division Division { get; set; }
     public List<ProductPrices> Prices { get; set; } = [];
     public List<ProductPacking> Packings { get; set; } = [];
@@ -88,6 +91,9 @@ public class ProductPrices
     public decimal Price { get; set; }
     public string PriceUoM { get; set; }
     public DateTime Date { get; set; }
+
+    /// <summary>The currency this list price is in. Prices are never converted between currencies.</summary>
+    public Guid? CurrencyId { get; set; }
 }
 
 public class ProductPacking : BaseEntity

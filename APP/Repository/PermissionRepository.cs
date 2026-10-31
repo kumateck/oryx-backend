@@ -53,7 +53,7 @@ public class PermissionRepository(
 
     public async Task<Result<List<PermissionModuleDto>>> GetAllPermissionForUser(Guid userId)
     {
-        var cacheKey = $"Permission_Cache_V2_{userId}";
+        var cacheKey = $"Permission_Cache_V3_{userId}";
 
         try
         {
@@ -118,7 +118,7 @@ public class PermissionRepository(
 
     public async Task<List<PermissionModuleDto>> GetPermissionByRole(Guid roleId)
     {
-        var cacheKey = $"Permission_Cache_V2_{roleId}";
+        var cacheKey = $"Permission_Cache_V3_{roleId}";
 
         try
         {
@@ -287,9 +287,9 @@ public class PermissionRepository(
 
         try
         {
-            await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{roleId}");
+            await redisCache.KeyDeleteAsync($"Permission_Cache_V3_{roleId}");
             foreach (var userId in userIds)
-                await redisCache.KeyDeleteAsync($"Permission_Cache_V2_{userId}");
+                await redisCache.KeyDeleteAsync($"Permission_Cache_V3_{userId}");
         }
         catch (Exception exception)
         {
