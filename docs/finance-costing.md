@@ -93,6 +93,16 @@ and customers are not department-scoped for pricing.
 
 ## Migration `AddListPriceCurrency` — changes live data
 
+The migration creates its column, index and foreign key before backfilling rows.
+Historical reporting installs an initially deferred capture trigger on
+`ProductPrices`. Backfilling before the index/foreign key left pending trigger
+events in the same transaction and blocked DigitalOcean deployment with
+`cannot CREATE INDEX "ProductPrices" because it has pending trigger events`.
+The corrected ordering keeps the trigger and its history records active.
+The migration ID and resulting schema are unchanged: already migrated databases
+skip it; pending databases execute the corrected order. A later migration alone
+cannot repair this failure because execution stops before reaching it.
+
 Up:
 1. Adds nullable `ProductPrices.CurrencyId` with an index and a restricting
    foreign key to `Currencies`.
@@ -114,3 +124,8 @@ set the list price currency, before deploying if that is common.
 Tests: `CostingRepositoryTests`, `ProductListPriceTests` (unpriced products and
 the Finance permission section), plus currency cases in
 `CustomerQuotationPricingTests` and `InvoicePricingTests`.
+`ListPriceCurrencyMigrationPostgresTests` uses the production deferred reporting
+trigger to cover both the full idempotent SQL path and EF's direct migrator,
+with/without a live base currency, safe retry, foreign-key enforcement and Down.
+It refuses databases outside the explicitly named local disposable fixture;
+set `ORYX_LIST_PRICE_MIGRATION_TEST_CONNECTION` to run these integration cases.
