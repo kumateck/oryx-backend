@@ -89,7 +89,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     }
 
     public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
-        string searchQuery, bool? isDisabled)
+        string searchQuery, bool? isDisabled, Guid? roleId = null, Guid? departmentId = null)
     {
         var query = context.Users.IgnoreQueryFilters().AsQueryable();
 
@@ -101,6 +101,17 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (isDisabled.HasValue)
         {
             query = query.Where(q => q.IsDisabled == isDisabled.Value);
+        }
+
+        if (roleId.HasValue)
+        {
+            var userIdsInRole = context.UserRoles.Where(ur => ur.RoleId == roleId.Value).Select(ur => ur.UserId);
+            query = query.Where(q => userIdsInRole.Contains(q.Id));
+        }
+
+        if (departmentId.HasValue)
+        {
+            query = query.Where(q => q.DepartmentId == departmentId.Value);
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
