@@ -388,23 +388,7 @@ public class ProductionScheduleRepository(
                     "Production schedule product not found"
                 );
 
-            var product = await context
-                .Products.AsSplitQuery()
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.Resources)
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.WorkCenters)
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.ResponsibleUsers)
-                        .ThenInclude(routeResponsibleUser =>
-                            routeResponsibleUser.ProductAnalyticalRawData
-                        )
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.ResponsibleRoles)
-                        .ThenInclude(routeResponsibleRole =>
-                            routeResponsibleRole.ProductAnalyticalRawData
-                        )
-                .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
+            var product = await ProcedureAssignments.LoadProductAsync(context, productionScheduleProduct.ProductId);
 
             if (product is null)
                 return Error.NotFound("Product.Validation", "Product was not found");
@@ -415,63 +399,7 @@ public class ProductionScheduleRepository(
                     "This product has no procedures defined hence a production activity cannot commence."
                 );
 
-            // Directly-assigned responsible users are an explicit choice made during
-            // procedure configuration, so they are not re-filtered by department here.
-            var users = product
-                .Routes.SelectMany(r => r.ResponsibleUsers)
-                .Select(r => r.User)
-                .ToList();
-
-            var responsibleRoles = product
-                .Routes.SelectMany(r => r.ResponsibleRoles)
-                .Select(rr => rr.Role)
-                .Where(role => role != null && !string.IsNullOrEmpty(role.Name))
-                .DistinctBy(role => role.Id)
-                .ToList();
-
-            var roleDepartmentsByRoleId = (
-                await context
-                    .RoleDepartments.Where(rd =>
-                        responsibleRoles.Select(role => role.Id).Contains(rd.RoleId)
-                    )
-                    .ToListAsync()
-            ).ToLookup(rd => rd.RoleId, rd => rd.DepartmentId);
-
-            var roleUsersMap = new Dictionary<string, IList<User>>();
-            foreach (var role in responsibleRoles)
-            {
-                var usersInThisRole = await userManager.GetUsersInRoleAsync(role.Name);
-
-                if (role.Type == DepartmentType.Production)
-                {
-                    // Production-department roles are scoped to the product's own department.
-                    usersInThisRole = usersInThisRole
-                        .Where(u => u.DepartmentId == product.DepartmentId)
-                        .ToList();
-                }
-                else
-                {
-                    // Non-production roles (e.g. QA/QC) are scoped to whichever
-                    // department(s) the role is explicitly associated with, since their
-                    // members won't sit in the product's production department. If no
-                    // association is configured, fall back to unfiltered rather than
-                    // silently dropping a required responsible party.
-                    var roleDepartmentIds = roleDepartmentsByRoleId[role.Id].ToList();
-                    if (roleDepartmentIds.Count > 0)
-                    {
-                        usersInThisRole = usersInThisRole
-                            .Where(u =>
-                                u.DepartmentId.HasValue
-                                && roleDepartmentIds.Contains(u.DepartmentId.Value)
-                            )
-                            .ToList();
-                    }
-                }
-
-                roleUsersMap[role.Name] = usersInThisRole;
-            }
-
-            var usersInRole = roleUsersMap.Values.SelectMany(uList => uList).ToList();
+            var assignments = await ProcedureAssignments.BuildAsync(context, userManager, product);
 
             var quantity = productionScheduleProduct.Quantity;
 
@@ -487,56 +415,7 @@ public class ProductionScheduleRepository(
                 );
             }
 
-            // Build user actions map
-            var userActionsMap =
-                new Dictionary<
-                    (Guid userId, int order),
-                    (Guid? productArdId, OperationAction action)
-                >();
-
-            foreach (var route in product.Routes)
-            {
-                foreach (var ru in route.ResponsibleUsers)
-                {
-                    userActionsMap[(ru.UserId, route.Order)] = (
-                        ru.ProductAnalyticalRawDataId,
-                        ru.Action
-                    );
-                }
-            }
-
-            foreach (var route in product.Routes)
-            {
-                foreach (var rr in route.ResponsibleRoles)
-                {
-                    var roleName = rr.Role?.Name ?? "";
-                    if (roleUsersMap.TryGetValue(roleName, out var usersInThisRole))
-                    {
-                        foreach (var user in usersInThisRole)
-                        {
-                            if (userActionsMap.ContainsKey((user.Id, route.Order)))
-                                continue;
-                            userActionsMap[(user.Id, route.Order)] = (
-                                rr.ProductAnalyticalRawDataId,
-                                rr.Action
-                            );
-                        }
-                    }
-                }
-            }
-
-            var totalUsers = userActionsMap
-                .Keys.Select(k => k.userId)
-                .Distinct()
-                .Select(uId =>
-                    users.FirstOrDefault(u => u.Id == uId)
-                    ?? usersInRole.FirstOrDefault(u => u.Id == uId)
-                )
-                .Where(u => u != null)
-                .Distinct()
-                .ToList();
-
-            if (totalUsers.Count == 0)
+            if (assignments.Count == 0)
                 return Error.Validation(
                     "Product.Validation",
                     "This product has no users associated for procedures defined"
@@ -566,13 +445,13 @@ public class ProductionScheduleRepository(
                                 WorkCenterId = re.WorkCenterId,
                             })
                             .ToList(),
-                        ResponsibleUsers = userActionsMap
-                            .Where(kvp => kvp.Key.order == r.Order)
-                            .Select(kvp => new ProductionActivityStepUser
+                        ResponsibleUsers = assignments
+                            .Where(assignment => assignment.Order == r.Order)
+                            .Select(assignment => new ProductionActivityStepUser
                             {
-                                UserId = kvp.Key.userId,
-                                ProductAnalyticalRawDataId = kvp.Value.productArdId,
-                                Action = kvp.Value.action,
+                                UserId = assignment.UserId,
+                                ProductAnalyticalRawDataId = assignment.ArdId,
+                                Action = assignment.Action,
                             })
                             .ToList(),
                         IsCritical = r.IsCritical,
@@ -648,6 +527,9 @@ public class ProductionScheduleRepository(
             );
         }
     }
+
+    public Task<Result<ProductionProcedureRepairResult>> RepairProductionProcedure(Guid productionActivityId, Guid userId) =>
+        ProductionProcedureRepair.RepairAsync(context, userManager, productionActivityId, userId);
 
     public async Task<Result> UpdateStatusOfProductionActivityStep(
         Guid productionStepId,
