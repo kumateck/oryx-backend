@@ -625,7 +625,15 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                         ? $"No store given, and {department} has no {Describe(expectedType)} store to put it in."
                         : $"{department} has no store called \"{line.WarehouseName}\".");
                 else if (string.IsNullOrWhiteSpace(line.ShelfName))
-                    blockers.Add("No shelf given. Pick one.");
+                {
+                    (store, shelf) = named.Select(w => (w, s: FirstShelf(w))).FirstOrDefault(x => x.s != null);
+                    if (shelf == null)
+                        blockers.Add(named.Count == 1
+                            ? $"No shelf given, and {named[0].Name} has no shelves. Add one or pick another store."
+                            : $"No shelf given, and {department}'s stores have no shelves. Add one.");
+                    else
+                        warnings.Add($"No shelf given, so the first shelf of the first rack in {store.Name} ({shelf.Name}) is used.");
+                }
                 else
                 {
                     var key = StockMigrationSheet.ShelfKey(line.ShelfName);
@@ -806,6 +814,13 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
     private static IEnumerable<WarehouseLocationShelf> ShelvesOf(Warehouse store) =>
         store.Locations.SelectMany(l => l.Racks).SelectMany(r => r.Shelves);
+
+    /// <summary>The store's first shelf on its first rack, by name, for rows the sheet gives no shelf.</summary>
+    internal static WarehouseLocationShelf FirstShelf(Warehouse store) =>
+        store.Locations.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase)
+            .SelectMany(l => l.Racks.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase))
+            .SelectMany(r => r.Shelves.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase))
+            .FirstOrDefault();
 
     private async Task<Result<StockMigration>> Draft(Guid id)
     {

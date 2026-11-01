@@ -69,6 +69,8 @@ public static partial class StockMigrationSheet
     {
         string previousWarehouse = null, previousShelf = null;
         var previousRow = 0;
+        string previousCode = null, previousName = null, previousUnit = null;
+        var previousMaterialRow = 0;
 
         for (var row = 2; row <= sheet.Dimension.End.Row; row++)
         {
@@ -82,6 +84,25 @@ public static partial class StockMigrationSheet
                 continue;
 
             var corrections = new List<string>();
+
+            // A further batch of the material above is often written with only its batch, dates and quantity.
+            var name = Text("name");
+            var unit = Text("unit");
+            if (code.Length == 0 && name.Length == 0 && unit.Length == 0 && previousMaterialRow > 0)
+            {
+                code = previousCode;
+                name = previousName;
+                unit = previousUnit;
+                corrections.Add($"Code, name and unit were blank, so row {previousMaterialRow}'s material was used ({(code.Length > 0 ? code : name)}).");
+            }
+            else if (code.Length > 0 || name.Length > 0)
+            {
+                previousCode = code;
+                previousName = name;
+                previousUnit = unit;
+                previousMaterialRow = row;
+            }
+
             var warehouse = Text("warehouse");
             var shelf = Text("shelf");
             if (warehouse.Length == 0 && shelf.Length == 0 && previousWarehouse != null)
@@ -119,7 +140,6 @@ public static partial class StockMigrationSheet
             if (expiryNote != null)
                 corrections.Add(expiryNote);
 
-            var unit = Text("unit");
             yield return new StockMigrationLine
             {
                 Id = Guid.NewGuid(),
@@ -127,10 +147,10 @@ public static partial class StockMigrationSheet
                 RowNumber = row,
                 SheetWarehouse = Clip(Text("warehouse"), 500),
                 SheetShelf = Clip(Text("shelf"), 200),
-                SheetMaterialCode = Clip(code, 200),
-                SheetMaterialName = Clip(Text("name"), 1000),
+                SheetMaterialCode = Clip(Text("code"), 200),
+                SheetMaterialName = Clip(name, 1000),
                 SheetBatchNumber = Clip(Cell("batch")?.Text?.Trim(), 500),
-                SheetUnit = Clip(unit, 50),
+                SheetUnit = Clip(Text("unit"), 50),
                 SheetQuantity = Clip(quantityCell?.Text?.Trim(), 100),
                 SheetManufacturingDate = Clip(Cell("manufactured")?.Text?.Trim(), 100),
                 SheetExpiryDate = Clip(Cell("expiry")?.Text?.Trim(), 100),

@@ -131,6 +131,29 @@ public class StockMigrationSheetTests
     }
 
     [Fact]
+    public void Further_batches_with_a_blank_code_name_and_unit_take_the_material_above()
+    {
+        using var package = Workbook(sheet =>
+        {
+            Row(sheet, 2, "OINTMENT Raw Warehouse", null, "PCS2511319", "Kg", "RMC039", "Cetostearyl Alcohol", null, "QCD/RM/26/075", null, null, 2365.95d);
+            Row(sheet, 3, null, null, "CS26063114", null, null, null, null, "QCD/RM/26/493", null, null, 3000d);
+            Row(sheet, 4, "OINTMENT Raw Warehouse", null, "L477782309", "Kg", null, "Benzoyl peroxide", null, null, null, null, 100d);
+            Row(sheet, 5, null, null, "L434382210", null, null, null, null, null, null, null, 1d);
+        });
+
+        var lines = StockMigrationSheet.Read(package);
+
+        Assert.Equal("RMC039", lines[1].MaterialCode);
+        Assert.Equal("Kg", lines[1].UnitSymbol);
+        Assert.Equal("Cetostearyl Alcohol", lines[1].SheetMaterialName);
+        Assert.Null(lines[1].SheetMaterialCode);
+        Assert.Contains("row 2's material", lines[1].Corrections);
+        Assert.Equal("OINTMENT Raw Warehouse", lines[1].WarehouseName);
+        Assert.Null(lines[3].MaterialCode);
+        Assert.Equal("Benzoyl peroxide", lines[3].SheetMaterialName);
+    }
+
+    [Fact]
     public void Reads_every_tab_with_a_code_and_quantity_column()
     {
         using var package = Workbook(sheet => Row(sheet, 2, "W", "S", "B1", "mg", "RMA014", "Aerosil", null, null, null, null, 1d));
