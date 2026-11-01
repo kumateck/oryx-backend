@@ -88,6 +88,8 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .ProductAnalyticalRawData.AsSplitQuery()
             .Include(ad => ad.CoaItems)
             .IgnoreQueryFilters()
+            // The list shows each record's template, as the material list does.
+            .Include(ad => ad.Form)
             .Include(ad => ad.ProductStandardTestProcedure)
                 .ThenInclude(p => p.Product)
             .Where(ad => !ad.DeletedAt.HasValue)
