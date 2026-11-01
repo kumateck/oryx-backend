@@ -11,6 +11,7 @@ public interface IRequisitionRepository
 {
     Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId);
     Task<Result<RequisitionDto>> GetRequisition(Guid requisitionId, Guid userId);
+    Task<Result<RequisitionDto>> GetRequisitionByIssue(Guid issueId, Guid userId);
 
     Task<Result<List<MaterialAlternativeBatchesDto>>> GetAlternativeBatchesForStockRequisition(Guid requisitionId, Guid userId);
 

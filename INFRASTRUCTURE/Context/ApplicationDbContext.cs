@@ -816,6 +816,8 @@ public partial class ApplicationDbContext(
     public DbSet<StockAdjustmentLine> StockAdjustmentLines { get; set; }
     public DbSet<StockAdjustmentApproval> StockAdjustmentApprovals { get; set; }
     public DbSet<StockDiscrepancy> StockDiscrepancies { get; set; }
+    public DbSet<StockRequisitionIssue> StockRequisitionIssues { get; set; }
+    public DbSet<StockRequisitionIssueApproval> StockRequisitionIssueApprovals { get; set; }
     public DbSet<StockDiscrepancyApproval> StockDiscrepancyApprovals { get; set; }
     public DbSet<InventoryLedger> InventoryLedgers { get; set; }
     #endregion
@@ -2577,6 +2579,17 @@ public partial class ApplicationDbContext(
             .HasIndex(a => new { a.ApprovalId, a.StockDiscrepancyId,
                 a.Order, a.UserId, a.RoleId }).IsUnique()
             .HasDatabaseName("IX_StockDiscrepancyApprovals_StageUnique");
+
+        // A stock requisition is issued once, so it has one issue check.
+        modelBuilder.Entity<StockRequisitionIssue>()
+            .HasIndex(issue => issue.RequisitionId).IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL");
+        modelBuilder.Entity<StockRequisitionIssue>()
+            .HasOne(issue => issue.IssuedBy).WithMany().HasForeignKey(issue => issue.IssuedById)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StockRequisitionIssueApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.StockRequisitionIssueId, a.Order, a.UserId, a.RoleId }).IsUnique()
+            .HasDatabaseName("IX_StockRequisitionIssueApprovals_StageUnique");
 
         // Proforma Invoice Approvals
         modelBuilder
