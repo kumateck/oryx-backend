@@ -96,6 +96,24 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }
 
     /// <summary>
+    /// Retrieves the stock requisition an issue belongs to, by the issue's ID. The issue check is
+    /// approved under its own ID, so this is how its approver reads what was issued.
+    /// </summary>
+    /// <param name="issueId">The ID of the stock requisition issue.</param>
+    [HttpGet("issue/{issueId:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetRequisitionByIssue(Guid issueId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.GetRequisitionByIssue(issueId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves alternative batches for a stock requisition that expire earlier than currently reserved ones.
     /// </summary>
     /// <param name="requisitionId">The ID of the Stock Requisition.</param>

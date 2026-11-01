@@ -63,7 +63,7 @@ public class ApprovalStatisticsTests
         using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql("Host=localhost;Database=sql_translation_only;Username=unused").Options, new Actor());
         var queries = new PendingApprovalQueries(db, Guid.NewGuid(), [Guid.NewGuid()]).Keys().ToList();
-        Assert.Equal(25, queries.Count);
+        Assert.Equal(26, queries.Count);
         foreach (var query in queries)
         {
             var sql = query.ToQueryString();

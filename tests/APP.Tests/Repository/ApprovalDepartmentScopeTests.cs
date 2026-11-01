@@ -79,7 +79,7 @@ public class ApprovalDepartmentScopeTests
         var user = Guid.NewGuid();
         var scope = new ApprovalDepartmentScope(Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()], user);
         var queries = new PendingApprovalQueries(db, user, [Guid.NewGuid()], scope).Keys().ToList();
-        Assert.Equal(25, queries.Count);
+        Assert.Equal(26, queries.Count);
         foreach (var query in queries) Assert.Contains("EXISTS", query.ToQueryString());
     }
 
