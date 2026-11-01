@@ -12,7 +12,7 @@ public interface IUserRepository
     Task<Result<Guid>> CreateUser(CreateUserRequest request);
     Task<Result<LoginResponse>> CreateNewUser(CreateClientRequest request);
     Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsers(int page, int pageSize,
-        string searchQuery, bool? isDisabled);
+        string searchQuery, bool? isDisabled, Guid? roleId = null, Guid? departmentId = null);
     Task<Result<UserWithRoleDto>> GetUser(Guid userId);
     Task<Result<IEnumerable<UserWithRoleDto>>> GetUsersByRoleId(Guid roleId, Guid? departmentId = null);
     Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsersByPermissions(

@@ -44,6 +44,13 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
                 (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))),
         x => x.Approvals, x => x.CreatedBy.Department);
 
+    internal IQueryable<StockRequisitionIssue> StockRequisitionIssues => departmentScope.Apply(context.StockRequisitionIssues
+        .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
+            stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
+            (stage.UserId == userId ||
+                (stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))))),
+        x => x.Approvals, x => x.IssuedBy.Department);
+
     internal IQueryable<ShipmentDiscrepancy> ShipmentDiscrepancies => departmentScope.Apply(context.ShipmentDiscrepancies
         .Where(item => !item.Approved && !item.Rejected && item.Approvals.Any(stage =>
             stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue &&
@@ -257,6 +264,7 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
     {
         yield return StockDiscrepancies.Select(item => new PendingApprovalKey(nameof(StockDiscrepancy), item.Id));
         yield return ShipmentDiscrepancies.Select(item => new PendingApprovalKey(nameof(ShipmentDiscrepancy), item.Id));
+        yield return StockRequisitionIssues.Select(item => new PendingApprovalKey(nameof(StockRequisitionIssue), item.Id));
         yield return PurchaseOrders.Select(item => new PendingApprovalKey(nameof(PurchaseOrder), item.Id));
         yield return Requisitions.Select(item => new PendingApprovalKey(item.RequisitionType == RequisitionType.Stock ? "StockRequisition"
                 : item.RequisitionType == RequisitionType.Trial ? "TrialRequisition" : "PurchaseRequisition", item.Id));

@@ -38,9 +38,11 @@ public class UserController(IUserRepository repo) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
     public async Task<IResult> GetUsers([FromQuery(Name = "isActive")] bool? isDisabled, [FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
-        [FromQuery(Name = "searchQuery")] string searchQuery = null)
+        [FromQuery(Name = "searchQuery")] string searchQuery = null,
+        [FromQuery(Name = "roleId")] Guid? roleId = null,
+        [FromQuery(Name = "departmentId")] Guid? departmentId = null)
     {
-        var response = await repo.GetUsers(page, pageSize, searchQuery, isDisabled);
+        var response = await repo.GetUsers(page, pageSize, searchQuery, isDisabled, roleId, departmentId);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 
