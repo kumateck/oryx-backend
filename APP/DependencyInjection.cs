@@ -87,11 +87,13 @@ public static class DependencyInjection
     public static void AddScopedServices(this IServiceCollection services)
     {
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IUserPasswordAdminRepository, UserPasswordAdminRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IBoMRepository, BoMRepository>();
         services.AddScoped<ICollectionRepository, CollectionRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IStockMigrationRepository, StockMigrationRepository>();
         services.AddScoped<IProductionScheduleRepository, ProductionScheduleRepository>();
         services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
         services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
@@ -150,6 +152,7 @@ public static class DependencyInjection
         services.AddScoped<IProductSpecificationRepository, ProductSpecificationRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ICostingRepository, CostingRepository>();
         services.AddScoped<IProductionOrderRepository, ProductionOrderRepository>();
         services.AddScoped<IServiceRepository, ServiceRepository>();
         services.AddScoped<IItemRepository, ItemRepository>();

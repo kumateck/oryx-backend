@@ -316,6 +316,14 @@ public partial class ApplicationDbContext(
 
     #endregion
 
+    #region StockMigrations
+
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigration> StockMigrations { get; set; }
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationLine> StockMigrationLines { get; set; }
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationWriteOff> StockMigrationWriteOffs { get; set; }
+
+    #endregion
+
     #region Procurement
 
     public DbSet<Supplier> Suppliers { get; set; }
@@ -808,6 +816,8 @@ public partial class ApplicationDbContext(
     public DbSet<StockAdjustmentLine> StockAdjustmentLines { get; set; }
     public DbSet<StockAdjustmentApproval> StockAdjustmentApprovals { get; set; }
     public DbSet<StockDiscrepancy> StockDiscrepancies { get; set; }
+    public DbSet<StockRequisitionIssue> StockRequisitionIssues { get; set; }
+    public DbSet<StockRequisitionIssueApproval> StockRequisitionIssueApprovals { get; set; }
     public DbSet<StockDiscrepancyApproval> StockDiscrepancyApprovals { get; set; }
     public DbSet<InventoryLedger> InventoryLedgers { get; set; }
     #endregion
@@ -1182,6 +1192,9 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<Product>().Navigation(p => p.Equipment).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Department).AutoInclude();
         modelBuilder.Entity<Product>().Navigation(p => p.Prices).AutoInclude();
+        modelBuilder.Entity<Product>().OwnsMany(p => p.Prices, price =>
+            price.HasOne<Currency>().WithMany().HasForeignKey(item => item.CurrencyId)
+                .OnDelete(DeleteBehavior.Restrict));
         modelBuilder.Entity<FinishedProduct>().Navigation(fp => fp.UoM).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Material).AutoInclude();
         modelBuilder.Entity<ProductPackage>().Navigation(pp => pp.Substitutes).AutoInclude();
@@ -1941,7 +1954,7 @@ public partial class ApplicationDbContext(
             .HasQueryFilter(a => !a.WorkCenter.DeletedAt.HasValue);
         modelBuilder
             .Entity<ProductionActivityStepUser>()
-            .HasQueryFilter(a => !a.User.DeletedAt.HasValue);
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && !a.User.DeletedAt.HasValue);
         modelBuilder
             .Entity<ProductionActivityLog>()
             .HasQueryFilter(a => a.ProductionActivity != null);
@@ -2566,6 +2579,17 @@ public partial class ApplicationDbContext(
             .HasIndex(a => new { a.ApprovalId, a.StockDiscrepancyId,
                 a.Order, a.UserId, a.RoleId }).IsUnique()
             .HasDatabaseName("IX_StockDiscrepancyApprovals_StageUnique");
+
+        // A stock requisition is issued once, so it has one issue check.
+        modelBuilder.Entity<StockRequisitionIssue>()
+            .HasIndex(issue => issue.RequisitionId).IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL");
+        modelBuilder.Entity<StockRequisitionIssue>()
+            .HasOne(issue => issue.IssuedBy).WithMany().HasForeignKey(issue => issue.IssuedById)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StockRequisitionIssueApproval>()
+            .HasIndex(a => new { a.ApprovalId, a.StockRequisitionIssueId, a.Order, a.UserId, a.RoleId }).IsUnique()
+            .HasDatabaseName("IX_StockRequisitionIssueApprovals_StageUnique");
 
         // Proforma Invoice Approvals
         modelBuilder

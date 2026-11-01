@@ -38,9 +38,11 @@ public class UserController(IUserRepository repo) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
     public async Task<IResult> GetUsers([FromQuery(Name = "isActive")] bool? isDisabled, [FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
-        [FromQuery(Name = "searchQuery")] string searchQuery = null)
+        [FromQuery(Name = "searchQuery")] string searchQuery = null,
+        [FromQuery(Name = "roleId")] Guid? roleId = null,
+        [FromQuery(Name = "departmentId")] Guid? departmentId = null)
     {
-        var response = await repo.GetUsers(page, pageSize, searchQuery, isDisabled);
+        var response = await repo.GetUsers(page, pageSize, searchQuery, isDisabled, roleId, departmentId);
         return response.IsSuccess ? TypedResults.Ok(response.Value) : response.ToProblemDetails();
     }
 
@@ -181,10 +183,38 @@ public class UserController(IUserRepository repo) : ControllerBase
         }
     }
 
-    [Authorize(Roles = RoleUtils.WarehouseManger + "," + RoleUtils.AppRoleAdmin + "," + RoleUtils.AppRoleSuper)]
+    /// <summary>
+    /// Sets or removes the signed-in user's department. Send an explicit null departmentId to
+    /// remove the assignment. Requires the CanSwitchDepartment permission.
+    /// </summary>
+    [Authorize(PermissionKeys.CanSwitchDepartment)]
+    [HttpPost("switch-department")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SetDepartment([FromBody] SwitchDepartmentRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var token = HttpContext.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
+        if (string.IsNullOrEmpty(token)) return TypedResults.Unauthorized();
+
+        var response = await repo.SwitchDepartment(request.DepartmentId, Guid.Parse(userId), token);
+        return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Legacy URL for assigning a department. Requires the CanSwitchDepartment permission
+    /// (IT Support &gt; Manage User Directory); role names no longer grant it.
+    /// </summary>
+    [Authorize(PermissionKeys.CanSwitchDepartment)]
     [HttpPost("switch-department/{departmentId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> SwitchDepartment(Guid departmentId)
     {

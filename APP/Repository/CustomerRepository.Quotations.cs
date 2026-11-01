@@ -33,7 +33,8 @@ public partial class CustomerRepository
             return Error.NotFound("ProductPacking.NotFound", "One or more packing styles were not found.");
 
         var priceDate = DateTime.UtcNow;
-        var currency = await ResolveQuotationCurrency(customer, request.Items, priceDate);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        var currency = await ResolveQuotationCurrency(customer, request.Items, products, baseCurrencyId, priceDate);
         if (currency.IsFailure) return currency.Error;
 
         var quotation = new CustomerQuotation
@@ -50,7 +51,7 @@ public partial class CustomerRepository
             if (!price.HasValue)
             {
                 var resolved = await ResolveUnitPrice(
-                    customer, products[requestItem.ProductId], requestItem.ProductPackingId, priceDate);
+                    customer, products[requestItem.ProductId], requestItem.ProductPackingId, baseCurrencyId, priceDate);
                 if (resolved.IsFailure) return resolved.Error;
                 price = resolved.Value.UnitPrice;
             }
@@ -77,7 +78,8 @@ public partial class CustomerRepository
         if (product is null) return Error.NotFound("Product.NotFound", "Product not found.");
         if (!await context.ProductPackings.AnyAsync(item => item.Id == productPackingId))
             return Error.NotFound("ProductPacking.NotFound", "Packing style not found.");
-        return await ResolveUnitPrice(customer, product, productPackingId, asOf);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        return await ResolveUnitPrice(customer, product, productPackingId, baseCurrencyId, asOf);
     }
 
     /// <summary>
@@ -85,23 +87,32 @@ public partial class CustomerRepository
     /// the single active pricing agreement for this customer/product/packing, else the product's
     /// list price. Backed by <see cref="CustomerPricingResolver"/> so the quotation, production
     /// order, and production schedule report paths can never disagree on what "the resolved
-    /// price" means.
+    /// price" means. The price must already be in the customer's preferred currency (when one
+    /// is set): a list price or agreement in another currency is rejected, never converted.
     /// </summary>
     private async Task<Result<ResolvedQuotationPriceDto>> ResolveUnitPrice(
-        Customer customer, Product product, Guid productPackingId, DateTime asOf)
+        Customer customer, Product product, Guid productPackingId, Guid? baseCurrencyId, DateTime asOf)
     {
-        var resolution = await CustomerPricingResolver.ResolveAsync(
-            context, customer.Id, product.Id, productPackingId, product.Price, asOf);
+        var resolution = await CustomerPricingResolver.ResolveAsync(context, customer.Id, product.Id, productPackingId,
+            product.Price, CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId), asOf);
         if (resolution.Ambiguous)
             return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
-        if (resolution.FromAgreement && customer.CurrencyId.HasValue
-            && resolution.CurrencyId != customer.CurrencyId)
-            return Error.Conflict("CustomerPricing.Currency", "Active pricing currency differs from the customer's preferred currency.");
-        if (!resolution.FromAgreement && !customer.CurrencyId.HasValue)
+        if (!resolution.FromAgreement && product.Prices.Count == 0)
+            return Error.Validation(
+                "CustomerQuotation.PriceRequired",
+                $"{product.Name} has no list price. Set it in Finance > Costing, add a pricing agreement, or enter the unit price.");
+        if (!resolution.CurrencyId.HasValue)
             return Error.Validation(
                 "CustomerQuotation.CurrencyRequired",
-                "Set the customer's preferred currency or create an active pricing agreement for this product and packing.");
-        return new ResolvedQuotationPriceDto { UnitPrice = resolution.UnitPrice, FromAgreement = resolution.FromAgreement };
+                $"The list price of {product.Name} has no currency. Set it in Finance > Costing.");
+        if (customer.CurrencyId.HasValue && resolution.CurrencyId != customer.CurrencyId)
+            return Error.Conflict("CustomerPricing.Currency", resolution.FromAgreement
+                ? "Active pricing currency differs from the customer's preferred currency."
+                : $"The list price of {product.Name} is in a different currency from the customer's preferred currency. Add a pricing agreement in the customer's currency or enter the unit price.");
+        return new ResolvedQuotationPriceDto
+        {
+            UnitPrice = resolution.UnitPrice, FromAgreement = resolution.FromAgreement, CurrencyId = resolution.CurrencyId,
+        };
     }
 
     public async Task<Result<CustomerQuotationDto>> GetQuotation(Guid quotationId, DateTime? asOf = null)

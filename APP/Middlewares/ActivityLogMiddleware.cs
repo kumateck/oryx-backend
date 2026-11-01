@@ -12,7 +12,8 @@ namespace APP.Middlewares;
 
 public class ActivityLogMiddleware(RequestDelegate next)
 {
-    private readonly string[] _excludedPaths = ["/auth", "/collections", "/details", "/pagination", "/favicon.ico"];
+    // "password" keeps any password-bearing body out of the stored payloads, even off /auth.
+    private readonly string[] _excludedPaths = ["/auth", "password", "/collections", "/details", "/pagination", "/favicon.ico"];
     private readonly string[] _excludedMethods = ["OPTIONS", "CONNECT"];
     private readonly string[] _allowedGetPaths = ["toggle-disable"];
 

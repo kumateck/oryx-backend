@@ -309,6 +309,26 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     /// <summary>
+    /// Repairs one running batch from its product's current procedure. The active step and the steps
+    /// still to do take the procedure's operation, work centres, resources, critical flag and responsible
+    /// people with their instruction and analytical raw data. Completed steps are never changed.
+    /// </summary>
+    /// <param name="productionActivityId">The production activity (the batch's run) to repair.</param>
+    [HttpPost("activity/{productionActivityId:guid}/repair-procedure")]
+    [Authorize(Policy = PermissionKeys.CanRepairProcedure)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionProcedureRepairResult))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> RepairProductionProcedure(Guid productionActivityId)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.RepairProductionProcedure(productionActivityId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a paginated list of Production Activities with optional filters.
     /// </summary>
     /// <param name="filter">Filter parameters for retrieving production activities.</param>

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using APP.Services.Documents;
 using APP.Services.Production;
 using APP.Extensions;
@@ -40,7 +41,8 @@ public class RequisitionRepository(
     IMaterialRepository materialRepository,
     IApprovalRepository approvalRepository,
     IBackgroundWorkerService backgroundWorkerService,
-    IProductionActivityStepEventPublisher stepEventPublisher
+    IProductionActivityStepEventPublisher stepEventPublisher,
+    ILogger<RequisitionRepository> logger = null
 ) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
@@ -366,6 +368,8 @@ public class RequisitionRepository(
         }
 
         var result = mapper.Map<RequisitionDto>(requisition);
+        if (requisition.RequisitionType == RequisitionType.Stock)
+            result.Signatories = await StockIssueSignatories(requisition);
 
         // If the requisition type is a purchase, return early
         if (requisition.RequisitionType == RequisitionType.Purchase)
@@ -641,6 +645,54 @@ public class RequisitionRepository(
         return stockRequisition is null
             ? RequisitionErrors.NotFound(stockRequisitionId)
             : Result.Success();
+    }
+
+    public async Task<Result<RequisitionDto>> GetRequisitionByIssue(Guid issueId, Guid userId)
+    {
+        var requisitionId = await context.StockRequisitionIssues
+            .Where(issue => issue.Id == issueId)
+            .Select(issue => (Guid?)issue.RequisitionId)
+            .FirstOrDefaultAsync();
+        return requisitionId is null
+            ? Error.NotFound("StockRequisitionIssue.NotFound", "Issued stock requisition not found.")
+            : await GetRequisition(requisitionId.Value, userId);
+    }
+
+    /// <summary>
+    /// The signature lines of a stock requisition voucher, with each person's full name and stored
+    /// signature: the store user who issued it, the approver who checked the issue, and the requester.
+    /// </summary>
+    private async Task<StockIssueSignatoriesDto> StockIssueSignatories(Requisition requisition)
+    {
+        var issue = await context.StockRequisitionIssues.AsSplitQuery()
+            .Include(item => item.IssuedBy)
+            .Include(item => item.Approvals).ThenInclude(stage => stage.ApprovedBy)
+            .Where(item => item.RequisitionId == requisition.Id)
+            .OrderByDescending(item => item.IssuedAt)
+            .FirstOrDefaultAsync();
+        var checker = issue is null ? null : StockRequisitionIssueApprovalHandler.Checker(issue);
+        return new StockIssueSignatoriesDto
+        {
+            IssuedBy = issue is null ? null : Signatory(issue.IssuedBy, issue.IssuedAt),
+            CheckedBy = checker is null ? null : Signatory(checker.ApprovedBy, checker.ApprovalTime),
+            // The requester receives what was issued, so they sign once it has been issued.
+            ReceivedBy = issue is null ? null : Signatory(requisition.RequestedBy, null),
+            CheckStatus = issue is null ? null : issue.Approved ? "Checked" : issue.Rejected ? "Rejected"
+                : issue.Approvals.Count == 0 ? "NotAssigned" : "Pending",
+        };
+    }
+
+    private VoucherSignatoryDto Signatory(User user, DateTime? signedAt)
+    {
+        if (user is null) return null;
+        var mapped = mapper.Map<UserDto>(user);
+        return new VoucherSignatoryDto
+        {
+            UserId = user.Id,
+            Name = $"{user.FirstName} {user.LastName}".Trim(),
+            Signature = mapped.Signature,
+            SignedAt = signedAt,
+        };
     }
 
     public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
@@ -1025,9 +1077,19 @@ public class RequisitionRepository(
                 i.Status == RequestStatus.Completed
             );
 
+            StockRequisitionIssue issueRecord = null;
             if (allItemsCompleted)
             {
                 stockRequisition.Status = RequestStatus.Completed;
+                // Who issued it signs the voucher; the issue is then checked by the warehouse.
+                issueRecord = new StockRequisitionIssue
+                {
+                    RequisitionId = stockRequisition.Id,
+                    IssuedById = userId,
+                    IssuedAt = now,
+                    CreatedById = userId,
+                };
+                context.StockRequisitionIssues.Add(issueRecord);
             }
 
             Guid? completedStepId = null;
@@ -1075,6 +1137,20 @@ public class RequisitionRepository(
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            if (issueRecord is not null)
+            {
+                try
+                {
+                    await approvalRepository.CreateInitialApprovalsAsync(
+                        StockRequisitionIssueApprovalHandler.ModelType, issueRecord.Id, userId);
+                }
+                catch (Exception error)
+                {
+                    // The stock has left the store; a failed check request must not undo that.
+                    logger?.LogError(error, "Could not raise the issue check for requisition {RequisitionId}", stockRequisition.Id);
+                }
+            }
 
             if (completedStepId.HasValue)
             {

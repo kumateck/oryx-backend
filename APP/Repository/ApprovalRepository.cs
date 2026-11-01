@@ -175,6 +175,9 @@ public class ApprovalRepository(
         if (modelType == nameof(ShipmentDiscrepancy))
             return await ShipmentDiscrepancyApprovalHandler.ReviewAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
+        if (modelType == StockRequisitionIssueApprovalHandler.ModelType)
+            return await StockRequisitionIssueApprovalHandler.ReviewAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
         if (modelType == nameof(StaffRequisition))
             return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
@@ -2236,6 +2239,9 @@ public class ApprovalRepository(
         if (modelType == nameof(ShipmentDiscrepancy))
             return await ShipmentDiscrepancyApprovalHandler.ReviewAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
+        if (modelType == StockRequisitionIssueApprovalHandler.ModelType)
+            return await StockRequisitionIssueApprovalHandler.ReviewAsync(
+                context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
         if (modelType == nameof(StaffRequisition))
             return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
@@ -3367,7 +3373,7 @@ public class ApprovalRepository(
     {
         if (string.IsNullOrWhiteSpace(modelType)) modelType = null;
         var entitiesRequiringApproval = new List<ApprovalEntity>();
-        var pending = new PendingApprovalQueries(context, userId, roleIds);
+        var pending = await PendingApprovalQueries.For(context, userId, roleIds ?? []);
 
         if (modelType is null or nameof(StockDiscrepancy))
         {
@@ -3404,6 +3410,16 @@ public class ApprovalRepository(
                 RequestedBy = mapper.Map<UserDto>(item.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(item.Id),
             }));
+        }
+
+        if (modelType is null or StockRequisitionIssueApprovalHandler.ModelType)
+        {
+            var issues = await pending.StockRequisitionIssues.AsSplitQuery()
+                .Include(item => item.Approvals)
+                .Include(item => item.Requisition)
+                .Include(item => item.IssuedBy).ThenInclude(user => user.Department)
+                .ToListAsync();
+            entitiesRequiringApproval.AddRange(issues.Select(item => StockRequisitionIssueEntity(item)));
         }
 
         // 1. Get Purchase Orders requiring approval
@@ -3878,7 +3894,7 @@ public class ApprovalRepository(
 
         if (modelType is null or "Payment")
         {
-            var payments = await PaymentApprovalQueue.GetAsync(context, userId, roleIds);
+            var payments = await PaymentApprovalQueue.Include(pending.Payments).ToListAsync();
 
             foreach (var payment in payments)
             {
@@ -4075,7 +4091,7 @@ public class ApprovalRepository(
     public async Task<List<PendingApprovalKey>> GetPendingApprovalKeys(Guid userId, List<Guid> roleIds)
     {
         var keys = new List<PendingApprovalKey>();
-        foreach (var query in new PendingApprovalQueries(context, userId, roleIds ?? []).Keys())
+        foreach (var query in (await PendingApprovalQueries.For(context, userId, roleIds ?? [])).Keys())
             keys.AddRange(await query.ToListAsync());
         return keys;
     }
@@ -4111,6 +4127,16 @@ public class ApprovalRepository(
                 RequestedBy = mapper.Map<UserDto>(report.CreatedBy),
                 ApprovalLogs = GetApprovalLogs(report.Id),
             };
+        }
+        if (modelType == StockRequisitionIssueApprovalHandler.ModelType)
+        {
+            var issue = await context.StockRequisitionIssues
+                .Include(item => item.Requisition)
+                .Include(item => item.IssuedBy).ThenInclude(user => user.Department)
+                .SingleOrDefaultAsync(item => item.Id == modelId);
+            if (issue is null)
+                return Error.NotFound("StockRequisitionIssue.NotFound", "Issued stock requisition not found.");
+            return StockRequisitionIssueEntity(issue);
         }
         if (modelType == nameof(ShipmentDiscrepancy))
         {
@@ -4670,6 +4696,14 @@ public class ApprovalRepository(
             throw new InvalidOperationException(
                 $"Automatic approval for '{modelType}' requires its resource-specific action.");
 
+        // An issue check is a person's signature on the voucher, so it is never approved automatically.
+        // Without a configured workflow the issue stays unchecked until one is set up.
+        if (modelType == StockRequisitionIssueApprovalHandler.ModelType && (approval is null || stages.Count == 0))
+        {
+            logger.LogWarning("No {ModelType} approval workflow is configured; issue {ModelId} stays unchecked.", modelType, modelId);
+            return;
+        }
+
         if (approval is null || stages.Count == 0)
         {
             var explanation = approval is null
@@ -4702,6 +4736,9 @@ public class ApprovalRepository(
                 break;
             case nameof(ShipmentDiscrepancy):
                 await ShipmentDiscrepancyApprovalHandler.CreateAsync(context, modelId, stages, approval!);
+                break;
+            case StockRequisitionIssueApprovalHandler.ModelType:
+                await StockRequisitionIssueApprovalHandler.CreateAsync(context, modelId, stages, approval!);
                 break;
             case "RawStockRequisition":
             case "PackageStockRequisition":
@@ -5278,6 +5315,18 @@ public class ApprovalRepository(
         );
         await context.SaveChangesAsync();
     }
+
+    /// <summary>An issued stock requisition as it appears in the approval queue: the voucher code, issued by the store user.</summary>
+    private ApprovalEntity StockRequisitionIssueEntity(StockRequisitionIssue issue) => new()
+    {
+        ModelType = StockRequisitionIssueApprovalHandler.ModelType,
+        Id = issue.Id,
+        Code = issue.Requisition?.Code ?? issue.Id.ToString(),
+        CreatedAt = issue.IssuedAt,
+        Department = mapper.Map<DepartmentDto>(issue.IssuedBy?.Department),
+        RequestedBy = mapper.Map<UserDto>(issue.IssuedBy),
+        ApprovalLogs = GetApprovalLogs(issue.Id),
+    };
 
     public List<ApprovalLog> GetApprovalLogs(Guid modelId)
     {

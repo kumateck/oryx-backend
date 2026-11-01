@@ -388,23 +388,7 @@ public class ProductionScheduleRepository(
                     "Production schedule product not found"
                 );
 
-            var product = await context
-                .Products.AsSplitQuery()
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.Resources)
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.WorkCenters)
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.ResponsibleUsers)
-                        .ThenInclude(routeResponsibleUser =>
-                            routeResponsibleUser.ProductAnalyticalRawData
-                        )
-                .Include(product => product.Routes)
-                    .ThenInclude(route => route.ResponsibleRoles)
-                        .ThenInclude(routeResponsibleRole =>
-                            routeResponsibleRole.ProductAnalyticalRawData
-                        )
-                .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
+            var product = await ProcedureAssignments.LoadProductAsync(context, productionScheduleProduct.ProductId);
 
             if (product is null)
                 return Error.NotFound("Product.Validation", "Product was not found");
@@ -415,63 +399,7 @@ public class ProductionScheduleRepository(
                     "This product has no procedures defined hence a production activity cannot commence."
                 );
 
-            // Directly-assigned responsible users are an explicit choice made during
-            // procedure configuration, so they are not re-filtered by department here.
-            var users = product
-                .Routes.SelectMany(r => r.ResponsibleUsers)
-                .Select(r => r.User)
-                .ToList();
-
-            var responsibleRoles = product
-                .Routes.SelectMany(r => r.ResponsibleRoles)
-                .Select(rr => rr.Role)
-                .Where(role => role != null && !string.IsNullOrEmpty(role.Name))
-                .DistinctBy(role => role.Id)
-                .ToList();
-
-            var roleDepartmentsByRoleId = (
-                await context
-                    .RoleDepartments.Where(rd =>
-                        responsibleRoles.Select(role => role.Id).Contains(rd.RoleId)
-                    )
-                    .ToListAsync()
-            ).ToLookup(rd => rd.RoleId, rd => rd.DepartmentId);
-
-            var roleUsersMap = new Dictionary<string, IList<User>>();
-            foreach (var role in responsibleRoles)
-            {
-                var usersInThisRole = await userManager.GetUsersInRoleAsync(role.Name);
-
-                if (role.Type == DepartmentType.Production)
-                {
-                    // Production-department roles are scoped to the product's own department.
-                    usersInThisRole = usersInThisRole
-                        .Where(u => u.DepartmentId == product.DepartmentId)
-                        .ToList();
-                }
-                else
-                {
-                    // Non-production roles (e.g. QA/QC) are scoped to whichever
-                    // department(s) the role is explicitly associated with, since their
-                    // members won't sit in the product's production department. If no
-                    // association is configured, fall back to unfiltered rather than
-                    // silently dropping a required responsible party.
-                    var roleDepartmentIds = roleDepartmentsByRoleId[role.Id].ToList();
-                    if (roleDepartmentIds.Count > 0)
-                    {
-                        usersInThisRole = usersInThisRole
-                            .Where(u =>
-                                u.DepartmentId.HasValue
-                                && roleDepartmentIds.Contains(u.DepartmentId.Value)
-                            )
-                            .ToList();
-                    }
-                }
-
-                roleUsersMap[role.Name] = usersInThisRole;
-            }
-
-            var usersInRole = roleUsersMap.Values.SelectMany(uList => uList).ToList();
+            var assignments = await ProcedureAssignments.BuildAsync(context, userManager, product);
 
             var quantity = productionScheduleProduct.Quantity;
 
@@ -487,56 +415,7 @@ public class ProductionScheduleRepository(
                 );
             }
 
-            // Build user actions map
-            var userActionsMap =
-                new Dictionary<
-                    (Guid userId, int order),
-                    (Guid? productArdId, OperationAction action)
-                >();
-
-            foreach (var route in product.Routes)
-            {
-                foreach (var ru in route.ResponsibleUsers)
-                {
-                    userActionsMap[(ru.UserId, route.Order)] = (
-                        ru.ProductAnalyticalRawDataId,
-                        ru.Action
-                    );
-                }
-            }
-
-            foreach (var route in product.Routes)
-            {
-                foreach (var rr in route.ResponsibleRoles)
-                {
-                    var roleName = rr.Role?.Name ?? "";
-                    if (roleUsersMap.TryGetValue(roleName, out var usersInThisRole))
-                    {
-                        foreach (var user in usersInThisRole)
-                        {
-                            if (userActionsMap.ContainsKey((user.Id, route.Order)))
-                                continue;
-                            userActionsMap[(user.Id, route.Order)] = (
-                                rr.ProductAnalyticalRawDataId,
-                                rr.Action
-                            );
-                        }
-                    }
-                }
-            }
-
-            var totalUsers = userActionsMap
-                .Keys.Select(k => k.userId)
-                .Distinct()
-                .Select(uId =>
-                    users.FirstOrDefault(u => u.Id == uId)
-                    ?? usersInRole.FirstOrDefault(u => u.Id == uId)
-                )
-                .Where(u => u != null)
-                .Distinct()
-                .ToList();
-
-            if (totalUsers.Count == 0)
+            if (assignments.Count == 0)
                 return Error.Validation(
                     "Product.Validation",
                     "This product has no users associated for procedures defined"
@@ -566,13 +445,13 @@ public class ProductionScheduleRepository(
                                 WorkCenterId = re.WorkCenterId,
                             })
                             .ToList(),
-                        ResponsibleUsers = userActionsMap
-                            .Where(kvp => kvp.Key.order == r.Order)
-                            .Select(kvp => new ProductionActivityStepUser
+                        ResponsibleUsers = assignments
+                            .Where(assignment => assignment.Order == r.Order)
+                            .Select(assignment => new ProductionActivityStepUser
                             {
-                                UserId = kvp.Key.userId,
-                                ProductAnalyticalRawDataId = kvp.Value.productArdId,
-                                Action = kvp.Value.action,
+                                UserId = assignment.UserId,
+                                ProductAnalyticalRawDataId = assignment.ArdId,
+                                Action = assignment.Action,
                             })
                             .ToList(),
                         IsCritical = r.IsCritical,
@@ -648,6 +527,9 @@ public class ProductionScheduleRepository(
             );
         }
     }
+
+    public Task<Result<ProductionProcedureRepairResult>> RepairProductionProcedure(Guid productionActivityId, Guid userId) =>
+        ProductionProcedureRepair.RepairAsync(context, userManager, productionActivityId, userId);
 
     public async Task<Result> UpdateStatusOfProductionActivityStep(
         Guid productionStepId,
@@ -4771,13 +4653,19 @@ public class ProductionScheduleRepository(
 
         var productionSchedules = await query.ToListAsync();
         var pricingAgreements = await LoadPricingAgreements(productionSchedules);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var groupedData = productionSchedules
-            .Select(p => new ProductionScheduleReportDto
+            .Select(p =>
+            {
+                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId);
+                return new ProductionScheduleReportDto
             {
                 Product = mapper.Map<ProductListDto>(p.Product),
-                UnitPrice = ResolveScheduleUnitPrice(p, pricingAgreements),
+                UnitPrice = price.UnitPrice,
                 PriceUoM = p.Product.PriceUoM,
+                Currency = CustomerPricingResolver.Label(currencyLabels, price.CurrencyId),
                 BatchSize = productionSchedules.Sum(productScheduleProduct =>
                     productScheduleProduct.BatchSize == BatchSize.Full
                         ? productScheduleProduct.Product.FullBatchSize
@@ -4792,6 +4680,7 @@ public class ProductionScheduleRepository(
                         .FinalPackings.FirstOrDefault(f => f.ProductionScheduleProductId == p.Id)
                         ?.TotalNumberOfBottles
                     ?? 0m,
+            };
             })
             .ToList();
 
@@ -4831,11 +4720,14 @@ public class ProductionScheduleRepository(
 
         var productionSchedules = await query.ToListAsync();
         var pricingAgreements = await LoadPricingAgreements(productionSchedules);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var report = productionSchedules
             .Select(p =>
             {
-                var unitPrice = ResolveScheduleUnitPrice(p, pricingAgreements);
+                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId);
+                var unitPrice = price.UnitPrice;
                 var expectedQty =
                     p.BatchSize == BatchSize.Full
                         ? p.Product.FullBatchSize
@@ -4851,6 +4743,7 @@ public class ProductionScheduleRepository(
                     BatchNumber = p.BatchNumber,
                     UnitPrice = unitPrice,
                     PriceUoM = p.Product.PriceUoM,
+                    Currency = CustomerPricingResolver.Label(currencyLabels, price.CurrencyId),
                     PackageStyle = p.Product.PackageStyle,
                     ExpectedQuantity = expectedQty,
                     ActualQuantity = actualQty,
@@ -4863,7 +4756,7 @@ public class ProductionScheduleRepository(
 
     /// <summary>
     /// Bulk-fetches the pricing agreements that could apply to this batch of schedule rows, so
-    /// <see cref="ResolveScheduleUnitPrice"/> can price every row without a query each.
+    /// <see cref="ResolveSchedulePrice"/> can price every row without a query each.
     /// </summary>
     private async Task<List<DOMAIN.Entities.Customers.CustomerPricingAgreement>> LoadPricingAgreements(
         List<ProductionScheduleProduct> items
@@ -4895,15 +4788,17 @@ public class ProductionScheduleRepository(
     /// Prices a schedule row with the market/customer's active pricing agreement as of the
     /// scheduled production date, else the product's list price -- via
     /// <see cref="CustomerPricingResolver"/> so this can never disagree with quotation or
-    /// production order pricing.
+    /// production order pricing. The result carries the currency of the price it chose.
     /// </summary>
-    private static decimal ResolveScheduleUnitPrice(
+    private static CustomerPricingResolution ResolveSchedulePrice(
         ProductionScheduleProduct item,
-        List<DOMAIN.Entities.Customers.CustomerPricingAgreement> pricingAgreements
+        List<DOMAIN.Entities.Customers.CustomerPricingAgreement> pricingAgreements,
+        Guid? baseCurrencyId
     )
     {
+        var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(item.Product, baseCurrencyId);
         if (!item.MarketTypeId.HasValue || !item.ProductPackingId.HasValue)
-            return item.Product.Price;
+            return new CustomerPricingResolution(item.Product.Price, listCurrencyId, false, false);
 
         var matches = CustomerPricingResolver.ActiveMatches(
             pricingAgreements,
@@ -4912,7 +4807,7 @@ public class ProductionScheduleRepository(
             item.ProductPackingId.Value,
             item.ProductionSchedule.ScheduledStartTime
         );
-        return CustomerPricingResolver.Resolve(matches, item.Product.Price).UnitPrice;
+        return CustomerPricingResolver.Resolve(matches, item.Product.Price, listCurrencyId);
     }
 
     public async Task<Result<List<ForecastMaterialDto>>> ForecastProductionScheduleProduct(

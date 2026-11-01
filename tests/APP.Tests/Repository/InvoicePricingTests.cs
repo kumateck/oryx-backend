@@ -54,6 +54,22 @@ public class InvoicePricingTests
         Assert.Equal(5 * 10m, amount.Amount);
     }
 
+    [Fact]
+    public async Task CreateInvoice_UsesListPrice_InTheListPriceCurrency()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context);
+        context.Products.Local.Single().Prices.Single().CurrencyId = ids.AgreementCurrencyId;
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).CreateInvoice(new CreateInvoice { ProformaInvoiceId = ids.ProformaId, CustomerId = ids.CustomerId });
+
+        Assert.True(result.IsSuccess);
+        var amount = Assert.Single(await context.InvoiceAmounts.Where(item => item.InvoiceId == result.Value).ToListAsync());
+        Assert.Equal(ids.AgreementCurrencyId, amount.CurrencyId);
+        Assert.Equal(5 * 10m, amount.Amount);
+    }
+
     private sealed class TestIds
     {
         public Guid CustomerId { get; } = Guid.NewGuid();

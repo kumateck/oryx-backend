@@ -55,14 +55,15 @@ public class ProductionOrderRepository(
         var productIds = products.Select(item => item.ProductId).Distinct().ToList();
         var prices = await context.Products.IgnoreQueryFilters()
             .Where(item => productIds.Contains(item.Id))
-            .ToDictionaryAsync(item => item.Id, item => item.Price);
+            .ToDictionaryAsync(item => item.Id);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
 
         foreach (var item in products)
         {
-            if (!prices.TryGetValue(item.ProductId, out var defaultPrice))
+            if (!prices.TryGetValue(item.ProductId, out var product))
                 return Error.NotFound("Product.NotFound", "One or more products were not found.");
-            var resolution = await CustomerPricingResolver.ResolveAsync(
-                context, customerId, item.ProductId, item.ProductPackingId, defaultPrice, DateTime.UtcNow);
+            var resolution = await CustomerPricingResolver.ResolveAsync(context, customerId, item.ProductId,
+                item.ProductPackingId, product.Price, CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId), DateTime.UtcNow);
             if (resolution.Ambiguous)
                 return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
             item.UnitPrice = resolution.UnitPrice;
@@ -402,7 +403,8 @@ public class ProductionOrderRepository(
     /// <summary>
     /// What a proforma's lines come to on a date, one amount per currency. A line uses the
     /// customer's agreed price for its product and packing style (in the agreement's currency)
-    /// when one is in effect, else the product's list price in the base currency.
+    /// when one is in effect, else the product's list price in the list price's currency
+    /// (the base currency for list prices saved before currencies were recorded).
     /// </summary>
     private async Task<List<InvoiceAmount>> InvoiceAmountsAt(ProformaInvoice proforma, DateTime asOf)
     {
@@ -410,19 +412,17 @@ public class ProductionOrderRepository(
             .Include(item => item.ProductionOrder)
             .Include(item => item.Products)
             .FirstOrDefaultAsync(item => item.Id == proforma.AllocateProductionOrderId);
-        var baseCurrencyId = await context.Currencies
-            .Where(currency => currency.IsBaseCurrency)
-            .Select(currency => (Guid?)currency.Id)
-            .FirstOrDefaultAsync();
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
 
         var totals = new Dictionary<Guid, decimal>();
         foreach (var line in proforma.Products)
         {
             var packingId = allocation?.Products.FirstOrDefault(item => item.ProductId == line.ProductId)?.ProductPackingId;
+            var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(line.Product, baseCurrencyId);
             var resolution = allocation?.ProductionOrder is { } order
-                ? await CustomerPricingResolver.ResolveAsync(context, order.CustomerId, line.ProductId, packingId, line.Product.Price, asOf)
-                : new CustomerPricingResolution(line.Product.Price, null, false, false);
-            var currencyId = resolution.CurrencyId ?? baseCurrencyId;
+                ? await CustomerPricingResolver.ResolveAsync(context, order.CustomerId, line.ProductId, packingId, line.Product.Price, listCurrencyId, asOf)
+                : new CustomerPricingResolution(line.Product.Price, listCurrencyId, false, false);
+            var currencyId = resolution.CurrencyId;
             if (currencyId is null) continue;
             totals[currencyId.Value] = totals.GetValueOrDefault(currencyId.Value) + line.Quantity * resolution.UnitPrice;
         }

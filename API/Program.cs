@@ -105,6 +105,7 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<ReApplyOptionalParameterFilter>();
     options.OperationFilter<SwaggerHeaderFilter>();
     options.OperationFilter<ReportHistoryParameterFilter>();
+    options.SchemaFilter<SwitchDepartmentRequestSchemaFilter>();
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);

@@ -11,6 +11,7 @@ public class AlertAuthorizationTests
     [InlineData(nameof(AlertController.GetAlert), PermissionKeys.CanViewAlerts)]
     [InlineData(nameof(AlertController.GetAlerts), PermissionKeys.CanViewAlerts)]
     [InlineData(nameof(AlertController.UpdateAlert), PermissionKeys.CanEditAlerts)]
+    [InlineData(nameof(AlertController.UpdateAlertRecipients), PermissionKeys.CanEditAlerts)]
     [InlineData(nameof(AlertController.ToggleDisable), PermissionKeys.CanEnableDisableAlerts)]
     [InlineData(nameof(AlertController.DeleteAlert), PermissionKeys.CanDeleteAlerts)]
     public void Configuration_requires_existing_backend_permissions(string method, string policy)

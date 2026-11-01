@@ -20,6 +20,7 @@ public static class PermissionModules
     public const string InventoryManagement = "Inventory Management";
     public const string OrganizationalStructure = "Organizational Structure";
     public const string Reports = "Reports";
+    public const string Finance = "Finance";
     public const string Audit = "Audit";
     public const string ResearchAndDevelopment = "Research & Development";
 }
@@ -47,6 +48,7 @@ public static class PermissionSubmodules
     public const string AvailableStock = "Available Stock";
     public const string Payments = "Payments";
     public const string CashflowReports = "Cashflow Reports";
+    public const string Costing = "Costing";
 
     // Warehouse
     public const string ReceivingArea = "Receiving Area";
@@ -390,6 +392,8 @@ public static class PermissionKeys
     public const string CanViewPlannedProducts = "CanViewPlannedProducts";
     public const string CanCreateNewProductionPlan = "CanCreateNewProductionPlan";
     public const string CanEditProductionPlan = "CanEditProductionPlan";
+    /// <summary>Re-apply a product's current procedure to a running batch's active and upcoming steps.</summary>
+    public const string CanRepairProcedure = "CanRepairProcedure";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
     public const string CanCreateProductSchedule = "CanCreateProductSchedule";
     public const string CanEditProductSchedule = "CanEditProductSchedule";
@@ -557,6 +561,8 @@ public static class PermissionKeys
     public const string CanDeleteCustomer = "CanDeleteCustomer";
     public const string CanViewCustomerCreditStatus = "ViewCustomerCreditStatus";
     public const string CanManageCustomerContracts = "ManageCustomerContracts";
+    /// <summary>Finance costing: product list prices and customer pricing agreements.</summary>
+    public const string CanManageCosting = "ManageCosting";
     public const string CanViewCustomerQuotations = "ViewCustomerQuotations";
     public const string CanCreateCustomerQuotation = "CreateCustomerQuotation";
     public const string CanApproveCustomerQuotation = "ApproveCustomerQuotation";
@@ -848,6 +854,8 @@ public static class PermissionKeys
     public const string CanBlockUser = "CanBlockUser";
     public const string CanViewInactiveUser = "CanViewInactiveUser";
     public const string CanUnblockUser = "CanUnblockUser";
+    /// <summary>Lets a user move their own account to another production department.</summary>
+    public const string CanSwitchDepartment = "CanSwitchDepartment";
     public const string CanViewAuditTrail = "CanViewAuditTrail";
     public const string CanViewRoles = "CanViewRoles";
     public const string CanCreateRole = "CanCreateRole";
@@ -1466,25 +1474,32 @@ public static class PermissionUtils
             PermissionSubmodules.AvailableStock,
             PermissionKeys.CanViewPackingMaterialStock
         );
+        // Finance. Grants are stored by key, so moving these keys here from Logistics and
+        // Reports keeps every role's existing access.
         addPermission(
-            PermissionModules.Logistics,
+            PermissionModules.Finance,
             PermissionSubmodules.Payments,
             PermissionKeys.CanViewPayments
         );
         addPermission(
-            PermissionModules.Logistics,
+            PermissionModules.Finance,
             PermissionSubmodules.Payments,
             PermissionKeys.CanRecordPayment
         );
         addPermission(
-            PermissionModules.Logistics,
+            PermissionModules.Finance,
             PermissionSubmodules.Payments,
             PermissionKeys.CanApprovePayment
         );
         addPermission(
-            PermissionModules.Reports,
+            PermissionModules.Finance,
             PermissionSubmodules.CashflowReports,
             PermissionKeys.CanViewCashflowReports
+        );
+        addPermission(
+            PermissionModules.Finance,
+            PermissionSubmodules.Costing,
+            PermissionKeys.CanManageCosting
         );
 
         // Warehouse
@@ -1899,6 +1914,11 @@ public static class PermissionUtils
             PermissionModules.Production,
             PermissionSubmodules.Products,
             PermissionKeys.CanEditProductionPlan
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanRepairProcedure
         );
         addPermission(
             PermissionModules.Production,
@@ -3534,6 +3554,11 @@ public static class PermissionUtils
             PermissionModules.ItSupport,
             PermissionSubmodules.UserManagement,
             PermissionKeys.CanUnblockUser
+        );
+        addPermission(
+            PermissionModules.ItSupport,
+            PermissionSubmodules.UserManagement,
+            PermissionKeys.CanSwitchDepartment
         );
         addPermission(
             PermissionModules.ItSupport,

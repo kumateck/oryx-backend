@@ -68,6 +68,21 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     }
 
     /// <summary>
+    /// Replaces the roles and users who receive an alert. Unlike a full update, this also works for
+    /// system alerts; their event, channels and delay stay fixed.
+    /// </summary>
+    [HttpPut("{alertId}/recipients")]
+    [Authorize(PermissionKeys.CanEditAlerts)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateAlertRecipients([FromBody] UpdateAlertRecipientsRequest request, Guid alertId)
+    {
+        var result = await repo.UpdateAlertRecipients(request, alertId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Toggles the disabled status of an alert.
     /// </summary>
     [HttpPut("{id}/toggle-disable")]

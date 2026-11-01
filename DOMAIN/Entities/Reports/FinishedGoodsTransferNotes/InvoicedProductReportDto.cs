@@ -32,6 +32,8 @@ public class InvoicedProductsSummaryReportDto
 
     public decimal UnitPrice { get; set; }
     public string PriceUoM { get; set; }
+    /// <summary>The currency the unit price and amounts are in; rows are never converted.</summary>
+    public DOMAIN.Entities.Currencies.CurrencyDto Currency { get; set; }
     public decimal ItemAmount => UnitPrice * QuantityAllocated;
 }
 
@@ -70,6 +72,8 @@ public class InvoicedProductsDetailedReportDto
     public string Uom { get; set; }
     public decimal UnitPrice { get; set; }
     public string PriceUoM { get; set; }
+    /// <summary>The currency the unit price and amounts are in; rows are never converted.</summary>
+    public DOMAIN.Entities.Currencies.CurrencyDto Currency { get; set; }
     public decimal ItemAmount => QuantityAllocated * UnitPrice;
 
    
