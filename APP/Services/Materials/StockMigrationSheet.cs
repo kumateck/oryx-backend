@@ -21,7 +21,7 @@ public static partial class StockMigrationSheet
         ["code"] = ["materialcode", "code", "itemcode"],
         ["name"] = ["materialname", "name", "itemname", "rawmaterialname"],
         ["grn"] = ["grnnumber", "grn", "grnno", "waybill"],
-        ["ar"] = ["arno", "arnumber", "ardno", "ardnumber"],
+        ["ar"] = ["arno", "arnumber", "arnumbers", "ardno", "ardnumber", "ardnumbers"],
         ["manufactured"] = ["manufacturingdate", "manufacturedate", "mfgdate", "mfg"],
         ["expiry"] = ["expirydate", "expiry", "exp", "expdate"],
         ["quantity"] = ["quantity", "qty", "availableqty", "availablequantity"],
@@ -123,10 +123,10 @@ public static partial class StockMigrationSheet
                 corrections.Add(batchNote);
 
             var grn = Text("grn");
-            var ar = Text("ar");
+            var ar = CleanArNumber(Text("ar"));
             var (grnNumber, arFromGrn) = SplitGrn(grn);
             if (ar.Length == 0 && arFromGrn != null)
-                ar = arFromGrn;
+                ar = CleanArNumber(arFromGrn);
             if (batch.Length == 0 && !batchDamaged && grnNumber != null)
             {
                 batch = grnNumber;
@@ -217,6 +217,9 @@ public static partial class StockMigrationSheet
 
     private static bool IsBlankMarker(string text) =>
         text.Length == 0 || text is "-" or "--" || Normal(text) is "na" or "nil" or "none";
+
+    private static string CleanArNumber(string text) =>
+        IsBlankMarker(text) || string.Equals(text, "null", StringComparison.OrdinalIgnoreCase) ? string.Empty : text;
 
     /// <summary>A GRN cell sometimes holds the GRN and the AR number together; the first is the GRN.</summary>
     public static (string Grn, string Ar) SplitGrn(string cell)
