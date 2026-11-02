@@ -359,7 +359,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             .StockMigrationLines.AsNoTracking()
             .Where(l => l.StockMigrationId == id && l.ResolvedMaterialId != null
                 && (l.Status == StockMigrationLineStatus.Ok || l.Status == StockMigrationLineStatus.Warning))
-            .Select(l => new { l.ResolvedMaterialId, l.BatchNumber, l.Quantity, Unit = l.UoM.Symbol })
+            .Select(l => new { l.Id, l.ResolvedMaterialId, l.BatchNumber, l.Quantity, Unit = l.UoM.Symbol })
             .ToListAsync();
         var materialIds = loaded.Select(l => l.ResolvedMaterialId.Value).Distinct().ToList();
         var materials = await context.Materials.IgnoreQueryFilters().Where(m => materialIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
@@ -367,7 +367,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         {
             var row = Row(rows, materials[group.Key], group.First().Unit);
             row.New = group.Sum(l => l.Quantity ?? 0);
-            row.NewBatches = group.Select(l => (l.BatchNumber ?? string.Empty).ToUpperInvariant()).Distinct().Count();
+            row.NewBatches = group.Select(l => OpeningBalanceBatches.Identity(l.Id, l.BatchNumber)).Distinct().Count();
         }
 
         return rows.Values.OrderBy(r => r.Kind).ThenBy(r => r.Code).ToList();
@@ -458,7 +458,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         }
 
         // 2. Load the counted stock as new batches.
-        foreach (var group in toLoad.GroupBy(l => (Material: l.ResolvedMaterialId!.Value, Batch: l.BatchNumber.Trim().ToUpperInvariant())))
+        foreach (var group in toLoad.GroupBy(l => (Material: l.ResolvedMaterialId!.Value, Identity: OpeningBalanceBatches.Identity(l.Id, l.BatchNumber))))
         {
             var first = group.First();
             var total = group.Sum(l => l.Quantity ?? 0);
@@ -466,7 +466,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             {
                 Id = Guid.NewGuid(),
                 MaterialId = group.Key.Material,
-                BatchNumber = first.BatchNumber.Trim(),
+                BatchNumber = first.BatchNumber?.Trim() ?? string.Empty,
                 UoMId = first.UoMId!.Value,
                 TotalQuantity = total,
                 QuantityAssigned = total,
@@ -707,7 +707,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             if (line.BatchNumberDamaged)
                 blockers.Add($"Excel turned the batch number into a date (\"{line.SheetBatchNumber}\"). Type the real batch number.");
             else if (string.IsNullOrWhiteSpace(line.BatchNumber))
-                blockers.Add("No batch number, and no GRN to use instead.");
+                warnings.Add("No supplier batch or GRN was supplied. This row is retained as separate opening stock without a batch number.");
             if (line.ExpiryDate is { } expiry && expiry < thisMonth)
                 warnings.Add($"Expired ({expiry:MMM yyyy}).");
             if (line.ManufacturingDate is { } made && line.ExpiryDate is { } expires && made > expires)
@@ -728,7 +728,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         var loading = lines
             .Where(l => l.Status is StockMigrationLineStatus.Ok or StockMigrationLineStatus.Warning && l.ResolvedMaterialId.HasValue)
             .ToList();
-        foreach (var batch in loading.GroupBy(l => (l.ResolvedMaterialId, (l.BatchNumber ?? string.Empty).Trim().ToUpperInvariant())))
+        foreach (var batch in loading.GroupBy(l => (l.ResolvedMaterialId, Identity: OpeningBalanceBatches.Identity(l.Id, l.BatchNumber))))
         {
             if (batch.Select(l => (l.ManufacturingDate, l.ExpiryDate)).Distinct().Count() > 1)
                 foreach (var line in batch)
