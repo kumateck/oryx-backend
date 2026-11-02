@@ -230,6 +230,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
     public async Task<Result> UpdateLine(Guid id, Guid lineId, UpdateStockMigrationLineRequest request)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await LockDraft(id);
         var migration = await Draft(id);
         if (migration.IsFailure)
             return migration.Error;
@@ -254,11 +256,14 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
         await Check(migration.Value);
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
         return Result.Success();
     }
 
     public async Task<Result> BulkUpdate(Guid id, BulkUpdateStockMigrationLinesRequest request)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await LockDraft(id);
         var migration = await Draft(id);
         if (migration.IsFailure)
             return migration.Error;
@@ -272,11 +277,14 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         }
         await Check(migration.Value);
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
         return Result.Success();
     }
 
     public async Task<Result> UpdateUnits(Guid id, UpdateStockMigrationUnitsRequest request)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await LockDraft(id);
         var migration = await Draft(id);
         if (migration.IsFailure)
             return migration.Error;
@@ -286,16 +294,20 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         migration.Value.VolumeUnit = volume;
         await Check(migration.Value);
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
         return Result.Success();
     }
 
     public async Task<Result> Recheck(Guid id)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await LockDraft(id);
         var migration = await Draft(id);
         if (migration.IsFailure)
             return migration.Error;
         await Check(migration.Value);
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
         return Result.Success();
     }
 
@@ -363,6 +375,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
     public async Task<Result> Approve(Guid id, Guid userId)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await LockDraft(id);
         var found = await Draft(id);
         if (found.IsFailure)
             return found.Error;
@@ -373,6 +387,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         if (blocked > 0)
         {
             await context.SaveChangesAsync();
+            await transaction.CommitAsync();
             return Error.Validation("StockMigration.Blocked", $"{blocked} row(s) still need fixing or leaving out before the stock can be approved.");
         }
 
@@ -392,8 +407,6 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             .ToDictionary(x => x.Item1, x => x.Item2);
         var now = DateTime.UtcNow;
         var stamp = $"Stock migration {now:dd MMM yyyy}";
-
-        await using var transaction = await context.Database.BeginTransactionAsync();
 
         // Claim the draft before touching stock: the row stays locked until commit, so a second approval made
         // at the same moment waits here and then finds it no longer a draft.
@@ -463,7 +476,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                 DateReceived = now,
                 DateApproved = now,
                 ManufacturingDate = first.ManufacturingDate,
-                ExpiryDate = first.ExpiryDate,
+                ExpiryDate = OpeningBalanceDates.ExpiryMonthEnd(first.ExpiryDate),
             };
             context.MaterialBatches.Add(batch);
 
@@ -521,6 +534,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
     public async Task<Result> Discard(Guid id)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await LockDraft(id);
         var migration = await context.StockMigrations.FirstOrDefaultAsync(m => m.Id == id);
         if (migration == null)
             return NotFound;
@@ -532,6 +547,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             .ExecuteUpdateAsync(set => set
                 .SetProperty(m => m.Status, StockMigrationStatus.Discarded)
                 .SetProperty(m => m.UpdatedAt, DateTime.UtcNow));
+        await transaction.CommitAsync();
         return discarded == 1
             ? Result.Success()
             : Error.Conflict("StockMigration.NotDraft", "Only a migration that has not been approved can be discarded.");
@@ -543,6 +559,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
     /// </summary>
     private async Task Check(StockMigration migration)
     {
+        OpeningBalanceDates.Reconcile(migration.Lines);
         var lines = migration.Lines;
         var department = await context.Departments.IgnoreQueryFilters().Where(d => d.Id == migration.DepartmentId).Select(d => d.Name).FirstAsync();
         var stores = await Stores(migration.DepartmentId);
@@ -664,12 +681,12 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                 {
                     storage = departmentUnit;
                     if (sheetUnit != null && Family(sheetUnit.Symbol) != Family(storage.Symbol))
-                        warnings.Add($"The sheet says {line.UnitSymbol}, but {department} keeps {material.Code} in {storage.Symbol}, so the quantity is read as {SheetUnitFor(migration, storage)}.");
+                        blockers.Add($"The sheet unit {line.UnitSymbol} conflicts with the material-department unit {storage.Symbol}. Correct the row or department linkage before approval.");
                 }
                 else
                 {
                     storage = sheetUnit;
-                    warnings.Add($"{material.Code} is not set up for {department}.");
+                    blockers.Add($"{material.Code} is not linked to {department}. Create its material-department link before approving opening balances.");
                     if (storage == null)
                         blockers.Add(string.IsNullOrWhiteSpace(line.UnitSymbol) ? "No unit." : $"\"{line.UnitSymbol}\" is not a unit in the system.");
                 }
@@ -694,9 +711,9 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             if (line.ExpiryDate is { } expiry && expiry < thisMonth)
                 warnings.Add($"Expired ({expiry:MMM yyyy}).");
             if (line.ManufacturingDate is { } made && line.ExpiryDate is { } expires && made > expires)
-                warnings.Add("The manufacturing date is after the expiry date.");
+                blockers.Add("The manufacturing date is after the expiry date.");
             if (line.ManufacturingDate is { } future && future > thisMonth)
-                warnings.Add("The manufacturing date is in the future.");
+                blockers.Add("The manufacturing date is in the future.");
 
             line.Blockers = Join(blockers);
             line.Warnings = Join(warnings);
@@ -821,6 +838,9 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             .SelectMany(l => l.Racks.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase))
             .SelectMany(r => r.Shelves.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase))
             .FirstOrDefault();
+
+    private Task LockDraft(Guid id) => context.Database.ExecuteSqlInterpolatedAsync(
+        $"SELECT pg_advisory_xact_lock(hashtext({"opening-balance:" + id}))");
 
     private async Task<Result<StockMigration>> Draft(Guid id)
     {

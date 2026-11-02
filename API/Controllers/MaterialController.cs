@@ -1066,23 +1066,21 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     /// <summary>
-    /// Imports material stock from an Excel file.
+    /// Legacy direct stock import is disabled. Use stock-migrations to save a draft,
+    /// correct its rows and approve opening balances with the separate permissions.
     /// </summary>
     /// <param name="file">The uploaded Excel file containing materials.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload/stock")]
+    [Authorize(PermissionKeys.CanViewOpeningBalances)]
+    [Authorize(PermissionKeys.CanUploadOpeningBalances)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadMaterialStock(IFormFile file)
+    public IResult UploadMaterialStock(IFormFile file)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null)
-            return TypedResults.Unauthorized();
-
-        var result = await repository.ImportMaterialStockFromExcel(file);
-
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        return Result.Failure(Error.Validation("Stock.DraftRequired",
+            "Upload material stock as a draft in Upload Center, correct and verify the rows, then approve it as opening balances. Direct stock uploads are disabled.")).ToProblemDetails();
     }
 
     /// <summary>
