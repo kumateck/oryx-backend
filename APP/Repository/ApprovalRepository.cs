@@ -166,9 +166,19 @@ public class ApprovalRepository(
         Guid modelId,
         Guid userId,
         List<Guid> roleIds,
-        string comments = null
+        string comments = null,
+        int? contentRevision = null
     )
     {
+        if (modelType == "StockRequisition" && context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => ApproveItem(modelType, modelId, userId, roleIds, comments, contentRevision));
+        if (modelType == "StockRequisition")
+        {
+            var revision = await context.Requisitions.Where(item => item.Id == modelId).Select(item => item.ContentRevision).SingleOrDefaultAsync();
+            if (revision > 0 && contentRevision != revision)
+                return Error.Conflict("Approval.StaleRevision", "This stock requisition was repaired. Reload and review its current quantities before deciding.");
+        }
+
         if (modelType == nameof(StockDiscrepancy))
             return await StockDiscrepancyApprovalHandler.ReviewAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
@@ -2230,9 +2240,19 @@ public class ApprovalRepository(
         Guid userId,
         List<Guid> roleIds,
         string comments = null,
-        ResponseRejectionOutcome? responseOutcome = null
+        ResponseRejectionOutcome? responseOutcome = null,
+        int? contentRevision = null
     )
     {
+        if (modelType == "StockRequisition" && context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => RejectItem(modelType, modelId, userId, roleIds, comments, responseOutcome, contentRevision));
+        if (modelType == "StockRequisition")
+        {
+            var revision = await context.Requisitions.Where(item => item.Id == modelId).Select(item => item.ContentRevision).SingleOrDefaultAsync();
+            if (revision > 0 && contentRevision != revision)
+                return Error.Conflict("Approval.StaleRevision", "This stock requisition was repaired. Reload and review its current quantities before deciding.");
+        }
+
         if (modelType == nameof(StockDiscrepancy))
             return await StockDiscrepancyApprovalHandler.ReviewAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
@@ -3470,6 +3490,7 @@ public class ApprovalRepository(
                         new ApprovalEntity
                         {
                             ModelType = "StockRequisition",
+                            ContentRevision = r.ContentRevision,
                             Id = r.Id,
                             CreatedAt = r.CreatedAt,
                             Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
@@ -4200,6 +4221,7 @@ public class ApprovalRepository(
                 return new ApprovalEntity
                 {
                     ModelType = modelType,
+                    ContentRevision = requisition.ContentRevision,
                     Id = modelId,
                     Code = requisition.Code,
                     CreatedAt = requisition.CreatedAt,
@@ -4834,6 +4856,8 @@ public class ApprovalRepository(
         Approval approval
     )
     {
+        var contentRevision = await context.Requisitions.Where(item => item.Id == requisitionId)
+            .Select(item => item.ContentRevision).SingleAsync();
         var exists = await context.RequisitionApprovals.AnyAsync(a =>
             a.RequisitionId == requisitionId && a.ApprovalId == approval.Id
         );
@@ -4846,6 +4870,7 @@ public class ApprovalRepository(
                 Required = stage.Required,
                 Order = stage.Order,
                 RequisitionId = requisitionId,
+                ContentRevision = contentRevision,
                 CreatedAt = DateTime.UtcNow,
                 ApprovalId = approval.Id,
                 UserId = stage.UserId,

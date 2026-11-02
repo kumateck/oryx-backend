@@ -608,7 +608,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
         var reservedQuantities = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .AsSplitQuery()
             .Where(r =>
                 materialIds.Contains(r.MaterialBatch.MaterialId)
@@ -810,7 +810,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
         var reservedQuery = context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId) && r.DeletedAt == null);
 
         if (departmentId.HasValue)
@@ -2103,8 +2103,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .SumAsync(s => s.Quantity);
 
         var reservedQuantity = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
-            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId)
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
+            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId && r.DeletedAt == null)
             .SumAsync(r => r.Quantity);
 
         return Math.Max(totalQuantity - reservedQuantity, 0);
@@ -2647,7 +2647,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var reservedQuantities = await context
             .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters()
+            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             // MaterialBatch auto-includes its own ShelfMaterialBatches collection
             // (see ConfigureAutoIncludes); loading it here is both unused and,
             // combined with AsSplitQuery, expensive. Explicit includes below cover
@@ -2673,7 +2673,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 r.MaterialBatch.MaterialId == materialId
                 && r.WarehouseId == warehouseId
                 && r.ProductionScheduleProductId == productionScheduleProductId
-                && r.DeletedAt == null
+                && r.DeletedAt == null && r.ReleasedAt == null
             )
             .ToListAsync();
 
@@ -2715,7 +2715,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     r.MaterialBatch.MaterialId == materialId
                     && r.WarehouseId == warehouseId
                     && r.ProductionScheduleProductId == productionScheduleProductId
-                    && r.DeletedAt != null
+                    && r.DeletedAt != null && r.ReleasedAt == null
                 )
                 .ToListAsync()
         );
@@ -3905,7 +3905,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
     {
         var reservedMaterialQuery = context
             .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters()
+            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .Where(r =>
                 r.MaterialBatch.MaterialId == materialId
                 && r.DeletedAt == null
