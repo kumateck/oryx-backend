@@ -4464,7 +4464,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     Id = Guid.NewGuid(),
                     MaterialId = material.Id,
                     BatchNumber = batchNo,
-                    TotalQuantity = qty,
+                    TotalQuantity = 0,
                     Status = BatchStatus.Available,
                     DateReceived = DateTime.UtcNow,
                     ExpiryDate = ParseDate(expiryDateStr),
