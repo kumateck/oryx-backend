@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using APP.Extensions;
 using APP.Repository;
 using APP.Services.Email;
@@ -62,6 +63,58 @@ public class ForgotPasswordEmailNotConfiguredTests
         Assert.Single(context.PasswordResets);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Transport_timeout_returns_503_and_revokes_only_the_undelivered_reset(bool socketTimeout)
+    {
+        await using var context = Context();
+        var user = await context.Users.SingleAsync();
+        var previous = new PasswordReset { Id = Guid.NewGuid(), UserId = user.Id,
+            KeyName = "previous-delivered-key", Token = "previous-token", CreatedAt = DateTime.UtcNow };
+        context.PasswordResets.Add(previous);
+        await context.SaveChangesAsync();
+        Exception failure = socketTimeout ? new SocketException((int)SocketError.TimedOut)
+            : new IOException("SMTP read failed", new TimeoutException("Timeout during reading attempt"));
+
+        var result = await Repository(context, new FakeEmail(configured: true, failure))
+            .ForgotPassword(new ForgotPasswordRequest { Email = KnownEmail });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Email.Unavailable", result.Error.Code);
+        Assert.DoesNotContain(failure.Message, result.Error.Description);
+        var http = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result.ToProblemDetails());
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, http.StatusCode);
+        context.ChangeTracker.Clear();
+        Assert.Equal(previous.Id, (await context.PasswordResets.SingleAsync()).Id);
+        var failedReset = await context.PasswordResets.IgnoreQueryFilters().SingleAsync(item => item.Id != previous.Id);
+        Assert.NotNull(failedReset.DeletedAt);
+    }
+
+    [Fact]
+    public async Task Smtp_authentication_failure_returns_safe_503()
+    {
+        await using var context = Context();
+        var failure = new MailKit.Security.AuthenticationException("535 provider account details");
+        var result = await Repository(context, new FakeEmail(configured: true, failure))
+            .ForgotPassword(new ForgotPasswordRequest { Email = KnownEmail });
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Email.Unavailable", result.Error.Code);
+        Assert.DoesNotContain("535", result.Error.Description);
+        Assert.Empty(await context.PasswordResets.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Programming_errors_are_not_reported_as_smtp_outages()
+    {
+        await using var context = Context();
+        var failure = new InvalidOperationException("programming error");
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Repository(context, new FakeEmail(configured: true, failure))
+                .ForgotPassword(new ForgotPasswordRequest { Email = KnownEmail }));
+        Assert.Same(failure, thrown);
+    }
+
     [Fact]
     public void Smtp_settings_report_whether_email_can_be_sent()
     {
@@ -107,7 +160,7 @@ public class ForgotPasswordEmailNotConfiguredTests
     }
 
     // Behaves like EmailService: on a server without SMTP settings, SendMail throws.
-    private sealed class FakeEmail(bool configured) : IEmailService
+    private sealed class FakeEmail(bool configured, Exception? failure = null) : IEmailService
     {
         public List<string> Sent { get; } = [];
         public bool IsConfigured => configured;
@@ -116,6 +169,7 @@ public class ForgotPasswordEmailNotConfiguredTests
             List<(byte[] fileContent, string fileName, string fileType)> attachments)
         {
             if (!configured) SmtpSettings.Read(_ => null);
+            if (failure is not null) throw failure;
             Sent.Add(to);
         }
 
