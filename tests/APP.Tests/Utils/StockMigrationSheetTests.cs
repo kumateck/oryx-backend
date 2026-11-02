@@ -185,4 +185,56 @@ public class StockMigrationSheetTests
     [Fact]
     public void Does_not_convert_between_weight_and_volume() =>
         Assert.Null(StockMigrationSheet.Factor("kg", "ml"));
+
+    [Theory]
+    [InlineData("AR No.")]
+    [InlineData("AR Number")]
+    [InlineData("AR Numbers")]
+    [InlineData("ARD Number")]
+    [InlineData("ARD Numbers")]
+    public void Reads_available_AR_numbers_from_recognised_headers(string header)
+    {
+        using var package = Workbook(sheet =>
+        {
+            sheet.Cells[1, 8].Value = header;
+            Row(sheet, 2, "W", "S", "B1", "mg", "RMA014", "Aerosil", null, "QCD/RM/26/314", null, null, 104d);
+        });
+        Assert.Equal("QCD/RM/26/314", Assert.Single(StockMigrationSheet.Read(package)).ArNumber);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("N/A")]
+    [InlineData("na")]
+    [InlineData("nil")]
+    [InlineData("none")]
+    [InlineData("NULL")]
+    [InlineData("-")]
+    [InlineData("--")]
+    public void Unavailable_AR_numbers_are_null(string ar)
+    {
+        using var package = Workbook(sheet => Row(sheet, 2, "W", "S", "B1", "mg", "RMA014", "Aerosil", null, ar, null, null, 104d));
+        Assert.Null(Assert.Single(StockMigrationSheet.Read(package)).ArNumber);
+    }
+
+    [Fact]
+    public void An_unavailable_AR_cell_uses_an_available_AR_from_the_GRN_cell()
+    {
+        using var package = Workbook(sheet => Row(sheet, 2, "W", "S", "B1", "mg", "RMA014", "Aerosil", "NWH/RM/26/095 QCD/RM/26/314", "N/A", null, null, 104d));
+        var line = Assert.Single(StockMigrationSheet.Read(package));
+        Assert.Equal("QCD/RM/26/314", line.ArNumber);
+        Assert.Equal("NWH/RM/26/095", line.Grn);
+    }
+
+    [Theory]
+    [InlineData("QCD/RM/26/314")]
+    [InlineData("NQC/RM/23/227")]
+    [InlineData("QCD/RM/26/")]
+    public void Available_AR_values_are_preserved_without_filling_or_replacing_them(string ar)
+    {
+        using var package = Workbook(sheet => Row(sheet, 2, "W", "S", "B1", "mg", "RMA014", "Aerosil", "NWH/RM/26/095 QCD/RM/26/999", ar, null, null, 104d));
+        Assert.Equal(ar, Assert.Single(StockMigrationSheet.Read(package)).ArNumber);
+    }
 }
