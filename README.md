@@ -313,6 +313,8 @@ Details about the project's license.
 
 Email delivery now requires `SMTP_HOST`, `SMTP_USERNAME`, and `SMTP_PASSWORD` in the deployed environment. Set optional `SMTP_PORT` (default 587) and `SMTP_FROM` (default SMTP_USERNAME) for the authorized sender. A 535 authentication failure must be resolved by verifying the deployed account and secret with the mail provider; do not log the password or mark a vendor request as sent after failure.
 
+SMTP connection attempts now have a 30-second deadline and network reads/writes have a 30-second inactivity timeout. Port 465 uses implicit TLS; other ports retain STARTTLS negotiation. TLS versions use the operating system defaults, including TLS 1.3, with certificate validation enabled. Password-reset transport failures return a safe HTTP 503 and revoke only the failed attempt’s reset key. See [SMTP timeout diagnosis and recovery](docs/email-timeout-review.md).
+
 The unified My Pending Approvals interface uses the self-scoped generic and QC queues. Generic detail and action endpoints require an active assigned stage; staff requisitions and production orders now support audited decisions. See [approval workflow documentation](docs/workflows.md).
 
 Full Procedures Question authoring accepts exact `calculationReferences`
