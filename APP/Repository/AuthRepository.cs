@@ -95,19 +95,31 @@ public class AuthRepository(IEmailService emailService, ApplicationDbContext con
 
         var key = Guid.NewGuid().ToString();
 
-        await context.PasswordResets.AddAsync(new PasswordReset
+        var reset = new PasswordReset
         {
             UserId = user.Id,
             Token = token,
             KeyName = key,
             CreatedAt = DateTime.UtcNow
-        });
+        };
+        await context.PasswordResets.AddAsync(reset);
 
         await context.SaveChangesAsync();
 
         var url = $"{partialUrl}/reset-password?key={key}";
 
-        emailService.SendMail(user.FirstName, user.Email, "Password Reset", url, []);
+        try
+        {
+            emailService.SendMail(user.FirstName, user.Email, "Password Reset", url, []);
+        }
+        catch (Exception ex) when (EmailTransportFailure.Is(ex))
+        {
+            // Keep the audit row, but make this failed/ambiguous delivery's key unusable.
+            // Other reset links are unaffected. SMTP work is never retried inside the request.
+            context.PasswordResets.Remove(reset);
+            await context.SaveChangesAsync();
+            return AuthErrors.EmailUnavailable;
+        }
         return Result.Success();
     }
 

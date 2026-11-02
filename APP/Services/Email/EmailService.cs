@@ -1,22 +1,38 @@
 using APP.Services.Documents;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using DOMAIN.Entities.Notifications;
 using Microsoft.Extensions.Logging;
 using MimeKit;
 
 namespace APP.Services.Email;
 
-public class EmailService(ILogger<EmailService> logger) : IEmailService
+public class EmailService : IEmailService
 {
+    private readonly ILogger<EmailService> logger;
+    private readonly Func<SmtpSettings> readSettings;
+    private readonly Func<SmtpClient> createClient;
+
+    public EmailService(ILogger<EmailService> logger)
+        : this(logger, SmtpSettings.FromEnvironment, () => new SmtpClient()) { }
+
+    internal EmailService(ILogger<EmailService> logger, Func<SmtpSettings> readSettings, Func<SmtpClient> createClient)
+    {
+        this.logger = logger;
+        this.readSettings = readSettings;
+        this.createClient = createClient;
+    }
+
     public bool IsConfigured => SmtpSettings.IsConfigured(Environment.GetEnvironmentVariable);
 
     public void SendMail(string name, string to, string subject, string body, List<(byte[] fileContent, string fileName, string fileType)> attachments)
     {
-        var smtp = SmtpSettings.FromEnvironment();
+        var smtp = readSettings();
 
+        var stage = "preparing";
         try
         {
-            var message = new MimeMessage();
+            using var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Kumateck LTD", smtp.Sender));
             message.To.Add(new MailboxAddress(name, to));
             message.Subject = subject;
@@ -41,19 +57,34 @@ public class EmailService(ILogger<EmailService> logger) : IEmailService
             }
             message.Body = multipart;
 
-            var client = new SmtpClient();
-            client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-            client.Connect(smtp.Host, smtp.Port, false);
+            using var client = createClient();
+            // Retain MailKit's OS-managed TLS defaults so secure TLS 1.3 endpoints can negotiate.
+            client.Timeout = 30_000; // Bound inactive network reads/writes, including the SMTP greeting.
+            stage = "connecting";
+            using (var connectionDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+            {
+                var security = smtp.Port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable;
+                client.Connect(smtp.Host, smtp.Port, security, connectionDeadline.Token);
+            }
+            stage = "authenticating";
             client.Authenticate(smtp.Username, smtp.Password);
+            stage = "sending";
             client.Send(message);
-            client.Disconnect(true);
 
+            // Send returning means SMTP accepted the message. A failed QUIT must not make callers retry it.
             logger.LogInformation("Email sent to {To}", to);
+            stage = "disconnecting";
+            try { client.Disconnect(true); }
+            catch (Exception ex) when (EmailTransportFailure.Is(ex))
+            {
+                logger.LogWarning(ex, "SMTP disconnect failed after email was accepted on {Host}:{Port}", smtp.Host, smtp.Port);
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError("Error sending email: {ExMessage}", ex.Message);
-            throw new Exception($"Error sending email: {ex.Message}");
+            logger.LogError(ex, "Error sending email during SMTP {Stage} on {Host}:{Port} ({ErrorType})",
+                stage, smtp.Host, smtp.Port, ex.GetType().Name);
+            throw;
         }
     }
 
