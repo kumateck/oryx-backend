@@ -14,8 +14,7 @@ namespace API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v{version:apiVersion}/stock-migrations")]
-// Approving replaces a department's stock, so every endpoint needs the key that changes stock (the desktop gates on it too).
-[Authorize(PermissionKeys.CanCreateMaterialStockAdjustment)]
+[Authorize(PermissionKeys.CanViewOpeningBalances)]
 // Someone signed in to a department acts only for that department; someone with no department may act for any.
 public class StockMigrationController(IStockMigrationRepository repository, ICurrentUserService user) : ControllerBase
 {
@@ -28,6 +27,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
     /// <param name="massUnit">The unit the sheet's weights are written in: kg, g or mg.</param>
     /// <param name="volumeUnit">The unit the sheet's liquids are written in: L or ml.</param>
     [HttpPost]
+    [Authorize(PermissionKeys.CanUploadOpeningBalances)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -82,6 +82,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
 
     /// <summary>Corrects one row; every row is checked again.</summary>
     [HttpPut("{id:guid}/lines/{lineId:guid}")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -95,6 +96,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
 
     /// <summary>Sets the shelf of, or leaves out, many rows at once.</summary>
     [HttpPut("{id:guid}/lines")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> BulkUpdate(Guid id, [FromBody] BulkUpdateStockMigrationLinesRequest request)
@@ -107,6 +109,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
 
     /// <summary>Changes the units the sheet's quantities are read in.</summary>
     [HttpPut("{id:guid}/units")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpdateUnits(Guid id, [FromBody] UpdateStockMigrationUnitsRequest request)
@@ -119,6 +122,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
 
     /// <summary>Checks every row again, for example after adding a missing shelf or material.</summary>
     [HttpPost("{id:guid}/recheck")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> Recheck(Guid id)
     {
@@ -144,6 +148,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
     /// rows in its place. Refused while any row is blocked.
     /// </summary>
     [HttpPost("{id:guid}/approve")]
+    [Authorize(PermissionKeys.CanApproveOpeningBalances)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -159,6 +164,7 @@ public class StockMigrationController(IStockMigrationRepository repository, ICur
 
     /// <summary>Discards a migration that has not been approved.</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> Discard(Guid id)
