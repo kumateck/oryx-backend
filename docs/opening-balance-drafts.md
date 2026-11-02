@@ -27,6 +27,16 @@ drafts cannot be changed or approved again. Approval retains the existing
 replacement behavior for the department/material kind; users must review the
 comparison and confirmation before posting.
 
+Supplier batch and GRN values may be absent from a counted opening-stock row.
+Leave those values blank rather than inventing identifiers. Such a row carries
+a review warning and posts as its own internal stock record; separate unbatched
+source rows are never merged, reconciled to each other's dates, or counted as
+one batch in the comparison. Existing supplier batches retain the normal
+same-material/batch grouping and date validation. Excel-damaged batch values
+still block approval. AR references and the migration line-to-stock record link
+remain available for traceability. This rule does not change material masters'
+batch settings or the receiving/production workflows.
+
 The legacy repository importer initializes a new batch total at zero before its
 normal per-row accumulation, correcting the doubled first quantity. Direct HTTP
 access to that importer is disabled; repository regression coverage remains.
@@ -42,6 +52,21 @@ before using the new permissions and flow. The desktop operator guide is
 `MaterialStockImportTests`, and existing `StockMigrationSheetTests` cover the
 reconciliation rule, distinct policies/catalog, disabled direct upload,
 first-row count regression and sheet parsing.
+
+`OpeningBalanceBatchesTests` verifies that known batch identities still group
+case-insensitively and absent batches keep source rows separate.
+`OpeningBalanceUnbatchedImportTests` uploads two real workbook rows through the
+repository, verifies blank batch/GRN retention, independent dates and AR values,
+two comparison stock records and zero stock/bin-card writes. The focused
+migration suite passes 31 tests.
+
+On 2 November, three additional prepared workbooks (84 Ointment packaging,
+57 Beta raw and 96 Beta packaging rows) were trial-uploaded through the actual
+repository in `oryx_migration_20261101`. Every prepared quantity was verified.
+Both trials rolled back all draft writes and any temporary department-link/UOM
+setup. Five blank source material codes intentionally remain approval blockers;
+no source code was substituted. No approval, client deployment or stock posting
+was performed by that trial.
 
 `OpeningBalanceRehearsalTests` is an opt-in integration rehearsal against the
 hardcoded disposable database `oryx_rehearsal_20261101_203716`. Enable only with
