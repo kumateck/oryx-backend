@@ -214,6 +214,10 @@ public static class PermissionSubmodules
 
 public static class PermissionKeys
 {
+    public const string CanViewOpeningBalances = "CanViewOpeningBalances";
+    public const string CanUploadOpeningBalances = "CanUploadOpeningBalances";
+    public const string CanCorrectOpeningBalances = "CanCorrectOpeningBalances";
+    public const string CanApproveOpeningBalances = "CanApproveOpeningBalances";
     // Procurement
     public const string CanViewPurchaseRequisitions = "CanViewPurchaseRequisitions";
     public const string CanSourcePurchaseRequisition = "CanSourcePurchaseRequisition";
@@ -1075,6 +1079,12 @@ public static class PermissionUtils
                 new PermissionDto(module, submodule, key, name, CreateDescription(name))
             );
         };
+
+        // Opening-balance drafts and posting are separately permissioned.
+        addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanViewOpeningBalances);
+        addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanUploadOpeningBalances);
+        addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanCorrectOpeningBalances);
+        addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanApproveOpeningBalances);
 
         // Procurement
         addPermission(
