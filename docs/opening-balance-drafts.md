@@ -36,6 +36,13 @@ before using the new permissions and flow. The desktop operator guide is
 `oryx-live-desktop/docs/fresh-opening-balances.md`; it records the authorized
 1 November 2026 local reset, backup, complete table manifest and four stock files.
 
+AR references are read from the workbook's `AR No.`, `AR Number(s)` or
+`ARD Number(s)` column. Available values are retained in `ArNumber`, returned
+with draft rows and searchable case-insensitively. Blank, N/A, nil, none and
+literal null markers become database null, with no fabricated replacement.
+When the dedicated cell is unavailable, an AR explicitly supplied alongside
+the GRN is still retained. Posting carries supplied AR values to bin cards.
+
 ## Verification
 
 `OpeningBalanceDatesTests`, `OpeningBalancePermissionTests`,

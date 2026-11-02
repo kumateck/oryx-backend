@@ -154,6 +154,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                 || EF.Functions.ILike(l.SheetMaterialName, term)
                 || EF.Functions.ILike(l.BatchNumber, term)
                 || EF.Functions.ILike(l.Grn, term)
+                || EF.Functions.ILike(l.ArNumber, term)
             );
         }
 
