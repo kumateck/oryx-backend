@@ -41,6 +41,8 @@ internal static class ProductionMaterialRequisitionRules
 
     internal static async Task<Result> Validate(ApplicationDbContext context, Guid batchId, List<CreateRequisitionItemRequest> items)
     {
+        var units = await ProductionMaterialUnitRules.ValidateStock(context, batchId, items);
+        if (units.IsFailure) return units;
         if (items.Count == 0 || items.GroupBy(item => item.MaterialId).Any(group => group.Count() != 1))
             return Error.Validation("Requisition.Materials", "Choose each required material exactly once.");
         var materials = await context.Materials.Where(item => items.Select(line => line.MaterialId).Contains(item.Id))

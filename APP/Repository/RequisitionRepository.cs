@@ -751,6 +751,11 @@ public class RequisitionRepository(
                 "Stock requisition has no production schedule product associated, contact admin."
             );
 
+        var materialUnits = await ProductionMaterialUnitRules.ValidateStock(context, stockRequisition.ProductionScheduleProductId.Value,
+            stockRequisition.Items.Select(item => new CreateRequisitionItemRequest
+                { MaterialId = item.MaterialId, UomId = item.UoMId, Quantity = item.Quantity }).ToList());
+        if (materialUnits.IsFailure) return materialUnits;
+
         var user = await context
             .Users.Include(u => u.Department)
                 .ThenInclude(d => d.Warehouses)

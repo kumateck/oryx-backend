@@ -60,6 +60,17 @@ No migration or release has been applied to customer data by this implementation
 
 ## Data integrity rules
 
+Raw material stock units come from the product department's material linkage,
+including counted units such as `piece`. Saving a BOM rejects a stale or different
+unit before removing any existing formula. Stock requisition creation and issue
+also reject raw lines, applied units or live reservations that disagree with that
+linkage. For a legacy batch, incompatible BOM units or a mismatch between the
+requested quantity and its existing reservation require the operator to save the
+correct product BOM and apply **Repair BOM**, then reload the batch. Repair keeps
+its existing preview, permission, reason, audit and renewed approval requirements.
+Physical stock units are never silently relabelled or converted from mass to count;
+incompatible stock evidence still blocks repair and needs reconciliation.
+
 New production runs capture raw and packaging requirements when they start. Later
 product edits do not change those applied requirements until explicit repair.
 The raw/package stock readers use the same applied version as requisition
