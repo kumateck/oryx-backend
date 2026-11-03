@@ -1905,6 +1905,15 @@ public class ProductionScheduleRepository(
         CreateBatchManufacturingRecord request
     )
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => CreateBatchManufacturingRecord(request));
+        // Starting production creates an unnumbered placeholder; uniqueness applies once a number is assigned.
+        if (!string.IsNullOrWhiteSpace(request.BatchNumber))
+        {
+            var number = await BmrBatchNumberRules.Validate(context, request.BatchNumber);
+            if (number.IsFailure) return number.Error;
+            request.BatchNumber = request.BatchNumber.Trim();
+        }
         var batchRecord = mapper.Map<BatchManufacturingRecord>(request);
         await context.BatchManufacturingRecords.AddAsync(batchRecord);
         await context.SaveChangesAsync();
@@ -2831,6 +2840,8 @@ public class ProductionScheduleRepository(
         Guid id
     )
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => UpdateBatchManufacturingRecord(request, id));
         var batchRecord = await context
             .BatchManufacturingRecords.Include(batchManufacturingRecord =>
                 batchManufacturingRecord.ProductionActivityStep
@@ -2841,6 +2852,9 @@ public class ProductionScheduleRepository(
             return ProductErrors.NotFound(id);
         }
 
+        var number = await BmrBatchNumberRules.Validate(context, request.BatchNumber, id);
+        if (number.IsFailure) return number;
+        request.BatchNumber = request.BatchNumber.Trim();
         mapper.Map(request, batchRecord);
         batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
         batchRecord.ProductionActivityStep.StartedAt = DateTime.UtcNow;
@@ -2860,12 +2874,16 @@ public class ProductionScheduleRepository(
             context.BatchPackagingRecords.Update(batchPackingRecord);
         }
 
+        var scheduleBatch = await context.ProductionScheduleProducts.FirstOrDefaultAsync(batch => batch.Id == batchRecord.ProductionScheduleProductId);
+        if (scheduleBatch is not null) scheduleBatch.BatchNumber = request.BatchNumber;
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
     public async Task<Result> IssueBatchManufacturingRecord(Guid id, Guid userId)
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => IssueBatchManufacturingRecord(id, userId));
         var batchRecord = await context
             .BatchManufacturingRecords.IgnoreQueryFilters()
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep)
@@ -2875,6 +2893,10 @@ public class ProductionScheduleRepository(
             return ProductErrors.NotFound(id);
         }
 
+        if (batchRecord.DeletedAt.HasValue)
+            return Error.Conflict("Bmr.Retired", "This BMR has been retired and cannot be issued.");
+        var number = await BmrBatchNumberRules.Validate(context, batchRecord.BatchNumber, id);
+        if (number.IsFailure) return number;
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;
         batchRecord.IssuedById = userId;
