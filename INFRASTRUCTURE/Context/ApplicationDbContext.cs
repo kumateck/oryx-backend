@@ -1142,6 +1142,7 @@ public partial class ApplicationDbContext(
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
+        ConfigureProductionMaterials(modelBuilder);
         ConfigureRelationships(modelBuilder);
         ConfigureConstraints(modelBuilder);
     }
@@ -1506,7 +1507,8 @@ public partial class ApplicationDbContext(
 
         modelBuilder
             .Entity<RequisitionApproval>()
-            .HasQueryFilter(entity => entity.Requisition != null);
+            .HasQueryFilter(entity => entity.Requisition != null
+                && entity.ContentRevision == entity.Requisition.ContentRevision);
 
         #endregion
 
@@ -1612,7 +1614,7 @@ public partial class ApplicationDbContext(
 
         modelBuilder.Entity<Requisition>().HasQueryFilter(r => !r.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisition>().HasQueryFilter(r => !r.DeletedAt.HasValue);
-        modelBuilder.Entity<RequisitionItem>().HasQueryFilter(r => !r.Material.DeletedAt.HasValue);
+        modelBuilder.Entity<RequisitionItem>().HasQueryFilter(r => r.DeletedAt == null && !r.Material.DeletedAt.HasValue);
         modelBuilder
             .Entity<SourceRequisitionItem>()
             .HasQueryFilter(r => !r.SourceRequisition.DeletedAt.HasValue);

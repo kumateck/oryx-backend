@@ -14,13 +14,14 @@ public class StockIssueQuantityValidatorTests
     public void IssueRequiresReservationToEqualApprovedLine(decimal reserved, bool valid)
     {
         var materialId = Guid.NewGuid();
+        var unitId = Guid.NewGuid();
         var requisition = new Requisition
         {
-            Items = [new RequisitionItem { MaterialId = materialId, Quantity = 100 }],
+            Items = [new RequisitionItem { MaterialId = materialId, UoMId = unitId, Quantity = 100 }],
         };
         var reservations = new List<MaterialBatchReservedQuantity>
         {
-            new() { MaterialBatch = new MaterialBatch { MaterialId = materialId }, Quantity = reserved },
+            new() { MaterialBatch = new MaterialBatch { MaterialId = materialId }, UoMId = unitId, Quantity = reserved },
         };
 
         var result = StockIssueQuantityValidator.Validate(requisition, reservations);

@@ -1898,6 +1898,10 @@ public class WarehouseRepository(
 
     public async Task<Result> CreateSwapRequest(CreateSwapRequest request, Guid userId)
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => CreateSwapRequest(request, userId));
+        var allocation = await ProductionMaterialSwapRules.Validate(context, request);
+        if (allocation.IsFailure) return allocation;
         // Validate quantity balance
         if (!request.QuantityIsValid)
             return Error.Validation(
@@ -2191,6 +2195,7 @@ public class WarehouseRepository(
 
     public async Task<Result> ApproveSwapRequest(Guid swapRequestId, Guid approverId)
     {
+        await using var transaction = await ProductionMaterialTransaction.Begin(context);
         var swapRequest = await context
             .SwapRequests.IgnoreQueryFilters()
             .AsSplitQuery()
@@ -2213,6 +2218,18 @@ public class WarehouseRepository(
                 "Swap.AlreadyApproved",
                 "This swap request has already been approved."
             );
+        if (swapRequest.Status != SwapRequestStatus.Pending)
+            return Error.Conflict("Swap.Final", "This swap has already been decided and cannot be approved.");
+        var allocation = await ProductionMaterialSwapRules.Validate(context, new CreateSwapRequest
+        {
+            StockRequisitionId = swapRequest.StockRequisitionId, FirstWarehouseId = swapRequest.FirstWarehouseId,
+            SecondWarehouseId = swapRequest.SecondWarehouseId,
+            FirstSwapShelfMaterialBatches = swapRequest.FirstSwapShelfMaterialBatches.Select(item => new CreateSwapShelfMaterialBatch
+            { ShelfMaterialBatchId = item.ShelfMaterialBatchId, MaterialBatchId = item.MaterialBatchId, UoMId = item.UoMId, Quantity = item.Quantity }).ToList(),
+            SecondSwapShelfMaterialBatches = swapRequest.SecondSwapShelfMaterialBatches.Select(item => new CreateSwapShelfMaterialBatch
+            { ShelfMaterialBatchId = item.ShelfMaterialBatchId, MaterialBatchId = item.MaterialBatchId, UoMId = item.UoMId, Quantity = item.Quantity }).ToList(),
+        });
+        if (allocation.IsFailure) return allocation;
 
         if (
             swapRequest.FirstSwapShelfMaterialBatches.Sum(x => x.Quantity)
@@ -2223,7 +2240,6 @@ public class WarehouseRepository(
                 "The total quantities to swap do not match."
             );
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
 
         try
         {
@@ -2397,8 +2413,10 @@ public class WarehouseRepository(
                         var reservation = await context
                             .MaterialBatchReservedQuantities.IgnoreQueryFilters()
                             .FirstOrDefaultAsync(r =>
-                                r.ProductionScheduleProductId == productionScheduleProductId.Value
+                                r.DeletedAt == null && r.ReleasedAt == null
+                                && r.ProductionScheduleProductId == productionScheduleProductId.Value
                                 && r.MaterialBatchId == firstBatch.MaterialBatchId
+                                && r.WarehouseLocationShelfId == firstShelfBatches[firstBatch.ShelfMaterialBatchId].WarehouseLocationShelfId
                             );
 
                         if (reservation != null)
