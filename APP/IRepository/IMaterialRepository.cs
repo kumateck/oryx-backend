@@ -214,11 +214,13 @@ public interface IMaterialRepository
         Guid? materialCategoryId,
         string sortLabel,
         SortDirection? sortDirection,
-        Guid userId
+        Guid userId,
+        Guid? productId = null
     );
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(
         Guid materialId,
-        Guid userId
+        Guid userId,
+        Guid? productId = null
     );
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
