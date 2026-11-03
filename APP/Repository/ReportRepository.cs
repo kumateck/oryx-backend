@@ -5663,6 +5663,22 @@ public partial class ReportRepository(
 
         foreach (var r in reservations) { r.No = ++seq; events.Add(r); }
 
+        var releases = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AsNoTracking()
+            .Where(r => r.MaterialBatchId == materialBatchId && r.ReleasedAt.HasValue)
+            .Select(r => new BatchTraceabilityDto
+            {
+                No = 0,
+                EventType = "Reservation released",
+                EventDate = r.ReleasedAt.GetValueOrDefault(),
+                FromLocation = r.Warehouse.Name,
+                PerformedBy = r.LastUpdatedBy.FirstName + " " + r.LastUpdatedBy.LastName,
+                Quantity = r.Quantity,
+                UOM = r.UoM.Symbol,
+                ReferenceDocument = r.ProductionScheduleProduct.ProductionSchedule.Code,
+                Remarks = "Unissued stock released by batch configuration repair; see repair audit.",
+            }).ToListAsync();
+        foreach (var release in releases) { release.No = ++seq; events.Add(release); }
+
         var consumptions = await context.MaterialBatchEvents.IgnoreQueryFilters().AsNoTracking()
             .Where(e => e.BatchId == materialBatchId && e.Type == EventType.Consumed && !e.DeletedAt.HasValue)
             .Select(e => new BatchTraceabilityDto

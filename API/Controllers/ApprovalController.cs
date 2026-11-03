@@ -269,7 +269,8 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
             modelId,
             actorId,
             roleIds,
-            comments
+            comments,
+            body.ContentRevision
         );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
@@ -327,7 +328,8 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
             actorId,
             roleIds,
             comments,
-            body.ResponseRejectionOutcome
+            body.ResponseRejectionOutcome,
+            body.ContentRevision
         );
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }

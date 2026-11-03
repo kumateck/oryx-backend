@@ -17,9 +17,16 @@ internal static class StockIssueQuantityValidator
                 "A stock requisition cannot issue the same material more than once."
             );
 
-        var quantitiesByMaterial = reservations
-            .GroupBy(reservation => reservation.MaterialBatch.MaterialId)
-            .ToDictionary(group => group.Key, group => group.Sum(reservation => reservation.Quantity));
+        var quantitiesByMaterial = new Dictionary<Guid, decimal>();
+        foreach (var group in reservations.GroupBy(reservation => reservation.MaterialBatch.MaterialId))
+        {
+            var line = requisition.Items.FirstOrDefault(item => item.MaterialId == group.Key);
+            var values = group.Select(reservation => reservation.UoMId == line?.UoMId ? reservation.Quantity
+                : UomConverter.Convert(reservation.Quantity, reservation.UoM?.Symbol, line?.UoM?.Symbol)).ToList();
+            if (values.Any(value => !value.HasValue))
+                return Error.Validation("Stock.Units", "Reservation and requisition units cannot be reconciled.");
+            quantitiesByMaterial[group.Key] = values.Sum(value => value.GetValueOrDefault());
+        }
 
         foreach (var item in requisition.Items)
         {

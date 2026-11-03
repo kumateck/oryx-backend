@@ -17,6 +17,8 @@ public class ProductionActivityStepEventPublisher(
         Guid? updatedByUserId
     )
     {
+        if (APP.Repository.ProductionMaterialTransaction.DeferUntilCommit(context,
+            () => PublishStatusChanged(productionActivityStepId, status, updatedByUserId))) return;
         var ids = await context
             .ProductionActivitySteps.IgnoreQueryFilters()
             .Where(s => s.Id == productionActivityStepId)
