@@ -89,6 +89,7 @@ internal static class ProductionMaterialSources
             var packages = await context.ProductPackages.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
                 .Include(item => item.Substitutes).Where(item => item.ProductId == batch.ProductId && item.DeletedAt == null
                     && (item.ProductPackingId == null || item.ProductPackingId == batch.ProductPackingId)).OrderBy(item => item.MaterialId).ToListAsync();
+            packages = ProductPackagingSelection.ForStyle(packages, batch.ProductPackingId);
             definitions.AddRange(packages.Select(item => new SourceLine(item.MaterialId, null, item.BaseQuantity,
                 item.PrescribedQuantity, item.Loose, item.UnitCapacity, item.DirectLinkMaterialId,
                 item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));

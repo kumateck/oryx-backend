@@ -76,6 +76,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     {
         var product = await context
             .Products.IgnoreQueryFilters()
+            .AsNoTrackingWithIdentityResolution()
             .AsSplitQuery()
             .Include(p => p.BaseUoM)
             .Include(p => p.Equipment)
@@ -84,7 +85,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                     .ThenInclude(p => p.Items.OrderBy(i => i.Order))
             .Include(p => p.Category)
             .Include(p => p.FinishedProducts)
-            .Include(p => p.Packages)
+            // History is needed elsewhere in the detail, but packaging is the current saved list.
+            .Include(p => p.Packages.Where(package => !package.DeletedAt.HasValue))
             .Include(p => p.Routes.OrderBy(r => r.Order))
                 .ThenInclude(p => p.WorkCenters)
             .Include(p => p.Routes.OrderBy(r => r.Order))
@@ -477,8 +479,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return ProductErrors.NotFound(productId);
         }
 
-        // Build a HashSet of existing MaterialIds for fast lookup
-        //var existingMaterialIds = product.Packages.Select(p => p.MaterialId).ToHashSet();
+        // The request replaces the list: compare incoming pairs, not the rows being replaced.
+        if (request.GroupBy(package => (package.MaterialId, package.ProductPackingId)).Any(group => group.Count() > 1))
+            return Error.Validation("Product.Package.Duplicate", "This material is already listed for this packing style.");
 
         foreach (var newPackage in request)
         {
@@ -608,6 +611,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 "ProductPackage.NotFound",
                 $"Product package with ID {productPackageId} not found."
             );
+
+        if (await context.ProductPackages.AnyAsync(package => package.ProductId == productPackage.ProductId
+            && package.Id != productPackageId && package.MaterialId == request.MaterialId
+            && package.ProductPackingId == request.ProductPackingId))
+            return Error.Validation("Product.Package.Duplicate", "This material is already listed for this packing style.");
 
         // Prevent self-referencing update
         if (

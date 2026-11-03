@@ -1560,12 +1560,13 @@ public class ProductionScheduleRepository(
         var product = await context
             .Products.IgnoreQueryFilters()
             .AsSplitQuery()
-            .Include(product => product.Packages)
+            .AsNoTrackingWithIdentityResolution()
+            .Include(product => product.Packages.Where(package => !package.DeletedAt.HasValue))
                 .ThenInclude(productPackage => productPackage.Material)
                     .ThenInclude(m => m.Batches)
-            .Include(product => product.Packages)
+            .Include(product => product.Packages.Where(package => !package.DeletedAt.HasValue))
                 .ThenInclude(productPackage => productPackage.DirectLinkMaterial)
-            .Include(product => product.Packages)
+            .Include(product => product.Packages.Where(package => !package.DeletedAt.HasValue))
                 .ThenInclude(productPackage => productPackage.Substitutes)
                     .ThenInclude(s => s.SubstituteMaterial)
             .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
@@ -1650,9 +1651,10 @@ public class ProductionScheduleRepository(
                 .ToListAsync();
         }
 
-        var materialIds = product.Packages.Select(p => p.MaterialId).ToList();
+        var packages = ProductPackagingSelection.ForStyle(product.Packages, productionScheduleProduct.ProductPackingId);
+        var materialIds = packages.Select(p => p.MaterialId).ToList();
         materialIds.AddRange(
-            product.Packages.SelectMany(p => p.Substitutes.Select(s => s.SubstituteMaterialId))
+            packages.SelectMany(p => p.Substitutes.Select(s => s.SubstituteMaterialId))
         );
         materialIds = materialIds.Distinct().ToList();
 
@@ -1728,8 +1730,7 @@ public class ProductionScheduleRepository(
                 && p.Status == ProductionStatus.InProgress
             );
 
-        var materialDetails = product
-            .Packages.Where(p =>
+        var materialDetails = packages.Where(p =>
                 p.ProductPackingId == productionScheduleProduct.ProductPackingId
                 || !p.ProductPackingId.HasValue && materialDepartments.ContainsKey(p.MaterialId)
             )
@@ -5015,8 +5016,8 @@ public class ProductionScheduleRepository(
             .GroupBy(r => r.MaterialBatch.MaterialId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
-        var packageMaterialDetails = product
-            .Packages.Where(p =>
+        var packageMaterialDetails = ProductPackagingSelection.ForStyle(product.Packages, productPackingId)
+            .Where(p =>
                 p.ProductPackingId == productPackingId
                 || !p.ProductPackingId.HasValue
                     && packageMaterialDepartments.ContainsKey(p.MaterialId)
