@@ -548,11 +548,6 @@ public class RequisitionRepository(
                     && smb.Quantity > 0
                     && !smb.DeletedAt.HasValue
                     && smb.MaterialBatch.Status == BatchStatus.Available
-                    && (
-                        smb.MaterialBatch.ExpiryDate == null
-                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
-                        || smb.MaterialBatch.ExpiryDate >= DateTime.UtcNow
-                    )
                     && !departmentWarehouseIds.Contains(
                         smb.WarehouseLocationShelf
                             .WarehouseLocationRack
@@ -561,6 +556,8 @@ public class RequisitionRepository(
                     )
                     && !pendingSwapShelfBatchIds.Contains(smb.Id)
                 )
+                .WhereMaterialDate(smb => smb.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
+                .Include(smb => smb.MaterialBatch.Material)
                 .ToListAsync()
         )
             .GroupBy(smb => smb.MaterialBatch.MaterialId)
@@ -609,9 +606,9 @@ public class RequisitionRepository(
             {
                 minExpiryDate = materialAlternative
                     .CurrentReservedBatches.Where(b =>
-                        b.Batch.ExpiryDate.HasValue && b.Batch.ExpiryDate.Value != DateTime.MinValue
+                        b.Batch.EffectiveExpiryDate.HasValue && b.Batch.EffectiveExpiryDate.Value != DateTime.MinValue
                     )
-                    .Min(b => b.Batch.ExpiryDate);
+                    .Min(b => b.Batch.EffectiveExpiryDate);
             }
 
             // 3. Find alternative batches across ALL warehouses EXCEPT our own department.
@@ -627,9 +624,9 @@ public class RequisitionRepository(
 
             var alternativeShelfBatches = candidateShelfBatches
                 .Where(smb =>
-                    !minExpiryDate.HasValue || smb.MaterialBatch.ExpiryDate < minExpiryDate.Value
+                    !minExpiryDate.HasValue || MaterialValidity.EffectiveDate(smb.MaterialBatch) < minExpiryDate.Value
                 )
-                .OrderBy(smb => smb.MaterialBatch.ExpiryDate)
+                .OrderBy(smb => MaterialValidity.EffectiveDate(smb.MaterialBatch))
                 .ToList();
 
             materialAlternative.AlternativeBatches = alternativeShelfBatches
@@ -754,6 +751,11 @@ public class RequisitionRepository(
                 "Stock requisition has no production schedule product associated, contact admin."
             );
 
+        var materialUnits = await ProductionMaterialUnitRules.ValidateStock(context, stockRequisition.ProductionScheduleProductId.Value,
+            stockRequisition.Items.Select(item => new CreateRequisitionItemRequest
+                { MaterialId = item.MaterialId, UomId = item.UoMId, Quantity = item.Quantity }).ToList());
+        if (materialUnits.IsFailure) return materialUnits;
+
         var user = await context
             .Users.Include(u => u.Department)
                 .ThenInclude(d => d.Warehouses)
@@ -828,6 +830,13 @@ public class RequisitionRepository(
             return quantityValidation;
 
         var allBatchIds = reservedBatches.Select(b => b.MaterialBatchId).Distinct().ToList();
+        var validCount = await context.MaterialBatches
+            .Where(b => allBatchIds.Contains(b.Id) && b.Status == BatchStatus.Available)
+            .WhereMaterialDate(b => b, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
+            .CountAsync();
+        if (validCount != allBatchIds.Count)
+            return Error.Conflict("Stock.InvalidBatch", "A reserved batch has expired or is no longer available. Review the stock requisition before supplying.");
+
 
         // Batch pre-fetch MaterialBatches, ShelfMaterialBatches, and latest MaterialSamplings
         var materialBatchesMap = await context
@@ -1263,6 +1272,10 @@ public class RequisitionRepository(
                     $"ShelfMaterialBatch with ID {batch.ShelfMaterialBatchId} not found."
                 );
             }
+
+            if (shelfMaterialBatch.MaterialBatch.Status != BatchStatus.Available
+                || MaterialValidity.IsExpired(shelfMaterialBatch.MaterialBatch, DateTime.UtcNow))
+                return Error.Conflict("Stock.InvalidBatch", "This batch has expired or is not available for supply.");
 
             if (shelfMaterialBatch.Quantity < batch.Quantity)
             {

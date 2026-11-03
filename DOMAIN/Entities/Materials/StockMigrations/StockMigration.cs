@@ -21,6 +21,8 @@ public class StockMigration : BaseEntity
     public string FileName { get; set; }
 
     public StockMigrationStatus Status { get; set; }
+    public StockMigrationMode Mode { get; set; }
+    [StringLength(2000)] public string Reason { get; set; }
 
     /// <summary>The unit the sheet's weighed quantities are written in (kg, g or mg).</summary>
     [StringLength(10)]
@@ -36,6 +38,26 @@ public class StockMigration : BaseEntity
 
     public List<StockMigrationLine> Lines { get; set; } = [];
     public List<StockMigrationWriteOff> WriteOffs { get; set; } = [];
+}
+
+public enum StockMigrationMode
+{
+    OpeningBalance = 0,
+    TopUp = 1,
+}
+
+/// <summary>Immutable material totals at top-up approval; subsequent stock use does not rewrite this evidence.</summary>
+public class StockMigrationBalance : BaseEntity
+{
+    public Guid StockMigrationId { get; set; }
+    public StockMigration StockMigration { get; set; }
+    public Guid MaterialId { get; set; }
+    public Material Material { get; set; }
+    [StringLength(50)] public string Unit { get; set; }
+    public decimal Before { get; set; }
+    public decimal Added { get; set; }
+    public int BeforeBatches { get; set; }
+    public int AddedBatches { get; set; }
 }
 
 public enum StockMigrationStatus
@@ -135,6 +157,8 @@ public class StockMigrationDto
     public string DepartmentName { get; set; }
     public string FileName { get; set; }
     public StockMigrationStatus Status { get; set; }
+    public StockMigrationMode Mode { get; set; }
+    public string Reason { get; set; }
     public string MassUnit { get; set; }
     public string VolumeUnit { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -172,6 +196,7 @@ public class StockMigrationShelfDto
 public class StockMigrationLineDto
 {
     public Guid Id { get; set; }
+    public Guid? ImportedBatchId { get; set; }
     public string Sheet { get; set; }
     public int RowNumber { get; set; }
     public string SheetWarehouse { get; set; }
@@ -239,23 +264,35 @@ public class StockMigrationComparisonDto
     public string Unit { get; set; }
     public decimal Current { get; set; }
     public decimal New { get; set; }
+    public decimal Added { get; set; }
     public int CurrentBatches { get; set; }
     public int NewBatches { get; set; }
 }
 
 public class UpdateStockMigrationLineRequest
 {
-    public string MaterialCode { get; set; }
+    [StringLength(500)] public string Grn { get; set; }
+    [StringLength(500)] public string ArNumber { get; set; }
+    [StringLength(200)] public string MaterialCode { get; set; }
     public Guid? MaterialId { get; set; }
-    public string WarehouseName { get; set; }
-    public string ShelfName { get; set; }
+    [StringLength(500)] public string WarehouseName { get; set; }
+    [StringLength(200)] public string ShelfName { get; set; }
     public Guid? ShelfId { get; set; }
-    public string BatchNumber { get; set; }
-    public string UnitSymbol { get; set; }
+    [StringLength(500)] public string BatchNumber { get; set; }
+    [StringLength(50)] public string UnitSymbol { get; set; }
     public decimal? QuantityInSheet { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
     public bool Excluded { get; set; }
+}
+
+public class CreateStockTopUpRequest
+{
+    [Required] public Guid DepartmentId { get; set; }
+    [Required, StringLength(2000)] public string Reason { get; set; }
+    [Required] public string MassUnit { get; set; } = "mg";
+    [Required] public string VolumeUnit { get; set; } = "ml";
+    [Required, MinLength(1), MaxLength(1000)] public List<UpdateStockMigrationLineRequest> Lines { get; set; } = [];
 }
 
 /// <summary>A change applied to many rows at once; only the fields given are changed.</summary>

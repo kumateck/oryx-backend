@@ -13,6 +13,7 @@ namespace DOMAIN.Entities.Materials.Batch;
 
 public class MaterialBatchDto : IGrnEnrichedDto
 {
+    public bool IsOpeningBalanceBatch { get; set; }
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public string BatchNumber { get; set; }
@@ -35,14 +36,15 @@ public class MaterialBatchDto : IGrnEnrichedDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    public DateTime? EffectiveExpiryDate { get; set; }
     public List<SrDto> SampleWeights { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
     public List<ShelfMaterialBatchDto> Shelves { get; set; } = [];
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
     public DateTime? ReturnDate { get; set; }
-    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
-    public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= EffectiveExpiryDate;
+    public bool Expired => EffectiveExpiryDate != DateTime.MinValue && DateTime.UtcNow >= EffectiveExpiryDate;
     public string IssueNumber { get; set; }
     public string SupplierName { get; set; }
     public string ManufacturerName { get; set; }
@@ -78,9 +80,10 @@ public class MaterialBatchListDto : IGrnEnrichedDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    public DateTime? EffectiveExpiryDate { get; set; }
     public MaterialBatchChecklistDto Checklist { get; set; }
-    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
-    public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= EffectiveExpiryDate;
+    public bool Expired => EffectiveExpiryDate != DateTime.MinValue && DateTime.UtcNow >= EffectiveExpiryDate;
     public DateTime? ReturnDate { get; set; }
     public bool IsReturn => ReturnDate.HasValue;
     public string IssueNumber { get; set; }
@@ -118,8 +121,9 @@ public class MaterialBatchReducedDto : IGrnEnrichedDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
-    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= ExpiryDate;
-    public bool Expired => DateTime.UtcNow >= ExpiryDate;
+    public DateTime? EffectiveExpiryDate { get; set; }
+    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= EffectiveExpiryDate;
+    public bool Expired => EffectiveExpiryDate != DateTime.MinValue && DateTime.UtcNow >= EffectiveExpiryDate;
     public string IssueNumber { get; set; }
     public CollectionItemDto IssuedBy { get; set; }
     public DateTime? IssuedAt { get; set; }
@@ -154,6 +158,7 @@ public class DistributedMaterialBatchDto
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    public DateTime? EffectiveExpiryDate { get; set; }
     public decimal QuantityDistributed { get; set; }
     public List<SrDto> SampleWeights { get; set; } = [];
     public decimal ReservedQuantity { get; set; }

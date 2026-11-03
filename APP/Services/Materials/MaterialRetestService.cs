@@ -54,12 +54,17 @@ public sealed class MaterialRetestService(
 {
     public async Task<Result<Guid>> RequestAsync(Guid batchId, string reason, Guid? actorId, bool scheduled, DateTime? asOf = null)
     {
-        var today = (asOf ?? DateTime.UtcNow).Date;
-        var batch = await context.MaterialBatches.SingleOrDefaultAsync(item => item.Id == batchId);
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync() : null;
+        if (context.Database.IsRelational())
+            await context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"MaterialBatches\" WHERE \"Id\" = {batchId} FOR UPDATE");
+        var batch = await context.MaterialBatches.Include(item => item.Material).SingleOrDefaultAsync(item => item.Id == batchId);
         if (batch is null) return Error.NotFound("MaterialRetest.BatchMissing", "Material batch was not found.");
+        await context.Entry(batch).ReloadAsync();
         if (batch.Status is not (BatchStatus.Available or BatchStatus.Approved or BatchStatus.Rejected))
             return Error.Conflict("MaterialRetest.BatchStatus", "Batch status does not allow a new retest request.");
-        if (scheduled && (batch.RetestDate is null || batch.RetestDate.Value.Year <= 1900 || batch.RetestDate.Value.Date > today))
+        if (scheduled && (batch.RetestDate is null || batch.RetestDate.Value.Year <= 1900 || batch.RetestDate.Value > (asOf ?? DateTime.UtcNow)
+            || batch.Material.Kind == DOMAIN.Entities.Materials.MaterialKind.Raw && batch.ExpiryDate > (asOf ?? DateTime.UtcNow)))
             return Error.Validation("MaterialRetest.NotDue", "The scheduled retest date is not due.");
         if (!scheduled && batch.RetestDate is not null)
             return Error.Validation("MaterialRetest.Scheduled", "This batch has a scheduled retest date; the due-date scan creates its request.");
@@ -71,8 +76,6 @@ public sealed class MaterialRetestService(
         if (await context.MaterialRetestRequests.AnyAsync(item => item.SourceKey == sourceKey))
             return Error.Conflict("MaterialRetest.Duplicate", "A retest request already exists for this batch cycle.");
 
-        await using var transaction = context.Database.IsRelational()
-            ? await context.Database.BeginTransactionAsync() : null;
         var now = DateTime.UtcNow;
         var request = new MaterialRetestRequest
         {
@@ -226,7 +229,8 @@ public sealed class MaterialRetestService(
     public async Task<int> ScanDueAsync(DateTime asOf, CancellationToken cancellationToken)
     {
         var due = await context.MaterialBatches.AsNoTracking()
-            .Where(item => item.RetestDate.HasValue && item.RetestDate.Value.Date <= asOf.Date
+            .Where(item => item.RetestDate.HasValue && item.RetestDate.Value <= asOf
+                && (item.Material.Kind != DOMAIN.Entities.Materials.MaterialKind.Raw || !item.ExpiryDate.HasValue || item.ExpiryDate <= asOf)
                 && (item.Status == BatchStatus.Available || item.Status == BatchStatus.Approved || item.Status == BatchStatus.Rejected)
                 && !context.MaterialRetestRequests.Any(request => request.MaterialBatchId == item.Id
                     && request.Origin == MaterialRetestOrigin.Scheduled && request.ScheduledFor == item.RetestDate))

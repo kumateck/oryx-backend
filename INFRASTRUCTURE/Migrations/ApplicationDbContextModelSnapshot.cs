@@ -10911,6 +10911,42 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("MaterialRetestRequests");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MigrationRetestDateChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("NewDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialBatchId", "OccurredAt");
+
+                    b.ToTable("MigrationRetestDateChanges");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.Sr", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11491,6 +11527,13 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
 
+                    b.Property<int>("Mode")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -11514,6 +11557,67 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("StockMigrations");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.StockMigrations.StockMigrationBalance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Added")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("AddedBatches")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Before")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("BeforeBatches")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("StockMigrationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialId");
+
+                    b.HasIndex("StockMigrationId");
+
+                    b.ToTable("StockMigrationBalances");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.StockMigrations.StockMigrationLine", b =>
@@ -16194,6 +16298,115 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("BatchPackagingRecords");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AffectedRecordsJson")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("BatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BatchNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreviousBatchNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("PreviousExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("RevisionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchManufacturingRecordId", "OccurredAt");
+
+                    b.ToTable("IssuedBmrChanges");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BatchNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReviewReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchManufacturingRecordId", "Status");
+
+                    b.ToTable("IssuedBmrRevisions");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>
@@ -32117,6 +32330,17 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("TestRequest");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.MigrationRetestDateChange", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatch", "MaterialBatch")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MaterialBatch");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Materials.Batch.Sr", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -32516,6 +32740,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.StockMigrations.StockMigrationBalance", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.StockMigrations.StockMigration", "StockMigration")
+                        .WithMany()
+                        .HasForeignKey("StockMigrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Material");
+
+                    b.Navigation("StockMigration");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.StockMigrations.StockMigrationLine", b =>
@@ -35300,6 +35561,28 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ProductionActivityStep");
 
                     b.Navigation("ProductionScheduleProduct");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrChange", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("BatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BatchManufacturingRecord");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrRevision", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("BatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BatchManufacturingRecord");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>

@@ -1,5 +1,6 @@
 using APP.Repository;
 using APP.Utils;
+using AutoMapper;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BillOfMaterials;
@@ -20,6 +21,7 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using SHARED;
 using SHARED.Services.Identity;
@@ -131,6 +133,90 @@ public class ProductionMaterialRepairPostgresTests
     }
     private static ApplyProductionMaterialRepair Request(ProductionMaterialRepairPreview preview) => new()
     { RequestId = Guid.NewGuid(), PreviewHash = preview.PreviewHash, Reason = "Correct saved product material configuration" };
+
+    [MaterialRepairFact]
+    public async Task Concurrent_BMR_saves_cannot_claim_the_same_normalized_number()
+    {
+        await Seed();
+        var first = Guid.NewGuid(); var second = Guid.NewGuid();
+        await using (var seed = Context())
+        {
+            await seed.Database.OpenConnectionAsync();
+            await seed.Database.ExecuteSqlRawAsync("SET session_replication_role = replica");
+            seed.BatchManufacturingRecords.AddRange(new BatchManufacturingRecord { Id = first, ProductionScheduleProductId = BatchId },
+                new BatchManufacturingRecord { Id = second, ProductionScheduleProductId = BatchId });
+            await seed.SaveChangesAsync();
+            await seed.Database.ExecuteSqlRawAsync("SET session_replication_role = DEFAULT");
+        }
+        async Task<Result> Assign(Guid id, string number)
+        {
+            await using var db = Context();
+            return await ProductionMaterialTransaction.Run(db, async () =>
+            {
+                var check = await BmrBatchNumberRules.Validate(db, number, id);
+                if (check.IsFailure) return check;
+                var record = await db.BatchManufacturingRecords.IgnoreQueryFilters().IgnoreAutoIncludes().SingleAsync(record => record.Id == id);
+                record.BatchNumber = number.Trim();
+                await db.SaveChangesAsync();
+                return Result.Success();
+            });
+        }
+        var results = await Task.WhenAll(Assign(first, "Unique-123"), Assign(second, " unique-123 "));
+        Assert.Single(results, result => result.IsSuccess);
+        Assert.Equal("Bmr.DuplicateBatchNumber", Assert.Single(results, result => result.IsFailure).Error.Code);
+        await using var verify = Context();
+        Assert.Equal(1, await verify.BatchManufacturingRecords.IgnoreQueryFilters().CountAsync(record => record.BatchNumber != null));
+    }
+
+    [MaterialRepairFact]
+    public async Task A_piece_linked_raw_material_requires_correct_BOM_and_repair_before_requisition()
+    {
+        await Seed();
+        var pieceId = Guid.NewGuid();
+        await using var db = Context();
+        db.UnitOfMeasures.Add(new UnitOfMeasure { Id = pieceId, Name = "Piece", Symbol = "piece", Category = UnitOfMeasureCategory.Countable });
+        (await db.MaterialDepartments.SingleAsync(link => link.MaterialId == MaterialId)).UoMId = pieceId;
+        (await db.MaterialBatches.SingleAsync(batch => batch.Id == RawBatch)).UoMId = pieceId;
+        (await db.ShelfMaterialBatches.SingleAsync(row => row.MaterialBatchId == RawBatch)).UoMId = pieceId;
+        (await db.MaterialBatchReservedQuantities.SingleAsync(row => row.MaterialBatchId == RawBatch)).UoMId = pieceId;
+        (await db.RequisitionItems.SingleAsync(item => item.RequisitionId == RequisitionId)).UoMId = pieceId;
+        await db.SaveChangesAsync();
+        var corrected = new List<CreateRequisitionItemRequest> { new() { MaterialId = MaterialId, UomId = pieceId, Quantity = 20 } };
+        var wrongBom = await ProductionMaterialRequisitionRules.Validate(db, BatchId, corrected);
+        Assert.Equal("Requisition.BomRepairRequired", wrongBom.Error.Code);
+
+        // The product is corrected first, without rewriting the batch's reservations or requisition.
+        var services = new ServiceCollection();
+        services.AddLogging(); services.AddHttpContextAccessor(); services.AddSingleton(db);
+        services.AddAutoMapper(configuration => { }, typeof(APP.Mapper.OryxMapper));
+        var mapper = services.BuildServiceProvider().GetRequiredService<IMapper>();
+        var productId = (await db.ProductionScheduleProducts.SingleAsync(batch => batch.Id == BatchId)).ProductId;
+        var saved = await new BoMRepository(db, mapper).CreateBillOfMaterial(new()
+        { ProductId = productId, Items = [new() { MaterialId = MaterialId, BaseUoMId = pieceId, BaseQuantity = 1, PrescribedQuantity = 20, Order = 1 }] }, Actor);
+        Assert.True(saved.IsSuccess, saved.IsFailure ? saved.Error.Description : null);
+        var staleBatch = await ProductionMaterialRequisitionRules.Validate(db, BatchId, corrected);
+        Assert.Equal("Requisition.BomRepairRequired", staleBatch.Error.Code);
+        Assert.Equal(10, (await db.RequisitionItems.SingleAsync(item => item.RequisitionId == RequisitionId)).Quantity);
+
+        var preview = await Preview(db);
+        Assert.Empty(preview.Blockers);
+        Assert.Equal("piece", Assert.Single(preview.Lines).Unit);
+        var applied = await ProductionMaterialRepairs.Apply(db, Approvals(db), ActivityId, Actor, MaterialKind.Raw, Request(preview));
+        Assert.True(applied.IsSuccess, applied.IsFailure ? applied.Error.Description : null);
+        Assert.True(applied.Value.ApprovalRequired);
+        var after = await ProductionMaterialRequisitionRules.Validate(db, BatchId, corrected);
+        Assert.True(after.IsSuccess, after.IsFailure ? after.Error.Description : null);
+        var requisition = await db.Requisitions.Include(item => item.Items).SingleAsync(item => item.Id == RequisitionId);
+        Assert.False(requisition.Approved);
+        Assert.Equal(pieceId, Assert.Single(requisition.Items).UoMId);
+        Assert.Equal(20, Assert.Single(requisition.Items).Quantity);
+        Assert.Equal(pieceId, (await db.MaterialBatchReservedQuantities.SingleAsync(row => row.MaterialBatchId == RawBatch && row.ReleasedAt == null)).UoMId);
+        Assert.Single(await db.ProductionMaterialRepairs.ToListAsync());
+        Assert.Equal(100, (await db.ShelfMaterialBatches.SingleAsync(row => row.MaterialBatchId == RawBatch)).Quantity);
+        var staleClient = await ProductionMaterialRequisitionRules.Validate(db, BatchId,
+            [new() { MaterialId = MaterialId, UomId = UnitId, Quantity = 20 }]);
+        Assert.Equal("Requisition.BomRepairRequired", staleClient.Error.Code);
+    }
 
     [MaterialRepairFact]
     public async Task Preview_is_read_only_and_apply_reconciles_stock_document_and_approval_atomically()

@@ -144,6 +144,9 @@ public partial class ApplicationDbContext(
     public DbSet<Sr> Srs { get; set; }
 
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
+    public DbSet<MigrationRetestDateChange> MigrationRetestDateChanges { get; set; }
+    public DbSet<IssuedBmrChange> IssuedBmrChanges { get; set; }
+    public DbSet<IssuedBmrRevision> IssuedBmrRevisions { get; set; }
     public DbSet<MaterialRetestRequest> MaterialRetestRequests { get; set; }
     public DbSet<MaterialRetestEvent> MaterialRetestEvents { get; set; }
     public DbSet<ResponseReworkTask> ResponseReworkTasks { get; set; }
@@ -319,6 +322,7 @@ public partial class ApplicationDbContext(
     #region StockMigrations
 
     public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigration> StockMigrations { get; set; }
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationBalance> StockMigrationBalances { get; set; }
     public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationLine> StockMigrationLines { get; set; }
     public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationWriteOff> StockMigrationWriteOffs { get; set; }
 
@@ -1137,6 +1141,15 @@ public partial class ApplicationDbContext(
         // Call base method
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
+        modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()
+            .HasForeignKey(change => change.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<IssuedBmrChange>().HasIndex(change => new { change.BatchManufacturingRecordId, change.OccurredAt });
+        modelBuilder.Entity<IssuedBmrRevision>().HasOne(revision => revision.BatchManufacturingRecord).WithMany()
+            .HasForeignKey(revision => revision.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<IssuedBmrRevision>().HasIndex(revision => new { revision.BatchManufacturingRecordId, revision.Status });
+        modelBuilder.Entity<MigrationRetestDateChange>().HasOne(change => change.MaterialBatch)
+            .WithMany().HasForeignKey(change => change.MaterialBatchId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MigrationRetestDateChange>().HasIndex(change => new { change.MaterialBatchId, change.OccurredAt });
         ConfigureEmployeeOnboarding(modelBuilder);
 
         ConfigureTableMappings(modelBuilder);
