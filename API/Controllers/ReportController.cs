@@ -34,6 +34,20 @@ namespace API.Controllers;
 [Authorize]
 public class ReportController(IReportRepository repository) : ControllerBase
 {
+    /// <summary>Issued BMRs by inclusive UTC issue date, including completed and archived history.</summary>
+    [HttpGet("bmr-issued", Name = "GetIssuedBmrReport")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrReportDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetIssuedBmrReport([FromQuery] IssuedBmrReportFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetIssuedBmrReport(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Complete market-grouped production plan and current product configuration readiness.</summary>
     [HttpGet("production-readiness", Name = "GetProductionReadinessReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReadinessReportDto))]
