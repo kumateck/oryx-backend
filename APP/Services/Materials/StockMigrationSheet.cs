@@ -30,7 +30,7 @@ public static partial class StockMigrationSheet
     public static string Normal(string text) =>
         NonAlphanumeric().Replace((text ?? string.Empty).ToLowerInvariant(), string.Empty);
 
-    public static List<StockMigrationLine> Read(ExcelPackage package)
+    public static List<StockMigrationLine> Read(ExcelPackage package, bool allowGrnBatchFallback = true)
     {
         var lines = new List<StockMigrationLine>();
         foreach (var sheet in package.Workbook.Worksheets)
@@ -40,7 +40,7 @@ public static partial class StockMigrationSheet
             var columns = HeaderColumns(sheet);
             if (!columns.ContainsKey("code") || !columns.ContainsKey("quantity"))
                 continue;
-            lines.AddRange(ReadSheet(sheet, columns));
+            lines.AddRange(ReadSheet(sheet, columns, allowGrnBatchFallback));
         }
         return lines;
     }
@@ -65,7 +65,7 @@ public static partial class StockMigrationSheet
         return found;
     }
 
-    private static IEnumerable<StockMigrationLine> ReadSheet(ExcelWorksheet sheet, Dictionary<string, int> columns)
+    private static IEnumerable<StockMigrationLine> ReadSheet(ExcelWorksheet sheet, Dictionary<string, int> columns, bool allowGrnBatchFallback)
     {
         string previousWarehouse = null, previousShelf = null;
         var previousRow = 0;
@@ -127,7 +127,7 @@ public static partial class StockMigrationSheet
             var (grnNumber, arFromGrn) = SplitGrn(grn);
             if (ar.Length == 0 && arFromGrn != null)
                 ar = CleanArNumber(arFromGrn);
-            if (batch.Length == 0 && !batchDamaged && grnNumber != null)
+            if (allowGrnBatchFallback && batch.Length == 0 && !batchDamaged && grnNumber != null)
             {
                 batch = grnNumber;
                 corrections.Add($"No batch number, so the GRN {grnNumber} is used as the batch.");

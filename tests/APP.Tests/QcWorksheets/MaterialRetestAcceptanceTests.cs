@@ -62,7 +62,7 @@ public class MaterialRetestAcceptanceTests
         var service = new MaterialRetestService(harness.Db, harness.ApprovalRepository, harness.SignatureService);
         var batch = await harness.SeedMaterialBatch("RETEST-DUE", BatchStatus.Available);
         batch.RetestDate = DateTime.UtcNow.Date.AddDays(1);
-        batch.ExpiryDate = DateTime.UtcNow.Date.AddDays(30);
+        batch.ExpiryDate = DateTime.UtcNow.Date.AddDays(-30);
         await harness.Db.SaveChangesAsync();
 
         Assert.Equal(0, await service.ScanDueAsync(DateTime.UtcNow.Date, CancellationToken.None));
@@ -76,6 +76,20 @@ public class MaterialRetestAcceptanceTests
         Assert.Equal(batch.RetestDate, request.ScheduledFor);
         Assert.Equal(BatchStatus.Frozen, batch.Status);
         Assert.Contains(await harness.Db.MaterialRetestEvents.ToListAsync(), item => item.Action == "AutoApproved");
+    }
+
+    [Fact]
+    public async Task Active_expiry_prevents_an_earlier_retest_schedule_from_freezing_raw_stock()
+    {
+        using var harness = new QcWorksheetTestContext();
+        var service = new MaterialRetestService(harness.Db, harness.ApprovalRepository, harness.SignatureService);
+        var batch = await harness.SeedMaterialBatch("ACTIVE-EXPIRY", BatchStatus.Available);
+        batch.RetestDate = DateTime.UtcNow.AddDays(-1);
+        batch.ExpiryDate = DateTime.UtcNow.AddDays(30);
+        await harness.Db.SaveChangesAsync();
+        Assert.Equal(0, await service.ScanDueAsync(DateTime.UtcNow, CancellationToken.None));
+        Assert.Equal(BatchStatus.Available, batch.Status);
+        Assert.Empty(await harness.Db.MaterialRetestRequests.ToListAsync());
     }
 
     [Fact]

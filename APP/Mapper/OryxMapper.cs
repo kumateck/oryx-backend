@@ -434,6 +434,7 @@ public class OryxMapper : Profile
 
         CreateMap<CreateMaterialBatchRequest, MaterialBatch>();
         CreateMap<MaterialBatch, MaterialBatchDto>()
+            .ForMember(dest => dest.IsOpeningBalanceBatch, opt => opt.Ignore())
             .ForMember(
                 dest => dest.SupplierName,
                 opt => opt.MapFrom<MaterialBatchSupplierNameResolver>()
