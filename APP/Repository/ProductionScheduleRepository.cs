@@ -2853,6 +2853,8 @@ public class ProductionScheduleRepository(
         }
 
         var number = await BmrBatchNumberRules.Validate(context, request.BatchNumber, id);
+        if (batchRecord.IssuedDate.HasValue)
+            return Error.Conflict("Bmr.AlreadyIssued", "Use Issued BMR records for batch-number corrections or an approved date revision.");
         if (number.IsFailure) return number;
         request.BatchNumber = request.BatchNumber.Trim();
         mapper.Map(request, batchRecord);
@@ -2895,6 +2897,8 @@ public class ProductionScheduleRepository(
 
         if (batchRecord.DeletedAt.HasValue)
             return Error.Conflict("Bmr.Retired", "This BMR has been retired and cannot be issued.");
+        if (batchRecord.IssuedDate.HasValue)
+            return Error.Conflict("Bmr.AlreadyIssued", "This BMR has already been issued.");
         var number = await BmrBatchNumberRules.Validate(context, batchRecord.BatchNumber, id);
         if (number.IsFailure) return number;
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
@@ -3021,6 +3025,8 @@ public class ProductionScheduleRepository(
         Guid id
     )
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => UpdateBatchPackagingRecord(request, id));
         var batchRecord = await context
             .BatchPackagingRecords.Include(batchPackagingRecord =>
                 batchPackagingRecord.ProductionActivityStep
@@ -3031,6 +3037,9 @@ public class ProductionScheduleRepository(
             return ProductErrors.NotFound(id);
         }
 
+        if (batchRecord.IssuedDate.HasValue || await context.BatchManufacturingRecords.IgnoreQueryFilters().IgnoreAutoIncludes()
+            .AnyAsync(record => record.ProductionScheduleProductId == batchRecord.ProductionScheduleProductId && record.IssuedDate.HasValue))
+            return Error.Conflict("Bmr.AlreadyIssued", "Use Issued BMR records for batch-number corrections or an approved date revision.");
         mapper.Map(request, batchRecord);
         batchRecord.ProductionActivityStep.Status = ProductionStatus.InProgress;
         context.BatchPackagingRecords.Update(batchRecord);

@@ -26,7 +26,8 @@ internal sealed class ProductionMaterialTransaction(ApplicationDbContext context
         "BillOfMaterialItem", "BillOfMaterialItemSubstitute", "MaterialDepartment", "UnitOfMeasure",
         "FinalPacking", "FinishedGoodsTransferNote", "MassMaterialBatchMovement", "BinCardInformation",
         "Approval", "ApprovalStage", "User", "Role", "PermissionType", "IdentityRoleClaim`1", "IdentityUserRole`1",
-        "BatchManufacturingRecord", "BatchPackagingRecord", "MaterialReturnNoteFullReturn", "MaterialReturnNotePartialReturn"
+        "BatchManufacturingRecord", "BatchPackagingRecord", "MaterialReturnNoteFullReturn", "MaterialReturnNotePartialReturn",
+        "IssuedBmrChange", "IssuedBmrRevision", "AnalyticalTestRequest", "TestRequestSubject", "OosInvestigation", "Coa", "CoaRow", "WorkOrder"
     ];
 
     public static async Task<ProductionMaterialTransaction> Begin(ApplicationDbContext context)
