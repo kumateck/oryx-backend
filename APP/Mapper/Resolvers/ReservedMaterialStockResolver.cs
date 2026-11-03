@@ -24,7 +24,7 @@ public class ReservedMaterialStockResolver(ApplicationDbContext dbContext) :
                 .IgnoreQueryFilters()
                 .Include(m => m.Warehouse)
                 .Include(materialBatchReservedQuantity => materialBatchReservedQuantity.UoM)
-                .Where(m => m.MaterialBatch.MaterialId == source.Id && !m.DeletedAt.HasValue)
+                .Where(m => m.MaterialBatch.MaterialId == source.Id && !m.DeletedAt.HasValue && m.ReleasedAt == null)
                 .Sum(m => m.Quantity);
     }
 }

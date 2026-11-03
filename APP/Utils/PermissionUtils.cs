@@ -398,6 +398,8 @@ public static class PermissionKeys
     public const string CanEditProductionPlan = "CanEditProductionPlan";
     /// <summary>Re-apply a product's current procedure to a running batch's active and upcoming steps.</summary>
     public const string CanRepairProcedure = "CanRepairProcedure";
+    public const string CanRepairBom = "CanRepairBom";
+    public const string CanRepairPackaging = "CanRepairPackaging";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
     public const string CanCreateProductSchedule = "CanCreateProductSchedule";
     public const string CanEditProductSchedule = "CanEditProductSchedule";
@@ -1930,6 +1932,8 @@ public static class PermissionUtils
             PermissionSubmodules.Products,
             PermissionKeys.CanRepairProcedure
         );
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairBom);
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairPackaging);
         addPermission(
             PermissionModules.Production,
             PermissionSubmodules.ProductSchedule,

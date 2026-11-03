@@ -53,6 +53,7 @@ public enum ApprovalStatus
 }
 public class ApprovalEntity
 {
+    public int? ContentRevision { get; set; }
     public Guid Id { get; set; }
     public Guid? SupplierId { get; set; }
     public string Code { get; set; }
@@ -70,6 +71,7 @@ public class ApprovalEntity
 
 public class ApprovalRequestBody
 {
+    public int? ContentRevision { get; set; }
     public string Comments { get; set; }
     public DOMAIN.Entities.Forms.ResponseRejectionOutcome? ResponseRejectionOutcome { get; set; }
 }
