@@ -24,14 +24,15 @@ public class MaterialBatchExpiryService(IServiceScopeFactory scopeFactory) : Bac
                 var stager = scope.ServiceProvider.GetRequiredService<AlertRequestStager>();
 
                 var expiredBatches = await dbContext.MaterialBatches
-                    .Where(l => l.Status == BatchStatus.Available &&
-                                l.ExpiryDate.HasValue && l.ExpiryDate < now)
+                    .Where(l => l.Status == BatchStatus.Available)
+                    .WhereMaterialDate(l => l, date => date.HasValue && date != DateTime.MinValue && date <= now)
+                    .Include(l => l.Material)
                     .ToListAsync(stoppingToken);
 
                 foreach (var batch in expiredBatches)
                 {
-                    var message = $"Material batch {batch.BatchNumber} expired at {batch.ExpiryDate:dd MMMM yyyy}";
-                    var sourceKey = $"expired-batch:{batch.Id}:{batch.ExpiryDate:O}";
+                    var message = $"Material batch {batch.BatchNumber} expired at {batch.EffectiveExpiryDate:dd MMMM yyyy}";
+                    var sourceKey = $"expired-batch:{batch.Id}:{batch.EffectiveExpiryDate:O}";
                     // Retained intent prevents daily repeats; a unique key also fences concurrent scanners.
                     if (!await dbContext.Set<AlertDispatchRequest>().AnyAsync(item => item.SourceKey == sourceKey, stoppingToken))
                         stager.Stage(message, NotificationType.ExpiredMaterial, sourceKey: sourceKey, relatedEntityType: "MaterialBatch", relatedEntityId: batch.Id, relatedEntityCode: batch.BatchNumber, relatedEntityStatus: batch.Status.ToString());

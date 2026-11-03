@@ -26,7 +26,7 @@ using SHARED.Requests;
 
 namespace APP.Repository;
 
-public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : IMaterialRepository
+public partial class MaterialRepository(ApplicationDbContext context, IMapper mapper) : IMaterialRepository
 {
     // ************* CRUD for Materials *************
     // Create Material
@@ -451,6 +451,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
 
         var batchDto = mapper.Map<MaterialBatchDto>(batch);
         batchDto.Locations = GetCurrentLocations(batchDto);
+        batchDto.IsOpeningBalanceBatch = await context.StockMigrationLines.AnyAsync(line => line.ImportedBatchId == batchId
+            && line.StockMigration.Status == DOMAIN.Entities.Materials.StockMigrations.StockMigrationStatus.Approved);
         return batchDto;
     }
 
@@ -954,7 +956,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     == warehouse.Id
                 && m.MaterialBatch.Status == BatchStatus.Available
             )
-            .OrderBy(m => m.MaterialBatch.ExpiryDate)
+            .OrderBy(MaterialValidity.DateFor<ShelfMaterialBatch>(m => m.MaterialBatch))
             .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(
@@ -1966,12 +1968,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(b =>
                 b.MaterialId == materialId
                 && b.Status == BatchStatus.Available
-                && (
-                    b.ExpiryDate == null
-                    || b.ExpiryDate == DateTime.MinValue
-                    || b.ExpiryDate >= DateTime.UtcNow
-                )
             )
+            .WhereMaterialDate(b => b, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
             .Select(b => b.Id)
             .ToListAsync();
 
@@ -2056,7 +2054,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     == warehouseId
                 && !s.DeletedAt.HasValue
             )
-            .Select(s => new { s.Quantity, s.MaterialBatch.ExpiryDate })
+            .Select(s => new { s.Quantity, ExpiryDate = s.MaterialBatch.Material.Kind == MaterialKind.Raw && !(s.MaterialBatch.ExpiryDate > DateTime.UtcNow) ? s.MaterialBatch.RetestDate ?? s.MaterialBatch.ExpiryDate : s.MaterialBatch.ExpiryDate })
             .ToListAsync();
 
         var totalQuantity = rows.Sum(r => r.Quantity);
@@ -2064,7 +2062,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
             .Where(r =>
                 r.ExpiryDate.HasValue
                 && r.ExpiryDate.Value != DateTime.MinValue
-                && r.ExpiryDate.Value < DateTime.UtcNow
+                && r.ExpiryDate.Value <= DateTime.UtcNow
             )
             .Sum(r => r.Quantity);
 
@@ -2094,17 +2092,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     == warehouseId
                 && !s.DeletedAt.HasValue
                 && s.MaterialBatch.Status == BatchStatus.Available
-                && (
-                    s.MaterialBatch.ExpiryDate == null
-                    || s.MaterialBatch.ExpiryDate == DateTime.MinValue
-                    || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
-                )
             )
+            .WhereMaterialDate(s => s.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
             .SumAsync(s => s.Quantity);
 
         var reservedQuantity = await context
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId && r.DeletedAt == null)
+            .Where(r => r.MaterialBatch.Status == BatchStatus.Available)
+            .WhereMaterialDate(r => r.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
             .SumAsync(r => r.Quantity);
 
         return Math.Max(totalQuantity - reservedQuantity, 0);
@@ -2459,16 +2455,12 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouseId
                 )
-                && (
-                    b.ExpiryDate == null
-                    || b.ExpiryDate == DateTime.MinValue
-                    || DateTime.UtcNow <= b.ExpiryDate
-                )
                 && b.Status == BatchStatus.Available
             )
+            .WhereMaterialDate(b => b, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
             .OrderBy(b => b.ReturnDate == null) // false (not null) first, true (null) last
             .ThenBy(b => b.ReturnDate) // earliest non-null return dates first
-            .ThenBy(b => b.ExpiryDate)
+            .ThenBy(MaterialValidity.DateFor<MaterialBatch>(b => b))
             .ToListAsync();
 
         foreach (var batch in batches)
@@ -2481,11 +2473,6 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 .ShelfMaterialBatches.Where(smb =>
                     smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                         == warehouseId
-                    && (
-                        smb.MaterialBatch.ExpiryDate == null
-                        || smb.MaterialBatch.ExpiryDate == DateTime.MinValue
-                        || DateTime.UtcNow <= smb.MaterialBatch.ExpiryDate
-                    )
                 )
                 .OrderBy(_ => batch.ReturnDate == null) // returned batches first
                 .ThenBy(_ => batch.ReturnDate) // earliest return date first
@@ -2590,6 +2577,13 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         bool saveChanges = true
     )
     {
+        var usable = await context.MaterialBatches
+            .Where(b => b.Id == batchId && b.Status == BatchStatus.Available)
+            .WhereMaterialDate(b => b, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
+            .AnyAsync();
+        if (!usable)
+            return Error.Conflict("Material.InvalidBatch", "This batch is expired or is not available for reservation.");
+
         // 1️⃣ Load the shelf batch if shelf is provided
         if (warehouseLocationShelfId.HasValue)
         {
@@ -3939,6 +3933,8 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                     .FirstOrDefault(),
                 ManufacturingDate = r.MaterialBatch.ManufacturingDate,
                 ExpiryDate = r.MaterialBatch.ExpiryDate,
+                EffectiveExpiryDate = r.MaterialBatch.Material.Kind == MaterialKind.Raw && !(r.MaterialBatch.ExpiryDate > DateTime.UtcNow)
+                    ? r.MaterialBatch.RetestDate ?? r.MaterialBatch.ExpiryDate : r.MaterialBatch.ExpiryDate,
                 BalanceQuantity =
                     r.MaterialBatch.TotalQuantity
                     - r.MaterialBatch.ConsumedQuantity
@@ -4102,6 +4098,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context
             .MaterialBatches.AsSplitQuery()
             .IgnoreQueryFilters()
+            .Where(b => b.DeletedAt == null && b.Material.DeletedAt == null)
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
@@ -4113,12 +4110,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                             .ThenInclude(l => l.Warehouse)
             .Include(b => b.ReservedQuantities)
                 .ThenInclude(rq => rq.Warehouse)
-            .Where(b =>
-                b.ExpiryDate.HasValue
-                && b.ExpiryDate.Value != DateTime.MinValue
-                && b.ExpiryDate.Value < DateTime.UtcNow
-            )
+            .WhereMaterialDate(b => b, date => date.HasValue && date.Value != DateTime.MinValue && date <= DateTime.UtcNow)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
+        {
+            var search = filter.SearchQuery.Trim().ToLower();
+            query = query.Where(b => b.Material.Code.ToLower().Contains(search)
+                || b.Material.Name.ToLower().Contains(search));
+        }
 
         if (filter.MaterialKind.HasValue)
         {
@@ -4128,7 +4128,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         if (filter.StartDate.HasValue)
         {
             var startDate = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
-            query = query.Where(b => b.ExpiryDate >= startDate);
+            query = query.WhereMaterialDate(b => b, date => date >= startDate);
         }
 
         if (filter.EndDate.HasValue)
@@ -4137,7 +4137,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 filter.EndDate.Value.Date.AddDays(1),
                 DateTimeKind.Utc
             );
-            query = query.Where(b => b.ExpiryDate < endDate);
+            query = query.WhereMaterialDate(b => b, date => date < endDate);
         }
 
         if (filter.WarehouseIds?.Count > 0)
@@ -4155,7 +4155,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
-            query,
+            query.OrderBy(MaterialValidity.DateFor<MaterialBatch>(b => b)).ThenBy(b => b.Id),
             filter,
             entity =>
             {
@@ -4176,6 +4176,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         var query = context
             .MaterialBatches.AsSplitQuery()
             .IgnoreQueryFilters()
+            .Where(b => b.DeletedAt == null && b.Material.DeletedAt == null)
             .Include(b => b.MassMovements)
             .Include(b => b.Material)
             .Include(b => b.Checklist)
@@ -4187,8 +4188,15 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                             .ThenInclude(l => l.Warehouse)
             .Include(b => b.ReservedQuantities)
                 .ThenInclude(rq => rq.Warehouse)
-            .Where(b => b.ExpiryDate >= now && b.ExpiryDate <= cutoff)
+            .WhereMaterialDate(b => b, date => date > DateTime.UtcNow && date <= cutoff)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
+        {
+            var search = filter.SearchQuery.Trim().ToLower();
+            query = query.Where(b => b.Material.Code.ToLower().Contains(search)
+                || b.Material.Name.ToLower().Contains(search));
+        }
 
         if (filter.MaterialKind.HasValue)
         {
@@ -4200,7 +4208,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         {
             var startDate = DateTime.SpecifyKind(filter.StartDate.Value.Date, DateTimeKind.Utc);
 
-            query = query.Where(b => b.ExpiryDate >= startDate);
+            query = query.WhereMaterialDate(b => b, date => date >= startDate);
         }
 
         if (filter.EndDate.HasValue)
@@ -4210,7 +4218,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
                 DateTimeKind.Utc
             );
 
-            query = query.Where(b => b.ExpiryDate < endDate);
+            query = query.WhereMaterialDate(b => b, date => date < endDate);
         }
 
         if (filter.WarehouseIds?.Count > 0)
@@ -4228,7 +4236,7 @@ public class MaterialRepository(ApplicationDbContext context, IMapper mapper) : 
         }
 
         return await PaginationHelper.GetPaginatedResultAsync(
-            query,
+            query.OrderBy(MaterialValidity.DateFor<MaterialBatch>(b => b)).ThenBy(b => b.Id),
             filter,
             entity =>
             {

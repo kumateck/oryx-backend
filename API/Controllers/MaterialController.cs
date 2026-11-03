@@ -20,6 +20,19 @@ namespace API.Controllers;
 [Authorize]
 public class MaterialController(IMaterialRepository repository) : ControllerBase
 {
+    /// <summary>Corrects the retest extension of an approved raw-material opening balance, without a QC retest.</summary>
+    [HttpPut("batch/{batchId:guid}/migration-retest-date")]
+    [Authorize(PermissionKeys.CanUpdateMigrationRetestDate)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> UpdateMigrationRetestDate(Guid batchId, [FromBody] UpdateMigrationRetestDate request)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.UpdateMigrationRetestDate(batchId, request, actor);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Creates a new material.
     /// </summary>
@@ -920,7 +933,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("batches/expired")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewExpiredMaterials)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
@@ -936,7 +949,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("batches/about-to-expire")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewAboutToExpireMaterials)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)

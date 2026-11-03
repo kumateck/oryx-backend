@@ -15,12 +15,24 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 {
     public async Task<Result<Guid>> CreateBillOfMaterial(CreateBillOfMaterialRequest request, Guid userId)
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => CreateBillOfMaterial(request, userId));
+
         var product = await context.Products
             .AsSplitQuery()
             .Include(product => product.BillOfMaterials)
             .FirstOrDefaultAsync(p => p.Id == request.ProductId);
 
         if (product is null) return ProductErrors.NotFound(request.ProductId);
+
+        var materialIds = request.Items.Select(item => item.MaterialId).Distinct().ToList();
+        var links = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Include(link => link.UoM).Where(link => materialIds.Contains(link.MaterialId)
+                && link.DepartmentId == product.DepartmentId && link.DeletedAt == null).ToListAsync();
+        if (product.DepartmentId is null || request.Items.Any(item =>
+            links.Count(link => link.MaterialId == item.MaterialId && link.UoMId == item.BaseUoMId
+                && link.UoM != null && !link.UoM.DeletedAt.HasValue) != 1))
+            return Error.Conflict("Bom.MaterialUnit", "A BOM material unit no longer matches the department material linkage. Reload the linked units and review the quantities before saving.");
 
         if (product.BillOfMaterials.Count != 0)
         {
