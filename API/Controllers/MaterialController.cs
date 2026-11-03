@@ -813,7 +813,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         [FromQuery] MaterialKind? kind = null,
         [FromQuery] Guid? materialCategoryId = null,
         [FromQuery] string sortLabel = "",
-        [FromQuery] SortDirection? sortDirection = null
+        [FromQuery] SortDirection? sortDirection = null,
+        [FromQuery] Guid? productId = null
     )
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -828,7 +829,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
             materialCategoryId,
             sortLabel,
             sortDirection,
-            Guid.Parse(userId)
+            Guid.Parse(userId),
+            productId
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -841,7 +843,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [HttpGet("{materialId}/uom")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UnitOfMeasureDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetUoMForMaterial(Guid materialId)
+    public async Task<IResult> GetUoMForMaterial(Guid materialId, [FromQuery] Guid? productId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -849,7 +851,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
 
         var result = await repository.GetUnitOfMeasureForMaterialDepartment(
             materialId,
-            Guid.Parse(userId)
+            Guid.Parse(userId),
+            productId
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

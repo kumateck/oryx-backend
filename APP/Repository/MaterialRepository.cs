@@ -3275,12 +3275,13 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         Guid? materialCategoryId,
         string sortLabel,
         SortDirection? sortDirection,
-        Guid userId
+        Guid userId,
+        Guid? productId = null
     )
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-            return UserErrors.NotFound(userId);
+        var scope = await ProductMaterialDepartment(userId, productId);
+        if (scope.IsFailure) return scope.Error;
+        var departmentId = scope.Value;
 
         var query = context
             .MaterialDepartments.AsSplitQuery()
@@ -3295,15 +3296,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
         }
 
-        if (!user.DepartmentId.HasValue)
-        {
-            return UserErrors.DepartmentNotFound;
-        }
-
-        if (user.DepartmentId.HasValue)
-        {
-            query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
-        }
+        query = query.Where(m => m.DepartmentId == departmentId);
 
         if (kind.HasValue)
         {
@@ -3336,7 +3329,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .Warehouses.IgnoreQueryFilters()
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(w =>
-                    w.DepartmentId == user.DepartmentId && w.Type == warehouseType
+                    w.DepartmentId == departmentId && w.Type == warehouseType
                 );
 
             if (warehouse == null)
@@ -3359,7 +3352,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .Include(s => s.StockTransfer)
                 .Where(s =>
                     s.StockTransfer.MaterialId == result.Material.Id
-                    && s.FromDepartmentId == user.DepartmentId
+                    && s.FromDepartmentId == departmentId
                     && s.Status == StockTransferStatus.InProgress
                 )
                 .SumAsync(s => s.Quantity);
@@ -3403,19 +3396,13 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
     public async Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(
         Guid materialId,
-        Guid userId
+        Guid userId,
+        Guid? productId = null
     )
     {
-        var user = await context
-            .Users.Include(u => u.Department)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-            return UserErrors.NotFound(userId);
-
-        if (!user.DepartmentId.HasValue)
-        {
-            return UserErrors.DepartmentNotFound;
-        }
+        var scope = await ProductMaterialDepartment(userId, productId);
+        if (scope.IsFailure) return scope.Error;
+        var departmentId = scope.Value;
 
         return mapper.Map<UnitOfMeasureDto>(
             (
@@ -3423,7 +3410,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     .MaterialDepartments.AsSplitQuery()
                     .Include(materialDepartment => materialDepartment.UoM)
                     .FirstOrDefaultAsync(m =>
-                        m.MaterialId == materialId && m.DepartmentId == user.DepartmentId.Value
+                        m.MaterialId == materialId && m.DepartmentId == departmentId
                     )
             )?.UoM
         );
