@@ -39,6 +39,8 @@ public class MaterialBatchDto : IGrnEnrichedDto
     public DateTime? EffectiveExpiryDate { get; set; }
     public List<SrDto> SampleWeights { get; set; } = [];
     public List<CurrentLocationDto> Locations { get; set; } = [];
+    /// <summary>Expiry reports: departments with positive shelf or reserved stock, not material-use associations.</summary>
+    public List<CollectionItemDto> StockDepartments { get; set; } = [];
     public List<ShelfMaterialBatchDto> Shelves { get; set; } = [];
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
