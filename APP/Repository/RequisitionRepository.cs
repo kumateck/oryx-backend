@@ -50,6 +50,20 @@ public class RequisitionRepository(
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
+        if ((request.RequisitionType == RequisitionType.Stock || request.ProductionScheduleProductId.HasValue)
+            && context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => CreateRequisition(request, userId));
+        if (request.RequisitionType == RequisitionType.Purchase && request.ProductionScheduleProductId.HasValue)
+        {
+            var consistent = await ProductionMaterialRequisitionRules.ValidateProcurement(context, request.ProductionScheduleProductId.Value, request.Items);
+            if (consistent.IsFailure) return consistent;
+        }
+        if (request.RequisitionType == RequisitionType.Stock && request.ProductionScheduleProductId.HasValue)
+        {
+            var consistent = await ProductionMaterialRequisitionRules.Validate(context, request.ProductionScheduleProductId.Value, request.Items);
+            if (consistent.IsFailure) return consistent;
+        }
+
         // Stock requisitions follow StockRequisitionRules (one raw and one packaging per batch), checked below.
         if (request.ProductionScheduleProductId.HasValue && request.RequisitionType != RequisitionType.Stock)
         {
@@ -155,7 +169,7 @@ public class RequisitionRepository(
                     return null;
 
                 // Use a transaction to prevent two users from generating the same number simultaneously
-                await using var transaction = await context.Database.BeginTransactionAsync();
+                await using var transaction = await ProductionMaterialTransaction.Begin(context);
                 try
                 {
                     var beta = department.Division == Division.BetaLactam ? "B" : "N";
@@ -358,7 +372,7 @@ public class RequisitionRepository(
             .Include(r => r.ProductionScheduleProduct)
                 .ThenInclude(r => r.Product)
             .Include(r => r.RequestedBy)
-            .Include(r => r.Items)
+            .Include(r => r.Items.Where(item => item.DeletedAt == null))
                 .ThenInclude(i => i.Material)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
@@ -695,9 +709,11 @@ public class RequisitionRepository(
 
     public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
     {
+        await using var transaction = await ProductionMaterialTransaction.Begin(context);
         var stockRequisition = await context
             .Requisitions.Include(r => r.Items)
                 .ThenInclude(requisitionItem => requisitionItem.Material)
+            .Include(r => r.Items).ThenInclude(item => item.UoM)
             .Include(requisition => requisition.ProductionActivityStep)
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == stockRequisitionId);
@@ -735,6 +751,11 @@ public class RequisitionRepository(
                 "Stock.Requisition",
                 "Stock requisition has no production schedule product associated, contact admin."
             );
+
+        var materialUnits = await ProductionMaterialUnitRules.ValidateStock(context, stockRequisition.ProductionScheduleProductId.Value,
+            stockRequisition.Items.Select(item => new CreateRequisitionItemRequest
+                { MaterialId = item.MaterialId, UomId = item.UoMId, Quantity = item.Quantity }).ToList());
+        if (materialUnits.IsFailure) return materialUnits;
 
         var user = await context
             .Users.Include(u => u.Department)
@@ -788,7 +809,7 @@ public class RequisitionRepository(
         // Pre-fetch all reserved quantities for all requisition items in a single query
         var itemMaterialIds = stockRequisition.Items.Select(i => i.MaterialId).Distinct().ToList();
         var reservedBatches = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Include(r => r.UoM)
             .Include(r => r.MaterialBatch)
                 .ThenInclude(b => b.Material)
             .Where(r =>
@@ -796,7 +817,7 @@ public class RequisitionRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.ProductionScheduleProductId
                     == stockRequisition.ProductionScheduleProductId.Value
-                && r.DeletedAt == null
+                && r.DeletedAt == null && r.ReleasedAt == null
             )
             .AsSplitQuery()
             .ToListAsync();
@@ -846,6 +867,16 @@ public class RequisitionRepository(
             .AsSplitQuery()
             .OrderBy(s => s.Quantity)
             .ToListAsync();
+
+        foreach (var reservation in reservedBatches)
+        {
+            var shelf = shelfMaterialBatches.SingleOrDefault(item => item.MaterialBatchId == reservation.MaterialBatchId
+                && item.WarehouseLocationShelfId == reservation.WarehouseLocationShelfId);
+            if (shelf is null || shelf.UoMId != reservation.UoMId || shelf.Quantity < reservation.Quantity
+                || reservation.MaterialBatch.Status != BatchStatus.Available
+                || reservation.MaterialBatch.ExpiryDate is { } expiry && expiry != DateTime.MinValue && expiry < DateTime.UtcNow)
+                return Error.Conflict("Stock.AllocationChanged", "An allocated shelf, batch status, expiry or quantity changed. Reconcile allocations before issuing.");
+        }
 
         var shelfBatchesByBatchId = shelfMaterialBatches
             .GroupBy(sb => sb.MaterialBatchId)
@@ -930,9 +961,6 @@ public class RequisitionRepository(
             runningBalances[(pair.MaterialId, pair.WarehouseId)] = initialBalance;
         }
 
-        await using var transaction = await context.Database.BeginTransactionAsync(
-            System.Data.IsolationLevel.Serializable
-        );
         try
         {
             var currentStatus = await context.Requisitions.AsNoTracking()
@@ -978,6 +1006,7 @@ public class RequisitionRepository(
                                     ?.WarehouseLocationRack
                                     ?.WarehouseLocation
                                     ?.WarehouseId == appropriateWarehouse.Id
+                                && sb.WarehouseLocationShelfId == batch.WarehouseLocationShelfId
                             )
                         )
                         {
@@ -1507,6 +1536,10 @@ public class RequisitionRepository(
         {
             return RequisitionErrors.NotFound(requisitionId);
         }
+
+        if (existingRequisition.RequisitionType == RequisitionType.Stock && existingRequisition.ProductionScheduleProductId.HasValue
+            && await context.ProductionMaterialConfigurations.AnyAsync(item => item.ProductionScheduleProductId == existingRequisition.ProductionScheduleProductId))
+            return Error.Conflict("Requisition.AppliedConfiguration", "Correct the product and use the batch Repair action to change this stock requisition.");
 
         mapper.Map(request, existingRequisition);
         existingRequisition.LastUpdatedById = userId;

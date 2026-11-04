@@ -10,6 +10,7 @@ namespace DOMAIN.Entities.Requisitions;
 
 public class RequisitionDto
 {
+    public int ContentRevision { get; set; }
     public Guid Id { get; set; }
     public string Code { get; set; }
     public RequisitionType RequisitionType { get; set; }

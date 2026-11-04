@@ -766,7 +766,7 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
             if (line.BatchNumberDamaged)
                 blockers.Add($"Excel turned the batch number into a date (\"{line.SheetBatchNumber}\"). Type the real batch number.");
             else if (string.IsNullOrWhiteSpace(line.BatchNumber))
-                {
+            {
                 if (migration.Mode == StockMigrationMode.TopUp)
                     blockers.Add("A batch number is required for migration top-ups.");
                 else

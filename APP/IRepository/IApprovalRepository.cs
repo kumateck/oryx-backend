@@ -26,7 +26,8 @@ public interface IApprovalRepository
         Guid modelId,
         Guid userId,
         List<Guid> roleIds,
-        string comments = null
+        string comments = null,
+        int? contentRevision = null
     );
     Task<Result> RejectItem(
         string modelType,
@@ -34,7 +35,8 @@ public interface IApprovalRepository
         Guid userId,
         List<Guid> roleIds,
         string comments = null,
-        ResponseRejectionOutcome? responseOutcome = null
+        ResponseRejectionOutcome? responseOutcome = null,
+        int? contentRevision = null
     );
     Task<List<ApprovalEntity>> GetEntitiesRequiringApproval(
         Guid userId,

@@ -35,6 +35,8 @@ public interface IProductionScheduleRepository
 
     Task<Result<Guid>> StartProductionActivity(Guid productionScheduleProductId, Guid userId);
     Task<Result<ProductionProcedureRepairResult>> RepairProductionProcedure(Guid productionActivityId, Guid userId);
+    Task<Result<ProductionMaterialRepairPreview>> PreviewMaterialRepair(Guid activityId, Guid actorId, MaterialKind kind);
+    Task<Result<ProductionMaterialRepairResult>> ApplyMaterialRepair(Guid activityId, Guid actorId, MaterialKind kind, ApplyProductionMaterialRepair request);
     Task<Result> UpdateStatusOfProductionActivityStep(Guid productionStepId, ProductionStatus status,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<ProductionActivityListDto>>>> GetProductionActivities(

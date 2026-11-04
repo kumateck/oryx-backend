@@ -610,7 +610,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
         var reservedQuantities = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .AsSplitQuery()
             .Where(r =>
                 materialIds.Contains(r.MaterialBatch.MaterialId)
@@ -812,7 +812,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
         var reservedQuery = context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId) && r.DeletedAt == null);
 
         if (departmentId.HasValue)
@@ -2097,8 +2097,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .SumAsync(s => s.Quantity);
 
         var reservedQuantity = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
-            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId)
+            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
+            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId && r.DeletedAt == null)
             .Where(r => r.MaterialBatch.Status == BatchStatus.Available)
             .WhereMaterialDate(r => r.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
             .SumAsync(r => r.Quantity);
@@ -2641,7 +2641,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
     {
         var reservedQuantities = await context
             .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters()
+            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             // MaterialBatch auto-includes its own ShelfMaterialBatches collection
             // (see ConfigureAutoIncludes); loading it here is both unused and,
             // combined with AsSplitQuery, expensive. Explicit includes below cover
@@ -2667,7 +2667,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 r.MaterialBatch.MaterialId == materialId
                 && r.WarehouseId == warehouseId
                 && r.ProductionScheduleProductId == productionScheduleProductId
-                && r.DeletedAt == null
+                && r.DeletedAt == null && r.ReleasedAt == null
             )
             .ToListAsync();
 
@@ -2709,8 +2709,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     r.MaterialBatch.MaterialId == materialId
                     && r.WarehouseId == warehouseId
                     && r.ProductionScheduleProductId == productionScheduleProductId
-                    && r.DeletedAt != null
-                    && r.ProductionUnstartRepairId == null
+                    && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
                 )
                 .ToListAsync()
         );
@@ -3276,12 +3275,13 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         Guid? materialCategoryId,
         string sortLabel,
         SortDirection? sortDirection,
-        Guid userId
+        Guid userId,
+        Guid? productId = null
     )
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-            return UserErrors.NotFound(userId);
+        var scope = await ProductMaterialDepartment(userId, productId);
+        if (scope.IsFailure) return scope.Error;
+        var departmentId = scope.Value;
 
         var query = context
             .MaterialDepartments.AsSplitQuery()
@@ -3296,15 +3296,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
         }
 
-        if (!user.DepartmentId.HasValue)
-        {
-            return UserErrors.DepartmentNotFound;
-        }
-
-        if (user.DepartmentId.HasValue)
-        {
-            query = query.Where(m => m.DepartmentId == user.DepartmentId.Value);
-        }
+        query = query.Where(m => m.DepartmentId == departmentId);
 
         if (kind.HasValue)
         {
@@ -3337,7 +3329,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .Warehouses.IgnoreQueryFilters()
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(w =>
-                    w.DepartmentId == user.DepartmentId && w.Type == warehouseType
+                    w.DepartmentId == departmentId && w.Type == warehouseType
                 );
 
             if (warehouse == null)
@@ -3360,7 +3352,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .Include(s => s.StockTransfer)
                 .Where(s =>
                     s.StockTransfer.MaterialId == result.Material.Id
-                    && s.FromDepartmentId == user.DepartmentId
+                    && s.FromDepartmentId == departmentId
                     && s.Status == StockTransferStatus.InProgress
                 )
                 .SumAsync(s => s.Quantity);
@@ -3404,19 +3396,13 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
     public async Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(
         Guid materialId,
-        Guid userId
+        Guid userId,
+        Guid? productId = null
     )
     {
-        var user = await context
-            .Users.Include(u => u.Department)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null)
-            return UserErrors.NotFound(userId);
-
-        if (!user.DepartmentId.HasValue)
-        {
-            return UserErrors.DepartmentNotFound;
-        }
+        var scope = await ProductMaterialDepartment(userId, productId);
+        if (scope.IsFailure) return scope.Error;
+        var departmentId = scope.Value;
 
         return mapper.Map<UnitOfMeasureDto>(
             (
@@ -3424,7 +3410,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     .MaterialDepartments.AsSplitQuery()
                     .Include(materialDepartment => materialDepartment.UoM)
                     .FirstOrDefaultAsync(m =>
-                        m.MaterialId == materialId && m.DepartmentId == user.DepartmentId.Value
+                        m.MaterialId == materialId && m.DepartmentId == departmentId
                     )
             )?.UoM
         );
@@ -3900,7 +3886,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
     {
         var reservedMaterialQuery = context
             .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters()
+            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .Where(r =>
                 r.MaterialBatch.MaterialId == materialId
                 && r.DeletedAt == null

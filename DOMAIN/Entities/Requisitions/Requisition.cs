@@ -30,10 +30,12 @@ public class Requisition : BaseEntity, IRequireApproval
     public List<RequisitionApproval> Approvals { get; set; }
     public List<RequisitionItem> Items { get; set; }
     public bool Approved { get; set; }
+    public int ContentRevision { get; set; }
 }
 
 public class RequisitionItem : BaseEntity
 {
+    public Guid? RetiredByRepairId { get; set; }
     public Guid RequisitionId { get; set; }
     public Requisition Requisition { get; set; }
     public Guid MaterialId { get; set; }
@@ -47,6 +49,8 @@ public class RequisitionItem : BaseEntity
 
 public class RequisitionApproval : ResponsibleApprovalStage
 {
+    /// <summary>Decisions authorize this document revision only. Earlier rows remain as history.</summary>
+    public int ContentRevision { get; set; }
     public Guid Id { get; set; }
     public Guid RequisitionId { get; set; }
     public Requisition Requisition { get; set; }

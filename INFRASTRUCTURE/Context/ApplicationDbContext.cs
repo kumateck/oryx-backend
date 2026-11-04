@@ -145,6 +145,8 @@ public partial class ApplicationDbContext(
 
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
     public DbSet<MigrationRetestDateChange> MigrationRetestDateChanges { get; set; }
+    public DbSet<IssuedBmrChange> IssuedBmrChanges { get; set; }
+    public DbSet<IssuedBmrRevision> IssuedBmrRevisions { get; set; }
     public DbSet<MaterialRetestRequest> MaterialRetestRequests { get; set; }
     public DbSet<MaterialRetestEvent> MaterialRetestEvents { get; set; }
     public DbSet<ResponseReworkTask> ResponseReworkTasks { get; set; }
@@ -1144,6 +1146,12 @@ public partial class ApplicationDbContext(
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
         ConfigureIssuedMaterialRepair(modelBuilder);
+        modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()
+            .HasForeignKey(change => change.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<IssuedBmrChange>().HasIndex(change => new { change.BatchManufacturingRecordId, change.OccurredAt });
+        modelBuilder.Entity<IssuedBmrRevision>().HasOne(revision => revision.BatchManufacturingRecord).WithMany()
+            .HasForeignKey(revision => revision.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<IssuedBmrRevision>().HasIndex(revision => new { revision.BatchManufacturingRecordId, revision.Status });
         modelBuilder.Entity<MigrationRetestDateChange>().HasOne(change => change.MaterialBatch)
             .WithMany().HasForeignKey(change => change.MaterialBatchId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<MigrationRetestDateChange>().HasIndex(change => new { change.MaterialBatchId, change.OccurredAt });
@@ -1155,6 +1163,7 @@ public partial class ApplicationDbContext(
         ConfigureProductionUnstart(modelBuilder);
         modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
+        ConfigureProductionMaterials(modelBuilder);
         ConfigureRelationships(modelBuilder);
         ConfigureConstraints(modelBuilder);
     }
@@ -1519,7 +1528,8 @@ public partial class ApplicationDbContext(
 
         modelBuilder
             .Entity<RequisitionApproval>()
-            .HasQueryFilter(entity => entity.Requisition != null);
+            .HasQueryFilter(entity => entity.Requisition != null
+                && entity.ContentRevision == entity.Requisition.ContentRevision);
 
         #endregion
 
@@ -1625,7 +1635,7 @@ public partial class ApplicationDbContext(
 
         modelBuilder.Entity<Requisition>().HasQueryFilter(r => !r.DeletedAt.HasValue);
         modelBuilder.Entity<SourceRequisition>().HasQueryFilter(r => !r.DeletedAt.HasValue);
-        modelBuilder.Entity<RequisitionItem>().HasQueryFilter(r => !r.Material.DeletedAt.HasValue);
+        modelBuilder.Entity<RequisitionItem>().HasQueryFilter(r => r.DeletedAt == null && !r.Material.DeletedAt.HasValue);
         modelBuilder
             .Entity<SourceRequisitionItem>()
             .HasQueryFilter(r => !r.SourceRequisition.DeletedAt.HasValue);

@@ -13,7 +13,7 @@ public sealed partial class ProductionUnstartService
 {
     private sealed record Plan(ProductionActivity Activity, ProductionSchedule Schedule, List<ProductionActivityStep> Steps,
         List<BatchManufacturingRecord> Bmrs, List<BatchPackagingRecord> Bprs, List<MaterialBatchReservedQuantity> Reservations,
-        ProductionUnstartPreviewDto Preview);
+        ProductionUnstartPreviewDto Preview, List<ProductionMaterialConfiguration> Configurations);
 
     private async Task<Result<Plan>> Build(Guid activityId)
     {
@@ -63,7 +63,7 @@ public sealed partial class ProductionUnstartService
             blockers.Add("Only the initial BMR preparation step may have started. Later or completed steps prevent unstarting.");
         var reservations = await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes()
             .Include(item => item.MaterialBatch).ThenInclude(item => item.Material).Include(item => item.UoM)
-            .Where(item => item.ProductionScheduleProductId == batch.Id && item.ProductionUnstartRepairId == null).OrderBy(item => item.Id).ToListAsync();
+            .Where(item => item.ProductionScheduleProductId == batch.Id && item.ProductionUnstartRepairId == null && item.ReleasedAt == null).OrderBy(item => item.Id).ToListAsync();
         foreach (var reservation in reservations)
         {
             if (reservation.DeletedAt.HasValue || reservation.Quantity <= 0 || reservation.MaterialBatch.DeletedAt.HasValue
@@ -91,7 +91,9 @@ public sealed partial class ProductionUnstartService
             LotNumber = item.MaterialBatch.BatchNumber, Unit = item.UoM.Symbol, Quantity = item.Quantity }).ToList();
         preview.Blockers = blockers.Distinct().ToList();
         preview.CanApply = preview.Blockers.Count == 0;
-        var plan = new Plan(run, schedule, steps, bmrs, bprs, reservations, preview);
+        var configurations = await db.ProductionMaterialConfigurations.IgnoreAutoIncludes()
+            .Where(item => item.ProductionScheduleProductId == batch.Id).OrderBy(item => item.Id).ToListAsync();
+        var plan = new Plan(run, schedule, steps, bmrs, bprs, reservations, preview, configurations);
         preview.PreviewToken = Hash(Snapshot(plan));
         return plan;
     }
@@ -103,6 +105,7 @@ public sealed partial class ProductionUnstartService
         Steps = plan.Steps.Select(item => new { item.Id, item.Order, item.OperationId, item.Status, item.StartedAt, item.CompletedAt, item.DeletedAt, item.UpdatedAt }),
         Bmrs = plan.Bmrs.Select(item => new { item.Id, item.BatchNumber, item.BatchQuantity, item.ManufacturingDate, item.ExpiryDate, item.Status, item.SampledQuantity, item.IssuedDate, item.IssuedById, item.DeletedAt, item.UpdatedAt }),
         Bprs = plan.Bprs.Select(item => new { item.Id, item.BatchNumber, item.BatchQuantity, item.ManufacturingDate, item.ExpiryDate, item.ProductPackingId, item.IssuedDate, item.IssuedById, item.DeletedAt, item.UpdatedAt }),
-        Reservations = plan.Reservations.Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseId, item.WarehouseLocationShelfId, item.Quantity, item.UoMId, item.DeletedAt, item.ProductionUnstartRepairId }),
+        Reservations = plan.Reservations.Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseId, item.WarehouseLocationShelfId, item.Quantity, item.UoMId, item.DeletedAt, item.ReleasedAt, item.ProductionUnstartRepairId }),
+        Configurations = plan.Configurations.Select(item => new { item.Id, item.Kind, item.Revision, item.SourceHash, item.RequirementsJson, item.DepartmentId, item.StorageWarehouseId, item.ProductionWarehouseId, item.DeletedAt }),
         plan.Preview.Blockers });
 }

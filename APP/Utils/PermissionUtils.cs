@@ -402,6 +402,8 @@ public static class PermissionKeys
     public const string CanRepairIssuedBom = "CanRepairIssuedBom";
     public const string CanRepairIssuedPackaging = "CanRepairIssuedPackaging";
     public const string CanUnstartProduction = "CanUnstartProduction";
+    public const string CanRepairBom = "CanRepairBom";
+    public const string CanRepairPackaging = "CanRepairPackaging";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
     public const string CanCreateProductSchedule = "CanCreateProductSchedule";
     public const string CanEditProductSchedule = "CanEditProductSchedule";
@@ -506,6 +508,10 @@ public static class PermissionKeys
     // Quality Assurance
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
     public const string CanIssueBmr = "CanIssueBmr";
+    public const string CanViewIssuedBmrRecords = "CanViewIssuedBmrRecords";
+    public const string CanCorrectIssuedBmrBatchNumber = "CanCorrectIssuedBmrBatchNumber";
+    public const string CanRequestIssuedBmrRevision = "CanRequestIssuedBmrRevision";
+    public const string CanApproveIssuedBmrRevision = "CanApproveIssuedBmrRevision";
     public const string CanViewAnalyticalTestRequests = "CanViewAnalyticalTestRequests";
     public const string CanViewAnalyticalTestRequestsForSampling =
         "CanViewAnalyticalTestRequestsForSampling";
@@ -1939,6 +1945,8 @@ public static class PermissionUtils
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairIssuedBom);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairIssuedPackaging);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanUnstartProduction);
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairBom);
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairPackaging);
         addPermission(
             PermissionModules.Production,
             PermissionSubmodules.ProductSchedule,
@@ -2276,6 +2284,9 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.QualityCertificates, PermissionKeys.CanGenerateQualityCertificate);
 
         // Quality Assurance
+        foreach (var key in new[] { PermissionKeys.CanViewIssuedBmrRecords, PermissionKeys.CanCorrectIssuedBmrBatchNumber,
+                     PermissionKeys.CanRequestIssuedBmrRevision, PermissionKeys.CanApproveIssuedBmrRevision })
+            addPermission(PermissionModules.QualityAssurance, "Issued BMR Records", key);
         addPermission(
             PermissionModules.QualityAssurance,
             PermissionSubmodules.IssueBmr,

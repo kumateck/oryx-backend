@@ -4,6 +4,7 @@ using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -325,6 +326,58 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         if (userId == null) return TypedResults.Unauthorized();
 
         var result = await repository.RepairProductionProcedure(productionActivityId, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Preview this batch's bom repair from the product's saved configuration. No writes.</summary>
+    [HttpGet("activity/{activityId:guid}/repair-bom/preview", Name = "PreviewProductionBomRepair")]
+    [Authorize(Policy = PermissionKeys.CanRepairBom)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionMaterialRepairPreview))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> PreviewBomRepair(Guid activityId)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.PreviewMaterialRepair(activityId, actor, MaterialKind.Raw);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Apply an unchanged preview to this batch's unissued bom material only.</summary>
+    [HttpPost("activity/{activityId:guid}/repair-bom", Name = "ApplyProductionBomRepair")]
+    [Authorize(Policy = PermissionKeys.CanRepairBom)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionMaterialRepairResult))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> ApplyBomRepair(Guid activityId, [FromBody] ApplyProductionMaterialRepair request)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.ApplyMaterialRepair(activityId, actor, MaterialKind.Raw, request);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Preview this batch's packaging repair from the product's saved configuration. No writes.</summary>
+    [HttpGet("activity/{activityId:guid}/repair-packaging/preview", Name = "PreviewProductionPackagingRepair")]
+    [Authorize(Policy = PermissionKeys.CanRepairPackaging)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionMaterialRepairPreview))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> PreviewPackagingRepair(Guid activityId)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.PreviewMaterialRepair(activityId, actor, MaterialKind.Package);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Apply an unchanged preview to this batch's unissued packaging material only.</summary>
+    [HttpPost("activity/{activityId:guid}/repair-packaging", Name = "ApplyProductionPackagingRepair")]
+    [Authorize(Policy = PermissionKeys.CanRepairPackaging)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionMaterialRepairResult))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> ApplyPackagingRepair(Guid activityId, [FromBody] ApplyProductionMaterialRepair request)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.ApplyMaterialRepair(activityId, actor, MaterialKind.Package, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

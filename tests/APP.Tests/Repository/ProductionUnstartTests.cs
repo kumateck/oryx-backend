@@ -4,6 +4,7 @@ using APP.Services.Production;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Products.Production;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
@@ -70,7 +71,19 @@ public sealed class ProductionUnstartTests
     [RepairPostgresFact]
     public async Task Unstart_archives_drafts_releases_reservations_preserves_stock_and_can_restart_once()
     {
-        await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture); var request = await Request(fixture, run);
+        await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture);
+        await using (var db = fixture.Open())
+        {
+            var productionId = await db.Warehouses.Where(item => item.Type == DOMAIN.Entities.Warehouses.WarehouseType.Production).Select(item => item.Id).SingleAsync();
+            db.ProductionMaterialConfigurations.Add(new ProductionMaterialConfiguration
+            {
+                ProductionScheduleProductId = fixture.BatchId, Kind = MaterialKind.Raw, DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(),
+                StorageWarehouseId = fixture.SourceId, ProductionWarehouseId = productionId, Revision = 1,
+                SourceHash = "prior-run-configuration", RequirementsJson = "[]"
+            });
+            await db.SaveChangesAsync();
+        }
+        var request = await Request(fixture, run);
         await using (var db = fixture.Open())
         {
             var result = await Service(db, fixture).Apply(run, request); Assert.True(result.IsSuccess, result.Error.Description);
@@ -81,12 +94,15 @@ public sealed class ProductionUnstartTests
             Assert.Empty(await db.ProductionActivities.ToListAsync()); Assert.Empty(await db.ProductionActivitySteps.ToListAsync());
             Assert.Empty(await db.BatchManufacturingRecords.ToListAsync()); Assert.Empty(await db.BatchPackagingRecords.ToListAsync());
             Assert.Empty(await db.MaterialBatchReservedQuantities.ToListAsync());
+            Assert.Empty(await db.ProductionMaterialConfigurations.ToListAsync());
             Assert.Equal(400_000_000, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
             Assert.Empty(await db.MassMaterialBatchMovements.ToListAsync()); Assert.Empty(await db.MaterialBatchEvents.ToListAsync());
             Assert.Equal(ProductionStatus.New, (await db.ProductionSchedules.SingleAsync()).Status);
             Assert.Equal(2, await db.ProductionActivitySteps.IgnoreQueryFilters().CountAsync());
             var audit = await db.ProductionUnstartRepairs.SingleAsync(); Assert.Contains("Accidental", audit.Reason);
             Assert.All(await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().ToListAsync(), item => Assert.Equal(audit.Id, item.ProductionUnstartRepairId));
+            Assert.All(await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().ToListAsync(), item => Assert.Equal(audit.AppliedAt, item.ReleasedAt));
+            Assert.Contains("prior-run-configuration", audit.BeforeJson);
             using var mapping = Mapping(db);
             var material = await db.MaterialBatches.FirstAsync();
             var productionId = await db.Warehouses.Where(item => item.Type == DOMAIN.Entities.Warehouses.WarehouseType.Production).Select(item => item.Id).SingleAsync();
@@ -108,6 +124,8 @@ public sealed class ProductionUnstartTests
         {
             Assert.Single(await db.ProductionActivities.ToListAsync()); Assert.Single(await db.BatchManufacturingRecords.ToListAsync());
             Assert.Equal(2, await db.MaterialBatchReservedQuantities.CountAsync());
+            Assert.Equal(2, await db.ProductionMaterialConfigurations.CountAsync());
+            Assert.Equal(2, (await db.ProductionMaterialConfigurations.SingleAsync(item => item.Kind == MaterialKind.Raw)).Revision);
             Assert.True((await Service(db, fixture).Apply(run, request)).Value.AlreadyApplied);
             request.RequestId = Guid.NewGuid(); Assert.True((await Service(db, fixture).Apply(run, request)).Value.AlreadyApplied);
             Assert.Equal(restarted, (await db.ProductionActivities.SingleAsync()).Id);

@@ -10691,6 +10691,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("UoMId")
                         .HasColumnType("uuid");
 
@@ -16302,6 +16305,115 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("BatchPackagingRecords");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AffectedRecordsJson")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("BatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BatchNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreviousBatchNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("PreviousExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("RevisionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchManufacturingRecordId", "OccurredAt");
+
+                    b.ToTable("IssuedBmrChanges");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BatchManufacturingRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BatchNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PreviousManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReviewReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchManufacturingRecordId", "Status");
+
+                    b.ToTable("IssuedBmrRevisions");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", b =>
                 {
                     b.Property<Guid>("Id")
@@ -16754,6 +16866,134 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("WorkCenterId");
 
                     b.ToTable("ProductionActivityStepWorkCenters");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionMaterialConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductionScheduleProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductionWarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequirementsJson")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("StorageWarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductionScheduleProductId", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("ProductionMaterialConfigurations");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionMaterialRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PreviewHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("ProductionScheduleProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ResultJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductionScheduleProductId");
+
+                    b.ToTable("ProductionMaterialRepairs");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionUnstartRepair", b =>
@@ -21143,6 +21383,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int>("ContentRevision")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -21228,6 +21471,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<int>("ContentRevision")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -21299,6 +21545,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<Guid>("RequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RetiredByRepairId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Status")
@@ -35503,6 +35752,28 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ProductionScheduleProduct");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrChange", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("BatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BatchManufacturingRecord");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedBmrRevision", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.BatchManufacturingRecord", "BatchManufacturingRecord")
+                        .WithMany()
+                        .HasForeignKey("BatchManufacturingRecordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BatchManufacturingRecord");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", null)
@@ -35764,6 +36035,66 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("ProductionActivityStep");
 
                     b.Navigation("WorkCenter");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionMaterialConfiguration", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionScheduleProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionMaterialRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionScheduleProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionUnstartRepair", b =>

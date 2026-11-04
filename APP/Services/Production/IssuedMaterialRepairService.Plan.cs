@@ -72,7 +72,7 @@ public sealed partial class IssuedMaterialRepairService
             .Where(item => ids.Contains(item.MaterialId) && item.DepartmentId == batch.Product.DepartmentId).ToListAsync();
         var reservations = await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes()
             .Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
-            .Where(item => item.ProductionScheduleProductId == batchId && item.ProductionUnstartRepairId == null && ids.Contains(item.MaterialBatch.MaterialId))
+            .Where(item => item.ProductionScheduleProductId == batchId && item.ProductionUnstartRepairId == null && item.ReleasedAt == null && ids.Contains(item.MaterialBatch.MaterialId))
             .OrderBy(item => item.Id).ToListAsync();
         if (reservations.Any(item => item.DeletedAt.HasValue || item.MaterialBatch.DeletedAt.HasValue || item.Quantity < 0))
             blockers.Add("Issued reservations include consumed, deleted or invalid stock. Their stock effect must be reviewed separately.");

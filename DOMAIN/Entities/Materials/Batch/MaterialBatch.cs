@@ -58,7 +58,7 @@ public class MaterialBatch : BaseEntity
     public List<MaterialBatchEvent> Events { get; set; } = [];
     public List<MassMaterialBatchMovement> MassMovements { get; set; } = [];
     public List<MaterialBatchReservedQuantity> ReservedQuantities { get; set; } = [];
-    public decimal ReservedQuantity => ReservedQuantities.Sum(r => r.Quantity);
+    public decimal ReservedQuantity => ReservedQuantities.Where(r => r.DeletedAt == null && r.ReleasedAt == null).Sum(r => r.Quantity);
     public List<ShelfMaterialBatch> ShelfMaterialBatches { get; set; } = [];
     public DateTime? ReturnDate { get; set; }
 
@@ -277,6 +277,8 @@ public class MaterialBatchReservedQuantity : BaseEntity
 {
     /// <summary>Released without issue/consumption by an immutable production unstart repair.</summary>
     public Guid? ProductionUnstartRepairId { get; set; }
+    /// <summary>Unissued allocation released by repair; never counts as consumption.</summary>
+    public DateTime? ReleasedAt { get; set; }
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public Guid WarehouseId { get; set; }

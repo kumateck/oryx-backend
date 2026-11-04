@@ -26,6 +26,23 @@ and context refuse changes to repair receipts. Released reservations remain
 history and are excluded from consumption reads and later issued-stock repair
 plans. Old logs/step configuration remain attached to the archived run.
 
+The 2026-11-04 merge with `desmond-latest` also preserves the pre-issue material
+repair allocation model. Unstart stamps `ReleasedAt` as well as its own audit
+marker, and archives the batch's adopted material configurations. Immutable
+before/after receipts retain configuration revisions, source hashes and complete
+requirements. Restart may reuse a configuration row only when its archival time
+matches a recorded unstart for that batch; an active or unrelated deleted
+configuration still blocks initialization. Reuse increments the revision and
+reloads the authoritative requirements without deleting history or creating a
+duplicate batch/kind row. Reservations released by an earlier pre-issue repair
+are excluded from unstart and post-issue repair plans.
+
+Merge validation built the backend, checked EF model/snapshot agreement, and ran
+109 focused tests: 71 passed and 38 PostgreSQL-dependent cases skipped because
+no isolated fixture connection was configured. The restart regression now also
+checks configuration archival/reuse and the shared reservation release marker.
+Run those opt-in PostgreSQL cases before release; no migration SQL was applied.
+
 Active activity/step queries exclude archived starts. The run-per-batch unique
 index is partial (`DeletedAt IS NULL`), allowing a new run without deleting its
 old evidence. Start operations serialize before checking for an active run and
