@@ -165,8 +165,10 @@ sha256sum "$BACKUP" > "$BACKUP.sha256"
 STAGE=migration
 MIGRATION_STARTED=1
 compose migration run --rm --no-deps --pull never -T app >>"$LOG" 2>&1
+# A retry can rebuild the same SHA tag with different bytes. Force Compose to replace
+# a stopped container even when its stored image name and config hash are unchanged.
 STAGE=deploying
-compose runtime up --detach --no-deps --no-build --pull never app >>"$LOG" 2>&1
+compose runtime up --detach --force-recreate --no-deps --no-build --pull never app >>"$LOG" 2>&1
 STAGE=health
 healthy=0
 for attempt in {1..45}; do
