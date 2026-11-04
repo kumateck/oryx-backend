@@ -173,6 +173,8 @@ public class MaterialExpiryProjectionDto
     public string MaterialCode { get; set; }
     public string BatchNo { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    public DateTime? RetestDate { get; set; }
+    public DateTime? EffectiveExpiryDate { get; set; }
     public int? DaysUntilExpiry { get; set; }
     public string ExpiryWindow { get; set; }
     public decimal Quantity { get; set; }

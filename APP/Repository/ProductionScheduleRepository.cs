@@ -27,7 +27,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(
+public partial class ProductionScheduleRepository(
     ApplicationDbContext context,
     IMapper mapper,
     UserManager<User> userManager,
@@ -90,26 +90,14 @@ public class ProductionScheduleRepository(
         return productionSchedule.Id;
     }
 
-    public async Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId)
+    public async Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId, Guid userId)
     {
-        var productionSchedule = await context
-            .ProductionSchedules.AsSplitQuery()
-            .Include(s => s.Products)
-                .ThenInclude(s => s.ProductPacking)
-                    .ThenInclude(p => p.BasePackingUoM)
-            .Include(s => s.Products)
-                .ThenInclude(s => s.Product)
-            .Include(s => s.Products)
-                .ThenInclude(s => s.ProductionActivity)
-            .Include(s => s.Products)
-                .ThenInclude(s => s.ProductPacking)
-                    .ThenInclude(p => p.PackingLists)
-                        .ThenInclude(p => p.Uom)
-            .FirstOrDefaultAsync(s => s.Id == scheduleId);
-
-        return productionSchedule is null
+        var scoped = await ProductionScheduleQueries.ForActor(context, userId);
+        if (scoped.IsFailure) return scoped.Error;
+        var schedule = await scoped.Value.Query.FirstOrDefaultAsync(item => item.Id == scheduleId);
+        return schedule is null
             ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found")
-            : mapper.Map<ProductionScheduleDto>(productionSchedule);
+            : mapper.Map<ProductionScheduleDto>(schedule);
     }
 
     public async Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
@@ -142,90 +130,23 @@ public class ProductionScheduleRepository(
         return new List<ProductionScheduleProcurementDto>();
     }
 
-    public async Task<
-        Result<Paginateable<IEnumerable<ProductionScheduleDto>>>
-    > GetProductionSchedules(
-        Guid roleId,
-        int page,
-        int pageSize,
-        string searchQuery,
-        Guid departmentId
-    )
+    public async Task<Result<Paginateable<IEnumerable<ProductionScheduleDto>>>> GetProductionSchedules(
+        Guid userId, int page, int pageSize, string searchQuery)
     {
-        var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
-        if (role is null)
-            return Error.NotFound("Role.NotFound", "Role not found");
-
-        var department = await context.Departments.FirstOrDefaultAsync(d => d.Id == departmentId);
-        if (department is null)
-            return Error.NotFound("Department.NotFound", "Department not found");
-
-        if (role.Type == DepartmentType.Production)
+        var scoped = await ProductionScheduleQueries.ForActor(context, userId);
+        if (scoped.IsFailure) return scoped.Error;
+        var query = scoped.Value.Query;
+        if (!string.IsNullOrWhiteSpace(searchQuery))
         {
-            var query = context
-                .ProductionSchedules.IgnoreQueryFilters()
-                .AsSplitQuery()
-                .Include(s => s.Products.Where(p => p.Product.DepartmentId == departmentId))
-                    .ThenInclude(p => p.Product)
-                .Include(s => s.Products.Where(p => p.Product.DepartmentId == departmentId))
-                    .ThenInclude(p => p.ProductionActivity)
-                .Include(s => s.Products)
-                    .ThenInclude(s => s.ProductPacking)
-                        .ThenInclude(p => p.PackingLists)
-                            .ThenInclude(l => l.Uom)
-                .Where(s => s.Products.Any(p => p.Product.DepartmentId == departmentId))
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchQuery))
-            {
-                var lowerSearchQuery = searchQuery.ToLower();
-                query = query.Where(q =>
-                    q.Code.ToLower().Contains(lowerSearchQuery)
-                    || q.Products.Any(p =>
-                        p.Product.DepartmentId == departmentId
-                        && p.Product.Name.ToLower().Contains(lowerSearchQuery)
-                    )
-                );
-            }
-
-            return await PaginationHelper.GetPaginatedResultAsync(
-                query,
-                page,
-                pageSize,
-                mapper.Map<ProductionScheduleDto>
-            );
+            var term = searchQuery.Trim().ToLower();
+            // Search exactly the same visible products as the filtered include.
+            var department = scoped.Value.DepartmentId;
+            query = query.Where(schedule => schedule.Code.ToLower().Contains(term)
+                || schedule.Products.Any(item => item.Product.DeletedAt == null
+                    && (!department.HasValue || item.Product.DepartmentId == department)
+                    && item.Product.Name.ToLower().Contains(term)));
         }
-        else
-        {
-            var query = context
-                .ProductionSchedules.IgnoreQueryFilters()
-                .AsSplitQuery()
-                .Include(s => s.Products)
-                    .ThenInclude(p => p.Product)
-                .Include(s => s.Products)
-                    .ThenInclude(p => p.ProductionActivity)
-                .Include(s => s.Products)
-                    .ThenInclude(s => s.ProductPacking)
-                        .ThenInclude(p => p.PackingLists)
-                            .ThenInclude(l => l.Uom)
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchQuery))
-            {
-                var lowerSearchQuery = searchQuery.ToLower();
-                query = query.Where(q =>
-                    q.Code.ToLower().Contains(lowerSearchQuery)
-                    || q.Products.Any(p => p.Product.Name.ToLower().Contains(lowerSearchQuery))
-                );
-            }
-
-            return await PaginationHelper.GetPaginatedResultAsync(
-                query,
-                page,
-                pageSize,
-                mapper.Map<ProductionScheduleDto>
-            );
-        }
+        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionScheduleDto>);
     }
 
     public async Task<Result> UpdateProductionSchedule(
@@ -1252,7 +1173,7 @@ public class ProductionScheduleRepository(
                 "No raw material warehouse is associated with current user"
             );
 
-        var warehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var warehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.RawMaterialStorage
         );
         if (warehouse is null)
@@ -1261,7 +1182,7 @@ public class ProductionScheduleRepository(
                 "No raw material warehouse is associated with current user"
             );
 
-        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var productionWarehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.Production
         );
         if (productionWarehouse is null)
@@ -1316,13 +1237,10 @@ public class ProductionScheduleRepository(
                 materialIds.Contains(s.MaterialBatch.MaterialId)
                 && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
                     == warehouse.Id
-                && !s.DeletedAt.HasValue
-                && (
-                    s.MaterialBatch.ExpiryDate == null
-                    || s.MaterialBatch.ExpiryDate == DateTime.MinValue
-                    || s.MaterialBatch.ExpiryDate >= DateTime.UtcNow
-                )
+                && !s.DeletedAt.HasValue && s.MaterialBatch.DeletedAt == null
+                && s.MaterialBatch.Status == BatchStatus.Available
             )
+            .WhereMaterialDate(s => s.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
             .GroupBy(s => s.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
             .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
@@ -1618,7 +1536,7 @@ public class ProductionScheduleRepository(
                 "No package material warehouse is associated with current user"
             );
 
-        var warehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var warehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.PackagedStorage
         );
         if (warehouse is null)
@@ -1627,7 +1545,7 @@ public class ProductionScheduleRepository(
                 "No package material warehouse is associated with current user"
             );
 
-        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var productionWarehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.Production
         );
         if (productionWarehouse is null)
@@ -4926,7 +4844,7 @@ public class ProductionScheduleRepository(
                 "No raw material warehouse is associated with current user"
             );
 
-        var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var rawWarehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.RawMaterialStorage
         );
         if (rawWarehouse is null)
@@ -4935,7 +4853,7 @@ public class ProductionScheduleRepository(
                 "No raw material warehouse is associated with current user"
             );
 
-        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var productionWarehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.Production
         );
         if (productionWarehouse is null)
@@ -4958,11 +4876,11 @@ public class ProductionScheduleRepository(
                     == rawWarehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .Select(s => new
+            .SelectMaterialDate(s => s.MaterialBatch, (s, date) => new
             {
                 s.MaterialBatch.MaterialId,
                 s.Quantity,
-                s.MaterialBatch.ExpiryDate,
+                ExpiryDate = date,
             })
             .ToListAsync();
 
@@ -4974,7 +4892,7 @@ public class ProductionScheduleRepository(
             .Where(r =>
                 r.ExpiryDate.HasValue
                 && r.ExpiryDate.Value != DateTime.MinValue
-                && r.ExpiryDate.Value < DateTime.UtcNow
+                && r.ExpiryDate.Value <= DateTime.UtcNow
             )
             .GroupBy(r => r.MaterialId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
@@ -5029,7 +4947,7 @@ public class ProductionScheduleRepository(
             })
             .ToList();
 
-        var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var packingWarehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.PackagedStorage
         );
         if (packingWarehouse is null)
@@ -5046,11 +4964,11 @@ public class ProductionScheduleRepository(
                     == packingWarehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .Select(s => new
+            .SelectMaterialDate(s => s.MaterialBatch, (s, date) => new
             {
                 s.MaterialBatch.MaterialId,
                 s.Quantity,
-                s.MaterialBatch.ExpiryDate,
+                ExpiryDate = date,
             })
             .ToListAsync();
 
@@ -5062,7 +4980,7 @@ public class ProductionScheduleRepository(
             .Where(r =>
                 r.ExpiryDate.HasValue
                 && r.ExpiryDate.Value != DateTime.MinValue
-                && r.ExpiryDate.Value < DateTime.UtcNow
+                && r.ExpiryDate.Value <= DateTime.UtcNow
             )
             .GroupBy(r => r.MaterialId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));

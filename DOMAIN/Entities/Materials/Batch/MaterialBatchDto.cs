@@ -45,8 +45,8 @@ public class MaterialBatchDto : IGrnEnrichedDto
     public List<MaterialBatchReservedQuantityDto> ReservedQuantities { get; set; } = [];
     public decimal ReservedQuantity { get; set; }
     public DateTime? ReturnDate { get; set; }
-    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= EffectiveExpiryDate;
-    public bool Expired => EffectiveExpiryDate != DateTime.MinValue && DateTime.UtcNow >= EffectiveExpiryDate;
+    public bool AboutToExpire => MaterialValidity.IsExpiringBy(EffectiveExpiryDate, DateTime.UtcNow, DateTime.UtcNow.AddMonths(6));
+    public bool Expired => MaterialValidity.IsExpiredDate(EffectiveExpiryDate, DateTime.UtcNow);
     public string IssueNumber { get; set; }
     public string SupplierName { get; set; }
     public string ManufacturerName { get; set; }
@@ -84,8 +84,8 @@ public class MaterialBatchListDto : IGrnEnrichedDto
     public DateTime? RetestDate { get; set; }
     public DateTime? EffectiveExpiryDate { get; set; }
     public MaterialBatchChecklistDto Checklist { get; set; }
-    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= EffectiveExpiryDate;
-    public bool Expired => EffectiveExpiryDate != DateTime.MinValue && DateTime.UtcNow >= EffectiveExpiryDate;
+    public bool AboutToExpire => MaterialValidity.IsExpiringBy(EffectiveExpiryDate, DateTime.UtcNow, DateTime.UtcNow.AddMonths(6));
+    public bool Expired => MaterialValidity.IsExpiredDate(EffectiveExpiryDate, DateTime.UtcNow);
     public DateTime? ReturnDate { get; set; }
     public bool IsReturn => ReturnDate.HasValue;
     public string IssueNumber { get; set; }
@@ -124,8 +124,8 @@ public class MaterialBatchReducedDto : IGrnEnrichedDto
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
     public DateTime? EffectiveExpiryDate { get; set; }
-    public bool AboutToExpire => !Expired && DateTime.UtcNow.AddMonths(6) >= EffectiveExpiryDate;
-    public bool Expired => EffectiveExpiryDate != DateTime.MinValue && DateTime.UtcNow >= EffectiveExpiryDate;
+    public bool AboutToExpire => MaterialValidity.IsExpiringBy(EffectiveExpiryDate, DateTime.UtcNow, DateTime.UtcNow.AddMonths(6));
+    public bool Expired => MaterialValidity.IsExpiredDate(EffectiveExpiryDate, DateTime.UtcNow);
     public string IssueNumber { get; set; }
     public CollectionItemDto IssuedBy { get; set; }
     public DateTime? IssuedAt { get; set; }

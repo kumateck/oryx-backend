@@ -73,8 +73,8 @@ internal static class ProductionMaterialQueries
         var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.MaterialBatch)
             .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.DeletedAt == null && item.MaterialBatch.DeletedAt == null
                 && item.MaterialBatch.Status == BatchStatus.Available
-                && (item.MaterialBatch.ExpiryDate == null || item.MaterialBatch.ExpiryDate == DateTime.MinValue || item.MaterialBatch.ExpiryDate >= DateTime.UtcNow)
-                && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == configuration.StorageWarehouseId).ToListAsync();
+                && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == configuration.StorageWarehouseId)
+            .WhereMaterialDate(item => item.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow).ToListAsync();
         var reservations = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.MaterialBatch)
             .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.WarehouseId == configuration.ProductionWarehouseId && item.ReleasedAt == null).ToListAsync();
         var items = await context.RequisitionItems.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.Requisition)

@@ -3565,15 +3565,14 @@ public partial class ReportRepository(
                     .DepartmentId == departmentId
             )
             .WhereMaterialDate(smb => smb.MaterialBatch, date => date.HasValue && date != DateTime.MinValue && date <= now)
-            .Select(smb => new ExpiredMaterialReportDto
+            .SelectMaterialDate(smb => smb.MaterialBatch, (smb, date) => new ExpiredMaterialReportDto
             {
                 MaterialName = smb.MaterialBatch.Material.Name,
                 MaterialCode = smb.MaterialBatch.Material.Code,
                 BatchNumber = smb.MaterialBatch.BatchNumber,
                 QuantityOnShelf = smb.Quantity,
                 UomSymbol = smb.MaterialBatch.UoM.Symbol,
-                ExpiryDate = smb.MaterialBatch.Material.Kind == MaterialKind.Raw && !(smb.MaterialBatch.ExpiryDate > now)
-                    ? smb.MaterialBatch.RetestDate ?? smb.MaterialBatch.ExpiryDate : smb.MaterialBatch.ExpiryDate,
+                ExpiryDate = date,
                 DateReceived = smb.MaterialBatch.DateReceived,
                 ShelfName = smb.WarehouseLocationShelf.Name,
             })
@@ -4547,7 +4546,6 @@ public partial class ReportRepository(
             .Where(smb =>
                 !smb.DeletedAt.HasValue
                 && smb.Quantity > 0
-                && smb.MaterialBatch.ExpiryDate.HasValue
                 && !smb.MaterialBatch.DeletedAt.HasValue
                 && !smb.MaterialBatch.Material.IsUnlimited
             );
@@ -4573,17 +4571,23 @@ public partial class ReportRepository(
                     .WarehouseLocation.Warehouse.Division == filter.Division.Value);
 
         var grouped = await query
+            .SelectMaterialDate(smb => smb.MaterialBatch, (smb, date) => new
+            {
+                DepartmentName = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Department.Name,
+                WarehouseName = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name,
+                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol,
+                smb.MaterialBatchId, smb.Quantity, Date = date
+            })
+            .Where(row => row.Date.HasValue && row.Date != DateTime.MinValue)
             .GroupBy(smb => new
             {
-                DepartmentName = smb.WarehouseLocationShelf.WarehouseLocationRack
-                    .WarehouseLocation.Warehouse.Department.Name,
-                WarehouseName = smb.WarehouseLocationShelf.WarehouseLocationRack
-                    .WarehouseLocation.Warehouse.Name,
-                WindowCode = smb.MaterialBatch.ExpiryDate <= threshold30 ? 0
-                    : smb.MaterialBatch.ExpiryDate <= threshold60 ? 1
-                    : smb.MaterialBatch.ExpiryDate <= threshold90 ? 2
+                DepartmentName = smb.DepartmentName,
+                WarehouseName = smb.WarehouseName,
+                WindowCode = smb.Date <= threshold30 ? 0
+                    : smb.Date <= threshold60 ? 1
+                    : smb.Date <= threshold90 ? 2
                     : 3,
-                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol
+                UomSymbol = smb.UomSymbol
             })
             .Select(g => new
             {
@@ -5087,10 +5091,10 @@ public partial class ReportRepository(
             query = query.Where(smb => smb.MaterialBatch.BatchNumber.Contains(batchNumber));
 
         if (expiryDateFrom.HasValue)
-            query = query.Where(smb => smb.MaterialBatch.ExpiryDate >= expiryDateFrom.Value);
+            query = query.WhereMaterialDate(smb => smb.MaterialBatch, date => date >= expiryDateFrom.Value);
 
         if (expiryDateTo.HasValue)
-            query = query.Where(smb => smb.MaterialBatch.ExpiryDate <= expiryDateTo.Value);
+            query = query.WhereMaterialDate(smb => smb.MaterialBatch, date => date <= expiryDateTo.Value);
 
         var rawData = await query
             .Select(smb => new
@@ -5872,8 +5876,8 @@ public partial class ReportRepository(
 
         var query = context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
             .Where(smb => !smb.DeletedAt.HasValue && smb.Quantity > 0
-                && !smb.MaterialBatch.DeletedAt.HasValue
-                && smb.MaterialBatch.ExpiryDate.HasValue);
+                && !smb.MaterialBatch.DeletedAt.HasValue)
+            .WhereMaterialDate(smb => smb.MaterialBatch, date => date.HasValue && date.Value != DateTime.MinValue);
 
         if (warehouseId.HasValue)
             query = query.Where(smb =>
@@ -5888,12 +5892,14 @@ public partial class ReportRepository(
                 md.DepartmentId == departmentId.Value && !md.DeletedAt.HasValue));
 
         var data = await query
-            .Select(smb => new
+            .SelectMaterialDate(smb => smb.MaterialBatch, (smb, effectiveDate) => new
             {
                 smb.MaterialBatch.Material.Name,
                 smb.MaterialBatch.Material.Code,
                 smb.MaterialBatch.BatchNumber,
                 smb.MaterialBatch.ExpiryDate,
+                smb.MaterialBatch.RetestDate,
+                EffectiveExpiryDate = effectiveDate,
                 smb.Quantity,
                 UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol,
                 WarehouseName = smb.WarehouseLocationShelf.WarehouseLocationRack
@@ -5910,8 +5916,8 @@ public partial class ReportRepository(
 
         var mapped = data.Select(x =>
         {
-            var daysUntilExpiry = x.ExpiryDate.HasValue
-                ? (int?)(x.ExpiryDate.Value.Date - today).TotalDays : null;
+            var daysUntilExpiry = x.EffectiveExpiryDate.HasValue
+                ? (int?)(x.EffectiveExpiryDate.Value.Date - today).TotalDays : null;
             var daysOnShelf = (int)(today - x.CreatedAt.Date).TotalDays;
             string windowStr;
             if (daysUntilExpiry < 0) windowStr = "Expired";
@@ -5920,7 +5926,7 @@ public partial class ReportRepository(
             else if (daysUntilExpiry <= 90) windowStr = "61–90 days";
             else windowStr = "> 90 days";
 
-            return new { x.Name, x.Code, x.BatchNumber, x.ExpiryDate, daysUntilExpiry, windowStr, x.Quantity, x.UomSymbol, x.WarehouseName, x.Shelf, daysOnShelf };
+            return new { x.Name, x.Code, x.BatchNumber, x.ExpiryDate, x.RetestDate, x.EffectiveExpiryDate, daysUntilExpiry, windowStr, x.Quantity, x.UomSymbol, x.WarehouseName, x.Shelf, daysOnShelf };
         });
 
         if (window.HasValue)
@@ -5939,7 +5945,7 @@ public partial class ReportRepository(
         }
 
         var result = mapped
-            .OrderBy(x => x.ExpiryDate)
+            .OrderBy(x => x.EffectiveExpiryDate)
             .Select((x, i) => new MaterialExpiryProjectionDto
             {
                 No = i + 1,
@@ -5947,6 +5953,8 @@ public partial class ReportRepository(
                 MaterialCode = x.Code,
                 BatchNo = x.BatchNumber,
                 ExpiryDate = x.ExpiryDate,
+                RetestDate = x.RetestDate,
+                EffectiveExpiryDate = x.EffectiveExpiryDate,
                 DaysUntilExpiry = x.daysUntilExpiry,
                 ExpiryWindow = x.windowStr,
                 Quantity = x.Quantity,
@@ -6549,10 +6557,10 @@ public partial class ReportRepository(
             query = query.Where(smb => smb.MaterialBatch.MaterialId == materialId.Value);
 
         if (expiryDateFrom.HasValue)
-            query = query.Where(smb => smb.MaterialBatch.ExpiryDate >= expiryDateFrom.Value);
+            query = query.WhereMaterialDate(smb => smb.MaterialBatch, date => date >= expiryDateFrom.Value);
 
         if (expiryDateTo.HasValue)
-            query = query.Where(smb => smb.MaterialBatch.ExpiryDate <= expiryDateTo.Value);
+            query = query.WhereMaterialDate(smb => smb.MaterialBatch, date => date <= expiryDateTo.Value);
 
         var data = await query
             .Select(smb => new
@@ -7797,7 +7805,6 @@ public partial class ReportRepository(
             .Where(smb =>
                 !smb.DeletedAt.HasValue
                 && smb.Quantity > 0
-                && smb.MaterialBatch.ExpiryDate.HasValue
                 && !smb.MaterialBatch.DeletedAt.HasValue
                 && !smb.MaterialBatch.Material.IsUnlimited
             );
@@ -7808,15 +7815,22 @@ public partial class ReportRepository(
                     .WarehouseLocation.WarehouseId == filter.WarehouseId.Value);
 
         var grouped = await query
+            .SelectMaterialDate(smb => smb.MaterialBatch, (smb, date) => new
+            {
+                DepartmentName = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Department.Name,
+                WarehouseName = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name,
+                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol,
+                smb.MaterialBatchId, smb.Quantity, Date = date
+            })
+            .Where(row => row.Date.HasValue && row.Date != DateTime.MinValue)
             .GroupBy(smb => new
             {
-                WarehouseName = smb.WarehouseLocationShelf.WarehouseLocationRack
-                    .WarehouseLocation.Warehouse.Name,
-                WindowCode = smb.MaterialBatch.ExpiryDate <= threshold30 ? 0
-                    : smb.MaterialBatch.ExpiryDate <= threshold60 ? 1
-                    : smb.MaterialBatch.ExpiryDate <= threshold90 ? 2
+                WarehouseName = smb.WarehouseName,
+                WindowCode = smb.Date <= threshold30 ? 0
+                    : smb.Date <= threshold60 ? 1
+                    : smb.Date <= threshold90 ? 2
                     : 3,
-                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol
+                UomSymbol = smb.UomSymbol
             })
             .Select(g => new
             {
@@ -8018,8 +8032,9 @@ public partial class ReportRepository(
             .Where(smb => !smb.DeletedAt.HasValue && warehouseIds.Contains(
                 smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId));
         var expiry = shelfStock.Where(smb => smb.Quantity > 0 &&
-            smb.MaterialBatch.ExpiryDate.HasValue &&
-            !smb.MaterialBatch.Material.IsUnlimited);
+            !smb.MaterialBatch.Material.IsUnlimited)
+            .WhereMaterialDate(smb => smb.MaterialBatch, date =>
+                date.HasValue && date != DateTime.MinValue && date <= DateTime.UtcNow);
         var transfers = context.StockTransferSources.IgnoreQueryFilters().AsNoTracking()
             .Where(sts => !sts.DeletedAt.HasValue);
         if (departmentId.HasValue)

@@ -35,7 +35,9 @@ internal static class MaterialStockReportQuery
         var batches = context.MaterialBatches.IgnoreQueryFilters().AsNoTracking()
             .Where(batch => batch.DeletedAt == null && batch.Material.DeletedAt == null);
         if (filter.MaterialKind.HasValue) batches = batches.Where(batch => batch.Material.Kind == filter.MaterialKind);
-        if (filter.ExpiredOnly) batches = batches.WhereMaterialDate(batch => batch, date => date.HasValue && date.Value != DateTime.MinValue && date <= now);
+        batches = filter.ExpiredOnly
+            ? batches.WhereMaterialDate(batch => batch, date => date.HasValue && date.Value != DateTime.MinValue && date <= now)
+            : batches.WhereMaterialDate(batch => batch, date => date == null || date == DateTime.MinValue || date > now);
         return from position in positions join batch in batches on position.MaterialBatchId equals batch.Id
             select new MaterialStockReportRow {
                 BatchId = batch.Id, DepartmentId = position.DepartmentId, DepartmentName = position.DepartmentName,

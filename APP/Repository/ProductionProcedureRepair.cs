@@ -15,7 +15,7 @@ namespace APP.Repository;
 /// criticality, work centres, resources, and the people responsible with their instruction and
 /// analytical raw data. Completed steps, and anything before them, are never changed.
 /// </summary>
-internal static class ProductionProcedureRepair
+internal static partial class ProductionProcedureRepair
 {
     internal static async Task<Result<ProductionProcedureRepairResult>> RepairAsync(
         ApplicationDbContext context, UserManager<User> userManager, Guid activityId, Guid userId)
@@ -50,7 +50,7 @@ internal static class ProductionProcedureRepair
             return Error.Validation("ProductionActivity.NothingToRepair", "Every step of this batch is completed, so there is nothing to repair.");
 
         var result = new ProductionProcedureRepairResult();
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await ProductionMaterialTransaction.Begin(context);
         try
         {
             foreach (var route in routes)

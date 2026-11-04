@@ -35,7 +35,8 @@ internal static class ProductionMaterialSwapRules
             return Error.Validation("Swap.Selection", "Select each complete source allocation and replacement shelf once.");
         var ids = first.Concat(second).Select(item => item.ShelfMaterialBatchId).ToList();
         var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
-            .Include(item => item.MaterialBatch).Include(item => item.WarehouseLocationShelf).ThenInclude(item => item.WarehouseLocationRack)
+            .Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
+            .Include(item => item.WarehouseLocationShelf).ThenInclude(item => item.WarehouseLocationRack)
                 .ThenInclude(item => item.WarehouseLocation)
             .Where(item => ids.Contains(item.Id) && item.DeletedAt == null && item.MaterialBatch.DeletedAt == null).ToDictionaryAsync(item => item.Id);
         var reservations = await context.MaterialBatchReservedQuantities.IgnoreAutoIncludes().AsNoTracking()
@@ -61,7 +62,7 @@ internal static class ProductionMaterialSwapRules
                 || shelf.MaterialBatchId != item.MaterialBatchId || shelf.UoMId != item.UoMId || item.Quantity <= 0
                 || shelf.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId != request.SecondWarehouseId
                 || shelf.MaterialBatch.Status != BatchStatus.Available
-                || shelf.MaterialBatch.ExpiryDate is { } expiry && expiry != DateTime.MinValue && expiry < DateTime.UtcNow)
+                || MaterialValidity.IsExpired(shelf.MaterialBatch, DateTime.UtcNow))
                 return Error.Conflict("Swap.Replacement", "The replacement shelf, units or stock eligibility changed. Reload before swapping.");
             var held = otherHolds.Where(row => row.MaterialBatchId == item.MaterialBatchId && row.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId).ToList();
             var key = (shelf.MaterialBatch.MaterialId, item.UoMId);
