@@ -1133,7 +1133,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         var remainingQuantityToMove = request.Quantity;
 
         // Iterate through batches, prioritizing those with earlier expiry dates
-        foreach (var batch in material.Batches.OrderBy(m => m.ExpiryDate))
+        foreach (var batch in material.Batches.OrderBy(b => MaterialValidity.EffectiveDate(b)))
         {
             // Get the stock for this specific batch at the fromLocation
             var batchStockAtFromWarehouse = await GetBatchStockInLocation(
@@ -2054,7 +2054,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     == warehouseId
                 && !s.DeletedAt.HasValue
             )
-            .Select(s => new { s.Quantity, ExpiryDate = s.MaterialBatch.Material.Kind == MaterialKind.Raw && !(s.MaterialBatch.ExpiryDate > DateTime.UtcNow) ? s.MaterialBatch.RetestDate ?? s.MaterialBatch.ExpiryDate : s.MaterialBatch.ExpiryDate })
+            .SelectMaterialDate(s => s.MaterialBatch, (s, date) => new { s.Quantity, ExpiryDate = date })
             .ToListAsync();
 
         var totalQuantity = rows.Sum(r => r.Quantity);
@@ -2140,7 +2140,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         shelfMaterialBatchesDto = shelfMaterialBatchesDto
             .OrderByDescending(s => s.MaterialBatch.AboutToExpire)
             .ThenByDescending(s => s.MaterialBatch.Expired)
-            .ThenByDescending(s => s.MaterialBatch.ExpiryDate)
+            .ThenByDescending(s => s.MaterialBatch.EffectiveExpiryDate)
             .ToList();
 
         if (onlyAboutToExpire.HasValue)
@@ -2197,7 +2197,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         shelfMaterialBatchesDto = shelfMaterialBatchesDto
             .OrderByDescending(s => s.MaterialBatch.AboutToExpire)
             .ThenByDescending(s => s.MaterialBatch.Expired)
-            .ThenByDescending(s => s.MaterialBatch.ExpiryDate)
+            .ThenByDescending(s => s.MaterialBatch.EffectiveExpiryDate)
             .ToList();
 
         return shelfMaterialBatchesDto;
@@ -2306,7 +2306,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     m.BatchId == b.Id && m.FromWarehouseId == warehouseId
                 )
             )
-            .OrderBy(b => b.ExpiryDate) // FIFO (First-In, First-Out)
+            .OrderBy(MaterialValidity.DateAt(DateTime.UtcNow)) // FIFO (First-In, First-Out)
             .ToListAsync();
 
         foreach (var batch in frozenBatches)
@@ -2372,7 +2372,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     ) || b.ReservedQuantities.Any(rq => rq.WarehouseId == warehouseId)
                 )
             ) // Ensure the batch is in the warehouse
-            .OrderBy(b => b.ExpiryDate) // FIFO
+            .OrderBy(MaterialValidity.DateAt(DateTime.UtcNow)) // FIFO
             .Include(b => b.ShelfMaterialBatches)
                 .ThenInclude(smb => smb.WarehouseLocationShelf)
                     .ThenInclude(s => s.WarehouseLocationRack)
@@ -2476,7 +2476,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 )
                 .OrderBy(_ => batch.ReturnDate == null) // returned batches first
                 .ThenBy(_ => batch.ReturnDate) // earliest return date first
-                .ThenBy(_ => batch.ExpiryDate) // then by expiry
+                .ThenBy(_ => MaterialValidity.EffectiveDate(batch)) // then by expiry
                 .ToList();
 
             foreach (var shelfBatch in shelfBatches)
@@ -2750,7 +2750,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         }
         else
         {
-            foreach (var batch in material.Batches.OrderBy(b => b.ExpiryDate))
+            foreach (var batch in material.Batches.OrderBy(b => MaterialValidity.EffectiveDate(b)))
             {
                 if (remainingQuantityToConsume <= 0)
                     break; // Stop if we've consumed all the required quantity
@@ -3895,7 +3895,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .AsNoTracking();
 
         var reservedMaterials = await reservedMaterialQuery
-            .Select(r => new ReservedMaterialReportDto
+            .SelectMaterialDate(r => r.MaterialBatch, (r, date) => new ReservedMaterialReportDto
             {
                 MaterialName = r.MaterialBatch.Material.Name,
                 MaterialCode = r.MaterialBatch.Material.Code,
@@ -3920,8 +3920,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     .FirstOrDefault(),
                 ManufacturingDate = r.MaterialBatch.ManufacturingDate,
                 ExpiryDate = r.MaterialBatch.ExpiryDate,
-                EffectiveExpiryDate = r.MaterialBatch.Material.Kind == MaterialKind.Raw && !(r.MaterialBatch.ExpiryDate > DateTime.UtcNow)
-                    ? r.MaterialBatch.RetestDate ?? r.MaterialBatch.ExpiryDate : r.MaterialBatch.ExpiryDate,
+                EffectiveExpiryDate = date,
                 BalanceQuantity =
                     r.MaterialBatch.TotalQuantity
                     - r.MaterialBatch.ConsumedQuantity

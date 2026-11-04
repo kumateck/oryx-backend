@@ -58,7 +58,7 @@ internal sealed class IssuedMaterialRepairFixture : IAsyncDisposable
     public ApplicationDbContext Open() => new(new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(Connection).Options, Actor);
     public IssuedMaterialRepairService Service(ApplicationDbContext context) => new(context, Actor);
 
-    public async Task Seed(IssuedMaterialRepairKind kind = IssuedMaterialRepairKind.Packaging, decimal stock = 200_000_000, bool issueStock = true)
+    public async Task Seed(IssuedMaterialRepairKind kind = IssuedMaterialRepairKind.Packaging, decimal stock = 200_000_000, bool issueStock = true, bool validRetest = false)
     {
         Kind = kind;
         var builder = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ORYX_ISSUE_REPAIR_TEST_CONNECTION"));
@@ -122,7 +122,8 @@ internal sealed class IssuedMaterialRepairFixture : IAsyncDisposable
             if (kind == IssuedMaterialRepairKind.Packaging) db.ProductPackages.Add(new() { Id = Guid.NewGuid(), ProductId = ProductId, MaterialId = material.Id, PrescribedQuantity = wrong });
             else bom.Items.Add(new() { Id = Guid.NewGuid(), MaterialId = material.Id, BaseUoMId = UnitId, PrescribedQuantity = wrong });
             var lot = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = material.Id, UoMId = UnitId, BatchNumber = code + "/SYNTHETIC/LOT",
-                Status = BatchStatus.Available, TotalQuantity = stock, QuantityAssigned = stock, ExpiryDate = DateTime.UtcNow.AddYears(1) };
+                Status = BatchStatus.Available, TotalQuantity = stock, QuantityAssigned = stock, ExpiryDate = validRetest ? DateTime.UtcNow.AddDays(-30) : DateTime.UtcNow.AddYears(1),
+                RetestDate = validRetest ? DateTime.UtcNow.AddDays(120) : null };
             db.MaterialBatches.Add(lot);
             db.ShelfMaterialBatches.Add(new() { Id = Guid.NewGuid(), MaterialBatchId = lot.Id, WarehouseLocationShelfId = shelf.Id, UoMId = UnitId, Quantity = stock });
             db.MaterialBatchReservedQuantities.Add(new() { Id = Guid.NewGuid(), MaterialBatchId = lot.Id, WarehouseId = production.Id,

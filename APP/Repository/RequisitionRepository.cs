@@ -874,7 +874,7 @@ public class RequisitionRepository(
                 && item.WarehouseLocationShelfId == reservation.WarehouseLocationShelfId);
             if (shelf is null || shelf.UoMId != reservation.UoMId || shelf.Quantity < reservation.Quantity
                 || reservation.MaterialBatch.Status != BatchStatus.Available
-                || reservation.MaterialBatch.ExpiryDate is { } expiry && expiry != DateTime.MinValue && expiry < DateTime.UtcNow)
+                || MaterialValidity.IsExpired(reservation.MaterialBatch, DateTime.UtcNow))
                 return Error.Conflict("Stock.AllocationChanged", "An allocated shelf, batch status, expiry or quantity changed. Reconcile allocations before issuing.");
         }
 

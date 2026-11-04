@@ -14,7 +14,13 @@ public static class MaterialValidity
             ? batch.RetestDate ?? batch.ExpiryDate : batch.ExpiryDate;
 
     public static bool IsExpired(MaterialBatch batch, DateTime asOf) =>
-        EffectiveDate(batch, asOf) is { } date && date != DateTime.MinValue && date <= asOf;
+        IsExpiredDate(EffectiveDate(batch, asOf), asOf);
+
+    public static bool IsExpiredDate(DateTime? date, DateTime asOf) =>
+        date.HasValue && date != DateTime.MinValue && date <= asOf;
+
+    public static bool IsExpiringBy(DateTime? date, DateTime asOf, DateTime through) =>
+        date.HasValue && date != DateTime.MinValue && date > asOf && date <= through;
 
     /// <summary>Compose the same rule into SQL, including shelf and reservation queries.</summary>
     public static Expression<Func<T, DateTime?>> DateFor<T>(Expression<Func<T, MaterialBatch>> batch)
@@ -30,6 +36,16 @@ public static class MaterialValidity
         var date = DateFor(batch);
         var body = new Substitute(condition.Parameters[0], date.Body).Visit(condition.Body);
         return query.Where(Expression.Lambda<Func<T, bool>>(body, batch.Parameters));
+    }
+
+    /// <summary>Project the effective date without duplicating its business rule in SQL reports.</summary>
+    public static IQueryable<TResult> SelectMaterialDate<T, TResult>(this IQueryable<T> query,
+        Expression<Func<T, MaterialBatch>> batch, Expression<Func<T, DateTime?, TResult>> projection)
+    {
+        var date = DateFor(batch);
+        var body = new Substitute(projection.Parameters[0], batch.Parameters[0]).Visit(projection.Body);
+        body = new Substitute(projection.Parameters[1], date.Body).Visit(body);
+        return query.Select(Expression.Lambda<Func<T, TResult>>(body, batch.Parameters));
     }
 
     private sealed class Substitute(Expression source, Expression target) : ExpressionVisitor
