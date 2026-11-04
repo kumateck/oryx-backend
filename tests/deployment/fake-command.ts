@@ -39,7 +39,7 @@ if (tool === "git") {
       } else { process.stderr.write(`Error: no such object: ${name}\n`); process.exit(1); }
     } else if (format.includes("compose.project")) process.stdout.write("oryx-backend\n");
     else if (format.includes("compose.service")) process.stdout.write("app\n");
-    else process.stdout.write(existsSync(join(fixture.directory, "active")) ? "new-image\n" : "old-image\n");
+    else process.stdout.write(existsSync(join(fixture.directory, "active")) && fixture.failure !== "image" ? "new-image\n" : "old-image\n");
   }
   if (args[0] === "image") process.stdout.write("new-image\n");
   if (args[0] === "compose") {
@@ -51,7 +51,7 @@ if (tool === "git") {
       if (args.includes("has-pending-model-changes")) fail("model");
       else fail("migration");
     }
-    if (args.includes("up")) { fail("activate"); writeFileSync(join(fixture.directory, "active"), "new"); }
+    if (args.includes("up")) { fail("activate"); if (fixture.failure !== "same-tag-stale" || args.includes("--force-recreate")) writeFileSync(join(fixture.directory, "active"), "new"); }
   }
   if (args[0] === "exec" && args.some(value => value.includes("exec pg_dump"))) { fail("backup"); process.stdout.write("PGDMPfixture"); }
   if (args[0] === "exec" && args.includes("pg_restore")) { fail("backup-verify"); process.stdout.write("Verified archive\n"); }
