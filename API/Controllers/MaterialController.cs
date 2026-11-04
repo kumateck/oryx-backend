@@ -20,6 +20,18 @@ namespace API.Controllers;
 [Authorize]
 public class MaterialController(IMaterialRepository repository) : ControllerBase
 {
+    /// <summary>Current physical stock for printable count sheets, scoped to the current account's department.</summary>
+    [HttpGet("batches/stock-report")]
+    [Authorize(PermissionKeys.CanViewWarehouseReport)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStockReportDto))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IResult> GetMaterialStockReport([FromQuery] MaterialStockReportFilter filter)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.GetMaterialStockReport(filter, actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Corrects the retest extension of an approved raw-material opening balance, without a QC retest.</summary>
     [HttpPut("batch/{batchId:guid}/migration-retest-date")]
     [Authorize(PermissionKeys.CanUpdateMigrationRetestDate)]
@@ -943,7 +955,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     )]
     public async Task<IResult> GetExpiredMaterialBatches([FromQuery] MaterialFilter filter)
     {
-        var result = await repository.GetExpiredMaterialBatches(filter);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.GetExpiredMaterialBatches(filter, actor);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -959,7 +972,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     )]
     public async Task<IResult> GetAboutToExpireMaterialBatches([FromQuery] MaterialFilter filter)
     {
-        var result = await repository.GetAboutToExpireMaterialBatches(filter);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.GetAboutToExpireMaterialBatches(filter, actor);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
