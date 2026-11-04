@@ -4080,8 +4080,11 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
     public async Task<
         Result<Paginateable<IEnumerable<MaterialBatchDto>>>
-    > GetExpiredMaterialBatches(MaterialFilter filter)
+    > GetExpiredMaterialBatches(MaterialFilter filter, Guid userId)
     {
+        var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
+        var department = await ExpiryDepartment(userId);
+        if (department.IsFailure) return department.Error;
         var query = context
             .MaterialBatches.AsSplitQuery()
             .IgnoreQueryFilters()
@@ -4095,10 +4098,14 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     .ThenInclude(s => s.WarehouseLocationRack)
                         .ThenInclude(r => r.WarehouseLocation)
                             .ThenInclude(l => l.Warehouse)
-            .Include(b => b.ReservedQuantities)
+                                .ThenInclude(w => w.Department)
+            .Include(b => b.ReservedQuantities.Where(item => !unissued.Any(hold => hold.Id == item.Id)))
                 .ThenInclude(rq => rq.Warehouse)
+                    .ThenInclude(w => w.Department)
             .WhereMaterialDate(b => b, date => date.HasValue && date.Value != DateTime.MinValue && date <= DateTime.UtcNow)
             .AsQueryable();
+
+        query = ScopeExpiryRecords(query, department.Value, filter);
 
         if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
         {
@@ -4144,19 +4151,17 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return await PaginationHelper.GetPaginatedResultAsync(
             query.OrderBy(MaterialValidity.DateFor<MaterialBatch>(b => b)).ThenBy(b => b.Id),
             filter,
-            entity =>
-            {
-                var dto = mapper.Map<MaterialBatchDto>(entity);
-                dto.Locations = GetCurrentLocations(dto);
-                return dto;
-            }
+            entity => ExpiryReportRow(entity, department.Value)
         );
     }
 
     public async Task<
         Result<Paginateable<IEnumerable<MaterialBatchDto>>>
-    > GetAboutToExpireMaterialBatches(MaterialFilter filter)
+    > GetAboutToExpireMaterialBatches(MaterialFilter filter, Guid userId)
     {
+        var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
+        var department = await ExpiryDepartment(userId);
+        if (department.IsFailure) return department.Error;
         var now = DateTime.UtcNow.Date;
         var cutoff = now.AddMonths(3);
 
@@ -4173,10 +4178,14 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     .ThenInclude(s => s.WarehouseLocationRack)
                         .ThenInclude(r => r.WarehouseLocation)
                             .ThenInclude(l => l.Warehouse)
-            .Include(b => b.ReservedQuantities)
+                                .ThenInclude(w => w.Department)
+            .Include(b => b.ReservedQuantities.Where(item => !unissued.Any(hold => hold.Id == item.Id)))
                 .ThenInclude(rq => rq.Warehouse)
+                    .ThenInclude(w => w.Department)
             .WhereMaterialDate(b => b, date => date > DateTime.UtcNow && date <= cutoff)
             .AsQueryable();
+
+        query = ScopeExpiryRecords(query, department.Value, filter);
 
         if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
         {
@@ -4225,12 +4234,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return await PaginationHelper.GetPaginatedResultAsync(
             query.OrderBy(MaterialValidity.DateFor<MaterialBatch>(b => b)).ThenBy(b => b.Id),
             filter,
-            entity =>
-            {
-                var dto = mapper.Map<MaterialBatchDto>(entity);
-                dto.Locations = GetCurrentLocations(dto);
-                return dto;
-            }
+            entity => ExpiryReportRow(entity, department.Value)
         );
     }
 

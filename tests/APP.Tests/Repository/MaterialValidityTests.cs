@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using APP.Repository;
 using APP.Tests.QcWorksheets;
 using DOMAIN.Entities.Materials;
+using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +16,56 @@ namespace APP.Tests.Repository;
 
 public class MaterialValidityTests
 {
-    private static ServiceProvider Mapping(QcWorksheetTestContext harness)
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Expiry_reports_name_only_departments_holding_positive_stock_without_duplicates(bool soon)
+    {
+        using var harness = new QcWorksheetTestContext();
+        var batch = await harness.SeedMaterialBatch("DEPARTMENT-REPORT", BatchStatus.Available);
+        batch.Material.Code = "DEPT-MATERIAL";
+        batch.ExpiryDate = DateTime.UtcNow.AddDays(soon ? 30 : -30);
+        var solids = new Department { Id = Guid.NewGuid(), Name = "Oral solids", Code = "SOL" };
+        var liquids = new Department { Id = Guid.NewGuid(), Name = "Liquids", Code = "LIQ" };
+        var unused = new Department { Id = Guid.NewGuid(), Name = "No stock" };
+        var deleted = new Department { Id = Guid.NewGuid(), Name = "Deleted department", DeletedAt = DateTime.UtcNow };
+        void AddShelf(Department? department, decimal quantity, bool removed = false)
+        {
+            var warehouse = new Warehouse { Id = Guid.NewGuid(), Name = "Stock store", Department = department, DepartmentId = department?.Id };
+            var location = new WarehouseLocation { Id = Guid.NewGuid(), Warehouse = warehouse };
+            var rack = new WarehouseLocationRack { Id = Guid.NewGuid(), WarehouseLocation = location };
+            var shelf = new WarehouseLocationShelf { Id = Guid.NewGuid(), WarehouseLocationRack = rack };
+            harness.Db.ShelfMaterialBatches.Add(new ShelfMaterialBatch { Id = Guid.NewGuid(), MaterialBatch = batch,
+                WarehouseLocationShelf = shelf, Quantity = quantity, DeletedAt = removed ? DateTime.UtcNow : null });
+        }
+        AddShelf(solids, 2);
+        AddShelf(solids, 3);
+        AddShelf(unused, 0);
+        AddShelf(unused, 1, removed: true);
+        AddShelf(deleted, 1);
+        AddShelf(null, 1);
+        harness.Db.MaterialBatchReservedQuantities.Add(new MaterialBatchReservedQuantity { Id = Guid.NewGuid(), MaterialBatch = batch,
+            Warehouse = new Warehouse { Id = Guid.NewGuid(), Name = "Production store", Department = liquids }, Quantity = 4 });
+        harness.Db.MaterialBatchReservedQuantities.Add(new MaterialBatchReservedQuantity { Id = Guid.NewGuid(), MaterialBatch = batch,
+            Warehouse = new Warehouse { Id = Guid.NewGuid(), Name = "Empty production store", Department = unused }, Quantity = 0 });
+        StockReportTestPositions.MarkIssued(harness);
+        await harness.Db.SaveChangesAsync();
+        harness.Db.ChangeTracker.Clear(); // Department navigation must come from the report query, not tracked seed objects.
+        using var mapping = Mapping(harness);
+        var repository = new MaterialRepository(harness.Db, mapping.GetRequiredService<IMapper>());
+        var filter = new MaterialFilter { SearchQuery = "DEPT-MATERIAL", PageSize = 1 };
+        var actor = new User { Id = Guid.NewGuid(), UserName = "expiry-global-reader" };
+        harness.Db.Users.Add(actor);
+        await harness.Db.SaveChangesAsync();
+        var result = soon ? await repository.GetAboutToExpireMaterialBatches(filter, actor.Id) : await repository.GetExpiredMaterialBatches(filter, actor.Id);
+        Assert.Equal(1, result.Value.TotalRecordCount);
+        var row = Assert.Single(result.Value.Data);
+        Assert.Equal(new[] { "Liquids", "Oral solids" }, row.StockDepartments.Select(department => department.Name));
+        Assert.Equal(new Guid?[] { liquids.Id, solids.Id }, row.StockDepartments.Select(department => department.Id));
+        Assert.Equal(new[] { "LIQ", "SOL" }, row.StockDepartments.Select(department => department.Code));
+    }
+
+    internal static ServiceProvider Mapping(QcWorksheetTestContext harness)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -88,6 +139,8 @@ public class MaterialValidityTests
     public async Task Expiry_lists_search_before_pagination_and_combine_optional_dates_with_effective_validity()
     {
         using var harness = new QcWorksheetTestContext();
+        var actor = new User { Id = Guid.NewGuid(), UserName = "expiry-reader" };
+        harness.Db.Users.Add(actor);
         var expired = await harness.SeedMaterialBatch("EXPIRED", BatchStatus.Available);
         expired.ExpiryDate = DateTime.UtcNow.AddDays(-90);
         expired.Material.Code = "RMC022";
@@ -100,16 +153,16 @@ public class MaterialValidityTests
         await harness.Db.SaveChangesAsync();
         using var mapping = Mapping(harness);
         var repository = new MaterialRepository(harness.Db, mapping.GetRequiredService<IMapper>());
-        var found = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "rmc022", PageSize = 1 });
+        var found = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "rmc022", PageSize = 1 }, actor.Id);
         Assert.Equal(1, found.Value.TotalRecordCount);
         Assert.Equal(expired.Id, Assert.Single(found.Value.Data).Id);
-        var byName = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "LACTOSE" });
+        var byName = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "LACTOSE" }, actor.Id);
         Assert.Equal(1, byName.Value.TotalRecordCount);
-        var filtered = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "RMC022", StartDate = DateTime.UtcNow.AddDays(-5) });
+        var filtered = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "RMC022", StartDate = DateTime.UtcNow.AddDays(-5) }, actor.Id);
         Assert.Equal(0, filtered.Value.TotalRecordCount);
-        var extensionNotExpired = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "RMC023" });
+        var extensionNotExpired = await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "RMC023" }, actor.Id);
         Assert.Empty(extensionNotExpired.Value.Data);
-        var soon = await repository.GetAboutToExpireMaterialBatches(new MaterialFilter { SearchQuery = "Extended" });
+        var soon = await repository.GetAboutToExpireMaterialBatches(new MaterialFilter { SearchQuery = "Extended" }, actor.Id);
         Assert.Equal(extended.Id, Assert.Single(soon.Value.Data).Id);
     }
 
