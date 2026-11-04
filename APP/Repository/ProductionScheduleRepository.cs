@@ -365,6 +365,8 @@ public class ProductionScheduleRepository(
 
         try
         {
+            if (context.Database.IsRelational())
+                await context.Database.ExecuteSqlRawAsync("LOCK TABLE \"ProductionActivities\", \"ProductionScheduleProducts\" IN SHARE ROW EXCLUSIVE MODE");
             if (
                 await context.ProductionActivities.AnyAsync(p =>
                     p.ProductionScheduleProductId == productionScheduleProductId
@@ -402,19 +404,6 @@ public class ProductionScheduleRepository(
             var assignments = await ProcedureAssignments.BuildAsync(context, userManager, product);
 
             var quantity = productionScheduleProduct.Quantity;
-
-            try
-            {
-                var initialized = await ProductionMaterialRepairs.Initialize(context, productionScheduleProduct.Id);
-                if (initialized.IsFailure) return initialized.Error;
-            }
-            catch (Exception e)
-            {
-                return Error.Failure(
-                    "Reserve.Material",
-                    $"Failed reserving material for production: {e.Message}"
-                );
-            }
 
             if (assignments.Count == 0)
                 return Error.Validation(
@@ -472,11 +461,14 @@ public class ProductionScheduleRepository(
             await context.ProductionActivities.AddAsync(activity);
             await context.SaveChangesAsync();
 
+            await FreezeMaterialInProduction(productionScheduleProduct.Id);
+
             await CreateBatchManufacturingRecord(
                 new CreateBatchManufacturingRecord
                 {
                     ProductionScheduleProductId = productionScheduleProductId,
                     ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
+                    BatchNumber = productionScheduleProduct.BatchNumber,
                     BatchQuantity = quantity,
                 }
             );
@@ -486,6 +478,7 @@ public class ProductionScheduleRepository(
                 {
                     ProductionScheduleProductId = productionScheduleProductId,
                     ProductionActivityStepId = activity.Steps.OrderBy(s => s.Order).First().Id,
+                    BatchNumber = productionScheduleProduct.BatchNumber,
                     BatchQuantity = quantity,
                 }
             );
@@ -522,6 +515,7 @@ public class ProductionScheduleRepository(
         catch (Exception e)
         {
             await transaction.RollbackAsync();
+            context.ChangeTracker.Clear();
             return Error.Failure(
                 "Production.Start",
                 $"Failed to start production activity: {e.Message}"
@@ -544,9 +538,26 @@ public class ProductionScheduleRepository(
         Guid userId
     )
     {
-        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
-            return await ProductionMaterialTransaction.Run(context, () => UpdateStatusOfProductionActivityStep(productionStepId, status, userId));
+        try
+        {
+            if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+                return await ProductionMaterialTransaction.Run(context, () => UpdateStatusOfProductionActivityStepCore(productionStepId, status, userId));
+            return await UpdateStatusOfProductionActivityStepCore(productionStepId, status, userId);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            context.ChangeTracker.Clear();
+            return Error.Conflict("ProductActivity.StockChanged",
+                "The production run or issued stock changed. Reload the batch before starting this step again.");
+        }
+    }
 
+    private async Task<Result> UpdateStatusOfProductionActivityStepCore(
+        Guid productionStepId,
+        ProductionStatus status,
+        Guid userId
+    )
+    {
         var activityStep = await context
             .ProductionActivitySteps.AsSplitQuery()
             .Include(productionActivityStep => productionActivityStep.ResponsibleUsers)
@@ -586,6 +597,10 @@ public class ProductionScheduleRepository(
                 extra.ProductionScheduleProductId == activityStep.ProductionActivity.ProductionScheduleProductId
                 && extra.Status == ProductionExtraPackingStatus.Pending))
             return Error.Conflict("ProductActivity.ExtraMaterialPending", "Extra material is waiting for approval. This step cannot be started yet.");
+
+        if (status == ProductionStatus.InProgress && activityStep.Operation.Name is { } operationName
+            && (operationName.StartsWith("Product Preparation") || operationName.StartsWith("Final Packing")))
+            context.Entry(activityStep.ProductionActivity).Property(item => item.UpdatedAt).IsModified = true;
 
         activityStep.Status = status;
 
@@ -1349,7 +1364,7 @@ public class ProductionScheduleRepository(
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null).Where(r =>
                 r.ProductionScheduleProductId == productionScheduleProduct.Id
                 && r.WarehouseId == productionWarehouse.Id
-                && r.DeletedAt != null && r.ReleasedAt == null
+                && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
             )
             .GroupBy(r => r.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
@@ -1369,6 +1384,7 @@ public class ProductionScheduleRepository(
             .OrderBy(p => p.Order)
             .FirstOrDefaultAsync(p =>
                 p.ProductionActivity.ProductionScheduleProductId == productionScheduleProduct.Id
+                && p.DeletedAt == null && p.ProductionActivity.DeletedAt == null
                 && p.Status == ProductionStatus.InProgress
             );
 
@@ -1707,7 +1723,7 @@ public class ProductionScheduleRepository(
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null).Where(r =>
                 r.ProductionScheduleProductId == productionScheduleProduct.Id
                 && r.WarehouseId == productionWarehouse.Id
-                && r.DeletedAt != null && r.ReleasedAt == null
+                && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
             )
             .GroupBy(r => r.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
@@ -1727,6 +1743,7 @@ public class ProductionScheduleRepository(
             .OrderBy(p => p.Order)
             .FirstOrDefaultAsync(p =>
                 p.ProductionActivity.ProductionScheduleProductId == productionScheduleProduct.Id
+                && p.DeletedAt == null && p.ProductionActivity.DeletedAt == null
                 && p.Status == ProductionStatus.InProgress
             );
 
@@ -2883,11 +2900,14 @@ public class ProductionScheduleRepository(
     }
 
     public async Task<Result> IssueBatchManufacturingRecord(Guid id, Guid userId)
+        => await GuardDraftWrite(() => IssueBatchManufacturingRecordCore(id, userId));
+
+    private async Task<Result> IssueBatchManufacturingRecordCore(Guid id, Guid userId)
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
             return await ProductionMaterialTransaction.Run(context, () => IssueBatchManufacturingRecord(id, userId));
         var batchRecord = await context
-            .BatchManufacturingRecords.IgnoreQueryFilters()
+            .BatchManufacturingRecords
             .Include(batchManufacturingRecord => batchManufacturingRecord.ProductionActivityStep)
             .FirstOrDefaultAsync(p => p.Id == id);
         if (batchRecord is null)
@@ -3048,6 +3068,9 @@ public class ProductionScheduleRepository(
     }
 
     public async Task<Result> IssueBatchPackagingRecord(Guid id, Guid userId)
+        => await GuardDraftWrite(() => IssueBatchPackagingRecordCore(id, userId));
+
+    private async Task<Result> IssueBatchPackagingRecordCore(Guid id, Guid userId)
     {
         var batchRecord = await context
             .BatchPackagingRecords.AsSplitQuery()
@@ -3091,6 +3114,21 @@ public class ProductionScheduleRepository(
         var initialized = await ProductionMaterialRepairs.Initialize(context, productionScheduleProductId);
         if (initialized.IsFailure) throw new InvalidOperationException(initialized.Error.Description);
         await transaction.CommitAsync();
+    }
+
+    private async Task<Result> GuardDraftWrite(Func<Task<Result>> write)
+    {
+        try { return await write(); }
+        catch (DbUpdateConcurrencyException)
+        {
+            context.ChangeTracker.Clear();
+            return Error.Conflict("ProductionActivity.DraftChanged", "The production run or draft changed. Reload the batch before continuing.");
+        }
+        catch (DbUpdateException error) when (error.InnerException is Npgsql.PostgresException { SqlState: "23514" })
+        {
+            context.ChangeTracker.Clear();
+            return Error.Conflict("ProductionActivity.DraftChanged", "The production run was unstarted. Reload the batch before continuing.");
+        }
     }
 
     public async Task<Result<Guid>> CreateStockTransfer(
@@ -3845,7 +3883,9 @@ public class ProductionScheduleRepository(
         if (requisition is null)
             return StockRequisitionNotRaised("raw material");
 
-        return mapper.Map<RequisitionDto>(requisition);
+        var result = mapper.Map<RequisitionDto>(requisition);
+        await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
+        return result;
     }
 
     private static Error StockRequisitionNotRaised(string kind) =>
@@ -3877,7 +3917,9 @@ public class ProductionScheduleRepository(
         if (requisition is null)
             return StockRequisitionNotRaised("packaging material");
 
-        return mapper.Map<RequisitionDto>(requisition);
+        var result = mapper.Map<RequisitionDto>(requisition);
+        await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
+        return result;
     }
 
     public async Task<Result<ProductionScheduleProductDto>> GetProductDetailsInProductionSchedule(
