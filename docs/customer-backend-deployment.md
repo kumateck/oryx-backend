@@ -253,3 +253,27 @@ not claimed verified. No customer server was accessed or modified.
 
 References: [EF migrations](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/applying)
 and [Compose one-shot jobs](https://docs.docker.com/reference/cli/docker/compose/run/).
+
+## Rebuilt same-commit images (2026-11-04)
+
+A commit tag identifies source, not necessarily identical build bytes: base images
+and package repositories can change between builds. On the customer host, the
+stopped API and rebuilt target both carried release `3042b387`, but inspection
+showed different immutable image IDs. A fresh, never-started container resolved
+the rebuilt tag to its expected image ID, confirming this was a stale container
+rather than an ID-format difference. The health probe alone had accepted an HTTP
+response; the final identity check correctly refused success and kept the API
+stopped with its database backup.
+
+Activation now uses `up --force-recreate --no-deps --no-build --pull never app`.
+It replaces only the existing API service using the frozen release configuration,
+preserving customer settings and dependency services. Immutable image verification
+and the health gate remain enforced. Regression fixtures model a stopped container
+reusing the same image tag and a genuine identity mismatch; both must be handled
+without weakening migration/backup protection.
+
+Git branch equality, checkout updates, built images and successful activation are
+separate states. `current` alone is insufficient while `pending` or a failed
+`last-result` exists. Check all deployment status fields and the live container's
+image/revision/HTTP health before concluding a customer is current. Never remove
+pending/blocked files or restore a database merely to suppress this check.

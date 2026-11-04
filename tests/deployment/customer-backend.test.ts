@@ -52,6 +52,7 @@ test("customer command builds main, stops the API, verifies backup, migrates, de
     assert.ok(index("stop") < index("pg_restore"));
     assert.ok(index("pg_restore") < index("run"));
     assert.ok(index("run") < index("up"));
+    assert.ok(events.find(event => contains(event, "up"))?.args.includes("--force-recreate"));
     const preflight = events.findIndex(event => contains(event, "has-pending-model-changes"));
     assert.ok(index("build") < preflight && preflight < index("stop"));
     const migration = events.find(event => contains(event, "run") && !event.args.includes("has-pending-model-changes"));
@@ -66,7 +67,7 @@ test("customer command builds main, stops the API, verifies backup, migrates, de
   } finally { f.close(); }
 });
 
-for (const failure of ["build", "model", "backup", "backup-verify", "migration", "activate", "health"]) {
+for (const failure of ["build", "model", "backup", "backup-verify", "migration", "activate", "health", "image"]) {
   test(`failure during ${failure} cannot mark the release successful or advance past failed migration`, { timeout: 20_000 }, () => {
     const f = fixture({ failure });
     try {
@@ -80,7 +81,7 @@ for (const failure of ["build", "model", "backup", "backup-verify", "migration",
         assert.equal(existsSync(join(f.state, "pending")), false);
       }
       if (["backup", "backup-verify"].includes(failure)) assert.ok(f.events().some(event => contains(event, "start")));
-      if (["migration", "activate", "health"].includes(failure)) {
+      if (["migration", "activate", "health", "image"].includes(failure)) {
         assert.equal(f.events().some(event => contains(event, "start")), false);
         assert.ok(f.events().filter(event => contains(event, "stop")).length >= 2);
       }
@@ -181,3 +182,16 @@ for (const failure of ["success", "sql-apply", "tampered-sql", "missing-api", "w
     } finally { f.close(); }
   });
 }
+
+test("a same-SHA retry replaces a stale stopped API container instead of trusting its image tag", () => {
+  const f = fixture({ failure: "same-tag-stale" });
+  try {
+    const result = f.run("deploy");
+    assert.equal(result.status, 0, result.stderr);
+    const activation = f.events().find(event => contains(event, "up"));
+    assert.ok(activation?.args.includes("--force-recreate"));
+    assert.ok(activation?.args.includes("--no-build"));
+    assert.ok(activation?.args.includes("--no-deps"));
+    assert.equal(readFileSync(join(f.state, "current"), "utf8").trim(), f.sha);
+  } finally { f.close(); }
+});
