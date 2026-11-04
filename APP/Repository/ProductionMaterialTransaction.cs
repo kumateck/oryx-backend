@@ -17,7 +17,10 @@ internal sealed class ProductionMaterialTransaction(ApplicationDbContext context
     private readonly List<Func<Task>> afterCommit = [];
     private static readonly HashSet<string> Tables =
     [
-        "ProductionMaterialConfiguration", "ProductionMaterialRepair", "MaterialBatchReservedQuantity",
+        "ProductionMaterialConfiguration", "ProductionMaterialRepair", "ProductionScheduleRepair", "MaterialBatchReservedQuantity",
+        "ProductionSchedule", "Route", "RouteResource", "RouteWorkCenter", "RouteResponsibleUser", "RouteResponsibleRole",
+        "ProductionActivityStepResource", "ProductionActivityStepWorkCenter", "ProductionActivityStepUser", "RoleDepartment",
+        "ProductAnalyticalRawData", "Operation", "Workflow",
         "ShelfMaterialBatch", "MaterialBatch", "Requisition", "RequisitionItem", "RequisitionApproval",
         "StockRequisitionIssue", "ProductionActivity", "ProductionActivityStep", "ProductionExtraPacking",
         "ProductionExtraPackingApproval", "MaterialReturnNote", "MaterialReturnNoteFullReturn",

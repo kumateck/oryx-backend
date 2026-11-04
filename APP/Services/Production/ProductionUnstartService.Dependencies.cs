@@ -15,7 +15,7 @@ public sealed partial class ProductionUnstartService
     private static readonly Type[] InitialRecords = [typeof(ProductionActivity), typeof(ProductionActivityStep),
         typeof(BatchManufacturingRecord), typeof(BatchPackagingRecord), typeof(MaterialBatchReservedQuantity),
         typeof(ProductionActivityStepResource), typeof(ProductionActivityStepWorkCenter), typeof(ProductionActivityStepUser),
-        typeof(ProductionActivityLog), typeof(ProductionUnstartRepair)];
+        typeof(ProductionActivityLog), typeof(ProductionUnstartRepair), typeof(ProductionMaterialConfiguration)];
 
     private IEnumerable<IForeignKey> EvidenceKeys() => db.Model.GetEntityTypes().SelectMany(type => type.GetForeignKeys())
         .Where(key => Principals.Contains(key.PrincipalEntityType.ClrType) && key.Properties.Count == 1);

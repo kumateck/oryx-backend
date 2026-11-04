@@ -27,7 +27,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionScheduleRepository(
+public partial class ProductionScheduleRepository(
     ApplicationDbContext context,
     IMapper mapper,
     UserManager<User> userManager,
