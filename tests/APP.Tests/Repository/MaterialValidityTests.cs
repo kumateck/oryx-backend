@@ -95,6 +95,17 @@ public class MaterialValidityTests
     }
 
     [Fact]
+    public void Undated_legacy_batches_are_neither_expired_nor_expiring_soon()
+    {
+        foreach (DateTime? date in new DateTime?[] { null, DateTime.MinValue })
+        {
+            var dto = new MaterialBatchDto { EffectiveExpiryDate = date };
+            Assert.False(dto.Expired);
+            Assert.False(dto.AboutToExpire);
+        }
+    }
+
+    [Fact]
     public void Packaging_does_not_gain_a_raw_material_extension()
     {
         var now = DateTime.UtcNow;

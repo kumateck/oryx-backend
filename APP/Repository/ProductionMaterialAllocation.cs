@@ -32,6 +32,7 @@ internal static class ProductionMaterialAllocator
         var ids = source.Requirements.Select(item => item.MaterialId).ToList();
         var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(item => item.MaterialBatch).ThenInclude(item => item.UoM)
+            .Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
             .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.DeletedAt == null && item.MaterialBatch.DeletedAt == null
                 && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == source.StorageId
                 && item.WarehouseLocationShelf.DeletedAt == null && item.WarehouseLocationShelf.WarehouseLocationRack.DeletedAt == null
@@ -53,11 +54,11 @@ internal static class ProductionMaterialAllocator
             var remaining = requirement.Quantity;
             var candidates = shelves.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId
                     && item.Quantity > 0 && item.MaterialBatch.Status == BatchStatus.Available
-                    && (item.MaterialBatch.ExpiryDate == null || item.MaterialBatch.ExpiryDate == DateTime.MinValue || item.MaterialBatch.ExpiryDate >= DateTime.UtcNow))
+                    && !MaterialValidity.IsExpired(item.MaterialBatch, DateTime.UtcNow))
                 .OrderByDescending(item => existing.Any(reservation => reservation.MaterialBatchId == item.MaterialBatchId
                     && reservation.WarehouseLocationShelfId == item.WarehouseLocationShelfId))
                 .ThenBy(item => item.MaterialBatch.ReturnDate == null).ThenBy(item => item.MaterialBatch.ReturnDate)
-                .ThenBy(item => item.MaterialBatch.ExpiryDate).ThenBy(item => item.Id).ToList();
+                .ThenBy(item => MaterialValidity.EffectiveDate(item.MaterialBatch)).ThenBy(item => item.Id).ToList();
             foreach (var shelf in candidates)
             {
                 if (remaining <= 0) break;
@@ -80,7 +81,7 @@ internal static class ProductionMaterialAllocator
         var evidence = ProductionMaterialSources.Hash(new
         {
             Shelves = shelves.OrderBy(item => item.Id).Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseLocationShelfId,
-                item.UoMId, item.Quantity, item.MaterialBatch.Status, item.MaterialBatch.ExpiryDate, item.MaterialBatch.ReturnDate, item.MaterialBatch.UoM.Symbol }),
+                item.UoMId, item.Quantity, item.MaterialBatch.Status, item.MaterialBatch.ExpiryDate, item.MaterialBatch.RetestDate, item.MaterialBatch.Material.Kind, item.MaterialBatch.ReturnDate, item.MaterialBatch.UoM.Symbol }),
             Others = others.OrderBy(item => item.Id).Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseLocationShelfId, item.UoMId, item.Quantity, item.UoM.Symbol })
         });
         return new ProductionMaterialAllocationPlan(allocations, shortages, evidence, blockers.Distinct().ToList());

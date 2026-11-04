@@ -4,7 +4,6 @@ using APP.Utils;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
-using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.ProductionSchedules.Packing;
 using DOMAIN.Entities.ProductionSchedules.StockTransfers;
@@ -66,7 +65,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionSchedule(Guid scheduleId)
     {
-        var result = await repository.GetProductionSchedule(scheduleId);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetProductionSchedule(scheduleId, userId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -85,13 +85,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
         [FromQuery] int pageSize = 10, 
         [FromQuery] string searchQuery = null)
     {
-        var departmentId = (string)HttpContext.Items["Department"];
-        if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
-        
-        var roleIds = (List<Guid>)HttpContext.Items["Roles"];
-
-        var result = await repository.GetProductionSchedules(roleIds[0],
-            page, pageSize, searchQuery, Guid.Parse(departmentId));
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetProductionSchedules(userId, page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
