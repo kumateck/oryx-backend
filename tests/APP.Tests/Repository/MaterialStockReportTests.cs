@@ -86,24 +86,24 @@ public class MaterialStockReportTests
         Assert.True(result.IsSuccess);
         Assert.Equal(own.Id, result.Value.DepartmentId); Assert.Equal("Oral solids", result.Value.DepartmentName);
         Assert.InRange(result.Value.GeneratedAt, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow);
-        Assert.Equal(3, result.Value.Rows.Count);
-        var row = Assert.Single(result.Value.Rows, item => item.BatchId == batch.Id && item.UoM == "kg");
-        Assert.Equal(8, row.Quantity); Assert.Equal("AR-001", row.ArNumber);
-        Assert.Equal("Maker", row.ManufacturerName); Assert.Equal("Supplier", row.SupplierName);
-        Assert.Equal(batch.ManufacturingDate, row.ManufacturingDate); Assert.Equal(batch.ExpiryDate, row.ExpiryDate);
-        Assert.Equal(300, Assert.Single(result.Value.Rows, item => item.UoM == "g").Quantity);
+        var row = Assert.Single(result.Value.Rows);
+        Assert.Equal(future.Id, row.BatchId);
+        Assert.Equal(1, row.Quantity); Assert.Equal("FUTURE", row.BatchNumber);
         Assert.All(result.Value.Rows, item => Assert.Equal(own.Id, item.DepartmentId));
         Assert.Empty(harness.Db.ChangeTracker.Entries());
         filter.ExpiredOnly = true;
-        Assert.Equal(2, (await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows.Count);
+        var expiredRows = (await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows;
+        Assert.Equal(2, expiredRows.Count);
+        Assert.Contains(expiredRows, item => item.BatchId == batch.Id && item.UoM == "kg" && item.Quantity == 8);
+        Assert.Contains(expiredRows, item => item.BatchId == batch.Id && item.UoM == "g" && item.Quantity == 300);
         filter.DepartmentId = other.Id;
         Assert.True((await repository.GetMaterialStockReport(filter, actor.Id)).IsFailure);
         Assert.Equal(17, Assert.Single((await repository.GetMaterialStockReport(filter, global.Id)).Value.Rows).Quantity);
         filter.DepartmentId = null; filter.ExpiredOnly = false;
-        Assert.Equal(4, (await repository.GetMaterialStockReport(filter, global.Id)).Value.Rows.Count);
+        Assert.Equal(1, (await repository.GetMaterialStockReport(filter, global.Id)).Value.Rows.Count);
         var stored = await harness.Db.Users.IgnoreQueryFilters().SingleAsync(item => item.Id == actor.Id);
         stored.DepartmentId = other.Id; await harness.Db.SaveChangesAsync(); harness.Db.ChangeTracker.Clear();
-        Assert.Equal(17, Assert.Single((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows).Quantity);
+        Assert.Empty((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
         stored = await harness.Db.Users.IgnoreQueryFilters().SingleAsync(item => item.Id == actor.Id);
         stored.IsDisabled = true; await harness.Db.SaveChangesAsync();
         Assert.True((await repository.GetMaterialStockReport(filter, actor.Id)).IsFailure);
@@ -127,8 +127,15 @@ public class MaterialStockReportTests
         var filter = new MaterialStockReportFilter { ExpiredOnly = true };
         Assert.Equal(expected, (await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows.Count);
         filter.ExpiredOnly = false;
-        var row = Assert.Single((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
-        Assert.Equal(batch.ExpiryDate, row.ExpiryDate); Assert.Equal(batch.RetestDate, row.RetestDate);
+        if (kind == MaterialKind.Raw)
+        {
+            var row = Assert.Single((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
+            Assert.Equal(batch.ExpiryDate, row.ExpiryDate); Assert.Equal(batch.RetestDate, row.RetestDate);
+        }
+        else
+        {
+            Assert.Empty((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
+        }
     }
 
     [Fact]
@@ -151,7 +158,7 @@ public class MaterialStockReportTests
         harness.Db.Requisitions.Add(requisition);
         await harness.Db.SaveChangesAsync(); harness.Db.ChangeTracker.Clear();
         var repository = new MaterialRepository(harness.Db, harness.Mapper);
-        var row = Assert.Single((await repository.GetMaterialStockReport(new(), actor.Id)).Value.Rows);
+        var row = Assert.Single((await repository.GetMaterialStockReport(new() { ExpiredOnly = true }, actor.Id)).Value.Rows);
         Assert.Equal(10, row.Quantity); Assert.Equal(source.Id, row.DepartmentId);
         Assert.Empty((await repository.GetMaterialStockReport(new(), targetActor.Id)).Value.Rows);
         Assert.Empty((await repository.GetExpiredMaterialBatches(new(), targetActor.Id)).Value.Data);

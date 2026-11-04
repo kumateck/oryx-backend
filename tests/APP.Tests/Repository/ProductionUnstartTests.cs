@@ -75,6 +75,23 @@ public sealed class ProductionUnstartTests
         await using (var db = fixture.Open())
         {
             var productionId = await db.Warehouses.Where(item => item.Type == DOMAIN.Entities.Warehouses.WarehouseType.Production).Select(item => item.Id).SingleAsync();
+            // A restart validates both saved material definitions, including a real packing style.
+            var style = new DOMAIN.Entities.Products.ProductPacking { ProductId = fixture.ProductId, Name = "Restart fixture" };
+            db.ProductPackings.Add(style);
+            (await db.ProductionScheduleProducts.SingleAsync()).ProductPackingId = style.Id;
+            var material = new Material { Name = "Restart foil", Code = "PM-RESTART", Kind = MaterialKind.Package };
+            db.Materials.Add(material);
+            db.MaterialDepartments.Add(new() { MaterialId = material.Id, DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(), UoMId = fixture.UnitId });
+            db.ProductPackages.Add(new() { ProductId = fixture.ProductId, ProductPackingId = style.Id, MaterialId = material.Id, PrescribedQuantity = 1 });
+            var warehouse = await db.Warehouses.SingleAsync(item => item.Type == DOMAIN.Entities.Warehouses.WarehouseType.PackagedStorage);
+            var shelf = new DOMAIN.Entities.Warehouses.WarehouseLocationShelf { Name = "Restart packing", Code = "RESTART/PM", WarehouseLocationRack = new()
+                { Name = "Rack", WarehouseLocation = new() { Name = "Room", WarehouseId = warehouse.Id } } };
+            db.WarehouseLocationShelves.Add(shelf);
+            var lot = new DOMAIN.Entities.Materials.Batch.MaterialBatch { MaterialId = material.Id, UoMId = fixture.UnitId,
+                BatchNumber = "RESTART-PM", Status = DOMAIN.Entities.Materials.Batch.BatchStatus.Available, TotalQuantity = 1, QuantityAssigned = 1,
+                ExpiryDate = DateTime.UtcNow.AddYears(1) };
+            db.MaterialBatches.Add(lot);
+            db.ShelfMaterialBatches.Add(new() { MaterialBatchId = lot.Id, WarehouseLocationShelfId = shelf.Id, UoMId = fixture.UnitId, Quantity = 1 });
             db.ProductionMaterialConfigurations.Add(new ProductionMaterialConfiguration
             {
                 ProductionScheduleProductId = fixture.BatchId, Kind = MaterialKind.Raw, DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(),
@@ -95,7 +112,7 @@ public sealed class ProductionUnstartTests
             Assert.Empty(await db.BatchManufacturingRecords.ToListAsync()); Assert.Empty(await db.BatchPackagingRecords.ToListAsync());
             Assert.Empty(await db.MaterialBatchReservedQuantities.ToListAsync());
             Assert.Empty(await db.ProductionMaterialConfigurations.ToListAsync());
-            Assert.Equal(400_000_000, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
+            Assert.Equal(400_000_001, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
             Assert.Empty(await db.MassMaterialBatchMovements.ToListAsync()); Assert.Empty(await db.MaterialBatchEvents.ToListAsync());
             Assert.Equal(ProductionStatus.New, (await db.ProductionSchedules.SingleAsync()).Status);
             Assert.Equal(2, await db.ProductionActivitySteps.IgnoreQueryFilters().CountAsync());
@@ -123,7 +140,7 @@ public sealed class ProductionUnstartTests
         await using (var db = fixture.Open())
         {
             Assert.Single(await db.ProductionActivities.ToListAsync()); Assert.Single(await db.BatchManufacturingRecords.ToListAsync());
-            Assert.Equal(2, await db.MaterialBatchReservedQuantities.CountAsync());
+            Assert.Equal(3, await db.MaterialBatchReservedQuantities.CountAsync());
             Assert.Equal(2, await db.ProductionMaterialConfigurations.CountAsync());
             Assert.Equal(2, (await db.ProductionMaterialConfigurations.SingleAsync(item => item.Kind == MaterialKind.Raw)).Revision);
             Assert.True((await Service(db, fixture).Apply(run, request)).Value.AlreadyApplied);
@@ -138,9 +155,30 @@ public sealed class ProductionUnstartTests
         await using (var db = fixture.Open())
         {
             Assert.Empty(await db.MaterialBatchReservedQuantities.ToListAsync());
-            Assert.Equal(4, await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().CountAsync());
+            Assert.Equal(5, await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().CountAsync());
             Assert.Equal(2, await db.ProductionUnstartRepairs.CountAsync());
-            Assert.Equal(400_000_000, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
+            Assert.Equal(400_000_001, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
+        }
+    }
+
+    [RepairPostgresFact]
+    public async Task Unissued_holds_are_released_without_recreating_shelf_stock_even_when_the_balance_changed()
+    {
+        await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture);
+        await using (var db = fixture.Open())
+        {
+            foreach (var shelf in await db.ShelfMaterialBatches.ToListAsync()) shelf.Quantity = 0;
+            await db.SaveChangesAsync();
+        }
+        var request = await Request(fixture, run);
+        await using (var db = fixture.Open()) Assert.True((await Service(db, fixture).Apply(run, request)).IsSuccess);
+        await using (var db = fixture.Open())
+        {
+            Assert.Empty(await db.MaterialBatchReservedQuantities.ToListAsync());
+            Assert.Equal(0, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
+            Assert.Empty(await db.MassMaterialBatchMovements.ToListAsync());
+            Assert.Empty(await db.StockRequisitionIssues.ToListAsync());
+            Assert.All(await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().ToListAsync(), item => Assert.NotNull(item.ReleasedAt));
         }
     }
 

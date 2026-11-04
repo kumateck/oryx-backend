@@ -4,6 +4,7 @@ using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Warehouses;
+using DOMAIN.Entities.Requisitions;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -71,15 +72,19 @@ public sealed partial class ProductionUnstartService
             { blockers.Add("Reservations contain consumed, deleted or invalid stock evidence."); break; }
             var production = await db.Warehouses.IgnoreQueryFilters().AnyAsync(item => item.Id == reservation.WarehouseId
                 && item.Type == WarehouseType.Production && item.DepartmentId == batch.Product.DepartmentId && item.DeletedAt == null);
-            var stored = await db.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes()
-                .Where(item => item.MaterialBatchId == reservation.MaterialBatchId && item.WarehouseLocationShelfId == reservation.WarehouseLocationShelfId
-                    && item.DeletedAt == null && item.UoMId == reservation.UoMId
-                    && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type != WarehouseType.Production)
-                .SumAsync(item => item.Quantity);
-            if (!production || stored < reservations.Where(item => item.MaterialBatchId == reservation.MaterialBatchId
-                && item.WarehouseLocationShelfId == reservation.WarehouseLocationShelfId).Sum(item => item.Quantity))
-            { blockers.Add("The reservations cannot be proven to remain unissued on their source shelves."); break; }
+            // A reservation holds availability; it does not remove physical shelf stock. Releasing
+            // it must not depend on today's shelf balance or add stock back a second time.
+            if (!production)
+            { blockers.Add("A reservation does not belong to this department's production warehouse."); break; }
         }
+        var requisitions = db.Requisitions.IgnoreQueryFilters().Where(item => item.ProductionScheduleProductId == batch.Id
+            && item.RequisitionType == RequisitionType.Stock);
+        if (await requisitions.AnyAsync(item => item.Status == RequestStatus.Completed
+                || item.Items.Any(line => line.Status == RequestStatus.Completed || line.QuantityReceived > 0))
+            || await db.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(issue => requisitions.Any(item => item.Id == issue.RequisitionId))
+            || await db.BinCardInformation.IgnoreQueryFilters().AnyAsync(card => card.QuantityIssued > 0
+                && requisitions.Any(item => item.Id == card.RequisitionId)))
+            blockers.Add("Stock has been issued for this batch. Releasing reservations cannot undo an issue.");
         blockers.AddRange(await Dependencies(run, steps, bmrs, bprs));
         var otherStarted = await db.ProductionActivities.IgnoreAutoIncludes().AnyAsync(item => item.Id != run.Id
             && item.ProductionScheduleProduct.ProductionScheduleId == schedule.Id);
