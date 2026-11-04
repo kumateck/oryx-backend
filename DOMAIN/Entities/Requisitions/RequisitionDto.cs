@@ -34,6 +34,8 @@ public class RequisitionItemDto
     public MaterialDto Material { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
+    /// <summary>Original signed quantity when Quantity includes an audited post-issue correction.</summary>
+    public decimal? ApprovedQuantity { get; set; }
     public decimal QuantityReceived { get; set; }
     public RequestStatus Status { get; set; }
     public List<BatchToSupply> Batches { get; set; } = [];

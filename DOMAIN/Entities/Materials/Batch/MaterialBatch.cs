@@ -48,6 +48,8 @@ public class MaterialBatch : BaseEntity
     public DateTime? ExpiryDate { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? RetestDate { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public DateTime? EffectiveExpiryDate => MaterialValidity.EffectiveDate(this);
     [StringLength(2000)]
     public string RetestReason { get; set; }
     [StringLength(2000)]
@@ -273,6 +275,8 @@ public class FinishedGoodsListTransferNoteDto
 
 public class MaterialBatchReservedQuantity : BaseEntity
 {
+    /// <summary>Released without issue/consumption by an immutable production unstart repair.</summary>
+    public Guid? ProductionUnstartRepairId { get; set; }
     public Guid MaterialBatchId { get; set; }
     public MaterialBatch MaterialBatch { get; set; }
     public Guid WarehouseId { get; set; }

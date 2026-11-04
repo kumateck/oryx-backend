@@ -18,6 +18,35 @@ namespace API.Controllers;
 // Someone signed in to a department acts only for that department; someone with no department may act for any.
 public class StockMigrationController(IStockMigrationRepository repository, ICurrentUserService user) : ControllerBase
 {
+    /// <summary>Save an additive migration top-up from the existing stock workbook format. No stock is posted.</summary>
+    [HttpPost("top-ups/upload")]
+    [Authorize(PermissionKeys.CanUploadOpeningBalances)]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> UploadTopUp(IFormFile file, [FromQuery] Guid departmentId,
+        [FromQuery, System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(2000)] string reason,
+        [FromQuery] string massUnit = "mg", [FromQuery] string volumeUnit = "ml")
+    {
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!MayActFor(departmentId)) return TypedResults.Forbid();
+        var result = await repository.UploadTopUp(file, departmentId, massUnit, volumeUnit, reason, actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Save a list of manually entered migration top-up rows as one draft.</summary>
+    [HttpPost("top-ups")]
+    [Authorize(PermissionKeys.CanUploadOpeningBalances)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IResult> CreateTopUp([FromBody] CreateStockTopUpRequest request)
+    {
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (!MayActFor(request.DepartmentId)) return TypedResults.Forbid();
+        var result = await repository.CreateTopUp(request, actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Reads a stock-count workbook into a draft migration. Every tab with a material code and quantity
     /// column is read. Nothing changes in the stock until the migration is approved.

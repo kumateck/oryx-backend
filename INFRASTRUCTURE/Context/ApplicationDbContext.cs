@@ -144,6 +144,7 @@ public partial class ApplicationDbContext(
     public DbSet<Sr> Srs { get; set; }
 
     public DbSet<MaterialBatch> MaterialBatches { get; set; }
+    public DbSet<MigrationRetestDateChange> MigrationRetestDateChanges { get; set; }
     public DbSet<MaterialRetestRequest> MaterialRetestRequests { get; set; }
     public DbSet<MaterialRetestEvent> MaterialRetestEvents { get; set; }
     public DbSet<ResponseReworkTask> ResponseReworkTasks { get; set; }
@@ -319,6 +320,7 @@ public partial class ApplicationDbContext(
     #region StockMigrations
 
     public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigration> StockMigrations { get; set; }
+    public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationBalance> StockMigrationBalances { get; set; }
     public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationLine> StockMigrationLines { get; set; }
     public DbSet<DOMAIN.Entities.Materials.StockMigrations.StockMigrationWriteOff> StockMigrationWriteOffs { get; set; }
 
@@ -1005,6 +1007,8 @@ public partial class ApplicationDbContext(
     {
         if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
+        ValidateIssuedMaterialRepairAudit();
+        ValidateProductionUnstartAudit();
         SaveEntity();
         ValidatePriceUoM();
         return base.SaveChanges();
@@ -1014,6 +1018,8 @@ public partial class ApplicationDbContext(
     {
         if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
+        ValidateIssuedMaterialRepairAudit();
+        ValidateProductionUnstartAudit();
         SaveEntity();
         ValidatePriceUoM();
         return await base.SaveChangesAsync(cancellationToken);
@@ -1137,11 +1143,18 @@ public partial class ApplicationDbContext(
         // Call base method
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
+        ConfigureIssuedMaterialRepair(modelBuilder);
+        modelBuilder.Entity<MigrationRetestDateChange>().HasOne(change => change.MaterialBatch)
+            .WithMany().HasForeignKey(change => change.MaterialBatchId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MigrationRetestDateChange>().HasIndex(change => new { change.MaterialBatchId, change.OccurredAt });
         ConfigureEmployeeOnboarding(modelBuilder);
 
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
+        ConfigureProductionUnstart(modelBuilder);
+        modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
+        modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
         ConfigureRelationships(modelBuilder);
         ConfigureConstraints(modelBuilder);
     }

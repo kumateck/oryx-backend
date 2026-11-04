@@ -214,6 +214,7 @@ public static class PermissionSubmodules
 
 public static class PermissionKeys
 {
+    public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
     public const string CanViewOpeningBalances = "CanViewOpeningBalances";
     public const string CanUploadOpeningBalances = "CanUploadOpeningBalances";
     public const string CanCorrectOpeningBalances = "CanCorrectOpeningBalances";
@@ -398,6 +399,9 @@ public static class PermissionKeys
     public const string CanEditProductionPlan = "CanEditProductionPlan";
     /// <summary>Re-apply a product's current procedure to a running batch's active and upcoming steps.</summary>
     public const string CanRepairProcedure = "CanRepairProcedure";
+    public const string CanRepairIssuedBom = "CanRepairIssuedBom";
+    public const string CanRepairIssuedPackaging = "CanRepairIssuedPackaging";
+    public const string CanUnstartProduction = "CanUnstartProduction";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
     public const string CanCreateProductSchedule = "CanCreateProductSchedule";
     public const string CanEditProductSchedule = "CanEditProductSchedule";
@@ -1079,6 +1083,8 @@ public static class PermissionUtils
                 new PermissionDto(module, submodule, key, name, CreateDescription(name))
             );
         };
+
+        addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
 
         // Opening-balance drafts and posting are separately permissioned.
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanViewOpeningBalances);
@@ -1930,6 +1936,9 @@ public static class PermissionUtils
             PermissionSubmodules.Products,
             PermissionKeys.CanRepairProcedure
         );
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairIssuedBom);
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairIssuedPackaging);
+        addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanUnstartProduction);
         addPermission(
             PermissionModules.Production,
             PermissionSubmodules.ProductSchedule,

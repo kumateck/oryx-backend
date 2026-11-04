@@ -21,13 +21,21 @@ namespace APP.Repository;
 /// system, corrected on the verification page, and only on approval does it replace the department's
 /// storage stock.
 /// </summary>
-public class StockMigrationRepository(ApplicationDbContext context) : IStockMigrationRepository
+public partial class StockMigrationRepository(ApplicationDbContext context) : IStockMigrationRepository
 {
     private static readonly string[] MassUnits = ["kg", "g", "mg"];
     private static readonly string[] VolumeUnits = ["L", "ml"];
 
-    public async Task<Result<Guid>> Upload(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, Guid userId)
+    public Task<Result<Guid>> Upload(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, Guid userId) =>
+        UploadDraft(file, departmentId, massUnit, volumeUnit, userId, StockMigrationMode.OpeningBalance, null);
+
+    public Task<Result<Guid>> UploadTopUp(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, string reason, Guid userId) =>
+        UploadDraft(file, departmentId, massUnit, volumeUnit, userId, StockMigrationMode.TopUp, reason);
+
+    private async Task<Result<Guid>> UploadDraft(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, Guid userId, StockMigrationMode mode, string reason)
     {
+        if (mode == StockMigrationMode.TopUp && ReasonError(reason) is { } reasonError)
+            return reasonError;
         if (file == null || file.Length == 0)
             return UploadErrors.EmptyFile;
         if (Unit(massUnit, MassUnits) is not { } mass || Unit(volumeUnit, VolumeUnits) is not { } volume)
@@ -41,7 +49,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
 
         ExcelPackage.License.SetNonCommercialPersonal("Oryx");
         using var package = new ExcelPackage(stream);
-        var lines = StockMigrationSheet.Read(package);
+        var lines = StockMigrationSheet.Read(package, allowGrnBatchFallback: mode == StockMigrationMode.OpeningBalance);
         if (lines.Count == 0)
             return Error.Validation(
                 "StockMigration.Empty",
@@ -54,6 +62,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             DepartmentId = departmentId,
             FileName = file.FileName?.Length > 500 ? file.FileName[..500] : file.FileName,
             Status = StockMigrationStatus.Draft,
+            Mode = mode,
+            Reason = reason?.Trim(),
             MassUnit = mass,
             VolumeUnit = volume,
             CreatedById = userId,
@@ -79,6 +89,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                 DepartmentName = m.Department.Name,
                 FileName = m.FileName,
                 Status = m.Status,
+                Mode = m.Mode,
+                Reason = m.Reason,
                 MassUnit = m.MassUnit,
                 VolumeUnit = m.VolumeUnit,
                 CreatedAt = m.CreatedAt,
@@ -126,7 +138,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                 Id = w.Id,
                 Name = w.Name,
                 Type = w.Type,
-                WillBeWiped = kinds.Contains(KindOf(w.Type)),
+                WillBeWiped = dto.Mode == StockMigrationMode.OpeningBalance && kinds.Contains(KindOf(w.Type)),
                 Shelves = w.Locations.SelectMany(l => l.Racks).SelectMany(r => r.Shelves)
                     .OrderBy(s => s.Name)
                     .Select(s => new StockMigrationShelfDto { Id = s.Id, Name = s.Name, Code = s.Code })
@@ -185,6 +197,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                     return new StockMigrationLineDto
                     {
                         Id = l.Id,
+                        ImportedBatchId = l.ImportedBatchId,
                         Sheet = l.Sheet,
                         RowNumber = l.RowNumber,
                         SheetWarehouse = l.SheetWarehouse,
@@ -254,6 +267,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         line.ManufacturingDate = Utc(request.ManufacturingDate);
         line.ExpiryDate = Utc(request.ExpiryDate);
         line.Excluded = request.Excluded;
+        if (request.Grn != null) line.Grn = request.Grn.Trim();
+        if (request.ArNumber != null) line.ArNumber = request.ArNumber.Trim();
 
         await Check(migration.Value);
         await context.SaveChangesAsync();
@@ -318,6 +333,9 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         if (migration == null)
             return NotFound;
 
+        if (migration.Mode == StockMigrationMode.TopUp && migration.Status == StockMigrationStatus.Approved)
+            return await ApprovedTopUpComparison(id);
+
         var kinds = await LoadedKinds(id);
         var rows = new Dictionary<Guid, StockMigrationComparisonDto>();
 
@@ -360,7 +378,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             .StockMigrationLines.AsNoTracking()
             .Where(l => l.StockMigrationId == id && l.ResolvedMaterialId != null
                 && (l.Status == StockMigrationLineStatus.Ok || l.Status == StockMigrationLineStatus.Warning))
-            .Select(l => new { l.Id, l.ResolvedMaterialId, l.BatchNumber, l.Quantity, Unit = l.UoM.Symbol })
+            .Select(l => new { l.Id, l.ResolvedMaterialId, l.BatchNumber, l.Grn, l.ArNumber, l.Quantity, Unit = l.UoM.Symbol })
             .ToListAsync();
         var materialIds = loaded.Select(l => l.ResolvedMaterialId.Value).Distinct().ToList();
         var materials = await context.Materials.IgnoreQueryFilters().Where(m => materialIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
@@ -368,8 +386,21 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         {
             var row = Row(rows, materials[group.Key], group.First().Unit);
             row.New = group.Sum(l => l.Quantity ?? 0);
-            row.NewBatches = group.Select(l => OpeningBalanceBatches.Identity(l.Id, l.BatchNumber)).Distinct().Count();
+            row.Added = group.Sum(l => l.Quantity ?? 0);
+            row.NewBatches = group.Select(l => BatchIdentity(migration, l.Id, l.BatchNumber, l.Grn, l.ArNumber)).Distinct().Count();
+            if (migration.Mode == StockMigrationMode.TopUp)
+            {
+                row.New += row.Current;
+                row.NewBatches += row.CurrentBatches;
+            }
         }
+
+        if (migration.Mode == StockMigrationMode.TopUp)
+            foreach (var row in rows.Values.Where(r => !materialIds.Contains(r.MaterialId)))
+            {
+                row.New = row.Current;
+                row.NewBatches = row.CurrentBatches;
+            }
 
         return rows.Values.OrderBy(r => r.Kind).ThenBy(r => r.Code).ToList();
     }
@@ -382,6 +413,11 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         if (found.IsFailure)
             return found.Error;
         var migration = found.Value;
+        if (migration.Mode == StockMigrationMode.TopUp && ReasonError(migration.Reason) is { } reasonError)
+            return reasonError;
+        // Serialize top-ups and replacement approvals for the same department.
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtext({"migration-stock:" + migration.DepartmentId}))");
         await Check(migration);
 
         var blocked = migration.Lines.Count(l => l.Status == StockMigrationLineStatus.Blocked);
@@ -398,6 +434,9 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         if (toLoad.Count == 0)
             return Error.Validation("StockMigration.Empty", "No row has stock to load.");
 
+        // Persist the approval-time recheck inside this transaction before capturing its totals.
+        await context.SaveChangesAsync();
+
         var materialIds = toLoad.Select(l => l.ResolvedMaterialId!.Value).Distinct().ToList();
         var materials = await context.Materials.Where(m => materialIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
         var kinds = materials.Values.Select(m => m.Kind).ToHashSet();
@@ -407,7 +446,14 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             .SelectMany(w => w.Locations.SelectMany(l => l.Racks).SelectMany(r => r.Shelves).Select(s => (s.Id, w.Id)))
             .ToDictionary(x => x.Item1, x => x.Item2);
         var now = DateTime.UtcNow;
-        var stamp = $"Stock migration {now:dd MMM yyyy}";
+        var stamp = migration.Mode == StockMigrationMode.TopUp
+            ? $"Migration top-up {migration.Id}: {migration.Reason}"
+            : $"Stock migration {now:dd MMM yyyy}";
+        if (migration.Mode == StockMigrationMode.TopUp)
+            await SnapshotTopUp(migration);
+        var receiptBalances = migration.Mode == StockMigrationMode.TopUp
+            ? await ReceiptBalances(materialIds, storeIds)
+            : new Dictionary<(Guid Material, Guid Warehouse), decimal>();
 
         // Claim the draft before touching stock: the row stays locked until commit, so a second approval made
         // at the same moment waits here and then finds it no longer a draft.
@@ -417,49 +463,53 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         if (claimed == 0)
             return Error.Conflict("StockMigration.NotDraft", "This migration has already been approved or discarded.");
 
-        // 1. Write off everything now on the department's shelves for the kinds being loaded.
-        var current = await CurrentStock(storeIds, kinds)
-            .Include(s => s.MaterialBatch)
-            .Include(s => s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
-            .ToListAsync();
-        var touched = current.Select(s => s.MaterialBatchId).ToHashSet();
-        var elsewhere = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .Where(s => touched.Contains(s.MaterialBatchId) && s.Quantity > 0 && s.DeletedAt == null
-                && !storeIds.Contains(s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId))
-            .Select(s => s.MaterialBatchId)
-            .Distinct()
-            .ToListAsync();
-
-        foreach (var shelfRow in current)
+        if (migration.Mode == StockMigrationMode.OpeningBalance)
         {
-            var batch = shelfRow.MaterialBatch;
-            context.StockMigrationWriteOffs.Add(new StockMigrationWriteOff
+            // 1. Write off everything now on the department's shelves for the kinds being loaded.
+            var current = await CurrentStock(storeIds, kinds)
+                .Include(s => s.MaterialBatch)
+                .Include(s => s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation)
+                .ToListAsync();
+            var touched = current.Select(s => s.MaterialBatchId).ToHashSet();
+            var elsewhere = await context
+                .ShelfMaterialBatches.IgnoreQueryFilters()
+                .Where(s => touched.Contains(s.MaterialBatchId) && s.Quantity > 0 && s.DeletedAt == null
+                    && !storeIds.Contains(s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId))
+                .Select(s => s.MaterialBatchId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var shelfRow in current)
             {
-                StockMigrationId = migration.Id,
-                ShelfMaterialBatchId = shelfRow.Id,
-                MaterialBatchId = batch.Id,
-                PreviousQuantity = shelfRow.Quantity,
-                PreviousBatchStatus = batch.Status,
-            });
-            context.BinCardInformation.Add(new BinCardInformation
-            {
-                MaterialBatchId = batch.Id,
-                WarehouseId = shelfRow.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId,
-                UoMId = shelfRow.UoMId ?? batch.UoMId,
-                QuantityReceived = 0,
-                QuantityIssued = shelfRow.Quantity,
-                BalanceQuantity = 0,
-                Description = $"{stamp}: written off, replaced by the counted stock",
-            });
-            shelfRow.Quantity = 0;
-            shelfRow.Note = Clip($"{stamp}: written off", 1000);
-            if (batch.Status == BatchStatus.Available && !elsewhere.Contains(batch.Id))
-                batch.Status = BatchStatus.Consumed;
+                var batch = shelfRow.MaterialBatch;
+                context.StockMigrationWriteOffs.Add(new StockMigrationWriteOff
+                {
+                    StockMigrationId = migration.Id,
+                    ShelfMaterialBatchId = shelfRow.Id,
+                    MaterialBatchId = batch.Id,
+                    PreviousQuantity = shelfRow.Quantity,
+                    PreviousBatchStatus = batch.Status,
+                });
+                context.BinCardInformation.Add(new BinCardInformation
+                {
+                    MaterialBatchId = batch.Id,
+                    WarehouseId = shelfRow.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId,
+                    UoMId = shelfRow.UoMId ?? batch.UoMId,
+                    QuantityReceived = 0,
+                    QuantityIssued = shelfRow.Quantity,
+                    BalanceQuantity = 0,
+                    Description = $"{stamp}: written off, replaced by the counted stock",
+                });
+                shelfRow.Quantity = 0;
+                shelfRow.Note = Clip($"{stamp}: written off", 1000);
+                if (batch.Status == BatchStatus.Available && !elsewhere.Contains(batch.Id))
+                    batch.Status = BatchStatus.Consumed;
+            }
+
         }
 
         // 2. Load the counted stock as new batches.
-        foreach (var group in toLoad.GroupBy(l => (Material: l.ResolvedMaterialId!.Value, Identity: OpeningBalanceBatches.Identity(l.Id, l.BatchNumber))))
+        foreach (var group in toLoad.GroupBy(l => (Material: l.ResolvedMaterialId!.Value, Identity: BatchIdentity(migration, l.Id, l.BatchNumber, l.Grn, l.ArNumber))))
         {
             var first = group.First();
             var total = group.Sum(l => l.Quantity ?? 0);
@@ -486,6 +536,13 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                 var quantity = onShelf.Sum(l => l.Quantity ?? 0);
                 var grn = string.Join(", ", onShelf.Select(l => l.Grn).Where(g => !string.IsNullOrWhiteSpace(g)).Distinct());
                 var ar = string.Join(", ", onShelf.Select(l => l.ArNumber).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct());
+                var balance = quantity;
+                if (migration.Mode == StockMigrationMode.TopUp)
+                {
+                    var key = (group.Key.Material, shelfStore[onShelf.Key]);
+                    balance += receiptBalances.GetValueOrDefault(key);
+                    receiptBalances[key] = balance;
+                }
                 context.ShelfMaterialBatches.Add(new ShelfMaterialBatch
                 {
                     WarehouseLocationShelfId = onShelf.Key,
@@ -503,8 +560,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
                     ArNumber = Clip(ar, 500),
                     QuantityReceived = quantity,
                     QuantityIssued = 0,
-                    BalanceQuantity = quantity,
-                    Description = $"{stamp}: opening stock",
+                    BalanceQuantity = balance,
+                    Description = Clip(migration.Mode == StockMigrationMode.TopUp ? $"{stamp}: additional stock" : $"{stamp}: opening stock", 500),
                 });
             }
 
@@ -560,7 +617,8 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
     /// </summary>
     private async Task Check(StockMigration migration)
     {
-        OpeningBalanceDates.Reconcile(migration.Lines);
+        if (migration.Mode == StockMigrationMode.OpeningBalance)
+            OpeningBalanceDates.Reconcile(migration.Lines);
         var lines = migration.Lines;
         var department = await context.Departments.IgnoreQueryFilters().Where(d => d.Id == migration.DepartmentId).Select(d => d.Name).FirstAsync();
         var stores = await Stores(migration.DepartmentId);
@@ -708,7 +766,12 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
             if (line.BatchNumberDamaged)
                 blockers.Add($"Excel turned the batch number into a date (\"{line.SheetBatchNumber}\"). Type the real batch number.");
             else if (string.IsNullOrWhiteSpace(line.BatchNumber))
-                warnings.Add("No supplier batch or GRN was supplied. This row is retained as separate opening stock without a batch number.");
+                {
+                if (migration.Mode == StockMigrationMode.TopUp)
+                    blockers.Add("A batch number is required for migration top-ups.");
+                else
+                    warnings.Add("No supplier batch or GRN was supplied. This row is retained as separate opening stock without a batch number.");
+            }
             if (line.ExpiryDate is { } expiry && expiry < thisMonth)
                 warnings.Add($"Expired ({expiry:MMM yyyy}).");
             if (line.ManufacturingDate is { } made && line.ExpiryDate is { } expires && made > expires)
@@ -729,7 +792,7 @@ public class StockMigrationRepository(ApplicationDbContext context) : IStockMigr
         var loading = lines
             .Where(l => l.Status is StockMigrationLineStatus.Ok or StockMigrationLineStatus.Warning && l.ResolvedMaterialId.HasValue)
             .ToList();
-        foreach (var batch in loading.GroupBy(l => (l.ResolvedMaterialId, Identity: OpeningBalanceBatches.Identity(l.Id, l.BatchNumber))))
+        foreach (var batch in loading.GroupBy(l => (l.ResolvedMaterialId, Identity: BatchIdentity(migration, l.Id, l.BatchNumber, l.Grn, l.ArNumber))))
         {
             if (batch.Select(l => (l.ManufacturingDate, l.ExpiryDate)).Distinct().Count() > 1)
                 foreach (var line in batch)

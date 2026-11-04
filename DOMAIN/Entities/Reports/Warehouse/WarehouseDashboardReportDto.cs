@@ -55,6 +55,7 @@ public class ReservedMaterialReportDto
     public string ArNumber { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    public DateTime? EffectiveExpiryDate { get; set; }
     public decimal BalanceQuantity { get; set; }
     public string MaterialBatchNumber { get; set; }
 }

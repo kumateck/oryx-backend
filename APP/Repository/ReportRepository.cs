@@ -3558,13 +3558,13 @@ public partial class ReportRepository(
                 smb.DeletedAt == null
                 && smb.Quantity > 0
                 && smb.MaterialBatch.DeletedAt == null
-                && smb.MaterialBatch.ExpiryDate <= now
                 && smb.WarehouseLocationShelf
                     .WarehouseLocationRack
                     .WarehouseLocation
                     .Warehouse
                     .DepartmentId == departmentId
             )
+            .WhereMaterialDate(smb => smb.MaterialBatch, date => date.HasValue && date != DateTime.MinValue && date <= now)
             .Select(smb => new ExpiredMaterialReportDto
             {
                 MaterialName = smb.MaterialBatch.Material.Name,
@@ -3572,7 +3572,8 @@ public partial class ReportRepository(
                 BatchNumber = smb.MaterialBatch.BatchNumber,
                 QuantityOnShelf = smb.Quantity,
                 UomSymbol = smb.MaterialBatch.UoM.Symbol,
-                ExpiryDate = smb.MaterialBatch.ExpiryDate,
+                ExpiryDate = smb.MaterialBatch.Material.Kind == MaterialKind.Raw && !(smb.MaterialBatch.ExpiryDate > now)
+                    ? smb.MaterialBatch.RetestDate ?? smb.MaterialBatch.ExpiryDate : smb.MaterialBatch.ExpiryDate,
                 DateReceived = smb.MaterialBatch.DateReceived,
                 ShelfName = smb.WarehouseLocationShelf.Name,
             })

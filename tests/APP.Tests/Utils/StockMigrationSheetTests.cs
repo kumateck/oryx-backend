@@ -30,6 +30,16 @@ public class StockMigrationSheetTests
     }
 
     [Fact]
+    public void Top_up_requires_a_supplier_batch_instead_of_substituting_a_grn()
+    {
+        using var package = Workbook(sheet => Row(sheet, 2, "W", "S", null, "mg", "RMA014", "Aerosil", "GRN-1", null, null, null, 104d));
+        Assert.Equal("GRN-1", Assert.Single(StockMigrationSheet.Read(package)).BatchNumber);
+        var topUp = Assert.Single(StockMigrationSheet.Read(package, allowGrnBatchFallback: false));
+        Assert.True(string.IsNullOrEmpty(topUp.BatchNumber));
+        Assert.Equal("GRN-1", topUp.Grn);
+    }
+
+    [Fact]
     public void Reads_month_year_typed_dates_that_Excel_stored_as_a_day_this_year()
     {
         using var package = Workbook(sheet =>
