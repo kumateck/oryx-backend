@@ -382,6 +382,7 @@ public class RequisitionRepository(
         }
 
         var result = mapper.Map<RequisitionDto>(requisition);
+        await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
         if (requisition.RequisitionType == RequisitionType.Stock)
             result.Signatories = await StockIssueSignatories(requisition);
 

@@ -10685,6 +10685,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ProductionScheduleProductId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ProductionUnstartRepairId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
@@ -16177,6 +16180,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("ExpiryDate")
@@ -16249,6 +16253,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("ExpiryDate")
@@ -16409,6 +16414,142 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("IssuedBmrRevisions");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PreviewToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("ProductionScheduleProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("RequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("RequisitionId");
+
+                    b.HasIndex("ProductionScheduleProductId", "Kind", "AppliedAt");
+
+                    b.ToTable("IssuedMaterialRepairs");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepairAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Adjustment")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("AssignedAfter")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("AssignedBefore")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("BinCardId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedMaterialRepairId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MovementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ReservationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ShelfAfter")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("ShelfBefore")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("ShelfId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IssuedMaterialRepairId");
+
+                    b.ToTable("IssuedMaterialRepairAllocations");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepairLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Adjustment")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("ApprovedQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("BeforeQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("IssuedMaterialRepairId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MaterialCode")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MaterialName")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RequisitionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TargetQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("UnitSymbol")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UoMId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IssuedMaterialRepairId", "MaterialId")
+                        .IsUnique();
+
+                    b.ToTable("IssuedMaterialRepairLines");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -16429,6 +16570,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("LastDeletedById")
@@ -16447,6 +16589,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -16458,7 +16601,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("ProductionScheduleProductId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
 
                     b.ToTable("ProductionActivities");
                 });
@@ -16531,6 +16675,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsCritical")
@@ -16849,6 +16994,50 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("ProductionScheduleProductId");
 
                     b.ToTable("ProductionMaterialRepairs");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionUnstartRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PreviewToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivityId")
+                        .IsUnique();
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("BatchId");
+
+                    b.ToTable("ProductionUnstartRepairs");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductsSampling.ProductSampling", b =>
@@ -35585,6 +35774,45 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("BatchManufacturingRecord");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionScheduleProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Requisitions.Requisition", null)
+                        .WithMany()
+                        .HasForeignKey("RequisitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepairAllocation", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", null)
+                        .WithMany("Allocations")
+                        .HasForeignKey("IssuedMaterialRepairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepairLine", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("IssuedMaterialRepairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -35867,6 +36095,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionUnstartRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Products.Production.ProductionActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", null)
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductsSampling.ProductSampling", b =>
@@ -42066,6 +42315,13 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Products.ProductPackage", b =>
                 {
                     b.Navigation("Substitutes");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.IssuedMaterialRepair", b =>
+                {
+                    b.Navigation("Allocations");
+
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Products.Production.ProductionActivity", b =>

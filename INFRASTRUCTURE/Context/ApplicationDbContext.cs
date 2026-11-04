@@ -1009,6 +1009,8 @@ public partial class ApplicationDbContext(
     {
         if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
+        ValidateIssuedMaterialRepairAudit();
+        ValidateProductionUnstartAudit();
         SaveEntity();
         ValidatePriceUoM();
         return base.SaveChanges();
@@ -1018,6 +1020,8 @@ public partial class ApplicationDbContext(
     {
         if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
+        ValidateIssuedMaterialRepairAudit();
+        ValidateProductionUnstartAudit();
         SaveEntity();
         ValidatePriceUoM();
         return await base.SaveChangesAsync(cancellationToken);
@@ -1141,6 +1145,7 @@ public partial class ApplicationDbContext(
         // Call base method
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
+        ConfigureIssuedMaterialRepair(modelBuilder);
         modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()
             .HasForeignKey(change => change.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<IssuedBmrChange>().HasIndex(change => new { change.BatchManufacturingRecordId, change.OccurredAt });
@@ -1155,6 +1160,9 @@ public partial class ApplicationDbContext(
         ConfigureTableMappings(modelBuilder);
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
+        ConfigureProductionUnstart(modelBuilder);
+        modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
+        modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
         ConfigureProductionMaterials(modelBuilder);
         ConfigureRelationships(modelBuilder);
         ConfigureConstraints(modelBuilder);
