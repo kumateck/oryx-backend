@@ -16,6 +16,8 @@ namespace APP.IRepository;
 
 public interface IProductionScheduleRepository
 {
+    Task<Result<ScheduleRepairPreview>> PreviewScheduleRepair(Guid scheduleId, Guid productId, Guid actorId, ScheduleRepairKind kind);
+    Task<Result<ScheduleRepairResult>> ApplyScheduleRepair(Guid scheduleId, Guid productId, Guid actorId, ScheduleRepairKind kind, ApplyScheduleRepair request);
     Task<Result<ProductionStepRecordsDto>> GetProductionStepRecords(Guid activityId, Guid stepId, Guid actorId, CancellationToken cancellationToken = default);
     Task<Result<Guid>> CreateProductionSchedule(CreateProductionScheduleRequest request, Guid userId);
     Task<Result<ProductionScheduleDto>> GetProductionSchedule(Guid scheduleId, Guid userId);

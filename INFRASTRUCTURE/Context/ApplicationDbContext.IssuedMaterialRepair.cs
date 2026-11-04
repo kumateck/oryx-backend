@@ -27,7 +27,7 @@ public partial class ApplicationDbContext
     private void ValidateIssuedMaterialRepairAudit()
     {
         if (ChangeTracker.Entries().Any(entry =>
-            entry.Entity is IssuedMaterialRepair or IssuedMaterialRepairLine or IssuedMaterialRepairAllocation
+            entry.Entity is IssuedMaterialRepair or IssuedMaterialRepairLine or IssuedMaterialRepairAllocation or ProductionScheduleRepair
             && entry.State is EntityState.Modified or EntityState.Deleted))
             throw new InvalidOperationException("Issued material repair evidence is append-only.");
     }
