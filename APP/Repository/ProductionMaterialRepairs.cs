@@ -146,7 +146,10 @@ internal static class ProductionMaterialRepairs
     {
         foreach (var kind in new[] { MaterialKind.Raw, MaterialKind.Package })
         {
-            if (await context.ProductionMaterialConfigurations.AnyAsync(item => item.ProductionScheduleProductId == batchId && item.Kind == kind))
+            var configuration = await context.ProductionMaterialConfigurations.IgnoreQueryFilters()
+                .SingleOrDefaultAsync(item => item.ProductionScheduleProductId == batchId && item.Kind == kind);
+            if (configuration is not null && (configuration.DeletedAt is null
+                || !await context.ProductionUnstartRepairs.AnyAsync(repair => repair.BatchId == batchId && repair.AppliedAt == configuration.DeletedAt)))
                 return Error.Conflict("Production.Configuration", "This batch already has an applied configuration.");
             var loaded = await ProductionMaterialSources.Load(context, batchId, kind);
             if (loaded.IsFailure) return loaded.Error;
@@ -159,10 +162,19 @@ internal static class ProductionMaterialRepairs
                 return Error.Validation("Production.Materials", string.Join(" ", source.Blockers.Concat(allocation.Blockers)
                     .Append("All materials must have valid configuration and enough unreserved, usable stock before starting.")));
             ProductionMaterialAllocator.Apply(context, source, [], allocation.Allocations);
-            context.ProductionMaterialConfigurations.Add(new ProductionMaterialConfiguration
-            { ProductionScheduleProductId = batchId, Kind = kind, Revision = 1, SourceHash = source.SourceHash,
-                DepartmentId = source.DepartmentId, StorageWarehouseId = source.StorageId, ProductionWarehouseId = source.ProductionId,
-                RequirementsJson = ProductionMaterialSources.Json(source.Requirements) });
+            if (configuration is null)
+            {
+                configuration = new ProductionMaterialConfiguration { ProductionScheduleProductId = batchId, Kind = kind };
+                context.ProductionMaterialConfigurations.Add(configuration);
+            }
+            configuration.Revision++;
+            configuration.SourceHash = source.SourceHash;
+            configuration.DepartmentId = source.DepartmentId;
+            configuration.StorageWarehouseId = source.StorageId;
+            configuration.ProductionWarehouseId = source.ProductionId;
+            configuration.RequirementsJson = ProductionMaterialSources.Json(source.Requirements);
+            configuration.DeletedAt = null;
+            configuration.LastDeletedById = null;
         }
         await context.SaveChangesAsync();
         return Result.Success();

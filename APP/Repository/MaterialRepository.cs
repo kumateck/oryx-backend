@@ -2709,7 +2709,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     r.MaterialBatch.MaterialId == materialId
                     && r.WarehouseId == warehouseId
                     && r.ProductionScheduleProductId == productionScheduleProductId
-                    && r.DeletedAt != null && r.ReleasedAt == null
+                    && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
                 )
                 .ToListAsync()
         );

@@ -467,6 +467,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> UpdateStatusOfProductionActivityStep(Guid productionStepId, [FromQuery] ProductionStatus status)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -736,6 +737,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> IssueBatchManufacturingRecord(Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -805,6 +807,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> IssueBatchPackagingRecord(Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
