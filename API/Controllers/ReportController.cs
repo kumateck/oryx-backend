@@ -34,6 +34,24 @@ namespace API.Controllers;
 [Authorize]
 public class ReportController(IReportRepository repository) : ControllerBase
 {
+    /// <summary>
+    /// The month's production schedules for the user's department with, per product, the materials one batch
+    /// needs, all planned batches need, and what the department's storage can cover now.
+    /// </summary>
+    [HttpGet("production-material-forecast", Name = "GetProductionMaterialForecast")]
+    [Authorize(PermissionKeys.CanViewProductionScheduleMaterialForecast)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionMaterialForecastDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionMaterialForecast([FromQuery] ProductionMaterialForecastFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetProductionMaterialForecast(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Issued BMRs by inclusive UTC issue date, including completed and archived history.</summary>
     [HttpGet("bmr-issued", Name = "GetIssuedBmrReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrReportDto))]

@@ -215,6 +215,7 @@ public static class PermissionSubmodules
 public static class PermissionKeys
 {
     public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
+    public const string CanViewProductionScheduleMaterialForecast = "CanViewProductionScheduleMaterialForecast";
     public const string CanViewOpeningBalances = "CanViewOpeningBalances";
     public const string CanUploadOpeningBalances = "CanUploadOpeningBalances";
     public const string CanCorrectOpeningBalances = "CanCorrectOpeningBalances";
@@ -1094,6 +1095,7 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Warehouse, "Production Material Forecast", PermissionKeys.CanViewProductionScheduleMaterialForecast);
 
         // Opening-balance drafts and posting are separately permissioned.
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanViewOpeningBalances);

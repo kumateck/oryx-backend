@@ -22,6 +22,8 @@ namespace APP.IRepository;
 
 public interface IReportRepository
 {
+    Task<Result<ProductionMaterialForecastDto>> GetProductionMaterialForecast(
+        ProductionMaterialForecastFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<IssuedBmrReportDto>> GetIssuedBmrReport(
         IssuedBmrReportFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<ProductionReadinessReportDto>> GetProductionReadinessReport(
