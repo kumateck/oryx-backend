@@ -767,10 +767,9 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
                 blockers.Add($"Excel turned the batch number into a date (\"{line.SheetBatchNumber}\"). Type the real batch number.");
             else if (string.IsNullOrWhiteSpace(line.BatchNumber))
             {
-                if (migration.Mode == StockMigrationMode.TopUp)
-                    blockers.Add("A batch number is required for migration top-ups.");
-                else
-                    warnings.Add("No supplier batch or GRN was supplied. This row is retained as separate opening stock without a batch number.");
+                warnings.Add(migration.Mode == StockMigrationMode.TopUp
+                    ? "No supplier batch number was supplied. This row is retained as separate top-up stock without a batch number."
+                    : "No supplier batch or GRN was supplied. This row is retained as separate opening stock without a batch number.");
             }
             if (line.ExpiryDate is { } expiry && expiry < thisMonth)
                 warnings.Add($"Expired ({expiry:MMM yyyy}).");

@@ -1009,6 +1009,7 @@ public partial class ApplicationDbContext(
     {
         if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
+        ValidateFormulaRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
         SaveEntity();
@@ -1020,6 +1021,7 @@ public partial class ApplicationDbContext(
     {
         if (ReportAsOfUtc.HasValue) throw new InvalidOperationException("Historical reporting is read-only.");
         FormulaChangeGuard.Validate(ChangeTracker);
+        ValidateFormulaRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
         SaveEntity();

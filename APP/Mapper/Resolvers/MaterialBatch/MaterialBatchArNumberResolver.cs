@@ -1,4 +1,5 @@
 using AutoMapper;
+using APP.Services.Materials;
 using DOMAIN.Entities.MaterialSampling;
 using INFRASTRUCTURE.Context;
 
@@ -14,18 +15,21 @@ public class MaterialBatchArNumberResolver(ApplicationDbContext dbContext)
         ResolutionContext context
     )
     {
+        var correction = MigrationBatchReferences.Corrections(dbContext, source.Id).FirstOrDefault();
+        if (correction != null) return correction;
         if (
             context.TryGetItems(out var items)
             && items.TryGetValue("Samplings", out var samplingsObj)
             && samplingsObj is List<MaterialSampling> samplings
         )
         {
-            return samplings.FirstOrDefault(s => s.MaterialBatchId == source.Id)?.ArNumber;
+            return samplings.FirstOrDefault(s => s.MaterialBatchId == source.Id)?.ArNumber
+                ?? string.Join(", ", MigrationBatchReferences.SourceReferences(dbContext, source.Id));
         }
 
         return dbContext
             .MaterialSamplings.Where(s => s.MaterialBatchId == source.Id)
             .Select(s => s.ArNumber)
-            .FirstOrDefault();
+            .FirstOrDefault() ?? string.Join(", ", MigrationBatchReferences.SourceReferences(dbContext, source.Id));
     }
 }

@@ -104,13 +104,14 @@ public sealed class StockTopUpPostgresTests
             Assert.Equal(130, comparison.Value[0].New);
 
             // Invalid rows cannot post even the valid part of a list.
-            request.Lines = [new() { MaterialCode = material.Code, ShelfId = shelf.Id, BatchNumber = "", UnitSymbol = "mg", QuantityInSheet = 5 }];
+            request.Lines = [new() { MaterialCode = "MISSING", ShelfId = shelf.Id, BatchNumber = "", UnitSymbol = "mg", QuantityInSheet = 5 }];
             var blocked = await repository.CreateTopUp(request, actor.UserId.Value);
             Assert.True(blocked.IsSuccess);
             Assert.True((await repository.Approve(blocked.Value, actor.UserId.Value)).IsFailure);
             Assert.Equal(80, await db.ShelfMaterialBatches.SumAsync(s => s.Quantity));
             var blockedLine = await db.StockMigrationLines.SingleAsync(l => l.StockMigrationId == blocked.Value);
             request.Lines[0].BatchNumber = "CONCURRENT";
+            request.Lines[0].MaterialCode = material.Code;
             Assert.True((await repository.UpdateLine(blocked.Value, blockedLine.Id, request.Lines[0])).IsSuccess);
 
             // Two independent approvers race for the same draft; only one can post it.
@@ -133,6 +134,21 @@ public sealed class StockTopUpPostgresTests
             Assert.Equal(85, await db.ShelfMaterialBatches.SumAsync(s => s.Quantity));
             Assert.False(await db.MaterialBatches.AnyAsync(b => b.BatchNumber == "ROLLBACK"));
             Assert.Equal(StockMigrationStatus.Draft, await db.StockMigrations.AsNoTracking().Where(m => m.Id == failing.Value).Select(m => m.Status).SingleAsync());
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"StockMigrationBalances\" DROP CONSTRAINT reject_test_topup");
+
+            // Missing references are optional and never merge separate source rows into one lot.
+            request.Lines = [
+                new() { MaterialCode = material.Code, ShelfId = shelf.Id, UnitSymbol = "mg", QuantityInSheet = 2 },
+                new() { MaterialCode = material.Code, ShelfId = shelf.Id, BatchNumber = " ", UnitSymbol = "mg", QuantityInSheet = 3 },
+            ];
+            var unnumbered = await repository.CreateTopUp(request, actor.UserId.Value);
+            Assert.True(unnumbered.IsSuccess);
+            Assert.True((await repository.Approve(unnumbered.Value, actor.UserId.Value)).IsSuccess);
+            var unnumberedLines = await db.StockMigrationLines.Where(l => l.StockMigrationId == unnumbered.Value).ToListAsync();
+            Assert.Equal(2, unnumberedLines.Select(l => l.ImportedBatchId).Distinct().Count());
+            Assert.Equal(90, await db.ShelfMaterialBatches.SumAsync(s => s.Quantity));
+            var batchIds = unnumberedLines.Select(l => l.ImportedBatchId).ToList();
+            Assert.All(await db.MaterialBatches.Where(b => batchIds.Contains(b.Id)).ToListAsync(), b => Assert.Equal("", b.BatchNumber));
         }
         finally
         {
