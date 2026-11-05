@@ -50,12 +50,20 @@ file sealed class ValidFormulaClient(bool testsPass = true) : IFormulaCalculatio
 public sealed class FormulaDefinitionServiceTests
 {
     [Fact]
-    public async Task Lifecycle_RequiresThreePeopleAndSupersedesEffectiveRevision()
+    public Task Lifecycle_RequiresThreePeopleAndSupersedesEffectiveRevision() => Lifecycle(postgres: false);
+
+    /// <summary>Approval commits inside its own transaction; the deferred audit trigger must accept it.</summary>
+    [RepairPostgresFact]
+    public Task Lifecycle_passes_the_database_audit_triggers_including_approval_and_supersession() => Lifecycle(postgres: true);
+
+    private static async Task Lifecycle(bool postgres)
     {
         var authorId = Guid.NewGuid();
         var reviewerId = Guid.NewGuid();
         var approverId = Guid.NewGuid();
-        await using var context = CreateContext(authorId);
+        await using var database = new FormulaTriggerDatabase();
+        if (postgres) await database.CreateAsync(new DefinitionTestUser(authorId), authorId, reviewerId, approverId);
+        await using var context = postgres ? database.Open(new DefinitionTestUser(authorId)) : CreateContext(authorId);
         var question = FormulaQuestion();
         var option = new QuestionOption
         {
@@ -103,8 +111,9 @@ public sealed class FormulaDefinitionServiceTests
             replacementTransition, authorId, Guid.NewGuid())).IsSuccess);
         Assert.True((await service.RecordReviewAsync(replacement.Value.Id,
             replacementTransition, reviewerId, Guid.NewGuid())).IsSuccess);
-        Assert.True((await service.ApproveAsync(replacement.Value.Id,
-            replacementTransition, approverId, Guid.NewGuid())).IsSuccess);
+        var replaced = await service.ApproveAsync(replacement.Value.Id,
+            replacementTransition, approverId, Guid.NewGuid());
+        Assert.True(replaced.IsSuccess, string.Join("; ", replaced.Errors.Select(error => $"{error.Code}: {error.Description}")));
 
         var original = await context.FormulaRevisions.SingleAsync(
             item => item.Id == approved.Value.Id);
