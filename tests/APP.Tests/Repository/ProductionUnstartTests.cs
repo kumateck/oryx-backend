@@ -162,6 +162,55 @@ public sealed class ProductionUnstartTests
     }
 
     [RepairPostgresFact]
+    public async Task Production_starts_when_raw_materials_are_ready_even_if_packaging_is_not_yet_in_stock()
+    {
+        await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture);
+        var request = await Request(fixture, run);
+        await using (var db = fixture.Open()) Assert.True((await Service(db, fixture).Apply(run, request)).IsSuccess);
+        await using (var db = fixture.Open())
+        {
+            foreach (var shelf in await db.ShelfMaterialBatches.Where(item => item.MaterialBatch.Material.Kind == MaterialKind.Package).ToListAsync())
+                shelf.Quantity = 0;
+            await db.SaveChangesAsync();
+        }
+        await using (var db = fixture.Open())
+        {
+            using var provider = Mapping(db);
+            var result = await Repository(db, provider.GetRequiredService<IMapper>()).StartProductionActivity(fixture.BatchId, fixture.Actor.UserId.GetValueOrDefault());
+            Assert.True(result.IsSuccess, result.Error.Description);
+        }
+        await using (var db = fixture.Open())
+        {
+            // Raw materials are reserved and configured; packaging is left for the later packaging requisition.
+            Assert.Equal(MaterialKind.Raw, (await db.ProductionMaterialConfigurations.SingleAsync()).Kind);
+            var held = await db.MaterialBatchReservedQuantities.Select(item => item.MaterialBatch.Material.Kind).ToListAsync();
+            Assert.NotEmpty(held); Assert.All(held, kind => Assert.Equal(MaterialKind.Raw, kind));
+        }
+    }
+
+    [RepairPostgresFact]
+    public async Task Production_start_is_still_refused_when_a_raw_material_is_short()
+    {
+        await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture);
+        var request = await Request(fixture, run);
+        await using (var db = fixture.Open()) Assert.True((await Service(db, fixture).Apply(run, request)).IsSuccess);
+        await using (var db = fixture.Open())
+        {
+            foreach (var shelf in await db.ShelfMaterialBatches.Where(item => item.MaterialBatch.Material.Kind == MaterialKind.Raw).ToListAsync())
+                shelf.Quantity = 0;
+            await db.SaveChangesAsync();
+        }
+        await using (var db = fixture.Open())
+        {
+            using var provider = Mapping(db);
+            var result = await Repository(db, provider.GetRequiredService<IMapper>()).StartProductionActivity(fixture.BatchId, fixture.Actor.UserId.GetValueOrDefault());
+            Assert.True(result.IsFailure);
+            Assert.Contains("All raw materials must have valid configuration", result.Error.Description);
+        }
+        await using (var db = fixture.Open()) Assert.Empty(await db.ProductionActivities.ToListAsync());
+    }
+
+    [RepairPostgresFact]
     public async Task Unissued_holds_are_released_without_recreating_shelf_stock_even_when_the_balance_changed()
     {
         await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture);
