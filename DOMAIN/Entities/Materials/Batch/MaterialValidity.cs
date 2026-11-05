@@ -2,16 +2,17 @@ using System.Linq.Expressions;
 
 namespace DOMAIN.Entities.Materials.Batch;
 
-/// <summary>Use active expiry first, then the raw-material retest extension; packaging keeps its expiry.</summary>
+/// <summary>
+/// Use the active expiry first, then the retest date, for every material kind (raw and packaging).
+/// A batch with neither date set (or only the MinValue sentinel) never expires.
+/// </summary>
 public static class MaterialValidity
 {
     public static Expression<Func<MaterialBatch, DateTime?>> DateAt(DateTime asOf) => batch =>
-        batch.Material.Kind == MaterialKind.Raw && !(batch.ExpiryDate > asOf)
-            ? batch.RetestDate ?? batch.ExpiryDate : batch.ExpiryDate;
+        !(batch.ExpiryDate > asOf) ? batch.RetestDate ?? batch.ExpiryDate : batch.ExpiryDate;
 
     public static DateTime? EffectiveDate(MaterialBatch batch, DateTime? asOf = null) =>
-        batch.Material?.Kind == MaterialKind.Raw && !(batch.ExpiryDate > (asOf ?? DateTime.UtcNow))
-            ? batch.RetestDate ?? batch.ExpiryDate : batch.ExpiryDate;
+        !(batch.ExpiryDate > (asOf ?? DateTime.UtcNow)) ? batch.RetestDate ?? batch.ExpiryDate : batch.ExpiryDate;
 
     public static bool IsExpired(MaterialBatch batch, DateTime asOf) =>
         IsExpiredDate(EffectiveDate(batch, asOf), asOf);
