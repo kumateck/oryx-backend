@@ -11075,6 +11075,10 @@ namespace INFRASTRUCTURE.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("NewBatchNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime?>("NewDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -11083,6 +11087,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<string>("PreviousArNumber")
                         .HasColumnType("text");
+
+                    b.Property<string>("PreviousBatchNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("PreviousDate")
                         .HasColumnType("timestamp with time zone");

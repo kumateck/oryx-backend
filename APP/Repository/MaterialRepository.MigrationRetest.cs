@@ -39,6 +39,12 @@ public partial class MaterialRepository
             return Error.Conflict("MaterialRetest.Changed", "The AR number changed. Reload the batch before correcting it.");
         if (request.ArNumber?.Trim().Length > 500)
             return Error.Validation("MaterialRetest.ArNumber", "The AR number must be at most 500 characters.");
+        var previousBatchNumber = batch.BatchNumber ?? string.Empty;
+        var newBatchNumber = request.BatchNumber?.Trim();
+        if (newBatchNumber != null && previousBatchNumber != (request.ExpectedBatchNumber ?? string.Empty))
+            return Error.Conflict("MaterialRetest.Changed", "The batch number changed. Reload the batch before correcting it.");
+        if (newBatchNumber is { Length: 0 or > 500 })
+            return Error.Validation("MaterialRetest.BatchNumber", "Enter the batch number (at most 500 characters).");
         var reason = request.Reason?.Trim();
         if (reason is null || reason.Length < 3 || reason.Length > 1000
             || request.RetestDate != batch.RetestDate && request.RetestDate is { } date
@@ -51,9 +57,11 @@ public partial class MaterialRepository
             Id = Guid.NewGuid(), MaterialBatchId = batchId, PreviousDate = batch.RetestDate,
             NewDate = request.RetestDate, ExpiryDate = batch.ExpiryDate, Reason = reason,
             PreviousArNumber = previousAr, NewArNumber = request.ArNumber?.Trim(),
+            PreviousBatchNumber = newBatchNumber is null ? null : previousBatchNumber, NewBatchNumber = newBatchNumber,
             ActorId = actorId, OccurredAt = DateTime.UtcNow,
         });
         batch.RetestDate = request.RetestDate;
+        if (newBatchNumber is not null) batch.BatchNumber = newBatchNumber;
         batch.LastUpdatedById = actorId;
         batch.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
