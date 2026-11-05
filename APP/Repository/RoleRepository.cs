@@ -81,7 +81,7 @@ public class RoleRepository(ApplicationDbContext context, IMapper mapper, UserMa
             return Error.Failure("Role.Create", $"{result.Errors.First()}");
         }
 
-        var permissionResult = await permissionRepository.UpdateRolePermissions(request.Permissions, newRole.Id);
+        var permissionResult = await permissionRepository.UpdateRolePermissions(request.Permissions, newRole.Id, userId, PermissionKeys.CanCreateRole);
         if (permissionResult.IsFailure) return permissionResult;
         await transaction.CommitAsync();
         return Result.Success();
