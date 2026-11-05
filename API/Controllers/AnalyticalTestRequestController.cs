@@ -135,6 +135,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Requests a retest for an analytical test request.
     /// </summary>
     [HttpPost("request-retest/{id:guid}")]
+    [Authorize(PermissionKeys.CanRequestRetestProductTest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -152,6 +153,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Completes a retest by extending the expiry date.
     /// </summary>
     [HttpPost("complete-retest/{id:guid}")]
+    [Authorize(PermissionKeys.CanCompleteRetestProductTest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

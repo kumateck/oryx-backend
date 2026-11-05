@@ -1,3 +1,4 @@
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -9,7 +10,7 @@ namespace API.Controllers;
 
 [Route("api/v{version:apiVersion}/permission")]
 [ApiController]
-public class PermissionController(IPermissionRepository repo) : ControllerBase
+public class PermissionController(IPermissionRepository repo, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
     /// <summary>
     /// Retrieves all permission modules in the system.
@@ -48,6 +49,10 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
         var id = (string)HttpContext.Items["Sub"];
         if (id == null) return TypedResults.Unauthorized();
 
+        // Your own permissions are yours to read; anyone else's need CanViewPermissions.
+        if (userId is { } other && other != Guid.Parse(id)
+            && !(await CurrentPermissionSet.Load(context, Guid.Parse(id))).Contains(PermissionKeys.CanViewPermissions))
+            return TypedResults.Forbid();
         var result = await repo.GetAllPermissionForUser(userId ?? Guid.Parse(id));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -57,7 +62,7 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
     /// </summary>
     /// <param name="roleId">The role ID.</param>
     [HttpGet("role/{roleId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewPermissions)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PermissionModuleDto>))]
     public async Task<IResult> GetPermissionsByRole(Guid roleId)
     {
@@ -71,12 +76,13 @@ public class PermissionController(IPermissionRepository repo) : ControllerBase
     /// <param name="roleId">The role ID.</param>
     /// <param name="permissions">List of permission identifiers.</param>
     [HttpPut("role/{roleId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanUpdateExistingPermission)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpdateRolePermissions(Guid roleId, [FromBody] List<PermissionModuleDto> permissions)
     {
-        var result = await repo.UpdateRolePermissions(permissions, roleId);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repo.UpdateRolePermissions(permissions, roleId, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

@@ -31,7 +31,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Creates a new approval.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateNewApproval)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateApproval([FromBody] CreateApprovalRequest request)
@@ -91,7 +91,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Transfers approval rights from one user to another.
     /// </summary>
     [HttpPost("transfer-rights")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanTransferApprovalRights)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> TransferApprovalRights([FromBody] TransferApprovalRequest request)
@@ -204,7 +204,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Deletes a specific approval by its ID.
     /// </summary>
     [HttpDelete("{approvalId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteApprovals)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteApproval(Guid approvalId)

@@ -7,6 +7,7 @@ using APP.Utils;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Users.Request;
+using SHARED;
 using SHARED.Requests;
 
 namespace API.Controllers;
@@ -15,23 +16,26 @@ namespace API.Controllers;
 [ApiController]
 public class UserController(IUserRepository repo) : ControllerBase
 {
-    [AllowAnonymous]
+    [Authorize(PermissionKeys.CanCreateUser)]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        var response = await repo.CreateUser(request);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var response = await repo.CreateUser(request, actor);
         return response.IsSuccess ? TypedResults.Ok(response) : response.ToProblemDetails();
     }
 
-    [AllowAnonymous]
+    /// <summary>
+    /// Self sign-up is switched off: accounts are created by someone with CanCreateUser through POST user, and
+    /// roles are given separately. The route stays so older clients get a clear refusal.
+    /// </summary>
+    [Authorize(PermissionKeys.CanCreateUser)]
     [HttpPost("sign-up")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IResult> CreateNewUser([FromBody] CreateClientRequest request)
-    {
-        var response = await repo.CreateNewUser(request);
-        return response.IsSuccess ? TypedResults.Created("", response.Value) : response.ToProblemDetails();
-    }
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public IResult CreateNewUser([FromBody] CreateClientRequest request) =>
+        Result.Failure(Error.Forbidden("User.SignUpDisabled", "Self sign-up is disabled. Create the account from user management.")).ToProblemDetails();
 
     [Authorize]
     [HttpGet]
@@ -97,7 +101,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     }
 
 
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditUser)]
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -110,7 +114,7 @@ public class UserController(IUserRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
 
-    //[Authorize("permission.user." + PermissionUtils.PermSuffixUpdate)]
+    [Authorize(PermissionKeys.CanAssignUserRole)]
     [HttpPut("role/{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -119,11 +123,11 @@ public class UserController(IUserRepository repo) : ControllerBase
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var response = await repo.UpdateRolesOfUser(request, id);
+        var response = await repo.UpdateRolesOfUser(request, id, Guid.Parse(userId));
         return response.IsSuccess ? TypedResults.NoContent() : response.ToProblemDetails();
     }
 
-    //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
+    [Authorize(PermissionKeys.CanDeleteUser)]
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -143,7 +147,8 @@ public class UserController(IUserRepository repo) : ControllerBase
         }
     }
 
-    [AllowAnonymous]
+    /// <summary>Sets the signed-in user's own avatar; another user's is refused.</summary>
+    [Authorize]
     [HttpPost("avatar/{id?}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -154,7 +159,8 @@ public class UserController(IUserRepository repo) : ControllerBase
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
 
-            await repo.UploadAvatar(request, id ?? Guid.Parse(userId));
+            if (id is { } other && other != Guid.Parse(userId)) return TypedResults.Forbid();
+            await repo.UploadAvatar(request, Guid.Parse(userId));
             return TypedResults.NoContent();
         }
         catch (Exception)
@@ -163,7 +169,11 @@ public class UserController(IUserRepository repo) : ControllerBase
         }
     }
 
-    [AllowAnonymous]
+    /// <summary>
+    /// Sets the signed-in user's own electronic signature. Nobody can set another user's signature, so a
+    /// signature always comes from the person it belongs to.
+    /// </summary>
+    [Authorize(PermissionKeys.CanCreateSignatureSettings)]
     [HttpPost("signature/{id?}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -174,7 +184,8 @@ public class UserController(IUserRepository repo) : ControllerBase
             var userId = (string)HttpContext.Items["Sub"];
             if (userId == null) return TypedResults.Unauthorized();
 
-            await repo.UploadSignature(request, id ?? Guid.Parse(userId));
+            if (id is { } other && other != Guid.Parse(userId)) return TypedResults.Forbid();
+            await repo.UploadSignature(request, Guid.Parse(userId));
             return TypedResults.NoContent();
         }
         catch (Exception)
@@ -228,7 +239,8 @@ public class UserController(IUserRepository repo) : ControllerBase
         return response.IsSuccess ? TypedResults.Ok() : response.ToProblemDetails();
     }
 
-    //[Authorize("permission.user." + PermissionUtils.PermSuffixDelete)]
+    /// <summary>Blocks an active user (CanBlockUser) or unblocks a blocked one (CanUnblockUser); never the caller.</summary>
+    [Authorize]
     [HttpPut("toggle-disable/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

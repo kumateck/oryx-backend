@@ -21,7 +21,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [HttpPost("{modelType}/{modelId}/{reference}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IResult> UploadFile(string modelType, Guid modelId,
         string reference, IFormFile file)
     {
@@ -53,7 +53,7 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     [HttpPost("{modelType}/{modelId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IResult> UploadFile(string modelType, Guid modelId,
       [FromForm] List<IFormFile> files)
     {
