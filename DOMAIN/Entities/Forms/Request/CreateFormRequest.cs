@@ -101,6 +101,7 @@ public class GetResponseIdRequest
 
 public class SaveResponseDraftRequest
 {
+    public string FormulaConfigurationHash { get; set; }
     public Guid? ResponseId { get; set; }
     public Guid FormId { get; set; }
     public Guid FormFieldId { get; set; }

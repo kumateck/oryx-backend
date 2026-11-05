@@ -4334,6 +4334,94 @@ namespace INFRASTRUCTURE.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaConfigurationPin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CapturedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Definition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DefinitionHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RepairId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("RequiresRecalculation")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormFieldId");
+
+                    b.HasIndex("RepairId");
+
+                    b.HasIndex("ResponseId", "FormFieldId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("LegacyFormulaConfigurationPins", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaRepairEvaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EngineBuildHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("InputHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("PinId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResultsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("PinId", "InputHash")
+                        .IsUnique();
+
+                    b.ToTable("LegacyFormulaRepairEvaluations", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyKeyMapping", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4433,6 +4521,60 @@ namespace INFRASTRUCTURE.Migrations
                         .IsUnique();
 
                     b.ToTable("QuestionFormulaDefinitions", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.QuestionFormulaRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DefinitionAfter")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DefinitionBefore")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("PreviewToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("UpdatedQuestion")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("QuestionFormulaRepairs", (string)null);
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Formulas.ResponseFormulaSnapshot", b =>
@@ -10929,11 +11071,18 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialBatchId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("NewArNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime?>("NewDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreviousArNumber")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("PreviousDate")
                         .HasColumnType("timestamp with time zone");
@@ -28930,6 +29079,42 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("QuestionOption");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaConfigurationPin", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Forms.FormField", null)
+                        .WithMany()
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Formulas.QuestionFormulaRepair", null)
+                        .WithMany()
+                        .HasForeignKey("RepairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaRepairEvaluation", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Formulas.LegacyFormulaConfigurationPin", null)
+                        .WithMany()
+                        .HasForeignKey("PinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyKeyMapping", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Formulas.LegacyFormulaArtifact", "LegacyFormulaArtifact")
@@ -28984,6 +29169,21 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.QuestionFormulaRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Question", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Formulas.ResponseFormulaSnapshot", b =>

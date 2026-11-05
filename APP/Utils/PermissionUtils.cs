@@ -959,6 +959,8 @@ public static class PermissionKeys
     public const string CanViewQuestions = "CanViewQuestions";
     public const string CanCreateQuestions = "CanCreateQuestions";
     public const string CanEditQuestions = "CanEditQuestions";
+    public const string CanRepairQuestionFormula = "CanRepairQuestionFormula";
+    public const string CanRepairTestFormula = "CanRepairTestFormula";
     public const string CanDeleteQuestions = "CanDeleteQuestions";
     public const string CanApplyFormulaMigration = "CanApplyFormulaMigration";
     public const string CanViewReviewFormulaRevision = "CanViewReviewFormulaRevision";
@@ -4052,6 +4054,8 @@ public static class PermissionUtils
             PermissionSubmodules.WorkflowBuilder,
             PermissionKeys.CanEditQuestions
         );
+        addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanRepairQuestionFormula);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.Testing, PermissionKeys.CanRepairTestFormula);
         addPermission(
             PermissionModules.Settings,
             PermissionSubmodules.WorkflowBuilder,
