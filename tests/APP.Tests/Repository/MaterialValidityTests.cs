@@ -105,13 +105,22 @@ public class MaterialValidityTests
         }
     }
 
-    [Fact]
-    public void Packaging_does_not_gain_a_raw_material_extension()
+    [Theory]
+    [InlineData(MaterialKind.Raw)]
+    [InlineData(MaterialKind.Package)]
+    public void Raw_and_packaging_follow_the_same_expiry_and_retest_rule(MaterialKind kind)
     {
         var now = DateTime.UtcNow;
-        var batch = new MaterialBatch { Material = new Material { Kind = MaterialKind.Package },
-            ExpiryDate = now.AddDays(-1), RetestDate = now.AddDays(30) };
-        Assert.True(MaterialValidity.IsExpired(batch, now));
+        MaterialBatch Batch(DateTime? expiry, DateTime? retest) =>
+            new() { Material = new Material { Kind = kind }, ExpiryDate = expiry, RetestDate = retest };
+        Assert.False(MaterialValidity.IsExpired(Batch(null, null), now));                       // no dates: never expires
+        Assert.False(MaterialValidity.IsExpired(Batch(DateTime.MinValue, null), now));          // sentinel: never expires
+        Assert.False(MaterialValidity.IsExpired(Batch(now.AddDays(-1), now.AddDays(30)), now)); // retest extends an elapsed expiry
+        Assert.True(MaterialValidity.IsExpired(Batch(now.AddDays(-30), now.AddDays(-1)), now)); // elapsed expiry and retest
+        Assert.True(MaterialValidity.IsExpired(Batch(now.AddDays(-1), null), now));             // elapsed expiry, no retest
+        Assert.False(MaterialValidity.IsExpired(Batch(null, now.AddDays(10)), now));            // retest only, not yet due
+        Assert.True(MaterialValidity.IsExpired(Batch(null, now.AddDays(-1)), now));             // retest only, elapsed
+        Assert.False(MaterialValidity.IsExpired(Batch(now.AddDays(10), now.AddDays(-1)), now)); // active expiry wins
     }
 
     [Fact]

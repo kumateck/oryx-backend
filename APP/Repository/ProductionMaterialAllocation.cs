@@ -50,7 +50,7 @@ internal static class ProductionMaterialAllocator
         var allocations = new List<ProductionMaterialAllocation>();
         var shortages = new Dictionary<Guid, decimal>();
         var blockers = new List<string>();
-        var details = new List<string>();
+        var shortfalls = new List<(ProductionMaterialRequirement Requirement, decimal Remaining)>();
         foreach (var requirement in source.Requirements)
         {
             var remaining = requirement.Quantity;
@@ -79,7 +79,7 @@ internal static class ProductionMaterialAllocator
                 remaining -= quantity;
             }
             shortages[requirement.MaterialId] = remaining;
-            if (remaining > 0) details.Add(ShortageDetail(requirement, remaining, shelves, others));
+            if (remaining > 0) shortfalls.Add((requirement, remaining));
         }
         var evidence = ProductionMaterialSources.Hash(new
         {
@@ -87,6 +87,21 @@ internal static class ProductionMaterialAllocator
                 item.UoMId, item.Quantity, item.MaterialBatch.Status, item.MaterialBatch.ExpiryDate, item.MaterialBatch.RetestDate, item.MaterialBatch.Material.Kind, item.MaterialBatch.ReturnDate, item.MaterialBatch.UoM.Symbol }),
             Others = others.OrderBy(item => item.Id).Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseLocationShelfId, item.UoMId, item.Quantity, item.UoM.Symbol })
         });
+        var details = new List<string>();
+        if (shortfalls.Count > 0)
+        {
+            // Only to explain a refusal: where else the short materials are on shelves (other warehouses).
+            var shortIds = shortfalls.Select(item => item.Requirement.MaterialId).ToList();
+            var elsewhere = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+                .Where(item => shortIds.Contains(item.MaterialBatch.MaterialId) && item.Quantity > 0
+                    && item.DeletedAt == null && item.MaterialBatch.DeletedAt == null && item.WarehouseLocationShelf.DeletedAt == null
+                    && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId != source.StorageId)
+                .Select(item => new StockElsewhere(item.MaterialBatch.MaterialId,
+                    item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Name, item.Quantity, item.MaterialBatch.UoM.Symbol))
+                .ToListAsync();
+            details.AddRange(shortfalls.Select(item => ShortageDetail(item.Requirement, item.Remaining, shelves, others,
+                elsewhere.Where(row => row.MaterialId == item.Requirement.MaterialId).ToList())));
+        }
         return new ProductionMaterialAllocationPlan(allocations, shortages, evidence, blockers.Distinct().ToList(), details);
     }
 
@@ -94,8 +109,10 @@ internal static class ProductionMaterialAllocator
     /// Explains a shortage in the requirement's unit: usable stock found, stock held by other batches' unissued
     /// reservations (with their batch numbers), and stock on shelves that is not approved or not valid.
     /// </summary>
+    private sealed record StockElsewhere(Guid MaterialId, string Warehouse, decimal Quantity, string Unit);
+
     private static string ShortageDetail(ProductionMaterialRequirement requirement, decimal remaining,
-        List<DOMAIN.Entities.Warehouses.ShelfMaterialBatch> shelves, List<MaterialBatchReservedQuantity> others)
+        List<DOMAIN.Entities.Warehouses.ShelfMaterialBatch> shelves, List<MaterialBatchReservedQuantity> others, List<StockElsewhere> elsewhere)
     {
         decimal Sum(IEnumerable<DOMAIN.Entities.Warehouses.ShelfMaterialBatch> rows) => rows
             .Select(item => UomConverter.Convert(item.Quantity, item.MaterialBatch.UoM?.Symbol, requirement.Unit) ?? 0).Sum();
@@ -118,6 +135,13 @@ internal static class ProductionMaterialAllocator
         if (notValid.Count > 0) parts.Add($"{Amount(Sum(notValid))} is expired or past its retest date");
         if (notApproved.Count > 0) parts.Add($"{Amount(Sum(notApproved))} is not yet approved for use");
         if (own.Count == 0) parts.Add("no stock of this material is on the storage warehouse's shelves");
+        var located = elsewhere.GroupBy(row => string.IsNullOrWhiteSpace(row.Warehouse) ? "an unnamed warehouse" : row.Warehouse)
+            .Select(group => (Warehouse: group.Key, Quantity: group.Sum(row => UomConverter.Convert(row.Quantity, row.Unit, requirement.Unit) ?? 0)))
+            .Where(item => item.Quantity > 0).OrderByDescending(item => item.Quantity).Take(3).ToList();
+        if (located.Count > 0)
+            parts.Add("shelved elsewhere: " + string.Join(", ", located.Select(item => $"{Amount(item.Quantity)} in {item.Warehouse}"))
+                + " (transfer it to this department's storage warehouse to use it)");
+        else if (own.Count == 0) parts.Add("none is shelved in any other warehouse either; check that received stock has been put on shelves");
         return string.Join("; ", parts) + ".";
     }
 
