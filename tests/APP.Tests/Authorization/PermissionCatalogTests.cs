@@ -68,6 +68,16 @@ public sealed class PermissionCatalogTests
 
     private sealed record Endpoint(string Name, string Verb, string Route, IReadOnlyList<string> Keys, bool Anonymous);
 
+    /// <summary>Every key a product permission attribute can require, in either context.</summary>
+    private static IEnumerable<string> ProductKeys(API.Authorization.ProductPermissionAttribute attribute)
+    {
+        var verbs = attribute.Verb == APP.Services.Authorization.ProductVerb.Save
+            ? new[] { APP.Services.Authorization.ProductVerb.Add, APP.Services.Authorization.ProductVerb.Edit, APP.Services.Authorization.ProductVerb.Delete }
+            : new[] { attribute.Verb };
+        return Enum.GetValues<APP.Services.Authorization.ProductContext>().SelectMany(context => verbs
+            .Select(verb => APP.Services.Authorization.ProductPermissions.Key(context, attribute.Section, verb))).Where(key => key is not null).Select(key => key!);
+    }
+
     private static IEnumerable<Endpoint> Endpoints()
     {
         foreach (var controller in typeof(UserController).Assembly.GetTypes()
@@ -79,7 +89,8 @@ public sealed class PermissionCatalogTests
             {
                 var http = action.GetCustomAttributes<HttpMethodAttribute>().First();
                 var keys = controller.GetCustomAttributes<AuthorizeAttribute>().Concat(action.GetCustomAttributes<AuthorizeAttribute>())
-                    .Select(attribute => attribute.Policy).Where(policy => !string.IsNullOrEmpty(policy)).Select(policy => policy!).Distinct().ToList();
+                    .Select(attribute => attribute.Policy).Where(policy => !string.IsNullOrEmpty(policy)).Select(policy => policy!)
+                    .Concat(action.GetCustomAttributes<API.Authorization.ProductPermissionAttribute>().SelectMany(ProductKeys)).Distinct().ToList();
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");
