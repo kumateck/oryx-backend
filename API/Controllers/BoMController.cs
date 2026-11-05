@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.BillOfMaterials.Request;
@@ -17,10 +19,11 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="request">The CreateBillOfMaterialRequest object.</param>
     /// <returns>Returns the ID of the created Bill of Material.</returns>
     [HttpPost]
+    [ProductPermission(ProductSection.Bom, ProductVerb.Save)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateBillOfMaterial([FromBody] CreateBillOfMaterialRequest request)
+    public async Task<IResult> CreateBillOfMaterial([FromBody] CreateBillOfMaterialRequest request, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -67,11 +70,12 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="billOfMaterialId">The ID of the Bill of Material to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{billOfMaterialId}")]
+    [ProductPermission(ProductSection.Bom, ProductVerb.Edit)]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> UpdateBillOfMaterial([FromBody] CreateProductBillOfMaterialRequest request, Guid billOfMaterialId)
+    public async Task<IResult> UpdateBillOfMaterial([FromBody] CreateProductBillOfMaterialRequest request, Guid billOfMaterialId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -86,11 +90,12 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="productId">The ID of the Product for which the bom should be archived.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("archive/{productId}")]
+    [ProductPermission(ProductSection.Bom, ProductVerb.Archive)]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> ArchiveBillOfMaterial(Guid productId)
+    public async Task<IResult> ArchiveBillOfMaterial(Guid productId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -105,10 +110,11 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="billOfMaterialId">The ID of the Bill of Material to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{billOfMaterialId}")]
+    [ProductPermission(ProductSection.Bom, ProductVerb.Delete)]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteBillOfMaterial(Guid billOfMaterialId)
+    public async Task<IResult> DeleteBillOfMaterial(Guid billOfMaterialId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
