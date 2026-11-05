@@ -17238,6 +17238,60 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ProductionUnstartRepairs");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ReservationRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AfterJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BeforeJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("MigrationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PreviewToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RowsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("MigrationId");
+
+                    b.HasIndex("PreviewToken")
+                        .IsUnique();
+
+                    b.ToTable("ReservationRepairs");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.ProductsSampling.ProductSampling", b =>
                 {
                     b.Property<Guid>("Id")
@@ -36384,6 +36438,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", null)
                         .WithMany()
                         .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.ReservationRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", null)
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.StockMigrations.StockMigration", null)
+                        .WithMany()
+                        .HasForeignKey("MigrationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
