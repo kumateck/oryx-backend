@@ -64,7 +64,7 @@ public sealed class MaterialRetestService(
         if (batch.Status is not (BatchStatus.Available or BatchStatus.Approved or BatchStatus.Rejected))
             return Error.Conflict("MaterialRetest.BatchStatus", "Batch status does not allow a new retest request.");
         if (scheduled && (batch.RetestDate is null || batch.RetestDate.Value.Year <= 1900 || batch.RetestDate.Value > (asOf ?? DateTime.UtcNow)
-            || batch.Material.Kind == DOMAIN.Entities.Materials.MaterialKind.Raw && batch.ExpiryDate > (asOf ?? DateTime.UtcNow)))
+            || batch.ExpiryDate > (asOf ?? DateTime.UtcNow)))
             return Error.Validation("MaterialRetest.NotDue", "The scheduled retest date is not due.");
         if (!scheduled && batch.RetestDate is not null)
             return Error.Validation("MaterialRetest.Scheduled", "This batch has a scheduled retest date; the due-date scan creates its request.");

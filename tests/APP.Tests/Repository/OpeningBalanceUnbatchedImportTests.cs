@@ -76,5 +76,26 @@ public class OpeningBalanceUnbatchedImportTests
         Assert.Equal(2, Assert.Single(comparison.Value).NewBatches);
         Assert.Empty(await context.MaterialBatches.ToListAsync());
         Assert.Empty(await context.BinCardInformation.ToListAsync());
+
+        var topUp = await repository.CreateTopUp(new CreateStockTopUpRequest
+        {
+            DepartmentId = department.Id, Reason = "Additional unnumbered stock", Lines = [
+                new() { MaterialCode = material.Code, ShelfId = shelf.Id, BatchNumber = "", UnitSymbol = unit.Symbol, QuantityInSheet = 2 },
+                new() { MaterialCode = material.Code, ShelfId = shelf.Id, UnitSymbol = unit.Symbol, QuantityInSheet = 3 },
+            ],
+        }, Guid.NewGuid());
+        Assert.True(topUp.IsSuccess, topUp.Error?.Description);
+        var topUpRows = await context.StockMigrationLines.Where(l => l.StockMigrationId == topUp.Value).ToListAsync();
+        Assert.Equal(2, topUpRows.Count);
+        Assert.All(topUpRows, line =>
+        {
+            Assert.True(string.IsNullOrWhiteSpace(line.BatchNumber));
+            Assert.True(string.IsNullOrWhiteSpace(line.ArNumber));
+            Assert.True(string.IsNullOrEmpty(line.Blockers));
+            Assert.Contains("separate top-up stock", line.Warnings);
+        });
+        var topUpComparison = await repository.Comparison(topUp.Value);
+        Assert.Equal(2, Assert.Single(topUpComparison.Value).NewBatches);
+        Assert.Empty(await context.MaterialBatches.ToListAsync());
     }
 }

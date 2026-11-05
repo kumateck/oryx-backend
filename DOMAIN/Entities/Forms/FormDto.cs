@@ -32,6 +32,7 @@ public class FormSectionDto : BaseDto
 
 public class FormFieldDto : BaseDto
 {
+    public string FormulaConfigurationHash { get; set; }
     public CollectionItemDto FormSection { get; set; }
     public QuestionDto Question { get; set; }
     public bool Required { get; set; }
@@ -47,6 +48,7 @@ public class ResponseDto : BaseDto
 
 public class ResponseDetailDto : ResponseDto
 {
+    public FormDto EffectiveForm { get; set; }
     public Guid? MaterialSamplingId { get; set; }
     public CollectionItemDto BatchManufacturingRecord { get; set; }
     public CollectionItemDto MaterialBatch { get; set; }
@@ -69,6 +71,8 @@ public class FormResponseDto : WithAttachment
     public UserDto CheckedBy { get; set; }
     public DateTime? CheckedAt { get; set; }
     public bool FormulaGoverned { get; set; }
+    public bool FormulaRepairPending { get; set; }
+    public bool FormulaRepairEvaluated { get; set; }
     public bool FormulaResultFinalized { get; set; }
     public Guid? FormulaExecutionId { get; set; }
     public string FormulaDisplayResultsJson { get; set; }

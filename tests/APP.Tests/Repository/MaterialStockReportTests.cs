@@ -114,7 +114,7 @@ public class MaterialStockReportTests
 
     [Theory]
     [InlineData(MaterialKind.Raw, 0)]
-    [InlineData(MaterialKind.Package, 1)]
+    [InlineData(MaterialKind.Package, 0)]
     public async Task Expired_count_uses_effective_validity_without_losing_original_dates(MaterialKind kind, int expected)
     {
         using var harness = new QcWorksheetTestContext();
@@ -127,15 +127,9 @@ public class MaterialStockReportTests
         var filter = new MaterialStockReportFilter { ExpiredOnly = true };
         Assert.Equal(expected, (await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows.Count);
         filter.ExpiredOnly = false;
-        if (kind == MaterialKind.Raw)
-        {
-            var row = Assert.Single((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
-            Assert.Equal(batch.ExpiryDate, row.ExpiryDate); Assert.Equal(batch.RetestDate, row.RetestDate);
-        }
-        else
-        {
-            Assert.Empty((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
-        }
+        // Raw and packaging extend alike, and the report keeps both original dates.
+        var row = Assert.Single((await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows);
+        Assert.Equal(batch.ExpiryDate, row.ExpiryDate); Assert.Equal(batch.RetestDate, row.RetestDate);
     }
 
     [Fact]
