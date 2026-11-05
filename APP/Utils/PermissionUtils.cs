@@ -1130,6 +1130,10 @@ public static class PermissionKeys
     public const string CanManageSupplierContracts = "CanManageSupplierContracts";
     public const string CanViewSupplierSpend = "CanViewSupplierSpend";
     public const string CanViewWarehouses = "CanViewWarehouses";
+    /// <summary>Create a warehouse. New in the permissions audit (phase 3); granted to nobody until assigned.</summary>
+    public const string CanCreateWarehouse = "CanCreateWarehouse";
+    public const string CanEditWarehouse = "CanEditWarehouse";
+    public const string CanDeleteWarehouse = "CanDeleteWarehouse";
     public const string CanViewLocations = "CanViewLocations";
     public const string CanAddNewLocation = "CanAddNewLocation";
     public const string CanEditLocation = "CanEditLocation";
@@ -4453,6 +4457,9 @@ public static class PermissionUtils
             PermissionSubmodules.Warehouses,
             PermissionKeys.CanViewWarehouses
         );
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanCreateWarehouse);
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanEditWarehouse);
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanDeleteWarehouse);
         addPermission(
             PermissionModules.InventoryManagement,
             PermissionSubmodules.Locations,

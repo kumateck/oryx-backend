@@ -5097,6 +5097,27 @@
   },
   {
     "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanCreateWarehouse",
+    "name": "Can Create Warehouse",
+    "description": "Allows the user to  create warehouse."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanEditWarehouse",
+    "name": "Can Edit Warehouse",
+    "description": "Allows the user to  edit warehouse."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanDeleteWarehouse",
+    "name": "Can Delete Warehouse",
+    "description": "Allows the user to  delete warehouse."
+  },
+  {
+    "module": "Inventory Management",
     "submodule": "Locations",
     "key": "CanViewLocations",
     "name": "Can View Locations",

@@ -97,7 +97,9 @@ public sealed class PermissionCatalogTests
                         Enum.GetValues<DOMAIN.Entities.Materials.MaterialKind>().Select(kind => APP.Services.Authorization.MaterialPermissions.Key(attribute.Task, kind))
                             .Where(key => key is not null).Select(key => key!)))
                     .Concat(action.GetCustomAttributes<API.Authorization.QcDocumentPermissionAttribute>()
-                        .SelectMany(attribute => APP.Services.Authorization.QcDocumentPermissions.KeysFor(attribute.Document, attribute.Task))).Distinct().ToList();
+                        .SelectMany(attribute => APP.Services.Authorization.QcDocumentPermissions.KeysFor(attribute.Document, attribute.Task)))
+                    .Concat(action.GetCustomAttributes<API.Authorization.MaterialKindPermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.RawKey, attribute.PackagingKey })).Distinct().ToList();
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");
