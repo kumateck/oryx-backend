@@ -95,9 +95,9 @@ public partial class ProductionScheduleRepository(
         var scoped = await ProductionScheduleQueries.ForActor(context, userId);
         if (scoped.IsFailure) return scoped.Error;
         var schedule = await scoped.Value.Query.FirstOrDefaultAsync(item => item.Id == scheduleId);
-        return schedule is null
-            ? Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found")
-            : mapper.Map<ProductionScheduleDto>(schedule);
+        if (schedule is null) return Error.NotFound("ProductionSchedule.NotFound", "Production schedule is not found");
+        await ProductionScheduleQueries.AttachLiveActivities(context, [schedule]);
+        return mapper.Map<ProductionScheduleDto>(schedule);
     }
 
     public async Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
@@ -146,7 +146,11 @@ public partial class ProductionScheduleRepository(
                     && (!department.HasValue || item.Product.DepartmentId == department)
                     && item.Product.Name.ToLower().Contains(term)));
         }
-        return await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ProductionScheduleDto>);
+        var total = await query.CountAsync();
+        var schedules = await query.OrderByDescending(schedule => schedule.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        await ProductionScheduleQueries.AttachLiveActivities(context, schedules);
+        return PaginationHelper.Page(schedules.Select(mapper.Map<ProductionScheduleDto>).ToList(), page, pageSize, total);
     }
 
     public async Task<Result> UpdateProductionSchedule(
