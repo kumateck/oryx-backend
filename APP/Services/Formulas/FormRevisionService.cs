@@ -165,22 +165,29 @@ public sealed partial class FormRevisionService(
         var active = await context.FormRevisions.SingleOrDefaultAsync(item =>
             item.FormId == revision.FormId && item.Status == FormRevisionStatus.Approved,
             cancellationToken);
-        if (active is not null)
-        {
-            active.Status = FormRevisionStatus.Retired;
-            active.RetiredAt = now;
-            context.FormRevisionAudits.Add(FormRevisionBuilder.Audit(
-                active, FormRevisionStatus.Approved, "Superseded", request.Reason.Trim(),
-                actorId, correlationId));
-        }
-        revision.Status = FormRevisionStatus.Approved;
-        revision.ApprovedById = actorId;
-        revision.ApprovedAt = now;
-        context.FormRevisionAudits.Add(FormRevisionBuilder.Audit(
-            revision, FormRevisionStatus.InReview, "Approved", request.Reason.Trim(),
-            actorId, correlationId));
+        // The status-audit trigger accepts only audit rows written by the top-level transaction
+        // (xmin = txid_current()). Inside this explicit transaction EF would otherwise wrap SaveChanges
+        // in a savepoint, giving the audit rows a sub-transaction id and failing the commit.
+        var savepoints = context.Database.AutoSavepointsEnabled;
+        context.Database.AutoSavepointsEnabled = false;
         try
         {
+            if (active is not null)
+            {
+                active.Status = FormRevisionStatus.Retired;
+                active.RetiredAt = now;
+                context.FormRevisionAudits.Add(FormRevisionBuilder.Audit(
+                    active, FormRevisionStatus.Approved, "Superseded", request.Reason.Trim(),
+                    actorId, correlationId));
+                // Only one revision may be approved at a time (unique index), so free that slot first.
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            revision.Status = FormRevisionStatus.Approved;
+            revision.ApprovedById = actorId;
+            revision.ApprovedAt = now;
+            context.FormRevisionAudits.Add(FormRevisionBuilder.Audit(
+                revision, FormRevisionStatus.InReview, "Approved", request.Reason.Trim(),
+                actorId, correlationId));
             await context.SaveChangesAsync(cancellationToken);
             if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         }
@@ -190,6 +197,10 @@ public sealed partial class FormRevisionService(
                 Npgsql.PostgresErrorCodes.SerializationFailure)
         {
             return FormRevisionErrors.Conflict;
+        }
+        finally
+        {
+            context.Database.AutoSavepointsEnabled = savepoints;
         }
         return FormRevisionBuilder.ToDto(revision);
     }

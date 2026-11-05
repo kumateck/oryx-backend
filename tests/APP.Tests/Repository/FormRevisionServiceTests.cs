@@ -32,12 +32,20 @@ file sealed class UnusedFormulaClient : IFormulaCalculationClient
 public sealed class FormRevisionServiceTests
 {
     [Fact]
-    public async Task Lifecycle_RequiresReviewAndSeparateApprover()
+    public Task Lifecycle_RequiresReviewAndSeparateApprover() => Lifecycle(postgres: false);
+
+    /// <summary>Approval commits inside its own transaction; the deferred audit trigger must accept it.</summary>
+    [RepairPostgresFact]
+    public Task Lifecycle_passes_the_database_audit_triggers_including_approval_and_supersession() => Lifecycle(postgres: true);
+
+    private static async Task Lifecycle(bool postgres)
     {
         var author = Guid.NewGuid();
         var reviewer = Guid.NewGuid();
         var approver = Guid.NewGuid();
-        await using var context = Context(author);
+        await using var database = new FormulaTriggerDatabase();
+        if (postgres) await database.CreateAsync(new FormRevisionTestUser(author), author, reviewer, approver);
+        await using var context = postgres ? database.Open(new FormRevisionTestUser(author)) : Context(author);
         var form = new Form { Id = Guid.NewGuid(), Name = "Controlled template" };
         var section = new FormSection
         {

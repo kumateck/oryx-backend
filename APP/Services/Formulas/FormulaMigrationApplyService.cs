@@ -25,6 +25,10 @@ public sealed class FormulaMigrationApplyService(
             ? await context.Database.BeginTransactionAsync(
                 IsolationLevel.Serializable, cancellationToken)
             : null;
+        // Revision status changes are checked at commit by a trigger that accepts only audit rows written by
+        // the top-level transaction (xmin = txid_current()); EF's automatic savepoints would hide them.
+        var savepoints = context.Database.AutoSavepointsEnabled;
+        context.Database.AutoSavepointsEnabled = false;
         try
         {
             var dryRun = await LoadDryRunAsync(request.DryRunId, cancellationToken);
@@ -81,6 +85,7 @@ public sealed class FormulaMigrationApplyService(
         }
         finally
         {
+            context.Database.AutoSavepointsEnabled = savepoints;
             if (transaction is not null)
                 await transaction.DisposeAsync();
         }
