@@ -11814,6 +11814,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("ExactDates")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("Excluded")
                         .HasColumnType("boolean");
 
@@ -11857,6 +11860,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("ResolvedWarehouseId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RetestDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("RowNumber")
                         .HasColumnType("integer");
