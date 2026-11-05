@@ -245,6 +245,8 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
         if (modelType == nameof(DOMAIN.Entities.Forms.Response) &&
             !(await authorization.AuthorizeAsync(User, PermissionKeys.CanApproveResponse)).Succeeded)
             return TypedResults.Forbid();
+        if (DecisionKey(modelType, approve: true) is { } approveKey && !(await authorization.AuthorizeAsync(User, approveKey)).Succeeded)
+            return TypedResults.Forbid();
 
         var actorId = Guid.Parse(userId);
         var comments = body.Comments;
@@ -302,6 +304,8 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
             return TypedResults.Forbid();
         if (modelType == nameof(DOMAIN.Entities.Forms.Response) &&
             !(await authorization.AuthorizeAsync(User, PermissionKeys.CanRejectResponse)).Succeeded)
+            return TypedResults.Forbid();
+        if (DecisionKey(modelType, approve: false) is { } rejectKey && !(await authorization.AuthorizeAsync(User, rejectKey)).Succeeded)
             return TypedResults.Forbid();
 
         var actorId = Guid.Parse(userId);
@@ -376,4 +380,17 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
 
         return TypedResults.Ok(await delegations.Statistics(repository, Guid.Parse(userId), roleIds, DateTime.UtcNow));
     }
+
+    /// <summary>
+    /// The permission an approval decision needs besides being the stage's configured approver (decision D7):
+    /// discrepancies and form responses are checked above with their own keys, QC worksheets by their e-signature flow,
+    /// payroll runs by the payroll keys, and every other document by the pending-approval keys the desktop uses.
+    /// </summary>
+    public static string DecisionKey(string modelType, bool approve) => modelType switch
+    {
+        "ShipmentDiscrepancy" or "StockDiscrepancy" or nameof(DOMAIN.Entities.Forms.Response) => null,
+        _ when QcWorksheetModelTypes.IsQcWorksheetModelType(modelType) => null,
+        "PayrollRun" => approve ? PermissionKeys.CanApprovePayrollRun : PermissionKeys.CanCancelPayrollRun,
+        _ => approve ? PermissionKeys.CanApprovePendingApproval : PermissionKeys.CanRejectPendingApproval,
+    };
 }
