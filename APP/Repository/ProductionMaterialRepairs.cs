@@ -142,25 +142,45 @@ internal static class ProductionMaterialRepairs
         }
     }
 
+    /// <summary>
+    /// Reserves a batch's materials when production starts. Raw materials are required: the start is refused
+    /// if any is short. Packaging is used later in the run, so, as before configurations were introduced, a
+    /// packaging shortage does not block the start: packaging is reserved now only when all of it is
+    /// available, otherwise it is left for the later packaging requisition.
+    /// </summary>
     internal static async Task<Result> Initialize(ApplicationDbContext context, Guid batchId)
     {
         foreach (var kind in new[] { MaterialKind.Raw, MaterialKind.Package })
         {
+            var required = kind == MaterialKind.Raw;
             var configuration = await context.ProductionMaterialConfigurations.IgnoreQueryFilters()
                 .SingleOrDefaultAsync(item => item.ProductionScheduleProductId == batchId && item.Kind == kind);
             if (configuration is not null && (configuration.DeletedAt is null
                 || !await context.ProductionUnstartRepairs.AnyAsync(repair => repair.BatchId == batchId && repair.AppliedAt == configuration.DeletedAt)))
+            {
+                if (!required) continue;
                 return Error.Conflict("Production.Configuration", "This batch already has an applied configuration.");
+            }
             var loaded = await ProductionMaterialSources.Load(context, batchId, kind);
-            if (loaded.IsFailure) return loaded.Error;
+            if (loaded.IsFailure)
+            {
+                if (!required) continue;
+                return loaded.Error;
+            }
             var source = loaded.Value;
             if (await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == batchId
                 && item.MaterialBatch.Material.Kind == kind && item.ReleasedAt == null))
+            {
+                if (!required) continue;
                 return Error.Conflict("Production.Reservations", "Existing material allocations need reconciliation before starting this batch.");
+            }
             var allocation = await ProductionMaterialAllocator.Plan(context, source, []);
             if (source.Blockers.Count != 0 || allocation.Blockers.Count != 0 || allocation.Shortages.Values.Any(value => value > 0))
+            {
+                if (!required) continue;
                 return Error.Validation("Production.Materials", string.Join(" ", source.Blockers.Concat(allocation.Blockers).Concat(allocation.ShortageDetails)
-                    .Append("All materials must have valid configuration and enough unreserved, usable stock before starting.")));
+                    .Append("All raw materials must have valid configuration and enough unreserved, usable stock before starting.")));
+            }
             ProductionMaterialAllocator.Apply(context, source, [], allocation.Allocations);
             if (configuration is null)
             {

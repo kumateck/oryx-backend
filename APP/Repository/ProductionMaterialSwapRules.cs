@@ -25,8 +25,11 @@ internal static class ProductionMaterialSwapRules
             || await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == requisition.ProductionScheduleProductId
                 && item.DeletedAt != null && item.ReleasedAt == null && requisition.Items.Select(line => line.MaterialId).Contains(item.MaterialBatch.MaterialId)))
             return Error.Conflict("Swap.Issued", "Issued or consumed material cannot be retargeted by a stock swap.");
+        // Only a material kind with an applied configuration has allocations to protect (packaging may be configured later).
+        var requisitionMaterials = requisition.Items.Select(line => line.MaterialId).ToList();
         if (!requisition.ProductionScheduleProductId.HasValue || !await context.ProductionMaterialConfigurations.AnyAsync(item =>
-                item.ProductionScheduleProductId == requisition.ProductionScheduleProductId)) return Result.Success();
+                item.ProductionScheduleProductId == requisition.ProductionScheduleProductId
+                && context.Materials.Any(material => requisitionMaterials.Contains(material.Id) && material.Kind == item.Kind))) return Result.Success();
         var batchId = requisition.ProductionScheduleProductId.Value;
         var first = request.FirstSwapShelfMaterialBatches;
         var second = request.SecondSwapShelfMaterialBatches;
