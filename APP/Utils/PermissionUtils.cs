@@ -221,6 +221,7 @@ public static class PermissionKeys
     public const string CanRequestRetestProductTest = "CanRequestRetestProductTest";
     /// <summary>Complete a product analytical test request retest.</summary>
     public const string CanCompleteRetestProductTest = "CanCompleteRetestProductTest";
+    public const string CanViewProductionScheduleMaterialForecast = "CanViewProductionScheduleMaterialForecast";
     public const string CanViewOpeningBalances = "CanViewOpeningBalances";
     public const string CanUploadOpeningBalances = "CanUploadOpeningBalances";
     public const string CanCorrectOpeningBalances = "CanCorrectOpeningBalances";
@@ -1106,6 +1107,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanApproveMaterialBatch);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanRequestRetestProductTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanCompleteRetestProductTest);
+        addPermission(PermissionModules.Warehouse, "Production Material Forecast", PermissionKeys.CanViewProductionScheduleMaterialForecast);
 
         // Opening-balance drafts and posting are separately permissioned.
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanViewOpeningBalances);

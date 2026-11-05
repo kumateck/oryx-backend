@@ -118,6 +118,13 @@ public class StockMigrationLine : BaseEntity
     public decimal? QuantityInSheet { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    /// <summary>When the lot is next due for retest, if it has a retest date.</summary>
+    public DateTime? RetestDate { get; set; }
+    /// <summary>
+    /// The dates were entered as full dates (a manual top-up), so the expiry day is kept. Sheet dates are
+    /// months, and their expiry is read as the end of that month.
+    /// </summary>
+    public bool ExactDates { get; set; }
     public bool Excluded { get; set; }
 
     // Worked out on every check.
@@ -220,6 +227,8 @@ public class StockMigrationLineDto
     public decimal? QuantityInSheet { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    public DateTime? RetestDate { get; set; }
+    public bool ExactDates { get; set; }
     public bool Excluded { get; set; }
     public Guid? ResolvedMaterialId { get; set; }
     public string ResolvedMaterialCode { get; set; }
@@ -283,6 +292,10 @@ public class UpdateStockMigrationLineRequest
     public decimal? QuantityInSheet { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    /// <summary>The lot's retest date. On a correction, empty keeps the saved date; see <see cref="ClearRetestDate"/>.</summary>
+    public DateTime? RetestDate { get; set; }
+    /// <summary>On a correction, removes the saved retest date.</summary>
+    public bool ClearRetestDate { get; set; }
     public bool Excluded { get; set; }
 }
 
@@ -292,6 +305,8 @@ public class CreateStockTopUpRequest
     [Required, StringLength(2000)] public string Reason { get; set; }
     [Required] public string MassUnit { get; set; } = "mg";
     [Required] public string VolumeUnit { get; set; } = "ml";
+    /// <summary>The rows carry full manufacturing, expiry and retest dates rather than months.</summary>
+    public bool ExactDates { get; set; }
     [Required, MinLength(1), MaxLength(1000)] public List<UpdateStockMigrationLineRequest> Lines { get; set; } = [];
 }
 
