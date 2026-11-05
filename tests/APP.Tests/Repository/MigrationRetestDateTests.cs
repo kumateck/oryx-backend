@@ -169,4 +169,62 @@ public class MigrationRetestDateTests
         Assert.Single(await harness.Db.MigrationRetestDateChanges.ToListAsync());
         Assert.Equal(originalRetest, batch.RetestDate);
     }
+
+    [Fact]
+    public async Task Batch_number_correction_keeps_dates_and_the_migration_evidence_and_checks_stale_values()
+    {
+        using var harness = new QcWorksheetTestContext();
+        // Excel turned the supplier batch "RMA016" into a date on import.
+        var batch = await harness.SeedMaterialBatch("01/12/2017", BatchStatus.Available);
+        batch.ExpiryDate = DateTime.UtcNow.AddDays(-30);
+        batch.RetestDate = null;
+        var department = new Department { Id = Guid.NewGuid(), Name = "Tablet" };
+        var actor = new User { Id = Guid.NewGuid(), UserName = "Batch operator", Department = department };
+        var role = new Role { Id = Guid.NewGuid(), Name = "Batch correction role" };
+        harness.Db.Users.Add(actor);
+        harness.Db.Roles.Add(role);
+        harness.Db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = actor.Id, RoleId = role.Id });
+        var claim = new IdentityRoleClaim<Guid> { Id = 989, RoleId = role.Id, ClaimType = AppConstants.Permission,
+            ClaimValue = PermissionKeys.CanUpdateMigrationRetestDate };
+        harness.Db.RoleClaims.Add(claim);
+        harness.Db.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim.Id,
+            Key = claim.ClaimValue, Type = "Action" });
+        var migration = new StockMigration { Id = Guid.NewGuid(), Department = department, Status = StockMigrationStatus.Approved };
+        var source = new StockMigrationLine { Id = Guid.NewGuid(), StockMigration = migration, ImportedBatchId = batch.Id,
+            BatchNumber = "01/12/2017", ArNumber = "AR-1" };
+        harness.Db.StockMigrationLines.Add(source);
+        await harness.Db.SaveChangesAsync();
+        var repository = new MaterialRepository(harness.Db, harness.Mapper);
+        var request = new UpdateMigrationRetestDate { RetestDate = null, ExpectedRetestDate = null,
+            ExpectedExpiryDate = batch.ExpiryDate, BatchNumber = " RMA016 ", ExpectedBatchNumber = "STALE",
+            Reason = "Excel converted the supplier batch number into a date" };
+
+        Assert.Equal("MaterialRetest.Changed", (await repository.UpdateMigrationRetestDate(batch.Id, request, actor.Id)).Error.Code);
+        request.ExpectedBatchNumber = "01/12/2017";
+        request.BatchNumber = "   ";
+        Assert.Equal("MaterialRetest.BatchNumber", (await repository.UpdateMigrationRetestDate(batch.Id, request, actor.Id)).Error.Code);
+        request.BatchNumber = new string('x', 501);
+        Assert.Equal("MaterialRetest.BatchNumber", (await repository.UpdateMigrationRetestDate(batch.Id, request, actor.Id)).Error.Code);
+        Assert.Empty(await harness.Db.MigrationRetestDateChanges.ToListAsync());
+
+        request.BatchNumber = " RMA016 ";
+        Assert.True((await repository.UpdateMigrationRetestDate(batch.Id, request, actor.Id)).IsSuccess);
+        Assert.Equal("RMA016", batch.BatchNumber);
+        Assert.Null(batch.RetestDate);
+        Assert.Equal("01/12/2017", source.BatchNumber);
+        var audit = await harness.Db.MigrationRetestDateChanges.SingleAsync();
+        Assert.Equal("01/12/2017", audit.PreviousBatchNumber);
+        Assert.Equal("RMA016", audit.NewBatchNumber);
+        Assert.Null(audit.NewArNumber);
+
+        // Omitting the batch number preserves it and records no batch change.
+        request.BatchNumber = null;
+        request.ExpectedBatchNumber = null;
+        request.Reason = "Separate date-only correction";
+        Assert.True((await repository.UpdateMigrationRetestDate(batch.Id, request, actor.Id)).IsSuccess);
+        Assert.Equal("RMA016", batch.BatchNumber);
+        var later = await harness.Db.MigrationRetestDateChanges.SingleAsync(item => item.Reason == "Separate date-only correction");
+        Assert.Null(later.PreviousBatchNumber);
+        Assert.Null(later.NewBatchNumber);
+    }
 }
