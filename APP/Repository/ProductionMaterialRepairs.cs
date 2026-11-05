@@ -159,7 +159,7 @@ internal static class ProductionMaterialRepairs
                 return Error.Conflict("Production.Reservations", "Existing material allocations need reconciliation before starting this batch.");
             var allocation = await ProductionMaterialAllocator.Plan(context, source, []);
             if (source.Blockers.Count != 0 || allocation.Blockers.Count != 0 || allocation.Shortages.Values.Any(value => value > 0))
-                return Error.Validation("Production.Materials", string.Join(" ", source.Blockers.Concat(allocation.Blockers)
+                return Error.Validation("Production.Materials", string.Join(" ", source.Blockers.Concat(allocation.Blockers).Concat(allocation.ShortageDetails)
                     .Append("All materials must have valid configuration and enough unreserved, usable stock before starting.")));
             ProductionMaterialAllocator.Apply(context, source, [], allocation.Allocations);
             if (configuration is null)
