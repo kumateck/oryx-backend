@@ -69,4 +69,29 @@ public class ProductionStartShortageTests
         Assert.Empty(plan.ShortageDetails);
         Assert.True(await fixture.Harness.Db.MaterialBatches.AnyAsync());
     }
+
+    [Fact]
+    public async Task Shortage_says_where_the_material_is_shelved_when_the_storage_warehouse_has_none()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var db = fixture.Harness.Db;
+        var shelf = await db.ShelfMaterialBatches.SingleAsync();
+        db.ShelfMaterialBatches.Remove(shelf);
+        var central = new DOMAIN.Entities.Warehouses.Warehouse { Id = Guid.NewGuid(), Name = "Central packing store", DepartmentId = fixture.OtherDepartment.Id };
+        db.ShelfMaterialBatches.Add(new DOMAIN.Entities.Warehouses.ShelfMaterialBatch { Id = Guid.NewGuid(), MaterialBatchId = fixture.Lot.Id,
+            Quantity = 500_000, UoMId = fixture.Lot.UoMId, WarehouseLocationShelf = new() { Id = Guid.NewGuid(), WarehouseLocationRack = new()
+            { Id = Guid.NewGuid(), WarehouseLocation = new() { Id = Guid.NewGuid(), Warehouse = central } } } });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var requirement = fixture.Requirement();
+        var source = new ProductionMaterialSource(fixture.Batch, fixture.Department.Id, fixture.Storage.Id,
+            fixture.Production.Id, [requirement], "test", "{}", []);
+
+        var plan = await ProductionMaterialAllocator.Plan(db, source, []);
+
+        var detail = Assert.Single(plan.ShortageDetails);
+        Assert.Contains("no stock of this material is on the storage warehouse's shelves", detail);
+        Assert.Contains($"shelved elsewhere: 500000 {requirement.Unit} in Central packing store", detail);
+    }
 }

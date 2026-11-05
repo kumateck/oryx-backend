@@ -55,8 +55,8 @@ public class ScheduleMaterialValidityTests
 
     [Theory]
     [InlineData(MaterialKind.Raw, 0)]
-    [InlineData(MaterialKind.Package, 300_000)]
-    public async Task Allocations_accept_extended_raw_stock_but_do_not_extend_packaging(MaterialKind kind, int shortage)
+    [InlineData(MaterialKind.Package, 0)]
+    public async Task Allocations_accept_retest_extended_raw_and_packaging_stock(MaterialKind kind, int shortage)
     {
         using var fixture = new ScheduleStockFixture();
         await fixture.Seed();
