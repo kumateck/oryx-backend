@@ -1,4 +1,7 @@
 using APP.IRepository;
+using APP.Services.Authorization;
+using APP.Utils;
+using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Base;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +14,13 @@ public class VerificationRepository(ApplicationDbContext context) : IVerificatio
 {
     public async Task<Result> VerifyEntity(VerifyRequest request, Guid userId)
     {
+        // Each kind of document is verified under its own permission, checked from current data before the change.
+        var required = await RequiredKey(request);
+        if (required is null)
+            return Error.NotFound("Entity.NotFound", $"{request.ModelType} with ID {request.ModelId} was not found.");
+        var actor = await CurrentPermissionSet.Load(context, userId);
+        if (AccessGuard.Missing(actor, required, "verify this document") is { } refused) return refused;
+
         IVerifiable entity = request.ModelType switch
         {
             VerifiableEntity.Product => await context.Products.FirstOrDefaultAsync(x =>
@@ -70,5 +80,27 @@ public class VerificationRepository(ApplicationDbContext context) : IVerificatio
 
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    /// <summary>The permission that verifies this record, or null when it does not exist.</summary>
+    private async Task<string> RequiredKey(VerifyRequest request)
+    {
+        MaterialKind? kind;
+        switch (request.ModelType)
+        {
+            case VerifiableEntity.Product: return PermissionKeys.CanVerifyProduct;
+            case VerifiableEntity.ProductSpecification: return PermissionKeys.CanVerifyProductSpecification;
+            case VerifiableEntity.ProductAnalyticalRawData: return PermissionKeys.CanVerifyProductArd;
+            case VerifiableEntity.MicrobialRequirement: return PermissionKeys.CanManageMicrobialRequirements;
+            case VerifiableEntity.RoutineArd: return PermissionKeys.CanManageRoutineSetup;
+            case VerifiableEntity.MaterialSpecification:
+                kind = await context.MaterialSpecifications.Where(x => x.Id == request.ModelId).Select(x => (MaterialKind?)x.Material.Kind).FirstOrDefaultAsync();
+                return kind is null ? null : kind == MaterialKind.Raw ? PermissionKeys.CanVerifyRawMaterialSpecification : PermissionKeys.CanVerifyPackagingMaterialSpecification;
+            case VerifiableEntity.MaterialAnalyticalRawData:
+                kind = await context.MaterialAnalyticalRawData.Where(x => x.Id == request.ModelId)
+                    .Select(x => (MaterialKind?)x.MaterialStandardTestProcedure.Material.Kind).FirstOrDefaultAsync();
+                return kind is null ? null : kind == MaterialKind.Raw ? PermissionKeys.CanVerifyRawMaterialArd : PermissionKeys.CanVerifyPackagingMaterialArd;
+            default: return null;
+        }
     }
 }

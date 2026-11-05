@@ -1,4 +1,5 @@
 using APP.IRepository;
+using APP.Services.Authorization;
 using APP.Services.Storage;
 using APP.Services.Token;
 using APP.Utils;
@@ -20,8 +21,17 @@ namespace APP.Repository;
 public class UserRepository(ApplicationDbContext context, UserManager<User> userManager, IJwtService jwtService, IBlobStorageService blobStorage, IMapper mapper, IMemoryCache cache)
     : IUserRepository
 {
-    public async Task<Result<Guid>> CreateUser(CreateUserRequest request)
+    public async Task<Result<Guid>> CreateUser(CreateUserRequest request, Guid actorId)
     {
+        var actor = await CurrentPermissionSet.Load(context, actorId);
+        if (AccessGuard.Missing(actor, PermissionKeys.CanCreateUser, "create users") is { } cannotCreate) return cannotCreate;
+        var roleNames = request.RoleNames ?? [];
+        var roleIds = await context.Roles.Where(item => roleNames.Contains(item.Name)).Select(item => item.Id).ToListAsync();
+        if (roleIds.Count > 0)
+        {
+            if (AccessGuard.Missing(actor, PermissionKeys.CanAssignUserRole, "give a new user a role") is { } cannotAssign) return cannotAssign;
+            if (await AccessGuard.RoleAssignment(context, actor, roleIds) is { } escalation) return escalation;
+        }
         var user = mapper.Map<User>(request);
         user.CreatedAt = DateTime.UtcNow;
 
@@ -36,7 +46,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         }
 
         var roleName = context.Roles
-            .Where(item => request.RoleNames.Contains(item.Name))
+            .Where(item => roleNames.Contains(item.Name))
             .Select(item => item.Name)
             .ToList();
 
@@ -76,13 +86,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             return Result.Failure<LoginResponse>(Error.Failure("User.Create", result.Errors.First().Description));
         }
 
-        var roleName = context.Roles
-            .Where(item => item.Name == RoleUtils.AppRoleSuper)
-            .Select(item => item.Name)
-            .ToList();
-
-        await userManager.AddToRolesAsync(user, roleName);
-
+        // An account created here has no role. Roles are given separately, by someone allowed to.
         await context.SaveChangesAsync();
 
         return await jwtService.AuthenticateNewUser(user);
@@ -209,6 +213,16 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
     public async Task<Result> UpdateUser(UpdateUserRequest request, Guid id, Guid userId)
     {
+        var actor = await CurrentPermissionSet.Load(context, userId);
+        if (AccessGuard.Missing(actor, PermissionKeys.CanEditUser, "edit users") is { } cannotEdit) return cannotEdit;
+        if (!string.IsNullOrEmpty(request.RoleName))
+        {
+            if (AccessGuard.Missing(actor, PermissionKeys.CanAssignUserRole, "change a user's role") is { } cannotAssign) return cannotAssign;
+            if (AccessGuard.Self(userId, id, "change the role") is { } self) return self;
+            var roleIds = await context.Roles.Where(item => item.Name == request.RoleName).Select(item => item.Id).ToListAsync();
+            if (roleIds.Count == 0) return Error.Validation("Role.Name", $"Could not find role {request.RoleName}");
+            if (await AccessGuard.RoleAssignment(context, actor, roleIds) is { } escalation) return escalation;
+        }
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
         if (user != null)
         {
@@ -245,14 +259,19 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         return Result.Success();
     }
 
-    public async Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id)
+    public async Task<Result> UpdateRolesOfUser(UpdateUserRoleRequest request, Guid id, Guid actorId)
     {
-        if(request.RoleNames.Count != 1)
+        if (request.RoleNames is not { Count: 1 })
             return Error.Validation("RoleNames.Count", "Only one role per user");
-        
+        if (AccessGuard.Self(actorId, id, "change the role") is { } self) return self;
+
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Name == request.RoleNames[0]);
-        if (role == null) return Error.Validation("Role.Name", 
+        if (role == null) return Error.Validation("Role.Name",
             $"Could not find role for {request.RoleNames[0]}");
+        // Checked again here, immediately before the change, from current data.
+        var actor = await CurrentPermissionSet.Load(context, actorId);
+        if (AccessGuard.Missing(actor, PermissionKeys.CanAssignUserRole, "change a user's role") is { } cannotAssign) return cannotAssign;
+        if (await AccessGuard.RoleAssignment(context, actor, [role.Id]) is { } escalation) return escalation;
 
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
         if (user == null)
@@ -267,8 +286,12 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
     public async Task<Result> DeleteUser(Guid id, Guid userId)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null) return UserErrors.NotFound(userId);
+        if (AccessGuard.Self(userId, id, "delete the account") is { } self) return self;
+        var actor = await CurrentPermissionSet.Load(context, userId);
+        if (AccessGuard.Missing(actor, PermissionKeys.CanDeleteUser, "delete users") is { } cannotDelete) return cannotDelete;
+        // The account deleted is the one named in the request, never the caller's.
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null) return UserErrors.NotFound(id);
 
         user.DeletedAt = DateTime.UtcNow;
         user.LastDeletedById = userId;
@@ -280,8 +303,15 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
 
     public async Task<Result> ToggleDisableUser(Guid id, Guid userId)
     {
+        if (AccessGuard.Self(userId, id, "block or unblock") is { } self) return self;
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
-        if (user == null) return UserErrors.NotFound(userId);
+        if (user == null) return UserErrors.NotFound(id);
+        // Blocking and unblocking are separate tasks with their own permissions.
+        var actor = await CurrentPermissionSet.Load(context, userId);
+        var refused = user.IsDisabled
+            ? AccessGuard.Missing(actor, PermissionKeys.CanUnblockUser, "unblock users")
+            : AccessGuard.Missing(actor, PermissionKeys.CanBlockUser, "block users");
+        if (refused is not null) return refused;
 
         user.IsDisabled = !user.IsDisabled;
         if (!user.IsDisabled)

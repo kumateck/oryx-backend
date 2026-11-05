@@ -342,6 +342,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     [HttpPut("batch/{batchId}/approve")]
+    [Authorize(PermissionKeys.CanApproveMaterialBatch)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ApproveMaterialBatch(Guid batchId)
@@ -1179,7 +1180,6 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of materials with their batches and production departments.</returns>
     [HttpGet("batches/departments")]
-    [AllowAnonymous]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDepartmentDto>>)

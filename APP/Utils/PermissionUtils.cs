@@ -215,6 +215,13 @@ public static class PermissionSubmodules
 public static class PermissionKeys
 {
     public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
+    /// <summary>Release a material batch whose QC analysis is complete (PUT material/batch/{id}/approve).</summary>
+    public const string CanApproveMaterialBatch = "CanApproveMaterialBatch";
+    /// <summary>Ask for a product analytical test request to be retested.</summary>
+    public const string CanRequestRetestProductTest = "CanRequestRetestProductTest";
+    /// <summary>Complete a product analytical test request retest.</summary>
+    public const string CanCompleteRetestProductTest = "CanCompleteRetestProductTest";
+    public const string CanViewProductionScheduleMaterialForecast = "CanViewProductionScheduleMaterialForecast";
     public const string CanViewOpeningBalances = "CanViewOpeningBalances";
     public const string CanUploadOpeningBalances = "CanUploadOpeningBalances";
     public const string CanCorrectOpeningBalances = "CanCorrectOpeningBalances";
@@ -869,6 +876,9 @@ public static class PermissionKeys
     public const string CanBlockUser = "CanBlockUser";
     public const string CanViewInactiveUser = "CanViewInactiveUser";
     public const string CanUnblockUser = "CanUnblockUser";
+    /// <summary>Change which role a user has. Only roles whose permissions the actor holds can be given.</summary>
+    public const string CanAssignUserRole = "CanAssignUserRole";
+    public const string CanDeleteUser = "CanDeleteUser";
     /// <summary>Lets a user move their own account to another production department.</summary>
     public const string CanSwitchDepartment = "CanSwitchDepartment";
     public const string CanViewAuditTrail = "CanViewAuditTrail";
@@ -1094,6 +1104,10 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanApproveMaterialBatch);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanRequestRetestProductTest);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanCompleteRetestProductTest);
+        addPermission(PermissionModules.Warehouse, "Production Material Forecast", PermissionKeys.CanViewProductionScheduleMaterialForecast);
 
         // Opening-balance drafts and posting are separately permissioned.
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanViewOpeningBalances);
@@ -2481,6 +2495,8 @@ public static class PermissionUtils
             PermissionSubmodules.Allocations,
             PermissionKeys.CanCreateWaybillForFgw
         );
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanEditWaybillForFgw);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanDeleteWaybillForFgw);
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.FinishedGoodsTransferNote,
@@ -3594,6 +3610,8 @@ public static class PermissionUtils
             PermissionSubmodules.UserManagement,
             PermissionKeys.CanSwitchDepartment
         );
+        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanAssignUserRole);
+        addPermission(PermissionModules.ItSupport, PermissionSubmodules.UserManagement, PermissionKeys.CanDeleteUser);
         addPermission(
             PermissionModules.ItSupport,
             PermissionSubmodules.AuditTrail,
