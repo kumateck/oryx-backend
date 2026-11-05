@@ -41,7 +41,7 @@ public class FormRepository(
         return form.Id;
     }
 
-    public async Task<Result<FormDto>> GetForm(Guid formId)
+    public async Task<Result<FormDto>> GetForm(Guid formId, Guid? responseId = null)
     {
         var form = await context
             .Forms.AsSplitQuery()
@@ -57,7 +57,12 @@ public class FormRepository(
         if (form == null)
             return FormErrors.NotFound(formId);
 
-        return mapper.Map<FormDto>(form);
+        var dto = mapper.Map<FormDto>(form);
+        if (responseId.HasValue && !await context.Responses.IgnoreQueryFilters().AnyAsync(r => r.Id == responseId && r.FormId == formId))
+            return Error.NotFound("Response.FormMismatch", "Response and form do not match.");
+        LegacyFormulaConfigurationReader.Apply(dto, responseId.HasValue
+            ? await LegacyFormulaConfigurationReader.Latest(context, [responseId.Value]) : []);
+        return dto;
     }
 
     public async Task<Result<Paginateable<IEnumerable<FormDto>>>> GetForms(FormFilter filter)
@@ -149,6 +154,12 @@ public class FormRepository(
 
         if (form == null)
             return FormErrors.NotFound(formId);
+
+        // Repaired formula history references these fields; replacing them would break pinned test configurations.
+        if (await context.LegacyFormulaConfigurationPins.AnyAsync(p => context.FormFields.IgnoreQueryFilters()
+                .Any(f => f.Id == p.FormFieldId && f.FormSection.FormId == formId)))
+            return Error.Conflict("Form.FormulaRepairHistory",
+                "Tests on this form have repaired formula history, so its fields cannot be replaced. Create a new form version instead.");
 
         // Hard delete existing relations to avoid soft-deleted "ghost" records showing up with IgnoreQueryFilters elsewhere.
         // We delete in order of dependency to avoid FK violations.
@@ -505,6 +516,12 @@ public class FormRepository(
                 $"FormField not found {request.FormFieldId}"
             );
 
+        // Hold the question's repair lock (shared) from the configuration check until the answer is written.
+        await using var formulaTransaction = formField.Question.Type == QuestionType.Formula && context.Database.IsRelational()
+            && context.Database.CurrentTransaction is null ? await context.Database.BeginTransactionAsync() : null;
+        if (formulaTransaction is not null) await LegacyFormulaConfigurationReader.LockQuestion(context, formField.QuestionId, shared: true);
+        var staleFormula = await LegacyFormulaConfigurationReader.ValidateWrite(context, response, formField, request.FormulaConfigurationHash);
+        if (staleFormula is not null) return staleFormula;
         var formFieldRevisionId = await FormRevisionSelection.FieldIdAsync(
             context, response.FormRevisionId, formField.Id);
         if (response.FormRevisionId.HasValue && !formFieldRevisionId.HasValue)
@@ -600,6 +617,7 @@ public class FormRepository(
         }
 
         await context.SaveChangesAsync();
+        if (formulaTransaction is not null) await formulaTransaction.CommitAsync();
         return Result.Success(response.Id);
     }
 
@@ -629,6 +647,8 @@ public class FormRepository(
                 "The response contains fields from another form and must be reconciled before submission."
             );
 
+        if (await LegacyFormulaConfigurationReader.Pending(context, response))
+            return Error.Conflict("FormulaRepair.RecalculationRequired", "Recalculate repaired formula fields from their saved readings before submitting.");
         // Reject missing or incomplete saved drafts before formula execution or workflow writes.
         var missingFields = await FormRevisionSelection.MissingRequiredFieldsAsync(
             context, response, requireAllFields: response.MaterialBatchId.HasValue
@@ -1330,6 +1350,8 @@ public class FormRepository(
         if (batch == null)
             return MaterialErrors.NotFound(materialBatchId);
 
+        if (await LegacyFormulaConfigurationReader.Pending(context, response))
+            return Error.Conflict("FormulaRepair.RecalculationRequired", "Recalculate repaired formula fields before generating the certificate.");
         var approvalValidation = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
         if (!approvalValidation.IsSuccess) return approvalValidation.Error;
 
@@ -1423,6 +1445,8 @@ public class FormRepository(
         if (bmr == null)
             return MaterialErrors.NotFound(batchManufacturingRecordId);
 
+        if (await LegacyFormulaConfigurationReader.Pending(context, response))
+            return Error.Conflict("FormulaRepair.RecalculationRequired", "Recalculate repaired formula fields before generating the certificate.");
         var approvalValidation = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
         if (!approvalValidation.IsSuccess) return approvalValidation.Error;
 
@@ -1489,6 +1513,11 @@ public class FormRepository(
             return FormErrors.NotFound(formResponseId);
 
         var detail = mapper.Map<ResponseDetailDto>(formResponse);
+        var effective = await GetForm(formResponse.FormId);
+        if (effective.IsFailure) return effective.Errors;
+        detail.EffectiveForm = effective.Value;
+        LegacyFormulaConfigurationReader.Apply(detail.EffectiveForm,
+            await LegacyFormulaConfigurationReader.Latest(context, [formResponse.Id]));
         await FormulaResultProjectionService.AttachAsync(
             context, formResponse.FormResponses, detail.FormResponses);
         detail.HasPendingApproval = ResponseApprovalRoundManager.Current(formResponse.Approvals)

@@ -1,4 +1,5 @@
 using APP.Services.Authorization;
+using APP.Services.Materials;
 using APP.Utils;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -33,9 +34,15 @@ public partial class MaterialRepository
             return Error.Conflict("MaterialRetest.QualityGate", "Only available raw migration stock without a QC retest cycle can be corrected here.");
         if (batch.RetestDate != request.ExpectedRetestDate || batch.ExpiryDate != request.ExpectedExpiryDate)
             return Error.Conflict("MaterialRetest.Changed", "The dates changed. Reload the batch before correcting them.");
+        var previousAr = await MigrationBatchReferences.Current(context, batchId);
+        if (request.ArNumber != null && previousAr != (request.ExpectedArNumber ?? string.Empty))
+            return Error.Conflict("MaterialRetest.Changed", "The AR number changed. Reload the batch before correcting it.");
+        if (request.ArNumber?.Trim().Length > 500)
+            return Error.Validation("MaterialRetest.ArNumber", "The AR number must be at most 500 characters.");
         var reason = request.Reason?.Trim();
         if (reason is null || reason.Length < 3 || reason.Length > 1000
-            || request.RetestDate is { } date && (date.Year <= 1900 || batch.ExpiryDate.HasValue && date <= batch.ExpiryDate))
+            || request.RetestDate != batch.RetestDate && request.RetestDate is { } date
+                && (date.Year <= 1900 || batch.ExpiryDate.HasValue && date <= batch.ExpiryDate))
             return Error.Validation("MaterialRetest.Correction", "Record a reason and a retest extension later than the original expiry, or clear the retest date.");
         if (!(await CurrentPermissionSet.Load(context, actorId)).Contains(PermissionKeys.CanUpdateMigrationRetestDate))
             return Error.Forbidden("MaterialRetest.Permission", "Your permission changed before saving.");
@@ -43,6 +50,7 @@ public partial class MaterialRepository
         {
             Id = Guid.NewGuid(), MaterialBatchId = batchId, PreviousDate = batch.RetestDate,
             NewDate = request.RetestDate, ExpiryDate = batch.ExpiryDate, Reason = reason,
+            PreviousArNumber = previousAr, NewArNumber = request.ArNumber?.Trim(),
             ActorId = actorId, OccurredAt = DateTime.UtcNow,
         });
         batch.RetestDate = request.RetestDate;

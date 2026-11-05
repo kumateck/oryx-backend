@@ -44,13 +44,14 @@ internal static class FormRevisionSelection
                 .Select(field => new { field.Id, field.Required, field.Question.Type,
                     Definition = field.Question.Options.Select(option => option.Name).FirstOrDefault() })
                 .ToListAsync(cancellationToken);
+        var pinned = (await LegacyFormulaConfigurationReader.Latest(context, [response.Id])).ToDictionary(p => p.FormFieldId);
         var answers = response.FormResponses.GroupBy(item => item.FormFieldId)
             .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CreatedAt).First());
         return fields.Where(field => requireAllFields || field.Required).Where(field =>
         {
             var hasDraft = answers.TryGetValue(field.Id, out var answer);
             if (!hasDraft) return requireAllFields || field.Required;
-            return !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, field.Type, field.Definition);
+            return !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, field.Type, pinned.TryGetValue(field.Id, out var pin) ? pin.Definition : field.Definition);
         }).Select(field => field.Id).ToList();
     }
 

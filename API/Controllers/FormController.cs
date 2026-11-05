@@ -40,13 +40,13 @@ public class FormController(IFormRepository repository) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetForm(Guid formId)
+    public async Task<IResult> GetForm(Guid formId, [FromQuery] Guid? responseId = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.GetForm(formId);
+        var result = await repository.GetForm(formId, responseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

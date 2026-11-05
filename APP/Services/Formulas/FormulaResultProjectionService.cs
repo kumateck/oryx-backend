@@ -16,6 +16,7 @@ internal static class FormulaResultProjectionService
         CancellationToken cancellationToken = default)
     {
         if (sources.Count == 0 || destinations.Count == 0) return;
+        await LegacyFormulaConfigurationReader.Attach(context, sources, destinations);
         var responseIds = sources.Select(item => item.ResponseId).Distinct().ToList();
         var governed = await context.Responses.AsNoTracking()
             .Where(item => responseIds.Contains(item.Id) && item.FormRevisionId.HasValue)
