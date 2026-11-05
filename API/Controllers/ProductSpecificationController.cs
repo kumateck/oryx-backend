@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -20,6 +22,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.ProductSpecification, QcTask.Create)]
     public async Task<IResult> CreateProductSpecification(CreateProductSpecificationRequest request)
     {
         var result = await repository.CreateProductSpecification(request);
@@ -123,6 +126,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductSpecification, QcTask.Edit)]
     public async Task<IResult> UpdateProductSpecification(
         [FromRoute] Guid id,
         [FromBody] UpdateProductSpecificationRequest request
@@ -142,6 +146,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductSpecification, QcTask.Edit)]
     public async Task<IResult> AddRemoveProductsToSpecification(
         [FromBody] AddRemoveProductToSpecificationRequest request
     )
@@ -156,6 +161,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductSpecification, QcTask.Delete)]
     public async Task<IResult> DeleteProductSpecification([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];

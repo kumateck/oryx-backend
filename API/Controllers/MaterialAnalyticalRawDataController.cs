@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -21,6 +23,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.MaterialArd, QcTask.Create)]
     public async Task<IResult> CreateAnalyticalRawData([FromBody] CreateMaterialAnalyticalRawDataRequest request)
     {
         var result = await repository.CreateAnalyticalRawData(request);
@@ -94,6 +97,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(MaterialAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialArd, QcTask.Edit)]
     public async Task<IResult> UpdateAnalyticalRawData([FromRoute] Guid id, [FromBody] CreateMaterialAnalyticalRawDataRequest request)
     {
         var result = await repository.UpdateAnalyticalRawData(id, request);
@@ -106,6 +110,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialArd, QcTask.Delete)]
     public async Task<IResult> DeleteAnalyticRawData([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
