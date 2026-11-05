@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
@@ -51,6 +53,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The CreateMaterialRequest object.</param>
     /// <returns>Returns the ID of the created material.</returns>
     [HttpPost]
+    [MaterialPermission(MaterialTask.Create)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateMaterial([FromBody] CreateMaterialRequest request)
@@ -164,6 +167,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{materialId}")]
+    [MaterialPermission(MaterialTask.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -187,6 +191,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="reOrderLevel">The new ReOrderLevel value.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{materialId}/reorder-level")]
+    [MaterialPermission(MaterialTask.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateReOrderLevel(
@@ -212,6 +217,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{materialId:guid}")]
+    [MaterialPermission(MaterialTask.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteMaterial([FromRoute] Guid materialId)
@@ -445,6 +451,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="kind">The kind of materials being imported.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload")]
+    [MaterialPermission(MaterialTask.Create)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -732,6 +739,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialDepartments">The list of material departments to create.</param>
     /// <returns>Returns the result of the creation process.</returns>
     [HttpPost("department")]
+    [MaterialPermission(MaterialTask.Link)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateMaterialDepartment(
@@ -755,6 +763,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The material you want to unlink from your department</param>
     /// <returns>Returns the result of the creation process.</returns>
     [HttpDelete("department")]
+    [MaterialPermission(MaterialTask.Unlink)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RemoveMaterialDepartment([FromQuery] Guid materialId)

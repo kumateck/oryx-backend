@@ -507,10 +507,9 @@ public static class PermissionKeys
     public const string CanReconcileStockDiscrepancy = "CanReconcileStockDiscrepancy";
 
     // Production
-    public const string CanViewRawMaterialRequisitionsForProduction =
-        "CanViewRawMaterialRequisitions";
-    public const string CanViewPackagingMaterialRequisitionsForProduction =
-        "CanViewPackagingMaterialRequisitions";
+    // Production's requisition list has its own keys; they used to be aliases of the Warehouse issue-list keys.
+    public const string CanViewRawMaterialRequisitionsForProduction = "CanViewProductionRawMaterialRequisitions";
+    public const string CanViewPackagingMaterialRequisitionsForProduction = "CanViewProductionPackagingMaterialRequisitions";
     public const string CanViewRawMaterialRequisitionsForCreation =
         "CanViewRawMaterialRequisitionsForCreation";
     public const string CanCreateRawMaterialRequisitions = "CanCreateRawMaterialRequisitions";
