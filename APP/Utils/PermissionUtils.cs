@@ -2493,6 +2493,8 @@ public static class PermissionUtils
             PermissionSubmodules.Allocations,
             PermissionKeys.CanCreateWaybillForFgw
         );
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanEditWaybillForFgw);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanDeleteWaybillForFgw);
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.FinishedGoodsTransferNote,

@@ -62,6 +62,18 @@ For each new or changed endpoint, add:
 
 For access management, also test the self-change and escalation refusals. `tests/APP.Tests/Authorization/AccessControlTests.cs` shows the pattern.
 
+### Guard rails that fail the build
+
+`tests/APP.Tests/Authorization/PermissionCatalogTests.cs` fails when:
+
+- a key is registered twice, or defined in `PermissionKeys` but never registered;
+- an endpoint requires a key that does not exist;
+- an endpoint is anonymous without being on the reviewed allow-list;
+- a **new** endpoint has no named permission. `docs/permission-endpoint-baseline.txt` lists today's signed-in-only endpoints and may only shrink; when you give one a key, remove its line;
+- `docs/permission-catalog.json` (read by the desktop's `bun run permissions:import`) is out of date.
+
+Regenerate both files with `ORYX_WRITE_PERMISSION_FILES=1 dotnet test tests/APP.Tests --filter PermissionCatalogTests` and commit them with your change.
+
 ### Pull request
 
 The description lists:
