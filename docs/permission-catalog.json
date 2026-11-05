@@ -835,6 +835,34 @@
   {
     "module": "Procurement",
     "submodule": "Purchase Order List Page",
+    "key": "CanCancelForeignPurchaseOrder",
+    "name": "Can Cancel Foreign Purchase Order",
+    "description": "Allows the user to  cancel foreign purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanCancelLocalPurchaseOrder",
+    "name": "Can Cancel Local Purchase Order",
+    "description": "Allows the user to  cancel local purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanDeleteForeignPurchaseOrder",
+    "name": "Can Delete Foreign Purchase Order",
+    "description": "Allows the user to  delete foreign purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanDeleteLocalPurchaseOrder",
+    "name": "Can Delete Local Purchase Order",
+    "description": "Allows the user to  delete local purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
     "key": "CanDeleteLocalPurchaseOrderItem",
     "name": "Can Delete Local Purchase Order Item",
     "description": "Allows the user to  delete local purchase order item."
