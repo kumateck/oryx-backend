@@ -1605,16 +1605,16 @@
   {
     "module": "Production",
     "submodule": "REQUISITIONS",
-    "key": "CanViewRawMaterialRequisitions",
-    "name": "Can View Raw Material Requisitions",
-    "description": "Allows the user to  view raw material requisitions."
+    "key": "CanViewProductionRawMaterialRequisitions",
+    "name": "Can View Production Raw Material Requisitions",
+    "description": "Allows the user to  view production raw material requisitions."
   },
   {
     "module": "Production",
     "submodule": "REQUISITIONS",
-    "key": "CanViewPackagingMaterialRequisitions",
-    "name": "Can View Packaging Material Requisitions",
-    "description": "Allows the user to  view packaging material requisitions."
+    "key": "CanViewProductionPackagingMaterialRequisitions",
+    "name": "Can View Production Packaging Material Requisitions",
+    "description": "Allows the user to  view production packaging material requisitions."
   },
   {
     "module": "Production",

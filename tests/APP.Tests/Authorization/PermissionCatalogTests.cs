@@ -61,7 +61,9 @@ public sealed class PermissionCatalogTests
     {
         "CanViewForeignPurchaseOrder", "CanViewApprovedForeignPurchaseOrder", "CanCreateForeignPurchaseOrder", "CanViewLocalPurchaseOrder",
         "CanViewApprovedLocalPurchaseOrder", "CanCreateLocalPurchaseOrder", "CanViewRawMaterials", "CanViewPackagingMaterials",
-        "CanAssignPackagingMaterialsStockToShelves", "CanViewRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions",
+        "CanAssignPackagingMaterialsStockToShelves",
+        // Also the Extra Packaging Requisitions tick box; it gets its own key with the requisition work in phase 3.
+        "CanViewPackagingMaterialRequisitions",
         "CanIssuePackagingMaterialRequisitions", "CanViewRawMaterialTransferList", "CanViewPackagingMaterialTransferList",
         "CanViewVendors", "CanCreateVendor", "CanUpdateVendorDetails", "CanDeleteVendor",
     };
@@ -90,7 +92,10 @@ public sealed class PermissionCatalogTests
                 var http = action.GetCustomAttributes<HttpMethodAttribute>().First();
                 var keys = controller.GetCustomAttributes<AuthorizeAttribute>().Concat(action.GetCustomAttributes<AuthorizeAttribute>())
                     .Select(attribute => attribute.Policy).Where(policy => !string.IsNullOrEmpty(policy)).Select(policy => policy!)
-                    .Concat(action.GetCustomAttributes<API.Authorization.ProductPermissionAttribute>().SelectMany(ProductKeys)).Distinct().ToList();
+                    .Concat(action.GetCustomAttributes<API.Authorization.ProductPermissionAttribute>().SelectMany(ProductKeys))
+                    .Concat(action.GetCustomAttributes<API.Authorization.MaterialPermissionAttribute>().SelectMany(attribute =>
+                        Enum.GetValues<DOMAIN.Entities.Materials.MaterialKind>().Select(kind => APP.Services.Authorization.MaterialPermissions.Key(attribute.Task, kind))
+                            .Where(key => key is not null).Select(key => key!))).Distinct().ToList();
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");
