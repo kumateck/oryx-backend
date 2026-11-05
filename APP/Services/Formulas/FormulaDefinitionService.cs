@@ -176,23 +176,30 @@ public sealed partial class FormulaDefinitionService(
             item.FormulaDefinitionId == revision.FormulaDefinitionId &&
             item.Status == FormulaRevisionStatus.Approved && item.Id != revision.Id,
             cancellationToken);
-        if (active is not null)
-        {
-            active.Status = FormulaRevisionStatus.Retired;
-            active.RetiredAt = now;
-            context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
-                active, FormulaRevisionStatus.Approved, active.Status, "Superseded",
-                request.Reason.Trim(), actorId, correlationId));
-        }
-        revision.Status = FormulaRevisionStatus.Approved;
-        revision.ApprovedById = actorId;
-        revision.ApprovedAt = now;
-        revision.EffectiveAt = now;
-        context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
-            revision, FormulaRevisionStatus.InReview, revision.Status, "Approved",
-            request.Reason.Trim(), actorId, correlationId));
+        // The status-audit trigger accepts only audit rows written by the top-level transaction
+        // (xmin = txid_current()). Inside this explicit transaction EF would otherwise wrap SaveChanges
+        // in a savepoint, giving the audit rows a sub-transaction id and failing the commit.
+        var savepoints = context.Database.AutoSavepointsEnabled;
+        context.Database.AutoSavepointsEnabled = false;
         try
         {
+            if (active is not null)
+            {
+                active.Status = FormulaRevisionStatus.Retired;
+                active.RetiredAt = now;
+                context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
+                    active, FormulaRevisionStatus.Approved, active.Status, "Superseded",
+                    request.Reason.Trim(), actorId, correlationId));
+                // Only one revision may be approved at a time (unique index), so free that slot first.
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            revision.Status = FormulaRevisionStatus.Approved;
+            revision.ApprovedById = actorId;
+            revision.ApprovedAt = now;
+            revision.EffectiveAt = now;
+            context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
+                revision, FormulaRevisionStatus.InReview, revision.Status, "Approved",
+                request.Reason.Trim(), actorId, correlationId));
             await context.SaveChangesAsync(cancellationToken);
             if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         }
@@ -202,6 +209,10 @@ public sealed partial class FormulaDefinitionService(
                 Npgsql.PostgresErrorCodes.SerializationFailure)
         {
             return FormulaDefinitionErrors.Conflict;
+        }
+        finally
+        {
+            context.Database.AutoSavepointsEnabled = savepoints;
         }
         return await ToDtoAsync(revision, cancellationToken);
     }

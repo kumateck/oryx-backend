@@ -14,6 +14,9 @@ public class MigrationRetestDateChange
     public string PreviousArNumber { get; set; }
     /// <summary>Null preserves the AR; an empty string records an explicit clear.</summary>
     [StringLength(500)] public string NewArNumber { get; set; }
+    [StringLength(500)] public string PreviousBatchNumber { get; set; }
+    /// <summary>Null when the batch number was not corrected in this change.</summary>
+    [StringLength(500)] public string NewBatchNumber { get; set; }
     public Guid ActorId { get; set; }
     public DateTime OccurredAt { get; set; }
     [Required, StringLength(1000)] public string Reason { get; set; }
@@ -27,5 +30,9 @@ public class UpdateMigrationRetestDate
     /// <summary>Optional correction. Omit to preserve the AR; send empty to clear it.</summary>
     [StringLength(500)] public string ArNumber { get; set; }
     public string ExpectedArNumber { get; set; }
+    /// <summary>Optional correction of the migrated batch number. Omit to preserve it.</summary>
+    [StringLength(500)] public string BatchNumber { get; set; }
+    /// <summary>The batch number the editor loaded; a different stored value refuses the change.</summary>
+    public string ExpectedBatchNumber { get; set; }
     [Required, StringLength(1000, MinimumLength = 3)] public string Reason { get; set; }
 }
