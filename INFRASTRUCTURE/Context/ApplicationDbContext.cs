@@ -1012,6 +1012,7 @@ public partial class ApplicationDbContext(
         ValidateFormulaRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateReservationRepairAudit();
         SaveEntity();
         ValidatePriceUoM();
         return base.SaveChanges();
@@ -1024,6 +1025,7 @@ public partial class ApplicationDbContext(
         ValidateFormulaRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateReservationRepairAudit();
         SaveEntity();
         ValidatePriceUoM();
         return await base.SaveChangesAsync(cancellationToken);
@@ -1163,6 +1165,7 @@ public partial class ApplicationDbContext(
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureProductionUnstart(modelBuilder);
+        ConfigureReservationRepair(modelBuilder);
         modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
         ConfigureProductionMaterials(modelBuilder);
