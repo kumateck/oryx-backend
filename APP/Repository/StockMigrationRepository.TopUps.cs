@@ -46,12 +46,14 @@ public partial class StockMigrationRepository
                 SheetShelf = line.ShelfName, SheetBatchNumber = line.BatchNumber,
                 SheetUnit = line.UnitSymbol,
                 SheetQuantity = line.QuantityInSheet?.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                SheetManufacturingDate = line.ManufacturingDate?.ToString("yyyy-MM"),
-                SheetExpiryDate = line.ExpiryDate?.ToString("yyyy-MM"),
+                SheetManufacturingDate = line.ManufacturingDate?.ToString(request.ExactDates ? "yyyy-MM-dd" : "yyyy-MM"),
+                SheetExpiryDate = line.ExpiryDate?.ToString(request.ExactDates ? "yyyy-MM-dd" : "yyyy-MM"),
                 WarehouseName = line.WarehouseName?.Trim(), ShelfName = line.ShelfName?.Trim(), ShelfId = line.ShelfId,
                 BatchNumber = line.BatchNumber?.Trim(), UnitSymbol = line.UnitSymbol?.Trim(),
                 QuantityInSheet = line.QuantityInSheet is > 0 ? line.QuantityInSheet : null,
-                ManufacturingDate = Utc(line.ManufacturingDate), ExpiryDate = Utc(line.ExpiryDate),
+                ManufacturingDate = Date(line.ManufacturingDate, request.ExactDates),
+                ExpiryDate = Date(line.ExpiryDate, request.ExactDates),
+                RetestDate = Day(line.RetestDate), ExactDates = request.ExactDates,
                 Grn = line.Grn?.Trim(), ArNumber = line.ArNumber?.Trim(), Excluded = line.Excluded,
             }).ToList(),
         };
@@ -60,6 +62,42 @@ public partial class StockMigrationRepository
         context.StockMigrations.Add(migration);
         await context.SaveChangesAsync();
         return migration.Id;
+    }
+
+    /// <summary>
+    /// A top-up adds new lots, so a batch number already in stock, or already waiting in another top-up
+    /// draft, may be the same stock entered twice. The person checking decides; it is not refused.
+    /// </summary>
+    private async Task WarnRepeatedTopUpBatches(StockMigration migration)
+    {
+        var numbered = migration.Lines.Where(l => l.ResolvedMaterialId.HasValue && !string.IsNullOrWhiteSpace(l.BatchNumber)
+            && l.Status is StockMigrationLineStatus.Ok or StockMigrationLineStatus.Warning).ToList();
+        if (numbered.Count == 0) return;
+        var materials = numbered.Select(l => l.ResolvedMaterialId!.Value).Distinct().ToList();
+        var numbers = numbered.Select(l => l.BatchNumber.Trim().ToUpperInvariant()).Distinct().ToList();
+        var inStock = (await context.MaterialBatches.AsNoTracking().IgnoreAutoIncludes()
+                .Where(b => materials.Contains(b.MaterialId) && numbers.Contains(b.BatchNumber.Trim().ToUpper()))
+                .Select(b => new { b.MaterialId, Number = b.BatchNumber.Trim().ToUpper() }).ToListAsync())
+            .Select(b => (b.MaterialId, b.Number)).ToHashSet();
+        var drafted = (await context.StockMigrationLines.AsNoTracking().IgnoreAutoIncludes()
+                .Where(l => l.StockMigrationId != migration.Id && !l.Excluded
+                    && l.StockMigration.Mode == StockMigrationMode.TopUp && l.StockMigration.Status == StockMigrationStatus.Draft
+                    && l.StockMigration.DeletedAt == null && l.ResolvedMaterialId != null
+                    && materials.Contains(l.ResolvedMaterialId.Value) && numbers.Contains(l.BatchNumber.Trim().ToUpper()))
+                .Select(l => new { Material = l.ResolvedMaterialId.Value, Number = l.BatchNumber.Trim().ToUpper() }).ToListAsync())
+            .Select(l => (l.Material, l.Number)).ToHashSet();
+        foreach (var line in numbered)
+        {
+            var key = (line.ResolvedMaterialId!.Value, line.BatchNumber.Trim().ToUpperInvariant());
+            var notes = new List<string>();
+            if (inStock.Contains(key))
+                notes.Add($"Batch {line.BatchNumber.Trim()} of this material is already in stock. Check this is new stock and not entered twice; approval adds it as a separate lot.");
+            if (drafted.Contains(key))
+                notes.Add($"Batch {line.BatchNumber.Trim()} of this material is also in another top-up draft waiting for approval.");
+            if (notes.Count == 0) continue;
+            line.Warnings = Join([.. Split(line.Warnings), .. notes]);
+            if (line.Status == StockMigrationLineStatus.Ok) line.Status = StockMigrationLineStatus.Warning;
+        }
     }
 
     private async Task SnapshotTopUp(StockMigration migration)
