@@ -1538,7 +1538,9 @@ public class RequisitionRepository(
         }
 
         if (existingRequisition.RequisitionType == RequisitionType.Stock && existingRequisition.ProductionScheduleProductId.HasValue
-            && await context.ProductionMaterialConfigurations.AnyAsync(item => item.ProductionScheduleProductId == existingRequisition.ProductionScheduleProductId))
+            // Only the material kinds the batch has an applied configuration for are locked (packaging may be configured later).
+            && await context.ProductionMaterialConfigurations.AnyAsync(item => item.ProductionScheduleProductId == existingRequisition.ProductionScheduleProductId
+                && context.RequisitionItems.Any(line => line.RequisitionId == existingRequisition.Id && line.DeletedAt == null && line.Material.Kind == item.Kind)))
             return Error.Conflict("Requisition.AppliedConfiguration", "Correct the product and use the batch Repair action to change this stock requisition.");
 
         mapper.Map(request, existingRequisition);
