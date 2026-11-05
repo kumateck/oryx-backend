@@ -95,7 +95,13 @@ public sealed class PermissionCatalogTests
                     .Concat(action.GetCustomAttributes<API.Authorization.ProductPermissionAttribute>().SelectMany(ProductKeys))
                     .Concat(action.GetCustomAttributes<API.Authorization.MaterialPermissionAttribute>().SelectMany(attribute =>
                         Enum.GetValues<DOMAIN.Entities.Materials.MaterialKind>().Select(kind => APP.Services.Authorization.MaterialPermissions.Key(attribute.Task, kind))
-                            .Where(key => key is not null).Select(key => key!))).Distinct().ToList();
+                            .Where(key => key is not null).Select(key => key!)))
+                    .Concat(action.GetCustomAttributes<API.Authorization.QcDocumentPermissionAttribute>()
+                        .SelectMany(attribute => APP.Services.Authorization.QcDocumentPermissions.KeysFor(attribute.Document, attribute.Task)))
+                    .Concat(action.GetCustomAttributes<API.Authorization.MaterialKindPermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.RawKey, attribute.PackagingKey }))
+                    .Concat(action.GetCustomAttributes<API.Authorization.PurchaseOrderPermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.ForeignKey, attribute.LocalKey })).Distinct().ToList();
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");

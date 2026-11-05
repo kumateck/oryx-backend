@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -20,6 +22,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.ProductArd, QcTask.Create)]
     public async Task<IResult> CreateAnalyticalRawData(
         [FromBody] CreateProductAnalyticalRawDataRequest request
     )
@@ -102,6 +105,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductArd, QcTask.Edit)]
     public async Task<IResult> UpdateAnalyticalRawData(
         [FromRoute] Guid id,
         [FromBody] CreateProductAnalyticalRawDataRequest request
@@ -117,6 +121,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductArd, QcTask.Delete)]
     public async Task<IResult> DeleteAnalyticRawData([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];

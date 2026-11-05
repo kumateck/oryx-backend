@@ -388,6 +388,12 @@ public static class PermissionKeys
     public const string CanChangeSupplySourceForeignPurchaseOrderItem =
         "CanChangeSupplySourceForeignPurchaseOrderItem";
     public const string CanReviseLocalPurchaseOrder = "CanReviseLocalPurchaseOrder";
+    /// <summary>Cancel a foreign or local purchase order (audit phase 3; granted to roles that could revise orders).</summary>
+    public const string CanCancelForeignPurchaseOrder = "CanCancelForeignPurchaseOrder";
+    public const string CanCancelLocalPurchaseOrder = "CanCancelLocalPurchaseOrder";
+    /// <summary>Delete a foreign or local purchase order (audit phase 3; granted to nobody until assigned).</summary>
+    public const string CanDeleteForeignPurchaseOrder = "CanDeleteForeignPurchaseOrder";
+    public const string CanDeleteLocalPurchaseOrder = "CanDeleteLocalPurchaseOrder";
     public const string CanDeleteLocalPurchaseOrderItem = "CanDeleteLocalPurchaseOrderItem";
     public const string CanReAssignLocalPurchaseOrderItem = "CanReAssignLocalPurchaseOrderItem";
     public const string CanChangeSupplySourceLocalPurchaseOrderItem =
@@ -1130,6 +1136,10 @@ public static class PermissionKeys
     public const string CanManageSupplierContracts = "CanManageSupplierContracts";
     public const string CanViewSupplierSpend = "CanViewSupplierSpend";
     public const string CanViewWarehouses = "CanViewWarehouses";
+    /// <summary>Create a warehouse. New in the permissions audit (phase 3); granted to nobody until assigned.</summary>
+    public const string CanCreateWarehouse = "CanCreateWarehouse";
+    public const string CanEditWarehouse = "CanEditWarehouse";
+    public const string CanDeleteWarehouse = "CanDeleteWarehouse";
     public const string CanViewLocations = "CanViewLocations";
     public const string CanAddNewLocation = "CanAddNewLocation";
     public const string CanEditLocation = "CanEditLocation";
@@ -1551,6 +1561,10 @@ public static class PermissionUtils
             PermissionSubmodules.PurchaseOrderListPage,
             PermissionKeys.CanReviseLocalPurchaseOrder
         );
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanCancelForeignPurchaseOrder);
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanCancelLocalPurchaseOrder);
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanDeleteForeignPurchaseOrder);
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanDeleteLocalPurchaseOrder);
         addPermission(
             PermissionModules.Procurement,
             PermissionSubmodules.PurchaseOrderListPage,
@@ -4453,6 +4467,9 @@ public static class PermissionUtils
             PermissionSubmodules.Warehouses,
             PermissionKeys.CanViewWarehouses
         );
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanCreateWarehouse);
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanEditWarehouse);
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanDeleteWarehouse);
         addPermission(
             PermissionModules.InventoryManagement,
             PermissionSubmodules.Locations,

@@ -835,6 +835,34 @@
   {
     "module": "Procurement",
     "submodule": "Purchase Order List Page",
+    "key": "CanCancelForeignPurchaseOrder",
+    "name": "Can Cancel Foreign Purchase Order",
+    "description": "Allows the user to  cancel foreign purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanCancelLocalPurchaseOrder",
+    "name": "Can Cancel Local Purchase Order",
+    "description": "Allows the user to  cancel local purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanDeleteForeignPurchaseOrder",
+    "name": "Can Delete Foreign Purchase Order",
+    "description": "Allows the user to  delete foreign purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanDeleteLocalPurchaseOrder",
+    "name": "Can Delete Local Purchase Order",
+    "description": "Allows the user to  delete local purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
     "key": "CanDeleteLocalPurchaseOrderItem",
     "name": "Can Delete Local Purchase Order Item",
     "description": "Allows the user to  delete local purchase order item."
@@ -5094,6 +5122,27 @@
     "key": "CanViewWarehouses",
     "name": "Can View Warehouses",
     "description": "Allows the user to  view warehouses."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanCreateWarehouse",
+    "name": "Can Create Warehouse",
+    "description": "Allows the user to  create warehouse."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanEditWarehouse",
+    "name": "Can Edit Warehouse",
+    "description": "Allows the user to  edit warehouse."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanDeleteWarehouse",
+    "name": "Can Delete Warehouse",
+    "description": "Allows the user to  delete warehouse."
   },
   {
     "module": "Inventory Management",

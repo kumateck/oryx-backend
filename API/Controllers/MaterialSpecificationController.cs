@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -20,6 +22,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.Create)]
     public async Task<IResult> CreateMaterialSpecification(
         CreateMaterialSpecificationRequest request
     )
@@ -126,6 +129,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.Edit)]
     public async Task<IResult> UpdateMaterialSpecification(
         [FromRoute] Guid id,
         [FromBody] UpdateMaterialSpecificationRequest request
@@ -145,6 +149,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.Edit)]
     public async Task<IResult> AddRemoveMaterialsToSpecification(
         [FromBody] AddRemoveMaterialToSpecificationRequest request
     )
@@ -159,6 +164,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.Delete)]
     public async Task<IResult> DeleteMaterialSpecification([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -175,6 +181,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     [HttpPost("import")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.Create)]
     public async Task<IResult> ImportMaterialSpecification(
         IFormFile file,
         [FromQuery] MaterialKind materialKind
