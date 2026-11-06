@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Utils;
 using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +34,7 @@ public class WorkOrderController(IWorkOrderRepository repository) : ControllerBa
     /// <param name="workOrderId">The ID of the work order.</param>
     /// <returns>Returns the work order details.</returns>
     [HttpGet("{workOrderId}")]
+    [AnyPermission("CanViewProductSchedules", "CanCreateWorkOrder", "CanEditWorkOrder")]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorkOrderDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -50,6 +52,7 @@ public class WorkOrderController(IWorkOrderRepository repository) : ControllerBa
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of work orders.</returns>
     [HttpGet]
+    [AnyPermission("CanViewProductSchedules", "CanCreateWorkOrder", "CanEditWorkOrder")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> GetWorkOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
