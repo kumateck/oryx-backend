@@ -32,9 +32,21 @@ public static class AccessGuard
         return Error.Forbidden("Access.Escalation", $"You cannot grant permissions you do not hold yourself: {shown}.");
     }
 
+    /// <summary>
+    /// The system administrator: the one account named as password administrator, active and not deleted, read from the
+    /// database (never from the token). It may grant permissions it does not hold, so permissions no role holds yet (a new
+    /// feature's key) can be given out at all. Everyone else can only hand on what they hold.
+    /// </summary>
+    public static async Task<bool> IsSystemAdministrator(ApplicationDbContext context, Guid? actorId)
+    {
+        if (actorId is not { } id) return false;
+        var user = await context.Users.AsNoTracking().FirstOrDefaultAsync(item => item.Id == id);
+        return user is not null && APP.Repository.UserPasswordAdminRepository.IsPasswordAdmin(user);
+    }
+
     /// <summary>Refuses assigning roles that carry permissions the actor does not hold.</summary>
-    public static async Task<Error> RoleAssignment(ApplicationDbContext context, IReadOnlySet<string> actor, IReadOnlyCollection<Guid> roleIds) =>
-        Escalation(actor, await RoleKeys(context, roleIds));
+    public static async Task<Error> RoleAssignment(ApplicationDbContext context, IReadOnlySet<string> actor, IReadOnlyCollection<Guid> roleIds, Guid actorId) =>
+        await IsSystemAdministrator(context, actorId) ? null : Escalation(actor, await RoleKeys(context, roleIds));
 
     public static Error Missing(IReadOnlySet<string> actor, string key, string task) =>
         actor.Contains(key) ? null : Error.Forbidden("Access.Permission", $"You need the {key} permission to {task}.");
