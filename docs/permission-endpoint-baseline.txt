@@ -46,10 +46,6 @@ EmployeeController.GetEmployee GET employee/{id:guid}
 EmployeeController.GetEmployees GET employee
 EmployeeController.GetEmployeesByDepartment GET employee/departments/{id:guid}
 EmployeeController.GetMyEmployee GET employee/me
-FileController.DeleteAttachments DELETE file/{modelId}
-FileController.DeleteSpecificAttachment DELETE file/{modelId}/{reference}
-FileController.UploadFile POST file/{modelType}/{modelId}
-FileController.UploadFile POST file/{modelType}/{modelId}/{reference}
 FormController.AddFormField POST form/section/{sectionId}/field
 FormController.AddFormReviewer POST form/{formId}/reviewer
 FormController.AddFormSection POST form/{formId}/section
