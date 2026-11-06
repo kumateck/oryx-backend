@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.ActivityLogs;
@@ -16,6 +17,7 @@ public class ActivityLogController(IActivityLogRepository repo) : ControllerBase
     /// <param name="filter">Filter for activity logs</param>
     /// <returns>Returns a paginated list of manufacturers.</returns>
     [HttpGet]
+    [AnyPermission("CanViewAuditTrail")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ActivityLogDto>>))]
     public async Task<IResult> GetManufacturers([FromQuery] ActivityLogFilter filter)

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -32,6 +33,7 @@ public class DesignationController(IDesignationRepository repository, INFRASTRUC
     /// Retrieves a paginated list of designations based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewDesignation", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewNewEmployee", "CanViewStaffRequisition")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DesignationDto>>))]
     public async Task<IResult> GetDesignations([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null)
@@ -46,6 +48,7 @@ public class DesignationController(IDesignationRepository repository, INFRASTRUC
     /// </summary>
 
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewDesignation")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DesignationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDesignation([FromRoute] Guid id)
@@ -59,6 +62,7 @@ public class DesignationController(IDesignationRepository repository, INFRASTRUC
     }
 
     [HttpGet("department/{id:guid}")]
+    [AnyPermission("CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewNewEmployee", "CanViewStaffRequisition")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DesignationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

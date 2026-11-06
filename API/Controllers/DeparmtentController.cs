@@ -1,3 +1,4 @@
+using API.Authorization;
 using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
@@ -38,6 +39,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department.</param>
     /// <returns>Returns the department details.</returns>
     [HttpGet("{departmentId}")]
+    [AnyPermission("CanApproveFgtn", "CanCreateProductionProduct", "CanSubmitAttendanceReportUpload", "CanSubmitShiftScheduleReportUpload", "CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewNewEmployee", "CanViewOpeningBalances", "CanViewStaffRequisition")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DepartmentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -57,6 +59,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <returns>Returns a paginated list of departments.</returns>
     [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet]
+    [SignedInUser("The organisation's department list, a reference lookup used by most pages and by department switching.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentDto>>))]
     public async Task<IResult> GetDepartments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null, [FromQuery] DepartmentType? type = null)

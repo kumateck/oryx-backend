@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -30,6 +31,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Retrieves a paginated list of overtime requests based on a search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewOvertimeManagement")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<OvertimeRequestDto>>))]
     public async Task<IResult> GetOvertimeRequests([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         OvertimeStatus? status = null, Guid? departmentId = null)
@@ -42,6 +44,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Retrieves the details of a specific overtime request by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewOvertimeManagement", "CanViewPendingApprovals")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OvertimeRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetOvertimeRequest([FromRoute] Guid id)

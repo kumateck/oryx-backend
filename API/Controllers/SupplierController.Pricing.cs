@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.Utils;
 using DOMAIN.Entities.Procurement.Suppliers;
@@ -17,6 +18,7 @@ public partial class SupplierController
     }
 
     [HttpGet("{supplierId:guid}/pricing-agreements/proposals/{id:guid}")]
+    [AnyPermission("CanViewPendingApprovals")]
     [Authorize]
     public async Task<IResult> GetPricingAgreementProposal([FromRoute] Guid supplierId, [FromRoute] Guid id)
     {

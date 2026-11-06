@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -35,6 +36,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository, INFRASTRUCTURE
     /// Returns a paginated list of leave types based on a search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewDesignation", "CanViewLeaveRequests")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveTypeDto>>))]
     public async Task<IResult> GetLeaveTypes([FromQuery] int page = 1,
         [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
@@ -53,6 +55,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository, INFRASTRUCTURE
     /// Retrieves the details of a specific leave type.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewDesignation", "CanViewLeaveRequests")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LeaveTypeDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveType([FromRoute] Guid id)

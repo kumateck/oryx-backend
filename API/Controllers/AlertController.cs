@@ -134,6 +134,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Retrieves notifications for the current user, optionally filtering by unread status.
     /// </summary>
     [HttpGet("notifications")]
+    [SignedInUser("Lists the caller's own notifications.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<NotificationDto>))]
     public async Task<IResult> GetNotificationsForUser([FromQuery] bool unreadOnly = false)

@@ -31,6 +31,7 @@ public partial class CustomerController(ICustomerRepository repository) : Contro
     /// Retrieves a paginated list of customers
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanViewCustomers", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewOrder", "CanViewProcurementReport", "CanViewProductSchedules", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<CustomerDto>>))]
     public async Task<IResult> GetCustomers([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
@@ -43,6 +44,7 @@ public partial class CustomerController(ICustomerRepository repository) : Contro
     /// Retrieves the details of a customer by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewCustomers")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetCustomer([FromRoute] Guid id)

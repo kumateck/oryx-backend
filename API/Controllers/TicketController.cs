@@ -60,6 +60,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// `status` client-side.
     /// </remarks>
     [HttpGet]
+    [PermissionCheckedInAction("Lists the tickets the caller reported or is assigned; all tickets need CanViewAllTickets.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<TicketDto>>))]
     public async Task<IResult> GetTickets(
         [FromQuery] int page = 1,
@@ -83,6 +84,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// Retrieves a ticket by its unique identifier
     /// </summary>
     [HttpGet("{id:guid}")]
+    [PermissionCheckedInAction("Shows a ticket only to its reporter, its assignee or holders of CanViewAllTickets.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TicketDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetTicket([FromRoute] Guid id)
@@ -201,6 +203,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// Retrieves the comment thread and status-history timeline for a ticket
     /// </summary>
     [HttpGet("{id:guid}/activity")]
+    [PermissionCheckedInAction("Shows a ticket's activity only to its reporter, its assignee or holders of CanViewAllTickets.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<TicketActivityDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetTicketActivity([FromRoute] Guid id)

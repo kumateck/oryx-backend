@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Approvals;
@@ -16,6 +17,7 @@ public sealed class PendingApprovalDocumentCountsController(
     ApplicationDbContext context, IAuthorizationService authorization) : ControllerBase
 {
     [HttpGet]
+    [AnyPermission("CanViewPendingApprovals")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, int>))]
     public async Task<IResult> Get(CancellationToken cancellationToken)
     {
