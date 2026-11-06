@@ -17,6 +17,7 @@ public class DesignationController(IDesignationRepository repository, INFRASTRUC
     /// Creates a designation.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateDesignation)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDesignation([FromBody] CreateDesignationRequest request)
@@ -75,7 +76,7 @@ public class DesignationController(IDesignationRepository repository, INFRASTRUC
     /// Updates the details of an existing designation
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditDesignation)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DesignationDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -93,7 +94,7 @@ public class DesignationController(IDesignationRepository repository, INFRASTRUC
     /// Deletes a specific designation by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteDesignation)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteDesignation([FromRoute] Guid id)

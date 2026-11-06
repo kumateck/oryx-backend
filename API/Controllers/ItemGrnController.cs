@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -11,7 +12,7 @@ namespace API.Controllers;
 [Route("api/v{version:apiVersion}/item-grns")]
 [ApiController]
 [Authorize]
-public class ItemGrnController(IItemGrnRepository repository) : ControllerBase
+public class ItemGrnController(IItemGrnRepository repository, INFRASTRUCTURE.Context.ApplicationDbContext context) : ControllerBase
 {
 
     /// <summary>
@@ -22,6 +23,7 @@ public class ItemGrnController(IItemGrnRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateItemGrn([FromBody] CreateItemGrnRequest request)
     {
+        if (!await MayReceive(request.ItemId)) return TypedResults.Forbid();
 
         var result = await repository.CreateItemGrn(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -64,6 +66,7 @@ public class ItemGrnController(IItemGrnRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateItemGrn([FromRoute] Guid id, [FromBody] CreateItemGrnRequest request)
     {
+        if (!await MayReceive(await GrnItem(id)) || !await MayReceive(request.ItemId)) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
@@ -79,9 +82,30 @@ public class ItemGrnController(IItemGrnRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteItemGrn([FromRoute] Guid id)
     {
+        if (!await MayReceive(await GrnItem(id))) return TypedResults.Forbid();
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
         var result = await repository.DeleteItemGrn(id, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    private async Task<Guid?> GrnItem(Guid id) =>
+        await context.ItemGrns.IgnoreQueryFilters().AsNoTracking().Where(grn => grn.Id == id).Select(grn => (Guid?)grn.ItemId).FirstOrDefaultAsync();
+
+    /// <summary>
+    /// An item GRN is the store's receiving-area entry: it needs that store's receiving-area approve key, checked from
+    /// current grants. An unknown item or GRN is refused.
+    /// </summary>
+    private async Task<bool> MayReceive(Guid? itemId)
+    {
+        if (itemId is null || !Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return false;
+        var store = await context.Items.IgnoreQueryFilters().AsNoTracking().Where(item => item.Id == itemId)
+            .Select(item => (DOMAIN.Entities.Items.Store?)item.Store).FirstOrDefaultAsync();
+        var name = store switch
+        {
+            DOMAIN.Entities.Items.Store.ItStore => "It", DOMAIN.Entities.Items.Store.GeneralStore => "General",
+            DOMAIN.Entities.Items.Store.EquipmentStore => "Equipment", DOMAIN.Entities.Items.Store.ReagentStore => "Reagent", _ => null,
+        };
+        return name is not null && (await APP.Services.Authorization.CurrentPermissionSet.Load(context, actor)).Contains($"CanApprove{name}StoreReceivingAreaEntry");
     }
 }

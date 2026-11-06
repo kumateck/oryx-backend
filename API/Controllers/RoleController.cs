@@ -49,8 +49,8 @@ public class RoleController(IRoleRepository repo) : ControllerBase
         }
     }
 
-    //[Authorize]
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateRole)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> CreateRole(CreateRoleRequest request)
     {

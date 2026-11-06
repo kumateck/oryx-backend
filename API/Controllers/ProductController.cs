@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
@@ -21,9 +23,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new product.
     /// </summary>
     [HttpPost]
+    [ProductPermission(ProductSection.Info, ProductVerb.Create)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CreateProduct([FromBody] CreateProductRequest request)
+    public async Task<IResult> CreateProduct([FromBody] CreateProductRequest request, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -91,13 +94,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates a specific product by its ID.
     /// </summary>
     [HttpPut("{productId}")]
+    [ProductPermission(ProductSection.Info, ProductVerb.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateProduct(
         [FromBody] UpdateProductRequest request,
         Guid productId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -111,13 +115,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates a specific product package description by its ID.
     /// </summary>
     [HttpPut("package-description/{productId}")]
+    [ProductPermission(ProductSection.PackingOrder, ProductVerb.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateProductPackage(
         [FromBody] UpdateProductPackageDescriptionRequest request,
         Guid productId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -135,9 +140,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes a specific product by its ID.
     /// </summary>
     [HttpDelete("{productId}")]
+    [ProductPermission(ProductSection.Info, ProductVerb.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteProduct(Guid productId)
+    public async Task<IResult> DeleteProduct(Guid productId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -163,12 +169,13 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new route for a product.
     /// </summary>
     [HttpPost("{productId}/routes")]
+    [ProductPermission(ProductSection.Procedure, ProductVerb.Save)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRoute(
         [FromBody] List<CreateRouteRequest> request,
         Guid productId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -205,9 +212,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes a specific route by its ID.
     /// </summary>
     [HttpDelete("routes/{routeId}")]
+    [ProductPermission(ProductSection.Procedure, ProductVerb.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteRoute(Guid routeId)
+    public async Task<IResult> DeleteRoute(Guid routeId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -221,12 +229,13 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new product package.
     /// </summary>
     [HttpPost("{productId}/packages")]
+    [ProductPermission(ProductSection.PackingMaterials, ProductVerb.Save)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductPackage(
         [FromBody] List<CreateProductPackageRequest> request,
         Guid productId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -240,12 +249,13 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new product package.
     /// </summary>
     [HttpPost("{productId}/packing")]
+    [ProductPermission(ProductSection.PackingStyles, ProductVerb.Save)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductPacking(
         [FromBody] List<CreateProductPacking> request,
         Guid productId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -315,13 +325,14 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates a specific product package by its ID.
     /// </summary>
     [HttpPut("packages/{productPackageId}")]
+    [ProductPermission(ProductSection.PackingMaterials, ProductVerb.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateProductPackage(
         [FromBody] CreateProductPackageRequest request,
         Guid productPackageId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -339,9 +350,10 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes a specific product package by its ID.
     /// </summary>
     [HttpDelete("packages/{productPackageId}")]
+    [ProductPermission(ProductSection.PackingMaterials, ProductVerb.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> DeleteProductPackage(Guid productPackageId)
+    public async Task<IResult> DeleteProductPackage(Guid productPackageId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -355,12 +367,13 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new finished product.
     /// </summary>
     [HttpPost("{productId}/finished")]
+    [ProductPermission(ProductSection.Info, ProductVerb.Edit)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateFinishedProduct(
         [FromBody] List<CreateFinishedProductRequest> request,
         Guid productId
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -376,10 +389,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="productId">The ID of the Product for which the bom should be archived.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{productId}/bom/archive")]
+    [ProductPermission(ProductSection.Bom, ProductVerb.Archive)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> ArchiveBillOfMaterial(Guid productId)
+    public async Task<IResult> ArchiveBillOfMaterial(Guid productId, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -488,10 +502,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing product data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload")]
+    [ProductPermission(ProductSection.List, ProductVerb.Import)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProducts(IFormFile file)
+    public async Task<IResult> UploadProducts(IFormFile file, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -507,10 +522,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing BOM data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("bom/upload")]
+    [ProductPermission(ProductSection.Bom, ProductVerb.Import)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProductBom(IFormFile file)
+    public async Task<IResult> UploadProductBom(IFormFile file, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -526,10 +542,11 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing package data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("packages/upload")]
+    [ProductPermission(ProductSection.PackingMaterials, ProductVerb.Import)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> UploadProductPackages(IFormFile file)
+    public async Task<IResult> UploadProductPackages(IFormFile file, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -594,11 +611,12 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns the Excel file containing products.</returns>
     [HttpGet("download")]
+    [ProductPermission(ProductSection.List, ProductVerb.Export)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
     public async Task<IResult> DownloadProducts(
         [FromQuery] Guid? departmentId,
         [FromQuery] Division? departmentDivision
-    )
+    , [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)

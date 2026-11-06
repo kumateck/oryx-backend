@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using APP.IRepository;
+using APP.Services.Authorization;
 using APP.Utils;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Roles;
@@ -209,12 +210,15 @@ public class PermissionRepository(
 
     public async Task<Result> UpdateRolePermissions(
         List<PermissionModuleDto> permissionModules,
-        Guid roleId
+        Guid roleId,
+        Guid actorId,
+        string requiredKey = PermissionKeys.CanUpdateExistingPermission
     )
     {
         var role = await context.Roles.FirstOrDefaultAsync(item => item.Id == roleId);
         if (role == null)
             return RoleErrors.NotFound(roleId);
+        permissionModules ??= [];
 
         // Extract permissions and their types from the provided sections
         var requestedPermissions = permissionModules
@@ -232,6 +236,22 @@ public class PermissionRepository(
                     .ToList(),
             })
             .ToList();
+
+        // Only keys in the catalog can be granted, and only by someone who holds them: access can be handed on,
+        // never escalated. Checked from current data, immediately before the change.
+        var catalog = PermissionUtils.GeneratePermissions().Select(permission => permission.Key).ToHashSet(StringComparer.Ordinal);
+        var unknown = requestedPermissions.Where(permission => !catalog.Contains(permission.Key)).Select(permission => permission.Key).ToList();
+        if (unknown.Count > 0)
+            return Error.Validation("Permission.Unknown", $"These are not permissions in the system: {string.Join(", ", unknown.Take(5))}.");
+        var actor = await CurrentPermissionSet.Load(context, actorId);
+        if (AccessGuard.Missing(actor, requiredKey, "change role permissions") is { } cannotChange) return cannotChange;
+        var held = await AccessGuard.RoleKeys(context, [roleId]);
+        if (AccessGuard.Escalation(actor, requestedPermissions.Where(permission => permission.Types.Count > 0 && !held.Contains(permission.Key))
+                .Select(permission => permission.Key)) is { } escalation)
+            return escalation;
+
+        // One unit of work: a failure part-way never leaves the role with no permissions.
+        await using var transaction = context.Database.CurrentTransaction is null ? await context.Database.BeginTransactionAsync() : null;
 
         // Retrieve current role permissions
         var roleClaims = await context
@@ -277,14 +297,13 @@ public class PermissionRepository(
         // Authorization reads these rows after cache eviction. Persist them first
         // so a concurrent request cannot cache an incomplete permission grant.
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
 
         var userIds = await context.UserRoles.IgnoreQueryFilters()
             .Where(item => item.RoleId == roleId)
             .Select(item => item.UserId)
             .ToListAsync();
-        foreach (var userId in userIds)
-            cache.Remove($"UserId_{userId}_Permissions");
-
+        // Server checks read current grants on every request; only the desktop's permission view is cached.
         try
         {
             await redisCache.KeyDeleteAsync($"Permission_Cache_V3_{roleId}");

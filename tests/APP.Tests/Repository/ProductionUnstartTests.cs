@@ -68,6 +68,19 @@ public sealed class ProductionUnstartTests
     private static ProductionScheduleRepository Repository(ApplicationDbContext db, IMapper mapper) =>
         new(db, mapper, null!, new MaterialRepository(db, mapper), new NoOpBackgroundWorker(), null!, new NoOpProductionActivityStepEventPublisher());
 
+    /// <summary>The batch as the schedule page and the schedule list both show it.</summary>
+    private static async Task<DOMAIN.Entities.ProductionSchedules.ProductionScheduleProductDto> ScheduleBatch(ApplicationDbContext db, IssuedMaterialRepairFixture fixture)
+    {
+        using var provider = Mapping(db); var repository = Repository(db, provider.GetRequiredService<IMapper>());
+        var user = fixture.Actor.UserId.GetValueOrDefault();
+        var scheduleId = await db.ProductionScheduleProducts.IgnoreQueryFilters().Where(item => item.Id == fixture.BatchId).Select(item => item.ProductionScheduleId).SingleAsync();
+        var detail = await repository.GetProductionSchedule(scheduleId, user); Assert.True(detail.IsSuccess, detail.Error?.Description);
+        var list = await repository.GetProductionSchedules(user, 1, 10, null!); Assert.True(list.IsSuccess, list.Error?.Description);
+        var batch = Assert.Single(detail.Value.Products); var listed = Assert.Single(Assert.Single(list.Value.Data).Products);
+        Assert.Equal(batch.HasStarted, listed.HasStarted); Assert.Equal(batch.ProductionActivityId, listed.ProductionActivityId);
+        return batch;
+    }
+
     [RepairPostgresFact]
     public async Task Unstart_archives_drafts_releases_reservations_preserves_stock_and_can_restart_once()
     {
@@ -120,6 +133,9 @@ public sealed class ProductionUnstartTests
             Assert.All(await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().ToListAsync(), item => Assert.Equal(audit.Id, item.ProductionUnstartRepairId));
             Assert.All(await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().ToListAsync(), item => Assert.Equal(audit.AppliedAt, item.ReleasedAt));
             Assert.Contains("prior-run-configuration", audit.BeforeJson);
+            // The archived run no longer counts: the schedule shows the batch as awaiting start.
+            var unstarted = await ScheduleBatch(db, fixture);
+            Assert.False(unstarted.HasStarted); Assert.Null(unstarted.ProductionActivityId);
             using var mapping = Mapping(db);
             var material = await db.MaterialBatches.FirstAsync();
             var productionId = await db.Warehouses.Where(item => item.Type == DOMAIN.Entities.Warehouses.WarehouseType.Production).Select(item => item.Id).SingleAsync();
@@ -146,6 +162,9 @@ public sealed class ProductionUnstartTests
             Assert.True((await Service(db, fixture).Apply(run, request)).Value.AlreadyApplied);
             request.RequestId = Guid.NewGuid(); Assert.True((await Service(db, fixture).Apply(run, request)).Value.AlreadyApplied);
             Assert.Equal(restarted, (await db.ProductionActivities.SingleAsync()).Id);
+            // One row per batch even with an archived run beside the live one.
+            var running = await ScheduleBatch(db, fixture);
+            Assert.True(running.HasStarted); Assert.Equal(restarted, running.ProductionActivityId);
             using var provider = Mapping(db);
             Assert.True((await Repository(db, provider.GetRequiredService<IMapper>()).StartProductionActivity(fixture.BatchId, fixture.Actor.UserId.GetValueOrDefault())).IsFailure);
         }

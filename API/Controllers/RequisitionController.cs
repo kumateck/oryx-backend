@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +23,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="request">The CreateRequisitionRequest object.</param>
     /// <returns>Returns the ID of the created Stock Requisition.</returns>
     [HttpPost]
-    [Authorize]
+    [RequisitionCreatePermission]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRequisition([FromBody] CreateRequisitionRequest request)
@@ -143,6 +144,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }*/
 
     [HttpPost("issue-stock-requisition/{stockRequisitionId}")]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -181,7 +183,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="requisitionId">The ID of the requisition.</param>
     /// <returns>A validation problem directing callers to the approval workflow.</returns>
     [HttpPost("{requisitionId}/issue")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveRequisition([FromBody] ApproveRequisitionRequest request, Guid requisitionId)
     {
@@ -204,6 +206,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="request">The CreateSourceRequisitionRequest object.</param>
     /// <returns>Returns the ID of the created Source Requisition.</returns>
     [HttpPost("source")]
+    [Authorize(PermissionKeys.CanSourcePurchaseRequisition)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -272,7 +275,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="sourceRequisitionId">The ID of the Source Requisition to update.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("source/{sourceRequisitionId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditSourceRequisition)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpdateSourceRequisition([FromBody] CreateSourceRequisitionRequest request, Guid sourceRequisitionId)
@@ -287,7 +290,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="sourceRequisitionId">The ID of the Source Requisition to delete.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("source/{sourceRequisitionId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteSourceRequisition)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> DeleteSourceRequisition(Guid sourceRequisitionId)
@@ -350,6 +353,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierId">The ID of the supplier.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/supplier/{supplierId}/send-quotation")]
+    [SupplierTypePermission(PermissionKeys.CanSendForeignQuotationRequest, PermissionKeys.CanSendLocalQuotationRequest)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -408,6 +412,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierQuotationId">The ID of the supplier quotation.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/supplier/{supplierQuotationId}/quotation/receive")]
+    [SupplierTypePermission(PermissionKeys.CanSendForeignQuotationResponse, PermissionKeys.CanSendLocalQuotationResponse)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -460,6 +465,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="processQuotations">The list of quotations to process.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/quotation/process-purchase-order")]
+    [SupplierTypePermission(PermissionKeys.CanApplyChangesForForeignVendorPricingSelection, PermissionKeys.CanApplyChangesForLocalVendorPricingSelection)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

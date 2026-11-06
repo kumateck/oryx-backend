@@ -16,6 +16,7 @@ public class MaterialDto
     public string Alphabet { get; set; }
     public MaterialKind Kind { get; set; }
     public bool IsUnlimited { get; set; }
+    public bool IsWhitePlacebo { get; set; }
     public MaterialCategoryDto MaterialCategory { get; set; }
     public MaterialSpecificationReducedDto Specification { get; set; }
     public decimal TotalStock { get; set; }

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -27,7 +28,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreateManufacturerRequest object.</param>
     /// <returns>Returns the ID of the created manufacturer.</returns>
     [HttpPost("manufacturer")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateManufacturer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateManufacturer([FromBody] CreateManufacturerRequest request)
@@ -100,7 +101,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="manufacturerId">The ID of the manufacturer to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("manufacturer/{manufacturerId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanUpdateManufacturerDetails)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -127,7 +128,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="manufacturerId">The ID of the manufacturer to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("manufacturer/{manufacturerId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteManufacturer)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteManufacturer(Guid manufacturerId)
@@ -148,7 +149,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreateSupplierRequest object.</param>
     /// <returns>Returns the ID of the created supplier.</returns>
     [HttpPost("supplier")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateVendor)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateSupplier([FromBody] CreateSupplierRequest request)
@@ -206,7 +207,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The new status of the supplier.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("supplier/{supplierId}/status")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanUpdateVendorDetails)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -266,7 +267,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="supplierId">The ID of the supplier to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("supplier/{supplierId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanUpdateVendorDetails)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -289,7 +290,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="supplierId">The ID of the supplier to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("supplier/{supplierId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteVendor)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteSupplier(Guid supplierId)
@@ -310,7 +311,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreatePurchaseOrderRequest object.</param>
     /// <returns>Returns the ID of the created purchase order.</returns>
     [HttpPost("purchase-order")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanCreateForeignPurchaseOrder, PermissionKeys.CanCreateLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreatePurchaseOrder([FromBody] CreatePurchaseOrderRequest request)
@@ -394,7 +395,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order you want to send to a supplier as an email.</param>
     /// <returns>Returns a 204 no content response</returns>
     [HttpPost("purchase-order/{purchaseOrderId}")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanSendApprovedForeignPurchaseOrder, PermissionKeys.CanSendApprovedLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> SendPurchaseOrderToSupplier(
@@ -412,7 +413,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order you want to send to a supplier as an email.</param>
     /// <returns>Returns a 204 no content response</returns>
     [HttpPost("purchase-order/proforma-invoice/{purchaseOrderId}")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanSendForeignProformaInvoice, PermissionKeys.CanSendLocalProformaInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> SendProformaInvoiceToSupplier(Guid purchaseOrderId)
@@ -428,7 +429,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("purchase-order/first-step/{purchaseOrderId}")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanCreateForeignPurchaseOrder, PermissionKeys.CanCreateLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -456,7 +457,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("purchase-order/{purchaseOrderId}")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanCreateForeignPurchaseOrder, PermissionKeys.CanCreateLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -483,7 +484,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("purchase-order/{purchaseOrderId}/cancel")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanCancelForeignPurchaseOrder, PermissionKeys.CanCancelLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -504,7 +505,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order to revise.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("purchase-order/{purchaseOrderId}/revise")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanReviseForeignPurchaseOrder, PermissionKeys.CanReviseLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -527,7 +528,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("purchase-order/{purchaseOrderId}")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanDeleteForeignPurchaseOrder, PermissionKeys.CanDeleteLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeletePurchaseOrder(Guid purchaseOrderId)
@@ -541,7 +542,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     }
 
     [HttpPut("purchase-order/check/{purchaseOrderId}")]
-    [Authorize]
+    [PurchaseOrderPermission(PermissionKeys.CanCheckForeignPurchaseOrder, PermissionKeys.CanCheckLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CheckPurchaseOrder(Guid purchaseOrderId)
@@ -668,7 +669,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreateBillingSheetRequest object.</param>
     /// <returns>Returns the ID of the created billing sheet.</returns>
     [HttpPost("billing-sheet")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateBillingSheet)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateBillingSheet([FromBody] CreateBillingSheetRequest request)
@@ -743,7 +744,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="billingSheetId">The ID of the billing sheet to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("billing-sheet/{billingSheetId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditBillingSheet)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -790,7 +791,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// </summary>
     /// <returns>Returns success or failure.</returns>
     [HttpPost("billing-sheet/charge/{billingSheetId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditBillingSheet)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -817,7 +818,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="billingSheetId">The ID of the billing sheet to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("billing-sheet/{billingSheetId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteBillingSheet)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteBillingSheet(Guid billingSheetId)
@@ -836,7 +837,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreateShipmentDocumentRequest object.</param>
     /// <returns>Returns the ID of the created shipment document.</returns>
     [HttpPost("shipment-document")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateShipmentDocument)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShipmentDocument(
@@ -903,7 +904,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The ID of the shipment document to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("shipment-document/{shipmentDocumentId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditShipmentDocument)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -930,7 +931,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The ID of the shipment document to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("shipment-document/{shipmentDocumentId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteShipmentDocument)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteShipmentDocument(Guid shipmentDocumentId)
@@ -954,7 +955,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreateShipmentDocumentRequest object.</param>
     /// <returns>Returns the ID of the created waybill.</returns>
     [HttpPost("waybill")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateWaybill)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateWayBill([FromBody] CreateShipmentDocumentRequest request)
@@ -1014,7 +1015,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="waybillId">The ID of the waybill to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("waybill/{waybillId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditWaybill)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1037,7 +1038,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="waybillId">The ID of the waybill to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("waybill/{waybillId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteWaybill)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteWaybillDocument(Guid waybillId)
@@ -1056,7 +1057,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("shipment-document/{shipmentDocumentId}/arrived")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanChangeShipmentDocumentStatus)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> MarkShipmentAsArrived(Guid shipmentDocumentId)
@@ -1079,6 +1080,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanChangeShipmentDocumentStatus)]
     public async Task<IResult> UpdateShipmentStatus(
         Guid shipmentId,
         [FromBody] UpdateShipmentStatusRequest request
@@ -1119,7 +1121,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Creates a new shipment invoice.
     /// </summary>
     [HttpPost("shipment-invoice")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateShipmentInvoice)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateShipmentInvoice([FromBody] CreateShipmentInvoice request)
@@ -1209,7 +1211,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Updates a specific shipment invoice by its ID.
     /// </summary>
     [HttpPut("shipment-invoice/{shipmentInvoiceId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditShipmentInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1234,7 +1236,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Marks a shipment invoice as paid and the time it was paid
     /// </summary>
     [HttpPut("shipment-invoice/paid/{shipmentInvoiceId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordPayment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1259,7 +1261,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Marks a shipment invoice as paid and the time it was paid
     /// </summary>
     [HttpPut("shipment-invoice/paid/multiple")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordPayment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1284,7 +1286,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Deletes a specific shipment invoice by its ID.
     /// </summary>
     [HttpDelete("shipment-invoice/{shipmentInvoiceId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteShipmentInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteShipmentInvoice(Guid shipmentInvoiceId)
@@ -1351,7 +1353,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Updates a specific shipment discrepancy by its ID.
     /// </summary>
     [HttpPut("shipment-discrepancy/{shipmentDiscrepancyId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordShipmentDiscrepancy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1376,7 +1378,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Deletes a specific shipment discrepancy by its ID.
     /// </summary>
     [HttpDelete("shipment-discrepancy/{shipmentDiscrepancyId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordShipmentDiscrepancy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteShipmentDiscrepancy(Guid shipmentDiscrepancyId)
@@ -1465,6 +1467,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="departmentId">The department the material goes to</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPost("{shipmentDocumentId}/confirm-distribution/{materialId}/{departmentId}")]
+    [Authorize(PermissionKeys.CanDistributeMaterial)]
     public async Task<IResult> ConfirmDistribution(
         [FromRoute] Guid shipmentDocumentId,
         [FromRoute] Guid materialId,
@@ -1485,6 +1488,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The shipment document id for which you want to approve distribution</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPost("{shipmentDocumentId}/confirm-distribution")]
+    [Authorize(PermissionKeys.CanDistributeMaterial)]
     public async Task<IResult> ConfirmDistribution(Guid shipmentDocumentId)
     {
         var result = await repository.ConfirmDistribution(shipmentDocumentId);
@@ -1534,7 +1538,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The distribution details request.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPost("distribute-material")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDistributeMaterial)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

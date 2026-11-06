@@ -17,6 +17,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository, INFRASTRUCTURE
     /// Creates a leave type.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateLeaveType)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveType([FromBody] CreateLeaveTypeRequest leaveType)
@@ -69,6 +70,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository, INFRASTRUCTURE
     /// Updates the details of an existing leave type.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditLeaveType)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveTypeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,7 +89,7 @@ public class LeaveTypeController(ILeaveTypeRepository repository, INFRASTRUCTURE
     /// Deletes a specific leave type by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteLeaveType)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveType([FromRoute] Guid id)

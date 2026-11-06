@@ -20,7 +20,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <returns>Returns the ID of the newly created configuration.</returns>
     [HttpPost]
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateNewCodes)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateConfiguration([FromBody] CreateConfigurationRequest request)
@@ -85,7 +85,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="configurationId">The ID of the configuration to update.</param>
     /// <returns>Returns success if the update was successful; otherwise returns an error.</returns>
     [HttpPut("{configurationId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditCodeSettings)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -104,7 +104,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="configurationId">The ID of the configuration to delete.</param>
     /// <returns>Returns success if the configuration was successfully deleted.</returns>
     [HttpDelete("{configurationId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteCodeSettings)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteConfiguration(Guid configurationId)
@@ -162,7 +162,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// Creates the threshold configuration
     /// </summary>
     [HttpPost("threshold")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateThreshold)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CreateThreshold(CreateThreshold request)

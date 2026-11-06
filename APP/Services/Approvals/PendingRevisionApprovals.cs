@@ -57,10 +57,11 @@ public static class PendingRevisionApprovals
         foreach (var item in candidates)
         {
             var revision = item.revision;
-            if (revision.CreatedById == actorId) continue;
             var action = revision.ReviewedById.HasValue ? "approve" : "review";
             if (action == "review" && !canReview ||
-                action == "approve" && (!canApprove || revision.ReviewedById == actorId))
+                action == "approve" && (!canApprove ||
+                    !FormulaRevisionParticipation.AllowsApproval(
+                        revision.CreatedById, revision.ReviewedById, actorId)))
                 continue;
             rows.Add(new PendingRevisionApprovalDto(revision.Id, item.QuestionId,
                 "FormulaRevision", action, item.Label, revision.DefinitionHash,

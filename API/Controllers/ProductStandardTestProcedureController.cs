@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -23,6 +25,7 @@ public class ProductStandardTestProcedureController(
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.ProductStp, QcTask.Create)]
     public async Task<IResult> CreateStandardTestProcedure(
         [FromBody] CreateProductStandardTestProcedureRequest request
     )
@@ -96,6 +99,7 @@ public class ProductStandardTestProcedureController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductStp, QcTask.Edit)]
     public async Task<IResult> UpdateStandardTestProcedure(
         [FromRoute] Guid id,
         [FromBody] UpdateProductStandardTestProcedureRequest request
@@ -112,6 +116,7 @@ public class ProductStandardTestProcedureController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductStp, QcTask.Edit)]
     public async Task<IResult> AddRemoveProductsToStp(
         [FromBody] AddRemoveProductToStpRequest request
     )
@@ -126,6 +131,7 @@ public class ProductStandardTestProcedureController(
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.ProductStp, QcTask.Delete)]
     public async Task<IResult> DeleteStandardTestProcedure([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];

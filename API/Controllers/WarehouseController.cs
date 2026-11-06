@@ -1,3 +1,4 @@
+using API.Authorization;
 using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
@@ -24,7 +25,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new warehouse.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateWarehouse)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateWarehouse([FromBody] CreateWarehouseRequest request)
@@ -101,7 +102,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Updates the details of an existing warehouse.
     /// </summary>
     [HttpPut("{warehouseId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditWarehouse)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -122,7 +123,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Deletes a specific warehouse by its ID.
     /// </summary>
     [HttpDelete("{warehouseId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteWarehouse)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteWarehouse(Guid warehouseId)
@@ -143,7 +144,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new location within a warehouse.
     /// </summary>
     [HttpPost("{warehouseId}/location")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanAddNewLocation)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     public async Task<IResult> CreateWarehouseLocation(
         [FromBody] CreateWarehouseLocationRequest request,
@@ -204,7 +205,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Updates an existing warehouse location.
     /// </summary>
     [HttpPut("location/{locationId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditLocation)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -229,7 +230,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Deletes a specific warehouse location.
     /// </summary>
     [HttpDelete("location/{locationId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteLocation)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteWarehouseLocation(Guid locationId)
@@ -250,7 +251,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new rack within a warehouse location.
     /// </summary>
     [HttpPost("{locationId}/rack")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanAddNewRack)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     public async Task<IResult> CreateWarehouseLocationRack(
         [FromBody] CreateWarehouseLocationRackRequest request,
@@ -348,7 +349,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Updates an existing warehouse location rack.
     /// </summary>
     [HttpPut("rack/{rackId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditRack)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -373,7 +374,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Deletes a specific warehouse location rack.
     /// </summary>
     [HttpDelete("rack/{rackId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteRack)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteWarehouseLocationRack(Guid rackId)
@@ -394,7 +395,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new shelf within a warehouse location rack.
     /// </summary>
     [HttpPost("{rackId}/shelf")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanAddNewShelf)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     public async Task<IResult> CreateWarehouseLocationShelf(
         [FromBody] CreateWarehouseLocationShelfRequest request,
@@ -478,7 +479,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Updates an existing warehouse location shelf.
     /// </summary>
     [HttpPut("shelf/{shelfId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditShelf)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -503,7 +504,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Deletes a specific warehouse location shelf.
     /// </summary>
     [HttpDelete("shelf/{shelfId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteShelf)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteWarehouseLocationShelf(Guid shelfId)
@@ -775,7 +776,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new arrival location for a warehouse.
     /// </summary>
     [HttpPost("arrival-location")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateArrivalLocation)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CreateArrivalLocation(
@@ -795,7 +796,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Updates an existing arrival location.
     /// </summary>
     [HttpPut("arrival-location")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditArrivalLocation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateArrivalLocation(
@@ -810,7 +811,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Confirms the arrival of a distributed material.
     /// </summary>
     [HttpPost("confirm-arrival/{distributedMaterialId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanConfirmMaterialArrival)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ConfirmArrival(Guid distributedMaterialId)
@@ -826,7 +827,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new checklist.
     /// </summary>
     [HttpPost("checklist")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanCreateChecklistForRawMaterials, PermissionKeys.CanCreateChecklistForPackagingMaterials)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateChecklist([FromBody] CreateChecklistRequest request)
@@ -914,7 +915,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new GRN and assigns it to the specified material batches.
     /// </summary>
     [HttpPost("grn")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanCreateGrnForRawMaterials, PermissionKeys.CanCreateGrnForPackagingMaterials)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateGrn([FromBody] CreateGrnRequest request)
@@ -1063,7 +1064,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="request">The swap request details.</param>
     /// <returns>A result indicating success or failure of the operation.</returns>
     [HttpPost("swap")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateSwapRequest([FromBody] CreateSwapRequest request)
@@ -1128,7 +1129,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="id">The unique identifier of the swap request to approve.</param>
     /// <returns>A result indicating success or failure of the operation.</returns>
     [HttpPut("swap/{id}/approve")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions, IdIsSwapRequest = true)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveSwapRequest([FromRoute] Guid id)
@@ -1148,7 +1149,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="reason">An optional reason for rejection.</param>
     /// <returns>A result indicating success or failure of the operation.</returns>
     [HttpPut("swap/{id}/reject")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions, IdIsSwapRequest = true)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RejectSwapRequest([FromRoute] Guid id, [FromQuery] string reason)

@@ -17,6 +17,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// Creates a staff requisition
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateStaffRequisition)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStaffRequisition([FromBody] CreateStaffRequisitionRequest request)
@@ -57,6 +58,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// Updates a staff requisition by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditStaffRequisition)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(StaffRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,6 +73,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// Deletes a staff requisition by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteStaffRequisition)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteStaffRequisition([FromRoute] Guid id)

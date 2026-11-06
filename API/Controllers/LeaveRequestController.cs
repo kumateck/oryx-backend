@@ -16,6 +16,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Creates a leave request.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveOrAbsenceRequest(
@@ -82,6 +83,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Updates the details of an existing leave request.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -102,6 +104,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Recalls an employee from a leave.
     /// </summary>
     [HttpPut("recall")]
+    [Authorize(PermissionKeys.CanRecallLeave)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -114,6 +117,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     }
 
     [HttpPut("{leaveRequestId:guid}/reapply")]
+    [Authorize(PermissionKeys.CanCreateLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ReapplyLeaveRequest(
@@ -129,6 +133,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Deletes a specific leave request by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveRequest([FromRoute] Guid id)
@@ -145,6 +150,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Cancels an approved leave if it has not been started yet.
     /// </summary>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(PermissionKeys.CanCancelLeave)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CancelLeaveRequest([FromRoute] Guid id)

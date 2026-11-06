@@ -17,6 +17,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Creates a holiday.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateHoliday)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateHoliday([FromBody] CreateHolidayRequest request)
@@ -62,6 +63,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Updates the details of an existing holiday.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditHoliday)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(HolidayDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -78,6 +80,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Deletes a specific holiday by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteHoliday)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteHoliday([FromRoute] Guid id)

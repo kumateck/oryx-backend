@@ -25,6 +25,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpPost("shipment-invoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(PermissionKeys.CanCreateShipmentInvoice)]
     public async Task<IResult> CreateItemShipmentInvoice([FromBody] CreateItemShipmentInvoice request)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -76,6 +77,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanEditShipmentInvoice)]
     public async Task<IResult> UpdateItemShipmentInvoice([FromBody] CreateItemShipmentInvoice request, [FromRoute] Guid invoiceId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -92,6 +94,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanRecordPayment)]
     public async Task<IResult> MarkItemShipmentInvoiceAsPaid([FromQuery] DateTime? paidAt, [FromRoute] Guid invoiceId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -107,6 +110,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpDelete("shipment-invoice/{invoiceId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanDeleteShipmentInvoice)]
     public async Task<IResult> DeleteItemShipmentInvoice([FromRoute] Guid invoiceId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -124,6 +128,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpPost("shipment-document")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(PermissionKeys.CanCreateShipmentDocument)]
     public async Task<IResult> CreateItemShipmentDocument([FromBody] CreateItemShipmentDocumentRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -164,6 +169,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanEditShipmentDocument)]
     public async Task<IResult> UpdateItemShipmentDocument([FromBody] CreateItemShipmentDocumentRequest request, [FromRoute] Guid shipmentDocumentId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -179,6 +185,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpDelete("shipment-document/{shipmentDocumentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanDeleteShipmentDocument)]
     public async Task<IResult> DeleteItemShipmentDocument([FromRoute] Guid shipmentDocumentId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -195,6 +202,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanChangeShipmentDocumentStatus)]
     public async Task<IResult> MarkItemShipmentAsArrived([FromRoute] Guid shipmentDocumentId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -212,6 +220,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpPost("waybill")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(PermissionKeys.CanCreateWaybill)]
     public async Task<IResult> CreateItemWaybill([FromBody] CreateItemShipmentDocumentRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -252,6 +261,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanEditWaybill)]
     public async Task<IResult> UpdateItemWaybill([FromBody] CreateItemShipmentDocumentRequest request, [FromRoute] Guid waybillId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -267,6 +277,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpDelete("waybill/{waybillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanDeleteWaybill)]
     public async Task<IResult> DeleteItemWaybill([FromRoute] Guid waybillId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -284,6 +295,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpPost("billing-sheet")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [Authorize(PermissionKeys.CanCreateBillingSheet)]
     public async Task<IResult> CreateItemBillingSheet([FromBody] CreateItemBillingSheetRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -336,6 +348,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanEditBillingSheet)]
     public async Task<IResult> UpdateItemBillingSheet([FromBody] UpdateItemBillingSheetRequest request, [FromRoute] Guid billingSheetId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -352,6 +365,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanEditBillingSheet)]
     public async Task<IResult> AddChargesToItemBillingSheet([FromBody] List<CreateBillingSheetCharge> request, [FromRoute] Guid billingSheetId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -368,6 +382,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanRecordPayment)]
     public async Task<IResult> MarkItemBillingSheetChargeAsPaid([FromBody] MarkBillingSheetCharge request)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -383,6 +398,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     [HttpDelete("billing-sheet/{billingSheetId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Authorize(PermissionKeys.CanDeleteBillingSheet)]
     public async Task<IResult> DeleteItemBillingSheet([FromRoute] Guid billingSheetId)
     {
         var userId = (string)HttpContext.Items["Sub"];
