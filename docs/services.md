@@ -702,3 +702,11 @@ are accepted for charges on the same billing sheet. A partial unique payment
 index retains reference uniqueness for other payable types. Each charge keeps
 its own payment, approval, and audit trail. See the draft attachment and payment
 workflow guides.
+
+## Employee assignment reporting manager (2026-11-06)
+
+Employee assignment now treats an omitted/null/all-zero manager ID as no manager
+and validates supplied IDs against existing user accounts before mutating the
+assignment. Invalid IDs return `Employee.ReportingManager` (400), preserving the
+foreign key and existing HR permission/audit flow. No schema migration is needed.
+See [root cause, regression and operator guidance](employee-assignment-reporting-manager-fix.md).
