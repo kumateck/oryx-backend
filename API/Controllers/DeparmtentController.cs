@@ -20,7 +20,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="request">The CreateDepartmentRequest object.</param>
     /// <returns>Returns the ID of the created department.</returns>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateNewDepartment)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDepartment([FromBody] CreateDepartmentRequest request)
@@ -72,7 +72,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("{departmentId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditDepartment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -91,7 +91,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("{departmentId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteDepartment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteDepartment(Guid departmentId)
