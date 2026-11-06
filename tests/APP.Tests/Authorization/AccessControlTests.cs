@@ -265,6 +265,33 @@ public sealed class AccessControlTests
     }
 
     [Fact]
+    public async Task A_users_permission_list_follows_role_changes_at_once()
+    {
+        var actorId = Guid.NewGuid();
+        await using var db = Context(actorId);
+        var viewers = AddRole(db, "viewers", PermissionKeys.CanViewRoles);
+        var forecasters = AddRole(db, "forecasters", PermissionKeys.CanViewProductionScheduleMaterialForecast);
+        var user = AddUser(db, viewers);
+        await db.SaveChangesAsync();
+        var repository = Permissions(db);
+        static IEnumerable<string> Granted(List<DOMAIN.Entities.Permissions.PermissionModuleDto> modules) =>
+            modules.SelectMany(module => module.Children).Where(child => child.Types.Count > 0).Select(child => child.Key);
+
+        Assert.DoesNotContain(PermissionKeys.CanViewProductionScheduleMaterialForecast, Granted((await repository.GetAllPermissionForUser(user.Id)).Value));
+        // A role given after the first read (or by a grant migration) shows on the very next read.
+        db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = user.Id, RoleId = forecasters.Id });
+        await db.SaveChangesAsync();
+        Assert.Contains(PermissionKeys.CanViewProductionScheduleMaterialForecast, Granted((await repository.GetAllPermissionForUser(user.Id)).Value));
+        // A deleted role and a disabled account grant nothing, as on the server.
+        forecasters.DeletedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        Assert.DoesNotContain(PermissionKeys.CanViewProductionScheduleMaterialForecast, Granted((await repository.GetAllPermissionForUser(user.Id)).Value));
+        user.IsDisabled = true;
+        await db.SaveChangesAsync();
+        Assert.Empty(Granted((await repository.GetAllPermissionForUser(user.Id)).Value));
+    }
+
+    [Fact]
     public async Task Verification_needs_the_key_for_that_kind_of_document()
     {
         var actorId = Guid.NewGuid();
