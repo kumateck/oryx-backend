@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Stores;
@@ -24,6 +25,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Creates an item stock requisition for the signed-in user. All items must be from one store.
     /// </summary>
     [HttpPost]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -69,6 +71,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Updates an item stock requisition that has not had stock issued against it.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -87,6 +90,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Deletes an item stock requisition that has not had stock issued against it.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteItem([FromRoute] Guid id)
@@ -103,6 +107,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Issues stock against an item stock requisition. Quantities cannot exceed what remains on each line or what is in stock.
     /// </summary>
     [HttpPost("{stockRequisitionId:guid}/issue-stock-against-requisition")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -114,6 +119,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Issues more stock against a partly issued requisition. Kept for existing clients; it is the same issue.
     /// </summary>
     [HttpPost("{stockRequisitionId:guid}/partial-issue-stock-against-requisition")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

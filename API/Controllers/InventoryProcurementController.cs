@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -26,6 +27,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="request">The CreateInventoryPurchaseRequisition object containing requisition details.</param>
     /// <returns>Returns the ID of the newly created requisition.</returns>
     [HttpPost]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -44,6 +46,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="request">The CreateInventoryPurchaseRequisition object with updated details.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{id}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -64,6 +67,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="id">The ID of the requisition to delete.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{id}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -415,6 +419,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="id">The ID of the memo item.</param>
     /// <returns>200 OK if successful, 404 or 400 otherwise.</returns>
     [HttpPost("memo-item/{id}/mark-paid")]
+    [PermissionCheckedInAction("The key depends on whether the memo item came from a trusted vendor or the open market.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

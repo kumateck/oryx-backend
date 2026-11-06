@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -62,11 +63,12 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <response code="200">Proforma invoice requested successfully</response>
     /// <response code="400">Invalid request data or quotation not selected</response>
     [HttpPost("request")]
+    [Authorize(ServiceKeys.ViewProformaRequests)]
+    [Authorize(ServiceKeys.SendProformaRequest)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RequestServiceProformaInvoice([FromBody] RequestServiceProformaInvoiceRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewProformaRequests, ServiceKeys.SendProformaRequest)) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -120,11 +122,12 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <response code="204">Proforma invoice response received successfully</response>
     /// <response code="400">Invalid request data or proforma invoice not found</response>
     [HttpPost("respond")]
+    [Authorize(ServiceKeys.ViewProformaResponses)]
+    [Authorize(ServiceKeys.SendProformaResponse)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RespondServiceProformaInvoice([FromBody] RespondServiceProformaInvoiceRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewProformaResponses, ServiceKeys.SendProformaResponse)) return TypedResults.Forbid();
 
         var result = await repository.RespondServiceProformaInvoice(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -161,11 +164,12 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <response code="204">Proforma invoice approved successfully</response>
     /// <response code="400">Invalid request data or proforma invoice not responded to</response>
     [HttpPost("approve")]
+    [Authorize(ServiceKeys.ViewPurchaseOrders)]
+    [Authorize(ServiceKeys.CreatePurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveServiceProformaInvoice([FromBody] ApproveServiceProformaInvoiceRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPurchaseOrders, ServiceKeys.CreatePurchaseOrder)) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -195,6 +199,7 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <returns>Paginated list of proforma invoices</returns>
     /// <response code="200">Returns paginated list of proforma invoices</response>
     [HttpGet]
+    [AnyPermission(ServiceKeys.ViewProformaRequests, ServiceKeys.ViewProformaResponses, ServiceKeys.ViewPurchaseOrders, ServiceKeys.ViewMemo)]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<ServiceProformaInvoiceDto>>))]
     public async Task<IResult> GetServiceProformaInvoices(
@@ -205,7 +210,6 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
         [FromQuery] Guid? serviceProviderId = null,
         [FromQuery] bool memoPending = false)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewProformaRequests, ServiceKeys.ViewProformaResponses, ServiceKeys.ViewPurchaseOrders, ServiceKeys.ViewMemo)) return TypedResults.Forbid();
 
         var result = await repository.GetServiceProformaInvoices(page, pageSize, status, jobOrderId, serviceProviderId, memoPending);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -228,11 +232,11 @@ public class ServiceProformaInvoiceController(IServiceProformaInvoiceRepository 
     /// <response code="200">Returns proforma invoice details</response>
     /// <response code="404">Proforma invoice not found</response>
     [HttpGet("{id:guid}")]
+    [AnyPermission(ServiceKeys.ViewProformaRequests, ServiceKeys.ViewProformaResponses, ServiceKeys.ViewPurchaseOrders, ServiceKeys.ViewMemo)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceProformaInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetServiceProformaInvoice([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewProformaRequests, ServiceKeys.ViewProformaResponses, ServiceKeys.ViewPurchaseOrders, ServiceKeys.ViewMemo)) return TypedResults.Forbid();
 
         var result = await repository.GetServiceProformaInvoice(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();

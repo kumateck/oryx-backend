@@ -1,3 +1,4 @@
+using API.Authorization;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
 using APP.IRepository;
@@ -19,6 +20,7 @@ public class ItemGrnController(IItemGrnRepository repository, INFRASTRUCTURE.Con
     /// Creates an item grn.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateItemGrn)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateItemGrn([FromBody] CreateItemGrnRequest request)
@@ -61,6 +63,7 @@ public class ItemGrnController(IItemGrnRepository repository, INFRASTRUCTURE.Con
     /// Updates the details of an existing item grn
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditItemGrn)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(DesignationDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -78,6 +81,7 @@ public class ItemGrnController(IItemGrnRepository repository, INFRASTRUCTURE.Con
     /// Deletes a specific item grn by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteItemGrn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteItemGrn([FromRoute] Guid id)

@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +17,7 @@ public class CommercialCertificateController(
         HttpContext.Items["Sub"] as string, out var id) ? id : null;
 
     [HttpPost("material-batches/{materialBatchId:guid}")]
+    [MaterialKindPermission(PermissionKeys.CanCheckRawMaterialTestResult, PermissionKeys.CanCheckPackagingMaterialTestResult)]
     public async Task<IResult> GenerateForMaterialBatch(
         [FromRoute] Guid materialBatchId)
     {
@@ -26,6 +29,7 @@ public class CommercialCertificateController(
     }
 
     [HttpPost("materials/{materialSamplingId:guid}")]
+    [MaterialKindPermission(PermissionKeys.CanCheckRawMaterialTestResult, PermissionKeys.CanCheckPackagingMaterialTestResult)]
     public async Task<IResult> GenerateForMaterial(
         [FromRoute] Guid materialSamplingId)
     {
@@ -37,6 +41,7 @@ public class CommercialCertificateController(
     }
 
     [HttpPost("products/{analyticalTestRequestId:guid}")]
+    [Authorize(PermissionKeys.CanCheckProductTest)]
     public async Task<IResult> GenerateForProduct(
         [FromRoute] Guid analyticalTestRequestId)
     {

@@ -1,3 +1,4 @@
+using API.Authorization;
 using API.Filters;
 using APP.Extensions;
 using APP.IRepository;
@@ -69,7 +70,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <param name="itemType">The type of item to create.</param>
     /// <returns>Returns the ID of the created item.</returns>
     [HttpPost("{itemType}")]
-    [Authorize]
+    [CollectionPermission(CollectionTask.Create)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateItem([FromBody] CreateItemRequest request, string itemType)
@@ -86,7 +87,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <param name="itemType">The type of item to update.</param>
     /// <returns>Returns the ID of the updated item.</returns>
     [HttpPut("{itemType}/{itemId}")]
-    [Authorize]
+    [CollectionPermission(CollectionTask.Edit)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -106,7 +107,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <param name="itemType">The type of item to delete.</param>
     /// <returns>Returns a confirmation of the deleted item's ID.</returns>
     [HttpDelete("{itemType}/{itemId}")]
-    [Authorize]
+    [CollectionPermission(CollectionTask.Delete)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -138,7 +139,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Returns a collection of package styles.</returns>
     [HttpPost("uom")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateUnitOfMeasure)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CreateUoM([FromBody] CreateUnitOfMeasure request)
@@ -195,7 +196,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Updayes a uom.</returns>
     [HttpPut("uom/{uomId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditUnitOfMeasure)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateUoM([FromRoute] Guid uomId, [FromBody] CreateUnitOfMeasure request)
@@ -210,7 +211,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Deletes a uom.</returns>
     [HttpDelete("uom/{uomId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteUnitOfMeasure)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteUoM([FromRoute] Guid uomId)

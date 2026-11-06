@@ -676,6 +676,7 @@ public class OryxMapper : Profile
         CreateMap<WarehouseLocationRack, WareHouseLocationRackDto>();
         CreateMap<WarehouseLocationShelf, WarehouseLocationShelfDto>();
         CreateMap<WarehouseLocationShelf, MaterialWarehouseLocationShelfDto>();
+        CreateMap<WarehouseLocationShelfDto, MaterialWarehouseLocationShelfDto>();
         CreateMap<WarehouseArrivalLocation, WarehouseArrivalLocationDto>();
         CreateMap<DistributedRequisitionMaterial, DistributedRequisitionMaterialDto>()
             .ForMember(
@@ -1772,7 +1773,9 @@ public class OryxMapper : Profile
         CreateMap<CreateSwapRequest, SwapRequest>();
         CreateMap<CreateSwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
         CreateMap<SwapRequest, SwapRequestDto>();
-        CreateMap<SwapShelfMaterialBatch, SwapShelfMaterialBatchDto>();
+        CreateMap<SwapShelfMaterialBatch, SwapShelfMaterialBatchDto>()
+            .ForMember(dest => dest.WarehouseLocationShelf,
+                opt => opt.MapFrom(src => src.ShelfMaterialBatch.WarehouseLocationShelf));
 
         #endregion
 

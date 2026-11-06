@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.QualityRoutines;
@@ -20,6 +22,7 @@ public class MicrobialRequirementController(IMicrobialRequirementRepository repo
     }
 
     [HttpPost]
+    [Authorize(PermissionKeys.CanManageMicrobialRequirements)]
     public async Task<IResult> Create([FromBody] CreateMicrobialRequirementRequest request)
     {
         var userId = HttpContext.Items["Sub"] as string;

@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.Checklists;
@@ -16,6 +18,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// Creates a sampling material
     /// </summary>
     [HttpPost]
+    [MaterialKindPermission(PermissionKeys.CanTakeRawMaterialSample, PermissionKeys.CanTakePackagingMaterialSample)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateMaterialSampling([FromBody] CreateMaterialSamplingRequest request)
@@ -28,6 +31,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// Adds an issue number to sampling material
     /// </summary>
     [HttpPut("{materialSamplingId:guid}")]
+    [MaterialKindPermission(PermissionKeys.CanTakeRawMaterialSample, PermissionKeys.CanTakePackagingMaterialSample)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid materialSamplingId,
@@ -57,6 +61,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// Creates a new pre-sample checklist.
     /// </summary>
     [HttpPost("pre-sample")]
+    [Authorize(PermissionKeys.CanCreatePreSamplingChecklist)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreatePreSampleChecklist([FromBody] CreatePreSampleChecklistRequest request)

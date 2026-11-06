@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -76,11 +77,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// <response code="200">Job order created successfully</response>
     /// <response code="400">Invalid request data</response>
     [HttpPost]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.CreateJobOrder)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateJobOrder([FromBody] CreateJobOrderRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.CreateJobOrder)) return TypedResults.Forbid();
         if (Actor() is not { } issuer) return TypedResults.Unauthorized();
         request.IssuedById = issuer;
 
@@ -92,6 +94,7 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// Retrieves a paginated list of job orders
     /// </summary>
     [HttpGet]
+    [Authorize(ServiceKeys.ViewJobOrders)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobOrderDto>>))]
     public async Task<IResult> GetJobOrders(
         [FromQuery] int page = 1,
@@ -100,7 +103,6 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
         [FromQuery] Guid? jobRequestId = null,
         [FromQuery] Guid? serviceId = null)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders)) return TypedResults.Forbid();
 
         var result = await repository.GetJobOrders(page, pageSize, status, jobRequestId, serviceId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -110,11 +112,11 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// Retrieves a job order by its unique identifier
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(JobOrderDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobOrder([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders)) return TypedResults.Forbid();
 
         var result = await repository.GetJobOrder(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -122,11 +124,11 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     
     
     [HttpGet("service-providers")]
+    [AnyPermission(ServiceKeys.ViewJobOrders, ServiceKeys.ViewQuotationResponses)]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<JobOrderServiceProviderDto>>))]
     public async Task<IResult> GetJobOrderServiceProviders(int page = 1, int pageSize = 10, string searchQuery = null)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.ViewQuotationResponses)) return TypedResults.Forbid();
 
         var result = await repository.GetJobOrderResponseServiceProviders(page, pageSize, searchQuery);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -161,11 +163,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// <response code="204">Job order sent to providers successfully</response>
     /// <response code="400">Invalid request data</response>
     [HttpPost("send-to-providers")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.EditJobOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SendJobOrderToProviders([FromBody] SendJobOrderToProvidersRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.EditJobOrder)) return TypedResults.Forbid();
 
         var result = await repository.SendJobOrderToProviders(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -200,11 +203,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// <response code="204">Quotation selected successfully</response>
     /// <response code="400">Invalid request data or quotation not found</response>
     [HttpPost("select-quotation")]
+    [Authorize(ServiceKeys.ViewPricing)]
+    [Authorize(ServiceKeys.ApplyPricing)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SelectQuotation([FromBody] SelectQuotationRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPricing, ServiceKeys.ApplyPricing)) return TypedResults.Forbid();
 
         var result = await repository.SelectQuotation(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -236,11 +240,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// <response code="200">Execution started successfully</response>
     /// <response code="400">Invalid request data or service memo not created</response>
     [HttpPost("start-execution")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.EditJobOrder)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> StartJobOrderExecution([FromBody] StartJobOrderExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.EditJobOrder)) return TypedResults.Forbid();
 
         var result = await repository.StartJobOrderExecution(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -250,11 +255,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// Records an activity performed by external contractor
     /// </summary>
     [HttpPost("executions/{id:guid}/activities")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.EditJobOrder)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RecordJobOrderActivity([FromRoute] Guid id, [FromBody] RecordJobActivityRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.EditJobOrder)) return TypedResults.Forbid();
         if (Actor() is not { } performer) return TypedResults.Unauthorized();
         request.PerformedById = performer;
 
@@ -266,11 +272,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// Records an item consumed by external contractor
     /// </summary>
     [HttpPost("executions/{id:guid}/consumed-items")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.EditJobOrder)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RecordJobOrderConsumedItem([FromRoute] Guid id, [FromBody] RecordConsumedItemRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.EditJobOrder)) return TypedResults.Forbid();
 
         var result = await repository.RecordJobOrderConsumedItem(id, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -280,11 +287,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// Completes a job order execution
     /// </summary>
     [HttpPost("complete-execution")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.EditJobOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CompleteJobOrderExecution([FromBody] CompleteJobOrderExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.EditJobOrder)) return TypedResults.Forbid();
         foreach (var activity in request.Activities ?? []) activity.PerformedById = Actor() ?? Guid.Empty;
 
         var result = await repository.CompleteJobOrderExecution(request);
@@ -314,11 +322,12 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// <response code="204">Execution verified successfully</response>
     /// <response code="400">Invalid request data or execution not completed</response>
     [HttpPost("verify-execution")]
+    [Authorize(ServiceKeys.ViewJobOrders)]
+    [Authorize(ServiceKeys.EditJobOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> VerifyJobOrderExecution([FromBody] VerifyJobOrderExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobOrders, ServiceKeys.EditJobOrder)) return TypedResults.Forbid();
         if (Actor() is not { } verifier) return TypedResults.Unauthorized();
         request.VerifiedById = verifier;
 
@@ -350,6 +359,8 @@ public class JobOrderController(IJobOrderRepository repository, INFRASTRUCTURE.C
     /// <response code="204">Execution approved successfully</response>
     /// <response code="400">Invalid request data or execution not verified</response>
     [HttpPost("approve-execution")]
+    // Seeing job requests is always needed; the rest of the check depends on the record and stays in the action.
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveJobOrderExecution([FromBody] ApproveJobOrderExecutionRequest request)

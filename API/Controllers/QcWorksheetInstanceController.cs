@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -107,6 +108,7 @@ public class QcWorksheetInstanceController(
     /// hold the permission key.
     /// </summary>
     [HttpPost("{id:guid}/start")]
+    [PermissionCheckedInAction("Chemical and microbial worksheets need their own key.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorksheetInstanceDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -131,6 +133,7 @@ public class QcWorksheetInstanceController(
     /// before accepting anything, and does not change the worksheet's status.
     /// </summary>
     [HttpPut("{id:guid}/values")]
+    [PermissionCheckedInAction("Chemical and microbial worksheets need their own key.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorksheetInstanceDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -156,6 +159,7 @@ public class QcWorksheetInstanceController(
     /// queue through the existing approval engine.
     /// </summary>
     [HttpPost("{id:guid}/submit")]
+    [PermissionCheckedInAction("Chemical and microbial worksheets need their own key.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorksheetInstanceDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -182,6 +186,7 @@ public class QcWorksheetInstanceController(
     /// approval round.
     /// </summary>
     [HttpPost("{id:guid}/review")]
+    [PermissionCheckedInAction("Chemical and microbial worksheets need their own key.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorksheetInstanceDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

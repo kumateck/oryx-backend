@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -17,6 +18,7 @@ public partial class CustomerController(ICustomerRepository repository) : Contro
     /// Creates a customer.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateCustomer)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateCustomer([FromBody] CreateCustomerRequest request)
@@ -53,6 +55,7 @@ public partial class CustomerController(ICustomerRepository repository) : Contro
     /// Updates the details of a customer by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditCustomer)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(CustomerDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -66,6 +69,7 @@ public partial class CustomerController(ICustomerRepository repository) : Contro
     /// Deletes the details of a customer by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteCustomer)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteCustomer([FromRoute] Guid id)

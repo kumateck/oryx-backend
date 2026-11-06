@@ -1,3 +1,4 @@
+using APP.Utils;
 using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,7 @@ public class WorkOrderController(IWorkOrderRepository repository) : ControllerBa
     /// <param name="userId">The ID of the user creating the work order.</param>
     /// <returns>Returns the ID of the created work order.</returns>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateWorkOrder)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateWorkOrder([FromBody] CreateWorkOrderRequest request, Guid userId)
@@ -65,7 +66,7 @@ public class WorkOrderController(IWorkOrderRepository repository) : ControllerBa
     /// <param name="userId">The ID of the user performing the update.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{workOrderId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditWorkOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,7 +83,7 @@ public class WorkOrderController(IWorkOrderRepository repository) : ControllerBa
     /// <param name="userId">The ID of the user performing the deletion.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{workOrderId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteWorkOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteWorkOrder(Guid workOrderId, Guid userId)

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -33,11 +34,12 @@ public class ServiceController(IServiceRepository repository, INFRASTRUCTURE.Con
     /// <response code="200">Service created successfully</response>
     /// <response code="400">Invalid request data or service already exists</response>
     [HttpPost]
+    [Authorize("CanViewServices")]
+    [Authorize("CanCreateService")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateService([FromBody] CreateServiceRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewServices", "CanCreateService")) return TypedResults.Forbid();
 
         var result = await repository.CreateService(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -47,12 +49,12 @@ public class ServiceController(IServiceRepository repository, INFRASTRUCTURE.Con
     /// Retrieves a paginated list of services
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewServices", "CanCreateJobRequest", "CanEditJobRequest", "CanCreateJobOrder")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ServiceDto>>))]
     public async Task<IResult> GetServices([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] bool? isActive = true, [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewServices", "CanCreateJobRequest", "CanEditJobRequest", "CanCreateJobOrder")) return TypedResults.Forbid();
 
         var result = await repository.GetServices(page, pageSize, searchQuery, isActive, startDate, endDate);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -62,10 +64,10 @@ public class ServiceController(IServiceRepository repository, INFRASTRUCTURE.Con
     /// Retrieves a service by its unique identifier.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewServices", "CanViewJobRequests", "CanViewJobOrders")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceDto))]
     public async Task<IResult> GetService([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewServices", "CanViewJobRequests", "CanViewJobOrders")) return TypedResults.Forbid();
 
         var result = await repository.GetService(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -75,12 +77,13 @@ public class ServiceController(IServiceRepository repository, INFRASTRUCTURE.Con
     /// Updates an existing service.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize("CanViewServices")]
+    [Authorize("CanEditService")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ServiceDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateService([FromRoute] Guid id, [FromBody] CreateServiceRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewServices", "CanEditService")) return TypedResults.Forbid();
 
         var result = await repository.UpdateService(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -90,11 +93,12 @@ public class ServiceController(IServiceRepository repository, INFRASTRUCTURE.Con
     /// Deletes a service using the specified service ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize("CanViewServices")]
+    [Authorize("CanDeleteService")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteService([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewServices", "CanDeleteService")) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
