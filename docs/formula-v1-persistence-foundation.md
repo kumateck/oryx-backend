@@ -195,3 +195,34 @@ written. The foundation migration may be rolled back only while all new tables a
 the three nullable legacy links remain unused. Once migration evidence, snapshots, executions,
 or submission sets exist, rollback is a controlled data-migration decision—not a routine EF
 down migration—because dropping the tables would destroy regulated evidence.
+
+### Concentration input names (2026-11-06)
+
+Universal questions may explicitly enable the two concentration aliases by saving
+`variableKeyFormat: 1` and `concentrationUnit: "mg/mL"` or `"%"`. `standardConc`
+means the configured standard weight input; `sampleConc` expands to each sample's
+own weight input, including explicit `sample1Conc`, `sample2Conc`, etc. There is
+one stored reading per pair and no unit conversion. Weight-only labels retain
+grams. The author chooses one concentration display unit for the question.
+
+The desktop compiles these names to the existing weight variables before building
+an executable definition, test cases, bindings and governed hashes. The bounded
+legacy repair compiler applies the same normalization and maps canonical weight
+keys back to configured storage keys (`wt` or `weight`) when reading saved answers.
+The calculation service receives ordinary bound variables; its generic parser and
+evaluator require no new alias registry or engine release. Its source remains in
+`oryx-next/src/formula` and is unchanged by this feature.
+
+The executable definition hash matches the equivalent weight expression. Raw
+legacy configuration/pin hashes continue to cover exact saved configuration bytes,
+so changing an expression or concentration unit still invalidates a stale save.
+A repair still cannot change the unit, input structure or configuration marker.
+Existing configurations without the marker retain their behavior, including any
+manual variable already named `standardConc` or `sampleConc`. No migration runs.
+No endpoint, permission, approval transition or audit policy changes.
+
+Focused tests: `FormulaConcentrationAliasTests`, `QuestionFormulaRepairTests`,
+`FormulaWorksheetInputResolverTests`, `FormulaCalculationClientTests`, and
+`FormulaCanonicalJsonTests`. Set `ORYX_FORMULA_REPAIR_SERVICE_URL` to an isolated
+engine using the `oryx-decimal-v1-half-up` numeric policy and `test-only` bearer
+token to include the real service validation/evaluation cases.
