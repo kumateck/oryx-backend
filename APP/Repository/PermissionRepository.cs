@@ -246,7 +246,8 @@ public class PermissionRepository(
         var actor = await CurrentPermissionSet.Load(context, actorId);
         if (AccessGuard.Missing(actor, requiredKey, "change role permissions") is { } cannotChange) return cannotChange;
         var held = await AccessGuard.RoleKeys(context, [roleId]);
-        if (AccessGuard.Escalation(actor, requestedPermissions.Where(permission => permission.Types.Count > 0 && !held.Contains(permission.Key))
+        // The system administrator may grant what nobody holds yet, so a new feature's key can be given out at all.
+        if (!await AccessGuard.IsSystemAdministrator(context, actorId) && AccessGuard.Escalation(actor, requestedPermissions.Where(permission => permission.Types.Count > 0 && !held.Contains(permission.Key))
                 .Select(permission => permission.Key)) is { } escalation)
             return escalation;
 
