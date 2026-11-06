@@ -5889,6 +5889,14 @@ public class ApprovalRepository(
     }*/
     public async Task<Result> TransferApprovalRights(TransferApprovalRequest request)
     {
+        if (request.FromUserId == request.ToUserId)
+            return Error.Validation("ApprovalTransfer.Self", "Choose a different person to give the approvals to.");
+        var receiver = await context.Users.Where(user => user.Id == request.ToUserId).Select(user => new { user.IsDisabled }).FirstOrDefaultAsync();
+        if (receiver is null) return Error.NotFound("ApprovalTransfer.ReceiverNotFound", "The person to give the approvals to was not found.");
+        if (receiver.IsDisabled) return Error.Validation("ApprovalTransfer.ReceiverDisabled", "The person to give the approvals to has a disabled account.");
+        // The receiver decides from the pending approvals page, so they must be able to open it.
+        if (!(await APP.Services.Authorization.CurrentPermissionSet.Load(context, request.ToUserId)).Contains(PermissionKeys.CanViewPendingApprovals))
+            return Error.Validation("ApprovalTransfer.ReceiverCannotApprove", "The person to give the approvals to cannot see pending approvals. Choose someone who can.");
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {

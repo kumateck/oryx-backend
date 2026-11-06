@@ -53,6 +53,9 @@ public sealed class ApprovalDelegationService(ApplicationDbContext context) : IA
         if (delegate_ is null) return Error.NotFound("ApprovalDelegation.DelegateNotFound", "The person to delegate to was not found.");
         if (delegate_.IsDisabled) return Error.Validation("ApprovalDelegation.DelegateDisabled", "The person to delegate to has a disabled account.");
         if (people.All(user => user.Id != delegatorId)) return Error.NotFound("ApprovalDelegation.DelegatorNotFound", "Your account was not found.");
+        // The delegate decides from the pending approvals page, so they must be able to open it.
+        if (!(await APP.Services.Authorization.CurrentPermissionSet.Load(context, request.DelegateUserId)).Contains(APP.Utils.PermissionKeys.CanViewPendingApprovals))
+            return Error.Validation("ApprovalDelegation.DelegateCannotApprove", "The person to delegate to cannot see pending approvals. Choose someone who can.");
 
         // One delegation at a time, so it is always clear who decides for whom.
         var overlaps = await context.ApprovalDelegations.AnyAsync(item => item.DelegatorId == delegatorId && item.RevokedAt == null
