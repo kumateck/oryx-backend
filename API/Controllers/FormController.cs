@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -22,6 +23,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The CreateFormRequest object.</param>
     /// <returns>Returns the ID of the created form.</returns>
     [HttpPost]
+    [AnyPermission("CanCreatePackagingMaterialArd", "CanCreatePackagingMaterialSpecification", "CanCreateProductArd", "CanCreateProductSpecification", "CanCreateProductionProduct", "CanCreateRawMaterialArd", "CanCreateRawMaterialSpecification", "CanCreateTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -37,6 +39,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formId">The ID of the form.</param>
     /// <returns>Returns the form details.</returns>
     [HttpGet("{formId}")]
+    [AnyPermission("CanAssignProductTest", "CanCheckPackagingMaterialTestResult", "CanCheckProductTest", "CanCheckRawMaterialTestResult", "CanCreatePackagingMaterialSpecification", "CanCreateProductSpecification", "CanCreateProductionProduct", "CanCreateQuestions", "CanCreateRawMaterialSpecification", "CanCreateTemplate", "CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditQuestions", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanReassignPackagingMaterialTest", "CanReassignProductTest", "CanReassignRawMaterialTest", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewPackagingMaterialArds", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPackagingMaterialSpecifications", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewProductArds", "CanViewProductSpecifications", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQuestions", "CanViewRawMaterialArds", "CanViewRawMaterialGoodsReceiptNotes", "CanViewRawMaterialSpecifications", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy", "CanViewTemplate", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,6 +59,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="filter">The FormFilter object for filtering forms.</param>
     /// <returns>Returns a paginated list of forms.</returns>
     [HttpGet]
+    [AnyPermission("CanAssignProductTest", "CanCheckPackagingMaterialTestResult", "CanCheckProductTest", "CanCheckRawMaterialTestResult", "CanCreatePackagingMaterialSpecification", "CanCreateProductSpecification", "CanCreateProductionProduct", "CanCreateQuestions", "CanCreateRawMaterialSpecification", "CanCreateTemplate", "CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditQuestions", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanReassignPackagingMaterialTest", "CanReassignProductTest", "CanReassignRawMaterialTest", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewPackagingMaterialArds", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPackagingMaterialSpecifications", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewProductArds", "CanViewProductSpecifications", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQuestions", "CanViewRawMaterialArds", "CanViewRawMaterialGoodsReceiptNotes", "CanViewRawMaterialSpecifications", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy", "CanViewTemplate", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -73,6 +77,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="filter">The FormFilter object for filtering form sections.</param>
     /// <returns>Returns a paginated list of forms.</returns>
     [HttpGet("section")]
+    [AnyPermission("CanAssignProductTest", "CanCheckPackagingMaterialTestResult", "CanCheckProductTest", "CanCheckRawMaterialTestResult", "CanCreatePackagingMaterialSpecification", "CanCreateProductSpecification", "CanCreateProductionProduct", "CanCreateQuestions", "CanCreateRawMaterialSpecification", "CanCreateTemplate", "CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditQuestions", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanReassignPackagingMaterialTest", "CanReassignProductTest", "CanReassignRawMaterialTest", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewPackagingMaterialArds", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPackagingMaterialSpecifications", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewProductArds", "CanViewProductSpecifications", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQuestions", "CanViewRawMaterialArds", "CanViewRawMaterialGoodsReceiptNotes", "CanViewRawMaterialSpecifications", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy", "CanViewTemplate", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -91,6 +96,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formId">The ID of the form to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{formId}")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -110,6 +116,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Updates form metadata.
     /// </summary>
     [HttpPut("{formId}/metadata")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -131,6 +138,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Adds a section to a form.
     /// </summary>
     [HttpPost("{formId}/section")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -152,6 +160,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Updates a form section.
     /// </summary>
     [HttpPut("section/{sectionId}")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -173,6 +182,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Deletes a form section.
     /// </summary>
     [HttpDelete("section/{sectionId}")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -190,6 +200,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Adds a field to a section.
     /// </summary>
     [HttpPost("section/{sectionId}/field")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -211,6 +222,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Updates a form field.
     /// </summary>
     [HttpPut("field/{fieldId}")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -232,6 +244,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Deletes a form field.
     /// </summary>
     [HttpDelete("field/{fieldId}")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -249,6 +262,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Adds a reviewer to a form.
     /// </summary>
     [HttpPost("{formId}/reviewer")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -270,6 +284,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// Deletes a reviewer from a form.
     /// </summary>
     [HttpDelete("{formId}/reviewer/{reviewerUserId}")]
+    [AnyPermission("CanEditPackagingMaterialArd", "CanEditPackagingMaterialSpecification", "CanEditProductArd", "CanEditProductSpecification", "CanEditRawMaterialArd", "CanEditRawMaterialSpecification", "CanEditTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -296,6 +311,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formId">The ID of the form to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{formId}")]
+    [AnyPermission("CanDeletePackagingMaterialArd", "CanDeletePackagingMaterialSpecification", "CanDeleteProductArd", "CanDeleteProductSpecification", "CanDeleteRawMaterialArd", "CanDeleteRawMaterialSpecification", "CanDeleteTemplate", "CanManageRoutineSetup")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -315,6 +331,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The SaveResponseDraftRequest object containing field response data.</param>
     /// <returns>Returns the ResponseId if successful, or a failure result.</returns>
     [HttpPost("responses/draft")]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateProductSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditRawMaterialSpecification", "CanExecuteFormulaResponse", "CanPerformRoutineTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -375,6 +392,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="productSpecificationId">The id of the product spec</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("responses/section")]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateProductSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditRawMaterialSpecification", "CanExecuteFormulaResponse", "CanPerformRoutineTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -404,6 +422,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="productSpecificationId">The id of the product spec</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("responses/section")]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateProductSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditRawMaterialSpecification", "CanExecuteFormulaResponse", "CanPerformRoutineTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -431,6 +450,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formResponseId">The ID of the form response.</param>
     /// <returns>Returns the form response details.</returns>
     [HttpGet("responses/{formResponseId}")]
+    [AnyPermission("CanAssignProductTest", "CanCheckProductTest", "CanReassignProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -446,6 +466,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The CreateQuestionRequest object containing question data.</param>
     /// <returns>Returns the ID of the created question.</returns>
     [HttpPost("question")]
+    [AnyPermission("CanCreateQuestions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -465,6 +486,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="questionId">The ID of the question.</param>
     /// <returns>Returns the question details.</returns>
     [HttpGet("question/{questionId}")]
+    [AnyPermission("CanCreateQuestions", "CanEditQuestions", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanViewQuestions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QuestionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -480,6 +502,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="filter">The PagedQuery object for pagination and filtering.</param>
     /// <returns>Returns a paginated list of questions.</returns>
     [HttpGet("question")]
+    [AnyPermission("CanCreateQuestions", "CanCreateTemplate", "CanEditQuestions", "CanEditTemplate", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanViewQuestions", "CanViewTemplate")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -498,6 +521,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="questionId">The ID of the question to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("question/{questionId}")]
+    [AnyPermission("CanEditQuestions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -521,6 +545,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="questionId">The ID of the question to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("question/{questionId}")]
+    [AnyPermission("CanDeleteQuestions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -541,6 +566,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="complies">The list of section ids that comply</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("generate-certificate/{materialBatchId}")]
+    [PermissionCheckedInAction("Needs the raw or packaging check key for the batch's material.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -579,6 +605,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [HttpPost(
         "generate-certificate/product/{batchManufacturingRecordId}/{productionActivityStepId}"
     )]
+    [AnyPermission("CanCheckProductTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -610,6 +637,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="materialBatchId">The ID of the material batch.</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("responses/material-batch/{materialBatchId}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewRawMaterialGoodsReceiptNotes", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -626,6 +654,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="productionActivityStepId">Optional production stage step filter.</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("responses/bmr/{batchManufacturingRecordId}")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -647,6 +676,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="materialSpecificationId">The ID of the material spec.</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("responses/material-specification/{materialSpecificationId}")]
+    [AnyPermission("CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditRawMaterialSpecification", "CanViewPackagingMaterialSpecifications", "CanViewRawMaterialSpecifications")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -664,6 +694,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="productSpecificationId">The ID of the product spec</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("responses/product-specification/{productSpecificationId}")]
+    [AnyPermission("CanEditPackagingMaterialSpecification", "CanEditProductSpecification", "CanEditRawMaterialSpecification", "CanViewProductSpecifications")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FormResponseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -679,6 +710,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="materialBatchId">The ID of the material batch.</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("with-responses/material-batch/{materialBatchId}")]
+    [AnyPermission("CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPendingApprovals", "CanViewRawMaterialGoodsReceiptNotes")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -694,6 +726,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="batchManufacturingRecordId">The ID of the batch manufacturing record.</param>
     /// <returns>Returns the form response.</returns>
     [HttpGet("with-responses/bmr/{batchManufacturingRecordId}")]
+    [AnyPermission("CanCheckProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewPendingApprovals", "CanViewProductAnalyticalTestRequests")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FormDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -709,6 +742,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The SaveFormAssigneeDraftRequest object containing field assignment data.</param>
     /// <returns>Returns the FormAssigneeId if successful, or a failure result.</returns>
     [HttpPost("assignees/draft")]
+    [AnyPermission("CanExecuteFormulaResponse", "CanPerformRoutineTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -731,6 +765,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formAssigneeId">The unique identifier of the FormAssignee being finalized.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("assignees/finalize/{formAssigneeId:guid}")]
+    [AnyPermission("CanExecuteFormulaResponse", "CanPerformRoutineTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -748,6 +783,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The ReassignFormAssigneeRequest object containing reassignment data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("assignees/reassign")]
+    [AnyPermission("CanAssignRoutineTest", "CanCreateRoutineTest", "CanReassignPackagingMaterialTest", "CanReassignProductTest", "CanReassignRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -765,6 +801,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The CreateFormAssigneeRequest object containing form and field assignment data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("assignees")]
+    [AnyPermission("CanAssignPackagingMaterialTest", "CanAssignProductTest", "CanAssignRawMaterialTest", "CanAssignRoutineTest", "CanCreateRoutineTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -784,6 +821,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formAssigneeId">The unique identifier of the Form Assignee.</param>
     /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
     [HttpGet("assignees/{formAssigneeId:guid}")]
+    [AnyPermission("CanAssignPackagingMaterialTest", "CanAssignProductTest", "CanAssignRawMaterialTest", "CanAssignRoutineTest", "CanCreateRoutineTest", "CanExecuteFormulaResponse", "CanPerformRoutineTest", "CanReassignPackagingMaterialTest", "CanReassignProductTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -800,6 +838,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="formId">The id of the form.</param>
     /// <returns>Returns a list of users assigned to the form.</returns>
     [HttpGet("assignees/{formId:guid}/users")]
+    [AnyPermission("CanAssignPackagingMaterialTest", "CanAssignProductTest", "CanAssignRawMaterialTest", "CanAssignRoutineTest", "CanCreateRoutineTest", "CanReassignPackagingMaterialTest", "CanReassignProductTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartProductTest", "CanStartRawMaterialTest")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -818,6 +857,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="productionActivityStepId">Optional production activity step to disambiguate assignments.</param>
     /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
     [HttpGet("assignees/material-batch/{materialBatchId:guid}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewRawMaterialGoodsReceiptNotes", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks")]
     [Authorize]
     [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -844,6 +884,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="productionActivityStepId">Optional production activity step to disambiguate assignments.</param>
     /// <returns>Returns the FormAssigneeDto if found, or a failure result.</returns>
     [HttpGet("assignees/bmr/{bmrId:guid}")]
+    [AnyPermission("CanAssignProductTest", "CanCheckProductTest", "CanReassignProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks")]
     [Authorize]
     [ProducesResponseType(typeof(FormAssigneeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -864,6 +905,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The body of the response</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpGet("response")]
+    [AnyPermission("CanAssignProductTest", "CanCheckProductTest", "CanReassignProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -879,6 +921,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     /// <param name="request">The body of the response</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpGet("form-assignee")]
+    [AnyPermission("CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid?))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
