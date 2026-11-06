@@ -129,26 +129,13 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
     public async Task<Result<Paginateable<IEnumerable<UserWithRoleDto>>>> GetUsersByPermissions(
         List<string> permissionKeys, int page, int pageSize, string searchQuery)
     {
-        var roleIds = await context.RoleClaims.IgnoreQueryFilters()
-            .Where(rc => permissionKeys.Contains(rc.ClaimValue))
-            .Select(rc => rc.RoleId)
-            .Distinct()
-            .ToListAsync();
-
-        var userIds = await context.UserRoles.IgnoreQueryFilters()
-            .Where(ur => roleIds.Contains(ur.RoleId))
-            .Select(ur => ur.UserId)
-            .Distinct()
-            .ToListAsync();
-
-        var query = context.Users.IgnoreQueryFilters()
-            .Where(u => userIds.Contains(u.Id))
-            .AsQueryable();
-
+        // Only people who hold one of the keys now, by the same rule the server checks with; search narrows that list
+        // and never widens it. Disabled and deleted users are left out here so every page is full and counts are right.
+        var keys = permissionKeys.Where(key => !string.IsNullOrWhiteSpace(key)).Distinct().ToList();
+        var query = APP.Services.Authorization.PermissionHolders.Query(context, keys);
         if (!string.IsNullOrEmpty(searchQuery))
-        {
             query = query.WhereSearch(searchQuery, q => q.FirstName, q => q.LastName, q => q.Email);
-        }
+        query = query.OrderBy(user => user.FirstName).ThenBy(user => user.LastName).ThenBy(user => user.Id);
 
         return await PaginationHelper.GetPaginatedResultAsync(
             query,
