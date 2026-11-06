@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -34,11 +35,12 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
     /// <response code="200">Service provider created successfully</response>
     /// <response code="400">Invalid request data or provider already exists</response>
     [HttpPost]
+    [Authorize("CanViewContractors")]
+    [Authorize("CanCreateContractors")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateServiceProvider([FromBody] CreateServiceProviderRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewContractors", "CanCreateContractors")) return TypedResults.Forbid();
 
         var result = await repository.CreateServiceProvider(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -48,6 +50,7 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
     /// Retrieves a paginated list of service providers
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewContractors", "CanCreateJobOrder", "CanEditJobOrder")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ServiceProviderReducedDto>>))]
     public async Task<IResult> GetServiceProviders([FromQuery] int page = 1, 
@@ -55,7 +58,6 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? serviceId = null)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewContractors", "CanCreateJobOrder", "CanEditJobOrder")) return TypedResults.Forbid();
 
         var result = await repository.GetServiceProviders(page, pageSize, searchQuery, serviceId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -65,10 +67,10 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
     /// Retrieves a service provider by its unique identifier.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewContractors", "CanViewJobOrders")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceProviderDto))]
     public async Task<IResult> GetServiceProvider([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewContractors", "CanViewJobOrders")) return TypedResults.Forbid();
 
         var result = await repository.GetServiceProvider(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -78,10 +80,10 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
     /// Retrieves a service provider by its service provider id.
     /// </summary>
     [HttpGet("service/{serviceId:guid}")]
+    [AnyPermission("CanViewContractors", "CanCreateJobOrder", "CanEditJobOrder")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceProviderDto))]
     public async Task<IResult> GetServiceProviderByService([FromRoute] Guid serviceId)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), "CanViewContractors", "CanCreateJobOrder", "CanEditJobOrder")) return TypedResults.Forbid();
 
         var result = await repository.GetServiceProvidersByService(serviceId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -91,13 +93,14 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
     /// Updates an existing service provider.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize("CanViewContractors")]
+    [Authorize("CanEditContractors")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ServiceProviderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateServiceProvider([FromRoute] Guid id, 
         [FromBody] CreateServiceProviderRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewContractors", "CanEditContractors")) return TypedResults.Forbid();
 
         var result = await repository.UpdateServiceProvider(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -107,11 +110,12 @@ public class ServiceProviderController(IServiceProviderRepository repository, IN
     /// Deletes a service provider using the specified service ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize("CanViewContractors")]
+    [Authorize("CanDeleteContractors")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteServiceProvider([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), "CanViewContractors", "CanDeleteContractors")) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

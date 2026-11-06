@@ -7,6 +7,27 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Production",
+    "submodule": "Work Orders",
+    "key": "CanCreateWorkOrder",
+    "name": "Can Create Work Order",
+    "description": "Allows the user to  create work order."
+  },
+  {
+    "module": "Production",
+    "submodule": "Work Orders",
+    "key": "CanEditWorkOrder",
+    "name": "Can Edit Work Order",
+    "description": "Allows the user to  edit work order."
+  },
+  {
+    "module": "Production",
+    "submodule": "Work Orders",
+    "key": "CanDeleteWorkOrder",
+    "name": "Can Delete Work Order",
+    "description": "Allows the user to  delete work order."
+  },
+  {
     "module": "Warehouse",
     "submodule": "Arrival Locations",
     "key": "CanCreateArrivalLocation",
