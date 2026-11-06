@@ -95,6 +95,7 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> UpdateForm([FromBody] CreateFormRequest request, Guid formId)
     {
         var userId = (string)HttpContext.Items["Sub"];
