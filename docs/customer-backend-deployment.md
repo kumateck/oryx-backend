@@ -1,5 +1,18 @@
 # Customer-host backend migration and deployment
 
+## Authoritative formula dependency (2026-11-06)
+
+Customer deployment now requires the separate formula image bundle released by
+`oryx-live-desktop`. Install that bundle and initialize the root-only workload
+secret **before** the first deployment with this tooling. See
+[customer formula service](customer-formula-service.md) for exact enable, verify,
+upgrade and formula-only rollback commands. A missing/corrupt bundle or unhealthy
+dependency blocks maintenance. Success requires the backend formula readiness
+probe as well as API HTTP health; setting a value in `.env` is insufficient.
+The migration-only SQL runner still intentionally leaves the API stopped and
+does not install or activate runtime dependencies. Discord success includes
+formula readiness; the notification helper needs no runtime changes.
+
 ## Compose comes from the deployed commit (2026-10-30)
 
 Deployments used to freeze `docker-compose.yml` from the installed checkout,
@@ -99,7 +112,7 @@ Each poll fetches `origin/main`. A new SHA triggers build → API maintenance
 window → verified database backup → pending migrations → API activation →
 health verification. An unchanged successfully deployed SHA does nothing.
 Without an existing success marker, the first poll deploys current main. A
-filesystem lock prevents overlapping runs. Only the API service is replaced;
+filesystem lock prevents overlapping runs. The API and formula dependency are managed together;
 the frontend, database, OnlyOffice and other services are not redeployed.
 
 Builds use detached main worktrees, leaving the installed checkout and `.env`

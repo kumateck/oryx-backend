@@ -16,5 +16,6 @@ public class AssignEmployeeDto
 
     public DateTime StartDate { get; set; }
 
-    public Guid ReportingManagerId { get; set; }
+    /// <summary>Optional user account ID; omitted or null means no reporting manager.</summary>
+    public Guid? ReportingManagerId { get; set; }
 }

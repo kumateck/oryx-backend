@@ -1045,6 +1045,7 @@ public class OryxMapper : Profile
 
         CreateMap<AssignEmployeeDto, Employee>()
             .ForMember(dest => dest.StaffNumber, opt => opt.MapFrom(src => src.StaffNumber))
+            .ForMember(dest => dest.ReportingManagerId, opt => opt.Ignore())
             .ForMember(dest => dest.Department, opt => opt.Ignore())
             .ForMember(dest => dest.Designation, opt => opt.Ignore());
 

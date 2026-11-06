@@ -23,6 +23,7 @@ namespace API.Controllers;
 public class MaterialController(IMaterialRepository repository) : ControllerBase
 {
     /// <summary>Current physical stock for printable count sheets, scoped to the current account's department.</summary>
+    [ReportDepartmentScope]
     [HttpGet("batches/stock-report")]
     [Authorize(PermissionKeys.CanViewWarehouseReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStockReportDto))]
@@ -648,6 +649,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportDepartmentScope]
     [HttpGet("department/approved-materials/v2")]
     [ProducesResponseType(
         StatusCodes.Status200OK,

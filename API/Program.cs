@@ -22,6 +22,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+// Run inside the deployed API container with its environment/network/secret mounts.
+// No HTTP listener, database, migrations, seeding or telemetry is started by this probe.
+if (args.Length == 1 && args[0] == "--formula-readiness")
+{
+    Environment.ExitCode = await API.Operations.FormulaReadinessCommand.RunAsync();
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Production error visibility:
@@ -134,7 +142,12 @@ builder.Services.AddCors(options =>
 
 //validate model state
 builder
-    .Services.AddControllers(options => options.Filters.Add<API.Filters.ReportHistoryFilter>())
+    .Services.AddControllers(options =>
+    {
+        // Department scope runs first, outside any historical snapshot the history filter opens.
+        options.Filters.Add<API.Filters.ReportDepartmentScopeFilter>();
+        options.Filters.Add<API.Filters.ReportHistoryFilter>();
+    })
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>

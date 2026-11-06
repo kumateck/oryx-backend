@@ -17,6 +17,10 @@ if (tool === "git") {
     const migrations = join(command[3] ?? "", "INFRASTRUCTURE/Migrations");
     mkdirSync(migrations, { recursive: true });
     writeFileSync(join(migrations, "Initial.Designer.cs"), '[Migration("20260101000000_Initial")]');
+    for (const file of ["customer-formula.sh", "customer-formula.compose.yml"]) {
+      mkdirSync(join(command[3] ?? "", "deploy"), { recursive: true });
+      copyFileSync(resolve(dirname(fileURLToPath(import.meta.url)), `../../deploy/${file}`), join(command[3] ?? "", "deploy", file));
+    }
     // The deployed commit carries the repository's current Compose definition.
     copyFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../docker-compose.yml"), join(command[3] ?? "", "docker-compose.yml"));
   }
@@ -39,11 +43,22 @@ if (tool === "git") {
       } else { process.stderr.write(`Error: no such object: ${name}\n`); process.exit(1); }
     } else if (format.includes("compose.project")) process.stdout.write("oryx-backend\n");
     else if (format.includes("compose.service")) process.stdout.write("app\n");
-    else process.stdout.write(existsSync(join(fixture.directory, "active")) && fixture.failure !== "image" ? "new-image\n" : "old-image\n");
+    else process.stdout.write(existsSync(join(fixture.directory, "active")) && fixture.failure !== "image" ? `sha256:${"e".repeat(64)}\n` : "old-image\n");
   }
-  if (args[0] === "image") process.stdout.write("new-image\n");
+  if (args[0] === "image" && args[1] === "inspect") {
+    if (args.at(-1)?.startsWith("sha256:")) {
+      fail("formula-image"); process.stdout.write(`${args.at(-1)}\n`);
+    } else process.stdout.write(`sha256:${"e".repeat(64)}\n`);
+  }
+  if (args[0] === "run" && args.includes("--network")) fail("formula-secret");
+  if (args[0] === "exec" && args.includes("--formula-readiness")) {
+    fail("formula-readiness");
+    const marker = join(fixture.directory, "readiness-failed-once");
+    if (fixture.failure === "formula-readiness-once" && !existsSync(marker)) { writeFileSync(marker, "failed"); process.exit(1); }
+  }
   if (args[0] === "compose") {
-    if (args.includes("config")) process.stdout.write(JSON.stringify({ services: { app: { environment: {
+    if (args.includes("config") && args.some(arg => arg.endsWith("formula-template.yml"))) process.stdout.write(JSON.stringify({ services: { "formula-calculation": {} } }));
+    else if (args.includes("config")) process.stdout.write(JSON.stringify({ services: { app: { environment: {
       connectionString: `Host=postgres_db;Port=5432;Username=test;Password=fixture;Database=${fixture.database ?? "entrancedb"}`,
       ...(fixture.smtp ? { SMTP_HOST: "mail.example.test", SMTP_USERNAME: "erp@example.test", SMTP_PASSWORD: "fixture" } : { SMTP_HOST: "" }),
     } } } }));
@@ -51,7 +66,8 @@ if (tool === "git") {
       if (args.includes("has-pending-model-changes")) fail("model");
       else fail("migration");
     }
-    if (args.includes("up")) { fail("activate"); if (fixture.failure !== "same-tag-stale" || args.includes("--force-recreate")) writeFileSync(join(fixture.directory, "active"), "new"); }
+    if (args.includes("up") && args.includes("formula-calculation")) fail("formula-health");
+    else if (args.includes("up")) { fail("activate"); if (fixture.failure !== "same-tag-stale" || args.includes("--force-recreate")) writeFileSync(join(fixture.directory, "active"), "new"); }
   }
   if (args[0] === "exec" && args.some(value => value.includes("exec pg_dump"))) { fail("backup"); process.stdout.write("PGDMPfixture"); }
   if (args[0] === "exec" && args.includes("pg_restore")) { fail("backup-verify"); process.stdout.write("Verified archive\n"); }
