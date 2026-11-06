@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -143,6 +144,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }*/
 
     [HttpPost("issue-stock-requisition/{stockRequisitionId}")]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -204,6 +206,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="request">The CreateSourceRequisitionRequest object.</param>
     /// <returns>Returns the ID of the created Source Requisition.</returns>
     [HttpPost("source")]
+    [Authorize(PermissionKeys.CanSourcePurchaseRequisition)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -350,6 +353,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierId">The ID of the supplier.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/supplier/{supplierId}/send-quotation")]
+    [SupplierTypePermission(PermissionKeys.CanSendForeignQuotationRequest, PermissionKeys.CanSendLocalQuotationRequest)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -408,6 +412,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierQuotationId">The ID of the supplier quotation.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/supplier/{supplierQuotationId}/quotation/receive")]
+    [SupplierTypePermission(PermissionKeys.CanSendForeignQuotationResponse, PermissionKeys.CanSendLocalQuotationResponse)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -460,6 +465,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="processQuotations">The list of quotations to process.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("source/quotation/process-purchase-order")]
+    [SupplierTypePermission(PermissionKeys.CanApplyChangesForForeignVendorPricingSelection, PermissionKeys.CanApplyChangesForLocalVendorPricingSelection)]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -263,12 +263,8 @@ MaterialController.GetUoMForMaterial GET material/{materialId}/uom
 MaterialController.GetWarehouseStock GET material/{materialId}/stock/{warehouseId}
 MaterialController.ImportMaterialBatchesFromCsv POST material/batches/import
 MaterialController.MoveMaterialBatch POST material/batch/move
-MaterialController.MoveMaterialBatchToWarehouseFromDistribute POST material/distribute-material/move-batch
-MaterialController.MoveMaterialBatchToWarehouseFromHolding POST material/holding/move
-MaterialController.MoveMaterialBatchV2 POST material/batch/move/v2
 MaterialController.RequestRetest POST material/batch/{batchId:guid}/request-retest
 MaterialController.ResolveInconsistencies POST material/maintenance/fix-inconsistencies
-MaterialController.SupplyMaterialBatchToWarehouse POST material/batch/supply
 MaterialController.UpdateBatchStatus PUT material/batch/status
 MaterialPurchaseUnitsController.Get GET material/{materialId:guid}/purchase-units
 MaterialSamplingController.AddIssueNumberToMaterialSampling PUT material-samplings/{materialSamplingId:guid}
@@ -461,7 +457,6 @@ ReportHistoryController.Vendors GET report/history/vendors
 RequisitionController.ApproveRequisition POST requisition/{requisitionId}/issue
 RequisitionController.CheckIfSupplierHasPendingPriceComparison GET requisition/pending/{supplierId}
 RequisitionController.CreateRequisition POST requisition
-RequisitionController.CreateSourceRequisition POST requisition/source
 RequisitionController.DeleteSourceRequisition DELETE requisition/source/{sourceRequisitionId}
 RequisitionController.GetAlternativeBatches GET requisition/{requisitionId}/alternative-batches
 RequisitionController.GetPriceComparisonOfMaterial GET requisition/source/material/price-comparison
@@ -477,10 +472,6 @@ RequisitionController.GetSuppliersWithSourceRequisitionItems GET requisition/sou
 RequisitionController.GetSuppliersWithSourceRequisitionItems GET requisition/source/supplier/{supplierId}
 RequisitionController.GetSuppliersWithSourceRequisitionItemsForQuotation GET requisition/source/supplier/quotation
 RequisitionController.GetSuppliersWithSourceRequisitionItemsForQuotation GET requisition/source/supplier/{supplierQuotationId}/quotation
-RequisitionController.IssueStockRequisition POST requisition/issue-stock-requisition/{stockRequisitionId}
-RequisitionController.MarkQuotationAsSent POST requisition/source/supplier/{supplierId}/send-quotation
-RequisitionController.ProcessQuotationAndCreatePurchaseOrder POST requisition/source/quotation/process-purchase-order
-RequisitionController.ReceiveQuotationFromSupplier POST requisition/source/supplier/{supplierQuotationId}/quotation/receive
 RequisitionController.UpdateSourceRequisition PUT requisition/source/{sourceRequisitionId}
 RoutineQcController.AddSample POST qc/routines/{id:guid}/samples
 RoutineQcController.Certificate GET qc/routines/certificates/{id:guid}

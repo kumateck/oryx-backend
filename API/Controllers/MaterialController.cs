@@ -525,6 +525,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The SupplyMaterialBatchRequest object.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("batch/supply")]
+    [MaterialKindPermission(PermissionKeys.CanAssignRawMaterialsStockToShelves, PermissionKeys.CanAssignPackagingMaterialsStockToShelves)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -546,6 +547,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The MoveShelfMaterialBatchRequest object.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("batch/move/v2")]
+    [MaterialKindPermission(PermissionKeys.CanReassignRawMaterialStock, PermissionKeys.CanReassignPackagingMaterialStock)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -922,6 +924,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The MoveShelfMaterialBatchRequest object.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("holding/move")]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanIssuePackagingMaterialStockTransfers)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1071,6 +1074,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The request containing batch supply details.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPost("distribute-material/move-batch")]
+    [MaterialKindPermission(PermissionKeys.CanAssignRawMaterialsStockToShelves, PermissionKeys.CanAssignPackagingMaterialsStockToShelves)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -13,7 +13,8 @@ namespace API.Authorization;
 /// Requires the raw-material or packaging-material key of a task. The kinds come from what the request names, read from
 /// the database: materials (<c>MaterialId</c>, <c>MaterialIds</c>), material batches (<c>MaterialBatchId</c>,
 /// <c>MaterialBatchIds</c>), distributed requisition materials (<c>DistributedRequisitionMaterialId</c>), stock transfers
-/// (<c>StockTransferId</c>) and extra packing requests (<c>ProductionExtraPackingId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
+/// (<c>StockTransferId</c>), extra packing requests (<c>ProductionExtraPackingId</c>), shelf batches
+/// (<c>ShelfMaterialBatchId</c>) and stock requisitions (<c>StockRequisitionId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
 /// data just before the action.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
@@ -47,6 +48,8 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
     private static readonly string[] DistributedNames = ["DistributedRequisitionMaterialId", "DistributedMaterialId"];
     private static readonly string[] TransferNames = ["StockTransferId"];
     private static readonly string[] ExtraPackingNames = ["ProductionExtraPackingId"];
+    private static readonly string[] ShelfBatchNames = ["ShelfMaterialBatchId"];
+    private static readonly string[] RequisitionNames = ["StockRequisitionId"];
 
     public static async Task<HashSet<MaterialKind>> Kinds(ApplicationDbContext db, IDictionary<string, object> arguments)
     {
@@ -56,6 +59,8 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
         var distributed = new List<Guid>();
         var transfers = new List<Guid>();
         var extraPackings = new List<Guid>();
+        var shelfBatches = new List<Guid>();
+        var requisitions = new List<Guid>();
         void Collect(string name, object value)
         {
             if (MaterialNames.Contains(name, StringComparer.OrdinalIgnoreCase)) materials.AddRange(Ids(value));
@@ -63,6 +68,8 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
             else if (DistributedNames.Contains(name, StringComparer.OrdinalIgnoreCase)) distributed.AddRange(Ids(value));
             else if (TransferNames.Contains(name, StringComparer.OrdinalIgnoreCase)) transfers.AddRange(Ids(value));
             else if (ExtraPackingNames.Contains(name, StringComparer.OrdinalIgnoreCase)) extraPackings.AddRange(Ids(value));
+            else if (ShelfBatchNames.Contains(name, StringComparer.OrdinalIgnoreCase)) shelfBatches.AddRange(Ids(value));
+            else if (RequisitionNames.Contains(name, StringComparer.OrdinalIgnoreCase)) requisitions.AddRange(Ids(value));
         }
         foreach (var (name, value) in arguments)
         {
@@ -81,6 +88,12 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
         if (extraPackings.Count > 0)
             materials.AddRange(await db.ProductionExtraPackings.IgnoreQueryFilters().AsNoTracking().Where(extra => extraPackings.Contains(extra.Id))
                 .Select(extra => extra.MaterialId).ToListAsync());
+        if (shelfBatches.Count > 0)
+            batches.AddRange(await db.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking().Where(shelf => shelfBatches.Contains(shelf.Id))
+                .Select(shelf => shelf.MaterialBatchId).ToListAsync());
+        if (requisitions.Count > 0)
+            materials.AddRange(await db.RequisitionItems.IgnoreQueryFilters().AsNoTracking()
+                .Where(item => requisitions.Contains(item.RequisitionId) && item.DeletedAt == null).Select(item => item.MaterialId).ToListAsync());
         if (batches.Count > 0)
             materials.AddRange(await db.MaterialBatches.IgnoreQueryFilters().AsNoTracking().Where(batch => batches.Contains(batch.Id))
                 .Select(batch => batch.MaterialId).ToListAsync());
