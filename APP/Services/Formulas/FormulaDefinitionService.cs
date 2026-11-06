@@ -145,8 +145,7 @@ public sealed partial class FormulaDefinitionService(
         if (!FormulaDefinitionDraft.CanTransition(
                 revision, FormulaRevisionStatus.InReview, request))
             return revision is null ? FormulaDefinitionErrors.NotFound : FormulaDefinitionErrors.Conflict;
-        if (revision!.CreatedById == actorId) return FormulaDefinitionErrors.SegregationOfDuties;
-        if (revision.ReviewedById.HasValue) return FormulaDefinitionErrors.Conflict;
+        if (revision!.ReviewedById.HasValue) return FormulaDefinitionErrors.Conflict;
         revision.ReviewedById = actorId;
         revision.ReviewedAt = DateTime.UtcNow;
         context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(
@@ -168,8 +167,8 @@ public sealed partial class FormulaDefinitionService(
         if (!FormulaDefinitionDraft.CanTransition(
                 revision, FormulaRevisionStatus.InReview, request))
             return revision is null ? FormulaDefinitionErrors.NotFound : FormulaDefinitionErrors.Conflict;
-        if (!revision!.ReviewedById.HasValue || revision.CreatedById == actorId ||
-            revision.ReviewedById == actorId)
+        if (!FormulaRevisionParticipation.AllowsApproval(
+                revision!.CreatedById, revision.ReviewedById, actorId))
             return FormulaDefinitionErrors.SegregationOfDuties;
         var now = DateTime.UtcNow;
         var active = await context.FormulaRevisions.SingleOrDefaultAsync(item =>
