@@ -1,0 +1,52 @@
+# Separate project per backend release: do not replace a dependency of the live API.
+services:
+  formula-calculation:
+    image: ${FORMULA_SERVICE_IMAGE:?Release image is required}
+    platform: ${FORMULA_SERVICE_PLATFORM:?Release platform is required}
+    init: true
+    environment:
+      FORMULA_V2_INTERNAL_SERVICE_ENABLED: "true"
+      FORMULA_SERVICE_HOST: "0.0.0.0"
+      FORMULA_SERVICE_PORT: "3101"
+      FORMULA_SERVICE_AUTH_SECRET_FILE: /run/secrets/formula-service-token
+      FORMULA_SERVICE_ENGINE_BUILD_HASH: ${FORMULA_SERVICE_ENGINE_BUILD_HASH:?Release engine hash is required}
+      FORMULA_SERVICE_NUMERIC_POLICY_VERSION: ${FORMULA_SERVICE_NUMERIC_POLICY_VERSION:?Release numeric policy is required}
+      FORMULA_SERVICE_MAX_REQUEST_BYTES: "262144"
+      FORMULA_SERVICE_CONCURRENCY: "2"
+      FORMULA_SERVICE_DEADLINE_MS: "2000"
+      FORMULA_SERVICE_CACHE_ENTRIES: "256"
+    volumes:
+      - formula-secrets:/run/secrets:ro
+    networks:
+      sail:
+        aliases:
+          - ${FORMULA_SERVICE_ALIAS:?Release network alias is required}
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1.0
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3101/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+volumes:
+  formula-secrets:
+    external: true
+    name: ${FORMULA_SERVICE_SECRET_VOLUME:?Server secret volume is required}
+networks:
+  sail:
+    external: true

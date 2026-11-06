@@ -72,6 +72,42 @@ public sealed class FormulaCalculationClientTests
         Assert.DoesNotContain("must-not-surface", error.Description);
     }
 
+    [Fact]
+    public async Task Ready_WhenDisabled_DoesNotSend()
+    {
+        var handler = new StubHandler(_ => throw new InvalidOperationException("must not send"));
+        var result = await CreateClient(handler, EnabledSettings with { Enabled = false }).IsReadyAsync();
+        Assert.True(result.IsFailure);
+        Assert.Equal("FormulaCalculation.Disabled", result.Error.Code);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.ServiceUnavailable, false)]
+    [InlineData(HttpStatusCode.Unauthorized, false)]
+    public async Task Ready_UsesReadyEndpoint(HttpStatusCode status, bool expected)
+    {
+        var handler = new StubHandler(request =>
+        {
+            Assert.Equal("/ready", request.RequestUri?.AbsolutePath);
+            return Response(status, "{}");
+        });
+        var result = await CreateClient(handler, EnabledSettings).IsReadyAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expected, result.Value);
+    }
+
+    [Fact]
+    public async Task Ready_WhenUnreachable_Fails()
+    {
+        var handler = new StubHandler(_ => throw new HttpRequestException("private endpoint details"));
+        var result = await CreateClient(handler, EnabledSettings).IsReadyAsync();
+        Assert.True(result.IsFailure);
+        Assert.Equal("FormulaCalculation.Unavailable", result.Error.Code);
+        Assert.DoesNotContain("private endpoint details", result.Error.Description);
+    }
+
     private static FormulaCalculationClient CreateClient(
         HttpMessageHandler handler,
         FormulaCalculationSettings settings) =>
