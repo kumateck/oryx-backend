@@ -43,6 +43,7 @@ public class RecoverableItemsReportController(IRecoverableItemReportRepository r
     /// Lists the returns of the stores whose returns the user may read, newest first.
     /// </summary>
     [HttpGet]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<RecoverableItemReportDto>))]
     public async Task<IResult> GetRecoverableItemReports()
     {

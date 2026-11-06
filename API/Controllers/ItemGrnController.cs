@@ -35,6 +35,7 @@ public class ItemGrnController(IItemGrnRepository repository, INFRASTRUCTURE.Con
     /// Retrieves a paginated list of item grns based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanCreateItemGrn", "CanEditItemGrn", "CanViewEquipmentStoreReceivingArea", "CanViewGeneralStoreReceivingArea", "CanViewItStoreReceivingArea", "CanViewReagentStoreReceivingArea")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemGrnDto>>))]
     public async Task<IResult> GetItemGrns([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null)
@@ -48,6 +49,7 @@ public class ItemGrnController(IItemGrnRepository repository, INFRASTRUCTURE.Con
     /// </summary>
 
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanCreateItemGrn", "CanEditItemGrn", "CanViewEquipmentStoreReceivingArea", "CanViewGeneralStoreReceivingArea", "CanViewItStoreReceivingArea", "CanViewReagentStoreReceivingArea")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemGrnDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemGrn([FromRoute] Guid id)

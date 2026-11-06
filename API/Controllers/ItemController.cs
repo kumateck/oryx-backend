@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -39,6 +40,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves an item shipment invoice by its ID.
     /// </summary>
     [HttpGet("shipment-invoice/{invoiceId:guid}")]
+    [AnyPermission("CanViewShipmentInvoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemShipmentInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemShipmentInvoice([FromRoute] Guid invoiceId)
@@ -51,6 +53,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves a paginated list of item shipment invoices.
     /// </summary>
     [HttpGet("shipment-invoice")]
+    [AnyPermission("CanViewShipmentInvoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemShipmentInvoiceDto>>))]
     public async Task<IResult> GetItemShipmentInvoices([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -62,6 +65,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves all item shipment invoices not linked to a shipment document.
     /// </summary>
     [HttpGet("shipment-invoice/unattached")]
+    [AnyPermission("CanViewShipmentInvoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ItemShipmentInvoiceDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUnattachedItemShipmentInvoices()
@@ -142,6 +146,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves an item shipment document by its ID.
     /// </summary>
     [HttpGet("shipment-document/{shipmentDocumentId:guid}")]
+    [AnyPermission("CanViewShipmentDocument")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemShipmentDocumentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemShipmentDocument([FromRoute] Guid shipmentDocumentId)
@@ -154,6 +159,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves a paginated list of item shipment documents.
     /// </summary>
     [HttpGet("shipment-document")]
+    [AnyPermission("CanViewShipmentDocument")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemShipmentDocumentDto>>))]
     public async Task<IResult> GetItemShipmentDocuments([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] bool? onlyApproved = null)
@@ -234,6 +240,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves an item waybill by its ID.
     /// </summary>
     [HttpGet("waybill/{waybillId:guid}")]
+    [AnyPermission("CanViewWaybill")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemShipmentDocumentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemWaybill([FromRoute] Guid waybillId)
@@ -246,6 +253,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves a paginated list of item waybills.
     /// </summary>
     [HttpGet("waybill")]
+    [AnyPermission("CanViewWaybill")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemShipmentDocumentDto>>))]
     public async Task<IResult> GetItemWaybills([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] ShipmentStatus? status = null)
@@ -309,6 +317,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves an item billing sheet by its ID.
     /// </summary>
     [HttpGet("billing-sheet/{billingSheetId:guid}")]
+    [AnyPermission("CanViewBillingSheet")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemBillingSheetDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemBillingSheet([FromRoute] Guid billingSheetId)
@@ -321,6 +330,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves an item billing sheet by its invoice ID.
     /// </summary>
     [HttpGet("billing-sheet/invoice/{invoiceId:guid}")]
+    [AnyPermission("CanViewBillingSheet")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemBillingSheetDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemBillingSheetByInvoice([FromRoute] Guid invoiceId)
@@ -333,6 +343,7 @@ public partial class ItemController(IItemRepository repository, INFRASTRUCTURE.C
     /// Retrieves a paginated list of item billing sheets.
     /// </summary>
     [HttpGet("billing-sheet")]
+    [AnyPermission("CanViewBillingSheet")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemBillingSheetDto>>))]
     public async Task<IResult> GetItemBillingSheets([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
         [FromQuery] BillingSheetStatus? status = null)

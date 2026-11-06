@@ -41,6 +41,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves a paginated list of the item stock requisitions of the stores the user may read.
     /// </summary>
     [HttpGet]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemStockRequisitionDto>>))]
     public async Task<IResult> GetItems([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] Store? store = null, [FromQuery] IssueItemStockRequisitionStatus? status = null)
@@ -56,6 +57,7 @@ public class ItemStockRequisitionController(IItemStockRequisitionRepository repo
     /// Retrieves an item stock requisition by its ID, with what has been issued and what remains on each line.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemStockRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItem([FromRoute] Guid id)

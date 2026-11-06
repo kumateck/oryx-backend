@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Services.Materials;
 using DOMAIN.Entities.Base;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ public sealed class MaterialPurchaseUnitsController(MaterialPurchaseUnitsReader 
 {
     /// <summary>Return distinct material unit symbols linked in any active department, including zero-stock links.</summary>
     [HttpGet]
+    [SignedInUser("A material's purchase units, a reference lookup for every purchase and requisition form.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UnitOfMeasureDto>))]
     public async Task<IResult> Get(Guid materialId, CancellationToken cancellationToken)
     {
