@@ -87,6 +87,7 @@ public class MaterialAlternativeBatchesDto
 
 public class AlternativeBatchDto
 {
+    public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public MaterialBatchListDto Batch { get; set; }
     public decimal QuantityAvailable { get; set; }
     public CollectionItemDto Warehouse { get; set; }

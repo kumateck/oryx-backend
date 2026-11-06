@@ -946,6 +946,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .ShelfMaterialBatches.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.WarehouseLocationShelf)
+                .ThenInclude(shelf => shelf.WarehouseLocationRack)
             .Include(m => m.MaterialBatch)
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(cl => cl.Manufacturer)
@@ -2496,6 +2497,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                         Batch = batchDto,
                         QuantityToTake = quantityToTake,
                         WarehouseLocationShelfId = shelfBatch.WarehouseLocationShelfId, // shelf origin
+                        WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(shelfBatch.WarehouseLocationShelf),
                     }
                 );
 
@@ -2663,6 +2665,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .ThenInclude(b => b.Checklist)
                     .ThenInclude(c => c.Manufacturer)
             .Include(b => b.WarehouseLocationShelf)
+                .ThenInclude(shelf => shelf.WarehouseLocationRack)
             .Where(r =>
                 r.MaterialBatch.MaterialId == materialId
                 && r.WarehouseId == warehouseId
@@ -3897,6 +3900,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         var reservedMaterials = await reservedMaterialQuery
             .SelectMaterialDate(r => r.MaterialBatch, (r, date) => new ReservedMaterialReportDto
             {
+                RackName = r.WarehouseLocationShelf == null ? null : r.WarehouseLocationShelf.WarehouseLocationRack.Name,
+                ShelfName = r.WarehouseLocationShelf == null ? null : r.WarehouseLocationShelf.Name ?? r.WarehouseLocationShelf.Code,
                 MaterialName = r.MaterialBatch.Material.Name,
                 MaterialCode = r.MaterialBatch.Material.Code,
                 ProductName = r.ProductionScheduleProduct.Product.Name,
