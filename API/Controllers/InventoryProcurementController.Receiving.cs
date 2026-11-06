@@ -12,6 +12,7 @@ namespace API.Controllers;
 public partial class InventoryProcurementController
 {
     [HttpGet("purchased-items")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockEntryDto>))]
     public async Task<IResult> GetStockEntries([FromQuery] ApprovalStatus status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,

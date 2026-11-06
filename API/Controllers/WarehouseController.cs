@@ -904,6 +904,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the material batch details by distributed requisition material IDs.
     /// </summary>
     [HttpPost("distributed-material/material-batch")]
+    [AnyPermission("CanCreateGrnForPackagingMaterials", "CanCreateGrnForRawMaterials", "CanViewPackagingMaterialsItems", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

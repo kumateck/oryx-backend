@@ -16,6 +16,7 @@ namespace API.Controllers;
 public sealed class FormulaRepairController(QuestionFormulaRepairService service) : ControllerBase
 {
     [HttpGet("questions/{questionId:guid}", Name = "GetFormulaRepairContext")]
+    [AnyPermission("CanCreateQuestions", "CanEditQuestions", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanViewQuestions")]
     [ProducesResponseType(typeof(FormulaRepairContextDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -36,6 +37,7 @@ public sealed class FormulaRepairController(QuestionFormulaRepairService service
     public Task<IResult> Apply(Guid questionId, ApplyFormulaRepairRequest request) => Run(() => service.Apply(questionId, request));
 
     [HttpGet("questions/{questionId:guid}/history", Name = "GetFormulaRepairHistory")]
+    [AnyPermission("CanCreateQuestions", "CanEditQuestions", "CanRepairQuestionFormula", "CanRepairTestFormula", "CanViewQuestions")]
     [ProducesResponseType(typeof(List<FormulaRepairHistoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public Task<IResult> History(Guid questionId) => Run(() => service.History(questionId));

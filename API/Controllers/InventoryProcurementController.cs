@@ -87,6 +87,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="id">The ID of the requisition to retrieve.</param>
     /// <returns>Returns the Inventory Purchase Requisition.</returns>
     [HttpGet("{id}")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(InventoryPurchaseRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -109,6 +110,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="status"></param>
     /// <returns>Returns a paginated list of Inventory Purchase Requisitions.</returns>
     [HttpGet]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<InventoryPurchaseRequisitionDto>>))]
     public async Task<IResult> GetInventoryPurchaseRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
@@ -197,6 +199,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="source">The source of the requisition (TrustedVendor or OpenMarket).</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("price-comparison")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<VendorPriceComparison>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -276,6 +279,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="received">A boolean to filter by received or unreceived quotations.</param>
     /// <returns>Returns a paginated list of vendor quotations.</returns>
     [HttpGet("vendor/quotations")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<VendorQuotationDto>>))]
     public async Task<IResult> GetVendorQuotations([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] bool received = false)
@@ -291,6 +295,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="vendorQuotationId">The ID of the vendor quotation.</param>
     /// <returns>Returns the vendor quotation.</returns>
     [HttpGet("vendor/quotation/{vendorQuotationId}")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VendorQuotationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -385,6 +390,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="status">The status of the memo. (0 = Memo, 1 = PurchaseOrder)</param>
     /// <returns>Returns a paginated list of memos.</returns>
     [HttpGet("memo")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MemoDto>>))]
     public async Task<IResult> GetMemos([FromQuery] int page = 1, 
@@ -403,6 +409,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// <param name="id">The ID of the memo.</param>
     /// <returns>Returns the memo details if found.</returns>
     [HttpGet("memo/{id}")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo", "CanViewOpenMarketPricingSelection", "CanViewOpenMarketPurchaseOrders", "CanViewOpenMarketQuotationSheets", "CanViewPurchaseOrdersForTrustedVendors", "CanViewPurchaseRequisitionsSourcing", "CanViewQuotationRequestsForTrustedVendors", "CanViewQuotationResponsesForTrustedVendors", "CanViewTrustedVendorPricingSelection")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MemoDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -446,6 +453,7 @@ public partial class InventoryProcurementController(IInventoryProcurementReposit
     /// </summary>
     /// <returns>Returns the generated memo code.</returns>
     [HttpGet("memo/code/generate")]
+    [AnyPermission("CanCreateMemoForTrustedVendor", "CanCreateOpenMarketMemo")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
     public async Task<IResult> GenerateMemoCode()
