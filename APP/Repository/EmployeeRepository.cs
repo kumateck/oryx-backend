@@ -475,6 +475,15 @@ public partial class EmployeeRepository(ApplicationDbContext context,
             return Error.Validation("Employee.Level", "Permanent employees must have a level assigned");
         }
 
+        var reportingManagerId = employeeDto.ReportingManagerId == Guid.Empty
+            ? null
+            : employeeDto.ReportingManagerId;
+        if (reportingManagerId.HasValue &&
+            !await context.Users.AnyAsync(user => user.Id == reportingManagerId.Value))
+        {
+            return Error.Validation("Employee.ReportingManager", "Reporting manager must be an existing user.");
+        }
+
         if (employeeDto.WarehouseIds.Count != 0)
         {
             var distinctWarehouseIds = employeeDto.WarehouseIds
@@ -513,6 +522,7 @@ public partial class EmployeeRepository(ApplicationDbContext context,
         }
 
         mapper.Map(employeeDto, employee);
+        employee.ReportingManagerId = reportingManagerId;
         employee.DepartmentId = employeeDto.DepartmentId;
         employee.DesignationId = employeeDto.DesignationId;
         employee.AnnualLeaveDays = designation.MaximumLeaveDays;

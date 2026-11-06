@@ -28,6 +28,7 @@ public sealed class HrPermissionTests
     [InlineData(typeof(StaffRequisitionController), "UpdateStaffRequisition", PermissionKeys.CanEditStaffRequisition)]
     [InlineData(typeof(AttendanceRecordController), "UploadAttendance", PermissionKeys.CanSubmitAttendanceReportUpload)]
     [InlineData(typeof(EmployeeController), "ChangeEmployeeType", PermissionKeys.CanUpdateEmployeeInfo)]
+    [InlineData(typeof(EmployeeController), "AssignEmployee", PermissionKeys.CanUpdateEmployeeInfo)]
     [InlineData(typeof(EmployeeController), "UpdateEmployeeEmail", PermissionKeys.CanUpdateEmployeeEmail)]
     [InlineData(typeof(EmployeeController), "UploadEmployees", PermissionKeys.CanRegisterEmployee)]
     [InlineData(typeof(EmployeeController), "DeleteEmployee", PermissionKeys.CanDeleteEmployee)]
