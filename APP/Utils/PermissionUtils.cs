@@ -258,6 +258,13 @@ public static class PermissionKeys
     public const string CanDeleteUniformityOfWeight = "CanDeleteUniformityOfWeight";
     /// <summary>Submit uniformity-of-weight results.</summary>
     public const string CanSubmitUniformityOfWeight = "CanSubmitUniformityOfWeight";
+    // Production work orders: no page offers them yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Create a production work order.</summary>
+    public const string CanCreateWorkOrder = "CanCreateWorkOrder";
+    /// <summary>Change a production work order.</summary>
+    public const string CanEditWorkOrder = "CanEditWorkOrder";
+    /// <summary>Delete a production work order.</summary>
+    public const string CanDeleteWorkOrder = "CanDeleteWorkOrder";
     // Dashboards: one key each (permissions audit phase 4).
     /// <summary>View the HR dashboard.</summary>
     public const string CanViewHrDashboard = "CanViewHrDashboard";
@@ -1345,6 +1352,9 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Production, "Work Orders", PermissionKeys.CanCreateWorkOrder);
+        addPermission(PermissionModules.Production, "Work Orders", PermissionKeys.CanEditWorkOrder);
+        addPermission(PermissionModules.Production, "Work Orders", PermissionKeys.CanDeleteWorkOrder);
         addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanCreateArrivalLocation);
         addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanEditArrivalLocation);
         addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanConfirmMaterialArrival);

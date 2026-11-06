@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -83,11 +84,12 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
     /// <response code="200">Quotation created successfully</response>
     /// <response code="400">Invalid request data or provider not sent job order</response>
     [HttpPost]
+    [Authorize(ServiceKeys.ViewQuotationResponses)]
+    [Authorize(ServiceKeys.SendQuotationResponse)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateServiceQuotation([FromBody] CreateServiceQuotationRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.SendQuotationResponse)) return TypedResults.Forbid();
 
         var result = await repository.CreateServiceQuotation(request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -97,6 +99,7 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
     /// Retrieves a paginated list of service quotations
     /// </summary>
     [HttpGet]
+    [AnyPermission(ServiceKeys.ViewQuotationResponses, ServiceKeys.ViewPricing, ServiceKeys.ViewProformaRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ServiceQuotationDto>>))]
     public async Task<IResult> GetServiceQuotations(
         [FromQuery] int page = 1,
@@ -107,7 +110,6 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
         [FromQuery] JobOrderStatus? jobOrderStatus = null,
         [FromQuery] bool proformaPending = false)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.ViewPricing, ServiceKeys.ViewProformaRequests)) return TypedResults.Forbid();
 
         var result = await repository.GetServiceQuotations(page, pageSize, status, jobOrderId,
             serviceProviderId, jobOrderStatus, proformaPending);
@@ -118,11 +120,11 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
     /// Retrieves a service quotation by its unique identifier
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission(ServiceKeys.ViewQuotationResponses, ServiceKeys.ViewPricing, ServiceKeys.ViewProformaRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceQuotationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetServiceQuotation([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.ViewPricing, ServiceKeys.ViewProformaRequests)) return TypedResults.Forbid();
 
         var result = await repository.GetServiceQuotation(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -132,12 +134,13 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
     /// Updates an existing service quotation
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(ServiceKeys.ViewQuotationResponses)]
+    [Authorize(ServiceKeys.SendQuotationResponse)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateServiceQuotation([FromRoute] Guid id, [FromBody] UpdateServiceQuotationRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewQuotationResponses, ServiceKeys.SendQuotationResponse)) return TypedResults.Forbid();
 
         var result = await repository.UpdateServiceQuotation(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -178,11 +181,12 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
     /// <response code="204">Quotation negotiated successfully</response>
     /// <response code="400">Invalid request data or quotation not found</response>
     [HttpPost("negotiate")]
+    [Authorize(ServiceKeys.ViewPricing)]
+    [Authorize(ServiceKeys.ApplyPricing)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> NegotiateQuotation([FromBody] NegotiateQuotationRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPricing, ServiceKeys.ApplyPricing)) return TypedResults.Forbid();
 
         var result = await repository.NegotiateQuotation(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -218,11 +222,11 @@ public class ServiceQuotationController(IServiceQuotationRepository repository, 
     /// <response code="200">Returns list of quotations for comparison</response>
     /// <response code="400">Invalid request data or no quotations found</response>
     [HttpPost("compare/{jobOrderId:guid}")]
+    [Authorize(ServiceKeys.ViewPricing)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ServiceQuotationDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CompareQuotations([FromRoute] Guid jobOrderId)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewPricing)) return TypedResults.Forbid();
 
         var result = await repository.CompareQuotations(jobOrderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
