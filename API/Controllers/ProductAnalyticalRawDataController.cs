@@ -35,6 +35,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Retrieves a paginated list of product analytical raw data based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewProductArds")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductAnalyticalRawDataDto>>)
@@ -54,6 +55,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Retrieves specific product analytical raw data by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewProductArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawData([FromRoute] Guid id)
@@ -66,6 +68,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Retrieves specific product analytical raw data by product Id.
     /// </summary>
     [HttpGet("product/{productId:guid}")]
+    [AnyPermission("CanAssignProductTest", "CanCheckProductTest", "CanCreateProductionProduct", "CanReassignProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<ProductAnalyticalRawDataDto>)
@@ -81,6 +84,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Retrieves specific product batch analytical raw data details
     /// </summary>
     [HttpGet("product/batch-details/{batchManufacturingRecordId:guid}")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductBatchArd))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRelevantProductInfoForArd(

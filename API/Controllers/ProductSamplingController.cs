@@ -31,6 +31,7 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
     /// Retrieves the details of a sampling product by its ID.
     /// </summary>
     [HttpGet("{bmrId:guid}")]
+    [AnyPermission("CanTakeSamples", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSamplingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductSamplingByProductId([FromRoute] Guid bmrId)

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -17,6 +18,7 @@ public class WaterQualityController(IWaterQualityRepository repository)
         HttpContext.Items["Sub"] as string, out var id) ? id : null;
 
     [HttpGet("periods")]
+    [AnyPermission("CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     public async Task<IResult> ListPeriods()
     {
         var result = await repository.ListPeriods();
@@ -25,6 +27,7 @@ public class WaterQualityController(IWaterQualityRepository repository)
     }
 
     [HttpGet("certificates")]
+    [AnyPermission("CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<EligibleWaterCertificateDto>>))]
     public async Task<IResult> ListEligibleCertificates(

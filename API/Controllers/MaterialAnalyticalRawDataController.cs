@@ -34,6 +34,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves a paginated list of analytical raw data based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewPackagingMaterialArds", "CanViewRawMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialAnalyticalRawDataDto>>))]
     public async Task<IResult> GetAnalyticalRawData([FromQuery] MaterialKind materialKind, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] bool? isVerified = null)
@@ -46,6 +47,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves specific analytical raw data by is ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewPackagingMaterialArds", "CanViewRawMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawData([FromRoute] Guid id)
@@ -58,6 +60,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves specific analytical raw data by is material ID.
     /// </summary>
     [HttpGet("material/{materialId:guid}")]
+    [AnyPermission("CanViewRawMaterialArds", "CanViewPackagingMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawDataByMaterial([FromRoute] Guid materialId)
@@ -70,6 +73,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves specific analytical raw data by is material batch ID.
     /// </summary>
     [HttpGet("material/batch/{materialBatchId:guid}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewRawMaterialGoodsReceiptNotes")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialAnalyticalRawDataDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalRawDataByMaterialBatch([FromRoute] Guid materialBatchId)
@@ -82,6 +86,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves specific analytical raw data by is material batch ID.
     /// </summary>
     [HttpGet("material/batch-details/{materialBatchId:guid}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewRawMaterialGoodsReceiptNotes", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialBatchArd))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRelevantMaterialInfoForArd([FromRoute] Guid materialBatchId)
@@ -150,6 +155,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves a paginated list of uniformity of weight records.
     /// </summary>
     [HttpGet("uniformity-of-weight")]
+    [AnyPermission("CanViewRawMaterialArds", "CanViewPackagingMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UniformityOfWeightDto>>))]
     public async Task<IResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
     {
@@ -161,6 +167,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Retrieves a specific uniformity of weight by ID.
     /// </summary>
     [HttpGet("uniformity-of-weight/{id:guid}")]
+    [AnyPermission("CanViewRawMaterialArds", "CanViewPackagingMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UniformityOfWeightDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetById([FromRoute] Guid id)
@@ -217,6 +224,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Gets all uniformity of weight responses by material batch ID.
     /// </summary>
     [HttpGet("uniformity-of-weight/{uniformityOfWeightId:guid}/{materialBatchId:guid}/response")]
+    [AnyPermission("CanViewRawMaterialArds", "CanViewPackagingMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UniformityOfWeightResponseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetResponsesByMaterialBatchId([FromRoute] Guid uniformityOfWeightId, [FromRoute] Guid materialBatchId)

@@ -62,6 +62,7 @@ public sealed class QcWorksheetFilesController(ApplicationDbContext context,
     }
 
     [HttpGet("{reference}")]
+    [AnyPermission("CanViewQcTestRequests")]
     public async Task<IResult> Read(Guid id, string reference)
     {
         if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
