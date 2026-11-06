@@ -132,5 +132,5 @@ public static class FormulaDefinitionErrors
         "FormulaDefinition.ValidationFailed", "The formula definition did not pass validation.");
     public static readonly Error SegregationOfDuties = Error.Conflict(
         "FormulaDefinition.SegregationOfDuties",
-        "Formula authoring, review, and approval must be performed by different users.");
+        "Formula approval requires a recorded author and reviewer and at least two different users across authoring, review, and approval.");
 }
