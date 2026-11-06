@@ -756,6 +756,22 @@ public static class PermissionKeys
     public const string CanConvertCustomerQuotation = "ConvertCustomerQuotation";
     public const string CanViewOrder = "CanViewOrder";
     public const string CanCreateOrders = "CanCreateOrders";
+    /// <summary>Change a production order.</summary>
+    public const string CanEditOrder = "CanEditOrder";
+    /// <summary>Delete a production order.</summary>
+    public const string CanDeleteOrder = "CanDeleteOrder";
+    /// <summary>Delete a proforma invoice.</summary>
+    public const string CanDeleteProformaInvoice = "CanDeleteProformaInvoice";
+    /// <summary>Create or change a customer invoice.</summary>
+    public const string CanCreateInvoice = "CanCreateInvoice";
+    /// <summary>Delete a customer invoice.</summary>
+    public const string CanDeleteInvoice = "CanDeleteInvoice";
+    /// <summary>Mark an allocation as loaded.</summary>
+    public const string CanLoadFinishedGoods = "CanLoadFinishedGoods";
+    /// <summary>Mark an allocation as delivered.</summary>
+    public const string CanDeliverFinishedGoods = "CanDeliverFinishedGoods";
+    /// <summary>Send a waybill to the customer.</summary>
+    public const string CanSendWaybillToCustomer = "CanSendWaybillToCustomer";
     public const string CanGeneratePackingList = "CanGeneratePackingList";
     public const string CanViewPackingList = "CanViewPackingList";
     public const string CanGenerateProformaInvoice = "CanGenerateProformaInvoice";
@@ -2754,6 +2770,16 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanEditOrder
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanDeleteOrder
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
             PermissionKeys.CanGeneratePackingList
         );
         addPermission(
@@ -2778,6 +2804,21 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanDeleteProformaInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanCreateInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanDeleteInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.Invoice,
             PermissionKeys.CanViewInvoice
         );
@@ -2790,6 +2831,21 @@ public static class PermissionUtils
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.Allocations,
             PermissionKeys.CanCreateWaybillForFgw
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanLoadFinishedGoods
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanDeliverFinishedGoods
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanSendWaybillToCustomer
         );
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanEditWaybillForFgw);
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanDeleteWaybillForFgw);

@@ -2704,6 +2704,20 @@
   {
     "module": "Finished Goods Warehouse",
     "submodule": "Production Orders",
+    "key": "CanEditOrder",
+    "name": "Can Edit Order",
+    "description": "Allows the user to  edit order."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Production Orders",
+    "key": "CanDeleteOrder",
+    "name": "Can Delete Order",
+    "description": "Allows the user to  delete order."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Production Orders",
     "key": "CanGeneratePackingList",
     "name": "Can Generate Packing List",
     "description": "Allows the user to  generate packing list."
@@ -2738,6 +2752,27 @@
   },
   {
     "module": "Finished Goods Warehouse",
+    "submodule": "Proforma Invoice",
+    "key": "CanDeleteProformaInvoice",
+    "name": "Can Delete Proforma Invoice",
+    "description": "Allows the user to  delete proforma invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Proforma Invoice",
+    "key": "CanCreateInvoice",
+    "name": "Can Create Invoice",
+    "description": "Allows the user to  create invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Proforma Invoice",
+    "key": "CanDeleteInvoice",
+    "name": "Can Delete Invoice",
+    "description": "Allows the user to  delete invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
     "submodule": "Invoice",
     "key": "CanViewInvoice",
     "name": "Can View Invoice",
@@ -2756,6 +2791,27 @@
     "key": "CanCreateWaybillForFgw",
     "name": "Can Create Waybill For Fgw",
     "description": "Allows the user to  create waybill for fgw."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanLoadFinishedGoods",
+    "name": "Can Load Finished Goods",
+    "description": "Allows the user to  load finished goods."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanDeliverFinishedGoods",
+    "name": "Can Deliver Finished Goods",
+    "description": "Allows the user to  deliver finished goods."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanSendWaybillToCustomer",
+    "name": "Can Send Waybill To Customer",
+    "description": "Allows the user to  send waybill to customer."
   },
   {
     "module": "Finished Goods Warehouse",
