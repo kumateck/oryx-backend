@@ -1,5 +1,7 @@
 using System.Text.Json;
 using APP.Services.Formulas;
+using APP.Services.Approvals;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Formulas;
 using INFRASTRUCTURE.Context;
@@ -49,18 +51,24 @@ file sealed class ValidFormulaClient(bool testsPass = true) : IFormulaCalculatio
 
 public sealed class FormulaDefinitionServiceTests
 {
-    [Fact]
-    public Task Lifecycle_RequiresThreePeopleAndSupersedesEffectiveRevision() => Lifecycle(postgres: false);
+    [Theory]
+    [InlineData(0, 1)] // Author also reviews; another user approves.
+    [InlineData(1, 0)] // Author also approves; another user reviews.
+    [InlineData(1, 1)] // Another user both reviews and approves.
+    [InlineData(1, 2)] // Three separate users remain supported.
+    public Task Lifecycle_AllowsTwoRolesAndSupersedesEffectiveRevision(int reviewer, int approver) =>
+        Lifecycle(postgres: false, reviewer, approver);
 
     /// <summary>Approval commits inside its own transaction; the deferred audit trigger must accept it.</summary>
     [RepairPostgresFact]
     public Task Lifecycle_passes_the_database_audit_triggers_including_approval_and_supersession() => Lifecycle(postgres: true);
 
-    private static async Task Lifecycle(bool postgres)
+    private static async Task Lifecycle(bool postgres, int reviewer = 1, int approver = 2)
     {
         var authorId = Guid.NewGuid();
-        var reviewerId = Guid.NewGuid();
-        var approverId = Guid.NewGuid();
+        Guid[] participants = [authorId, Guid.NewGuid(), Guid.NewGuid()];
+        var reviewerId = participants[reviewer];
+        var approverId = participants[approver];
         await using var database = new FormulaTriggerDatabase();
         if (postgres) await database.CreateAsync(new DefinitionTestUser(authorId), authorId, reviewerId, approverId);
         await using var context = postgres ? database.Open(new DefinitionTestUser(authorId)) : CreateContext(authorId);
@@ -88,20 +96,21 @@ public sealed class FormulaDefinitionServiceTests
             request.DefinitionHash, "Validated against the controlled golden corpus.");
         Assert.True((await service.SubmitForReviewAsync(
             created.Value.Id, transition, authorId, Guid.NewGuid())).IsSuccess);
-        Assert.Equal("FormulaDefinition.SegregationOfDuties", Assert.Single(
-            (await service.RecordReviewAsync(created.Value.Id, transition,
-                authorId, Guid.NewGuid())).Errors).Code);
         Assert.True((await service.RecordReviewAsync(created.Value.Id, transition,
             reviewerId, Guid.NewGuid())).IsSuccess);
-        Assert.Equal("FormulaDefinition.SegregationOfDuties", Assert.Single(
-            (await service.ApproveAsync(created.Value.Id, transition,
-                reviewerId, Guid.NewGuid())).Errors).Code);
 
         var approved = await service.ApproveAsync(
             created.Value.Id, transition, approverId, Guid.NewGuid());
         Assert.True(approved.IsSuccess);
         Assert.Equal(FormulaRevisionStatus.Approved.ToString(), approved.Value.StatusName);
+        Assert.Equal(authorId, approved.Value.CreatedById);
+        Assert.Equal(reviewerId, approved.Value.ReviewedById);
+        Assert.Equal(approverId, approved.Value.ApprovedById);
         Assert.Equal(4, await context.FormulaRevisionAudits.CountAsync());
+        Assert.Contains(await context.FormulaRevisionAudits.ToListAsync(),
+            item => item.Action == "ReviewCompleted" && item.ActorId == reviewerId);
+        Assert.Contains(await context.FormulaRevisionAudits.ToListAsync(),
+            item => item.Action == "Approved" && item.ActorId == approverId);
 
         var replacement = await service.CreateDraftAsync(
             question.Id, request, authorId, Guid.NewGuid());
@@ -124,6 +133,87 @@ public sealed class FormulaDefinitionServiceTests
             item.Status == FormulaRevisionStatus.Approved).ToListAsync());
         Assert.Contains(await context.FormulaRevisionAudits.ToListAsync(),
             item => item.FormulaRevisionId == original.Id && item.Action == "Superseded");
+    }
+
+    [Fact]
+    public async Task Approval_RequiresReviewAndRefusesOneUserInAllThreeRoles()
+    {
+        var authorId = Guid.NewGuid();
+        await using var context = CreateContext(authorId);
+        var question = FormulaQuestion();
+        context.Questions.Add(question);
+        await context.SaveChangesAsync();
+        var service = new FormulaDefinitionService(context, new ValidFormulaClient());
+        var request = DraftRequest();
+        var created = await service.CreateDraftAsync(
+            question.Id, request, authorId, Guid.NewGuid());
+        var transition = new FormulaRevisionTransitionRequest(
+            request.DefinitionHash, "Reviewed against the controlled formula definition.");
+        await service.SubmitForReviewAsync(created.Value.Id, transition, authorId, Guid.NewGuid());
+
+        var beforeReview = await service.ApproveAsync(
+            created.Value.Id, transition, Guid.NewGuid(), Guid.NewGuid());
+        Assert.Equal("FormulaDefinition.SegregationOfDuties", Assert.Single(beforeReview.Errors).Code);
+        Assert.True((await service.RecordReviewAsync(
+            created.Value.Id, transition, authorId, Guid.NewGuid())).IsSuccess);
+        var refused = await service.ApproveAsync(
+            created.Value.Id, transition, authorId, Guid.NewGuid());
+        Assert.Equal("FormulaDefinition.SegregationOfDuties", Assert.Single(refused.Errors).Code);
+        Assert.DoesNotContain(await context.FormulaRevisionAudits.ToListAsync(),
+            item => item.Action == "Approved");
+        Assert.Equal(FormulaRevisionStatus.InReview,
+            (await context.FormulaRevisions.SingleAsync()).Status);
+
+        var stale = await service.ApproveAsync(created.Value.Id,
+            transition with { ExpectedDefinitionHash = new string('f', 64) },
+            Guid.NewGuid(), Guid.NewGuid());
+        Assert.Equal("FormulaDefinition.Conflict", Assert.Single(stale.Errors).Code);
+        var approved = await service.ApproveAsync(
+            created.Value.Id, transition, Guid.NewGuid(), Guid.NewGuid());
+        Assert.True(approved.IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(0, 1, true)]
+    [InlineData(1, 0, true)]
+    [InlineData(1, 1, true)]
+    [InlineData(1, 2, true)]
+    [InlineData(0, 0, false)]
+    public async Task PendingQueue_UsesTwoUserRuleAndPreservesAssignmentsAndPermissions(
+        int reviewer, int approver, bool eligible)
+    {
+        Guid[] actors = [Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()];
+        await using var context = CreateContext(actors[0]);
+        var question = FormulaQuestion();
+        context.Questions.Add(question);
+        context.Approvals.Add(new Approval
+        {
+            Id = Guid.NewGuid(), ItemType = "FormulaRevision",
+            ApprovalStages = [
+                new() { Id = Guid.NewGuid(), Order = 1, Required = true, UserId = actors[reviewer] },
+                new() { Id = Guid.NewGuid(), Order = 2, Required = true, UserId = actors[approver] }
+            ]
+        });
+        await context.SaveChangesAsync();
+        var service = new FormulaDefinitionService(context, new ValidFormulaClient());
+        var draft = DraftRequest();
+        var created = await service.CreateDraftAsync(question.Id, draft, actors[0], Guid.NewGuid());
+        var transition = new FormulaRevisionTransitionRequest(draft.DefinitionHash, "Checked the controlled formula.");
+        await service.SubmitForReviewAsync(created.Value.Id, transition, actors[0], Guid.NewGuid());
+        var permissions = new PendingRevisionPermissions(true, true, false, false, false, false, false);
+        var reviewQueue = await PendingRevisionApprovals.GetAsync(
+            context, actors[reviewer], [], permissions, default);
+        Assert.Equal("review", Assert.Single(reviewQueue).Action);
+
+        await service.RecordReviewAsync(created.Value.Id, transition, actors[reviewer], Guid.NewGuid());
+        var approvalQueue = await PendingRevisionApprovals.GetAsync(
+            context, actors[approver], [], permissions, default);
+        Assert.Equal(eligible, approvalQueue.Count == 1);
+        if (eligible) Assert.Equal("approve", Assert.Single(approvalQueue).Action);
+        Assert.Empty(await PendingRevisionApprovals.GetAsync(
+            context, Guid.NewGuid(), [], permissions, default));
+        Assert.Empty(await PendingRevisionApprovals.GetAsync(context, actors[approver], [],
+            permissions with { FormulaReview = false, FormulaApprove = false }, default));
     }
 
     [Fact]

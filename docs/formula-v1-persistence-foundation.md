@@ -161,6 +161,17 @@ Backend verification at implementation time:
 
 ## Formula question revision edit locking
 
+As authorized on 6 November 2026, a formula revision requires at least two distinct
+users across authoring, review and approval. Any two roles may overlap: author
+and reviewer, author and approver, or reviewer and approver. All three roles
+cannot belong to one user. Approval requires a recorded author and reviewer;
+review is still an explicit step before approval. Existing endpoint permissions,
+pending queue stage assignments, hash/state checks, immutable definitions and
+audit records remain in force. The pending approvals list uses the same
+participation policy as the transition service. This is a service/UI policy
+change with no schema migration; migration importer evidence and other revision
+types retain their existing separation rules.
+
 Quality Assurance queue endpoints expose the governed review lifecycle without granting editor access:
 
 - `GET /api/v1/formula-definitions/review-queue` lists `InReview` revisions with no recorded reviewer and requires `CanViewReviewFormulaRevision`.
