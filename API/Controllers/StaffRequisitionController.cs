@@ -48,7 +48,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// Retrieves a staff requisition by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [AnyPermission("CanViewPendingApprovals", "CanViewStaffRequisition")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStaffRequisition", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStaffRequisition([FromRoute] Guid id)

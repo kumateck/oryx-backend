@@ -74,7 +74,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Retrieves a paginated list of employees based on search criteria.
     /// </summary>
     [HttpGet]
-    [AnyPermission("CanCreateUser", "CanSubmitManagerReview", "CanSubmitSelfAssessment", "CanViewActiveEmployee", "CanViewActiveUser", "CanViewCompensation", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewInactiveUser", "CanViewJobRequests", "CanViewLeaveRequests", "CanViewNewEmployee", "CanViewOvertimeManagement", "CanViewOwnGoals", "CanViewPayrollRuns", "CanViewPayslip", "CanViewPerformanceReviews", "CanViewTeamGoals")]
+    [AnyPermission("CanCreateUser", "CanSubmitManagerReview", "CanSubmitSelfAssessment", "CanViewActiveEmployee", "CanViewActiveUser", "CanViewCompensation", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewInactiveUser", "CanViewJobOrders", "CanViewJobRequests", "CanViewLeaveRequests", "CanViewNewEmployee", "CanViewOvertimeManagement", "CanViewOwnGoals", "CanViewPayrollConfiguration", "CanViewPayrollRuns", "CanViewPayslip", "CanViewPerformanceReviews", "CanViewTeamGoals")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<EmployeeDto>>))]
     public async Task<IResult> GetEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] EmployeeStatus? status = null, 
         [FromQuery] string searchQuery = null, [FromQuery] string designation = null, [FromQuery] string department = null,
@@ -91,7 +91,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Retrieves a list of employees based on their department.
     /// </summary>
     [HttpGet("departments/{id:guid}")]
-    [AnyPermission("CanViewOvertimeManagement", "CanViewShiftScheduleReportUpload")]
+    [AnyPermission("CanViewDepartmentEmployee", "CanViewOvertimeManagement", "CanViewShiftCategories", "CanViewShiftSchedule", "CanViewShiftScheduleReportUpload", "CanViewWorkingHoursPolicy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<EmployeeDto>))]
     public async Task<IResult> GetEmployeesByDepartment([FromRoute] Guid id)
     {
@@ -104,7 +104,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Returns a list of employees available for shift assignment
     /// </summary>
     [HttpGet("{shiftScheduleId:guid}/available")]
-    [AnyPermission("CanViewShiftSchedule")]
+    [AnyPermission("CanViewEmployeeDetails", "CanViewShiftCategories", "CanViewShiftSchedule", "CanViewWorkingHoursPolicy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MinimalEmployeeInfoDto>))]
     public async Task<IResult> GetAvailableEmployees([FromRoute] Guid shiftScheduleId, [FromQuery] DateTime date)
     {
@@ -115,7 +115,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Retrieves the details of a specific employee by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [AnyPermission("CanSubmitManagerReview", "CanSubmitSelfAssessment", "CanViewActiveEmployee", "CanViewCompensation", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewLeaveRequests", "CanViewNewEmployee", "CanViewOwnGoals", "CanViewPerformanceReviews", "CanViewShiftSchedule", "CanViewTeamGoals")]
+    [AnyPermission("CanSubmitManagerReview", "CanSubmitSelfAssessment", "CanViewActiveEmployee", "CanViewCompensation", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewLeaveRequests", "CanViewNewEmployee", "CanViewOwnGoals", "CanViewPayrollConfiguration", "CanViewPerformanceCycles", "CanViewPerformanceReviews", "CanViewShiftCategories", "CanViewShiftSchedule", "CanViewTeamGoals", "CanViewWorkingHoursPolicy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetEmployee([FromRoute] Guid id)

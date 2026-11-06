@@ -39,7 +39,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="departmentId">The ID of the department.</param>
     /// <returns>Returns the department details.</returns>
     [HttpGet("{departmentId}")]
-    [AnyPermission("CanApproveFgtn", "CanCreateProductionProduct", "CanSubmitAttendanceReportUpload", "CanSubmitShiftScheduleReportUpload", "CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewNewEmployee", "CanViewOpeningBalances", "CanViewStaffRequisition")]
+    [AnyPermission("CanApproveFgtn", "CanCreateProductionProduct", "CanSubmitAttendanceReportUpload", "CanSubmitShiftScheduleReportUpload", "CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewNewEmployee", "CanViewOpeningBalances", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewStaffRequisition")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DepartmentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

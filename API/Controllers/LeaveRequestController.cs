@@ -69,7 +69,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Retrieves the details of a specific leave request.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [AnyPermission("CanViewLeaveRequests", "CanViewPendingApprovals")]
+    [AnyPermission("CanViewLeaveRequests", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveRequest([FromRoute] Guid id)

@@ -43,7 +43,7 @@ public partial class PerformanceController
 
     /// <summary>A review, for HR reviewers or for the employee and reviewer taking part in it.</summary>
     [HttpGet("reviews/{id:guid}")]
-    [AnyPermission("CanViewPendingApprovals")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     public async Task<IResult> GetReview([FromRoute] Guid id)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();

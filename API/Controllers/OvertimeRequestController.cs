@@ -44,7 +44,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Retrieves the details of a specific overtime request by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    [AnyPermission("CanViewOvertimeManagement", "CanViewPendingApprovals")]
+    [AnyPermission("CanViewOvertimeManagement", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OvertimeRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetOvertimeRequest([FromRoute] Guid id)

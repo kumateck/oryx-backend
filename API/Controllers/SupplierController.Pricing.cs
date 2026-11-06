@@ -18,7 +18,7 @@ public partial class SupplierController
     }
 
     [HttpGet("{supplierId:guid}/pricing-agreements/proposals/{id:guid}")]
-    [AnyPermission("CanViewPendingApprovals")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     public async Task<IResult> GetPricingAgreementProposal([FromRoute] Guid supplierId, [FromRoute] Guid id)
     {
