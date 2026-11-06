@@ -226,9 +226,6 @@ MaterialAnalyticalRawDataController.StartTestForMaterialBatch PUT material-ard/s
 MaterialAnalyticalRawDataController.SubmitResponse POST material-ard/uniformity-of-weight/response
 MaterialAnalyticalRawDataController.Update PUT material-ard/uniformity-of-weight/{id:guid}
 MaterialController.CheckStockLevel GET material/{materialId}/stock-level
-MaterialController.CompleteRetest POST material/batch/{batchId:guid}/complete-retest
-MaterialController.ConsumeMaterialAtLocation POST material/batch/consume
-MaterialController.CreateMaterialBatch POST material/batch
 MaterialController.DownloadMaterialStock GET material/download/stock
 MaterialController.GetApprovedRawMaterials GET material/approved-materials
 MaterialController.GetApprovedRawMaterialsByDepartment GET material/batches/departments
@@ -261,11 +258,6 @@ MaterialController.GetStockByDepartment GET material/{materialId}/stock/departme
 MaterialController.GetStockByWarehouse GET material/{materialId}/stock/warehouses
 MaterialController.GetUoMForMaterial GET material/{materialId}/uom
 MaterialController.GetWarehouseStock GET material/{materialId}/stock/{warehouseId}
-MaterialController.ImportMaterialBatchesFromCsv POST material/batches/import
-MaterialController.MoveMaterialBatch POST material/batch/move
-MaterialController.RequestRetest POST material/batch/{batchId:guid}/request-retest
-MaterialController.ResolveInconsistencies POST material/maintenance/fix-inconsistencies
-MaterialController.UpdateBatchStatus PUT material/batch/status
 MaterialPurchaseUnitsController.Get GET material/{materialId:guid}/purchase-units
 MaterialSamplingController.AddIssueNumberToMaterialSampling PUT material-samplings/{materialSamplingId:guid}
 MaterialSamplingController.CreateMaterialSampling POST material-samplings
@@ -454,10 +446,7 @@ RecoverableItemsReportController.CreateRecoverableItemReport POST v{version:apiV
 RecoverableItemsReportController.GetRecoverableItemReports GET v{version:apiVersion}/recoverable-items-reports
 ReportHistoryController.Capabilities GET report/history/capabilities
 ReportHistoryController.Vendors GET report/history/vendors
-RequisitionController.ApproveRequisition POST requisition/{requisitionId}/issue
 RequisitionController.CheckIfSupplierHasPendingPriceComparison GET requisition/pending/{supplierId}
-RequisitionController.CreateRequisition POST requisition
-RequisitionController.DeleteSourceRequisition DELETE requisition/source/{sourceRequisitionId}
 RequisitionController.GetAlternativeBatches GET requisition/{requisitionId}/alternative-batches
 RequisitionController.GetPriceComparisonOfMaterial GET requisition/source/material/price-comparison
 RequisitionController.GetPriceComparisonOfMaterial GET requisition/source/material/price-comparison/by-material
@@ -472,7 +461,6 @@ RequisitionController.GetSuppliersWithSourceRequisitionItems GET requisition/sou
 RequisitionController.GetSuppliersWithSourceRequisitionItems GET requisition/source/supplier/{supplierId}
 RequisitionController.GetSuppliersWithSourceRequisitionItemsForQuotation GET requisition/source/supplier/quotation
 RequisitionController.GetSuppliersWithSourceRequisitionItemsForQuotation GET requisition/source/supplier/{supplierQuotationId}/quotation
-RequisitionController.UpdateSourceRequisition PUT requisition/source/{sourceRequisitionId}
 RoutineQcController.AddSample POST qc/routines/{id:guid}/samples
 RoutineQcController.Certificate GET qc/routines/certificates/{id:guid}
 RoutineQcController.CreateArd POST qc/routines/ards
@@ -548,10 +536,6 @@ VendorController.GetVendor GET vendors/{id:guid}
 VendorController.GetVendors GET vendors
 VendorController.UpdateVendor PUT vendors/{id:guid}
 VerificationController.VerifyEntity POST verification
-WarehouseController.ApproveSwapRequest PUT warehouse/swap/{id}/approve
-WarehouseController.ConfirmArrival POST warehouse/confirm-arrival/{distributedMaterialId}
-WarehouseController.CreateArrivalLocation POST warehouse/arrival-location
-WarehouseController.CreateSwapRequest POST warehouse/swap
 WarehouseController.GetAllShelves GET warehouse/{warehouseId}/shelves
 WarehouseController.GetAllSwapRequests GET warehouse/swap
 WarehouseController.GetArrivalLocationDetails GET warehouse/{warehouseId}/arrival-location
@@ -584,8 +568,6 @@ WarehouseController.GetWarehouseLocationShelves GET warehouse/shelf/by-departmen
 WarehouseController.GetWarehouseLocations GET warehouse/location
 WarehouseController.GetWarehouses GET warehouse
 WarehouseController.GetWarehousesByDepartment GET warehouse/department/{departmentId}
-WarehouseController.RejectSwapRequest PUT warehouse/swap/{id}/reject
-WarehouseController.UpdateArrivalLocation PUT warehouse/arrival-location
 WaterQualityController.ActivatePeriod POST qc/water-quality/periods
 WaterQualityController.HoldPeriod POST qc/water-quality/periods/{id:guid}/hold
 WaterQualityController.ListEligibleCertificates GET qc/water-quality/certificates

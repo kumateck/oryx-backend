@@ -7,6 +7,97 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Warehouse",
+    "submodule": "Arrival Locations",
+    "key": "CanCreateArrivalLocation",
+    "name": "Can Create Arrival Location",
+    "description": "Allows the user to  create arrival location."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Arrival Locations",
+    "key": "CanEditArrivalLocation",
+    "name": "Can Edit Arrival Location",
+    "description": "Allows the user to  edit arrival location."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Arrival Locations",
+    "key": "CanConfirmMaterialArrival",
+    "name": "Can Confirm Material Arrival",
+    "description": "Allows the user to  confirm material arrival."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanCreateMaterialBatch",
+    "name": "Can Create Material Batch",
+    "description": "Allows the user to  create material batch."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanImportMaterialBatches",
+    "name": "Can Import Material Batches",
+    "description": "Allows the user to  import material batches."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanMoveMaterialBatch",
+    "name": "Can Move Material Batch",
+    "description": "Allows the user to  move material batch."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanConsumeMaterialAtLocation",
+    "name": "Can Consume Material At Location",
+    "description": "Allows the user to  consume material at location."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanChangeMaterialBatchStatus",
+    "name": "Can Change Material Batch Status",
+    "description": "Allows the user to  change material batch status."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanRequestMaterialBatchRetest",
+    "name": "Can Request Material Batch Retest",
+    "description": "Allows the user to  request material batch retest."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanCompleteMaterialBatchRetest",
+    "name": "Can Complete Material Batch Retest",
+    "description": "Allows the user to  complete material batch retest."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanFixStockInconsistencies",
+    "name": "Can Fix Stock Inconsistencies",
+    "description": "Allows the user to  fix stock inconsistencies."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Requisition Sourcing",
+    "key": "CanEditSourceRequisition",
+    "name": "Can Edit Source Requisition",
+    "description": "Allows the user to  edit source requisition."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Requisition Sourcing",
+    "key": "CanDeleteSourceRequisition",
+    "name": "Can Delete Source Requisition",
+    "description": "Allows the user to  delete source requisition."
+  },
+  {
     "module": "Reports",
     "submodule": "Dashboards",
     "key": "CanViewHrDashboard",
