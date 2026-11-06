@@ -102,7 +102,9 @@ public sealed class PermissionCatalogTests
                         .SelectMany(attribute => new[] { attribute.RawKey, attribute.PackagingKey }))
                     .Concat(action.GetCustomAttributes<API.Authorization.PurchaseOrderPermissionAttribute>()
                         .SelectMany(attribute => new[] { attribute.ForeignKey, attribute.LocalKey }))
-                    .Concat(action.GetCustomAttributes<API.Authorization.AnyPermissionAttribute>().SelectMany(attribute => attribute.Keys)).Distinct().ToList();
+                    .Concat(action.GetCustomAttributes<API.Authorization.AnyPermissionAttribute>().SelectMany(attribute => attribute.Keys))
+                    .Concat(action.GetCustomAttributes<API.Authorization.SupplierTypePermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.ForeignKey, attribute.LocalKey })).Distinct().ToList();
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");
