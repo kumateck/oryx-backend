@@ -24,10 +24,6 @@ AuthController.ResetPassword POST auth/change-password
 AuthController.UserChangePassword POST auth/user-reset-password
 BillOfMaterialController.GetBillOfMaterial GET bom/{billOfMaterialId}
 BillOfMaterialController.GetBillOfMaterials GET bom
-CollectionController.CreateItem POST collection/{itemType}
-CollectionController.CreateUoM POST collection/uom
-CollectionController.DeleteItem DELETE collection/{itemType}/{itemId}
-CollectionController.DeleteUoM DELETE collection/uom/{uomId}
 CollectionController.GetItemCollection GET collection/{itemType}
 CollectionController.GetItemCollection POST collection
 CollectionController.GetItemTypes GET collection/item-types
@@ -35,8 +31,6 @@ CollectionController.GetOperations GET collection/operations
 CollectionController.GetPackageStyles GET collection/package-styles
 CollectionController.GetUoM POST collection/uom/paginated
 CollectionController.GetUoM POST collection/uom/{uomId}
-CollectionController.UpdateItem PUT collection/{itemType}/{itemId}
-CollectionController.UpdateUoM PUT collection/uom/{uomId}
 CommercialCertificateController.GenerateForMaterial POST qc/commercial-certificates/materials/{materialSamplingId:guid}
 CommercialCertificateController.GenerateForMaterialBatch POST qc/commercial-certificates/material-batches/{materialBatchId:guid}
 CommercialCertificateController.GenerateForProduct POST qc/commercial-certificates/products/{analyticalTestRequestId:guid}
@@ -243,8 +237,6 @@ PermissionController.GetAllPermissionModules GET permission/modules
 PermissionController.GetAllPermissions GET permission
 PermissionController.GetFilteredMenu GET permission/menu
 PermissionController.GetPermissionsForUser GET permission/user/{userId?}
-ProcurementController.CreatePurchaseOrderInvoice POST procurement/purchase-order-invoice
-ProcurementController.DeletePurchaseOrderInvoice DELETE procurement/purchase-order-invoice/{invoiceId}
 ProcurementController.GetArrivedShipments GET procurement/shipment-document/arrived
 ProcurementController.GetBillingSheet GET procurement/billing-sheet/{billingSheetId}
 ProcurementController.GetBillingSheetByInvoice GET procurement/billing-sheet/invoice/{invoiceId}
@@ -277,14 +269,11 @@ ProcurementController.GetSuppliers GET procurement/supplier
 ProcurementController.GetUnattachedShipmentInvoices GET procurement/shipment-invoice/unattached
 ProcurementController.GetWaybillDocument GET procurement/waybill/{waybillId}
 ProcurementController.GetWaybillDocuments GET procurement/waybill
-ProcurementController.UpdatePurchaseOrderInvoice PUT procurement/purchase-order-invoice/{invoiceId}
 ProductAnalyticalRawDataController.GetAnalyticalRawData GET product-ard
 ProductAnalyticalRawDataController.GetAnalyticalRawData GET product-ard/{id:guid}
 ProductAnalyticalRawDataController.GetAnalyticalRawDataByProduct GET product-ard/product/{productId:guid}
 ProductAnalyticalRawDataController.GetRelevantProductInfoForArd GET product-ard/product/batch-details/{batchManufacturingRecordId:guid}
 ProductAnalyticalRawDataController.StartTestForMaterialBatch PUT product-ard/start-test/{batchManufacturingRecordId:guid}
-ProductController.CreateEquipment POST product/equipment
-ProductController.DeleteEquipment DELETE product/equipment/{equipmentId}
 ProductController.DownloadProductStock GET product/download/stock
 ProductController.GetAllEquipments GET product/equipment/all
 ProductController.GetBillOfMaterial GET product/{productId}/bom
@@ -298,9 +287,6 @@ ProductController.GetProductPackings GET product/{productId}/packing
 ProductController.GetProducts GET product
 ProductController.GetRoute GET product/routes/{routeId}
 ProductController.GetRoutes GET product/{productId}/routes
-ProductController.UpdateEquipment PUT product/equipment/{equipmentId}
-ProductController.UploadEquipment POST product/upload/equipment
-ProductController.UploadProductStock POST product/upload/stock
 ProductSamplingController.AddIssueNumberToMaterialSampling PUT product-samplings/{productSamplingId:guid}
 ProductSamplingController.CreateProductSampling POST product-samplings
 ProductSamplingController.GetProductSamplingByProductId GET product-samplings/{bmrId:guid}
@@ -442,12 +428,6 @@ UserController.GetUserByRole GET user/role/{roleId}
 UserController.GetUsers GET user
 UserController.GetUsersByPermissions GET user/by-permission
 UserController.UploadAnImage POST user/avatar/{id?}
-VendorController.CreateVendor POST vendors
-VendorController.DeleteVendor DELETE vendors/{id:guid}
-VendorController.GetItems GET vendors/item/{id:guid}
-VendorController.GetVendor GET vendors/{id:guid}
-VendorController.GetVendors GET vendors
-VendorController.UpdateVendor PUT vendors/{id:guid}
 VerificationController.VerifyEntity POST verification
 WarehouseController.GetAllShelves GET warehouse/{warehouseId}/shelves
 WarehouseController.GetAllSwapRequests GET warehouse/swap
