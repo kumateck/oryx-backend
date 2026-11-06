@@ -242,6 +242,21 @@ public static class PermissionKeys
     public const string CanEditSourceRequisition = "CanEditSourceRequisition";
     /// <summary>Delete a source requisition.</summary>
     public const string CanDeleteSourceRequisition = "CanDeleteSourceRequisition";
+    // QC/QA tasks no page offers yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Change an analytical test request.</summary>
+    public const string CanEditAnalyticalTestRequest = "CanEditAnalyticalTestRequest";
+    /// <summary>Change the status of an analytical test request.</summary>
+    public const string CanChangeAnalyticalTestRequestStatus = "CanChangeAnalyticalTestRequestStatus";
+    /// <summary>Delete an analytical test request.</summary>
+    public const string CanDeleteAnalyticalTestRequest = "CanDeleteAnalyticalTestRequest";
+    /// <summary>Create a uniformity-of-weight record.</summary>
+    public const string CanCreateUniformityOfWeight = "CanCreateUniformityOfWeight";
+    /// <summary>Change a uniformity-of-weight record.</summary>
+    public const string CanEditUniformityOfWeight = "CanEditUniformityOfWeight";
+    /// <summary>Delete a uniformity-of-weight record.</summary>
+    public const string CanDeleteUniformityOfWeight = "CanDeleteUniformityOfWeight";
+    /// <summary>Submit uniformity-of-weight results.</summary>
+    public const string CanSubmitUniformityOfWeight = "CanSubmitUniformityOfWeight";
     // Dashboards: one key each (permissions audit phase 4).
     /// <summary>View the HR dashboard.</summary>
     public const string CanViewHrDashboard = "CanViewHrDashboard";
@@ -2387,6 +2402,26 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanCreateUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanEditUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanDeleteUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanSubmitUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
             PermissionKeys.CanReassignRawMaterialTest
         );
         addPermission(
@@ -2438,6 +2473,21 @@ public static class PermissionUtils
             PermissionModules.QualityControl,
             PermissionSubmodules.AnalyticalTestRequestProducts,
             PermissionKeys.CanAssignProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanEditAnalyticalTestRequest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanChangeAnalyticalTestRequestStatus
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanDeleteAnalyticalTestRequest
         );
         addPermission(
             PermissionModules.QualityControl,

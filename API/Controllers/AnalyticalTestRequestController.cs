@@ -17,6 +17,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Creates an analytical test request
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanUpdateProductionStep)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateAnalyticalTestRequest(
@@ -67,6 +68,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Updates the details of an analytical test request by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditAnalyticalTestRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AnalyticalTestRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -83,6 +85,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Updates the status of an analytical test request by its ID.
     /// </summary>
     [HttpPut("status/{id:guid}")]
+    [Authorize(PermissionKeys.CanChangeAnalyticalTestRequestStatus)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(AnalyticalTestRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -103,6 +106,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Assigns users to an analytical test request.
     /// </summary>
     [HttpPut("assign/{id:guid}")]
+    [Authorize(PermissionKeys.CanAssignProductTest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -119,6 +123,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Reassigns users to an analytical test request.
     /// </summary>
     [HttpPut("reassign/{id:guid}")]
+    [Authorize(PermissionKeys.CanReassignProductTest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -171,6 +176,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Deletes an analytical test request.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteAnalyticalTestRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteAnalyticalTestRequest([FromRoute] Guid id)

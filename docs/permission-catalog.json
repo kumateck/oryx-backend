@@ -2081,6 +2081,34 @@
   {
     "module": "Quality Control",
     "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanCreateUniformityOfWeight",
+    "name": "Can Create Uniformity Of Weight",
+    "description": "Allows the user to  create uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanEditUniformityOfWeight",
+    "name": "Can Edit Uniformity Of Weight",
+    "description": "Allows the user to  edit uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanDeleteUniformityOfWeight",
+    "name": "Can Delete Uniformity Of Weight",
+    "description": "Allows the user to  delete uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanSubmitUniformityOfWeight",
+    "name": "Can Submit Uniformity Of Weight",
+    "description": "Allows the user to  submit uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
     "key": "CanReassignRawMaterialTest",
     "name": "Can Reassign Raw Material Test",
     "description": "Allows the user to  reassign raw material test."
@@ -2154,6 +2182,27 @@
     "key": "CanAssignProductTest",
     "name": "Can Assign Product Test",
     "description": "Allows the user to  assign product test."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanEditAnalyticalTestRequest",
+    "name": "Can Edit Analytical Test Request",
+    "description": "Allows the user to  edit analytical test request."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanChangeAnalyticalTestRequestStatus",
+    "name": "Can Change Analytical Test Request Status",
+    "description": "Allows the user to  change analytical test request status."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanDeleteAnalyticalTestRequest",
+    "name": "Can Delete Analytical Test Request",
+    "description": "Allows the user to  delete analytical test request."
   },
   {
     "module": "Quality Control",

@@ -124,6 +124,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Starts test for material batch
     /// </summary>
     [HttpPut("start-test/{materialBatchId:guid}")]
+    [MaterialKindPermission(PermissionKeys.CanStartRawMaterialTest, PermissionKeys.CanStartPackagingMaterialTest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> StartTestForMaterialBatch([FromRoute] Guid materialBatchId)
@@ -136,6 +137,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Creates a uniformity of weight record.
     /// </summary>
     [HttpPost("uniformity-of-weight")]
+    [Authorize(PermissionKeys.CanCreateUniformityOfWeight)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> Create([FromBody] CreateUniformityOfWeight request)
@@ -171,6 +173,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Updates a uniformity of weight record.
     /// </summary>
     [HttpPut("uniformity-of-weight/{id:guid}")]
+    [Authorize(PermissionKeys.CanEditUniformityOfWeight)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -184,6 +187,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Deletes a uniformity of weight record.
     /// </summary>
     [HttpDelete("uniformity-of-weight/{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteUniformityOfWeight)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> Delete([FromRoute] Guid id)
@@ -199,6 +203,7 @@ public class MaterialAnalyticalRawDataController(IMaterialAnalyticalRawDataRepos
     /// Submits a uniformity of weight response.
     /// </summary>
     [HttpPost("uniformity-of-weight/response")]
+    [Authorize(PermissionKeys.CanSubmitUniformityOfWeight)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SubmitResponse([FromBody] CreateUniformityOfWeightResponse request)
