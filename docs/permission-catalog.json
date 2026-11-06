@@ -7,6 +7,90 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewHrDashboard",
+    "name": "Can View Hr Dashboard",
+    "description": "Allows the user to  view hr dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewHrExecutiveSummary",
+    "name": "Can View Hr Executive Summary",
+    "description": "Allows the user to  view hr executive summary."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewProductionHealthDashboard",
+    "name": "Can View Production Health Dashboard",
+    "description": "Allows the user to  view production health dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewFgtnDashboard",
+    "name": "Can View Fgtn Dashboard",
+    "description": "Allows the user to  view fgtn dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewWarehouseDashboard",
+    "name": "Can View Warehouse Dashboard",
+    "description": "Allows the user to  view warehouse dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewInventoryCommandCenter",
+    "name": "Can View Inventory Command Center",
+    "description": "Allows the user to  view inventory command center."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewLogisticsDashboard",
+    "name": "Can View Logistics Dashboard",
+    "description": "Allows the user to  view logistics dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewProcurementDashboard",
+    "name": "Can View Procurement Dashboard",
+    "description": "Allows the user to  view procurement dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewQcDashboard",
+    "name": "Can View Qc Dashboard",
+    "description": "Allows the user to  view qc dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewQaDashboard",
+    "name": "Can View Qa Dashboard",
+    "description": "Allows the user to  view qa dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewServicesDashboard",
+    "name": "Can View Services Dashboard",
+    "description": "Allows the user to  view services dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewStoresDashboard",
+    "name": "Can View Stores Dashboard",
+    "description": "Allows the user to  view stores dashboard."
+  },
+  {
     "module": "Production",
     "submodule": "Products",
     "key": "CanViewProductionProducts",

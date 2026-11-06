@@ -215,6 +215,31 @@ public static class PermissionSubmodules
 public static class PermissionKeys
 {
     public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
+    // Dashboards: one key each (permissions audit phase 4).
+    /// <summary>View the HR dashboard.</summary>
+    public const string CanViewHrDashboard = "CanViewHrDashboard";
+    /// <summary>View the HR executive summary.</summary>
+    public const string CanViewHrExecutiveSummary = "CanViewHrExecutiveSummary";
+    /// <summary>View the production health dashboard.</summary>
+    public const string CanViewProductionHealthDashboard = "CanViewProductionHealthDashboard";
+    /// <summary>View the FGTN dashboard.</summary>
+    public const string CanViewFgtnDashboard = "CanViewFgtnDashboard";
+    /// <summary>View the warehouse dashboard.</summary>
+    public const string CanViewWarehouseDashboard = "CanViewWarehouseDashboard";
+    /// <summary>View the inventory command centre.</summary>
+    public const string CanViewInventoryCommandCenter = "CanViewInventoryCommandCenter";
+    /// <summary>View the logistics dashboard.</summary>
+    public const string CanViewLogisticsDashboard = "CanViewLogisticsDashboard";
+    /// <summary>View the procurement dashboard.</summary>
+    public const string CanViewProcurementDashboard = "CanViewProcurementDashboard";
+    /// <summary>View the QC dashboard.</summary>
+    public const string CanViewQcDashboard = "CanViewQcDashboard";
+    /// <summary>View the QA dashboard.</summary>
+    public const string CanViewQaDashboard = "CanViewQaDashboard";
+    /// <summary>View the services dashboard.</summary>
+    public const string CanViewServicesDashboard = "CanViewServicesDashboard";
+    /// <summary>View the stores dashboard.</summary>
+    public const string CanViewStoresDashboard = "CanViewStoresDashboard";
     // Products: one key per task and section, per context (permissions audit phase 2).
     /// <summary>View the Production product list.</summary>
     public const string CanViewProductionProducts = "CanViewProductionProducts";
@@ -1230,6 +1255,18 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewHrDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewHrExecutiveSummary);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewProductionHealthDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewFgtnDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewWarehouseDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewInventoryCommandCenter);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewLogisticsDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewProcurementDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewQcDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewQaDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewServicesDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewStoresDashboard);
         // Products (audit phase 2): Production authors, QA maintains, the FG warehouse lists.
         addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProducts);
         addPermission(PermissionModules.Production, "Products", PermissionKeys.CanImportProductionProducts);

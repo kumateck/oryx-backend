@@ -1,3 +1,4 @@
+using APP.Services.Stores;
 using APP.Extensions;
 using APP.Utils;
 using APP.Services.Inventory;
@@ -35,6 +36,9 @@ public partial class ItemController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadItem([FromForm] ImportItemsRequest request)
     {
+        // The sheet decides each item's store, so an import needs the create key of every store.
+        foreach (var store in StoreWorkflowAccess.Stores)
+            if (!await Allowed(store, "CreateNewItemIn")) return TypedResults.Forbid();
         var result = await repository.UploadItems(request);
         return result.IsSuccess ? TypedResults.Ok() : result.ToProblemDetails();
     }
