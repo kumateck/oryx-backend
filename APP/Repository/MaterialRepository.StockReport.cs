@@ -1,3 +1,4 @@
+using APP.Services.Authorization;
 using APP.Extensions;
 using DOMAIN.Entities.Materials.Batch;
 using Microsoft.EntityFrameworkCore;
@@ -9,13 +10,14 @@ public partial class MaterialRepository
 {
     public async Task<Result<MaterialStockReportDto>> GetMaterialStockReport(MaterialStockReportFilter filter, Guid userId)
     {
-        var account = await ExpiryDepartment(userId);
-        if (account.IsFailure) return account.Error;
-        if (account.Value.HasValue && filter.DepartmentId.HasValue && account.Value != filter.DepartmentId)
-            return Error.Forbidden("StockReport.Department", "Your account can only report stock in its assigned department.");
+        // Production users report on their own department; other users choose any department or all.
+        var actor = await ReportDepartmentScope.Load(context, userId);
+        if (actor is null) return Error.Forbidden("Expiry.AccountUnavailable", "An active account is required to read expiry records.");
+        var scope = ReportDepartmentScope.Resolve(actor, filter.DepartmentId);
+        if (scope.IsFailure) return scope.Error;
         if (filter.MaterialKind.HasValue && !Enum.IsDefined(filter.MaterialKind.Value))
             return Error.Validation("StockReport.Kind", "Choose a valid material kind.");
-        var departmentId = account.Value ?? filter.DepartmentId;
+        var departmentId = scope.Value;
         var department = departmentId.HasValue ? await context.Departments.IgnoreQueryFilters().AsNoTracking()
             .Where(value => value.Id == departmentId && value.DeletedAt == null)
             .Select(value => new { value.Name }).SingleOrDefaultAsync() : null;
