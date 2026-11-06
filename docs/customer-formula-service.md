@@ -19,8 +19,9 @@ bun run formula:package /absolute/path/to/new-formula-release
 
 The directory contains `manifest.json` and `image.tar`. The manifest pins the
 Docker image identity, archive SHA-256, engine hash, numeric policy, source SHA
-and source-content hash. It also records whether the source checkout was dirty;
-production release bundles should come from clean, reviewed source. Keep this
+and source-content hash. It also records whether the source checkout was dirty; the
+deployer refuses bundles with `sourceDirty: true`, and packaging refuses a dirty
+checkout unless explicitly run for local development. Keep this
 bundle as a release artifact; transfer the whole directory using your approved
 file-transfer/offline-media process. No registry login or Node installation is
 needed on the customer server. Do not manually substitute an image/hash or edit
@@ -68,7 +69,8 @@ must be moved to a retained release directory before installing the symlink.
 `init-secret` creates `/opt/oryx/secrets/formula-service-token` once: root-owned,
 mode 0600, in a root-owned 0700 directory. Repeating it validates and retains the
 same secret. Invalid existing files fail instead of rotating. Back it up securely.
-The networkless one-shot helper copies it into a Docker volume as UID 10001,
+The networkless one-shot helper, run from the locally built API image (never
+the delivered formula image), copies it into a Docker volume as UID 10001,
 mode 0400; only that helper has CHOWN/DAC_OVERRIDE capabilities. Both running
 containers mount the volume read-only. The unprivileged formula container drops
 **all** capabilities and retains read-only root filesystem, restricted tmpfs,
@@ -99,8 +101,11 @@ docker ps --filter label=com.docker.compose.service=formula-calculation
 ```
 
 Verification executes `dotnet API.dll --formula-readiness` **inside the live API
-container**, using the same settings loader, HTTP client registration and
-`IsReadyAsync` call as `/api/v1/formula-runtime/status`. It fails nonzero and the
+container**, using the same settings loader and HTTP client registration as
+`/api/v1/formula-runtime/status`. It calls `/ready` and then sends an empty,
+authenticated validate request: the service answers it as an invalid request only
+after accepting the workload token and running a worker, so a token mismatch or
+broken workers fail readiness instead of passing it. It fails nonzero and the
 deployment fails loudly if disabled, unreachable or `/ready` is non-success. It
 starts no HTTP server, migrations, database connection, seeding or telemetry.
 It needs no user password, forged token or anonymous endpoint. The normal status
@@ -142,8 +147,10 @@ An interrupted rollback can be retried with the same command after inspection.
 Do not resume polling until you have selected the corresponding retained bundle
 as `current`, resolved any pending state, and validated the formula screens.
 Successful rollback leaves backend `current` unchanged and updates only
-`formula-current`. Keep state/release snapshots and `formula-images` archives;
-missing Docker images can be restored from those verified archives offline.
+`formula-current`. Successful deploys keep the active and previous formula releases plus the newest
+`ORYX_FORMULA_KEEP` (default 5) snapshots, and delete archives no kept release
+references; copy any older bundle you may need into long-term storage. Missing
+Docker images can be restored from retained archives offline.
 Full backend/database rollback still follows the existing tested restore process.
 
 ## Local verification
@@ -170,3 +177,11 @@ the pinned offline actionlint check. The final desktop image/bundle built and th
 disposable Docker smoke passed, including real validation and evaluation. The
 full production backend Docker/migration build and complete web/Electron build
 were not run. No customer server was contacted or changed.
+
+## Review follow-up (2026-11-06)
+
+`docker-compose.formula.yml` (demo/manual) health-checks `/health` again: `/ready`
+fails by design while formulas are disabled, which blocked the API's
+`service_healthy` dependency. The customer compose keeps `/ready` because customer
+deployments always enable the service. A deployment test keeps both files'
+container hardening identical.

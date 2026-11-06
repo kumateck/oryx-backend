@@ -36,7 +36,9 @@ docker run --rm --platform linux/amd64 --network none --user 0 --read-only --cap
 const fs=require("node:fs"); fs.chmodSync("/source",0o700); fs.writeFileSync("/source/formula-service-token",require("node:crypto").randomBytes(32).toString("hex"),{mode:0o600});'
 ORYX_FORMULA_SECRET_FILE="$(docker volume inspect --format '{{.Mountpoint}}' "$source_volume")/formula-service-token"
 formula_prepare
+formula_provision_secret "$PROBE_IMAGE"
 formula_prepare # Reuse the existing secret and retained image; must not rotate or fail.
+formula_provision_secret "$PROBE_IMAGE"
 python3 - "$FORMULA_RELEASE/formula.json" "$network" <<'PY'
 import json,pathlib,sys
 path=pathlib.Path(sys.argv[1]); config=json.loads(path.read_text()); config['networks']['sail']['name']=sys.argv[2]; path.write_text(json.dumps(config))
