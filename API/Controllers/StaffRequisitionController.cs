@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -33,6 +34,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// Retrieves a paginated list of staff requisitions.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewStaffRequisition")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StaffRequisitionDto>>))]
     public async Task<IResult> GetStaffRequisitions([FromQuery] AppointmentType? appointmentType, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null,
@@ -46,6 +48,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     /// Retrieves a staff requisition by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStaffRequisition", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStaffRequisition([FromRoute] Guid id)

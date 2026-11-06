@@ -1,3 +1,4 @@
+using API.Authorization;
 using API.Filters;
 using SHARED;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ namespace API.Controllers;
 public class ReportHistoryController(ApplicationDbContext context, ICurrentUserService user) : ControllerBase
 {
     [HttpGet("capabilities")]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ReportHistoryCapabilitiesDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IResult> Capabilities(CancellationToken cancellationToken)
@@ -28,6 +30,7 @@ public class ReportHistoryController(ApplicationDbContext context, ICurrentUserS
         return TypedResults.Ok(new ReportHistoryCapabilitiesDto { ServerTime = DateTime.UtcNow, Available = coverage.Count > 0, AvailableFrom = coverage.Count > 0 ? coverage.Values.Max() : null });
     }
     [HttpGet("vendors")]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport, RequireForCurrent = true)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CollectionItemDto>))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

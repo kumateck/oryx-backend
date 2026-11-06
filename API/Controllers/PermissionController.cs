@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
@@ -16,6 +17,7 @@ public class PermissionController(IPermissionRepository repo, INFRASTRUCTURE.Con
     /// Retrieves all permission modules in the system.
     /// </summary>
     [HttpGet("modules")]
+    [AnyPermission("CanViewPermissions", "CanViewRoles", "CanCreateRole", "CanEditRole")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PermissionModuleDto>))]
     public IResult GetAllPermissionModules()
@@ -28,6 +30,7 @@ public class PermissionController(IPermissionRepository repo, INFRASTRUCTURE.Con
     /// Retrieves all permissions in the system.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewPermissions", "CanViewRoles", "CanCreateRole", "CanEditRole")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PermissionDto>))]
     public IResult GetAllPermissions()
@@ -41,6 +44,7 @@ public class PermissionController(IPermissionRepository repo, INFRASTRUCTURE.Con
     /// </summary>
     /// <param name="userId">The user ID.</param>
     [HttpGet("user/{userId?}")]
+    [SignedInUser("Returns the caller's own permissions, which every signed-in page needs.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PermissionModuleDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,6 +94,7 @@ public class PermissionController(IPermissionRepository repo, INFRASTRUCTURE.Con
     /// Gets filtered menu based on user role
     /// </summary>
     [HttpGet("menu")]
+    [SignedInUser("Returns the caller's own menu.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MenuItem>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

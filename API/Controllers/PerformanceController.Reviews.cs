@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.Utils;
 using DOMAIN.Entities.Performance;
@@ -30,6 +31,7 @@ public partial class PerformanceController
 
     /// <summary>The reviews the signed-in employee is reviewed in or reviews.</summary>
     [HttpGet("reviews/mine")]
+    [SignedInUser("Lists the caller's own performance reviews.")]
     public async Task<IResult> GetMyReviews([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();
@@ -41,6 +43,7 @@ public partial class PerformanceController
 
     /// <summary>A review, for HR reviewers or for the employee and reviewer taking part in it.</summary>
     [HttpGet("reviews/{id:guid}")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     public async Task<IResult> GetReview([FromRoute] Guid id)
     {
         if (!TryGetUserId(out var userId)) return TypedResults.Unauthorized();

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.Countries;
@@ -14,6 +15,7 @@ public class CountryController(ICountryRepository repository) : ControllerBase
     /// Returns a list of countries.
     /// </summary>
     [HttpGet]
+    [SignedInUser("The country list, a reference lookup.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CountryDto>))]
     public async Task<IResult> GetCountries()
     {

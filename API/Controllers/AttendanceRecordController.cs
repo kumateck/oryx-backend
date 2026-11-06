@@ -1,3 +1,4 @@
+using API.Authorization;
 using API.Filters;
 using APP.Utils;
 using APP.Extensions;
@@ -30,6 +31,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// </summary>
     [ReportDepartmentScope]
     [HttpGet("daily-summary")]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AttendanceRecordDepartmentDto>))]
     public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName,
         [FromQuery] DateTime date)
@@ -44,6 +46,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [ReportDepartmentScope]
     [HttpGet("general-summary")]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralAttendanceReportResponse))]
     public async Task<IResult> GeneralDailySummary([FromQuery] Guid? departmentId = null)
     {
@@ -55,6 +58,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// Exports attendance summary as a CSV or Excel file (excel by default)
     /// </summary>
     [HttpGet("export")]
+    [AnyPermission("CanViewAttendanceReportUpload", "CanViewHumanResourcesReport")]
     public async Task<IResult> ExportAttendanceSummary([FromQuery] FileFormat format)
     {
         var result = await repository.ExportAttendanceSummary(format);
