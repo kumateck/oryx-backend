@@ -54,6 +54,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     /// <summary>Issued BMRs by inclusive UTC issue date, including completed and archived history.</summary>
+    [ReportDepartmentScope]
     [HttpGet("bmr-issued", Name = "GetIssuedBmrReport")]
     [Authorize(PermissionKeys.CanViewQcAndQaReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrReportDto))]
@@ -69,6 +70,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     /// <summary>Complete market-grouped production plan and current product configuration readiness.</summary>
+    [ReportDepartmentScope]
     [HttpGet("production-readiness", Name = "GetProductionReadinessReport")]
     [Authorize(PermissionKeys.CanViewQcAndQaReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReadinessReportDto))]
@@ -210,6 +212,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves the report detailing the grade-wise count of permanent staff across departments.
     /// </summary>
     [ReportHistory(PermissionKeys.CanViewHumanResourcesReport)]
+    [ReportDepartmentScope]
     [HttpGet("staff-report")]
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PermanentStaffGradeReportDto))]
@@ -222,6 +225,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves the employee movement report based on the specified filter.
     /// </summary>
+    [ReportDepartmentScope]
     [HttpGet("employee-movement")]
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMovementReportDto>))]
@@ -234,6 +238,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves the staff total report based on the specified filter.
     /// </summary>
+    [ReportDepartmentScope]
     [HttpGet("staff-total-report")]
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTotalReport))]
@@ -248,6 +253,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     /// <param name="filter"></param>
     /// <returns></returns>
+    [ReportDepartmentScope]
     [HttpGet("staff-gender-ratio-report")]
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffGenderRatioReport))]
@@ -257,6 +263,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [ReportDepartmentScope]
     [HttpGet("staff-leave-report")]
 
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
@@ -267,6 +274,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    [ReportDepartmentScope]
     [HttpGet("staff-turnover-report")]
 
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
@@ -399,6 +407,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves the product stock summary report.
     /// </summary>
     [ReportHistory(PermissionKeys.CanViewFgtnReport)]
+    [ReportDepartmentScope]
     [HttpGet("product-stock-summary")]
     [AnyPermission(PermissionKeys.CanViewFgtnDashboard, PermissionKeys.CanViewFgtnReport)]
     [ProducesResponseType(
@@ -424,6 +433,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves the detailed product stock report with batch and expiry information.
     /// </summary>
     [ReportHistory(PermissionKeys.CanViewFgtnReport)]
+    [ReportDepartmentScope]
     [HttpGet("product-stock-detailed")]
     [Authorize(PermissionKeys.CanViewFgtnReport)]
     [ProducesResponseType(
@@ -1238,6 +1248,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportDepartmentScope]
     [HttpGet("warehouse/materials-stock-summary")]
     [Authorize(PermissionKeys.CanViewWarehouseReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialsStockSummaryDto>))]
@@ -1252,6 +1263,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportDepartmentScope]
     [HttpGet("warehouse/materials-stock-batch-detail")]
     [Authorize(PermissionKeys.CanViewWarehouseReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialsStockBatchDetailDto>))]
@@ -1519,6 +1531,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportDepartmentScope]
     [HttpGet("warehouse/inventory-valuation-detail")]
     [Authorize(PermissionKeys.CanViewWarehouseReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<InventoryValuationDetailDto>))]
@@ -1742,6 +1755,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     }
 
     [ReportHistory(PermissionKeys.CanViewHumanResourcesReport)]
+    [ReportDepartmentScope]
     [HttpGet("hr/employee-master-list")]
     [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMasterListReportDto>))]
