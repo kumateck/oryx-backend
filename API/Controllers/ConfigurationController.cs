@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -38,6 +39,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="configurationId">The ID of the configuration to retrieve.</param>
     /// <returns>Returns the detailed information of the configuration.</returns>
     [HttpGet("{configurationId}")]
+    [AnyPermission("CanViewCodeSettings")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConfigurationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -53,6 +55,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="modelType">The modeltype of the configuration to retrieve.</param>
     /// <returns>Returns the detailed information of the configuration.</returns>
     [HttpGet("by-model-type/{modelType}")]
+    [SignedInUser("Code numbering settings that every create form reads to suggest the next number.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConfigurationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -70,6 +73,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="searchQuery">Search query to filter configurations.</param>
     /// <returns>A paginated list of configurations.</returns>
     [HttpGet]
+    [AnyPermission("CanViewCodeSettings")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ConfigurationDto>>))]
     public async Task<IResult> GetConfigurations([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
@@ -126,6 +130,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <returns>A list of Naming Types with their corresponding value and name.</returns>
     /// <response code="200">Returns the list of namning types</response>
     [HttpGet("naming-types")]
+    [AnyPermission("CanViewCodeSettings")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<TypeResponse>))]
     public IResult GetQuestionValidationTypes()
     {
@@ -148,6 +153,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// <param name="prefix">The prefix of the particular model </param>
     /// <returns>Returns the count or usage of the configuration.</returns>
     [HttpGet("{modelType}/count")]
+    [SignedInUser("Code numbering counter that every create form reads to suggest the next number.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -177,6 +183,7 @@ public class ConfigurationController(IConfigurationRepository repository) : Cont
     /// </summary>
     /// <returns>Returns the threshold dto.</returns>
     [HttpGet("threshold")]
+    [AnyPermission("CanViewThreshold")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ThresholdDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

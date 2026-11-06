@@ -22,6 +22,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <param name="materialKind">The kind of material</param>
     /// <returns>Returns a collection of items.</returns>
     [HttpPost]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, IEnumerable<CollectionItemDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -40,7 +41,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// <returns>Returns a collection of items.</returns>
     [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet("{itemType}")]
-    [Authorize]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<CollectionItemDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemCollection(string itemType,
@@ -55,6 +56,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Returns a list of item types.</returns>
     [HttpGet("item-types")]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<string>))]
     public IResult GetItemTypes()
@@ -125,6 +127,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Returns a collection of package styles.</returns>
     [HttpGet("package-styles")]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PackageStyleDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -153,6 +156,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Returns a collection of uom items.</returns>
     [HttpPost("uom/paginated")]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UnitOfMeasureDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -167,6 +171,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Returns a collection of uom items.</returns>
     [HttpGet("operations")]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<OperationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -182,6 +187,7 @@ public class CollectionController(ICollectionRepository repository) : Controller
     /// </summary>
     /// <returns>Returns a collection of uom items.</returns>
     [HttpPost("uom/{uomId}")]
+    [SignedInUser("A reference list (categories, units, styles, operations) that forms across the app read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UnitOfMeasureDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

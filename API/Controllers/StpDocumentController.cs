@@ -29,6 +29,7 @@ public class StpDocumentController(
     /// no document has been created yet for it.
     /// </summary>
     [HttpGet("{ownerType}/{ownerId:guid}")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpDocumentDto))]
     public async Task<IResult> GetDocument([FromRoute] string ownerType, [FromRoute] Guid ownerId)
     {
@@ -80,6 +81,7 @@ public class StpDocumentController(
 
     /// <summary>Streams a specific version's .docx to an authenticated application user.</summary>
     [HttpGet("documents/{documentId:guid}/versions/{versionId:guid}/file")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IFormFile))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> GetVersionFile([FromRoute] Guid documentId, [FromRoute] Guid versionId)

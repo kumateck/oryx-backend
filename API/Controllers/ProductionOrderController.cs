@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -37,6 +38,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a paginated list of production orders.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewOrder")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductionOrderDto>>)
@@ -56,6 +58,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a production order by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewOrder", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionOrder([FromRoute] Guid id)
@@ -139,6 +142,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a paginated list of proforma invoices.
     /// </summary>
     [HttpGet("proforma-invoice")]
+    [AnyPermission("CanViewInvoice", "CanViewPackingList", "CanViewProformaInvoice")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProformaInvoiceDto>>)
@@ -165,6 +169,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a proforma invoice by its ID.
     /// </summary>
     [HttpGet("proforma-invoice/{proformaInvoiceId:guid}")]
+    [AnyPermission("CanViewInvoice", "CanViewPackingList", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProformaInvoice", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProformaInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProformaInvoice([FromRoute] Guid proformaInvoiceId)
@@ -228,6 +233,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Gets a paginated list of invoices.
     /// </summary>
     [HttpGet("invoice")]
+    [AnyPermission("CanViewCashflowReports", "CanViewPayments")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<InvoiceDto>>)
@@ -246,6 +252,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Gets an invoice by ID.
     /// </summary>
     [HttpGet("invoice/{id:guid}")]
+    [AnyPermission("CanViewInvoice")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(InvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetInvoice([FromRoute] Guid id)
@@ -325,6 +332,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Get product allocations
     /// </summary>
     [HttpGet("allocate")]
+    [AnyPermission("CanViewInvoice", "CanViewPackingList", "CanViewProformaInvoice")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<List<AllocateProductionOrderDto>>)
@@ -352,6 +360,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Get product allocation by id
     /// </summary>
     [HttpGet("allocate/{allocateProductionOrderId}")]
+    [AnyPermission("CanViewInvoice", "CanViewPackingList", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewProformaInvoice", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AllocateProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetAllocatedProduct([FromRoute] Guid allocateProductionOrderId)
@@ -421,6 +430,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a paginated list of production order waybills.
     /// </summary>
     [HttpGet("waybill")]
+    [AnyPermission("CanViewWaybillForFgw")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductionOrderWaybillDto>>)
@@ -446,6 +456,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Retrieves a production order waybill by its ID.
     /// </summary>
     [HttpGet("waybill/{productionOrderWaybillId:guid}")]
+    [AnyPermission("CanViewWaybillForFgw")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionOrderWaybillDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductionOrderWaybill([FromRoute] Guid productionOrderWaybillId)

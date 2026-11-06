@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Services.Approvals;
 using APP.Utils;
 using INFRASTRUCTURE.Context;
@@ -13,6 +14,7 @@ public sealed class PendingRevisionApprovalController(
     ApplicationDbContext context, IAuthorizationService authorization) : ControllerBase
 {
     [HttpGet]
+    [AnyPermission("CanViewPendingApprovals")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(IReadOnlyList<PendingRevisionApprovalDto>))]
     public async Task<IResult> Get([FromQuery] string? approvalDocument,

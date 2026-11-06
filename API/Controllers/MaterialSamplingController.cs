@@ -49,6 +49,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// Retrieves the details of a sampling material by its ID.
     /// </summary>
     [HttpGet("{grnId:guid}/{batchId:guid}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewRawMaterialGoodsReceiptNotes")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSamplingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSamplingByMaterialId([FromRoute] Guid grnId, [FromRoute] Guid batchId)
@@ -74,6 +75,7 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
     /// Retrieves a pre-sample checklist by GRN and Batch.
     /// </summary>
     [HttpGet("pre-sample/{grnId:guid}/{batchId:guid}")]
+    [AnyPermission("CanCreatePreSamplingChecklist", "CanTakeRawMaterialSample", "CanTakePackagingMaterialSample", "CanViewRawMaterialGoodsReceiptNotes", "CanViewPackagingMaterialGoodsReceiptNotes")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PreSampleChecklistDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetPreSampleChecklistByGrnAndBatch([FromRoute] Guid grnId, [FromRoute] Guid batchId)

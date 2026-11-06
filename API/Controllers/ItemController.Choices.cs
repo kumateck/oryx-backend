@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Services.Inventory;
 using APP.Services.Stores;
 using APP.Utils;
@@ -28,6 +29,7 @@ public partial class ItemController
     /// or raise its requisitions, without giving them the full item register.
     /// </summary>
     [HttpGet("choices")]
+    [PermissionCheckedInAction("Store item choices are limited to the stores the caller may read.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StoreItemChoiceDto>>))]
     public async Task<IResult> GetItemChoices([FromQuery] Store store, [FromQuery] string searchQuery = null,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)

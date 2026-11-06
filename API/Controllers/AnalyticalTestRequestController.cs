@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -32,6 +33,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Retrieves a list of paginated analytical test requests
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanAssignProductTest", "CanCheckProductTest", "CanReassignProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<AnalyticalTestRequestDto>>)
@@ -56,6 +58,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Retrieves the details of an analytical test request by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanAssignProductTest", "CanCheckProductTest", "CanReassignProductTest", "CanStartProductTest", "CanViewAnalyticalTestRequests", "CanViewAnalyticalTestRequestsForSampling", "CanViewProductAnalyticalTestRequests", "CanViewProductAnalyticalTestRequestsForAnalysing")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AnalyticalTestRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalTestRequest([FromRoute] Guid id)
@@ -193,6 +196,7 @@ public class AnalyticalTestRequestController(IAnalyticalTestRequestRepository re
     /// Retrieves the details of an analytical test request by its activity step ID
     /// </summary>
     [HttpGet("activity-step/{activityStepId:guid}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewPlannedProducts", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AnalyticalTestRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAnalyticalTestRequestByActivityStep(

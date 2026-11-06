@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -33,6 +34,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Retrieves a list of holidays based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewHolidays")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<HolidayDto>>))]
     public async Task<IResult> GetHolidays([FromQuery] string searchQuery)
     {
@@ -48,6 +50,7 @@ public class HolidayController(IHolidayRepository repository) : ControllerBase
     /// Retrieves the details of a specific holiday by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewHolidays")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HolidayDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetHoliday([FromRoute] Guid id)

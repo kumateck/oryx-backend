@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -198,6 +199,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Retrieves details of a quality audit by ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewQualityAudits")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QualityAuditDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetAudit([FromRoute] Guid id)
@@ -210,6 +212,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Retrieves a paginated list of quality audits.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewQualityAudits")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<QualityAuditDto>>))]
     public async Task<IResult> GetAudits(
         [FromQuery] int page = 1,
@@ -227,6 +230,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Retrieves the active audit checklist templates available to select when creating an audit.
     /// </summary>
     [HttpGet("checklist-templates")]
+    [AnyPermission("CanViewQualityAudits")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AuditChecklistTemplateDto>))]
     public async Task<IResult> GetChecklistTemplates()
     {
@@ -238,6 +242,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Generates and downloads the audit report as a PDF.
     /// </summary>
     [HttpGet("{id:guid}/report")]
+    [AnyPermission("CanViewQualityAudits")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GenerateAuditReportPdf([FromRoute] Guid id)

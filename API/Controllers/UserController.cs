@@ -40,6 +40,7 @@ public class UserController(IUserRepository repo) : ControllerBase
 
     [Authorize]
     [HttpGet]
+    [AnyPermission("CanCreateUser", "CanViewActiveEmployee", "CanViewActiveUser", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewInactiveUser", "CanViewNewEmployee")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
     public async Task<IResult> GetUsers([FromQuery(Name = "isActive")] bool? isDisabled, [FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 5,
@@ -58,6 +59,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     /// </summary>
     [Authorize]
     [HttpGet("by-permission")]
+    [SignedInUser("Names of current permission holders for assignment pickers (QC, tickets, approvals); search only narrows that list.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<UserWithRoleDto>>))]
     public async Task<IResult> GetUsersByPermissions(
         [FromQuery(Name = "permissionKey")] List<string> permissionKey,
@@ -77,6 +79,7 @@ public class UserController(IUserRepository repo) : ControllerBase
 
     [Authorize]
     [HttpGet("authenticated")]
+    [SignedInUser("Returns the caller's own account.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserWithRoleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUser()
@@ -90,6 +93,7 @@ public class UserController(IUserRepository repo) : ControllerBase
 
     [Authorize]
     [HttpGet("role/{roleId}")]
+    [AnyPermission("CanViewRoles", "CanViewActiveUser")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserWithRoleDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetUserByRole(Guid roleId, [FromQuery(Name = "departmentId")] Guid? departmentId = null)

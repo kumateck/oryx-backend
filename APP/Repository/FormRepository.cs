@@ -161,6 +161,30 @@ public class FormRepository(
             return Error.Conflict("Form.FormulaRepairHistory",
                 "Tests on this form have repaired formula history, so its fields cannot be replaced. Create a new form version instead.");
 
+        // Validate before touching the database: the deletes below are immediate.
+        mapper.Map(request, form);
+
+        var validate = FormValidator.Validate(form);
+
+        if (validate.IsFailure)
+            return Result.Failure<FormDto>(validate.Errors);
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
+        // Lock the template's sections and fields so no answer, CoA item or specification value can be
+        // attached to them between the check and the delete (FK inserts wait on these row locks).
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM \"FormSections\" WHERE \"FormId\" = {formId} FOR UPDATE"
+        );
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM \"FormFields\" f JOIN \"FormSections\" s ON s.\"Id\" = f.\"FormSectionId\" WHERE s.\"FormId\" = {formId} FOR UPDATE OF f"
+        );
+
+        // Deleting fields cascades to saved answers and CoA items, and deleting sections drops their
+        // specification values. Once a template holds any of that, it can only change field by field.
+        if (await FormHasSavedFieldData(formId))
+            return FormErrors.FieldsInUse(formId);
+
         // Hard delete existing relations to avoid soft-deleted "ghost" records showing up with IgnoreQueryFilters elsewhere.
         // We delete in order of dependency to avoid FK violations.
         await context.FormFields.Where(f => f.FormSection.FormId == formId).ExecuteDeleteAsync();
@@ -171,19 +195,37 @@ public class FormRepository(
             .ExecuteDeleteAsync();
         await context.FormAssignees.Where(a => a.FormId == formId).ExecuteDeleteAsync();
 
-        mapper.Map(request, form);
-
-        var validate = FormValidator.Validate(form);
-
-        if (validate.IsFailure)
-            return Result.Failure<FormDto>(validate.Errors);
-
         form.LastUpdatedById = userId;
         form.UpdatedAt = DateTime.UtcNow;
         context.Forms.Update(form);
 
         await context.SaveChangesAsync();
+        await transaction.CommitAsync();
         return Result.Success();
+    }
+
+    // Includes soft-deleted rows: they are still audit history and the database cascade removes them too.
+    private async Task<bool> FormHasSavedFieldData(Guid formId)
+    {
+        var fieldIds = context
+            .FormFields.IgnoreQueryFilters()
+            .Where(f => f.FormSection.FormId == formId)
+            .Select(f => f.Id);
+
+        return await context.FormResponses.IgnoreQueryFilters().AnyAsync(r => fieldIds.Contains(r.FormFieldId))
+            || await context.FormFieldRevisions.IgnoreQueryFilters().AnyAsync(r => fieldIds.Contains(r.FormFieldId))
+            || await context.CommercialCoaItems.IgnoreQueryFilters().AnyAsync(i => fieldIds.Contains(i.FormFieldId))
+            || await context.RoutineCoaItems.IgnoreQueryFilters().AnyAsync(i => fieldIds.Contains(i.FormFieldId))
+            || await context
+                .FormSections.IgnoreQueryFilters()
+                .AnyAsync(s =>
+                    s.FormId == formId
+                    && (
+                        s.Value != null
+                        || s.MaterialSpecificationId != null
+                        || s.ProductSpecificationId != null
+                    )
+                );
     }
 
     public async Task<Result> UpdateFormMetadata(

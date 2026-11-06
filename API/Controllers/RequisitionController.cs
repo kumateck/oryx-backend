@@ -45,6 +45,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet]
+    [AnyPermission("CanViewPackageMaterialRequisitionsForCreation", "CanViewRawMaterialRequisitionsForCreation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
@@ -66,6 +67,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="kind"></param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet("department")]
+    [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions", "CanViewRawMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitionsForDepartment([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
@@ -84,6 +86,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="requisitionId">The ID of the Stock Requisition.</param>
     /// <returns>Returns the Stock Requisition.</returns>
     [HttpGet("{requisitionId}")]
+    [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewPackageMaterialRequisitionsForCreation", "CanViewPackagingMaterialRequisitions", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewRawMaterialRequisitions", "CanViewRawMaterialRequisitionsForCreation", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -102,6 +105,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// </summary>
     /// <param name="issueId">The ID of the stock requisition issue.</param>
     [HttpGet("issue/{issueId:guid}")]
+    [AnyPermission("CanViewPackageMaterialRequisitionsForCreation", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewRawMaterialRequisitionsForCreation", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -120,6 +124,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="requisitionId">The ID of the Stock Requisition.</param>
     /// <returns>Returns a list of materials with their current reserved batches and alternative earlier expiring batches.</returns>
     [HttpGet("{requisitionId}/alternative-batches")]
+    [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions", "CanViewRawMaterialRequisitions")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialAlternativeBatchesDto>))]
     public async Task<IResult> GetAlternativeBatches(Guid requisitionId)
     {
@@ -225,6 +230,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="sourceRequisitionId">The ID of the Source Requisition.</param>
     /// <returns>Returns the Source Requisition.</returns>
     [HttpGet("source/{sourceRequisitionId}")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SourceRequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -242,6 +248,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Source Requisitions.</returns>
     [HttpGet("source")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SourceRequisitionDto>>))]
     public async Task<IResult> GetSourceRequisitions([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
@@ -258,6 +265,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="source">The procurement source of the material(e.g., Local, Foreign, Internal).</param>
     /// <returns>Returns a paginated list of Source Requisition Items.</returns>
     [HttpGet("source/items")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SourceRequisitionItemDto>>))]
     public async Task<IResult> GetSourceRequisitionItems([FromQuery] ProcurementSource source,
@@ -308,6 +316,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="sent">Filter by whether a quotation has been sent.</param>
     /// <returns>Returns a paginated list of suppliers with their requisition items.</returns>
     [HttpGet("source/supplier")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationRequest>>))]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItems([FromQuery] SupplierType source,
@@ -325,6 +334,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierId">The id of the supplier with associated requisition items.</param>
     /// <returns>Returns a supplier with their requisition items.</returns>
     [HttpGet("source/supplier/{supplierId}")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationRequest))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -340,6 +350,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierId">The id of the supplier.</param>
     /// <returns>Returns a boolean whether a supplier has a pending price comparison</returns>
     [HttpGet("pending/{supplierId}")]
+    [AnyPermission("CanViewForeignQuotation", "CanViewLocalQuotation")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
     public async Task<IResult> CheckIfSupplierHasPendingPriceComparison(Guid supplierId)
@@ -379,6 +390,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="received">Filter by whether the quotation has been received.</param>
     /// <returns>Returns a paginated list of suppliers with their requisition items for quotation.</returns>
     [HttpGet("source/supplier/quotation")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<SupplierQuotationDto>>))]
     public async Task<IResult> GetSuppliersWithSourceRequisitionItemsForQuotation([FromQuery] SupplierType supplierType,
@@ -396,6 +408,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierQuotationId">The ID of the supplier quotation.</param>
     /// <returns>Returns a supplier with their requisition items for quotation.</returns>
     [HttpGet("source/supplier/{supplierQuotationId}/quotation")]
+    [AnyPermission("CanSourcePurchaseRequisition", "CanViewForeignQuotation", "CanViewForeignQuotationResponse", "CanViewLocalQuotation", "CanViewLocalQuotationResponse", "CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierQuotationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -433,6 +446,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="supplierType">The type of the supplier (example Local, Foreign).</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("source/material/price-comparison")]
+    [AnyPermission("CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewForeignQuotationResponse", "CanViewForeignVendorPricing", "CanViewLocalPurchaseOrder", "CanViewLocalQuotationResponse", "CanViewLocalVendorPricing")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
     public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType)
@@ -450,6 +464,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="status">The status of the price comparison (NotProcessed, Processed, NotUsed)</param>
     /// <returns>Returns a list of price comparisons.</returns>
     [HttpGet("source/material/price-comparison/by-material")]
+    [AnyPermission("CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierPriceComparison>))]
     public async Task<IResult> GetPriceComparisonOfMaterial([FromQuery] SupplierType supplierType, [FromQuery] Guid materialId, [FromQuery] Guid purchaseOrderId, [FromQuery] SupplierQuotationItemStatus? status)

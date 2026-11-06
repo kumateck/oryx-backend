@@ -65,6 +65,7 @@ assert release['image']=='oryx-formula-calculation:'+release['sourceHash']
 assert release['platform']=='linux/amd64', 'Approve a new platform/image release before changing architecture'
 assert re.fullmatch('[a-f0-9]{64}',release['engineBuildHash'])
 assert release['numericPolicyVersion']=='oryx-decimal-v1-half-up'
+assert release.get('sourceDirty') is False, 'Refusing a formula bundle built from uncommitted source'
 alias='oryx-formula-'+sha[:16]+'-'+release['imageId'][7:27]
 volume=project+'-formula-secrets'
 values={'FORMULA_SERVICE_IMAGE':release['imageId'],'FORMULA_SERVICE_PLATFORM':release['platform'],
@@ -74,6 +75,8 @@ values={'FORMULA_SERVICE_IMAGE':release['imageId'],'FORMULA_SERVICE_PLATFORM':re
 (root/'formula.env').write_text(''.join(f'{key}={value}\n' for key,value in values.items()))
 (root/'formula-project').write_text(project+'-formula-'+sha[:16]+'-'+release['imageId'][7:27]+'\n')
 (root/'formula-image-id').write_text(release['imageId']+'\n')
+(root/'formula-secret-volume').write_text(volume+'\n')
+(root/'formula-archive-sha256').write_text(release['archiveSha256']+'\n')
 (root/'formula-app.json').write_text(json.dumps({'services':{'app':{
     'environment':{'FORMULA_RUNTIME_ENABLED':'true','FORMULA_SERVICE_BASE_URL':'http://'+alias+':3101/',
                    'FORMULA_SERVICE_AUTH_SECRET_FILE':'/run/secrets/formula-service-token',
@@ -83,30 +86,41 @@ values={'FORMULA_SERVICE_IMAGE':release['imageId'],'FORMULA_SERVICE_PLATFORM':re
 PY
   env -i PATH="$PATH" HOME="$HOME" docker compose --project-name "$(cat "$RELEASE/formula-project")" \
     --project-directory "$REPO" --env-file "$RELEASE/formula.env" -f "$RELEASE/formula-template.yml" config --format json > "$RELEASE/formula.json"
-  image=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["imageId"])' "$RELEASE/formula-release.json")
-  platform=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["platform"])' "$RELEASE/formula-release.json")
-  volume="$PROJECT-formula-secrets"
   # Retain the exact archive independently of Docker pruning, for offline upgrades/rollback.
   local archive_hash archive
-  archive_hash=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["archiveSha256"])' "$RELEASE/formula-release.json")
+  archive_hash=$(cat "$RELEASE/formula-archive-sha256")
   archive="$STATE/formula-images/$archive_hash.tar"
   mkdir -p "$STATE/formula-images"
   [[ $(sha256sum "$bundle/image.tar" | cut -d ' ' -f 1) = "$archive_hash" ]] || { echo 'Formula image archive checksum mismatch.' >&2; return 1; }
   if [[ ! -f "$archive" ]]; then cp "$bundle/image.tar" "$archive.tmp"; mv "$archive.tmp" "$archive"; fi
   printf '%s\n' "$archive" > "$RELEASE/formula-archive"
-  formula_restore_image "$RELEASE"
+  formula_restore_image "$RELEASE" "$archive_hash"
+}
+
+# Copy the root-only master secret into the release's Docker volume. The one-shot helper runs the
+# locally built API image (reviewed backend source), not the delivered formula image, so an
+# untrusted bundle never executes with the master secret mounted.
+formula_provision_secret() {
+  local helper_image=$1 secret volume
+  secret=$(formula_secret_path)
+  volume=$(cat "$FORMULA_RELEASE/formula-secret-volume") || return
   docker volume create "$volume" >/dev/null
   docker run --rm --network none --user 0 --read-only --cap-drop ALL --cap-add CHOWN --cap-add DAC_OVERRIDE \
     --security-opt no-new-privileges:true --pids-limit 32 --memory 64m --cpus 1 \
-    --platform "$platform" --entrypoint /bin/sh \
+    --entrypoint /bin/sh \
     --mount "type=bind,src=${secret%/*},dst=/source,readonly" \
-    --mount "type=volume,src=$volume,dst=/target" "$image" -ceu '
+    --mount "type=volume,src=$volume,dst=/target" "$helper_image" -ceu '
       test "$(stat -c %u:%a /source)" = 0:700
       test ! -L /source/formula-service-token
       test -f /source/formula-service-token
       test "$(stat -c %u:%a /source/formula-service-token)" = 0:600
       test ! -L /target/formula-service-token
-      node -e '\''const fs=require("node:fs"); const token=fs.readFileSync("/source/formula-service-token","utf8").trim(); if(token.length<32||token.length>512)process.exit(1); if(fs.existsSync("/target/formula-service-token")&&fs.readFileSync("/target/formula-service-token","utf8").trim()!==token){process.stderr.write("Secret mismatch; refusing automatic rotation.\n");process.exit(1)}'\''
+      token=$(tr -d "[:space:]" < /source/formula-service-token)
+      test "${#token}" -ge 32 && test "${#token}" -le 512
+      if test -e /target/formula-service-token; then
+        existing=$(tr -d "[:space:]" < /target/formula-service-token)
+        test "$existing" = "$token" || { echo "Secret mismatch; refusing automatic rotation." >&2; exit 1; }
+      fi
       chown 0:0 /target
       chmod 0711 /target
       if test ! -e /target/formula-service-token; then
@@ -121,15 +135,46 @@ PY
     '
 }
 
+# A present image is verified by its content-addressed ID; the archive is only hashed when it must be
+# loaded (pass the already-verified hash to skip re-reading a freshly checked archive).
 formula_restore_image() {
-  local release=$1 image archive expected
+  local release=$1 verified=${2:-} image archive expected
   image=$(cat "$release/formula-image-id") || return
-  archive=$(cat "$release/formula-archive") || return
-  expected=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["archiveSha256"])' "$release/formula-release.json") || return
-  [[ $(sha256sum "$archive" | cut -d ' ' -f 1) = "$expected" ]] || { echo 'Retained formula archive checksum mismatch.' >&2; return 1; }
-  if ! docker image inspect "$image" >/dev/null 2>&1; then docker image load --input "$archive" || return; fi
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    archive=$(cat "$release/formula-archive") || return
+    expected=$(cat "$release/formula-archive-sha256" 2>/dev/null || python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["archiveSha256"])' "$release/formula-release.json") || return
+    if [[ "$verified" != "$expected" ]]; then
+      [[ $(sha256sum "$archive" | cut -d ' ' -f 1) = "$expected" ]] || { echo 'Retained formula archive checksum mismatch.' >&2; return 1; }
+    fi
+    docker image load --input "$archive" || return
+  fi
   [[ $(docker image inspect --format '{{.Id}}' "$image") = "$image" ]] || { echo 'Formula image identity mismatch.' >&2; return 1; }
 }
+# Keep the active and previous formula releases plus the newest ORYX_FORMULA_KEEP (default 5);
+# remove older release snapshots, their stopped containers and archives nothing still references.
+formula_prune() {
+  local keep=${ORYX_FORMULA_KEEP:-5} dir id
+  [[ "$keep" =~ ^[0-9]+$ && "$keep" -ge 2 ]] || keep=5
+  local -a protected=("$@")
+  [[ -d "$STATE/formula-releases" ]] || return 0
+  local index=0
+  while IFS= read -r dir; do
+    index=$((index + 1))
+    id=${dir##*/}
+    [[ "$id" =~ ^[a-f0-9]{40}-[a-f0-9]{64}$ ]] || continue
+    [[ $index -le $keep ]] && continue
+    [[ " ${protected[*]} " = *" $id "* ]] && continue
+    if [[ -f "$dir/formula.json" ]]; then formula_compose "$dir" rm --force --stop formula-calculation >/dev/null 2>&1 || true; fi
+    rm -rf -- "$dir"
+  done < <(ls -1dt "$STATE/formula-releases"/*/ 2>/dev/null | sed 's#/$##')
+  local archive referenced
+  referenced=$(cat "$STATE/formula-releases"/*/formula-archive 2>/dev/null || true)
+  for archive in "$STATE/formula-images"/*.tar; do
+    [[ -f "$archive" ]] || continue
+    grep -Fxq -- "$archive" <<<"$referenced" || rm -f -- "$archive"
+  done
+}
+
 formula_start() { formula_restore_image "$1" && formula_compose "$1" up --detach --no-build --pull never --wait --wait-timeout 90 formula-calculation; }
 formula_verify() { docker exec oryx_api dotnet API.dll --formula-readiness; }
 
@@ -179,6 +224,7 @@ formula_rollback() {
   else
     if formula_activate_api "$previous" >>"$log" 2>&1 && formula_check_api >>"$log" 2>&1; then
       rm -f "$STATE/formula-pending"
+      if [[ "$active" != "$selected" ]]; then formula_compose "$chosen" stop formula-calculation >>"$log" 2>&1 || true; fi
       echo "Formula rollback failed; previous formula configuration restored. Log: $log" >&2
     else
       docker stop oryx_api >>"$log" 2>&1 || true

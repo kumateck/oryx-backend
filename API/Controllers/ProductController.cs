@@ -40,6 +40,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a specific product by its ID.
     /// </summary>
     [HttpGet("{productId}")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewApprovedProducts", "CanViewFgProducts", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProduct(Guid productId)
@@ -53,6 +54,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewFgtnReport)]
     [HttpGet]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanCreateProductionProduct", "CanEditProductSchedule", "CanRemoveProductsFromProductSchedule", "CanViewCustomers", "CanViewFgProducts", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewPlannedProducts", "CanViewProcurementReport", "CanViewProductSchedules", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", "CanViewWaterQuality")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductListDto>>)
@@ -83,6 +85,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a list of product categories.
     /// </summary>
     [HttpGet("categories")]
+    [AnyPermission("CanViewProductCategories", "CanViewProductionProducts", "CanCreateProductionProduct")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductCategory>))]
     public async Task<IResult> GetProductCategories()
     {
@@ -157,6 +160,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves the active bom for the product.
     /// </summary>
     [HttpGet("{productId}/bom")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductBillOfMaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetBillOfMaterial(Guid productId)
@@ -189,6 +193,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a specific route by its ID.
     /// </summary>
     [HttpGet("routes/{routeId}")]
+    [AnyPermission("CanViewProductionProductProcedure", "CanViewProductionProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RouteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetRoute(Guid routeId)
@@ -201,6 +206,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of routes.
     /// </summary>
     [HttpGet("{productId}/routes")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<RouteDto>))]
     public async Task<IResult> GetRoutes(Guid productId)
     {
@@ -290,6 +296,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves packings lists for a product
     /// </summary>
     [HttpGet("{productId}/packing")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanCreateProductionProduct", "CanEditProductSchedule", "CanRemoveProductsFromProductSchedule", "CanViewCustomers", "CanViewPlannedProducts", "CanViewProductSchedules", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackingDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductPackings([FromRoute] Guid productId)
@@ -302,6 +309,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a specific product package by its ID.
     /// </summary>
     [HttpGet("packages/{productPackageId}")]
+    [AnyPermission("CanViewProductionProductPackingMaterials", "CanViewQaProductPackingMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductPackageDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductPackage(Guid productPackageId)
@@ -314,6 +322,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of product packages.
     /// </summary>
     [HttpGet("{productId}/packages")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductPackageDto>))]
     public async Task<IResult> GetProductPackages(Guid productId)
     {
@@ -424,6 +433,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves specific equipment by its ID.
     /// </summary>
     [HttpGet("equipment/{equipmentId}")]
+    [AnyPermission("CanViewEquipment")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(EquipmentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetEquipment(Guid equipmentId)
@@ -436,6 +446,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a paginated list of equipment.
     /// </summary>
     [HttpGet("equipment")]
+    [AnyPermission("CanViewEquipment")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<EquipmentDto>>)
@@ -454,6 +465,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Retrieves a list of all equipment.
     /// </summary>
     [HttpGet("equipment/all")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewJobOrders", "CanViewJobRequests", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EquipmentDto>))]
     public async Task<IResult> GetAllEquipments()
     {
@@ -585,6 +597,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns the Excel file containing product stock.</returns>
     [HttpGet("download/stock")]
+    [AnyPermission("CanUploadProductStock", "CanViewOpeningBalances", "CanUploadOpeningBalances", "CanViewFgtnReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
     public async Task<IResult> DownloadProductStock(
         [FromQuery] Guid? departmentId,

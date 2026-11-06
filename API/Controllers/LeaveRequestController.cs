@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -35,6 +36,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Returns a paginated list of leave requests based on a search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewLeaveRequests")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<LeaveRequestDto>>)
@@ -67,6 +69,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
     /// Retrieves the details of a specific leave request.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewLeaveRequests", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LeaveRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveRequest([FromRoute] Guid id)

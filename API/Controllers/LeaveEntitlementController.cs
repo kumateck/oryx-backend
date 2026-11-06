@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -33,6 +34,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     /// Retrieves a paginated list of leave entitlements based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewLeaveType", "CanCreateLeaveEntitlement", "CanEditLeaveEntitlement")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<LeaveEntitlementDto>>))]
     public async Task<IResult> GetLeaveEntitlements(int page = 1, int pageSize = 10, string searchQuery = null)
     {
@@ -47,6 +49,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     /// Retrieves the details of a specific leave entitlement by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewLeaveType", "CanCreateLeaveEntitlement", "CanEditLeaveEntitlement")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LeaveEntitlementDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetLeaveEntitlement([FromRoute] Guid id)

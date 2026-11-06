@@ -35,6 +35,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// Retrieves a paginated list of material specifications
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditRawMaterialSpecification", "CanViewPackagingMaterialSpecifications", "CanViewRawMaterialSpecifications")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialSpecificationDto>>)
@@ -61,6 +62,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// Retrieves the details of a material specification by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditRawMaterialSpecification", "CanViewPackagingMaterialSpecifications", "CanViewRawMaterialSpecifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSpecification([FromRoute] Guid id)
@@ -73,6 +75,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// Retrieves products not linked to spec
     /// </summary>
     [HttpGet("materials/not-linked")]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditRawMaterialSpecification", "CanViewPackagingMaterialSpecifications", "CanViewRawMaterialSpecifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<List<MaterialDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialsNotLinkedToSpec(
@@ -95,6 +98,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// Retrieves the details of a material specification by material ID
     /// </summary>
     [HttpGet("material/{materialId:guid}")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewPackagingMaterialArds", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewRawMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSpecificationByMaterial([FromRoute] Guid materialId)
@@ -107,6 +111,7 @@ public class MaterialSpecificationController(IMaterialSpecificationRepository re
     /// Retrieves the details of materials linked to a specification number.
     /// </summary>
     [HttpGet("materials")]
+    [AnyPermission("CanCreatePackagingMaterialSpecification", "CanCreateRawMaterialSpecification", "CanEditPackagingMaterialSpecification", "CanEditRawMaterialSpecification", "CanViewPackagingMaterialSpecifications", "CanViewRawMaterialSpecifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialSpecificationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialSpecificationBySpecificationNumber(
