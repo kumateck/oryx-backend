@@ -265,6 +265,17 @@ public static class PermissionKeys
     public const string CanEditWorkOrder = "CanEditWorkOrder";
     /// <summary>Delete a production work order.</summary>
     public const string CanDeleteWorkOrder = "CanDeleteWorkOrder";
+    // Reference lists, uploads and invoices no page offers yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Create, change or delete items in reference lists no settings page manages (currencies, package types, market types, instruments, reagents, warehouse location names, shipment discrepancy types).</summary>
+    public const string CanManageOtherCollectionTypes = "CanManageOtherCollectionTypes";
+    /// <summary>Import equipment from a file.</summary>
+    public const string CanUploadEquipment = "CanUploadEquipment";
+    /// <summary>Import product stock from a file.</summary>
+    public const string CanUploadProductStock = "CanUploadProductStock";
+    /// <summary>Create or change a purchase order invoice.</summary>
+    public const string CanCreatePurchaseOrderInvoice = "CanCreatePurchaseOrderInvoice";
+    /// <summary>Delete a purchase order invoice.</summary>
+    public const string CanDeletePurchaseOrderInvoice = "CanDeletePurchaseOrderInvoice";
     // Dashboards: one key each (permissions audit phase 4).
     /// <summary>View the HR dashboard.</summary>
     public const string CanViewHrDashboard = "CanViewHrDashboard";
@@ -1352,6 +1363,11 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Settings, "Products", PermissionKeys.CanManageOtherCollectionTypes);
+        addPermission(PermissionModules.Production, "Equipment", PermissionKeys.CanUploadEquipment);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanUploadProductStock);
+        addPermission(PermissionModules.Procurement, "Purchase Order Invoices", PermissionKeys.CanCreatePurchaseOrderInvoice);
+        addPermission(PermissionModules.Procurement, "Purchase Order Invoices", PermissionKeys.CanDeletePurchaseOrderInvoice);
         addPermission(PermissionModules.Production, "Work Orders", PermissionKeys.CanCreateWorkOrder);
         addPermission(PermissionModules.Production, "Work Orders", PermissionKeys.CanEditWorkOrder);
         addPermission(PermissionModules.Production, "Work Orders", PermissionKeys.CanDeleteWorkOrder);
