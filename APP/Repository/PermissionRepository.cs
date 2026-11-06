@@ -23,8 +23,6 @@ public class PermissionRepository(
     ILogger<PermissionRepository> logger
 ) : IPermissionRepository
 {
-    private readonly TimeSpan _cacheExpiry = TimeSpan.FromDays(7);
-
     public IEnumerable<PermissionModuleDto> GetAllPermissionInSystem()
     {
         return PermissionUtils
@@ -54,28 +52,14 @@ public class PermissionRepository(
 
     public async Task<Result<List<PermissionModuleDto>>> GetAllPermissionForUser(Guid userId)
     {
-        var cacheKey = $"Permission_Cache_V3_{userId}";
-
-        try
-        {
-            var cachedData = await redisCache.StringGetAsync(cacheKey);
-            if (cachedData.HasValue)
-            {
-                var cacheResponse = JsonConvert.DeserializeObject<List<PermissionModuleDto>>(
-                    cachedData
-                );
-                return cacheResponse;
-            }
-        }
-        catch (Exception e)
-        {
-            logger.LogError("Error whiles retrieving cache, Message: {Message}", e);
-        }
-
+        // Built from current data on every call, never cached: a role given to a user, a role change or a grant
+        // migration shows up at once, without signing out. The server's own checks read current grants too.
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == userId);
         if (user == null)
             return UserErrors.NotFound(userId);
-        var userRoles = await context.UserRoles.Where(item => item.UserId == userId).ToListAsync();
+        // Disabled accounts and deleted roles grant nothing, as in CurrentPermissionSet.
+        if (user.IsDisabled) return new List<PermissionModuleDto>();
+        var userRoles = await context.UserRoles.Where(item => item.UserId == userId && context.Roles.Any(role => role.Id == item.RoleId)).ToListAsync();
 
         var rolePermissions = new List<PermissionModuleDto>();
         foreach (var userRole in userRoles)
@@ -105,38 +89,11 @@ public class PermissionRepository(
             })
             .ToList();
 
-        var serializedData = JsonConvert.SerializeObject(response);
-        try
-        {
-            await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
-        }
-        catch (Exception e)
-        {
-            logger.LogError("Error whiles setting permission cache, Message: {Message}", e);
-        }
         return response;
     }
 
     public async Task<List<PermissionModuleDto>> GetPermissionByRole(Guid roleId)
     {
-        var cacheKey = $"Permission_Cache_V3_{roleId}";
-
-        try
-        {
-            var cachedData = await redisCache.StringGetAsync(cacheKey);
-            if (cachedData.HasValue)
-            {
-                var cacheResponse = JsonConvert.DeserializeObject<List<PermissionModuleDto>>(
-                    cachedData
-                );
-                return cacheResponse;
-            }
-        }
-        catch (Exception e)
-        {
-            logger.LogError("Error whiles retrieving cache, Message: {Message}", e);
-        }
-
         // Get the list of permission keys for the role from the RoleClaims table
         var roleClaims = await context
             .RoleClaims.Where(item =>
@@ -150,10 +107,12 @@ public class PermissionRepository(
         var allPermissions = PermissionUtils.GeneratePermissions().ToList();
 
         // Fetch all required PermissionTypes in a single query
-        var permissionTypesLookup = await context
-            .PermissionTypes.Where(pt => roleClaimIds.Contains(pt.RoleClaimId))
+        var permissionTypesLookup = (await context
+                .PermissionTypes.Where(pt => roleClaimIds.Contains(pt.RoleClaimId) && pt.Type != null && pt.Type != "")
+                .Select(pt => new { pt.Key, pt.Type })
+                .ToListAsync())
             .GroupBy(pt => pt.Key)
-            .ToDictionaryAsync(g => g.Key, g => g.Select(pt => pt.Type).ToList());
+            .ToDictionary(g => g.Key, g => g.Select(pt => pt.Type).ToList());
 
         // Group permissions by section and map to PermissionSectionDto structure
         // Return the complete permission catalog for the role editor. Permissions
@@ -181,15 +140,6 @@ public class PermissionRepository(
             })
             .ToList();
 
-        var serializedData = JsonConvert.SerializeObject(response);
-        try
-        {
-            await redisCache.StringSetAsync(cacheKey, serializedData, _cacheExpiry);
-        }
-        catch (Exception e)
-        {
-            logger.LogError("Error whiles setting permission cache, Message: {Message}", e);
-        }
         return response;
         /*return allPermissions
             .GroupBy(permission => permission.Module)
@@ -304,7 +254,7 @@ public class PermissionRepository(
             .Where(item => item.RoleId == roleId)
             .Select(item => item.UserId)
             .ToListAsync();
-        // Server checks read current grants on every request; only the desktop's permission view is cached.
+        // Permission views are no longer cached; this only clears entries left by older versions.
         try
         {
             await redisCache.KeyDeleteAsync($"Permission_Cache_V3_{roleId}");
