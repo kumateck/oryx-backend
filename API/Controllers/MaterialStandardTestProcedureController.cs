@@ -33,6 +33,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Retrieves a paginated list of material standard test procedures.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewPackagingMaterialStps", "CanViewRawMaterialStps", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialStandardTestProcedureDto>>))]
     public async Task<IResult> GetStandardTestProcedures([FromQuery] MaterialKind materialKind, [FromQuery] bool unused, [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] AnalysisType analysisType = AnalysisType.Chemical)
@@ -45,6 +46,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Retrieves the details of a specific material standard test procedure by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewPackagingMaterialStps", "CanViewRawMaterialStps")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStandardTestProcedure([FromRoute] Guid id)
@@ -57,6 +59,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Retrieves the details of a specific material standard test procedure by its ID.
     /// </summary>
     [HttpGet("{materialId:guid}/material")]
+    [AnyPermission("CanViewPackagingMaterialArds", "CanViewRawMaterialArds")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStandardTestProcedureByMaterial([FromRoute] Guid materialId)
@@ -69,6 +72,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Retrieves the details of materials linked to a stp.
     /// </summary>
     [HttpGet("{stpNumber}/materials")]
+    [AnyPermission("CanViewPackagingMaterialStps", "CanViewRawMaterialStps")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStandardTestProcedureDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStandardTestProcedureByMaterial(string stpNumber)
@@ -127,6 +131,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     /// Retrieves a paginated list of materials that are not yet used in any standard test procedure.
     /// </summary>
     [HttpGet("unused-materials")]
+    [AnyPermission("CanViewPackagingMaterialStps", "CanViewRawMaterialStps")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialDto>>))]
     public async Task<IResult> GetMaterialsNotUsedInStandardTestProcedure(
         [FromQuery] MaterialKind kind,

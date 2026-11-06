@@ -38,6 +38,7 @@ public class ProductStandardTestProcedureController(
     /// Retrieves a paginated list of standard test procedures.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewProductStps", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductStandardTestProcedureDto>>)
@@ -56,6 +57,7 @@ public class ProductStandardTestProcedureController(
     /// Retrieves a paginated list of standard test procedures.
     /// </summary>
     [HttpGet("{stpNumber}/products")]
+    [AnyPermission("CanViewProductStps")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductStandardTestProcedureDto>>)
@@ -72,6 +74,7 @@ public class ProductStandardTestProcedureController(
     /// Retrieves the details of a specific standard test procedure by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewProductStps")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStandardTestProcedure([FromRoute] Guid id)
@@ -84,6 +87,7 @@ public class ProductStandardTestProcedureController(
     /// Retrieves the details of a specific standard test procedure by its ID.
     /// </summary>
     [HttpGet("{productId:guid}/product")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductStandardTestProcedureDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStandardTestProcedureByProduct([FromRoute] Guid productId)
@@ -146,6 +150,7 @@ public class ProductStandardTestProcedureController(
     /// Retrieves a paginated list of products that are not yet used in any standard test procedure.
     /// </summary>
     [HttpGet("unused-products")]
+    [AnyPermission("CanViewProductStps")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductListDto>>)
@@ -169,6 +174,7 @@ public class ProductStandardTestProcedureController(
     /// for the requested stage and analysis type.
     /// </summary>
     [HttpGet("unlinked-to-ard")]
+    [AnyPermission("CanViewProductArds")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductStandardTestProcedureDto>>)

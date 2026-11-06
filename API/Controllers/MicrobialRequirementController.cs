@@ -15,6 +15,7 @@ public class MicrobialRequirementController(IMicrobialRequirementRepository repo
     : ControllerBase
 {
     [HttpGet]
+    [AnyPermission("CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     public async Task<IResult> List([FromQuery] Guid? materialId, [FromQuery] Guid? productId)
     {
         var result = await repository.List(materialId, productId);

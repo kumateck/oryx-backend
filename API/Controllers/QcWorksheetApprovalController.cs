@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -23,6 +24,7 @@ public class QcWorksheetApprovalController(IQcApprovalRepository repository) : C
 {
     /// <summary>Every QC approval currently awaiting the calling user, across all QC entity types.</summary>
     [HttpGet("my-pending")]
+    [AnyPermission("CanCreateUnscheduledQcTestRequest", "CanLinkMaterialRetestTestRequest", "CanReviewChemicalWorksheet", "CanReviewMicrobialWorksheet", "CanViewMaterialRetestDetail", "CanViewMaterialRetests", "CanViewQcCertificate", "CanViewQcEquipment", "CanViewQcOosCases", "CanViewQcSpecifications", "CanViewQcTestRequests")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<QcPendingApprovalDto>))]
     public async Task<IResult> GetMyPending()
     {

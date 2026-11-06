@@ -54,6 +54,7 @@ public class CommercialCertificateController(
     }
 
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckProductTest", "CanCheckRawMaterialTestResult", "CanViewQcCertificate")]
     public async Task<IResult> Get([FromRoute] Guid id)
     {
         var result = await repository.Get(id);

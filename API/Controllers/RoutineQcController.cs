@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
@@ -24,6 +25,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpGet("ards")]
+    [AnyPermission("CanViewRoutineTests", "CanViewRoutineSetup", "CanViewWaterQuality", "CanCreateRoutineTest", "CanPerformRoutineTest", "CanManageRoutineSetup")]
     public async Task<IResult> ListArds()
     {
         var result = await repository.ListArds();
@@ -31,6 +33,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpGet("definitions")]
+    [AnyPermission("CanViewRoutineTests", "CanViewRoutineSetup", "CanViewWaterQuality", "CanCreateRoutineTest", "CanPerformRoutineTest", "CanManageRoutineSetup")]
     public async Task<IResult> ListDefinitions()
     {
         var result = await repository.ListDefinitions();
@@ -56,6 +59,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpGet]
+    [AnyPermission("CanViewRoutineTests", "CanViewRoutineSetup", "CanViewWaterQuality", "CanCreateRoutineTest", "CanPerformRoutineTest", "CanManageRoutineSetup")]
     public async Task<IResult> List()
     {
         var result = await repository.ListExecutions();
@@ -63,6 +67,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewRoutineTests", "CanViewRoutineSetup", "CanViewWaterQuality", "CanCreateRoutineTest", "CanPerformRoutineTest", "CanManageRoutineSetup")]
     public async Task<IResult> Detail([FromRoute] Guid id)
     {
         var result = await repository.GetExecution(id);
@@ -80,6 +85,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpGet("tracks/{id:guid}")]
+    [AnyPermission("CanViewRoutineTests", "CanViewRoutineSetup", "CanViewWaterQuality", "CanCreateRoutineTest", "CanPerformRoutineTest", "CanManageRoutineSetup")]
     public async Task<IResult> Track([FromRoute] Guid id)
     {
         var result = await repository.GetTrack(id);
@@ -87,6 +93,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpGet("certificates/{id:guid}")]
+    [AnyPermission("CanViewRoutineTests", "CanViewRoutineSetup", "CanViewWaterQuality", "CanCreateRoutineTest", "CanPerformRoutineTest", "CanManageRoutineSetup")]
     public async Task<IResult> Certificate([FromRoute] Guid id)
     {
         var result = await repository.GetCertificate(id);
