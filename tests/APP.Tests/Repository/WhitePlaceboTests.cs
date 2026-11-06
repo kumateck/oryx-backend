@@ -103,6 +103,27 @@ public sealed class WhitePlaceboTests
     }
 
     [Fact]
+    public async Task PreparationReads_ExposeTheSelectedRackAndShelfWithoutChangingStock()
+    {
+        await using var fixture = new Fixture();
+        await fixture.Seed();
+        var workspace = await fixture.Service.Workspace();
+        Assert.True(workspace.IsSuccess);
+        Assert.Equal("Rack", Assert.Single(workspace.Value.Stock).Rack);
+        var created = await fixture.Service.Create(fixture.Request());
+        Assert.True(created.IsSuccess);
+        fixture.Db.ChangeTracker.Clear();
+
+        var preparation = await fixture.Service.Get(created.Value);
+
+        Assert.True(preparation.IsSuccess);
+        var input = Assert.Single(preparation.Value.Inputs);
+        Assert.Equal("Shelf A", input.WarehouseLocationShelf.Name);
+        Assert.Equal("Rack", input.WarehouseLocationShelf.WarehouseLocationRack.Name);
+        Assert.Equal(100, (await fixture.Db.ShelfMaterialBatches.SingleAsync()).Quantity);
+    }
+
+    [Fact]
     public async Task CompleteJourney_ConsumesInputsOnce_PostsActualOutputInQuarantine()
     {
         await using var fixture = new Fixture(); await fixture.Seed();

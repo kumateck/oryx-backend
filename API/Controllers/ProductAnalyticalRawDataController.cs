@@ -136,6 +136,7 @@ public class ProductAnalyticalRawDataController(IProductAnalyticalRawDataReposit
     /// Starts test for BMR
     /// </summary>
     [HttpPut("start-test/{batchManufacturingRecordId:guid}")]
+    [Authorize(PermissionKeys.CanStartProductTest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> StartTestForMaterialBatch(

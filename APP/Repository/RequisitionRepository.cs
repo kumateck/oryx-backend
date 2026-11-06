@@ -470,6 +470,7 @@ public class RequisitionRepository(
                             Batch = rb.MaterialBatch,
                             QuantityToTake = rb.Quantity,
                             WarehouseLocationShelfId = rb.WarehouseLocationShelf?.Id,
+                            WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(rb.WarehouseLocationShelf),
                         })
                         .ToList();
                     continue;
@@ -614,6 +615,7 @@ public class RequisitionRepository(
                             Batch = rb.MaterialBatch,
                             QuantityToTake = rb.Quantity,
                             WarehouseLocationShelfId = rb.WarehouseLocationShelf?.Id,
+                            WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(rb.WarehouseLocationShelf),
                         })
                         .ToList();
                 }
@@ -663,6 +665,7 @@ public class RequisitionRepository(
                         smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse
                     ),
                     WarehouseLocationShelfId = smb.WarehouseLocationShelfId,
+                    WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(smb.WarehouseLocationShelf),
                 })
                 .ToList();
 

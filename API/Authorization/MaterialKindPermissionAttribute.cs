@@ -14,7 +14,7 @@ namespace API.Authorization;
 /// the database: materials (<c>MaterialId</c>, <c>MaterialIds</c>), material batches (<c>MaterialBatchId</c>,
 /// <c>MaterialBatchIds</c>), distributed requisition materials (<c>DistributedRequisitionMaterialId</c>), stock transfers
 /// (<c>StockTransferId</c>), extra packing requests (<c>ProductionExtraPackingId</c>), shelf batches
-/// (<c>ShelfMaterialBatchId</c>) and requisitions (<c>StockRequisitionId</c>, <c>RequisitionId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
+/// (<c>ShelfMaterialBatchId</c>), material samplings (<c>MaterialSamplingId</c>) and requisitions (<c>StockRequisitionId</c>, <c>RequisitionId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
 /// data just before the action.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
@@ -53,6 +53,7 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
     private static readonly string[] ExtraPackingNames = ["ProductionExtraPackingId"];
     private static readonly string[] ShelfBatchNames = ["ShelfMaterialBatchId"];
     private static readonly string[] RequisitionNames = ["StockRequisitionId", "RequisitionId"];
+    private static readonly string[] SamplingNames = ["MaterialSamplingId"];
 
     public static async Task<HashSet<MaterialKind>> Kinds(ApplicationDbContext db, IDictionary<string, object> arguments, bool idIsSwapRequest = false)
     {
@@ -64,6 +65,7 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
         var extraPackings = new List<Guid>();
         var shelfBatches = new List<Guid>();
         var requisitions = new List<Guid>();
+        var samplings = new List<Guid>();
         void Collect(string name, object value)
         {
             if (MaterialNames.Contains(name, StringComparer.OrdinalIgnoreCase)) materials.AddRange(Ids(value));
@@ -73,6 +75,7 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
             else if (ExtraPackingNames.Contains(name, StringComparer.OrdinalIgnoreCase)) extraPackings.AddRange(Ids(value));
             else if (ShelfBatchNames.Contains(name, StringComparer.OrdinalIgnoreCase)) shelfBatches.AddRange(Ids(value));
             else if (RequisitionNames.Contains(name, StringComparer.OrdinalIgnoreCase)) requisitions.AddRange(Ids(value));
+            else if (SamplingNames.Contains(name, StringComparer.OrdinalIgnoreCase)) samplings.AddRange(Ids(value));
         }
         foreach (var (name, value) in arguments)
         {
@@ -100,6 +103,9 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
             batches.AddRange(await stored.SelectMany(swap => swap.FirstSwapShelfMaterialBatches).Select(batch => batch.MaterialBatchId).ToListAsync());
             batches.AddRange(await stored.SelectMany(swap => swap.SecondSwapShelfMaterialBatches).Select(batch => batch.MaterialBatchId).ToListAsync());
         }
+        if (samplings.Count > 0)
+            batches.AddRange(await db.MaterialSamplings.IgnoreQueryFilters().AsNoTracking().Where(sample => samplings.Contains(sample.Id))
+                .Select(sample => sample.MaterialBatchId).ToListAsync());
         if (shelfBatches.Count > 0)
             batches.AddRange(await db.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking().Where(shelf => shelfBatches.Contains(shelf.Id))
                 .Select(shelf => shelf.MaterialBatchId).ToListAsync());

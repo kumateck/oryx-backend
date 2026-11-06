@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -60,6 +61,7 @@ public class QcTestRequestController(ITestRequestRepository repository) : Contro
     /// </para>
     /// </summary>
     [HttpPost]
+    [PermissionCheckedInAction("Scheduled and unscheduled requests need their own create key.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TestRequestDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -84,6 +86,7 @@ public class QcTestRequestController(ITestRequestRepository repository) : Contro
     /// are added incrementally. Rejected once the round is past Sampled.
     /// </summary>
     [HttpPost("{id:guid}/subjects")]
+    [PermissionCheckedInAction("Scheduled and unscheduled requests need their own create key.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TestRequestDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Services.Stores;
 using APP.Extensions;
 using APP.Utils;
@@ -17,6 +18,7 @@ public partial class ItemController
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateItem([FromBody] CreateItemsRequest request)
@@ -32,6 +34,7 @@ public partial class ItemController
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpPost("upload")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadItem([FromForm] ImportItemsRequest request)
@@ -79,6 +82,7 @@ public partial class ItemController
     /// Updates an item
     /// </summary>
     [HttpPut("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ItemDto))]
     public async Task<IResult> UpdateItem([FromRoute] Guid id, [FromBody] CreateItemsRequest request)
     {
@@ -93,6 +97,7 @@ public partial class ItemController
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpDelete("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteItem([FromRoute] Guid id)

@@ -234,6 +234,37 @@ public sealed class AccessControlTests
     }
 
     [Fact]
+    public async Task The_system_administrator_may_grant_permissions_nobody_holds_yet()
+    {
+        var actorId = Guid.NewGuid();
+        await using var db = Context(actorId);
+        var editors = AddRole(db, "permission-editors", PermissionKeys.CanUpdateExistingPermission, PermissionKeys.CanAssignUserRole);
+        var admin = AddUser(db, editors);
+        admin.Id = actorId;
+        admin.Email = APP.Repository.UserPasswordAdminRepository.PasswordAdminEmail;
+        var other = AddUser(db, editors);
+        var clerks = AddRole(db, "clerks", PermissionKeys.CanDeleteUser);
+        var target = AddUser(db, clerks);
+        var forecasters = AddRole(db, "forecasters", PermissionKeys.CanViewProductionScheduleMaterialForecast);
+        await db.SaveChangesAsync();
+        var permissions = Permissions(db);
+
+        // A new feature's key that no role holds: the administrator can give it out, other editors still cannot.
+        var key = PermissionKeys.CanViewProductionScheduleMaterialForecast;
+        Assert.Equal("Access.Escalation", (await permissions.UpdateRolePermissions(Request(key), clerks.Id, other.Id)).Error.Code);
+        Assert.True((await permissions.UpdateRolePermissions(Request(PermissionKeys.CanDeleteUser, key), clerks.Id, actorId)).IsSuccess);
+        Assert.Contains(key, await CurrentPermissionSet.Load(db, target.Id));
+        // Assigning a role carrying keys the administrator lacks is allowed for them too, and still refused for others.
+        Assert.Equal("Access.Escalation", (await Users(db).UpdateRolesOfUser(new() { RoleNames = ["forecasters"] }, target.Id, other.Id)).Error.Code);
+        Assert.Null(await AccessGuard.RoleAssignment(db, await CurrentPermissionSet.Load(db, actorId), [forecasters.Id], actorId));
+
+        // A disabled administrator account is no administrator.
+        admin.IsDisabled = true;
+        await db.SaveChangesAsync();
+        Assert.False(await AccessGuard.IsSystemAdministrator(db, actorId));
+    }
+
+    [Fact]
     public async Task Verification_needs_the_key_for_that_kind_of_document()
     {
         var actorId = Guid.NewGuid();

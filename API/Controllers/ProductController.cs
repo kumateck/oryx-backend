@@ -407,6 +407,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Creates a new equipment.
     /// </summary>
     [HttpPost("equipment")]
+    [Authorize(PermissionKeys.CanCreateEquipment)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateEquipment([FromBody] CreateEquipmentRequest request)
@@ -464,6 +465,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Updates specific equipment by its ID.
     /// </summary>
     [HttpPut("equipment/{equipmentId}")]
+    [Authorize(PermissionKeys.CanEditEquipmentDetails)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -484,6 +486,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// Deletes specific equipment by its ID.
     /// </summary>
     [HttpDelete("equipment/{equipmentId}")]
+    [Authorize(PermissionKeys.CanDeleteEquipment)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteEquipment(Guid equipmentId)
@@ -562,6 +565,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing materials.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload/stock")]
+    [Authorize(PermissionKeys.CanUploadProductStock)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -643,6 +647,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
     /// <param name="file">The uploaded Excel file containing materials.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload/equipment")]
+    [Authorize(PermissionKeys.CanUploadEquipment)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

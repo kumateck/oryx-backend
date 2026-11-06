@@ -79,6 +79,7 @@ public class SwapRequestDto
 
 public class SwapShelfMaterialBatchDto
 {
+    public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public MaterialBatchReducedDto MaterialBatch { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }

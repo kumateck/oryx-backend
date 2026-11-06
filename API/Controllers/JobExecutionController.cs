@@ -18,6 +18,7 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Retrieves a paginated list of job executions
     /// </summary>
     [HttpGet]
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobExecutionDto>>))]
     public async Task<IResult> GetJobExecutions(
         [FromQuery] int page = 1,
@@ -26,7 +27,6 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
         [FromQuery] Guid? employeeId = null,
         [FromQuery] Guid? jobRequestId = null)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
 
         var result = await repository.GetJobExecutions(page, pageSize, status, employeeId, jobRequestId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -36,11 +36,11 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Retrieves a job execution by its unique identifier
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(JobExecutionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobExecution([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
 
         var result = await repository.GetJobExecution(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -50,11 +50,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Acknowledges a job execution (employee acknowledges receipt of assignment)
     /// </summary>
     [HttpPost("acknowledge")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.AcknowledgeJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AcknowledgeJobExecution([FromBody] AcknowledgeJobExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AcknowledgeJobRequest)) return TypedResults.Forbid();
 
         var result = await repository.AcknowledgeJobExecution(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -64,11 +65,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Starts a job execution
     /// </summary>
     [HttpPost("start")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.StartJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> StartJobExecution([FromBody] StartJobExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.StartJobRequest)) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -81,11 +83,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Records an activity performed during job execution
     /// </summary>
     [HttpPost("{id:guid}/activities")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.StartJobRequest)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RecordJobActivity([FromRoute] Guid id, [FromBody] RecordJobActivityRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.StartJobRequest)) return TypedResults.Forbid();
         if (Actor() is not { } performer) return TypedResults.Unauthorized();
         request.PerformedById = performer;
 
@@ -97,11 +100,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Records an item consumed during job execution
     /// </summary>
     [HttpPost("{id:guid}/consumed-items")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.StartJobRequest)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RecordConsumedItem([FromRoute] Guid id, [FromBody] RecordConsumedItemRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.StartJobRequest)) return TypedResults.Forbid();
 
         var result = await repository.RecordConsumedItem(id, request);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -111,11 +115,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Completes a job execution
     /// </summary>
     [HttpPost("complete")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.CompleteJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CompleteJobExecution([FromBody] CompleteJobExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.CompleteJobRequest)) return TypedResults.Forbid();
         foreach (var activity in request.AdditionalActivities ?? []) activity.PerformedById = Actor() ?? Guid.Empty;
 
         var userId = (string)HttpContext.Items["Sub"];
@@ -129,11 +134,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Reassigns a job execution to another employee
     /// </summary>
     [HttpPost("reassign")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.AssignJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReassignJobExecution([FromBody] ReassignJobExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AssignJobRequest)) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -146,11 +152,12 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Verifies a completed job execution (by supervisor)
     /// </summary>
     [HttpPost("verify")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.AssignJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> VerifyJobExecution([FromBody] VerifyJobExecutionRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AssignJobRequest)) return TypedResults.Forbid();
         if (Actor() is not { } verifier) return TypedResults.Unauthorized();
         request.VerifiedById = verifier;
 
@@ -162,6 +169,8 @@ public class JobExecutionController(IJobExecutionRepository repository, INFRASTR
     /// Approves a verified job execution
     /// </summary>
     [HttpPost("approve")]
+    // Seeing job requests is always needed; the rest of the check depends on the record and stays in the action.
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveJobExecution([FromBody] ApproveJobExecutionRequest request)

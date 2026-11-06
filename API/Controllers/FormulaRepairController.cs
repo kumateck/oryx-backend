@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.Services.Formulas;
 using APP.Utils;
@@ -21,12 +22,14 @@ public sealed class FormulaRepairController(QuestionFormulaRepairService service
     public Task<IResult> Context(Guid questionId) => Run(() => service.Context(questionId));
 
     [HttpPost("questions/{questionId:guid}/preview", Name = "PreviewFormulaRepair")]
+    [PermissionCheckedInAction("The formula repair service checks the question repair key.")]
     [ProducesResponseType(typeof(FormulaRepairPreviewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public Task<IResult> Preview(Guid questionId, FormulaRepairCandidate request) => Run(() => service.Preview(questionId, request));
 
     [HttpPost("questions/{questionId:guid}/apply", Name = "ApplyFormulaRepair")]
+    [PermissionCheckedInAction("The formula repair service checks the question repair key.")]
     [ProducesResponseType(typeof(FormulaRepairResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

@@ -559,7 +559,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="request">The CreatePurchaseOrderInvoiceRequest object.</param>
     /// <returns>Returns the ID of the created invoice.</returns>
     [HttpPost("purchase-order-invoice")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreatePurchaseOrderInvoice)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreatePurchaseOrderInvoice(
@@ -621,7 +621,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="invoiceId">The ID of the invoice to update.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpPut("purchase-order-invoice/{invoiceId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreatePurchaseOrderInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -648,7 +648,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="invoiceId">The ID of the invoice to delete.</param>
     /// <returns>Returns success or failure.</returns>
     [HttpDelete("purchase-order-invoice/{invoiceId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeletePurchaseOrderInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeletePurchaseOrderInvoice(Guid invoiceId)

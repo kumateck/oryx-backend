@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -124,12 +125,13 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="400">Invalid request data. Check validation errors in response body</response>
     /// <response code="401">Unauthorized - User must be authenticated with valid Bearer token</response>
     [HttpPost]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.CreateJobRequest)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> CreateJobRequest([FromBody] CreateJobRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.CreateJobRequest)) return TypedResults.Forbid();
 
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
@@ -219,6 +221,7 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="200">Returns paginated list of job requests with pagination metadata</response>
     /// <response code="401">Unauthorized - User must be authenticated with valid Bearer token</response>
     [HttpGet]
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobRequestDto>>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetJobRequests(
@@ -228,7 +231,6 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
         [FromQuery] JobRequestStatus? status = null,
         [FromQuery] JobHandlingType? handlingType = null)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
 
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
@@ -315,11 +317,11 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="404">Job request not found with the provided ID</response>
     /// <response code="401">Unauthorized - User must be authenticated (if authorization is required)</response>
     [HttpGet("{id:guid}")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(JobRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobRequest([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
 
         var result = await repository.GetJobRequest(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -330,11 +332,11 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// </summary>
     /// <returns></returns>
     [HttpGet("orders")]
+    [AnyPermission(ServiceKeys.ViewJobRequests, ServiceKeys.ViewJobOrders)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(JobRequestDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetJobRequestInJobOrder()
     {
-        if (!await ServiceWorkflowAccess.Any(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.ViewJobOrders)) return TypedResults.Forbid();
 
         var result = await repository.GetJobRequestsInJobOrders();
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -409,12 +411,13 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="404">Job request not found with the provided ID</response>
     /// <response code="401">Unauthorized - User must be authenticated</response>
     [HttpPut("{id:guid}")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.EditJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateJobRequest([FromRoute] Guid id, [FromBody] UpdateJobRequestRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.EditJobRequest)) return TypedResults.Forbid();
 
         var result = await repository.UpdateJobRequest(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -459,12 +462,13 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="404">Job request not found with the provided ID</response>
     /// <response code="401">Unauthorized - User must be authenticated</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.DeleteJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> DeleteJobRequest([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.DeleteJobRequest)) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
@@ -534,12 +538,13 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="400">Invalid assignment data, validation error, or request cannot be assigned (e.g., already assigned, wrong status, invalid employee)</response>
     /// <response code="401">Unauthorized - User must be authenticated</response>
     [HttpPost("assign-internal")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.AssignJobRequest)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> AssignInternalJob([FromBody] AssignInternalJobRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.AssignJobRequest)) return TypedResults.Forbid();
         if (Actor() is not { } assigner) return TypedResults.Unauthorized();
         request.AssignedById = assigner;
 
@@ -710,6 +715,8 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="404">Job request not found with the provided ID</response>
     /// <response code="401">Unauthorized - User must be authenticated</response>
     [HttpPut("status/{id:guid}")]
+    // Seeing job requests is always needed; the rest of the check depends on the record and stays in the action.
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -795,6 +802,7 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="200">Returns paginated list of completed job requests with pagination metadata</response>
     /// <response code="401">Unauthorized - User must be authenticated with valid Bearer token</response>
     [HttpGet("completed/internal")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<JobRequestDto>>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetCompletedJobRequestsForInternalEmployees(
@@ -803,7 +811,6 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
         [FromQuery] string searchQuery = null,
         [FromQuery] Guid? employeeId = null)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests)) return TypedResults.Forbid();
 
         var result = await repository.GetCompletedJobRequestsForInternalEmployees(page, pageSize, searchQuery, employeeId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -890,13 +897,14 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     /// <response code="404">Job request not found</response>
     /// <response code="401">Unauthorized - User must be authenticated</response>
     [HttpPost("complete")]
+    [Authorize(ServiceKeys.ViewJobRequests)]
+    [Authorize(ServiceKeys.CompleteJobRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> CompleteJobRequest([FromBody] CompleteJobRequestRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewJobRequests, ServiceKeys.CompleteJobRequest)) return TypedResults.Forbid();
 
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();

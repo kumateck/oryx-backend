@@ -30,7 +30,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         if (roleIds.Count > 0)
         {
             if (AccessGuard.Missing(actor, PermissionKeys.CanAssignUserRole, "give a new user a role") is { } cannotAssign) return cannotAssign;
-            if (await AccessGuard.RoleAssignment(context, actor, roleIds) is { } escalation) return escalation;
+            if (await AccessGuard.RoleAssignment(context, actor, roleIds, actorId) is { } escalation) return escalation;
         }
         var user = mapper.Map<User>(request);
         user.CreatedAt = DateTime.UtcNow;
@@ -208,7 +208,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
             if (AccessGuard.Self(userId, id, "change the role") is { } self) return self;
             var roleIds = await context.Roles.Where(item => item.Name == request.RoleName).Select(item => item.Id).ToListAsync();
             if (roleIds.Count == 0) return Error.Validation("Role.Name", $"Could not find role {request.RoleName}");
-            if (await AccessGuard.RoleAssignment(context, actor, roleIds) is { } escalation) return escalation;
+            if (await AccessGuard.RoleAssignment(context, actor, roleIds, userId) is { } escalation) return escalation;
         }
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
         if (user != null)
@@ -258,7 +258,7 @@ public class UserRepository(ApplicationDbContext context, UserManager<User> user
         // Checked again here, immediately before the change, from current data.
         var actor = await CurrentPermissionSet.Load(context, actorId);
         if (AccessGuard.Missing(actor, PermissionKeys.CanAssignUserRole, "change a user's role") is { } cannotAssign) return cannotAssign;
-        if (await AccessGuard.RoleAssignment(context, actor, [role.Id]) is { } escalation) return escalation;
+        if (await AccessGuard.RoleAssignment(context, actor, [role.Id], actorId) is { } escalation) return escalation;
 
         var user = await context.Users.FirstOrDefaultAsync(item => item.Id == id);
         if (user == null)

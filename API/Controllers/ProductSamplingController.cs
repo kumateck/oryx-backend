@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.ProductsSampling;
@@ -16,6 +18,7 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
     /// Creates a sampling product
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanTakeSamples)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductSampling([FromBody] CreateProductSamplingRequest request)
@@ -40,6 +43,7 @@ public class ProductSamplingController(IProductSamplingRepository repository) : 
     /// Adds an issue number to sampling product
     /// </summary>
     [HttpPut("{productSamplingId:guid}")]
+    [Authorize(PermissionKeys.CanTakeSamples)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AddIssueNumberToMaterialSampling([FromRoute] Guid productSamplingId,

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.StpDocuments;
@@ -42,6 +43,7 @@ public class StpDocumentController(
     /// omitted in that case to start editing from a clone of the current effective version.
     /// </summary>
     [HttpPost("{ownerType}/{ownerId:guid}/versions")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpDocumentDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UploadVersion(
@@ -62,6 +64,7 @@ public class StpDocumentController(
 
     /// <summary>Creates a brand-new STP document seeded with a minimal blank .docx.</summary>
     [HttpPost("{ownerType}/{ownerId:guid}/new")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpDocumentDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateBlank([FromRoute] string ownerType, [FromRoute] Guid ownerId)
@@ -119,6 +122,7 @@ public class StpDocumentController(
     /// straight into DocsAPI.DocEditor.
     /// </summary>
     [HttpPost("documents/{documentId:guid}/editor-sessions")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> CreateEditorSession([FromRoute] Guid documentId)
@@ -166,6 +170,7 @@ public class StpDocumentController(
 
     /// <summary>Draft -&gt; InReview.</summary>
     [HttpPost("documents/{documentId:guid}/submit-review")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpDocumentDto))]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> SubmitForReview([FromRoute] Guid documentId)
@@ -181,6 +186,7 @@ public class StpDocumentController(
 
     /// <summary>InReview -&gt; Reviewed with a separate review e-signature.</summary>
     [HttpPost("documents/{documentId:guid}/review")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     public async Task<IResult> Review(
         [FromRoute] Guid documentId,
         [FromBody] SubmitStpDocumentVersionRequest request
@@ -198,6 +204,7 @@ public class StpDocumentController(
     /// <summary>InReview -&gt; Approved. Re-verifies the caller's password and captures an
     /// e-signature (21 CFR 11.50/11.200).</summary>
     [HttpPost("documents/{documentId:guid}/approve")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpDocumentDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -218,6 +225,7 @@ public class StpDocumentController(
     /// <summary>InReview -&gt; Draft. Re-verifies the caller's password and captures an
     /// e-signature (21 CFR 11.50/11.200).</summary>
     [HttpPost("documents/{documentId:guid}/reject")]
+    [PermissionCheckedInAction("Access depends on the document owner (material, product or QC).")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpDocumentDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

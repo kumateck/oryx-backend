@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -34,6 +35,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// Reports a new IT support ticket
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateTicket)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateTicket([FromBody] CreateTicketRequest request)
@@ -113,6 +115,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// Marks an assigned ticket as in progress. Only the assigned agent may call this.
     /// </summary>
     [HttpPut("{id:guid}/start")]
+    [PermissionCheckedInAction("Only the assigned agent may start a ticket.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -129,6 +132,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// Marks a ticket as done. Only the assigned agent may call this.
     /// </summary>
     [HttpPut("{id:guid}/done")]
+    [PermissionCheckedInAction("Only the assigned agent may mark a ticket done.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -163,6 +167,7 @@ public class TicketController(ITicketRepository repository) : ControllerBase
     /// with the `CanCloseTicket` permission.
     /// </summary>
     [HttpPut("{id:guid}/reopen")]
+    [PermissionCheckedInAction("The reporter, or someone with CanCloseTicket, may reopen a ticket.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

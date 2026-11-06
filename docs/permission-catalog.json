@@ -7,6 +7,83 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Procurement",
+    "submodule": "Store Item GRNs",
+    "key": "CanCreateItemGrn",
+    "name": "Can Create Item Grn",
+    "description": "Allows the user to  create item grn."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Store Item GRNs",
+    "key": "CanEditItemGrn",
+    "name": "Can Edit Item Grn",
+    "description": "Allows the user to  edit item grn."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Store Item GRNs",
+    "key": "CanDeleteItemGrn",
+    "name": "Can Delete Item Grn",
+    "description": "Allows the user to  delete item grn."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Products",
+    "key": "CanManageOtherCollectionTypes",
+    "name": "Can Manage Other Collection Types",
+    "description": "Allows the user to  manage other collection types."
+  },
+  {
+    "module": "Production",
+    "submodule": "Equipment",
+    "key": "CanUploadEquipment",
+    "name": "Can Upload Equipment",
+    "description": "Allows the user to  upload equipment."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanUploadProductStock",
+    "name": "Can Upload Product Stock",
+    "description": "Allows the user to  upload product stock."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order Invoices",
+    "key": "CanCreatePurchaseOrderInvoice",
+    "name": "Can Create Purchase Order Invoice",
+    "description": "Allows the user to  create purchase order invoice."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order Invoices",
+    "key": "CanDeletePurchaseOrderInvoice",
+    "name": "Can Delete Purchase Order Invoice",
+    "description": "Allows the user to  delete purchase order invoice."
+  },
+  {
+    "module": "Production",
+    "submodule": "Work Orders",
+    "key": "CanCreateWorkOrder",
+    "name": "Can Create Work Order",
+    "description": "Allows the user to  create work order."
+  },
+  {
+    "module": "Production",
+    "submodule": "Work Orders",
+    "key": "CanEditWorkOrder",
+    "name": "Can Edit Work Order",
+    "description": "Allows the user to  edit work order."
+  },
+  {
+    "module": "Production",
+    "submodule": "Work Orders",
+    "key": "CanDeleteWorkOrder",
+    "name": "Can Delete Work Order",
+    "description": "Allows the user to  delete work order."
+  },
+  {
     "module": "Warehouse",
     "submodule": "Arrival Locations",
     "key": "CanCreateArrivalLocation",

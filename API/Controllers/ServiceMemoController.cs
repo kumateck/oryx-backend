@@ -76,11 +76,12 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
     /// <response code="200">Service memo created successfully</response>
     /// <response code="400">Invalid request data or proforma invoice not approved</response>
     [HttpPost]
+    [Authorize(ServiceKeys.ViewMemo)]
+    [Authorize(ServiceKeys.CreateMemo)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateServiceMemo([FromBody] CreateServiceMemoRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreateMemo)) return TypedResults.Forbid();
         if (Actor() is not { } issuer) return TypedResults.Unauthorized();
         // The issuer is the signed-in user, never a value from the request.
         request.IssuedById = issuer;
@@ -93,6 +94,7 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
     /// Retrieves a paginated list of service memos
     /// </summary>
     [HttpGet]
+    [Authorize(ServiceKeys.ViewMemo)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ServiceMemoDto>>))]
     public async Task<IResult> GetServiceMemos(
         [FromQuery] int page = 1,
@@ -101,7 +103,6 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
         [FromQuery] Guid? jobOrderId = null,
         [FromQuery] Guid? serviceProviderId = null)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo)) return TypedResults.Forbid();
 
         var result = await repository.GetServiceMemos(page, pageSize, status, jobOrderId, serviceProviderId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -111,11 +112,11 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
     /// Retrieves a service memo by its unique identifier
     /// </summary>
     [HttpGet("{id:guid}")]
+    [Authorize(ServiceKeys.ViewMemo)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ServiceMemoDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetServiceMemo([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo)) return TypedResults.Forbid();
 
         var result = await repository.GetServiceMemo(id);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
@@ -125,12 +126,13 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
     /// Updates an existing service memo
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(ServiceKeys.ViewMemo)]
+    [Authorize(ServiceKeys.CreateMemo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateServiceMemo([FromRoute] Guid id, [FromBody] UpdateServiceMemoRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreateMemo)) return TypedResults.Forbid();
 
         var result = await repository.UpdateServiceMemo(id, request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -140,12 +142,13 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
     /// Updates an existing service memo
     /// </summary>
     [HttpPut("paid/{id:guid}")]
+    [Authorize(ServiceKeys.ViewMemo)]
+    [Authorize(ServiceKeys.CreatePurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> MarkServiceMemoAsPaid([FromRoute] Guid id)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreatePurchaseOrder)) return TypedResults.Forbid();
 
         var result = await repository.MarkServiceMemoAsPaid(id);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
@@ -174,11 +177,12 @@ public class ServiceMemoController(IServiceMemoRepository repository, INFRASTRUC
     /// <response code="204">Service memo issued successfully</response>
     /// <response code="400">Invalid request data or memo not in draft status</response>
     [HttpPost("issue")]
+    [Authorize(ServiceKeys.ViewMemo)]
+    [Authorize(ServiceKeys.CreateMemo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> IssueServiceMemo([FromBody] IssueServiceMemoRequest request)
     {
-        if (!await ServiceWorkflowAccess.All(context, Actor(), ServiceKeys.ViewMemo, ServiceKeys.CreateMemo)) return TypedResults.Forbid();
 
         var result = await repository.IssueServiceMemo(request);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();

@@ -36,6 +36,8 @@ public class ExpiredMaterialReportDto
 
 public class ReservedMaterialReportDto
 {
+    public string RackName { get; set; }
+    public string ShelfName { get; set; }
     public string MaterialName { get; set; }
     public string MaterialCode { get; set; }
 
