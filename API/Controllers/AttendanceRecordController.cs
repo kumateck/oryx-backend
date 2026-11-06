@@ -18,6 +18,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// Upload daily attendance record
     /// </summary>
     [HttpPost("upload/{date:datetime}")]
+    [Authorize(PermissionKeys.CanSubmitAttendanceReportUpload)]
     public async Task<IResult> UploadAttendance([FromForm] CreateAttendanceRequest request, [FromQuery] DateTime date)
     {
         var result = await repository.UploadAttendance(request, date.Date);

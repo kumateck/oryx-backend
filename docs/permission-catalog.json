@@ -3845,6 +3845,13 @@
   {
     "module": "Human Resources",
     "submodule": "Employee Management",
+    "key": "CanDeleteEmployee",
+    "name": "Can Delete Employee",
+    "description": "Allows the user to  delete employee."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Employee Management",
     "key": "CanViewEmployeeDetails",
     "name": "Can View Employee Details",
     "description": "Allows the user to  view employee details."
@@ -3956,6 +3963,13 @@
   },
   {
     "module": "Human Resources",
+    "submodule": "Leave Management",
+    "key": "CanDeleteLeaveRequest",
+    "name": "Can Delete Leave Request",
+    "description": "Allows the user to  delete leave request."
+  },
+  {
+    "module": "Human Resources",
     "submodule": "Leave Type Configuration",
     "key": "CanViewLeaveType",
     "name": "Can View Leave Type",
@@ -3981,6 +3995,27 @@
     "key": "CanDeleteLeaveType",
     "name": "Can Delete Leave Type",
     "description": "Allows the user to  delete leave type."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Type Configuration",
+    "key": "CanCreateLeaveEntitlement",
+    "name": "Can Create Leave Entitlement",
+    "description": "Allows the user to  create leave entitlement."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Type Configuration",
+    "key": "CanEditLeaveEntitlement",
+    "name": "Can Edit Leave Entitlement",
+    "description": "Allows the user to  edit leave entitlement."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Type Configuration",
+    "key": "CanDeleteLeaveEntitlement",
+    "name": "Can Delete Leave Entitlement",
+    "description": "Allows the user to  delete leave entitlement."
   },
   {
     "module": "Human Resources",

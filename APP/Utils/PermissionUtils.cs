@@ -983,6 +983,13 @@ public static class PermissionKeys
     public const string CanCreateLeaveType = "CanCreateLeaveType";
     public const string CanEditLeaveType = "CanEditLeaveType";
     public const string CanDeleteLeaveType = "CanDeleteLeaveType";
+    public const string CanCreateLeaveEntitlement = "CanCreateLeaveEntitlement";
+    public const string CanEditLeaveEntitlement = "CanEditLeaveEntitlement";
+    public const string CanDeleteLeaveEntitlement = "CanDeleteLeaveEntitlement";
+    /// <summary>Delete a leave request record (not cancel or recall).</summary>
+    public const string CanDeleteLeaveRequest = "CanDeleteLeaveRequest";
+    /// <summary>Delete an employee record.</summary>
+    public const string CanDeleteEmployee = "CanDeleteEmployee";
     public const string CanViewAttendanceReportUpload = "CanViewAttendanceReportUpload";
     public const string CanSubmitAttendanceReportUpload = "CanSubmitAttendanceReportUpload";
     public const string CanCancelAttendanceReportUpload = "CanCancelAttendanceReportUpload";
@@ -3542,6 +3549,11 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.HumanResources,
             PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanDeleteEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
             PermissionKeys.CanViewEmployeeDetails
         );
         addPermission(
@@ -3621,6 +3633,11 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanDeleteLeaveRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
             PermissionSubmodules.LeaveTypeConfiguration,
             PermissionKeys.CanViewLeaveType
         );
@@ -3638,6 +3655,21 @@ public static class PermissionUtils
             PermissionModules.HumanResources,
             PermissionSubmodules.LeaveTypeConfiguration,
             PermissionKeys.CanDeleteLeaveType
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanCreateLeaveEntitlement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanEditLeaveEntitlement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanDeleteLeaveEntitlement
         );
         addPermission(
             PermissionModules.HumanResources,
