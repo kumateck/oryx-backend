@@ -1,3 +1,5 @@
+using APP.Services.Stores;
+using API.Authorization;
 using APP.Services.Inventory;
 using Microsoft.EntityFrameworkCore;
 using APP.Extensions;
@@ -18,6 +20,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository, INFRAS
     /// Creates a damaged stock record
     /// </summary>
     [HttpPost]
+    [StoreItemPermission(StoreWorkflow.DamageMissing, StoreWorkflowAction.Create, NeedsView = false)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateDamagedStocks([FromBody] CreateDamagedStockRequest request)
@@ -64,6 +67,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository, INFRAS
     /// Corrects a damage or missing record; the stock difference is posted to the ledger.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [StoreItemPermission(StoreWorkflow.DamageMissing, StoreWorkflowAction.Edit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -81,6 +85,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository, INFRAS
     /// Deletes a damage or missing record and gives its quantity back to stock.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [StoreItemPermission(StoreWorkflow.DamageMissing, StoreWorkflowAction.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

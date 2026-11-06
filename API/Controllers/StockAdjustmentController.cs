@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -38,6 +39,7 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// <param name="request">The stock adjustment request payload.</param>
     /// <returns>Returns a summary of the processed stock adjustment including the variance total.</returns>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateMaterialStockAdjustment)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(StockAdjustmentSummaryDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

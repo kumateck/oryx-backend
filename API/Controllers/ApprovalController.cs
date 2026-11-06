@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Approvals;
@@ -50,6 +51,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// that right too. QC documents that are signed electronically are not delegated.
     /// </summary>
     [HttpPost("delegate")]
+    [PermissionCheckedInAction("Delegates the caller own approvals; the delegate must hold CanViewPendingApprovals.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -75,6 +77,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
 
     /// <summary>Ends a delegation at once. Either the delegator or the delegate may end it.</summary>
     [HttpDelete("delegations/{delegationId:guid}")]
+    [PermissionCheckedInAction("Only the delegator or the delegate may end a delegation.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -221,6 +224,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Approves an item (Requisition, PurchaseOrder, BillingSheet) by model type and ID.
     /// </summary>
     [HttpPost("approve/{modelType}/{modelId}")]
+    [PermissionCheckedInAction("Decided by the approval stage the caller belongs to (as user, role or delegate), plus the document type key.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -281,6 +285,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Rejects an item (Requisition, PurchaseOrder, BillingSheet) by model type and ID.
     /// </summary>
     [HttpPost("reject/{modelType}/{modelId}")]
+    [PermissionCheckedInAction("Decided by the approval stage the caller belongs to (as user, role or delegate), plus the document type key.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

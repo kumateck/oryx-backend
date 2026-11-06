@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,7 @@ public class VerificationController(IVerificationRepository repository) : Contro
     /// Verifies an entity (Product, Specification, or ARD).
     /// </summary>
     [HttpPost]
+    [PermissionCheckedInAction("The key depends on the record being verified; the repository checks it.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -276,6 +276,13 @@ public static class PermissionKeys
     public const string CanCreatePurchaseOrderInvoice = "CanCreatePurchaseOrderInvoice";
     /// <summary>Delete a purchase order invoice.</summary>
     public const string CanDeletePurchaseOrderInvoice = "CanDeletePurchaseOrderInvoice";
+    // Store item GRNs: no page offers them yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Create a store item goods received note.</summary>
+    public const string CanCreateItemGrn = "CanCreateItemGrn";
+    /// <summary>Change a store item goods received note.</summary>
+    public const string CanEditItemGrn = "CanEditItemGrn";
+    /// <summary>Delete a store item goods received note.</summary>
+    public const string CanDeleteItemGrn = "CanDeleteItemGrn";
     // Dashboards: one key each (permissions audit phase 4).
     /// <summary>View the HR dashboard.</summary>
     public const string CanViewHrDashboard = "CanViewHrDashboard";
@@ -1363,6 +1370,9 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Procurement, "Store Item GRNs", PermissionKeys.CanCreateItemGrn);
+        addPermission(PermissionModules.Procurement, "Store Item GRNs", PermissionKeys.CanEditItemGrn);
+        addPermission(PermissionModules.Procurement, "Store Item GRNs", PermissionKeys.CanDeleteItemGrn);
         addPermission(PermissionModules.Settings, "Products", PermissionKeys.CanManageOtherCollectionTypes);
         addPermission(PermissionModules.Production, "Equipment", PermissionKeys.CanUploadEquipment);
         addPermission(PermissionModules.Production, "Products", PermissionKeys.CanUploadProductStock);

@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.Services.Authorization;
 using APP.Services.Storage;
@@ -16,6 +17,7 @@ public sealed class QcWorksheetFilesController(ApplicationDbContext context,
     IBlobStorageService storage) : ControllerBase
 {
     [HttpPost("{reference}")]
+    [PermissionCheckedInAction("The assigned analyst with the chemical or microbial result key may attach files.")]
     [RequestSizeLimit(17825792)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> Upload(Guid id, string reference, IFormFile file)

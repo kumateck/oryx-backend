@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.Services.Inventory;
 using DOMAIN.Entities.Approvals;
@@ -26,6 +27,7 @@ public partial class InventoryProcurementController
     }
 
     [HttpPost("items/{id:guid}/approve")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> ApproveItem([FromRoute] Guid id)
@@ -36,6 +38,7 @@ public partial class InventoryProcurementController
     }
 
     [HttpPost("items/{id:guid}/reject")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IResult> RejectItem([FromRoute] Guid id)

@@ -7,6 +7,27 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Procurement",
+    "submodule": "Store Item GRNs",
+    "key": "CanCreateItemGrn",
+    "name": "Can Create Item Grn",
+    "description": "Allows the user to  create item grn."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Store Item GRNs",
+    "key": "CanEditItemGrn",
+    "name": "Can Edit Item Grn",
+    "description": "Allows the user to  edit item grn."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Store Item GRNs",
+    "key": "CanDeleteItemGrn",
+    "name": "Can Delete Item Grn",
+    "description": "Allows the user to  delete item grn."
+  },
+  {
     "module": "Settings",
     "submodule": "Products",
     "key": "CanManageOtherCollectionTypes",
