@@ -68,7 +68,7 @@ public sealed class PermissionCatalogTests
         "CanViewVendors", "CanCreateVendor", "CanUpdateVendorDetails", "CanDeleteVendor",
     };
 
-    private sealed record Endpoint(string Name, string Verb, string Route, IReadOnlyList<string> Keys, bool Anonymous);
+    private sealed record Endpoint(string Name, string Verb, string Route, IReadOnlyList<string> Keys, bool Anonymous, string? Exemption = null);
 
     /// <summary>Every key a product permission attribute can require, in either context.</summary>
     private static IEnumerable<string> ProductKeys(API.Authorization.ProductPermissionAttribute attribute)
@@ -107,11 +107,15 @@ public sealed class PermissionCatalogTests
                         .SelectMany(attribute => new[] { attribute.ForeignKey, attribute.LocalKey }))
                     .Concat(action.GetCustomAttributes<API.Authorization.RequisitionCreatePermissionAttribute>()
                         .SelectMany(_ => API.Authorization.RequisitionCreatePermissionAttribute.AllKeys))
-                    .Concat(action.GetCustomAttributes<API.Authorization.CollectionPermissionAttribute>().SelectMany(attribute => attribute.AllKeys)).Distinct().ToList();
+                    .Concat(action.GetCustomAttributes<API.Authorization.CollectionPermissionAttribute>().SelectMany(attribute => attribute.AllKeys))
+                    .Concat(action.GetCustomAttributes<API.Authorization.StoreItemPermissionAttribute>().SelectMany(attribute => attribute.AllKeys)).Distinct().ToList();
+                // Checked inside the action (record-dependent) or acting only on the caller's own data; the reason is required.
+                var exemption = action.GetCustomAttribute<API.Authorization.PermissionCheckedInActionAttribute>()?.Reason
+                    ?? action.GetCustomAttribute<API.Authorization.SignedInUserAttribute>()?.Reason;
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");
-                yield return new Endpoint($"{controller.Name}.{action.Name}", http.HttpMethods.First(), route, keys, anonymous);
+                yield return new Endpoint($"{controller.Name}.{action.Name}", http.HttpMethods.First(), route, keys, anonymous, exemption);
             }
         }
     }
@@ -143,7 +147,9 @@ public sealed class PermissionCatalogTests
         Assert.True(unexpected.Count == 0, "Anonymous endpoints outside the allow-list: " + string.Join(", ", unexpected));
 
         // Endpoints with no named permission (signed-in only). This list may only shrink: give a new endpoint its key.
-        var lines = endpoints.Where(endpoint => !endpoint.Anonymous && endpoint.Keys.Count == 0)
+        var unexplained = endpoints.Where(endpoint => endpoint.Exemption is not null && string.IsNullOrWhiteSpace(endpoint.Exemption)).Select(endpoint => endpoint.Name).ToList();
+        Assert.True(unexplained.Count == 0, "Say why the action checks its own keys: " + string.Join(", ", unexplained));
+        var lines = endpoints.Where(endpoint => !endpoint.Anonymous && endpoint.Keys.Count == 0 && endpoint.Exemption is null)
             .Select(endpoint => $"{endpoint.Name} {endpoint.Verb} {endpoint.Route}").Distinct().OrderBy(line => line, StringComparer.Ordinal).ToList();
         var path = Path.Combine(Repository(), "docs/permission-endpoint-baseline.txt");
         if (Write) { File.WriteAllText(path, string.Join('\n', lines) + "\n"); return; }

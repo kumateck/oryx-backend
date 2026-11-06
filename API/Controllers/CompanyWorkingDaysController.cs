@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -16,7 +17,7 @@ public class CompanyWorkingDaysController(ICompanyWorkingDaysRepository reposito
     /// Creates the company working days.
     /// </summary>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateWorkingDays)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateWorkingDays([FromBody] List<CompanyWorkingDaysRequest> request)

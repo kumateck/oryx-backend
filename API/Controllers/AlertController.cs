@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -115,6 +116,7 @@ public class AlertController(IAlertRepository repo) : ControllerBase
     /// Marks a specific notification as read for the given user.
     /// </summary>
     [HttpPut("{id}/mark-as-read")]
+    [SignedInUser("Marks the caller own notification as read.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

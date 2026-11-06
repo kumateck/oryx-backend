@@ -1,3 +1,4 @@
+using API.Authorization;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -150,6 +151,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     /// <summary>Sets the signed-in user's own avatar; another user's is refused.</summary>
     [Authorize]
     [HttpPost("avatar/{id?}")]
+    [SignedInUser("Changes the caller own avatar; another user id is refused.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UploadAnImage([Required][FromBody] UploadFileRequest request, Guid? id = null)
@@ -242,6 +244,7 @@ public class UserController(IUserRepository repo) : ControllerBase
     /// <summary>Blocks an active user (CanBlockUser) or unblocks a blocked one (CanUnblockUser); never the caller.</summary>
     [Authorize]
     [HttpPut("toggle-disable/{id:guid}")]
+    [PermissionCheckedInAction("Blocking needs CanBlockUser and unblocking CanUnblockUser, by the user current state.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DisableUser([FromRoute] Guid id)

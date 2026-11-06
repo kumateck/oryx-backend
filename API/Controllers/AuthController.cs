@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.Auth;
@@ -42,6 +44,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PasswordChangeResponse))]
     [Authorize]
     [HttpPost("change-password")]
+    [SignedInUser("Changes the caller own password.")]
     public async Task<IResult> ResetPassword([FromBody] ChangePasswordRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -63,6 +66,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
     /// Password change for logged-in users.
     /// </summary>
     [HttpPost("user-reset-password")]
+    [SignedInUser("Changes the caller own password.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PasswordChangeResponse))]
     public async Task<IResult> UserChangePassword([FromBody] UserPasswordChangeRequest request)
@@ -79,6 +83,7 @@ public class AuthController(IAuthRepository repo) : ControllerBase
     /// request body (it contains the new password); the repository writes its own audit entry.
     /// </summary>
     [HttpPost("admin/user-password")]
+    [PermissionCheckedInAction("Only the password administrator may set another user password.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

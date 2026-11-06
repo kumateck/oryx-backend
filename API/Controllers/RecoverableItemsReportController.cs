@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Stores;
@@ -22,6 +24,7 @@ public class RecoverableItemsReportController(IRecoverableItemReportRepository r
     /// Records a return of recoverable stock issued against a stock requisition item, and puts the stock back.
     /// </summary>
     [HttpPost]
+    [StoreItemPermission(StoreWorkflow.ReturnItems, StoreWorkflowAction.Create)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
