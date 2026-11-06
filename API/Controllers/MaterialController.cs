@@ -278,6 +278,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The CreateMaterialBatchRequest object.</param>
     /// <returns>Returns the ID of the created material batch.</returns>
     [HttpPost("batch")]
+    [Authorize(PermissionKeys.CanCreateMaterialBatch)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateMaterialBatch(
@@ -334,6 +335,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The move material to location request object</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("batch/move")]
+    [Authorize(PermissionKeys.CanMoveMaterialBatch)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -380,6 +382,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Consumes a specified quantity of a material at a location.
     /// </summary>
     [HttpPost("batch/consume")]
+    [Authorize(PermissionKeys.CanConsumeMaterialAtLocation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -472,6 +475,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The UpdateBatchStatusRequest object.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("batch/status")]
+    [Authorize(PermissionKeys.CanChangeMaterialBatchStatus)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -489,6 +493,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Requests a retest for a material batch.
     /// </summary>
     [HttpPost("batch/{batchId:guid}/request-retest")]
+    [Authorize(PermissionKeys.CanRequestMaterialBatchRetest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -506,6 +511,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Completes a retest by extending the expiry date.
     /// </summary>
     [HttpPost("batch/{batchId:guid}/complete-retest")]
+    [Authorize(PermissionKeys.CanCompleteMaterialBatchRetest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -944,6 +950,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     [HttpPost("batches/import")]
+    [Authorize(PermissionKeys.CanImportMaterialBatches)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ImportMaterialBatchesFromCsv(IFormFile file)
@@ -1235,6 +1242,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Resolves inconsistencies by syncing batch aggregates with ledger records.
     /// </summary>
     [HttpPost("maintenance/fix-inconsistencies")]
+    [Authorize(PermissionKeys.CanFixStockInconsistencies)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> ResolveInconsistencies()
     {

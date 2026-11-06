@@ -776,7 +776,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Creates a new arrival location for a warehouse.
     /// </summary>
     [HttpPost("arrival-location")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateArrivalLocation)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CreateArrivalLocation(
@@ -796,7 +796,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Updates an existing arrival location.
     /// </summary>
     [HttpPut("arrival-location")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditArrivalLocation)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateArrivalLocation(
@@ -811,7 +811,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Confirms the arrival of a distributed material.
     /// </summary>
     [HttpPost("confirm-arrival/{distributedMaterialId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanConfirmMaterialArrival)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> ConfirmArrival(Guid distributedMaterialId)
@@ -1064,7 +1064,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="request">The swap request details.</param>
     /// <returns>A result indicating success or failure of the operation.</returns>
     [HttpPost("swap")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateSwapRequest([FromBody] CreateSwapRequest request)
@@ -1129,7 +1129,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="id">The unique identifier of the swap request to approve.</param>
     /// <returns>A result indicating success or failure of the operation.</returns>
     [HttpPut("swap/{id}/approve")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions, IdIsSwapRequest = true)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveSwapRequest([FromRoute] Guid id)
@@ -1149,7 +1149,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="reason">An optional reason for rejection.</param>
     /// <returns>A result indicating success or failure of the operation.</returns>
     [HttpPut("swap/{id}/reject")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions, IdIsSwapRequest = true)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RejectSwapRequest([FromRoute] Guid id, [FromQuery] string reason)

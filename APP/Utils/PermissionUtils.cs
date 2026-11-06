@@ -215,6 +215,33 @@ public static class PermissionSubmodules
 public static class PermissionKeys
 {
     public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
+    // Warehouse and sourcing tasks no page offers yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Create an arrival location.</summary>
+    public const string CanCreateArrivalLocation = "CanCreateArrivalLocation";
+    /// <summary>Change an arrival location.</summary>
+    public const string CanEditArrivalLocation = "CanEditArrivalLocation";
+    /// <summary>Confirm that distributed material has arrived.</summary>
+    public const string CanConfirmMaterialArrival = "CanConfirmMaterialArrival";
+    /// <summary>Create a material batch by hand.</summary>
+    public const string CanCreateMaterialBatch = "CanCreateMaterialBatch";
+    /// <summary>Import material batches from a file.</summary>
+    public const string CanImportMaterialBatches = "CanImportMaterialBatches";
+    /// <summary>Move a material batch between locations (legacy move).</summary>
+    public const string CanMoveMaterialBatch = "CanMoveMaterialBatch";
+    /// <summary>Consume material at a location.</summary>
+    public const string CanConsumeMaterialAtLocation = "CanConsumeMaterialAtLocation";
+    /// <summary>Change a material batch status.</summary>
+    public const string CanChangeMaterialBatchStatus = "CanChangeMaterialBatchStatus";
+    /// <summary>Request a retest of a material batch.</summary>
+    public const string CanRequestMaterialBatchRetest = "CanRequestMaterialBatchRetest";
+    /// <summary>Complete a material batch retest.</summary>
+    public const string CanCompleteMaterialBatchRetest = "CanCompleteMaterialBatchRetest";
+    /// <summary>Run the stock inconsistency repair.</summary>
+    public const string CanFixStockInconsistencies = "CanFixStockInconsistencies";
+    /// <summary>Change a source requisition.</summary>
+    public const string CanEditSourceRequisition = "CanEditSourceRequisition";
+    /// <summary>Delete a source requisition.</summary>
+    public const string CanDeleteSourceRequisition = "CanDeleteSourceRequisition";
     // Dashboards: one key each (permissions audit phase 4).
     /// <summary>View the HR dashboard.</summary>
     public const string CanViewHrDashboard = "CanViewHrDashboard";
@@ -1296,6 +1323,19 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanCreateArrivalLocation);
+        addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanEditArrivalLocation);
+        addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanConfirmMaterialArrival);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanCreateMaterialBatch);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanImportMaterialBatches);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanMoveMaterialBatch);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanConsumeMaterialAtLocation);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanChangeMaterialBatchStatus);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanRequestMaterialBatchRetest);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanCompleteMaterialBatchRetest);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanFixStockInconsistencies);
+        addPermission(PermissionModules.Procurement, "Purchase Requisition Sourcing", PermissionKeys.CanEditSourceRequisition);
+        addPermission(PermissionModules.Procurement, "Purchase Requisition Sourcing", PermissionKeys.CanDeleteSourceRequisition);
         addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewHrDashboard);
         addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewHrExecutiveSummary);
         addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewProductionHealthDashboard);

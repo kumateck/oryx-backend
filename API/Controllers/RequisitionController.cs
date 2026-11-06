@@ -23,7 +23,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="request">The CreateRequisitionRequest object.</param>
     /// <returns>Returns the ID of the created Stock Requisition.</returns>
     [HttpPost]
-    [Authorize]
+    [RequisitionCreatePermission]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateRequisition([FromBody] CreateRequisitionRequest request)
@@ -183,7 +183,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="requisitionId">The ID of the requisition.</param>
     /// <returns>A validation problem directing callers to the approval workflow.</returns>
     [HttpPost("{requisitionId}/issue")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveRequisition([FromBody] ApproveRequisitionRequest request, Guid requisitionId)
     {
@@ -275,7 +275,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="sourceRequisitionId">The ID of the Source Requisition to update.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("source/{sourceRequisitionId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditSourceRequisition)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpdateSourceRequisition([FromBody] CreateSourceRequisitionRequest request, Guid sourceRequisitionId)
@@ -290,7 +290,7 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="sourceRequisitionId">The ID of the Source Requisition to delete.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("source/{sourceRequisitionId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanDeleteSourceRequisition)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> DeleteSourceRequisition(Guid sourceRequisitionId)

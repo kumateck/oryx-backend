@@ -14,7 +14,7 @@ namespace API.Authorization;
 /// the database: materials (<c>MaterialId</c>, <c>MaterialIds</c>), material batches (<c>MaterialBatchId</c>,
 /// <c>MaterialBatchIds</c>), distributed requisition materials (<c>DistributedRequisitionMaterialId</c>), stock transfers
 /// (<c>StockTransferId</c>), extra packing requests (<c>ProductionExtraPackingId</c>), shelf batches
-/// (<c>ShelfMaterialBatchId</c>) and stock requisitions (<c>StockRequisitionId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
+/// (<c>ShelfMaterialBatchId</c>) and requisitions (<c>StockRequisitionId</c>, <c>RequisitionId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
 /// data just before the action.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
@@ -23,6 +23,9 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
     public string RawKey { get; } = rawKey;
     public string PackagingKey { get; } = packagingKey;
 
+    /// <summary>Set when the route <c>id</c> is a swap request; its kinds are those of the batches it swaps.</summary>
+    public bool IdIsSwapRequest { get; init; }
+
     public string Key(MaterialKind kind) => kind == MaterialKind.Raw ? RawKey : PackagingKey;
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -30,7 +33,7 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
         var http = context.HttpContext;
         if (!Guid.TryParse(http.Items["Sub"] as string, out var actor)) { context.Result = new UnauthorizedResult(); return; }
         var db = http.RequestServices.GetRequiredService<ApplicationDbContext>();
-        var kinds = await Kinds(db, context.ActionArguments);
+        var kinds = await Kinds(db, context.ActionArguments!, IdIsSwapRequest);
         // Nothing names a material that exists: the action itself answers not found or invalid.
         if (kinds.Count == 0) { await next(); return; }
         var grants = await CurrentPermissionSet.Load(db, actor);
@@ -49,9 +52,9 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
     private static readonly string[] TransferNames = ["StockTransferId"];
     private static readonly string[] ExtraPackingNames = ["ProductionExtraPackingId"];
     private static readonly string[] ShelfBatchNames = ["ShelfMaterialBatchId"];
-    private static readonly string[] RequisitionNames = ["StockRequisitionId"];
+    private static readonly string[] RequisitionNames = ["StockRequisitionId", "RequisitionId"];
 
-    public static async Task<HashSet<MaterialKind>> Kinds(ApplicationDbContext db, IDictionary<string, object> arguments)
+    public static async Task<HashSet<MaterialKind>> Kinds(ApplicationDbContext db, IDictionary<string, object> arguments, bool idIsSwapRequest = false)
     {
         var kinds = new HashSet<MaterialKind>();
         var materials = new List<Guid>();
@@ -88,6 +91,15 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
         if (extraPackings.Count > 0)
             materials.AddRange(await db.ProductionExtraPackings.IgnoreQueryFilters().AsNoTracking().Where(extra => extraPackings.Contains(extra.Id))
                 .Select(extra => extra.MaterialId).ToListAsync());
+        // A swap names its batches in two lists, on the request or on the stored swap.
+        foreach (var swap in arguments.Values.OfType<DOMAIN.Entities.Warehouses.CreateSwapRequest>())
+            batches.AddRange(swap.FirstSwapShelfMaterialBatches.Concat(swap.SecondSwapShelfMaterialBatches).Select(batch => batch.MaterialBatchId));
+        if (idIsSwapRequest && arguments.TryGetValue("id", out var swapValue) && swapValue is Guid swapId)
+        {
+            var stored = db.SwapRequests.IgnoreQueryFilters().AsNoTracking().Where(swap => swap.Id == swapId);
+            batches.AddRange(await stored.SelectMany(swap => swap.FirstSwapShelfMaterialBatches).Select(batch => batch.MaterialBatchId).ToListAsync());
+            batches.AddRange(await stored.SelectMany(swap => swap.SecondSwapShelfMaterialBatches).Select(batch => batch.MaterialBatchId).ToListAsync());
+        }
         if (shelfBatches.Count > 0)
             batches.AddRange(await db.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking().Where(shelf => shelfBatches.Contains(shelf.Id))
                 .Select(shelf => shelf.MaterialBatchId).ToListAsync());
