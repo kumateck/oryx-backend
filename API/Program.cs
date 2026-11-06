@@ -22,6 +22,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+// Run inside the deployed API container with its environment/network/secret mounts.
+// No HTTP listener, database, migrations, seeding or telemetry is started by this probe.
+if (args.Length == 1 && args[0] == "--formula-readiness")
+{
+    Environment.ExitCode = await API.Operations.FormulaReadinessCommand.RunAsync();
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Production error visibility:

@@ -244,6 +244,14 @@ and it does not authenticate an actor, select BMR/BPR masters or perform effects
 
 ## Formula dependency and deployment boundary (2026-09-07)
 
+Customer installation now uses the authoritative Node runtime owned and released
+by `oryx-live-desktop`, sharing its existing formula core. It consumes a verified
+offline image bundle, reuses a root-only master secret via read-only volume
+mounts, health-checks `/ready` before API downtime and runs the backend
+`IsReadyAsync` probe after activation. The obsolete Next service build is no
+longer a customer dependency. See [customer formula deployment](customer-formula-service.md)
+for release pinning, secret handling, enable/verify and rollback commands.
+
 - `QuestionValue`, `QuestionTableColumnStat`, and `FormulaResult` bindings resolve only against the
   same response and approved form revision. Formula-result resolution requires the latest valid
   authoritative upstream execution and re-resolves its current inputs to reject stale evidence.
