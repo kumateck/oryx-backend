@@ -14,7 +14,7 @@ case "$OPERATION" in status|pause|resume|deploy|poll) ;; *) echo 'Use status, pa
 mkdir -p "$STATE"/{releases,backups,logs,sources,blocked}
 chmod 0700 "$STATE" "$STATE/releases" "$STATE/backups" "$STATE/logs" "$STATE/sources" "$STATE/blocked"
 if [[ "$OPERATION" = status ]]; then
-  for key in current pending last-result; do [[ ! -f "$STATE/$key" ]] || { printf '%s: ' "$key"; cat "$STATE/$key"; }; done
+  for key in current pending formula-current formula-pending last-result; do [[ ! -f "$STATE/$key" ]] || { printf '%s: ' "$key"; cat "$STATE/$key"; }; done
   [[ ! -f "$STATE/paused" ]] || echo 'Polling paused.'
   exit 0
 fi
@@ -26,6 +26,7 @@ case "$OPERATION" in
   resume) rm -f "$STATE/paused"; echo 'Backend polling resumed; failed releases still require deploy --retry.'; exit 0;;
   poll) [[ ! -f "$STATE/paused" ]] || exit 0;;
 esac
+[[ ! -f "$STATE/formula-pending" ]] || { echo 'An interrupted formula rollback requires recovery before backend deployment.' >&2; exit 1; }
 [[ -f "$ENV_FILE" && ! -L "$ENV_FILE" ]] || { echo 'The existing backend .env file is required.' >&2; exit 1; }
 MODE=$(stat -c '%a' "$ENV_FILE" 2>/dev/null || stat -f '%Lp' "$ENV_FILE")
 [[ "$MODE" = 600 || "$MODE" = 400 ]] || { echo 'Protect the backend .env file with chmod 600 before deploying.' >&2; exit 1; }
@@ -70,6 +71,9 @@ failure() {
   # Before migration starts, the untouched original API can be restarted safely.
   if [[ "$STOPPED" = 1 && "$MIGRATION_STARTED" = 0 && "$RECOVERING" = 0 ]]; then docker start oryx_api >>"$LOG" 2>&1; fi
   if [[ "$MIGRATION_STARTED" = 1 ]]; then compose runtime stop app >>"$LOG" 2>&1; fi
+  if [[ -n ${FORMULA_RELEASE:-} && -f "$FORMULA_RELEASE/formula.json" && "${FORMULA_ID:-}" != "$(cat "$STATE/formula-current" 2>/dev/null)" ]]; then
+    formula_compose "$FORMULA_RELEASE" stop formula-calculation >>"$LOG" 2>&1
+  fi
   echo "Backend deployment failed during $STAGE. Log: $LOG" >&3
   if [[ "$MIGRATION_STARTED" = 1 ]]; then echo "The API is kept stopped for recovery; database backup: ${BACKUP:-not-created}. No schema downgrade was attempted." >&3; fi
   local api_state='previous API still running'
@@ -92,14 +96,19 @@ fi
 # against the installed checkout.
 cp "$SOURCE/docker-compose.yml" "$RELEASE/compose.yml"
 cp "$ENV_FILE" "$RELEASE/runtime.env"
+source "$SOURCE/deploy/customer-formula.sh"
 printf '{"services":{"app":{"image":"oryx-api-customer:%s","environment":{"Database__ApplyMigrationsOnStartup":"false"}}}}\n' "$TARGET" > "$RELEASE/runtime.json"
 printf '{"services":{"app":{"image":"oryx-api-customer-migration:%s","environment":{"Database__ApplyMigrationsOnStartup":"false"}}}}\n' "$TARGET" > "$RELEASE/migration.json"
 compose() {
   local overlay=$1; shift
   # Ambient Cron/shell variables cannot override the frozen customer configuration.
   env -i PATH="$PATH" HOME="$HOME" docker compose --project-name "$PROJECT" --project-directory "$REPO" \
-    --env-file "$RELEASE/runtime.env" -f "$RELEASE/compose.yml" -f "$RELEASE/$overlay.json" "$@"
+    --env-file "$RELEASE/runtime.env" -f "$RELEASE/compose.yml" -f "$RELEASE/$overlay.json" -f "$FORMULA_RELEASE/formula-app.json" "$@"
 }
+# Verify and freeze the released formula identity and provision its shared token before downtime.
+# Preparation errors leave the current API and its formula dependency untouched.
+STAGE=formula-preparing
+formula_prepare >>"$LOG" 2>&1
 compose runtime config --format json > "$RELEASE/resolved.json" 2>>"$LOG"
 DATABASE=$(python3 - "$RELEASE/resolved.json" <<'PY'
 import json,re,sys
@@ -150,6 +159,8 @@ docker build --file "$SOURCE/deploy.Dockerfile" --target runtime --build-arg "RE
 docker build --file "$SOURCE/deploy.Dockerfile" --target migration --tag "oryx-api-customer-migration:$TARGET" "$SOURCE" >>"$LOG" 2>&1
 STAGE=model-consistency
 compose migration run --rm --no-deps --pull never -T --entrypoint dotnet app ef migrations has-pending-model-changes --no-build --configuration Release --project INFRASTRUCTURE/INFRASTRUCTURE.csproj --startup-project API/API.csproj >>"$LOG" 2>&1
+STAGE=formula-health
+formula_start "$FORMULA_RELEASE" >>"$LOG" 2>&1
 echo "Built backend main $TARGET. Preparing $DATABASE for migration."
 docker inspect --format '{{.Image}}' oryx_api > "$RELEASE/previous-image"
 printf '%s\n' "$TARGET" > "$STATE/pending"
@@ -178,9 +189,18 @@ for attempt in {1..45}; do
 done
 [[ "$healthy" = 1 ]] || { echo 'The updated API did not pass its health probe.' >&2; false; }
 [[ $(docker inspect --format '{{.Image}}' oryx_api) = $(docker image inspect --format '{{.Id}}' "oryx-api-customer:$TARGET") ]] || { echo 'The API container is running a different image.' >&2; false; }
+STAGE=formula-readiness
+formula_verify >>"$LOG" 2>&1 || { echo 'Backend formula readiness FAILED: service is disabled, not ready, or unreachable. Inspect the protected deployment log.' >&2; false; }
+PREVIOUS_FORMULA=$(cat "$STATE/formula-current" 2>/dev/null || true)
+printf '%s\n' "$FORMULA_ID" > "$STATE/formula-current.tmp"
+mv "$STATE/formula-current.tmp" "$STATE/formula-current"
 printf '%s\n' "$TARGET" > "$STATE/current.tmp"
 mv "$STATE/current.tmp" "$STATE/current"
 rm -f "$STATE/pending" "$STATE/blocked/$TARGET"
 printf 'success %s\n' "$TARGET" > "$STATE/last-result"
 echo "Backend main $TARGET built, backed up, migrated and deployed. Backup: $BACKUP"
-notify "🟢 ORYX Backend deployment SUCCESS | $NOTIFY_HOST | main ${TARGET:0:8} | API healthy | backup: $(basename "$BACKUP")"
+notify "🟢 ORYX Backend deployment SUCCESS | $NOTIFY_HOST | main ${TARGET:0:8} | API and formula ready | backup: $(basename "$BACKUP")"
+# Keep the previous frozen configuration/image for formula-only rollback; free its runtime resources.
+if [[ "$PREVIOUS_FORMULA" =~ ^[a-f0-9]{40}-[a-f0-9]{64}$ && "$PREVIOUS_FORMULA" != "$FORMULA_ID" ]]; then
+  formula_compose "$STATE/formula-releases/$PREVIOUS_FORMULA" stop formula-calculation >>"$LOG" 2>&1 || echo 'Warning: old formula container could not be stopped; inspect the log.' >&3
+fi

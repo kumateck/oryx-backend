@@ -1,0 +1,219 @@
+{
+  "validate": {
+    "schemaVersion": "oryx-formula-service-validate-request-v1",
+    "requestId": "request-1",
+    "formulaLanguageVersion": "oryx-formula-v1",
+    "numericPolicyVersion": "oryx-decimal-v1-half-up",
+    "definitionHash": "dff79c69c3231f4bf1e5a875254ae6cb63a5bd644da48c38af9adab25dd46901",
+    "definition": {
+      "formulaLanguageVersion": "oryx-formula-v1",
+      "numericPolicyVersion": "oryx-decimal-v1-half-up",
+      "variables": [
+        {
+          "key": "a",
+          "label": "a",
+          "dataType": 0,
+          "valueShape": 0,
+          "scope": 0,
+          "unit": null,
+          "required": true
+        },
+        {
+          "key": "b",
+          "label": "b",
+          "dataType": 0,
+          "valueShape": 0,
+          "scope": 0,
+          "unit": null,
+          "required": true
+        }
+      ],
+      "results": [
+        {
+          "key": "result",
+          "label": "Result",
+          "expression": ":a/:b",
+          "unit": null,
+          "numericScale": 0,
+          "rounding": {
+            "kind": 0,
+            "digits": 2
+          }
+        }
+      ]
+    },
+    "testCases": [
+      {
+        "schemaVersion": "oryx-formula-test-cases-v1",
+        "id": "nominal",
+        "name": "Nominal calculation",
+        "category": 0,
+        "resolvedInputs": {
+          "a": "2",
+          "b": "3"
+        },
+        "expectedStatus": 0,
+        "expectedResults": {
+          "result": "0.67"
+        }
+      },
+      {
+        "schemaVersion": "oryx-formula-test-cases-v1",
+        "id": "boundary",
+        "name": "Small positive boundary",
+        "category": 1,
+        "resolvedInputs": {
+          "a": "0.0001",
+          "b": "1"
+        },
+        "expectedStatus": 0,
+        "expectedResults": {
+          "result": "0.00"
+        }
+      },
+      {
+        "schemaVersion": "oryx-formula-test-cases-v1",
+        "id": "missing-input",
+        "name": "Required input omitted",
+        "category": 2,
+        "resolvedInputs": {
+          "a": null,
+          "b": "3"
+        },
+        "expectedStatus": 1,
+        "expectedResults": {}
+      },
+      {
+        "schemaVersion": "oryx-formula-test-cases-v1",
+        "id": "invalid-input",
+        "name": "Non-numeric input rejected",
+        "category": 3,
+        "resolvedInputs": {
+          "a": "not-a-number",
+          "b": "3"
+        },
+        "expectedStatus": 2,
+        "expectedResults": {}
+      },
+      {
+        "schemaVersion": "oryx-formula-test-cases-v1",
+        "id": "rounding",
+        "name": "Governed decimal rounding",
+        "category": 5,
+        "resolvedInputs": {
+          "a": "1",
+          "b": "3"
+        },
+        "expectedStatus": 0,
+        "expectedResults": {
+          "result": "0.33"
+        }
+      },
+      {
+        "schemaVersion": "oryx-formula-test-cases-v1",
+        "id": "divide-by-zero",
+        "name": "Zero denominator rejected",
+        "category": 4,
+        "resolvedInputs": {
+          "a": "2",
+          "b": "0"
+        },
+        "expectedStatus": 3,
+        "expectedResults": {}
+      }
+    ]
+  },
+  "evaluate": {
+    "schemaVersion": "oryx-formula-service-evaluate-request-v1",
+    "requestId": "request-1",
+    "formulaLanguageVersion": "oryx-formula-v1",
+    "numericPolicyVersion": "oryx-decimal-v1-half-up",
+    "definitionHash": "dff79c69c3231f4bf1e5a875254ae6cb63a5bd644da48c38af9adab25dd46901",
+    "definition": {
+      "formulaLanguageVersion": "oryx-formula-v1",
+      "numericPolicyVersion": "oryx-decimal-v1-half-up",
+      "variables": [
+        {
+          "key": "a",
+          "label": "a",
+          "dataType": 0,
+          "valueShape": 0,
+          "scope": 0,
+          "unit": null,
+          "required": true
+        },
+        {
+          "key": "b",
+          "label": "b",
+          "dataType": 0,
+          "valueShape": 0,
+          "scope": 0,
+          "unit": null,
+          "required": true
+        }
+      ],
+      "results": [
+        {
+          "key": "result",
+          "label": "Result",
+          "expression": ":a/:b",
+          "unit": null,
+          "numericScale": 0,
+          "rounding": {
+            "kind": 0,
+            "digits": 2
+          }
+        }
+      ]
+    },
+    "configurationHash": "41bf9ccd57bf7eec9aff9ebc7bd0363fd9f452e996d32ea7bad3e2043b76d09f",
+    "configuration": {
+      "placementKey": "assay",
+      "definitionHash": "dff79c69c3231f4bf1e5a875254ae6cb63a5bd644da48c38af9adab25dd46901",
+      "methodReference": null,
+      "displayPolicy": {
+        "policyVersion": "oryx-formula-display-v1",
+        "showResult": true,
+        "showUnit": true,
+        "showTrace": false
+      },
+      "bindings": [
+        {
+          "variableKey": "a",
+          "source": {
+            "sourceType": 0,
+            "reference": "local:a",
+            "dataType": 0,
+            "valueShape": 0,
+            "scope": 0,
+            "unit": null
+          }
+        },
+        {
+          "variableKey": "b",
+          "source": {
+            "sourceType": 0,
+            "reference": "local:b",
+            "dataType": 0,
+            "valueShape": 0,
+            "scope": 0,
+            "unit": null
+          }
+        }
+      ],
+      "resultTargets": [
+        {
+          "resultKey": "result",
+          "targetKey": "assay:result",
+          "dataType": 0,
+          "valueShape": 0,
+          "unit": null
+        }
+      ]
+    },
+    "resolvedInputs": {
+      "a": "1",
+      "b": "2"
+    }
+  }
+}

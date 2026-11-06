@@ -256,15 +256,7 @@ public static class DependencyInjection
         services.AddScoped<IFormulaResponseRuntimeService, FormulaResponseRuntimeService>();
         services.AddScoped<IFormulaSubmissionService, FormulaSubmissionService>();
         services.AddScoped<IFormRevisionService, FormRevisionService>();
-        services.AddSingleton(_ => FormulaCalculationSettings.Load());
-        services.AddTransient<FormulaCalculationClientAuthHandler>();
-        services.AddHttpClient<IFormulaCalculationClient, FormulaCalculationClient>((provider, client) =>
-            {
-                var settings = provider.GetRequiredService<FormulaCalculationSettings>();
-                client.BaseAddress = settings.BaseUri;
-                client.Timeout = settings.Timeout;
-            })
-            .AddHttpMessageHandler<FormulaCalculationClientAuthHandler>();
+        services.AddFormulaCalculationClient();
         services.AddHttpClient();
 
         services.AddScoped<IBlobStorageService, BlobStorageService>();
