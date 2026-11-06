@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Warehouses;
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Materials.Batch;
 
@@ -43,12 +44,15 @@ public sealed record WhitePlaceboRecipeDto(Guid MaterialId, string MaterialName,
     int Revision, string Reference, string Instructions, string StorageConditions, int HoldHours,
     decimal ExpectedQuantity, List<WhitePlaceboIngredientDto> Ingredients);
 public sealed record WhitePlaceboStockDto(Guid Id, Guid MaterialId, string MaterialName,
-    string BatchNumber, string Shelf, string UnitSymbol, decimal Quantity, DateTime? ExpiryDate);
+    string BatchNumber, string Shelf, string UnitSymbol, decimal Quantity, DateTime? ExpiryDate, string Rack = null);
 public sealed record WhitePlaceboWorkspaceDto(WhitePlaceboRecipeDto Recipe,
     List<WhitePlaceboMaterialDto> Materials, List<WhitePlaceboStockDto> Stock);
 public sealed record WhitePlaceboInputDto(Guid Id, Guid MaterialId, Guid MaterialBatchId,
     string MaterialName, string MaterialCode, string BatchNumber, string UnitSymbol,
-    decimal RecipeQuantity, decimal Quantity);
+    decimal RecipeQuantity, decimal Quantity)
+{
+    public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; init; }
+}
 public sealed record WhitePlaceboPreparationPageDto(List<WhitePlaceboPreparationDto> Items, int TotalRows);
 public sealed record WhitePlaceboPreparationDto(Guid Id, string BatchNumber, string MaterialName,
     string UnitSymbol, int RecipeRevision, string RecipeReference, string Instructions,

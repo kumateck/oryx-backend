@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Warehouses;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.WhitePlacebo;
@@ -25,7 +26,8 @@ public sealed partial class WhitePlaceboService
         var total = await query.CountAsync();
         var items = await query.OrderByDescending(item => item.CreatedAt).ThenByDescending(item => item.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-        return new WhitePlaceboPreparationPageDto(items.Select(PreparationDto).ToList(), total);
+        var locations = await InputShelfLocations(items);
+        return new WhitePlaceboPreparationPageDto(items.Select(item => PreparationDto(item, locations)).ToList(), total);
     }
 
     public async Task<Result<WhitePlaceboPreparationDto>> Get(Guid id)
@@ -33,10 +35,27 @@ public sealed partial class WhitePlaceboService
         var scope = await Department();
         if (scope.IsFailure) return scope.Errors;
         var item = await Preparations(scope.Value).SingleOrDefaultAsync(item => item.Id == id);
-        return item == null ? Error.NotFound("WhitePlacebo.NotFound", "Preparation was not found in your department.") : PreparationDto(item);
+        if (item == null) return Error.NotFound("WhitePlacebo.NotFound", "Preparation was not found in your department.");
+        return PreparationDto(item, await InputShelfLocations([item]));
     }
 
-    private static WhitePlaceboPreparationDto PreparationDto(WhitePlaceboPreparation item) => new(
+    private async Task<Dictionary<Guid, MaterialWarehouseLocationShelfDto>> InputShelfLocations(
+        IEnumerable<WhitePlaceboPreparation> preparations)
+    {
+        var sources = preparations.SelectMany(item => item.Inputs).Select(input => input.SourceShelfId).Distinct().ToArray();
+        return await context.ShelfMaterialBatches.AsNoTracking().IgnoreAutoIncludes()
+            .Where(item => sources.Contains(item.Id))
+            .Select(item => new { item.Id, Location = new MaterialWarehouseLocationShelfDto {
+                Id = item.WarehouseLocationShelf.Id, Name = item.WarehouseLocationShelf.Name,
+                Code = item.WarehouseLocationShelf.Code,
+                WarehouseLocationRack = new WareHouseLocationRackDto {
+                    Id = item.WarehouseLocationShelf.WarehouseLocationRack.Id,
+                    Name = item.WarehouseLocationShelf.WarehouseLocationRack.Name }
+            } }).ToDictionaryAsync(item => item.Id, item => item.Location);
+    }
+
+    private static WhitePlaceboPreparationDto PreparationDto(WhitePlaceboPreparation item,
+        IReadOnlyDictionary<Guid, MaterialWarehouseLocationShelfDto> locations) => new(
         item.Id, item.BatchNumber, item.Material.Name, item.UoM.Symbol, item.RecipeRevision, item.RecipeReference,
         item.Instructions, item.StorageConditions, item.HoldHours, item.ExpectedQuantity, item.ActualQuantity,
         item.Notes, item.OutputNotes, item.RequisitionId, item.Requisition.Approved, item.Requisition.Status == RequestStatus.Rejected,
@@ -44,7 +63,9 @@ public sealed partial class WhitePlaceboService
         item.OutputBatchId, item.OutputBatch?.GrnId, item.OutputBatch?.Status, item.OutputBatch?.ExpiryDate,
         item.Inputs.OrderBy(input => input.MaterialName).ThenBy(input => input.BatchNumber).Select(input => new WhitePlaceboInputDto(
             input.Id, input.MaterialId, input.MaterialBatchId, input.MaterialName, input.MaterialCode,
-            input.BatchNumber, input.UnitSymbol, input.RecipeQuantity, input.Quantity)).ToList());
+            input.BatchNumber, input.UnitSymbol, input.RecipeQuantity, input.Quantity) {
+                WarehouseLocationShelf = locations.GetValueOrDefault(input.SourceShelfId)
+            }).ToList());
 
     public async Task<Result<Guid>> Create(CreateWhitePlaceboPreparation body)
     {

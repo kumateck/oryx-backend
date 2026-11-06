@@ -69,7 +69,8 @@ public sealed partial class WhitePlaceboService(ApplicationDbContext context,
             .Select(item => new WhitePlaceboStockDto(item.Id, item.MaterialBatch.MaterialId,
                 item.MaterialBatch.Material.Name, item.MaterialBatch.BatchNumber,
                 item.WarehouseLocationShelf.Name, units[item.MaterialBatch.MaterialId].UnitSymbol,
-                Math.Max(0, Math.Min(item.Quantity, item.MaterialBatch.RemainingQuantity)), item.MaterialBatch.ExpiryDate))
+                Math.Max(0, Math.Min(item.Quantity, item.MaterialBatch.RemainingQuantity)), item.MaterialBatch.ExpiryDate,
+                item.WarehouseLocationShelf.WarehouseLocationRack.Name))
             .Where(item => item.Quantity > 0).ToList();
         return new WhitePlaceboWorkspaceDto(recipe is null ? null : RecipeDto(recipe), materials, stock);
     }
