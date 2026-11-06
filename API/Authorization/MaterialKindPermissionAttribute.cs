@@ -12,8 +12,8 @@ namespace API.Authorization;
 /// <summary>
 /// Requires the raw-material or packaging-material key of a task. The kinds come from what the request names, read from
 /// the database: materials (<c>MaterialId</c>, <c>MaterialIds</c>), material batches (<c>MaterialBatchId</c>,
-/// <c>MaterialBatchIds</c>) and distributed requisition materials (<c>DistributedRequisitionMaterialId</c>), in the body or
-/// the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
+/// <c>MaterialBatchIds</c>), distributed requisition materials (<c>DistributedRequisitionMaterialId</c>), stock transfers
+/// (<c>StockTransferId</c>) and extra packing requests (<c>ProductionExtraPackingId</c>), in the body or the route, plus any <see cref="MaterialKind"/> argument. Every kind involved needs its key. Grants are read from current
 /// data just before the action.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
@@ -45,18 +45,24 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
     private static readonly string[] MaterialNames = ["MaterialId", "MaterialIds"];
     private static readonly string[] BatchNames = ["MaterialBatchId", "MaterialBatchIds", "BatchId"];
     private static readonly string[] DistributedNames = ["DistributedRequisitionMaterialId", "DistributedMaterialId"];
+    private static readonly string[] TransferNames = ["StockTransferId"];
+    private static readonly string[] ExtraPackingNames = ["ProductionExtraPackingId"];
 
-    internal static async Task<HashSet<MaterialKind>> Kinds(ApplicationDbContext db, IDictionary<string, object> arguments)
+    public static async Task<HashSet<MaterialKind>> Kinds(ApplicationDbContext db, IDictionary<string, object> arguments)
     {
         var kinds = new HashSet<MaterialKind>();
         var materials = new List<Guid>();
         var batches = new List<Guid>();
         var distributed = new List<Guid>();
+        var transfers = new List<Guid>();
+        var extraPackings = new List<Guid>();
         void Collect(string name, object value)
         {
             if (MaterialNames.Contains(name, StringComparer.OrdinalIgnoreCase)) materials.AddRange(Ids(value));
             else if (BatchNames.Contains(name, StringComparer.OrdinalIgnoreCase)) batches.AddRange(Ids(value));
             else if (DistributedNames.Contains(name, StringComparer.OrdinalIgnoreCase)) distributed.AddRange(Ids(value));
+            else if (TransferNames.Contains(name, StringComparer.OrdinalIgnoreCase)) transfers.AddRange(Ids(value));
+            else if (ExtraPackingNames.Contains(name, StringComparer.OrdinalIgnoreCase)) extraPackings.AddRange(Ids(value));
         }
         foreach (var (name, value) in arguments)
         {
@@ -69,6 +75,12 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
         if (distributed.Count > 0)
             materials.AddRange((await db.DistributedRequisitionMaterials.IgnoreQueryFilters().AsNoTracking()
                 .Where(item => distributed.Contains(item.Id) && item.MaterialId != null).Select(item => item.MaterialId).ToListAsync()).OfType<Guid>());
+        if (transfers.Count > 0)
+            materials.AddRange(await db.StockTransfers.IgnoreQueryFilters().AsNoTracking().Where(transfer => transfers.Contains(transfer.Id))
+                .Select(transfer => transfer.MaterialId).ToListAsync());
+        if (extraPackings.Count > 0)
+            materials.AddRange(await db.ProductionExtraPackings.IgnoreQueryFilters().AsNoTracking().Where(extra => extraPackings.Contains(extra.Id))
+                .Select(extra => extra.MaterialId).ToListAsync());
         if (batches.Count > 0)
             materials.AddRange(await db.MaterialBatches.IgnoreQueryFilters().AsNoTracking().Where(batch => batches.Contains(batch.Id))
                 .Select(batch => batch.MaterialId).ToListAsync());
