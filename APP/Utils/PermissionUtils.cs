@@ -74,6 +74,7 @@ public static class PermissionSubmodules
     public const string Products = "Products";
     public const string ProductSchedule = "Product Schedule";
     public const string StockTransferRequests = "Stock Transfer Requests";
+    public const string WhitePlacebo = "White Placebo";
 
     // Quality Control
     public const string GoodsReceiptNote = "Goods Receipt Note (GRN)";
@@ -599,6 +600,12 @@ public static class PermissionKeys
     public const string CanRepairIssuedPackaging = "CanRepairIssuedPackaging";
     public const string CanUnstartProduction = "CanUnstartProduction";
     public const string CanRepairStockReservations = "CanRepairStockReservations";
+    // White Placebo preparation: one key per task (view, recipe, request, issue, record output).
+    public const string CanViewWhitePlacebo = "CanViewWhitePlacebo";
+    public const string CanEditWhitePlaceboRecipe = "CanEditWhitePlaceboRecipe";
+    public const string CanRequestWhitePlaceboIngredients = "CanRequestWhitePlaceboIngredients";
+    public const string CanIssueWhitePlaceboIngredients = "CanIssueWhitePlaceboIngredients";
+    public const string CanRecordWhitePlaceboOutput = "CanRecordWhitePlaceboOutput";
     public const string CanRepairBom = "CanRepairBom";
     public const string CanRepairPackaging = "CanRepairPackaging";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
@@ -2315,6 +2322,11 @@ public static class PermissionUtils
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairIssuedPackaging);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanUnstartProduction);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairStockReservations);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanViewWhitePlacebo);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanEditWhitePlaceboRecipe);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanRequestWhitePlaceboIngredients);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanRecordWhitePlaceboOutput);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanIssueWhitePlaceboIngredients);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairBom);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairPackaging);
         addPermission(

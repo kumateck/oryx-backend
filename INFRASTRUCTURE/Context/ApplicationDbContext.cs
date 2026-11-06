@@ -1013,6 +1013,7 @@ public partial class ApplicationDbContext(
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
         ValidateReservationRepairAudit();
+        ValidateWhitePlaceboStock();
         SaveEntity();
         ValidatePriceUoM();
         return base.SaveChanges();
@@ -1026,6 +1027,7 @@ public partial class ApplicationDbContext(
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
         ValidateReservationRepairAudit();
+        ValidateWhitePlaceboStock();
         SaveEntity();
         ValidatePriceUoM();
         return await base.SaveChangesAsync(cancellationToken);
@@ -1149,6 +1151,7 @@ public partial class ApplicationDbContext(
         // Call base method
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
+        ConfigureWhitePlacebo(modelBuilder);
         ConfigureIssuedMaterialRepair(modelBuilder);
         modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()
             .HasForeignKey(change => change.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
