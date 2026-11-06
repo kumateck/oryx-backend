@@ -38,6 +38,7 @@ public class WaterQualityController(IWaterQualityRepository repository)
     }
 
     [HttpPost("periods")]
+    [Authorize(PermissionKeys.CanManageWaterQuality)]
     public async Task<IResult> ActivatePeriod(
         [FromBody] ActivateWaterQualityPeriodRequest request)
     {
@@ -48,6 +49,7 @@ public class WaterQualityController(IWaterQualityRepository repository)
     }
 
     [HttpPost("uses")]
+    [Authorize(PermissionKeys.CanManageWaterQuality)]
     public async Task<IResult> RecordUse([FromBody] RecordWaterUseRequest request)
     {
         if (ActorId is not Guid actor) return TypedResults.Unauthorized();
@@ -57,6 +59,7 @@ public class WaterQualityController(IWaterQualityRepository repository)
     }
 
     [HttpPost("periods/{id:guid}/hold")]
+    [Authorize(PermissionKeys.CanManageWaterQuality)]
     public async Task<IResult> HoldPeriod([FromRoute] Guid id,
         [FromBody] HoldWaterQualityPeriodRequest request)
     {
