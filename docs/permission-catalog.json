@@ -1954,6 +1954,41 @@
   },
   {
     "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanViewWhitePlacebo",
+    "name": "Can View White Placebo",
+    "description": "Allows the user to  view white placebo."
+  },
+  {
+    "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanEditWhitePlaceboRecipe",
+    "name": "Can Edit White Placebo Recipe",
+    "description": "Allows the user to  edit white placebo recipe."
+  },
+  {
+    "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanRequestWhitePlaceboIngredients",
+    "name": "Can Request White Placebo Ingredients",
+    "description": "Allows the user to  request white placebo ingredients."
+  },
+  {
+    "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanRecordWhitePlaceboOutput",
+    "name": "Can Record White Placebo Output",
+    "description": "Allows the user to  record white placebo output."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanIssueWhitePlaceboIngredients",
+    "name": "Can Issue White Placebo Ingredients",
+    "description": "Allows the user to  issue white placebo ingredients."
+  },
+  {
+    "module": "Production",
     "submodule": "Products",
     "key": "CanRepairBom",
     "name": "Can Repair Bom",

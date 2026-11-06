@@ -28,6 +28,8 @@ using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
+using SHARED.Services.Identity;
+using APP.Services.Authorization;
 
 namespace APP.Repository;
 
@@ -42,7 +44,8 @@ public class RequisitionRepository(
     IApprovalRepository approvalRepository,
     IBackgroundWorkerService backgroundWorkerService,
     IProductionActivityStepEventPublisher stepEventPublisher,
-    ILogger<RequisitionRepository> logger = null
+    ILogger<RequisitionRepository> logger = null,
+    ICurrentUserService identity = null
 ) : IRequisitionRepository
 {
     // ************* CRUD for Requisitions *************
@@ -50,6 +53,9 @@ public class RequisitionRepository(
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
+        if (request.RequisitionType == RequisitionType.Purchase && await context.Materials.AnyAsync(material =>
+            material.IsWhitePlacebo && request.Items.Select(item => item.MaterialId).Contains(material.Id)))
+            return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if ((request.RequisitionType == RequisitionType.Stock || request.ProductionScheduleProductId.HasValue)
             && context.Database.IsRelational() && context.Database.CurrentTransaction is null)
             return await ProductionMaterialTransaction.Run(context, () => CreateRequisition(request, userId));
@@ -381,8 +387,26 @@ public class RequisitionRepository(
             return RequisitionErrors.NotFound(requisitionId);
         }
 
+        // A White Placebo ingredient request is visible only to staff of its preparation's department with the White Placebo key.
+        var preparation = await context.WhitePlaceboPreparations.Where(item => item.RequisitionId == requisitionId)
+            .Select(item => new { item.Id, item.DepartmentId }).SingleOrDefaultAsync();
+        if (preparation != null)
+        {
+            var grants = await CurrentPermissionSet.Load(context, userId);
+            if (!grants.Contains(PermissionKeys.CanViewWhitePlacebo))
+                return Error.Forbidden("WhitePlacebo.Permission", "Viewing this preparation's stock request requires White Placebo access.");
+            if (!await context.Users.AnyAsync(actor => actor.Id == userId && actor.DepartmentId == preparation.DepartmentId && !actor.IsDisabled))
+                return Error.Forbidden("WhitePlacebo.Department", "This preparation belongs to another department.");
+        }
+
         var result = mapper.Map<RequisitionDto>(requisition);
         await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
+        if (preparation != null)
+        {
+            result.WhitePlaceboPreparationId = preparation.Id;
+            result.Signatories = await StockIssueSignatories(requisition);
+            return result;
+        }
         if (requisition.RequisitionType == RequisitionType.Stock)
             result.Signatories = await StockIssueSignatories(requisition);
 
@@ -1450,6 +1474,11 @@ public class RequisitionRepository(
         MaterialKind? materialKind
     )
     {
+        var actorId = identity?.UserId;
+        var grants = await CurrentPermissionSet.Load(context, actorId);
+        var ownDepartment = await context.Users.IgnoreQueryFilters().Where(actor => actor.Id == actorId && !actor.IsDisabled && actor.DeletedAt == null)
+            .Select(actor => actor.DepartmentId).SingleOrDefaultAsync();
+        var maySeePreparations = grants.Contains(PermissionKeys.CanViewWhitePlacebo);
         var query = context
             .Requisitions.AsSplitQuery()
             .Include(r => r.RequestedBy)
@@ -1467,6 +1496,9 @@ public class RequisitionRepository(
                 .ThenInclude(rp => rp.ProductionActivity)
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
+
+        query = query.Where(requisition => !context.WhitePlaceboPreparations.Any(preparation => preparation.RequisitionId == requisition.Id)
+            || maySeePreparations && context.WhitePlaceboPreparations.Any(preparation => preparation.RequisitionId == requisition.Id && preparation.DepartmentId == ownDepartment));
 
         if (departmentId.HasValue)
         {
@@ -1518,7 +1550,13 @@ public class RequisitionRepository(
                 return dto;
             }
         );
-
+        var rows = result.Data.ToList();
+        var ids = rows.Select(item => item.Id).ToArray();
+        var preparations = await context.WhitePlaceboPreparations.Where(item => ids.Contains(item.RequisitionId))
+            .Select(item => new { item.RequisitionId, item.Id }).ToDictionaryAsync(item => item.RequisitionId, item => item.Id);
+        foreach (var row in rows)
+            if (preparations.TryGetValue(row.Id, out var id)) row.WhitePlaceboPreparationId = id;
+        result.Data = rows;
         return result;
     }
 
@@ -1529,6 +1567,11 @@ public class RequisitionRepository(
         Guid userId
     )
     {
+        if (await context.WhitePlaceboPreparations.AnyAsync(item => item.RequisitionId == requisitionId))
+            return Error.Conflict("WhitePlacebo.ImmutableRequest", "A White Placebo ingredient request is fixed to its preparation and cannot be edited separately.");
+        if (request.RequisitionType == RequisitionType.Purchase && await context.Materials.AnyAsync(material =>
+            material.IsWhitePlacebo && request.Items.Select(item => item.MaterialId).Contains(material.Id)))
+            return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased.");
         var existingRequisition = await context.Requisitions.FirstOrDefaultAsync(r =>
             r.Id == requisitionId
         );
@@ -1554,6 +1597,8 @@ public class RequisitionRepository(
     // Delete Stock Requisition (soft delete)
     public async Task<Result> DeleteRequisition(Guid requisitionId, Guid userId)
     {
+        if (await context.WhitePlaceboPreparations.AnyAsync(item => item.RequisitionId == requisitionId))
+            return Error.Conflict("WhitePlacebo.ImmutableRequest", "A White Placebo ingredient request is part of its preparation history and cannot be deleted separately.");
         var requisition = await context.Requisitions.FirstOrDefaultAsync(r =>
             r.Id == requisitionId
         );

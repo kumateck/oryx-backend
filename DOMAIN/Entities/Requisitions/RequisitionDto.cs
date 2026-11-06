@@ -25,6 +25,7 @@ public class RequisitionDto
     /// <summary>The production step the requisition was raised from.</summary>
     public Guid? ProductionActivityStepId { get; set; }
     public string Comments { get; set; }
+    public Guid? WhitePlaceboPreparationId { get; set; }
     /// <summary>Who signs the printed stock requisition voucher; null for other requisition types.</summary>
     public StockIssueSignatoriesDto Signatories { get; set; }
 }
