@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -42,7 +43,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="request">The CreateProductionScheduleRequest object.</param>
     /// <returns>Returns the ID of the created Production Schedule.</returns>
     [HttpPost]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateProductSchedule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductionSchedule([FromBody] CreateProductionScheduleRequest request)
@@ -111,7 +112,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{scheduleId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanEditProductSchedule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -131,7 +132,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("{scheduleId}/add-products")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanAddProductsToProductSchedule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -150,7 +151,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The ID of the Production Schedule Product to be removed.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("product/{productionScheduleProductId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRemoveProductsFromProductSchedule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -166,6 +167,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("{scheduleId}")]
+    [Authorize(PermissionKeys.CanDeleteProductSchedule)]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -292,7 +294,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">the production schedule product id</param>
     /// <returns>Returns the ID of the started Production Activity.</returns>
     [HttpPost("activity/start/{productionScheduleProductId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanStartProduction)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> StartProductionActivity([FromRoute] Guid productionScheduleProductId)
@@ -458,7 +460,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="status">The new status to set.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("activity-step/{productionStepId}/status")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanUpdateProductionStep)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -535,7 +537,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Creates a new batch manufacturing record.
     /// </summary>
     [HttpPost("manufacturing")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanIssueBmr)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateBatchManufacturingRecord([FromBody] CreateBatchManufacturingRecord request)
@@ -555,7 +557,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpPost("finished-goods-transfer-note/quantity")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateFgtn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateFinishedGoodsTransferNoteQuantity(
@@ -580,7 +582,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpPost("finished-goods-transfer-note")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateFgtn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateFinishedGoodsTransferNote([FromBody] CreateFinishedGoodsTransferNoteRequest request)
@@ -661,6 +663,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpPut("finished-goods-transfer-note/{id:guid}/approve")]
+    [Authorize(PermissionKeys.CanApproveFgtn)]
     public async Task<IResult> ApproveTransferNote([FromRoute] Guid id, 
         [FromBody] ApproveTransferNoteRequest quantityReceived)
     {
@@ -672,7 +675,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Updates the details of a transfer note.
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCreateFgtn)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateFinishedGoodsTransferNote([FromRoute] Guid id, 
@@ -714,7 +717,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Updates a specific batch manufacturing record by its ID.
     /// </summary>
     [HttpPut("manufacturing/{id}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanIssueBmr)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -728,7 +731,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Issues a specific batch manufacturing record by its ID.
     /// </summary>
     [HttpPut("manufacturing/issue/{id}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanIssueBmr)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -746,7 +749,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Creates a new batch packaging record.
     /// </summary>
     [HttpPost("packaging")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanIssueBpr)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateBatchPackagingRecord([FromBody] CreateBatchPackagingRecord request)
@@ -784,7 +787,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Updates a specific batch packaging record by its ID.
     /// </summary>
     [HttpPut("packaging/{id}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanIssueBpr)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -798,7 +801,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Issues a specific batch packing record by its ID.
     /// </summary>
     [HttpPut("packaging/issue/{id}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanIssueBpr)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -820,7 +823,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Creates a new Stock Transfer.
     /// </summary>
     [HttpPost("stock-transfer")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanCreateRawMaterialRequisitions, PermissionKeys.CanCreatePackageMaterialRequisitions)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateStockTransfer([FromBody] CreateStockTransferRequest request)
@@ -919,7 +922,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Approves a Stock Transfer.
     /// </summary>
     [HttpPut("stock-transfer/approve/{stockTransferId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanApproveIncomingStockTransferRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ApproveStockTransfer(Guid stockTransferId)
@@ -935,7 +938,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Rejects a Stock Transfer.
     /// </summary>
     [HttpPut("stock-transfer/reject/{stockTransferId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRejectIncomingStockTransferRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> RejectStockTransfer(Guid stockTransferId)
@@ -964,7 +967,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Issues a Stock Transfer with batch selection.
     /// </summary>
     [HttpPut("stock-transfer/issue/{stockTransferId}")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanIssuePackagingMaterialStockTransfers)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> IssueStockTransfer(Guid stockTransferId, [FromBody] List<BatchTransferRequest> batches)
@@ -986,7 +989,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="request">The CreateFinalPacking object.</param>
     /// <returns>Returns the ID of the created Final Packing entry.</returns>
     [HttpPost("final-packing")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordFinalPacking)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateFinalPacking([FromBody] CreateFinalPacking request)
@@ -1048,7 +1051,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="finalPackingId">The ID of the Final Packing to be updated.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPut("final-packing/{finalPackingId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordFinalPacking)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1064,7 +1067,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="finalPackingId">The ID of the Final Packing to be deleted.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpDelete("final-packing/{finalPackingId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRecordFinalPacking)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteFinalPacking(Guid finalPackingId)
@@ -1117,7 +1120,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="reason">The reason for cancelling the production</param>
     /// <returns>Returns a success result if materials were returned successfully.</returns>
     [HttpPost("return-before-production")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanReturnProductionMaterials)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReturnBeforeProduction([FromQuery] Guid productionScheduleProductId, [FromQuery] string reason)
@@ -1133,7 +1136,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="returns">The list of partially used materials to return.</param>
     /// <returns>Returns a success result if leftovers were recorded successfully.</returns>
     [HttpPost("return-after-production")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanReturnProductionMaterials)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> ReturnAfterProduction([FromQuery] Guid productionScheduleProductId, [FromBody] List<PartialMaterialToReturn> returns)
@@ -1179,7 +1182,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="materialReturnNoteId">The ID of the Material Return Note.</param>
     /// <returns>Returns the Material Return Note.</returns>
     [HttpPut("material-return-note/complete/{materialReturnNoteId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanCompleteMaterialReturnNote)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CompleteMaterialReturnNoteById(Guid materialReturnNoteId)
@@ -1199,7 +1202,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="extraPackings">List of Extra Packing details to create.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("extra-packing/{productionScheduleProductId}")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRequestExtraPacking)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateExtraPacking(Guid productionScheduleProductId, [FromBody] List<CreateProductionExtraPacking> extraPackings)
@@ -1281,7 +1284,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="batches">The list of batches for approval.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("extra-packing/approve/{productionExtraPackingId}")]
-    [Authorize]
+    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -663,6 +663,24 @@ public static class PermissionKeys
     // Quality Assurance
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
     public const string CanIssueBmr = "CanIssueBmr";
+    /// <summary>Delete a production schedule.</summary>
+    public const string CanDeleteProductSchedule = "CanDeleteProductSchedule";
+    /// <summary>Start production of a scheduled batch.</summary>
+    public const string CanStartProduction = "CanStartProduction";
+    /// <summary>Start or complete a production step on the batch board.</summary>
+    public const string CanUpdateProductionStep = "CanUpdateProductionStep";
+    /// <summary>Return materials before or after production.</summary>
+    public const string CanReturnProductionMaterials = "CanReturnProductionMaterials";
+    /// <summary>Record, change or remove a batch's final packing.</summary>
+    public const string CanRecordFinalPacking = "CanRecordFinalPacking";
+    /// <summary>Raise or change a finished goods transfer note.</summary>
+    public const string CanCreateFgtn = "CanCreateFgtn";
+    /// <summary>Request extra packing material for a batch.</summary>
+    public const string CanRequestExtraPacking = "CanRequestExtraPacking";
+    /// <summary>Create, change or issue a batch packaging record.</summary>
+    public const string CanIssueBpr = "CanIssueBpr";
+    /// <summary>Complete a material return note.</summary>
+    public const string CanCompleteMaterialReturnNote = "CanCompleteMaterialReturnNote";
     public const string CanViewIssuedBmrRecords = "CanViewIssuedBmrRecords";
     public const string CanCorrectIssuedBmrBatchNumber = "CanCorrectIssuedBmrBatchNumber";
     public const string CanRequestIssuedBmrRevision = "CanRequestIssuedBmrRevision";
@@ -2033,6 +2051,11 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.MaterialReturnNote,
+            PermissionKeys.CanCompleteMaterialReturnNote
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialReturnNote,
             PermissionKeys.CanAssignPackagingMaterialsStockToShelves
         );
         addPermission(
@@ -2180,6 +2203,31 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Production,
             PermissionSubmodules.Products,
+            PermissionKeys.CanRequestExtraPacking
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateFgtn
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanRecordFinalPacking
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanReturnProductionMaterials
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanUpdateProductionStep
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
             PermissionKeys.CanCreateNewProductionPlan
         );
         addPermission(
@@ -2222,6 +2270,16 @@ public static class PermissionUtils
             PermissionModules.Production,
             PermissionSubmodules.ProductSchedule,
             PermissionKeys.CanRemoveProductsFromProductSchedule
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanStartProduction
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanDeleteProductSchedule
         );
         addPermission(
             PermissionModules.Production,
@@ -2547,6 +2605,11 @@ public static class PermissionUtils
             PermissionModules.QualityAssurance,
             PermissionSubmodules.IssueBmr,
             PermissionKeys.CanIssueBmr
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.IssueBmr,
+            PermissionKeys.CanIssueBpr
         );
         addPermission(
             PermissionModules.QualityAssurance,

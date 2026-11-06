@@ -1549,6 +1549,13 @@
   {
     "module": "Warehouse",
     "submodule": "Material Return Note",
+    "key": "CanCompleteMaterialReturnNote",
+    "name": "Can Complete Material Return Note",
+    "description": "Allows the user to  complete material return note."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Return Note",
     "key": "CanAssignPackagingMaterialsStockToShelves",
     "name": "Can Assign Packaging Materials Stock To Shelves",
     "description": "Allows the user to  assign packaging materials stock to shelves."
@@ -1773,6 +1780,41 @@
   {
     "module": "Production",
     "submodule": "Products",
+    "key": "CanRequestExtraPacking",
+    "name": "Can Request Extra Packing",
+    "description": "Allows the user to  request extra packing."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanCreateFgtn",
+    "name": "Can Create Fgtn",
+    "description": "Allows the user to  create fgtn."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanRecordFinalPacking",
+    "name": "Can Record Final Packing",
+    "description": "Allows the user to  record final packing."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanReturnProductionMaterials",
+    "name": "Can Return Production Materials",
+    "description": "Allows the user to  return production materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanUpdateProductionStep",
+    "name": "Can Update Production Step",
+    "description": "Allows the user to  update production step."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
     "key": "CanCreateNewProductionPlan",
     "name": "Can Create New Production Plan",
     "description": "Allows the user to  create new production plan."
@@ -1867,6 +1909,20 @@
     "key": "CanRemoveProductsFromProductSchedule",
     "name": "Can Remove Products From Product Schedule",
     "description": "Allows the user to  remove products from product schedule."
+  },
+  {
+    "module": "Production",
+    "submodule": "Product Schedule",
+    "key": "CanStartProduction",
+    "name": "Can Start Production",
+    "description": "Allows the user to  start production."
+  },
+  {
+    "module": "Production",
+    "submodule": "Product Schedule",
+    "key": "CanDeleteProductSchedule",
+    "name": "Can Delete Product Schedule",
+    "description": "Allows the user to  delete product schedule."
   },
   {
     "module": "Production",
@@ -2413,6 +2469,13 @@
     "key": "CanIssueBmr",
     "name": "Can Issue Bmr",
     "description": "Allows the user to  issue bmr."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Issue BMR",
+    "key": "CanIssueBpr",
+    "name": "Can Issue Bpr",
+    "description": "Allows the user to  issue bpr."
   },
   {
     "module": "Quality Assurance",
