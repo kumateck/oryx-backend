@@ -42,6 +42,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the details of a specific warehouse by its ID.
     /// </summary>
     [HttpGet("{warehouseId}")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -55,6 +56,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves warehouses by department id
     /// </summary>
     [HttpGet("department/{departmentId}")]
+    [AnyPermission("CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewInactiveEmployee", "CanViewNewEmployee")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<WarehouseDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -69,6 +71,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// </summary>
     [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [HttpGet]
+    [AnyPermission("CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewInactiveEmployee", "CanViewLocations", "CanViewNewEmployee", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -167,6 +170,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves details of a specific warehouse location.
     /// </summary>
     [HttpGet("location/{locationId}")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseLocationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -180,6 +184,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of warehouse locations.
     /// </summary>
     [HttpGet("location")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -274,6 +279,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves details of a specific warehouse location rack.
     /// </summary>
     [HttpGet("rack/{rackId}")]
+    [AnyPermission("CanViewPackagingMaterialLocationChartList", "CanViewRawMaterialLocationChartList")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseLocationRackDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -287,6 +293,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of racks in warehouse locations.
     /// </summary>
     [HttpGet("rack")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -307,6 +314,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a list of racks in warehouse locations for logged-in user.
     /// </summary>
     [HttpGet("rack/by-department")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -330,6 +338,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <c>rack/by-department</c> unless you specifically need that extra detail.
     /// </summary>
     [HttpGet("rack/by-department/summary")]
+    [AnyPermission("CanViewPackagingMaterialLocationChartList", "CanViewRawMaterialLocationChartList")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -418,6 +427,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves details of a specific warehouse location shelf.
     /// </summary>
     [HttpGet("shelf/{shelfId}")]
+    [AnyPermission("CanViewRacks", "CanViewShelves")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseLocationShelfDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -435,6 +445,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// are required.
     /// </remarks>
     [HttpGet("shelf")]
+    [AnyPermission("CanViewRacks", "CanViewShelves")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -460,6 +471,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a list of shelves in warehouse locations by department.
     /// </summary>
     [HttpGet("shelf/by-department")]
+    [AnyPermission("CanUploadOpeningBalances", "CanViewOpeningBalances")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -521,6 +533,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of shelves in a warehouse by material ID.
     /// </summary>
     [HttpGet("{warehouseId}/shelves/by-material/{materialId}")]
+    [AnyPermission("CanReassignPackagingMaterialStock", "CanReassignRawMaterialStock", "CanViewPackagingMaterialLocationList", "CanViewRawMaterialLocationList", "CanViewShelves")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -549,6 +562,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of shelves in a warehouse by material batch ID.
     /// </summary>
     [HttpGet("{warehouseId}/shelves/by-materialbatch/{materialBatchId}")]
+    [AnyPermission("CanReassignPackagingMaterialStock", "CanReassignRawMaterialStock", "CanViewPackagingMaterialLocationList", "CanViewRawMaterialLocationList", "CanViewShelves")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -577,6 +591,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of shelves in a warehouse location rack.
     /// </summary>
     [HttpGet("rack/{rackId}/shelves")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -598,6 +613,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of all shelves in a warehouse.
     /// </summary>
     [HttpGet("{warehouseId}/shelves")]
+    [AnyPermission("CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -622,6 +638,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the arrival location details of a specific warehouse by its ID.
     /// </summary>
     [HttpGet("{warehouseId}/arrival-location")]
+    [AnyPermission("CanConfirmMaterialArrival", "CanCreateArrivalLocation", "CanEditArrivalLocation", "CanViewLocations", "CanViewRacks", "CanViewShelves", "CanViewWarehouses")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WarehouseArrivalLocationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -649,6 +666,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of distributed requisition materials for a specific warehouse.
     /// </summary>
     [HttpGet("distributed-requisition-materials")]
+    [AnyPermission("CanCreateChecklistForPackagingMaterials", "CanCreateChecklistForRawMaterials", "CanViewPackagingMaterialsItems", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -682,6 +700,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the finished goods details of a specific warehouse by its ID.
     /// </summary>
     [HttpGet("finished-goods-details")]
+    [AnyPermission("CanViewApprovedProducts", "CanViewFgtn")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -711,6 +730,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the stock transfer details of a specific warehouse by its ID.
     /// </summary>
     [HttpGet("stock-transfer-details")]
+    [AnyPermission("CanViewIncomingStockTransferRequests", "CanViewOutgoingStockTransferRequests", "CanViewPackagingMaterialTransferList", "CanViewRawMaterialTransferList")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
@@ -760,6 +780,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpGet("distributed-material/{id}")]
+    [AnyPermission("CanCreateChecklistForPackagingMaterials", "CanCreateChecklistForRawMaterials", "CanViewPackagingMaterialsItems", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -851,6 +872,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the details of a specific checklist by its ID.
     /// </summary>
     [HttpGet("checklist/{id}")]
+    [AnyPermission("CanCreateChecklistForPackagingMaterials", "CanCreateChecklistForRawMaterials", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPackagingMaterialsItems", "CanViewRawMaterialGoodsReceiptNotes", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChecklistDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -867,6 +889,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the material batch details by distributed requisition material ID.
     /// </summary>
     [HttpGet("distributed-material/{distributedMaterialId}/material-batch")]
+    [AnyPermission("CanAssignPackagingMaterialsStockToShelves", "CanAssignRawMaterialsStockToShelves", "CanViewDistributedPackagingMaterials", "CanViewDistributedRawMaterials")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -899,6 +922,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves the checklist details by distributed material ID.
     /// </summary>
     [HttpGet("distributed-material/{distributedMaterialId}/checklist")]
+    [AnyPermission("CanCreateChecklistForPackagingMaterials", "CanCreateChecklistForRawMaterials", "CanViewPackagingMaterialsItems", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChecklistDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -940,6 +964,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Gets a GRN by its ID.
     /// </summary>
     [HttpGet("grn/{id}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanCreateChecklistForPackagingMaterials", "CanCreateChecklistForRawMaterials", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewPackagingMaterialsItems", "CanViewQuarantinePackagingMaterials", "CanViewQuarantineRawMaterials", "CanViewRawMaterialGoodsReceiptNotes", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GrnDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -954,6 +979,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of GRNs based on search criteria.
     /// </summary>
     [HttpGet("grns")]
+    [AnyPermission("CanCreateChecklistForPackagingMaterials", "CanCreateChecklistForRawMaterials", "CanViewPackagingMaterialsItems", "CanViewQuarantinePackagingMaterials", "CanViewQuarantineRawMaterials", "CanViewRawMaterialsItems")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -975,6 +1001,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// Retrieves a paginated list of GRNs based on search criteria.
     /// </summary>
     [HttpGet("grns/qc")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewRawMaterialGoodsReceiptNotes")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1005,6 +1032,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     #region BinCardInformation
 
     [HttpGet("bincardinformation/{materialId:guid}/{departmentId:guid}")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1032,6 +1060,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     }
 
     [HttpGet("bincardinformation/{productId}/product")]
+    [AnyPermission("CanViewApprovedProducts")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1092,6 +1121,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="request">Filter parameters for the swap requests.</param>
     /// <returns>A paginated list of swap requests.</returns>
     [HttpGet("swap")]
+    [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions", "CanViewRawMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1114,6 +1144,7 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <param name="id">The unique identifier of the swap request.</param>
     /// <returns>The swap request details.</returns>
     [HttpGet("swap/{id:guid}")]
+    [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SwapRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

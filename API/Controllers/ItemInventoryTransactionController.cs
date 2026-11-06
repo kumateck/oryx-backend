@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.ItemInventoryTransactions;
@@ -12,6 +13,7 @@ namespace API.Controllers;
 public class ItemInventoryTransactionController(IItemInventoryTransactionRepository repository) : ControllerBase
 {
     [HttpGet("{memoId:guid}")]
+    [AnyPermission("CanViewMemoForTrustedVendors", "CanViewOpenMarketMemo")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemInventoryTransactionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItemInventoryTransactions([FromRoute] Guid memoId)

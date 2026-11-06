@@ -50,6 +50,7 @@ public partial class ItemController
     /// Retrieves a paginated list of items
     /// </summary>
     [HttpGet]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ItemDto>>))]
     public async Task<IResult> GetItems([FromQuery] Store? store, [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
@@ -69,6 +70,7 @@ public partial class ItemController
     /// Retrieves an item by its ID
     /// </summary>
     [HttpGet("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetItem([FromRoute] Guid id)
@@ -117,6 +119,7 @@ public partial class ItemController
     /// <param name="transactionType"> The transaction type</param>
     /// <returns></returns>
     [HttpGet("{itemCode}/transactions")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemTransactionLogDto>))]
     public async Task<IResult> GetItemTransactions([FromRoute] string itemCode, [FromQuery] string transactionType)
     {
