@@ -55,7 +55,8 @@ public class MaterialStockReportTests
         var otherStore = new Warehouse { Id = Guid.NewGuid(), Department = other };
         var actor = new User { Id = Guid.NewGuid(), UserName = "stock-reader", Department = own };
         var global = new User { Id = Guid.NewGuid(), UserName = "global-reader" };
-        harness.Db.Users.AddRange(actor, global);
+        var quality = new User { Id = Guid.NewGuid(), UserName = "qa-reader", Department = new Department { Id = Guid.NewGuid(), Name = "Quality assurance", Type = SHARED.DepartmentType.NonProduction } };
+        harness.Db.Users.AddRange(actor, global, quality);
         var batch = await harness.SeedMaterialBatch("SHARED", BatchStatus.Available);
         batch.Material.Name = "Cyanocobalamin"; batch.Material.Kind = kind;
         batch.ManufacturingDate = DateTime.UtcNow.AddYears(-3); batch.ExpiryDate = DateTime.UtcNow.AddDays(-30);
@@ -99,6 +100,8 @@ public class MaterialStockReportTests
         filter.DepartmentId = other.Id;
         Assert.True((await repository.GetMaterialStockReport(filter, actor.Id)).IsFailure);
         Assert.Equal(17, Assert.Single((await repository.GetMaterialStockReport(filter, global.Id)).Value.Rows).Quantity);
+        // A non-production department chooses any department, like an account without one.
+        Assert.Equal(17, Assert.Single((await repository.GetMaterialStockReport(filter, quality.Id)).Value.Rows).Quantity);
         filter.DepartmentId = null; filter.ExpiredOnly = false;
         Assert.Equal(1, (await repository.GetMaterialStockReport(filter, global.Id)).Value.Rows.Count);
         var stored = await harness.Db.Users.IgnoreQueryFilters().SingleAsync(item => item.Id == actor.Id);

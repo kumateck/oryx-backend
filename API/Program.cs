@@ -134,7 +134,12 @@ builder.Services.AddCors(options =>
 
 //validate model state
 builder
-    .Services.AddControllers(options => options.Filters.Add<API.Filters.ReportHistoryFilter>())
+    .Services.AddControllers(options =>
+    {
+        // Department scope runs first, outside any historical snapshot the history filter opens.
+        options.Filters.Add<API.Filters.ReportDepartmentScopeFilter>();
+        options.Filters.Add<API.Filters.ReportHistoryFilter>();
+    })
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
