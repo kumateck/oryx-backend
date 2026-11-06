@@ -22,6 +22,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Creates a production order
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateOrders)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProductionOrder(
@@ -67,6 +68,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Updates a production order by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ProductionOrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -83,6 +85,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Deletes a production order by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteProductionOrder([FromRoute] Guid id)
@@ -103,6 +106,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Creates a proforma invoice.
     /// </summary>
     [HttpPost("proforma-invoice")]
+    [Authorize(PermissionKeys.CanGenerateProformaInvoice)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateProformaInvoice([FromBody] CreateProformaInvoice request)
@@ -115,6 +119,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Sends the proforma invoice to the customer
     /// </summary>
     [HttpPost("proforma-invoice/{proformaInvoiceId:guid}/customer")]
+    [Authorize(PermissionKeys.CanSendProformaInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SendProformaInvoiceToCustomer([FromRoute] Guid proformaInvoiceId)
@@ -172,6 +177,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Updates a proforma invoice by its ID.
     /// </summary>
     [HttpPut("proforma-invoice/{id:guid}")]
+    [Authorize(PermissionKeys.CanGenerateProformaInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -188,6 +194,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Deletes a proforma invoice by its ID.
     /// </summary>
     [HttpDelete("proforma-invoice/{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteProformaInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteProformaInvoice([FromRoute] Guid id)
@@ -208,6 +215,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Creates an invoice.
     /// </summary>
     [HttpPost("invoice")]
+    [Authorize(PermissionKeys.CanCreateInvoice)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateInvoice([FromBody] CreateInvoice request)
@@ -250,6 +258,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Updates an invoice.
     /// </summary>
     [HttpPut("invoice/{id:guid}")]
+    [Authorize(PermissionKeys.CanCreateInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -263,6 +272,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Deletes an invoice.
     /// </summary>
     [HttpDelete("invoice/{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteInvoice)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteInvoice([FromRoute] Guid id)
@@ -283,6 +293,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Allocates stock to a production order
     /// </summary>
     [HttpPost("allocate")]
+    [Authorize(PermissionKeys.CanGeneratePackingList)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> AllocateProductionOrder(
@@ -297,6 +308,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Changes a packing list that is still waiting for approval; approval starts again
     /// </summary>
     [HttpPut("allocate/{allocateProductionOrderId:guid}")]
+    [Authorize(PermissionKeys.CanGeneratePackingList)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -352,6 +364,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Mark a production order as delivered
     /// </summary>
     [HttpPut("deliver/{allocateProductionOrderId:guid}")]
+    [Authorize(PermissionKeys.CanDeliverFinishedGoods)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> MarkProductAllocationAsDelivered(
@@ -372,6 +385,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Marks a production order allocation as loaded.
     /// </summary>
     [HttpPut("load/{allocateProductionOrderId:guid}")]
+    [Authorize(PermissionKeys.CanLoadFinishedGoods)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> MarkAllocationProductionOrderAsLoaded(
@@ -388,6 +402,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Creates a waybill from a production order.
     /// </summary>
     [HttpPost("{allocateProductionOrderId:guid}/waybill")]
+    [Authorize(PermissionKeys.CanCreateWaybillForFgw)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateWaybillFromProductionOrder(
@@ -443,6 +458,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Sends a waybill to the customer.
     /// </summary>
     [HttpPost("waybill/{allocateProductionOrderId:guid}/customer")]
+    [Authorize(PermissionKeys.CanSendWaybillToCustomer)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> SendWaybillToCustomer([FromRoute] Guid allocateProductionOrderId)
