@@ -29,7 +29,7 @@ function fixture(options: Options = {}) {
   writeFileSync(join(bundle, "image.tar"), "fixture-image");
   const manifest = { schemaVersion: "oryx-formula-release-v1", sourceRepository: "kumateck/oryx-live-desktop", sourceSha: sha,
     sourceHash: "b".repeat(64), image: `oryx-formula-calculation:${"b".repeat(64)}`, imageId: `sha256:${"c".repeat(64)}`,
-    engineBuildHash: "d".repeat(64), platform: "linux/amd64", numericPolicyVersion: "oryx-decimal-v1-half-up",
+    engineBuildHash: "d".repeat(64), platform: "linux/amd64", numericPolicyVersion: "oryx-decimal-v1-half-up", sourceDirty: false,
     archiveSha256: createHash("sha256").update("fixture-image").digest("hex") };
   writeFileSync(join(bundle, "manifest.json"), JSON.stringify(manifest));
   const settings = join(directory, "fixture.json");
@@ -48,8 +48,11 @@ function fixture(options: Options = {}) {
     ? readFileSync(join(directory, "events.jsonl"), "utf8").trim().split("\n").map(line => JSON.parse(line)) : [];
   return { directory, repo, state, sha, run, events, configure, close: () => rmSync(directory, { recursive: true, force: true }) };
 }
-const contains = (event: Event, word: string) => event.tool === "docker" && event.args.includes(word)
-  && !(event.args.includes("formula-calculation") || event.args.includes("--network"));
+// Formula container and secret-helper events are asserted separately (formulaEvent), so API
+// lifecycle checks below are not confused by the dependency's own start/stop/run commands.
+const isFormula = (event: Event) => event.args.includes("formula-calculation") || event.args.includes("--network");
+const contains = (event: Event, word: string) => event.tool === "docker" && event.args.includes(word) && !isFormula(event);
+const formulaEvent = (event: Event, word: string) => event.tool === "docker" && event.args.includes(word) && isFormula(event);
 
 test("customer command builds main, stops the API, verifies backup, migrates, deploys and records the exact SHA", () => {
   const f = fixture();
@@ -288,4 +291,69 @@ test("a new formula image for unchanged backend main keeps the old rollback snap
     const frozen = JSON.parse(readFileSync(join(f.state, "formula-releases", old, "formula-release.json"), "utf8"));
     assert.equal(frozen.imageId, `sha256:${"c".repeat(64)}`);
   } finally { f.close(); }
+});
+
+test("a failure after the new formula dependency starts stops it, but never the live API's dependency", { timeout: 20_000 }, () => {
+  const f = fixture({ failure: "migration" });
+  try {
+    assert.notEqual(f.run("deploy").status, 0);
+    const events = f.events();
+    const started = events.findIndex(event => formulaEvent(event, "--wait"));
+    assert.ok(started >= 0);
+    assert.ok(events.slice(started).some(event => formulaEvent(event, "stop")));
+  } finally { f.close(); }
+});
+
+test("the secret helper runs the locally built API image, never the delivered formula image", () => {
+  const f = fixture();
+  try {
+    assert.equal(f.run("deploy").status, 0);
+    const helper = f.events().find(event => event.tool === "docker" && event.args[0] === "run" && event.args.includes("--network"));
+    assert.ok(helper);
+    assert.ok(helper.args.includes(`oryx-api-customer:${f.sha}`));
+    assert.equal(helper.args.some(arg => arg.startsWith("sha256:")), false);
+  } finally { f.close(); }
+});
+
+test("a bundle built from uncommitted source is refused before downtime", () => {
+  const f = fixture();
+  try {
+    const manifestPath = join(f.directory, "bundle", "manifest.json");
+    writeFileSync(manifestPath, JSON.stringify({ ...JSON.parse(readFileSync(manifestPath, "utf8")), sourceDirty: true }));
+    assert.notEqual(f.run("deploy").status, 0);
+    assert.equal(f.events().some(event => contains(event, "stop") || contains(event, "up")), false);
+  } finally { f.close(); }
+});
+
+test("successful deploys keep only recent formula releases and the archives they reference", { timeout: 60_000 }, () => {
+  const f = fixture();
+  try {
+    const manifestPath = join(f.directory, "bundle", "manifest.json");
+    const ids: string[] = [];
+    for (const letter of ["1", "2", "3", "4", "5", "6", "7"]) {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      manifest.imageId = `sha256:${letter.repeat(64)}`;
+      writeFileSync(manifestPath, JSON.stringify(manifest));
+      assert.equal(f.run("deploy").status, 0);
+      ids.push(readFileSync(join(f.state, "formula-current"), "utf8").trim());
+    }
+    const kept = ids.filter(id => existsSync(join(f.state, "formula-releases", id)));
+    assert.ok(kept.length <= 5, `kept ${kept.length}`);
+    assert.ok(kept.includes(ids.at(-1)!) && kept.includes(ids.at(-2)!));
+    assert.equal(existsSync(join(f.state, "formula-releases", ids[0]!)), false);
+  } finally { f.close(); }
+});
+
+test("demo and customer formula services keep the same container hardening", () => {
+  const demo = readFileSync(join(root, "docker-compose.formula.yml"), "utf8");
+  const customer = readFileSync(join(root, "deploy/customer-formula.compose.yml"), "utf8");
+  for (const rule of [/read_only: true/, /- ALL/, /no-new-privileges:true/, /pids_limit: 64/, /mem_limit: 256m/, /cpus: 1\.0/,
+    /\/tmp:size=16m,noexec,nosuid,nodev/, /FORMULA_SERVICE_MAX_REQUEST_BYTES: "262144"/, /FORMULA_SERVICE_CONCURRENCY: "2"/,
+    /FORMULA_SERVICE_DEADLINE_MS: "2000"/]) {
+    assert.match(demo, rule, `demo compose lost ${rule}`);
+    assert.match(customer, rule, `customer compose lost ${rule}`);
+  }
+  // /ready fails while the demo default keeps formulas disabled; the dependency must still be healthy.
+  assert.match(demo, /3101\/health/);
+  assert.match(customer, /3101\/ready/);
 });

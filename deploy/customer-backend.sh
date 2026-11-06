@@ -159,6 +159,8 @@ docker build --file "$SOURCE/deploy.Dockerfile" --target runtime --build-arg "RE
 docker build --file "$SOURCE/deploy.Dockerfile" --target migration --tag "oryx-api-customer-migration:$TARGET" "$SOURCE" >>"$LOG" 2>&1
 STAGE=model-consistency
 compose migration run --rm --no-deps --pull never -T --entrypoint dotnet app ef migrations has-pending-model-changes --no-build --configuration Release --project INFRASTRUCTURE/INFRASTRUCTURE.csproj --startup-project API/API.csproj >>"$LOG" 2>&1
+STAGE=formula-secret
+formula_provision_secret "oryx-api-customer:$TARGET" >>"$LOG" 2>&1
 STAGE=formula-health
 formula_start "$FORMULA_RELEASE" >>"$LOG" 2>&1
 echo "Built backend main $TARGET. Preparing $DATABASE for migration."
@@ -192,10 +194,12 @@ done
 STAGE=formula-readiness
 formula_verify >>"$LOG" 2>&1 || { echo 'Backend formula readiness FAILED: service is disabled, not ready, or unreachable. Inspect the protected deployment log.' >&2; false; }
 PREVIOUS_FORMULA=$(cat "$STATE/formula-current" 2>/dev/null || true)
-printf '%s\n' "$FORMULA_ID" > "$STATE/formula-current.tmp"
-mv "$STATE/formula-current.tmp" "$STATE/formula-current"
+# Order matters: `pending` stays until both pointers are written, so an interruption between them
+# still requires deploy --retry, which rewrites both.
 printf '%s\n' "$TARGET" > "$STATE/current.tmp"
 mv "$STATE/current.tmp" "$STATE/current"
+printf '%s\n' "$FORMULA_ID" > "$STATE/formula-current.tmp"
+mv "$STATE/formula-current.tmp" "$STATE/formula-current"
 rm -f "$STATE/pending" "$STATE/blocked/$TARGET"
 printf 'success %s\n' "$TARGET" > "$STATE/last-result"
 echo "Backend main $TARGET built, backed up, migrated and deployed. Backup: $BACKUP"
@@ -204,3 +208,4 @@ notify "🟢 ORYX Backend deployment SUCCESS | $NOTIFY_HOST | main ${TARGET:0:8}
 if [[ "$PREVIOUS_FORMULA" =~ ^[a-f0-9]{40}-[a-f0-9]{64}$ && "$PREVIOUS_FORMULA" != "$FORMULA_ID" ]]; then
   formula_compose "$STATE/formula-releases/$PREVIOUS_FORMULA" stop formula-calculation >>"$LOG" 2>&1 || echo 'Warning: old formula container could not be stopped; inspect the log.' >&3
 fi
+formula_prune "$FORMULA_ID" "$PREVIOUS_FORMULA" >>"$LOG" 2>&1 || echo 'Warning: old formula releases could not be pruned; inspect the log.' >&3

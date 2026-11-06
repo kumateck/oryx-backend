@@ -74,6 +74,8 @@ public sealed partial class EmployeeAssignmentTests
     [InlineData("missing")]
     [InlineData("employee-id")]
     [InlineData("deleted-user")]
+    [InlineData("disabled-user")]
+    [InlineData("own-account")]
     public async Task InvalidManagerReturnsValidationBeforeChangingAssignment(string kind)
     {
         await using var db = InMemory();
@@ -82,6 +84,17 @@ public sealed partial class EmployeeAssignmentTests
         if (kind == "deleted-user")
         {
             db.Users.Add(new User { Id = invalid, UserName = "deleted", DeletedAt = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+        }
+        if (kind == "disabled-user")
+        {
+            db.Users.Add(new User { Id = invalid, UserName = "disabled", IsDisabled = true });
+            await db.SaveChangesAsync();
+        }
+        if (kind == "own-account")
+        {
+            db.Users.Add(new User { Id = invalid, UserName = "self" });
+            employee.UserId = invalid;
             await db.SaveChangesAsync();
         }
         request.ReportingManagerId = invalid;
