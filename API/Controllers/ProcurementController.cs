@@ -47,6 +47,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="manufacturerId">The ID of the manufacturer.</param>
     /// <returns>Returns the manufacturer details.</returns>
     [HttpGet("manufacturer/{manufacturerId}")]
+    [AnyPermission("CanCreateManufacturer", "CanUpdateManufacturerDetails", "CanViewManufacturers")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ManufacturerDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -64,6 +65,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of manufacturers.</returns>
     [HttpGet("manufacturer")]
+    [AnyPermission("CanCreateManufacturer", "CanUpdateManufacturerDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewManufacturers", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -85,6 +87,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the supplier details.</returns>
     [HttpGet("manufacturer/material/{materialId}")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanUpdateVendorDetails", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ManufacturerDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -168,6 +171,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="supplierId">The ID of the supplier.</param>
     /// <returns>Returns the supplier details.</returns>
     [HttpGet("supplier/{supplierId}")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanUpdateVendorDetails", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -185,6 +189,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of suppliers.</returns>
     [HttpGet("supplier")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors", "CanViewWarehouseReport")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -235,6 +240,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the supplier details.</returns>
     [HttpGet("supplier/material/{materialId}")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanUpdateVendorDetails", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -251,6 +257,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="type">The type of the supplier.</param>
     /// <returns>Returns the supplier details.</returns>
     [HttpGet("supplier/{materialId}/{type}")]
+    [AnyPermission("CanViewPurchaseRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SupplierDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -330,6 +337,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderId">The ID of the purchase order.</param>
     /// <returns>Returns the purchase order details.</returns>
     [HttpGet("purchase-order/{purchaseOrderId}")]
+    [AnyPermission("CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PurchaseOrderDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -346,6 +354,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="materialId">The material ID to know the requisition</param>
     /// <returns>Returns the purchase order details.</returns>
     [HttpGet("purchase-order/requisition/{purchaseOrderId}/{materialId}")]
+    [AnyPermission("CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -371,6 +380,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="type">Filter by the supplier type</param>
     /// <returns>Returns a paginated list of purchase orders.</returns>
     [HttpGet("purchase-order")]
+    [AnyPermission("CanViewForeignProformaRequest", "CanViewLocalProformaRequest")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -580,6 +590,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="invoiceId">The ID of the invoice.</param>
     /// <returns>Returns the invoice details.</returns>
     [HttpGet("purchase-order-invoice/{invoiceId}")]
+    [AnyPermission("CanCreatePurchaseOrderInvoice", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PurchaseOrderInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -598,6 +609,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="type">Filter by supplier type</param>
     /// <returns>Returns a paginated list of invoices.</returns>
     [HttpGet("purchase-order-invoice")]
+    [AnyPermission("CanViewCashflowReports", "CanViewPayments")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -688,6 +700,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="billingSheetId">The ID of the billing sheet.</param>
     /// <returns>Returns the billing sheet details.</returns>
     [HttpGet("billing-sheet/{billingSheetId}")]
+    [AnyPermission("CanCreateBillingSheet", "CanEditBillingSheet", "CanViewBillingSheet")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BillingSheetDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -703,6 +716,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="invoiceId">The ID of the invoice.</param>
     /// <returns>Returns the billing sheet details.</returns>
     [HttpGet("billing-sheet/invoice/{invoiceId}")]
+    [AnyPermission("CanCreateBillingSheet", "CanEditBillingSheet", "CanViewBillingSheet")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BillingSheetDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -721,6 +735,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="status">The status of the billing sheet( 0 -> Pending, 1 -> Paid </param>
     /// <returns>Returns a paginated list of billing sheets.</returns>
     [HttpGet("billing-sheet")]
+    [AnyPermission("CanCreateBillingSheet", "CanEditBillingSheet", "CanViewBillingSheet", "CanViewCashflowReports", "CanViewPayments")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -858,6 +873,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
     /// <returns>Returns the shipment document details.</returns>
     [HttpGet("shipment-document/{shipmentDocumentId}")]
+    [AnyPermission("CanCreateShipmentDocument", "CanRecordShipmentDiscrepancy", "CanViewBillingSheet", "CanViewMaterialDistribution", "CanViewShipmentDiscrepancy", "CanViewShipmentDocument", "CanViewWaybill")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDocumentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -876,6 +892,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="onlyApproved">Get onlt shipment documents that have been approved</param>
     /// <returns>Returns a paginated list of shipment documents.</returns>
     [HttpGet("shipment-document")]
+    [AnyPermission("CanCreateBillingSheet", "CanCreateShipmentDocument", "CanEditBillingSheet", "CanRecordShipmentDiscrepancy", "CanViewBillingSheet", "CanViewShipmentDiscrepancy", "CanViewShipmentDocument", "CanViewWaybill")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -974,6 +991,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="waybillId">The ID of the waybill.</param>
     /// <returns>Returns the waybill details.</returns>
     [HttpGet("waybill/{waybillId}")]
+    [AnyPermission("CanCreateShipmentDocument", "CanViewBillingSheet", "CanViewShipmentDocument", "CanViewWaybill")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentDocumentDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -992,6 +1010,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="status">The status of the shipment. (0 -> New, 1 -> In Transit, 2 -> Cleared, 3 -> Arrived.</param>
     /// <returns>Returns a paginated list of waybills.</returns>
     [HttpGet("waybill")]
+    [AnyPermission("CanCreateShipmentDocument", "CanViewBillingSheet", "CanViewShipmentDocument", "CanViewWaybill")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1102,6 +1121,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Retrieves all shipments that have arrived.
     /// </summary>
     [HttpGet("shipment-document/arrived")]
+    [AnyPermission("CanViewMaterialDistribution")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1149,6 +1169,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Retrieves a shipment invoice by the ID.
     /// </summary>
     [HttpGet("shipment-invoice/{id}")]
+    [AnyPermission("CanCreateBillingSheet", "CanCreateShipmentInvoice", "CanEditBillingSheet", "CanViewBillingSheet", "CanViewShipmentInvoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1162,6 +1183,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Retrieves all shipment invoices that have not been linked to a shipment document.
     /// </summary>
     [HttpGet("shipment-invoice/unattached")]
+    [AnyPermission("CanCreateShipmentDocument", "CanCreateShipmentInvoice", "CanViewBillingSheet", "CanViewShipmentDocument", "CanViewShipmentInvoice", "CanViewWaybill")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ShipmentInvoiceDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1175,6 +1197,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Retrieves a shipment invoice by the shipment document ID.
     /// </summary>
     [HttpGet("shipment-invoice/shipment-document/{shipmentDocumentId}")]
+    [AnyPermission("CanViewShipmentDocument", "CanViewShipmentInvoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ShipmentInvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1192,6 +1215,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of shipment documents.</returns>
     [HttpGet("shipment-invoice")]
+    [AnyPermission("CanCreateShipmentInvoice", "CanViewCashflowReports", "CanViewPayments", "CanViewShipmentInvoice")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1399,6 +1423,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// </summary>
     /// <returns>Returns a list of purchase orders.</returns>
     [HttpGet("purchase-order/not-linked")]
+    [AnyPermission("CanCreateShipmentInvoice", "CanViewShipmentInvoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<SupplierDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1414,6 +1439,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="supplierId">The ID of the supplier.</param>
     /// <returns>Returns a list of purchase orders.</returns>
     [HttpGet("purchase-order/supplier/{supplierId}/not-linked")]
+    [AnyPermission("CanCreateShipmentInvoice", "CanViewShipmentInvoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1433,6 +1459,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="purchaseOrderIds">A list of purchase order IDs.</param>
     /// <returns>Returns a list of materials.</returns>
     [HttpPost("materials/by-purchase-orders")]
+    [AnyPermission("CanCreateShipmentInvoice", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder", "CanViewShipmentInvoice")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1450,6 +1477,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="shipmentDocumentId">The ID of the shipment document.</param>
     /// <returns>Returns the material distribution details.</returns>
     [HttpGet("shipment-document/{shipmentDocumentId}/material-distribution")]
+    [AnyPermission("CanViewMaterialDistribution")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDistributionPageDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1499,6 +1527,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Retrieves a list of supplier materials by material
     /// </summary>
     [HttpGet("supplier/{supplierId}/material/{materialId}")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanUpdateVendorDetails", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewLocalPurchaseOrder", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1518,6 +1547,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// Retrieves a list of supplier materials by material
     /// </summary>
     [HttpGet("supplier/{supplierId}/material")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanReviseForeignPurchaseOrder", "CanReviseLocalPurchaseOrder", "CanUpdateVendorDetails", "CanViewApprovedForeignPurchaseOrder", "CanViewApprovedLocalPurchaseOrder", "CanViewForeignPurchaseOrder", "CanViewForeignQuotationResponse", "CanViewLocalPurchaseOrder", "CanViewLocalQuotationResponse", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1561,6 +1591,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="kind">The material kind</param>
     /// <returns>Returns a paginated list of distributed materials.</returns>
     [HttpGet("distribute-material")]
+    [AnyPermission("CanViewDistributedPackagingMaterials", "CanViewDistributedRawMaterials")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -1592,6 +1623,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="distributeMaterialId">The ID of the distributed material.</param>
     /// <returns>Returns the distributed material details.</returns>
     [HttpGet("distribute-material/{distributeMaterialId}")]
+    [AnyPermission("CanDistributeMaterial", "CanViewMaterialDistribution")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DistributeMaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

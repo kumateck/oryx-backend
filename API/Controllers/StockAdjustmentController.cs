@@ -74,6 +74,7 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// <param name="targetType">The target type: 0 for item, 1 for material, 2 for product</param>
     /// <returns>A paginated list of stock adjustment summaries.</returns>
     [HttpGet]
+    [AnyPermission("CanCreateMaterialStockAdjustment", "CanViewMaterialStockAdjustment")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<StockAdjustmentSummaryDto>>)
@@ -102,6 +103,7 @@ public class StockAdjustmentController(IStockAdjustmentRepository repository) : 
     /// <param name="id">The GUID of the stock adjustment.</param>
     /// <returns>A detailed view of the stock adjustment including its lines.</returns>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockAdjustmentDetailDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetStockAdjustmentById([FromRoute] Guid id)
