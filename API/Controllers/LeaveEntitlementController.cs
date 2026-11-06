@@ -17,6 +17,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     /// Creates a leave entitlement.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateLeaveEntitlement)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateLeaveEntitlement([FromBody] LeaveEntitlementDto request)
@@ -61,6 +62,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     /// Updates the details of an existing leave entitlement.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditLeaveEntitlement)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(LeaveEntitlementDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -77,6 +79,7 @@ public class LeaveEntitlementController(ILeaveEntitlementRepository repository) 
     /// Deletes a specific leave entitlement by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteLeaveEntitlement)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteLeaveEntitlement([FromRoute] Guid id)

@@ -1,3 +1,4 @@
+using APP.Utils;
 using APP.Extensions;
 using APP.IRepository;
 using DOMAIN.Entities.QualityRoutines;
@@ -14,6 +15,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     private Guid? ActorId => Guid.TryParse(HttpContext.Items["Sub"] as string, out var id) ? id : null;
 
     [HttpPost("ards")]
+    [Authorize(PermissionKeys.CanManageRoutineSetup)]
     public async Task<IResult> CreateArd([FromBody] CreateRoutineArdRequest request)
     {
         if (ActorId is not Guid actor) return TypedResults.Unauthorized();
@@ -36,6 +38,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpPost("definitions")]
+    [Authorize(PermissionKeys.CanManageRoutineSetup)]
     public async Task<IResult> CreateDefinition([FromBody] CreateRoutineDefinitionRequest request)
     {
         if (ActorId is not Guid actor) return TypedResults.Unauthorized();
@@ -44,6 +47,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateRoutineTest)]
     public async Task<IResult> CreateExecution([FromBody] CreateRoutineExecutionRequest request)
     {
         if (ActorId is not Guid actor) return TypedResults.Unauthorized();
@@ -66,6 +70,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpPost("{id:guid}/samples")]
+    [Authorize(PermissionKeys.CanCreateRoutineTest)]
     public async Task<IResult> AddSample([FromRoute] Guid id,
         [FromBody] CreateRoutineSampleRequest request)
     {
@@ -89,6 +94,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpPost("tracks/{trackId:guid}/submit-approval")]
+    [Authorize(PermissionKeys.CanPerformRoutineTest)]
     public async Task<IResult> SubmitTrackForApproval([FromRoute] Guid trackId)
     {
         if (ActorId is not Guid actor) return TypedResults.Unauthorized();
@@ -97,6 +103,7 @@ public class RoutineQcController(IRoutineQcRepository repository) : ControllerBa
     }
 
     [HttpPost("samples/{sampleId:guid}/certificate")]
+    [Authorize(PermissionKeys.CanPerformRoutineTest)]
     public async Task<IResult> GenerateCertificate([FromRoute] Guid sampleId)
     {
         if (ActorId is not Guid actor) return TypedResults.Unauthorized();

@@ -61,12 +61,24 @@ public sealed class PermissionCatalogTests
     {
         "CanViewForeignPurchaseOrder", "CanViewApprovedForeignPurchaseOrder", "CanCreateForeignPurchaseOrder", "CanViewLocalPurchaseOrder",
         "CanViewApprovedLocalPurchaseOrder", "CanCreateLocalPurchaseOrder", "CanViewRawMaterials", "CanViewPackagingMaterials",
-        "CanAssignPackagingMaterialsStockToShelves", "CanViewRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions",
+        "CanAssignPackagingMaterialsStockToShelves",
+        // Also the Extra Packaging Requisitions tick box; it gets its own key with the requisition work in phase 3.
+        "CanViewPackagingMaterialRequisitions",
         "CanIssuePackagingMaterialRequisitions", "CanViewRawMaterialTransferList", "CanViewPackagingMaterialTransferList",
         "CanViewVendors", "CanCreateVendor", "CanUpdateVendorDetails", "CanDeleteVendor",
     };
 
     private sealed record Endpoint(string Name, string Verb, string Route, IReadOnlyList<string> Keys, bool Anonymous);
+
+    /// <summary>Every key a product permission attribute can require, in either context.</summary>
+    private static IEnumerable<string> ProductKeys(API.Authorization.ProductPermissionAttribute attribute)
+    {
+        var verbs = attribute.Verb == APP.Services.Authorization.ProductVerb.Save
+            ? new[] { APP.Services.Authorization.ProductVerb.Add, APP.Services.Authorization.ProductVerb.Edit, APP.Services.Authorization.ProductVerb.Delete }
+            : new[] { attribute.Verb };
+        return Enum.GetValues<APP.Services.Authorization.ProductContext>().SelectMany(context => verbs
+            .Select(verb => APP.Services.Authorization.ProductPermissions.Key(context, attribute.Section, verb))).Where(key => key is not null).Select(key => key!);
+    }
 
     private static IEnumerable<Endpoint> Endpoints()
     {
@@ -79,7 +91,22 @@ public sealed class PermissionCatalogTests
             {
                 var http = action.GetCustomAttributes<HttpMethodAttribute>().First();
                 var keys = controller.GetCustomAttributes<AuthorizeAttribute>().Concat(action.GetCustomAttributes<AuthorizeAttribute>())
-                    .Select(attribute => attribute.Policy).Where(policy => !string.IsNullOrEmpty(policy)).Select(policy => policy!).Distinct().ToList();
+                    .Select(attribute => attribute.Policy).Where(policy => !string.IsNullOrEmpty(policy)).Select(policy => policy!)
+                    .Concat(action.GetCustomAttributes<API.Authorization.ProductPermissionAttribute>().SelectMany(ProductKeys))
+                    .Concat(action.GetCustomAttributes<API.Authorization.MaterialPermissionAttribute>().SelectMany(attribute =>
+                        Enum.GetValues<DOMAIN.Entities.Materials.MaterialKind>().Select(kind => APP.Services.Authorization.MaterialPermissions.Key(attribute.Task, kind))
+                            .Where(key => key is not null).Select(key => key!)))
+                    .Concat(action.GetCustomAttributes<API.Authorization.QcDocumentPermissionAttribute>()
+                        .SelectMany(attribute => APP.Services.Authorization.QcDocumentPermissions.KeysFor(attribute.Document, attribute.Task)))
+                    .Concat(action.GetCustomAttributes<API.Authorization.MaterialKindPermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.RawKey, attribute.PackagingKey }))
+                    .Concat(action.GetCustomAttributes<API.Authorization.PurchaseOrderPermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.ForeignKey, attribute.LocalKey }))
+                    .Concat(action.GetCustomAttributes<API.Authorization.AnyPermissionAttribute>().SelectMany(attribute => attribute.Keys))
+                    .Concat(action.GetCustomAttributes<API.Authorization.SupplierTypePermissionAttribute>()
+                        .SelectMany(attribute => new[] { attribute.ForeignKey, attribute.LocalKey }))
+                    .Concat(action.GetCustomAttributes<API.Authorization.RequisitionCreatePermissionAttribute>()
+                        .SelectMany(_ => API.Authorization.RequisitionCreatePermissionAttribute.AllKeys)).Distinct().ToList();
                 var anonymous = action.GetCustomAttributes<AllowAnonymousAttribute>().Any() || controller.GetCustomAttributes<AllowAnonymousAttribute>().Any();
                 var route = string.Join("/", new[] { prefix, http.Template }.Where(part => !string.IsNullOrEmpty(part)))
                     .Replace("api/v{version:apiVersion}/", "");

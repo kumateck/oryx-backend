@@ -58,6 +58,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Uploads an avatar image for a specific employee by their unique identifier.
     /// </summary>
     [HttpPost("avatar/{id:guid}")]
+    [Authorize(PermissionKeys.CanUpdateEmployeeInfo)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UploadAnImage([FromBody] UploadFileRequest request, [FromRoute] Guid id)
@@ -122,6 +123,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     ///  Updates the details of an existing employee.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanUpdateEmployeeInfo)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -135,6 +137,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Updates the department and designation of an existing employee.
     /// </summary>
     [HttpPut("{id:guid}/assign")]
+    [Authorize(PermissionKeys.CanUpdateEmployeeInfo)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -151,6 +154,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// <param name="employeeType"></param>
     /// <returns></returns>
     [HttpPut("{id:guid}/change-type")]
+    [Authorize(PermissionKeys.CanUpdateEmployeeInfo)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -167,6 +171,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// <param name="status">The states of the employee to be chanegd</param>
     /// <returns></returns>
     [HttpPut("{id:guid}/status")]
+    [Authorize(PermissionKeys.CanUpdateEmployeeInfo)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(EmployeeDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -180,6 +185,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Deletes a specific employee by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteEmployee)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteEmployee([FromRoute] Guid id)
@@ -195,6 +201,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// Deletes a specific employee by its ID.
     /// </summary>
     [HttpPut("email/{id:guid}")]
+    [Authorize(PermissionKeys.CanUpdateEmployeeEmail)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateEmployeeEmail([FromRoute] Guid id, [FromQuery] string email)
@@ -212,7 +219,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     /// <param name="file">The uploaded Excel file containing employee data.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("upload")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanRegisterEmployee)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

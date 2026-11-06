@@ -1,7 +1,10 @@
 using System.Reflection;
 using APP.IRepository;
 using APP.Services.Approvals;
+using APP.Utils;
 using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.Permissions;
+using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.QcWorksheets;
 using DOMAIN.Entities.Users;
 using INFRASTRUCTURE.Context;
@@ -15,7 +18,8 @@ namespace APP.Tests.Repository;
 public class ApprovalDelegationTests
 {
     private static readonly DateTime Now = new(2026, 10, 15, 8, 0, 0, DateTimeKind.Utc);
-    private static readonly Guid Ama = Guid.NewGuid(), Kofi = Guid.NewGuid(), Esi = Guid.NewGuid(), Blocked = Guid.NewGuid(), QaRole = Guid.NewGuid();
+    private static readonly Guid Ama = Guid.NewGuid(), Kofi = Guid.NewGuid(), Esi = Guid.NewGuid(), Blocked = Guid.NewGuid(), QaRole = Guid.NewGuid(),
+        Yaw = Guid.NewGuid(), ApproverRole = Guid.NewGuid();
 
     private static ApplicationDbContext Context()
     {
@@ -24,8 +28,16 @@ public class ApprovalDelegationTests
             new User { Id = Ama, FirstName = "Ama", LastName = "Owusu", Email = "ama@test" },
             new User { Id = Kofi, FirstName = "Kofi", LastName = "Boateng", Email = "kofi@test" },
             new User { Id = Esi, FirstName = "Esi", LastName = "Arthur", Email = "esi@test" },
-            new User { Id = Blocked, FirstName = "Old", LastName = "Account", Email = "old@test", IsDisabled = true });
+            new User { Id = Blocked, FirstName = "Old", LastName = "Account", Email = "old@test", IsDisabled = true },
+            new User { Id = Yaw, FirstName = "Yaw", LastName = "Mensah", Email = "yaw@test" });
         context.UserRoles.Add(new IdentityUserRole<Guid> { UserId = Ama, RoleId = QaRole });
+        // Kofi and Esi can open the pending approvals page, so they may decide for someone; Yaw cannot.
+        context.Roles.Add(new Role { Id = ApproverRole, Name = "approvers", NormalizedName = "APPROVERS", DisplayName = "Approvers" });
+        var claim = new IdentityRoleClaim<Guid> { Id = 7001, RoleId = ApproverRole, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanViewPendingApprovals };
+        context.RoleClaims.Add(claim);
+        context.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), Key = PermissionKeys.CanViewPendingApprovals, RoleClaimId = claim.Id, Type = "Access" });
+        foreach (var approver in new[] { Kofi, Esi, Blocked })
+            context.UserRoles.Add(new IdentityUserRole<Guid> { UserId = approver, RoleId = ApproverRole });
         context.SaveChanges();
         return context;
     }
@@ -43,6 +55,7 @@ public class ApprovalDelegationTests
         Assert.Equal("ApprovalDelegation.TooLong", (await service.Delegate(Ama, Request(Kofi, 0, 91), Now)).Error.Code);
         Assert.Equal("ApprovalDelegation.DelegateDisabled", (await service.Delegate(Ama, Request(Blocked, 0, 5), Now)).Error.Code);
         Assert.Equal("ApprovalDelegation.DelegateNotFound", (await service.Delegate(Ama, Request(Guid.NewGuid(), 0, 5), Now)).Error.Code);
+        Assert.Equal("ApprovalDelegation.DelegateCannotApprove", (await service.Delegate(Ama, Request(Yaw, 0, 5), Now)).Error.Code);
 
         var created = await service.Delegate(Ama, Request(Kofi, -1, 5), Now);
         Assert.True(created.IsSuccess);

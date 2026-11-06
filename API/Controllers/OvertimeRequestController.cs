@@ -17,6 +17,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Creates an overtime request.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateOvertimeManagement)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateOvertimeRequest([FromBody] CreateOvertimeRequest request)
@@ -53,6 +54,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Updates a specific overtime request by its ID.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanEditOvertimeManagement)]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(OvertimeRequestDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -66,6 +68,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     /// Deletes a specific overtime request by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteOvertimeManagement)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> DeleteOvertimeRequest([FromRoute] Guid id)

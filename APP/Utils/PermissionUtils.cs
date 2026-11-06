@@ -74,6 +74,7 @@ public static class PermissionSubmodules
     public const string Products = "Products";
     public const string ProductSchedule = "Product Schedule";
     public const string StockTransferRequests = "Stock Transfer Requests";
+    public const string WhitePlacebo = "White Placebo";
 
     // Quality Control
     public const string GoodsReceiptNote = "Goods Receipt Note (GRN)";
@@ -215,6 +216,190 @@ public static class PermissionSubmodules
 public static class PermissionKeys
 {
     public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
+    // Warehouse and sourcing tasks no page offers yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Create an arrival location.</summary>
+    public const string CanCreateArrivalLocation = "CanCreateArrivalLocation";
+    /// <summary>Change an arrival location.</summary>
+    public const string CanEditArrivalLocation = "CanEditArrivalLocation";
+    /// <summary>Confirm that distributed material has arrived.</summary>
+    public const string CanConfirmMaterialArrival = "CanConfirmMaterialArrival";
+    /// <summary>Create a material batch by hand.</summary>
+    public const string CanCreateMaterialBatch = "CanCreateMaterialBatch";
+    /// <summary>Import material batches from a file.</summary>
+    public const string CanImportMaterialBatches = "CanImportMaterialBatches";
+    /// <summary>Move a material batch between locations (legacy move).</summary>
+    public const string CanMoveMaterialBatch = "CanMoveMaterialBatch";
+    /// <summary>Consume material at a location.</summary>
+    public const string CanConsumeMaterialAtLocation = "CanConsumeMaterialAtLocation";
+    /// <summary>Change a material batch status.</summary>
+    public const string CanChangeMaterialBatchStatus = "CanChangeMaterialBatchStatus";
+    /// <summary>Request a retest of a material batch.</summary>
+    public const string CanRequestMaterialBatchRetest = "CanRequestMaterialBatchRetest";
+    /// <summary>Complete a material batch retest.</summary>
+    public const string CanCompleteMaterialBatchRetest = "CanCompleteMaterialBatchRetest";
+    /// <summary>Run the stock inconsistency repair.</summary>
+    public const string CanFixStockInconsistencies = "CanFixStockInconsistencies";
+    /// <summary>Change a source requisition.</summary>
+    public const string CanEditSourceRequisition = "CanEditSourceRequisition";
+    /// <summary>Delete a source requisition.</summary>
+    public const string CanDeleteSourceRequisition = "CanDeleteSourceRequisition";
+    // QC/QA tasks no page offers yet; granted to nobody (permissions audit phase 4).
+    /// <summary>Change an analytical test request.</summary>
+    public const string CanEditAnalyticalTestRequest = "CanEditAnalyticalTestRequest";
+    /// <summary>Change the status of an analytical test request.</summary>
+    public const string CanChangeAnalyticalTestRequestStatus = "CanChangeAnalyticalTestRequestStatus";
+    /// <summary>Delete an analytical test request.</summary>
+    public const string CanDeleteAnalyticalTestRequest = "CanDeleteAnalyticalTestRequest";
+    /// <summary>Create a uniformity-of-weight record.</summary>
+    public const string CanCreateUniformityOfWeight = "CanCreateUniformityOfWeight";
+    /// <summary>Change a uniformity-of-weight record.</summary>
+    public const string CanEditUniformityOfWeight = "CanEditUniformityOfWeight";
+    /// <summary>Delete a uniformity-of-weight record.</summary>
+    public const string CanDeleteUniformityOfWeight = "CanDeleteUniformityOfWeight";
+    /// <summary>Submit uniformity-of-weight results.</summary>
+    public const string CanSubmitUniformityOfWeight = "CanSubmitUniformityOfWeight";
+    // Dashboards: one key each (permissions audit phase 4).
+    /// <summary>View the HR dashboard.</summary>
+    public const string CanViewHrDashboard = "CanViewHrDashboard";
+    /// <summary>View the HR executive summary.</summary>
+    public const string CanViewHrExecutiveSummary = "CanViewHrExecutiveSummary";
+    /// <summary>View the production health dashboard.</summary>
+    public const string CanViewProductionHealthDashboard = "CanViewProductionHealthDashboard";
+    /// <summary>View the FGTN dashboard.</summary>
+    public const string CanViewFgtnDashboard = "CanViewFgtnDashboard";
+    /// <summary>View the warehouse dashboard.</summary>
+    public const string CanViewWarehouseDashboard = "CanViewWarehouseDashboard";
+    /// <summary>View the inventory command centre.</summary>
+    public const string CanViewInventoryCommandCenter = "CanViewInventoryCommandCenter";
+    /// <summary>View the logistics dashboard.</summary>
+    public const string CanViewLogisticsDashboard = "CanViewLogisticsDashboard";
+    /// <summary>View the procurement dashboard.</summary>
+    public const string CanViewProcurementDashboard = "CanViewProcurementDashboard";
+    /// <summary>View the QC dashboard.</summary>
+    public const string CanViewQcDashboard = "CanViewQcDashboard";
+    /// <summary>View the QA dashboard.</summary>
+    public const string CanViewQaDashboard = "CanViewQaDashboard";
+    /// <summary>View the services dashboard.</summary>
+    public const string CanViewServicesDashboard = "CanViewServicesDashboard";
+    /// <summary>View the stores dashboard.</summary>
+    public const string CanViewStoresDashboard = "CanViewStoresDashboard";
+    // Products: one key per task and section, per context (permissions audit phase 2).
+    /// <summary>View the Production product list.</summary>
+    public const string CanViewProductionProducts = "CanViewProductionProducts";
+    /// <summary>Import products from a spreadsheet.</summary>
+    public const string CanImportProductionProducts = "CanImportProductionProducts";
+    /// <summary>Export the product list.</summary>
+    public const string CanExportProductionProducts = "CanExportProductionProducts";
+    /// <summary>View a product's general information.</summary>
+    public const string CanViewProductionProductInfo = "CanViewProductionProductInfo";
+    /// <summary>Create a product.</summary>
+    public const string CanCreateProductionProduct = "CanCreateProductionProduct";
+    /// <summary>Edit a product's general information.</summary>
+    public const string CanEditProductionProductInfo = "CanEditProductionProductInfo";
+    /// <summary>Delete a product.</summary>
+    public const string CanDeleteProductionProduct = "CanDeleteProductionProduct";
+    /// <summary>View a product's bill of materials.</summary>
+    public const string CanViewProductionProductBom = "CanViewProductionProductBom";
+    /// <summary>Add materials to a bill of materials.</summary>
+    public const string CanAddProductionProductBom = "CanAddProductionProductBom";
+    /// <summary>Edit bill of materials lines.</summary>
+    public const string CanEditProductionProductBom = "CanEditProductionProductBom";
+    /// <summary>Remove bill of materials lines or a bill of materials.</summary>
+    public const string CanDeleteProductionProductBom = "CanDeleteProductionProductBom";
+    /// <summary>Archive the active bill of materials.</summary>
+    public const string CanArchiveProductionProductBom = "CanArchiveProductionProductBom";
+    /// <summary>Import bills of materials.</summary>
+    public const string CanImportProductionProductBom = "CanImportProductionProductBom";
+    /// <summary>View a product's packing materials.</summary>
+    public const string CanViewProductionProductPackingMaterials = "CanViewProductionProductPackingMaterials";
+    /// <summary>Add packing materials.</summary>
+    public const string CanAddProductionProductPackingMaterials = "CanAddProductionProductPackingMaterials";
+    /// <summary>Edit packing materials.</summary>
+    public const string CanEditProductionProductPackingMaterials = "CanEditProductionProductPackingMaterials";
+    /// <summary>Remove packing materials.</summary>
+    public const string CanDeleteProductionProductPackingMaterials = "CanDeleteProductionProductPackingMaterials";
+    /// <summary>Import packing materials.</summary>
+    public const string CanImportProductionProductPackingMaterials = "CanImportProductionProductPackingMaterials";
+    /// <summary>View packing styles.</summary>
+    public const string CanViewProductionProductPackingStyles = "CanViewProductionProductPackingStyles";
+    /// <summary>Add packing styles.</summary>
+    public const string CanAddProductionProductPackingStyles = "CanAddProductionProductPackingStyles";
+    /// <summary>Edit packing styles.</summary>
+    public const string CanEditProductionProductPackingStyles = "CanEditProductionProductPackingStyles";
+    /// <summary>Remove packing styles.</summary>
+    public const string CanDeleteProductionProductPackingStyles = "CanDeleteProductionProductPackingStyles";
+    /// <summary>View the packing order.</summary>
+    public const string CanViewProductionProductPackingOrder = "CanViewProductionProductPackingOrder";
+    /// <summary>Edit the packing order.</summary>
+    public const string CanEditProductionProductPackingOrder = "CanEditProductionProductPackingOrder";
+    /// <summary>View the production procedure.</summary>
+    public const string CanViewProductionProductProcedure = "CanViewProductionProductProcedure";
+    /// <summary>Add procedure steps.</summary>
+    public const string CanAddProductionProductProcedure = "CanAddProductionProductProcedure";
+    /// <summary>Edit procedure steps.</summary>
+    public const string CanEditProductionProductProcedure = "CanEditProductionProductProcedure";
+    /// <summary>Remove procedure steps.</summary>
+    public const string CanDeleteProductionProductProcedure = "CanDeleteProductionProductProcedure";
+    /// <summary>View the product specification on the product.</summary>
+    public const string CanViewProductionProductSpecifications = "CanViewProductionProductSpecifications";
+    /// <summary>View the product STPs on the product.</summary>
+    public const string CanViewProductionProductStps = "CanViewProductionProductStps";
+    /// <summary>View the product ARDs on the product.</summary>
+    public const string CanViewProductionProductArds = "CanViewProductionProductArds";
+    /// <summary>Print a product.</summary>
+    public const string CanPrintProductionProduct = "CanPrintProductionProduct";
+    /// <summary>View the QA product list.</summary>
+    public const string CanViewQaProducts = "CanViewQaProducts";
+    /// <summary>View a product's general information in QA.</summary>
+    public const string CanViewQaProductInfo = "CanViewQaProductInfo";
+    /// <summary>Edit a product's general information in QA.</summary>
+    public const string CanEditQaProductInfo = "CanEditQaProductInfo";
+    /// <summary>View the bill of materials in QA.</summary>
+    public const string CanViewQaProductBom = "CanViewQaProductBom";
+    /// <summary>Add bill of materials lines in QA.</summary>
+    public const string CanAddQaProductBom = "CanAddQaProductBom";
+    /// <summary>Edit bill of materials lines in QA.</summary>
+    public const string CanEditQaProductBom = "CanEditQaProductBom";
+    /// <summary>Remove bill of materials lines in QA.</summary>
+    public const string CanDeleteQaProductBom = "CanDeleteQaProductBom";
+    /// <summary>Archive the active bill of materials in QA.</summary>
+    public const string CanArchiveQaProductBom = "CanArchiveQaProductBom";
+    /// <summary>View packing materials in QA.</summary>
+    public const string CanViewQaProductPackingMaterials = "CanViewQaProductPackingMaterials";
+    /// <summary>Add packing materials in QA.</summary>
+    public const string CanAddQaProductPackingMaterials = "CanAddQaProductPackingMaterials";
+    /// <summary>Edit packing materials in QA.</summary>
+    public const string CanEditQaProductPackingMaterials = "CanEditQaProductPackingMaterials";
+    /// <summary>Remove packing materials in QA.</summary>
+    public const string CanDeleteQaProductPackingMaterials = "CanDeleteQaProductPackingMaterials";
+    /// <summary>View packing styles in QA.</summary>
+    public const string CanViewQaProductPackingStyles = "CanViewQaProductPackingStyles";
+    /// <summary>Add packing styles in QA.</summary>
+    public const string CanAddQaProductPackingStyles = "CanAddQaProductPackingStyles";
+    /// <summary>Edit packing styles in QA.</summary>
+    public const string CanEditQaProductPackingStyles = "CanEditQaProductPackingStyles";
+    /// <summary>Remove packing styles in QA.</summary>
+    public const string CanDeleteQaProductPackingStyles = "CanDeleteQaProductPackingStyles";
+    /// <summary>View the packing order in QA.</summary>
+    public const string CanViewQaProductPackingOrder = "CanViewQaProductPackingOrder";
+    /// <summary>Edit the packing order in QA.</summary>
+    public const string CanEditQaProductPackingOrder = "CanEditQaProductPackingOrder";
+    /// <summary>View the procedure in QA.</summary>
+    public const string CanViewQaProductProcedure = "CanViewQaProductProcedure";
+    /// <summary>Add procedure steps in QA.</summary>
+    public const string CanAddQaProductProcedure = "CanAddQaProductProcedure";
+    /// <summary>Edit procedure steps in QA.</summary>
+    public const string CanEditQaProductProcedure = "CanEditQaProductProcedure";
+    /// <summary>Remove procedure steps in QA.</summary>
+    public const string CanDeleteQaProductProcedure = "CanDeleteQaProductProcedure";
+    /// <summary>View the product specification in QA.</summary>
+    public const string CanViewQaProductSpecifications = "CanViewQaProductSpecifications";
+    /// <summary>View the product ARDs in QA.</summary>
+    public const string CanViewQaProductArds = "CanViewQaProductArds";
+    /// <summary>View the product STPs in QA.</summary>
+    public const string CanViewQaProductStps = "CanViewQaProductStps";
+    /// <summary>View the finished goods product list.</summary>
+    public const string CanViewFgProducts = "CanViewFgProducts";
     /// <summary>Release a material batch whose QC analysis is complete (PUT material/batch/{id}/approve).</summary>
     public const string CanApproveMaterialBatch = "CanApproveMaterialBatch";
     /// <summary>Ask for a product analytical test request to be retested.</summary>
@@ -271,6 +456,12 @@ public static class PermissionKeys
     public const string CanChangeSupplySourceForeignPurchaseOrderItem =
         "CanChangeSupplySourceForeignPurchaseOrderItem";
     public const string CanReviseLocalPurchaseOrder = "CanReviseLocalPurchaseOrder";
+    /// <summary>Cancel a foreign or local purchase order (audit phase 3; granted to roles that could revise orders).</summary>
+    public const string CanCancelForeignPurchaseOrder = "CanCancelForeignPurchaseOrder";
+    public const string CanCancelLocalPurchaseOrder = "CanCancelLocalPurchaseOrder";
+    /// <summary>Delete a foreign or local purchase order (audit phase 3; granted to nobody until assigned).</summary>
+    public const string CanDeleteForeignPurchaseOrder = "CanDeleteForeignPurchaseOrder";
+    public const string CanDeleteLocalPurchaseOrder = "CanDeleteLocalPurchaseOrder";
     public const string CanDeleteLocalPurchaseOrderItem = "CanDeleteLocalPurchaseOrderItem";
     public const string CanReAssignLocalPurchaseOrderItem = "CanReAssignLocalPurchaseOrderItem";
     public const string CanChangeSupplySourceLocalPurchaseOrderItem =
@@ -390,10 +581,9 @@ public static class PermissionKeys
     public const string CanReconcileStockDiscrepancy = "CanReconcileStockDiscrepancy";
 
     // Production
-    public const string CanViewRawMaterialRequisitionsForProduction =
-        "CanViewRawMaterialRequisitions";
-    public const string CanViewPackagingMaterialRequisitionsForProduction =
-        "CanViewPackagingMaterialRequisitions";
+    // Production's requisition list has its own keys; they used to be aliases of the Warehouse issue-list keys.
+    public const string CanViewRawMaterialRequisitionsForProduction = "CanViewProductionRawMaterialRequisitions";
+    public const string CanViewPackagingMaterialRequisitionsForProduction = "CanViewProductionPackagingMaterialRequisitions";
     public const string CanViewRawMaterialRequisitionsForCreation =
         "CanViewRawMaterialRequisitionsForCreation";
     public const string CanCreateRawMaterialRequisitions = "CanCreateRawMaterialRequisitions";
@@ -410,6 +600,12 @@ public static class PermissionKeys
     public const string CanRepairIssuedPackaging = "CanRepairIssuedPackaging";
     public const string CanUnstartProduction = "CanUnstartProduction";
     public const string CanRepairStockReservations = "CanRepairStockReservations";
+    // White Placebo preparation: one key per task (view, recipe, request, issue, record output).
+    public const string CanViewWhitePlacebo = "CanViewWhitePlacebo";
+    public const string CanEditWhitePlaceboRecipe = "CanEditWhitePlaceboRecipe";
+    public const string CanRequestWhitePlaceboIngredients = "CanRequestWhitePlaceboIngredients";
+    public const string CanIssueWhitePlaceboIngredients = "CanIssueWhitePlaceboIngredients";
+    public const string CanRecordWhitePlaceboOutput = "CanRecordWhitePlaceboOutput";
     public const string CanRepairBom = "CanRepairBom";
     public const string CanRepairPackaging = "CanRepairPackaging";
     public const string CanViewProductSchedules = "CanViewProductSchedules";
@@ -516,6 +712,24 @@ public static class PermissionKeys
     // Quality Assurance
     public const string CanViewIssuedBmrBprs = "CanViewIssuedBmrBprs";
     public const string CanIssueBmr = "CanIssueBmr";
+    /// <summary>Delete a production schedule.</summary>
+    public const string CanDeleteProductSchedule = "CanDeleteProductSchedule";
+    /// <summary>Start production of a scheduled batch.</summary>
+    public const string CanStartProduction = "CanStartProduction";
+    /// <summary>Start or complete a production step on the batch board.</summary>
+    public const string CanUpdateProductionStep = "CanUpdateProductionStep";
+    /// <summary>Return materials before or after production.</summary>
+    public const string CanReturnProductionMaterials = "CanReturnProductionMaterials";
+    /// <summary>Record, change or remove a batch's final packing.</summary>
+    public const string CanRecordFinalPacking = "CanRecordFinalPacking";
+    /// <summary>Raise or change a finished goods transfer note.</summary>
+    public const string CanCreateFgtn = "CanCreateFgtn";
+    /// <summary>Request extra packing material for a batch.</summary>
+    public const string CanRequestExtraPacking = "CanRequestExtraPacking";
+    /// <summary>Create, change or issue a batch packaging record.</summary>
+    public const string CanIssueBpr = "CanIssueBpr";
+    /// <summary>Complete a material return note.</summary>
+    public const string CanCompleteMaterialReturnNote = "CanCompleteMaterialReturnNote";
     public const string CanViewIssuedBmrRecords = "CanViewIssuedBmrRecords";
     public const string CanCorrectIssuedBmrBatchNumber = "CanCorrectIssuedBmrBatchNumber";
     public const string CanRequestIssuedBmrRevision = "CanRequestIssuedBmrRevision";
@@ -591,6 +805,22 @@ public static class PermissionKeys
     public const string CanConvertCustomerQuotation = "ConvertCustomerQuotation";
     public const string CanViewOrder = "CanViewOrder";
     public const string CanCreateOrders = "CanCreateOrders";
+    /// <summary>Change a production order.</summary>
+    public const string CanEditOrder = "CanEditOrder";
+    /// <summary>Delete a production order.</summary>
+    public const string CanDeleteOrder = "CanDeleteOrder";
+    /// <summary>Delete a proforma invoice.</summary>
+    public const string CanDeleteProformaInvoice = "CanDeleteProformaInvoice";
+    /// <summary>Create or change a customer invoice.</summary>
+    public const string CanCreateInvoice = "CanCreateInvoice";
+    /// <summary>Delete a customer invoice.</summary>
+    public const string CanDeleteInvoice = "CanDeleteInvoice";
+    /// <summary>Mark an allocation as loaded.</summary>
+    public const string CanLoadFinishedGoods = "CanLoadFinishedGoods";
+    /// <summary>Mark an allocation as delivered.</summary>
+    public const string CanDeliverFinishedGoods = "CanDeliverFinishedGoods";
+    /// <summary>Send a waybill to the customer.</summary>
+    public const string CanSendWaybillToCustomer = "CanSendWaybillToCustomer";
     public const string CanGeneratePackingList = "CanGeneratePackingList";
     public const string CanViewPackingList = "CanViewPackingList";
     public const string CanGenerateProformaInvoice = "CanGenerateProformaInvoice";
@@ -836,6 +1066,13 @@ public static class PermissionKeys
     public const string CanCreateLeaveType = "CanCreateLeaveType";
     public const string CanEditLeaveType = "CanEditLeaveType";
     public const string CanDeleteLeaveType = "CanDeleteLeaveType";
+    public const string CanCreateLeaveEntitlement = "CanCreateLeaveEntitlement";
+    public const string CanEditLeaveEntitlement = "CanEditLeaveEntitlement";
+    public const string CanDeleteLeaveEntitlement = "CanDeleteLeaveEntitlement";
+    /// <summary>Delete a leave request record (not cancel or recall).</summary>
+    public const string CanDeleteLeaveRequest = "CanDeleteLeaveRequest";
+    /// <summary>Delete an employee record.</summary>
+    public const string CanDeleteEmployee = "CanDeleteEmployee";
     public const string CanViewAttendanceReportUpload = "CanViewAttendanceReportUpload";
     public const string CanSubmitAttendanceReportUpload = "CanSubmitAttendanceReportUpload";
     public const string CanCancelAttendanceReportUpload = "CanCancelAttendanceReportUpload";
@@ -1014,6 +1251,10 @@ public static class PermissionKeys
     public const string CanManageSupplierContracts = "CanManageSupplierContracts";
     public const string CanViewSupplierSpend = "CanViewSupplierSpend";
     public const string CanViewWarehouses = "CanViewWarehouses";
+    /// <summary>Create a warehouse. New in the permissions audit (phase 3); granted to nobody until assigned.</summary>
+    public const string CanCreateWarehouse = "CanCreateWarehouse";
+    public const string CanEditWarehouse = "CanEditWarehouse";
+    public const string CanDeleteWarehouse = "CanDeleteWarehouse";
     public const string CanViewLocations = "CanViewLocations";
     public const string CanAddNewLocation = "CanAddNewLocation";
     public const string CanEditLocation = "CanEditLocation";
@@ -1104,6 +1345,90 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanCreateArrivalLocation);
+        addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanEditArrivalLocation);
+        addPermission(PermissionModules.Warehouse, "Arrival Locations", PermissionKeys.CanConfirmMaterialArrival);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanCreateMaterialBatch);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanImportMaterialBatches);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanMoveMaterialBatch);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanConsumeMaterialAtLocation);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanChangeMaterialBatchStatus);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanRequestMaterialBatchRetest);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanCompleteMaterialBatchRetest);
+        addPermission(PermissionModules.Warehouse, "Material Batches", PermissionKeys.CanFixStockInconsistencies);
+        addPermission(PermissionModules.Procurement, "Purchase Requisition Sourcing", PermissionKeys.CanEditSourceRequisition);
+        addPermission(PermissionModules.Procurement, "Purchase Requisition Sourcing", PermissionKeys.CanDeleteSourceRequisition);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewHrDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewHrExecutiveSummary);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewProductionHealthDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewFgtnDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewWarehouseDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewInventoryCommandCenter);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewLogisticsDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewProcurementDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewQcDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewQaDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewServicesDashboard);
+        addPermission(PermissionModules.Reports, "Dashboards", PermissionKeys.CanViewStoresDashboard);
+        // Products (audit phase 2): Production authors, QA maintains, the FG warehouse lists.
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProducts);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanImportProductionProducts);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanExportProductionProducts);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductInfo);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanCreateProductionProduct);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanEditProductionProductInfo);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanDeleteProductionProduct);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductBom);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanAddProductionProductBom);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanEditProductionProductBom);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanDeleteProductionProductBom);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanArchiveProductionProductBom);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanImportProductionProductBom);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductPackingMaterials);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanAddProductionProductPackingMaterials);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanEditProductionProductPackingMaterials);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanDeleteProductionProductPackingMaterials);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanImportProductionProductPackingMaterials);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductPackingStyles);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanAddProductionProductPackingStyles);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanEditProductionProductPackingStyles);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanDeleteProductionProductPackingStyles);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductPackingOrder);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanEditProductionProductPackingOrder);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductProcedure);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanAddProductionProductProcedure);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanEditProductionProductProcedure);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanDeleteProductionProductProcedure);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductSpecifications);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductStps);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductArds);
+        addPermission(PermissionModules.Production, "Products", PermissionKeys.CanPrintProductionProduct);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProducts);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductInfo);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductInfo);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductBom);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanAddQaProductBom);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductBom);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanDeleteQaProductBom);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanArchiveQaProductBom);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductPackingMaterials);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanAddQaProductPackingMaterials);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductPackingMaterials);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanDeleteQaProductPackingMaterials);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductPackingStyles);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanAddQaProductPackingStyles);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductPackingStyles);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanDeleteQaProductPackingStyles);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductPackingOrder);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductPackingOrder);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductProcedure);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanAddQaProductProcedure);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductProcedure);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanDeleteQaProductProcedure);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductSpecifications);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductArds);
+        addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductStps);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Products", PermissionKeys.CanViewFgProducts);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanApproveMaterialBatch);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanRequestRetestProductTest);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanCompleteRetestProductTest);
@@ -1376,6 +1701,10 @@ public static class PermissionUtils
             PermissionSubmodules.PurchaseOrderListPage,
             PermissionKeys.CanReviseLocalPurchaseOrder
         );
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanCancelForeignPurchaseOrder);
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanCancelLocalPurchaseOrder);
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanDeleteForeignPurchaseOrder);
+        addPermission(PermissionModules.Procurement, PermissionSubmodules.PurchaseOrderListPage, PermissionKeys.CanDeleteLocalPurchaseOrder);
         addPermission(
             PermissionModules.Procurement,
             PermissionSubmodules.PurchaseOrderListPage,
@@ -1800,6 +2129,11 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.MaterialReturnNote,
+            PermissionKeys.CanCompleteMaterialReturnNote
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.MaterialReturnNote,
             PermissionKeys.CanAssignPackagingMaterialsStockToShelves
         );
         addPermission(
@@ -1947,6 +2281,31 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Production,
             PermissionSubmodules.Products,
+            PermissionKeys.CanRequestExtraPacking
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanCreateFgtn
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanRecordFinalPacking
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanReturnProductionMaterials
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
+            PermissionKeys.CanUpdateProductionStep
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.Products,
             PermissionKeys.CanCreateNewProductionPlan
         );
         addPermission(
@@ -1963,6 +2322,11 @@ public static class PermissionUtils
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairIssuedPackaging);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanUnstartProduction);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairStockReservations);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanViewWhitePlacebo);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanEditWhitePlaceboRecipe);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanRequestWhitePlaceboIngredients);
+        addPermission(PermissionModules.Production, PermissionSubmodules.WhitePlacebo, PermissionKeys.CanRecordWhitePlaceboOutput);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanIssueWhitePlaceboIngredients);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairBom);
         addPermission(PermissionModules.Production, PermissionSubmodules.Products, PermissionKeys.CanRepairPackaging);
         addPermission(
@@ -1989,6 +2353,16 @@ public static class PermissionUtils
             PermissionModules.Production,
             PermissionSubmodules.ProductSchedule,
             PermissionKeys.CanRemoveProductsFromProductSchedule
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanStartProduction
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.ProductSchedule,
+            PermissionKeys.CanDeleteProductSchedule
         );
         addPermission(
             PermissionModules.Production,
@@ -2036,6 +2410,26 @@ public static class PermissionUtils
             PermissionModules.QualityControl,
             PermissionSubmodules.GoodsReceiptNote,
             PermissionKeys.CanCheckRawMaterialTestResult
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanCreateUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanEditUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanDeleteUniformityOfWeight
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.GoodsReceiptNote,
+            PermissionKeys.CanSubmitUniformityOfWeight
         );
         addPermission(
             PermissionModules.QualityControl,
@@ -2091,6 +2485,21 @@ public static class PermissionUtils
             PermissionModules.QualityControl,
             PermissionSubmodules.AnalyticalTestRequestProducts,
             PermissionKeys.CanAssignProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanEditAnalyticalTestRequest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanChangeAnalyticalTestRequestStatus
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanDeleteAnalyticalTestRequest
         );
         addPermission(
             PermissionModules.QualityControl,
@@ -2317,6 +2726,11 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.QualityAssurance,
+            PermissionSubmodules.IssueBmr,
+            PermissionKeys.CanIssueBpr
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
             PermissionSubmodules.AnalyticalTestRequests,
             PermissionKeys.CanViewAnalyticalTestRequests
         );
@@ -2458,6 +2872,16 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanEditOrder
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanDeleteOrder
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
             PermissionKeys.CanGeneratePackingList
         );
         addPermission(
@@ -2482,6 +2906,21 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanDeleteProformaInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanCreateInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProformaInvoice,
+            PermissionKeys.CanDeleteInvoice
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.Invoice,
             PermissionKeys.CanViewInvoice
         );
@@ -2494,6 +2933,21 @@ public static class PermissionUtils
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.Allocations,
             PermissionKeys.CanCreateWaybillForFgw
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanLoadFinishedGoods
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanDeliverFinishedGoods
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.Allocations,
+            PermissionKeys.CanSendWaybillToCustomer
         );
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanEditWaybillForFgw);
         addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Allocations, PermissionKeys.CanDeleteWaybillForFgw);
@@ -3316,6 +3770,11 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.HumanResources,
             PermissionSubmodules.EmployeeManagement,
+            PermissionKeys.CanDeleteEmployee
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.EmployeeManagement,
             PermissionKeys.CanViewEmployeeDetails
         );
         addPermission(
@@ -3395,6 +3854,11 @@ public static class PermissionUtils
         );
         addPermission(
             PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanDeleteLeaveRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
             PermissionSubmodules.LeaveTypeConfiguration,
             PermissionKeys.CanViewLeaveType
         );
@@ -3412,6 +3876,21 @@ public static class PermissionUtils
             PermissionModules.HumanResources,
             PermissionSubmodules.LeaveTypeConfiguration,
             PermissionKeys.CanDeleteLeaveType
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanCreateLeaveEntitlement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanEditLeaveEntitlement
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveTypeConfiguration,
+            PermissionKeys.CanDeleteLeaveEntitlement
         );
         addPermission(
             PermissionModules.HumanResources,
@@ -4278,6 +4757,9 @@ public static class PermissionUtils
             PermissionSubmodules.Warehouses,
             PermissionKeys.CanViewWarehouses
         );
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanCreateWarehouse);
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanEditWarehouse);
+        addPermission(PermissionModules.InventoryManagement, PermissionSubmodules.Warehouses, PermissionKeys.CanDeleteWarehouse);
         addPermission(
             PermissionModules.InventoryManagement,
             PermissionSubmodules.Locations,

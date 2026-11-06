@@ -7,6 +7,587 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Warehouse",
+    "submodule": "Arrival Locations",
+    "key": "CanCreateArrivalLocation",
+    "name": "Can Create Arrival Location",
+    "description": "Allows the user to  create arrival location."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Arrival Locations",
+    "key": "CanEditArrivalLocation",
+    "name": "Can Edit Arrival Location",
+    "description": "Allows the user to  edit arrival location."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Arrival Locations",
+    "key": "CanConfirmMaterialArrival",
+    "name": "Can Confirm Material Arrival",
+    "description": "Allows the user to  confirm material arrival."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanCreateMaterialBatch",
+    "name": "Can Create Material Batch",
+    "description": "Allows the user to  create material batch."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanImportMaterialBatches",
+    "name": "Can Import Material Batches",
+    "description": "Allows the user to  import material batches."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanMoveMaterialBatch",
+    "name": "Can Move Material Batch",
+    "description": "Allows the user to  move material batch."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanConsumeMaterialAtLocation",
+    "name": "Can Consume Material At Location",
+    "description": "Allows the user to  consume material at location."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanChangeMaterialBatchStatus",
+    "name": "Can Change Material Batch Status",
+    "description": "Allows the user to  change material batch status."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanRequestMaterialBatchRetest",
+    "name": "Can Request Material Batch Retest",
+    "description": "Allows the user to  request material batch retest."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanCompleteMaterialBatchRetest",
+    "name": "Can Complete Material Batch Retest",
+    "description": "Allows the user to  complete material batch retest."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Batches",
+    "key": "CanFixStockInconsistencies",
+    "name": "Can Fix Stock Inconsistencies",
+    "description": "Allows the user to  fix stock inconsistencies."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Requisition Sourcing",
+    "key": "CanEditSourceRequisition",
+    "name": "Can Edit Source Requisition",
+    "description": "Allows the user to  edit source requisition."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Requisition Sourcing",
+    "key": "CanDeleteSourceRequisition",
+    "name": "Can Delete Source Requisition",
+    "description": "Allows the user to  delete source requisition."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewHrDashboard",
+    "name": "Can View Hr Dashboard",
+    "description": "Allows the user to  view hr dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewHrExecutiveSummary",
+    "name": "Can View Hr Executive Summary",
+    "description": "Allows the user to  view hr executive summary."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewProductionHealthDashboard",
+    "name": "Can View Production Health Dashboard",
+    "description": "Allows the user to  view production health dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewFgtnDashboard",
+    "name": "Can View Fgtn Dashboard",
+    "description": "Allows the user to  view fgtn dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewWarehouseDashboard",
+    "name": "Can View Warehouse Dashboard",
+    "description": "Allows the user to  view warehouse dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewInventoryCommandCenter",
+    "name": "Can View Inventory Command Center",
+    "description": "Allows the user to  view inventory command center."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewLogisticsDashboard",
+    "name": "Can View Logistics Dashboard",
+    "description": "Allows the user to  view logistics dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewProcurementDashboard",
+    "name": "Can View Procurement Dashboard",
+    "description": "Allows the user to  view procurement dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewQcDashboard",
+    "name": "Can View Qc Dashboard",
+    "description": "Allows the user to  view qc dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewQaDashboard",
+    "name": "Can View Qa Dashboard",
+    "description": "Allows the user to  view qa dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewServicesDashboard",
+    "name": "Can View Services Dashboard",
+    "description": "Allows the user to  view services dashboard."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Dashboards",
+    "key": "CanViewStoresDashboard",
+    "name": "Can View Stores Dashboard",
+    "description": "Allows the user to  view stores dashboard."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProducts",
+    "name": "Can View Production Products",
+    "description": "Allows the user to  view production products."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanImportProductionProducts",
+    "name": "Can Import Production Products",
+    "description": "Allows the user to  import production products."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanExportProductionProducts",
+    "name": "Can Export Production Products",
+    "description": "Allows the user to  export production products."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductInfo",
+    "name": "Can View Production Product Info",
+    "description": "Allows the user to  view production product info."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanCreateProductionProduct",
+    "name": "Can Create Production Product",
+    "description": "Allows the user to  create production product."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanEditProductionProductInfo",
+    "name": "Can Edit Production Product Info",
+    "description": "Allows the user to  edit production product info."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanDeleteProductionProduct",
+    "name": "Can Delete Production Product",
+    "description": "Allows the user to  delete production product."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductBom",
+    "name": "Can View Production Product Bom",
+    "description": "Allows the user to  view production product bom."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanAddProductionProductBom",
+    "name": "Can Add Production Product Bom",
+    "description": "Allows the user to  add production product bom."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanEditProductionProductBom",
+    "name": "Can Edit Production Product Bom",
+    "description": "Allows the user to  edit production product bom."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanDeleteProductionProductBom",
+    "name": "Can Delete Production Product Bom",
+    "description": "Allows the user to  delete production product bom."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanArchiveProductionProductBom",
+    "name": "Can Archive Production Product Bom",
+    "description": "Allows the user to  archive production product bom."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanImportProductionProductBom",
+    "name": "Can Import Production Product Bom",
+    "description": "Allows the user to  import production product bom."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductPackingMaterials",
+    "name": "Can View Production Product Packing Materials",
+    "description": "Allows the user to  view production product packing materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanAddProductionProductPackingMaterials",
+    "name": "Can Add Production Product Packing Materials",
+    "description": "Allows the user to  add production product packing materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanEditProductionProductPackingMaterials",
+    "name": "Can Edit Production Product Packing Materials",
+    "description": "Allows the user to  edit production product packing materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanDeleteProductionProductPackingMaterials",
+    "name": "Can Delete Production Product Packing Materials",
+    "description": "Allows the user to  delete production product packing materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanImportProductionProductPackingMaterials",
+    "name": "Can Import Production Product Packing Materials",
+    "description": "Allows the user to  import production product packing materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductPackingStyles",
+    "name": "Can View Production Product Packing Styles",
+    "description": "Allows the user to  view production product packing styles."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanAddProductionProductPackingStyles",
+    "name": "Can Add Production Product Packing Styles",
+    "description": "Allows the user to  add production product packing styles."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanEditProductionProductPackingStyles",
+    "name": "Can Edit Production Product Packing Styles",
+    "description": "Allows the user to  edit production product packing styles."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanDeleteProductionProductPackingStyles",
+    "name": "Can Delete Production Product Packing Styles",
+    "description": "Allows the user to  delete production product packing styles."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductPackingOrder",
+    "name": "Can View Production Product Packing Order",
+    "description": "Allows the user to  view production product packing order."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanEditProductionProductPackingOrder",
+    "name": "Can Edit Production Product Packing Order",
+    "description": "Allows the user to  edit production product packing order."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductProcedure",
+    "name": "Can View Production Product Procedure",
+    "description": "Allows the user to  view production product procedure."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanAddProductionProductProcedure",
+    "name": "Can Add Production Product Procedure",
+    "description": "Allows the user to  add production product procedure."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanEditProductionProductProcedure",
+    "name": "Can Edit Production Product Procedure",
+    "description": "Allows the user to  edit production product procedure."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanDeleteProductionProductProcedure",
+    "name": "Can Delete Production Product Procedure",
+    "description": "Allows the user to  delete production product procedure."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductSpecifications",
+    "name": "Can View Production Product Specifications",
+    "description": "Allows the user to  view production product specifications."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductStps",
+    "name": "Can View Production Product Stps",
+    "description": "Allows the user to  view production product stps."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanViewProductionProductArds",
+    "name": "Can View Production Product Ards",
+    "description": "Allows the user to  view production product ards."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanPrintProductionProduct",
+    "name": "Can Print Production Product",
+    "description": "Allows the user to  print production product."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProducts",
+    "name": "Can View Qa Products",
+    "description": "Allows the user to  view qa products."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductInfo",
+    "name": "Can View Qa Product Info",
+    "description": "Allows the user to  view qa product info."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanEditQaProductInfo",
+    "name": "Can Edit Qa Product Info",
+    "description": "Allows the user to  edit qa product info."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductBom",
+    "name": "Can View Qa Product Bom",
+    "description": "Allows the user to  view qa product bom."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanAddQaProductBom",
+    "name": "Can Add Qa Product Bom",
+    "description": "Allows the user to  add qa product bom."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanEditQaProductBom",
+    "name": "Can Edit Qa Product Bom",
+    "description": "Allows the user to  edit qa product bom."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanDeleteQaProductBom",
+    "name": "Can Delete Qa Product Bom",
+    "description": "Allows the user to  delete qa product bom."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanArchiveQaProductBom",
+    "name": "Can Archive Qa Product Bom",
+    "description": "Allows the user to  archive qa product bom."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductPackingMaterials",
+    "name": "Can View Qa Product Packing Materials",
+    "description": "Allows the user to  view qa product packing materials."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanAddQaProductPackingMaterials",
+    "name": "Can Add Qa Product Packing Materials",
+    "description": "Allows the user to  add qa product packing materials."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanEditQaProductPackingMaterials",
+    "name": "Can Edit Qa Product Packing Materials",
+    "description": "Allows the user to  edit qa product packing materials."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanDeleteQaProductPackingMaterials",
+    "name": "Can Delete Qa Product Packing Materials",
+    "description": "Allows the user to  delete qa product packing materials."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductPackingStyles",
+    "name": "Can View Qa Product Packing Styles",
+    "description": "Allows the user to  view qa product packing styles."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanAddQaProductPackingStyles",
+    "name": "Can Add Qa Product Packing Styles",
+    "description": "Allows the user to  add qa product packing styles."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanEditQaProductPackingStyles",
+    "name": "Can Edit Qa Product Packing Styles",
+    "description": "Allows the user to  edit qa product packing styles."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanDeleteQaProductPackingStyles",
+    "name": "Can Delete Qa Product Packing Styles",
+    "description": "Allows the user to  delete qa product packing styles."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductPackingOrder",
+    "name": "Can View Qa Product Packing Order",
+    "description": "Allows the user to  view qa product packing order."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanEditQaProductPackingOrder",
+    "name": "Can Edit Qa Product Packing Order",
+    "description": "Allows the user to  edit qa product packing order."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductProcedure",
+    "name": "Can View Qa Product Procedure",
+    "description": "Allows the user to  view qa product procedure."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanAddQaProductProcedure",
+    "name": "Can Add Qa Product Procedure",
+    "description": "Allows the user to  add qa product procedure."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanEditQaProductProcedure",
+    "name": "Can Edit Qa Product Procedure",
+    "description": "Allows the user to  edit qa product procedure."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanDeleteQaProductProcedure",
+    "name": "Can Delete Qa Product Procedure",
+    "description": "Allows the user to  delete qa product procedure."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductSpecifications",
+    "name": "Can View Qa Product Specifications",
+    "description": "Allows the user to  view qa product specifications."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductArds",
+    "name": "Can View Qa Product Ards",
+    "description": "Allows the user to  view qa product ards."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Products",
+    "key": "CanViewQaProductStps",
+    "name": "Can View Qa Product Stps",
+    "description": "Allows the user to  view qa product stps."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Products",
+    "key": "CanViewFgProducts",
+    "name": "Can View Fg Products",
+    "description": "Allows the user to  view fg products."
+  },
+  {
     "module": "Quality Control",
     "submodule": "Goods Receipt Note (GRN)",
     "key": "CanApproveMaterialBatch",
@@ -26,6 +607,13 @@
     "key": "CanCompleteRetestProductTest",
     "name": "Can Complete Retest Product Test",
     "description": "Allows the user to  complete retest product test."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Production Material Forecast",
+    "key": "CanViewProductionScheduleMaterialForecast",
+    "name": "Can View Production Schedule Material Forecast",
+    "description": "Allows the user to  view production schedule material forecast."
   },
   {
     "module": "Settings",
@@ -418,6 +1006,34 @@
     "key": "CanReviseLocalPurchaseOrder",
     "name": "Can Revise Local Purchase Order",
     "description": "Allows the user to  revise local purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanCancelForeignPurchaseOrder",
+    "name": "Can Cancel Foreign Purchase Order",
+    "description": "Allows the user to  cancel foreign purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanCancelLocalPurchaseOrder",
+    "name": "Can Cancel Local Purchase Order",
+    "description": "Allows the user to  cancel local purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanDeleteForeignPurchaseOrder",
+    "name": "Can Delete Foreign Purchase Order",
+    "description": "Allows the user to  delete foreign purchase order."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Purchase Order List Page",
+    "key": "CanDeleteLocalPurchaseOrder",
+    "name": "Can Delete Local Purchase Order",
+    "description": "Allows the user to  delete local purchase order."
   },
   {
     "module": "Procurement",
@@ -1024,6 +1640,13 @@
   {
     "module": "Warehouse",
     "submodule": "Material Return Note",
+    "key": "CanCompleteMaterialReturnNote",
+    "name": "Can Complete Material Return Note",
+    "description": "Allows the user to  complete material return note."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Material Return Note",
     "key": "CanAssignPackagingMaterialsStockToShelves",
     "name": "Can Assign Packaging Materials Stock To Shelves",
     "description": "Allows the user to  assign packaging materials stock to shelves."
@@ -1192,16 +1815,16 @@
   {
     "module": "Production",
     "submodule": "REQUISITIONS",
-    "key": "CanViewRawMaterialRequisitions",
-    "name": "Can View Raw Material Requisitions",
-    "description": "Allows the user to  view raw material requisitions."
+    "key": "CanViewProductionRawMaterialRequisitions",
+    "name": "Can View Production Raw Material Requisitions",
+    "description": "Allows the user to  view production raw material requisitions."
   },
   {
     "module": "Production",
     "submodule": "REQUISITIONS",
-    "key": "CanViewPackagingMaterialRequisitions",
-    "name": "Can View Packaging Material Requisitions",
-    "description": "Allows the user to  view packaging material requisitions."
+    "key": "CanViewProductionPackagingMaterialRequisitions",
+    "name": "Can View Production Packaging Material Requisitions",
+    "description": "Allows the user to  view production packaging material requisitions."
   },
   {
     "module": "Production",
@@ -1244,6 +1867,41 @@
     "key": "CanViewPlannedProducts",
     "name": "Can View Planned Products",
     "description": "Allows the user to  view planned products."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanRequestExtraPacking",
+    "name": "Can Request Extra Packing",
+    "description": "Allows the user to  request extra packing."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanCreateFgtn",
+    "name": "Can Create Fgtn",
+    "description": "Allows the user to  create fgtn."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanRecordFinalPacking",
+    "name": "Can Record Final Packing",
+    "description": "Allows the user to  record final packing."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanReturnProductionMaterials",
+    "name": "Can Return Production Materials",
+    "description": "Allows the user to  return production materials."
+  },
+  {
+    "module": "Production",
+    "submodule": "Products",
+    "key": "CanUpdateProductionStep",
+    "name": "Can Update Production Step",
+    "description": "Allows the user to  update production step."
   },
   {
     "module": "Production",
@@ -1296,6 +1954,41 @@
   },
   {
     "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanViewWhitePlacebo",
+    "name": "Can View White Placebo",
+    "description": "Allows the user to  view white placebo."
+  },
+  {
+    "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanEditWhitePlaceboRecipe",
+    "name": "Can Edit White Placebo Recipe",
+    "description": "Allows the user to  edit white placebo recipe."
+  },
+  {
+    "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanRequestWhitePlaceboIngredients",
+    "name": "Can Request White Placebo Ingredients",
+    "description": "Allows the user to  request white placebo ingredients."
+  },
+  {
+    "module": "Production",
+    "submodule": "White Placebo",
+    "key": "CanRecordWhitePlaceboOutput",
+    "name": "Can Record White Placebo Output",
+    "description": "Allows the user to  record white placebo output."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanIssueWhitePlaceboIngredients",
+    "name": "Can Issue White Placebo Ingredients",
+    "description": "Allows the user to  issue white placebo ingredients."
+  },
+  {
+    "module": "Production",
     "submodule": "Products",
     "key": "CanRepairBom",
     "name": "Can Repair Bom",
@@ -1342,6 +2035,20 @@
     "key": "CanRemoveProductsFromProductSchedule",
     "name": "Can Remove Products From Product Schedule",
     "description": "Allows the user to  remove products from product schedule."
+  },
+  {
+    "module": "Production",
+    "submodule": "Product Schedule",
+    "key": "CanStartProduction",
+    "name": "Can Start Production",
+    "description": "Allows the user to  start production."
+  },
+  {
+    "module": "Production",
+    "submodule": "Product Schedule",
+    "key": "CanDeleteProductSchedule",
+    "name": "Can Delete Product Schedule",
+    "description": "Allows the user to  delete product schedule."
   },
   {
     "module": "Production",
@@ -1405,6 +2112,34 @@
     "key": "CanCheckRawMaterialTestResult",
     "name": "Can Check Raw Material Test Result",
     "description": "Allows the user to  check raw material test result."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanCreateUniformityOfWeight",
+    "name": "Can Create Uniformity Of Weight",
+    "description": "Allows the user to  create uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanEditUniformityOfWeight",
+    "name": "Can Edit Uniformity Of Weight",
+    "description": "Allows the user to  edit uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanDeleteUniformityOfWeight",
+    "name": "Can Delete Uniformity Of Weight",
+    "description": "Allows the user to  delete uniformity of weight."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanSubmitUniformityOfWeight",
+    "name": "Can Submit Uniformity Of Weight",
+    "description": "Allows the user to  submit uniformity of weight."
   },
   {
     "module": "Quality Control",
@@ -1482,6 +2217,27 @@
     "key": "CanAssignProductTest",
     "name": "Can Assign Product Test",
     "description": "Allows the user to  assign product test."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanEditAnalyticalTestRequest",
+    "name": "Can Edit Analytical Test Request",
+    "description": "Allows the user to  edit analytical test request."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanChangeAnalyticalTestRequestStatus",
+    "name": "Can Change Analytical Test Request Status",
+    "description": "Allows the user to  change analytical test request status."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanDeleteAnalyticalTestRequest",
+    "name": "Can Delete Analytical Test Request",
+    "description": "Allows the user to  delete analytical test request."
   },
   {
     "module": "Quality Control",
@@ -1891,6 +2647,13 @@
   },
   {
     "module": "Quality Assurance",
+    "submodule": "Issue BMR",
+    "key": "CanIssueBpr",
+    "name": "Can Issue Bpr",
+    "description": "Allows the user to  issue bpr."
+  },
+  {
+    "module": "Quality Assurance",
     "submodule": "Analytical Test Requests",
     "key": "CanViewAnalyticalTestRequests",
     "name": "Can View Analytical Test Requests",
@@ -2116,6 +2879,20 @@
   {
     "module": "Finished Goods Warehouse",
     "submodule": "Production Orders",
+    "key": "CanEditOrder",
+    "name": "Can Edit Order",
+    "description": "Allows the user to  edit order."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Production Orders",
+    "key": "CanDeleteOrder",
+    "name": "Can Delete Order",
+    "description": "Allows the user to  delete order."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Production Orders",
     "key": "CanGeneratePackingList",
     "name": "Can Generate Packing List",
     "description": "Allows the user to  generate packing list."
@@ -2150,6 +2927,27 @@
   },
   {
     "module": "Finished Goods Warehouse",
+    "submodule": "Proforma Invoice",
+    "key": "CanDeleteProformaInvoice",
+    "name": "Can Delete Proforma Invoice",
+    "description": "Allows the user to  delete proforma invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Proforma Invoice",
+    "key": "CanCreateInvoice",
+    "name": "Can Create Invoice",
+    "description": "Allows the user to  create invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Proforma Invoice",
+    "key": "CanDeleteInvoice",
+    "name": "Can Delete Invoice",
+    "description": "Allows the user to  delete invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
     "submodule": "Invoice",
     "key": "CanViewInvoice",
     "name": "Can View Invoice",
@@ -2168,6 +2966,27 @@
     "key": "CanCreateWaybillForFgw",
     "name": "Can Create Waybill For Fgw",
     "description": "Allows the user to  create waybill for fgw."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanLoadFinishedGoods",
+    "name": "Can Load Finished Goods",
+    "description": "Allows the user to  load finished goods."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanDeliverFinishedGoods",
+    "name": "Can Deliver Finished Goods",
+    "description": "Allows the user to  deliver finished goods."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanSendWaybillToCustomer",
+    "name": "Can Send Waybill To Customer",
+    "description": "Allows the user to  send waybill to customer."
   },
   {
     "module": "Finished Goods Warehouse",
@@ -3320,6 +4139,13 @@
   {
     "module": "Human Resources",
     "submodule": "Employee Management",
+    "key": "CanDeleteEmployee",
+    "name": "Can Delete Employee",
+    "description": "Allows the user to  delete employee."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Employee Management",
     "key": "CanViewEmployeeDetails",
     "name": "Can View Employee Details",
     "description": "Allows the user to  view employee details."
@@ -3431,6 +4257,13 @@
   },
   {
     "module": "Human Resources",
+    "submodule": "Leave Management",
+    "key": "CanDeleteLeaveRequest",
+    "name": "Can Delete Leave Request",
+    "description": "Allows the user to  delete leave request."
+  },
+  {
+    "module": "Human Resources",
     "submodule": "Leave Type Configuration",
     "key": "CanViewLeaveType",
     "name": "Can View Leave Type",
@@ -3456,6 +4289,27 @@
     "key": "CanDeleteLeaveType",
     "name": "Can Delete Leave Type",
     "description": "Allows the user to  delete leave type."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Type Configuration",
+    "key": "CanCreateLeaveEntitlement",
+    "name": "Can Create Leave Entitlement",
+    "description": "Allows the user to  create leave entitlement."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Type Configuration",
+    "key": "CanEditLeaveEntitlement",
+    "name": "Can Edit Leave Entitlement",
+    "description": "Allows the user to  edit leave entitlement."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Type Configuration",
+    "key": "CanDeleteLeaveEntitlement",
+    "name": "Can Delete Leave Entitlement",
+    "description": "Allows the user to  delete leave entitlement."
   },
   {
     "module": "Human Resources",
@@ -4681,6 +5535,27 @@
     "key": "CanViewWarehouses",
     "name": "Can View Warehouses",
     "description": "Allows the user to  view warehouses."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanCreateWarehouse",
+    "name": "Can Create Warehouse",
+    "description": "Allows the user to  create warehouse."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanEditWarehouse",
+    "name": "Can Edit Warehouse",
+    "description": "Allows the user to  edit warehouse."
+  },
+  {
+    "module": "Inventory Management",
+    "submodule": "Warehouses",
+    "key": "CanDeleteWarehouse",
+    "name": "Can Delete Warehouse",
+    "description": "Allows the user to  delete warehouse."
   },
   {
     "module": "Inventory Management",

@@ -1,3 +1,5 @@
+using API.Authorization;
+using APP.Services.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -20,6 +22,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [QcDocumentPermission(QcDocument.MaterialStp, QcTask.Create)]
     public async Task<IResult> CreateStandardTestProcedure([FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
         var result = await repository.CreateMaterialStandardTestProcedure(request);
@@ -81,6 +84,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialStp, QcTask.Edit)]
     public async Task<IResult> UpdateStandardTestProcedure([FromRoute] Guid id, [FromBody] CreateMaterialStandardTestProcedureRequest request)
     {
         var result = await repository.UpdateMaterialStandardTestProcedure(id, request);
@@ -94,6 +98,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialStpMappingDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialStp, QcTask.Edit)]
     public async Task<IResult> AddRemoveMaterialsToStp(
         [FromBody] AddRemoveMaterialToStpRequest request
     )
@@ -108,6 +113,7 @@ public class MaterialStandardTestProcedureController(IMaterialStandardTestProced
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [QcDocumentPermission(QcDocument.MaterialStp, QcTask.Delete)]
     public async Task<IResult> DeleteStandardTestProcedure([FromRoute] Guid id)
     {
         var userId = (string)HttpContext.Items["Sub"];

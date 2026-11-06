@@ -16,6 +16,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Creates a new quality audit in the Planned state.
     /// </summary>
     [HttpPost]
+    [Authorize(PermissionKeys.CanCreateQualityAudit)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateAudit([FromBody] CreateQualityAuditRequest request)
@@ -31,6 +32,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Updates a quality audit's plan while it is still Planned.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(PermissionKeys.CanCreateQualityAudit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,6 +49,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Starts a Planned audit, moving it to InProgress.
     /// </summary>
     [HttpPut("{id:guid}/start")]
+    [Authorize(PermissionKeys.CanConductQualityAudit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -63,6 +66,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Records a response to a checklist item (templated or ad-hoc) while conducting the audit.
     /// </summary>
     [HttpPost("{id:guid}/checklist-responses")]
+    [Authorize(PermissionKeys.CanConductQualityAudit)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,6 +86,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Raises a finding on the audit, optionally traced back to a specific checklist response.
     /// </summary>
     [HttpPost("{id:guid}/findings")]
+    [Authorize(PermissionKeys.CanConductQualityAudit)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -98,6 +103,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Raises the corrective/preventive action (CAPA) for a finding.
     /// </summary>
     [HttpPost("findings/{findingId:guid}/corrective-action")]
+    [Authorize(PermissionKeys.CanRaiseCorrectiveAction)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -117,6 +123,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Updates a corrective action's status (not usable to close it - see the effectiveness endpoint).
     /// </summary>
     [HttpPut("corrective-actions/{capaId:guid}/status")]
+    [Authorize(PermissionKeys.CanRaiseCorrectiveAction)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -136,6 +143,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// Verifies whether a corrective action was effective, closing it (and its finding) if so.
     /// </summary>
     [HttpPut("corrective-actions/{capaId:guid}/verify-effectiveness")]
+    [Authorize(PermissionKeys.CanReviewCorrectiveAction)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -156,6 +164,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// unless the caller explicitly accepts and justifies the deferral.
     /// </summary>
     [HttpPut("{id:guid}/submit-for-closure")]
+    [Authorize(PermissionKeys.CanConductQualityAudit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -172,6 +181,7 @@ public class QualityAuditController(IQualityAuditRepository repository) : Contro
     /// QA sign-off closing (or rejecting the closure of) an audit pending closure.
     /// </summary>
     [HttpPut("{id:guid}/close")]
+    [Authorize(PermissionKeys.CanCloseQualityAudit)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
