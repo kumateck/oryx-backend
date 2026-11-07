@@ -2824,6 +2824,9 @@ public partial class ProductionScheduleRepository(
     public async Task<Result> IssueBatchManufacturingRecord(Guid id, Guid userId)
         => await GuardDraftWrite(() => IssueBatchManufacturingRecordCore(id, userId));
 
+    private static Error BmrRetired() =>
+        Error.Conflict("Bmr.Retired", "This BMR has been retired and cannot be issued.");
+
     private async Task<Result> IssueBatchManufacturingRecordCore(Guid id, Guid userId)
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
@@ -2834,11 +2837,14 @@ public partial class ProductionScheduleRepository(
             .FirstOrDefaultAsync(p => p.Id == id);
         if (batchRecord is null)
         {
-            return ProductErrors.NotFound(id);
+            // The soft-delete filter hides retired BMRs; report them as retired, not missing.
+            var retired = await context.BatchManufacturingRecords.IgnoreQueryFilters()
+                .AnyAsync(p => p.Id == id && p.DeletedAt.HasValue);
+            return retired ? BmrRetired() : ProductErrors.NotFound(id);
         }
 
         if (batchRecord.DeletedAt.HasValue)
-            return Error.Conflict("Bmr.Retired", "This BMR has been retired and cannot be issued.");
+            return BmrRetired();
         if (batchRecord.IssuedDate.HasValue)
             return Error.Conflict("Bmr.AlreadyIssued", "This BMR has already been issued.");
         var number = await BmrBatchNumberRules.Validate(context, batchRecord.BatchNumber, id);
