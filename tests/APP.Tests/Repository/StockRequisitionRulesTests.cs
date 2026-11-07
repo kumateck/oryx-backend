@@ -33,6 +33,8 @@ public class StockRequisitionRulesTests
     {
         Id = Guid.NewGuid(),
         Operation = new Operation { Id = Guid.NewGuid(), Name = "Operation" },
+        // Real steps always belong to an activity; the step query filter excludes orphans.
+        ProductionActivity = new ProductionActivity { Id = Guid.NewGuid() },
         ResponsibleUsers = actions.Select(action => new ProductionActivityStepUser
         {
             Id = Guid.NewGuid(), Action = action,

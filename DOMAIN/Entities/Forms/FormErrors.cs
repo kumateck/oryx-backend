@@ -25,6 +25,13 @@ public static class FormErrors
     public static Error InvalidQuestionType(string questionType) =>
         Error.Validation("FormResponse.InvalidQuestionType", $"The question type '{questionType}' is invalid.");
 
+    public static Error FieldsInUse(Guid formId) =>
+        Error.Conflict(
+            "Form.FieldsInUse",
+            $"Form {formId} already has saved test answers, specification values or CoA items. "
+                + "Replacing its sections and fields would delete them. Edit, add or remove individual "
+                + "sections and fields instead, or create a new form.");
+
     public static readonly Error FormulaGovernanceRequired = Error.Conflict(
         "Form.Question.FormulaGovernanceRequired",
         "Formula questions must be created or edited through the governed formula workflow.");

@@ -33,6 +33,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves a paginated list of product specifications
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanCreateProductSpecification", "CanEditProductSpecification", "CanViewProductSpecifications")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<ProductSpecificationDto>>)
@@ -57,6 +58,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves the details of a product specification by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [AnyPermission("CanCreateProductSpecification", "CanEditProductSpecification", "CanViewProductSpecifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSpecificationDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductSpecification([FromRoute] Guid id)
@@ -69,6 +71,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves products not linked to spec
     /// </summary>
     [HttpGet("products/not-linked")]
+    [AnyPermission("CanCreateProductSpecification", "CanEditProductSpecification", "CanViewProductSpecifications")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<List<ProductListDto>>)
@@ -92,6 +95,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves the details of a product specification by its product ID.
     /// </summary>
     [HttpGet("product/{id:guid}")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewProductArds", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductSpecificationByProductId([FromRoute] Guid id)
@@ -104,6 +108,7 @@ public class ProductSpecificationController(IProductSpecificationRepository repo
     /// Retrieves the details of products linked to a specification number.
     /// </summary>
     [HttpGet("products")]
+    [AnyPermission("CanCreateProductSpecification", "CanEditProductSpecification", "CanViewProductSpecifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductSpecificationDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetProductSpecificationBySpecificationNumber(

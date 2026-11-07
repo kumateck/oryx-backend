@@ -61,6 +61,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule.</param>
     /// <returns>Returns the Production Schedule.</returns>
     [HttpGet("{scheduleId}")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanRemoveProductsFromProductSchedule", "CanViewPlannedProducts", "CanViewProductSchedules")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -79,6 +80,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Production Schedules.</returns>
     [HttpGet]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanRemoveProductsFromProductSchedule", "CanViewPlannedProducts", "CanViewProductSchedules")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<ProductionScheduleDto>>))]
@@ -96,6 +98,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <returns>Returns the details of the product in the Production Schedule.</returns>
     [HttpGet("production-schedule-product/{productionScheduleProductId}")]
+    [AnyPermission("CanViewProductSchedules", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionScheduleProductDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -189,6 +192,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <returns>A list of Naming Types with their corresponding value and name.</returns>
     /// <response code="200">Returns the list of production status</response>
     [HttpGet("production-status")]
+    [SignedInUser("The list of production statuses, a fixed reference list.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<TypeResponse>))]
     public IResult GetQuestionValidationTypes()
     {
@@ -210,6 +214,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="scheduleId">The ID of the Production Schedule.</param>
     /// <returns>Returns the details of the Production Schedule, including procurement information.</returns>
     [HttpGet("{scheduleId}/details")]
+    [AnyPermission("CanViewProductSchedules", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -223,6 +228,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpGet("material-stock/{productionScheduleProductId}")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanIssueBmr", "CanRecordFinalPacking", "CanRemoveProductsFromProductSchedule", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewIssuedBmrBprs", "CanViewPlannedProducts", "CanViewProductSchedules")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -237,6 +243,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpGet("package-material-stock/{productionScheduleProductId}")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanIssueBmr", "CanRecordFinalPacking", "CanRemoveProductsFromProductSchedule", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewIssuedBmrBprs", "CanViewPlannedProducts", "CanViewProductSchedules")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -256,6 +263,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns a list of materials with insufficient stock.</returns>
     [HttpGet("{productionScheduleProductId}/materials-with-insufficient-stock")]
+    [AnyPermission("CanViewProductSchedules", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -271,6 +279,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schdeule product Id</param>
     /// <returns>Returns a list of packaging materials with insufficient stock.</returns>
     [HttpGet("{productionScheduleProductId}/package-materials-with-insufficient-stock")]
+    [AnyPermission("CanViewProductSchedules", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionScheduleProcurementPackageDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -384,6 +393,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="filter">Filter parameters for retrieving production activities.</param>
     /// <returns>Returns a paginated list of Production Activities.</returns>
     [HttpGet("activity")]
+    [AnyPermission("CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<ProductionActivityDto>>))]
@@ -399,6 +409,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionActivityId">The ID of the Production Activity.</param>
     /// <returns>Returns the details of the Production Activity.</returns>
     [HttpGet("activity/{productionActivityId}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -414,6 +425,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schedule prdocut</param>
     /// <returns>Returns the details of the Production Activity.</returns>
     [HttpGet("activity/product/{productionScheduleProductId}")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanRemoveProductsFromProductSchedule", "CanViewPlannedProducts", "CanViewProductSchedules", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -428,6 +440,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
     [HttpGet("activity/status-grouped")]
+    [AnyPermission("CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityDto>>))]
     public async Task<IResult> GetProductionActivityGroupedByStatus()
@@ -441,6 +454,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activities by their status.</returns>
     [HttpGet("activity/operation-grouped")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionActivityGroupResultDto>))]
     public async Task<IResult> GetProductionActivityGroupedByOperation([FromQuery] Guid? departmentId)
@@ -480,6 +494,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="filter">Filter parameters for retrieving production activity steps.</param>
     /// <returns>Returns a paginated list of Production Activity Steps.</returns>
     [HttpGet("activity-step")]
+    [AnyPermission("CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductionActivityStepDto>>))]
     public async Task<IResult> GetProductionActivitySteps([FromQuery] ProductionFilter filter)
@@ -494,6 +509,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionActivityStepId">The ID of the Production Activity Step.</param>
     /// <returns>Returns the details of the Production Activity Step.</returns>
     [HttpGet("activity-step/{productionActivityStepId}")]
+    [AnyPermission("CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionActivityStepDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -508,6 +524,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activity Steps by their status.</returns>
     [HttpGet("activity-step/status-grouped")]
+    [AnyPermission("CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityStepDto>>))]
     public async Task<IResult> GetProductionActivityStepsGroupedByStatus()
@@ -521,6 +538,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <returns>Returns a dictionary grouping Production Activity Steps by their status.</returns>
     [HttpGet("activity-step/operation-grouped")]
+    [AnyPermission("CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, List<ProductionActivityStepDto>>))]
     public async Task<IResult> GetProductionActivityStepsGroupedByOperation()
@@ -547,6 +565,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpGet("manufacturing/product/{productionScheduleProductId}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -571,6 +590,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     }
 
     [HttpGet("finished-goods-transfer-note/bmr-quantity/{batchManufacturingRecordId}")]
+    [AnyPermission("CanViewFgtn", "CanCreateFgtn", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(decimal))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -598,6 +618,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a paginated list of finished good transfer notes
     /// </summary>
     [HttpGet("finished-goods-transfer-note")]
+    [AnyPermission("CanCreateMaterialStockAdjustment", "CanViewFgtn", "CanViewMaterialStockAdjustment")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     public async Task<IResult> GetFinishedGoodsTransferNotes(
         [FromQuery] int page = 1,
@@ -624,6 +645,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves the details of a finished good transfer note
     /// </summary>
     [HttpGet("finished-goods-transfer-note/{id:guid}")]
+    [AnyPermission("CanViewFgtn", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinishedGoodsTransferNoteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFinishedGoodsTransferNote([FromRoute] Guid id)
@@ -636,6 +658,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of finished goods transfer note by bmr id
     /// </summary>
     [HttpGet("finished-goods-transfer-note/bmr/{batchManufacturingRecordId:guid}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<FinishedGoodsTransferNoteDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFinishedGoodsTransferNoteByBmr([FromRoute] Guid batchManufacturingRecordId)
@@ -648,6 +671,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves the details of a finished good transfer note by product Id
     /// </summary>
     [HttpGet("finished-goods-transfer-note/{productId:guid}/product")]
+    [AnyPermission("CanViewFgtn", "CanCreateFgtn", "CanViewPlannedProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinishedGoodsTransferNoteDto>>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetFinishedGoodsTransferNoteByProduct([FromRoute] Guid productId,
@@ -689,6 +713,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a paginated list of batch manufacturing records.
     /// </summary>
     [HttpGet("manufacturing")]
+    [AnyPermission("CanIssueBmr", "CanViewIssuedBmrBprs", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewWaterQuality")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<BatchManufacturingRecordDto>>))]
@@ -704,6 +729,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a specific batch manufacturing record by its ID.
     /// </summary>
     [HttpGet("manufacturing/{batchManufacturingRecordId:guid}")]
+    [AnyPermission("CanIssueBmr", "CanViewIssuedBmrBprs", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchManufacturingRecordDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -762,6 +788,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a paginated list of batch packaging records.
     /// </summary>
     [HttpGet("packaging")]
+    [AnyPermission("CanViewIssuedBmrBprs", "CanIssueBpr")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<BatchPackagingRecordDto>>))]
     public async Task<IResult> GetBatchPackagingRecords([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
@@ -774,6 +801,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a specific batch packaging record by its ID.
     /// </summary>
     [HttpGet("packaging/{id}")]
+    [AnyPermission("CanViewIssuedBmrBprs", "CanIssueBpr")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BatchPackagingRecordDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -839,6 +867,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer")]
+    [AnyPermission("CanViewIncomingStockTransferRequests", "CanViewOutgoingStockTransferRequests", "CanViewRawMaterialTransferList", "CanViewPackagingMaterialTransferList")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<StockTransferDto>))]
     public async Task<IResult> GetStockTransfers([FromQuery] Guid? fromDepartmentId = null, [FromQuery] Guid? toDepartmentId = null, [FromQuery] Guid? materialId = null)
@@ -851,6 +880,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer/user")]
+    [AnyPermission("CanViewIncomingStockTransferRequests", "CanViewOutgoingStockTransferRequests")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<StockTransferDto>>))]
     public async Task<IResult> GetStockTransfersForUserDepartment([FromQuery] int page = 1,
@@ -870,6 +900,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer/in-bound")]
+    [AnyPermission("CanIssuePackagingMaterialStockTransfers", "CanIssueRawMaterialStockTransfers", "CanViewIncomingStockTransferRequests", "CanViewOutgoingStockTransferRequests", "CanViewPackagingMaterialTransferList", "CanViewRawMaterialTransferList")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
     public async Task<IResult> GetInBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
@@ -888,6 +919,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of Stock Transfers with optional filters.
     /// </summary>
     [HttpGet("stock-transfer/out-bound")]
+    [AnyPermission("CanIssuePackagingMaterialStockTransfers", "CanIssueRawMaterialStockTransfers", "CanViewIncomingStockTransferRequests", "CanViewOutgoingStockTransferRequests", "CanViewPackagingMaterialTransferList", "CanViewRawMaterialTransferList")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DepartmentStockTransferDto>>))]
     public async Task<IResult> GetOutBoundStockTransfers([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
@@ -906,6 +938,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Get a Stock Transfer by ID.
     /// </summary>
     [HttpGet("stock-transfer/{stockTransferId}")]
+    [AnyPermission("CanIssuePackagingMaterialStockTransfers", "CanIssueRawMaterialStockTransfers", "CanViewIncomingStockTransferRequests", "CanViewOutgoingStockTransferRequests", "CanViewPackagingMaterialTransferList", "CanViewRawMaterialTransferList")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DepartmentStockTransferDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -954,6 +987,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Gets a list of material batches to fulfill a Stock Transfer.
     /// </summary>
     [HttpGet("stock-transfer/batch/{stockTransferId}")]
+    [AnyPermission("CanIssuePackagingMaterialStockTransfers", "CanIssueRawMaterialStockTransfers", "CanViewPackagingMaterialTransferList", "CanViewRawMaterialTransferList")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<BatchToSupply>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1004,6 +1038,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="finalPackingId">The ID of the Final Packing.</param>
     /// <returns>Returns the Final Packing details.</returns>
     [HttpGet("final-packing/{finalPackingId}")]
+    [AnyPermission("CanViewPlannedProducts", "CanRecordFinalPacking")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinalPackingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1019,6 +1054,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns the Final Packing details.</returns>
     [HttpGet("final-packing/product/{productionScheduleProductId}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FinalPackingDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1036,6 +1072,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Final Packing entries.</returns>
     [HttpGet("final-packing")]
+    [AnyPermission("CanViewPlannedProducts", "CanRecordFinalPacking")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<FinalPackingDto>>))]
     public async Task<IResult> GetFinalPackings([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)
@@ -1085,6 +1122,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns the Stock Requisition for Packaging.</returns>
     [HttpGet("stock-requisition/raw/{productionScheduleProductId}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1100,6 +1138,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schedule prdouct id</param>
     /// <returns>Returns the Stock Requisition for Packaging.</returns>
     [HttpGet("stock-requisition/package/{productionScheduleProductId}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RequisitionDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1153,6 +1192,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Material Return Notes.</returns>
     [HttpGet("material-return-note")]
+    [AnyPermission("CanViewMaterialsReturnNote")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<MaterialReturnNoteDto>>))]
     public async Task<IResult> GetMaterialReturnNotes([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = "")
@@ -1167,6 +1207,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="materialReturnNoteId">The ID of the Material Return Note.</param>
     /// <returns>Returns the Material Return Note.</returns>
     [HttpGet("material-return-note/{materialReturnNoteId}")]
+    [AnyPermission("CanViewMaterialsReturnNote")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialReturnNoteDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1220,6 +1261,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="kind">The kind of material</param>
     /// <returns>Returns a paginated list of Extra Packing entries.</returns>
     [HttpGet("extra-packing")]
+    [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, 
         Type = typeof(Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>))]
@@ -1238,6 +1280,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionExtraPackingId">The ID of the Extra Packing.</param>
     /// <returns>Returns the Extra Packing with batches.</returns>
     [HttpGet("extra-packing/{productionExtraPackingId}")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionExtraPackingWithBatchesDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1253,6 +1296,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="productionScheduleProductId">The production schedule product id</param>
     /// <returns>Returns the Extra Packing with batches.</returns>
     [HttpGet("extra-packing/by-product/{productionScheduleProductId}")]
+    [AnyPermission("CanRecordFinalPacking", "CanRequestExtraPacking", "CanReturnProductionMaterials", "CanViewPlannedProducts")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductionExtraPackingWithBatchesDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1268,6 +1312,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="extraPackingMaterialId">The ID of the Extra Packing Material.</param>
     /// <returns>Returns a list of batches to supply.</returns>
     [HttpGet("extra-packing/batches-to-supply/{extraPackingMaterialId}")]
+    [AnyPermission("CanIssueRawMaterialRequisitions", "CanIssuePackagingMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<BatchToSupply>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1301,6 +1346,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of approved products
     /// </summary>
     [HttpGet("approved-products")]
+    [AnyPermission("CanViewApprovedProducts", "CanViewFgtn")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ApprovedProductDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1319,6 +1365,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a single approved product
     /// </summary>
     [HttpGet("approved-products/product/{productId}")]
+    [AnyPermission("CanViewOrder")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovedProductDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1333,6 +1380,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves details of an approved product
     /// </summary>
     [HttpGet("approved-products/{productId}")]
+    [AnyPermission("CanViewApprovedProducts", "CanViewFgtn")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FinishedGoodsTransferNoteDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1353,6 +1401,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="filter">The filter criteria for the report.</param>
     /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
     [HttpGet("summary-report")]
+    [AnyPermission("CanViewProductSchedules", "CanViewWarehouseReport")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductionScheduleReportDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1368,6 +1417,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// <param name="filter">The filter criteria for the report.</param>
     /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
     [HttpGet("detailed-report")]
+    [AnyPermission("CanViewProductSchedules", "CanViewWarehouseReport")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ProductionScheduleDetailedReportDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -1386,6 +1436,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// </summary>
     /// <returns>Returns a list of Production Schedule summary report DTOs.</returns>
     [HttpGet("forecast")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanRemoveProductsFromProductSchedule", "CanViewPlannedProducts", "CanViewProductSchedules")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ForecastMaterialDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

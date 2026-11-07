@@ -478,10 +478,12 @@ public partial class EmployeeRepository(ApplicationDbContext context,
         var reportingManagerId = employeeDto.ReportingManagerId == Guid.Empty
             ? null
             : employeeDto.ReportingManagerId;
-        if (reportingManagerId.HasValue &&
-            !await context.Users.AnyAsync(user => user.Id == reportingManagerId.Value))
+        if (reportingManagerId.HasValue)
         {
-            return Error.Validation("Employee.ReportingManager", "Reporting manager must be an existing user.");
+            if (reportingManagerId == employee.UserId)
+                return Error.Validation("Employee.ReportingManager", "An employee cannot be their own reporting manager.");
+            if (!await context.Users.AnyAsync(user => user.Id == reportingManagerId.Value && !user.IsDisabled))
+                return Error.Validation("Employee.ReportingManager", "Reporting manager must be an active user.");
         }
 
         if (employeeDto.WarehouseIds.Count != 0)

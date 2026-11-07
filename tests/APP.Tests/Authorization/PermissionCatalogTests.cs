@@ -108,7 +108,8 @@ public sealed class PermissionCatalogTests
                     .Concat(action.GetCustomAttributes<API.Authorization.RequisitionCreatePermissionAttribute>()
                         .SelectMany(_ => API.Authorization.RequisitionCreatePermissionAttribute.AllKeys))
                     .Concat(action.GetCustomAttributes<API.Authorization.CollectionPermissionAttribute>().SelectMany(attribute => attribute.AllKeys))
-                    .Concat(action.GetCustomAttributes<API.Authorization.StoreItemPermissionAttribute>().SelectMany(attribute => attribute.AllKeys)).Distinct().ToList();
+                    .Concat(action.GetCustomAttributes<API.Authorization.StoreItemPermissionAttribute>().SelectMany(attribute => attribute.AllKeys))
+                    .Concat(action.GetCustomAttributes<API.Authorization.AttachmentPermissionAttribute>().SelectMany(_ => API.Authorization.AttachmentPermissionAttribute.AllKeys)).Distinct().ToList();
                 // Checked inside the action (record-dependent) or acting only on the caller's own data; the reason is required.
                 var exemption = action.GetCustomAttribute<API.Authorization.PermissionCheckedInActionAttribute>()?.Reason
                     ?? action.GetCustomAttribute<API.Authorization.SignedInUserAttribute>()?.Reason;

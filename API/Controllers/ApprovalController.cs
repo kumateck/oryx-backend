@@ -20,6 +20,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Gets all users that have a pending approval.
     /// </summary>
     [HttpGet("users-with-pending")]
+    [AnyPermission("CanTransferApprovalRights", "CanViewPendingApprovals")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserDto>))]
     public async Task<IResult> GetUsersWithPendingApprovals()
@@ -66,6 +67,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
 
     /// <summary>The caller's delegations: those they gave and those given to them, including ones ended in the last 30 days.</summary>
     [HttpGet("delegations/mine")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MyApprovalDelegationsDto))]
     public async Task<IResult> GetMyDelegations()
@@ -107,6 +109,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Retrieves a specific approval by its ID.
     /// </summary>
     [HttpGet("{approvalId:guid}")]
+    [AnyPermission("CanCreateNewApproval", "CanEditApprovalWorkflow", "CanViewApprovals")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -117,6 +120,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     }
 
     [HttpGet("{modelType}/{modelId:guid}")]
+    [SignedInUser("The approval history panel shown on the page of every record that goes through approval.")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalEntity))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -138,6 +142,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
 
     /// <summary>Details of a document in the caller's active pending queue.</summary>
     [HttpGet("my-pending/{modelType}/{modelId:guid}")]
+    [AnyPermission("CanViewActiveEmployee", "CanViewEmployeeDetails", "CanViewOwnGoals", "CanViewPayrollRuns", "CanViewPayslip", "CanViewPendingApprovals", "CanViewPerformanceCycles", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy", "CanViewTeamGoals")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovalEntity))]
     public async Task<IResult> GetMyPendingApprovalDetail(string modelType, Guid modelId)
@@ -167,6 +172,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Retrieves a paginated list of approvals.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanCreateNewApproval", "CanEditApprovalWorkflow", "CanViewApprovals")]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -347,6 +353,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Gets all items requiring approval by the current user.
     /// </summary>
     [HttpGet("my-pending")]
+    [AnyPermission("CanViewCashflowReports", "CanViewPayments", "CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ApprovalEntity>))]
     public async Task<IResult> GetPendingApprovals(
@@ -373,6 +380,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Gets all items requiring approval by the current user.
     /// </summary>
     [HttpGet("my-pending/stats")]
+    [AnyPermission("CanViewPayrollRuns", "CanViewPendingApprovals", "CanViewPerformanceReviews", "CanViewShipmentDiscrepancy", "CanViewStockDiscrepancy")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Dictionary<string, int>))]
     public async Task<IResult> GetPendingApprovalStatistics()

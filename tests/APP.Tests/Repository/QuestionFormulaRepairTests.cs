@@ -349,7 +349,9 @@ public sealed class QuestionFormulaRepairTests
             Value = "{\"a\":\"1.230000\",\"b\":\"2\"}" };
         f.Db.FormResponses.Add(answer); await f.Db.SaveChangesAsync();
         var url = new Uri(Environment.GetEnvironmentVariable("ORYX_FORMULA_REPAIR_SERVICE_URL")!);
-        var client = new FormulaCalculationClient(new HttpClient { BaseAddress = url }, new(true, url, "test-only", TimeSpan.FromSeconds(5)));
+        using var http = new HttpClient { BaseAddress = url };
+        http.DefaultRequestHeaders.Authorization = new("Bearer", "test-only");
+        var client = new FormulaCalculationClient(http, new(true, url, "test-only", TimeSpan.FromSeconds(5)));
         var service = new QuestionFormulaRepairService(f.Db, f.Actor, client);
         var preview = await service.Preview(f.Question, f.Candidate()); Assert.True(preview.IsSuccess, preview.Error?.Description);
         Assert.Empty(preview.Value.Blockers);
@@ -389,7 +391,9 @@ public sealed class QuestionFormulaRepairTests
         Assert.Null(LegacyFormulaRepairDefinition.Validate(raw, raw));
         var compiled = LegacyFormulaRepairDefinition.Compile(raw);
         var url = new Uri(Environment.GetEnvironmentVariable("ORYX_FORMULA_REPAIR_SERVICE_URL")!);
-        var client = new FormulaCalculationClient(new HttpClient { BaseAddress = url }, new(true, url, "test-only", TimeSpan.FromSeconds(5)));
+        using var http = new HttpClient { BaseAddress = url };
+        http.DefaultRequestHeaders.Authorization = new("Bearer", "test-only");
+        var client = new FormulaCalculationClient(http, new(true, url, "test-only", TimeSpan.FromSeconds(5)));
         var validated = await client.ValidateAsync(LegacyFormulaRepairDefinition.ValidationRequest(raw));
         Assert.True(validated.IsSuccess); Assert.Equal(5, validated.Value.Status); Assert.Equal(compiled.Hash, validated.Value.ComputedDefinitionHash);
         var inputs = LegacyFormulaRepairDefinition.ResolveInputs(raw, values);

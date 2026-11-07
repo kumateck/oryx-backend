@@ -50,7 +50,7 @@ public static class LegacyFormulaRepairDefinition
             if (next["manualVarLabels"] is JsonObject labels && (labels.Count > 100 || labels.Any(x => !Regex.IsMatch(x.Key, @"^[A-Za-z][A-Za-z0-9_]{0,99}$") || x.Value is not JsonValue v || !v.TryGetValue<string>(out var label) || label.Length is < 1 or > 200)))
                 return "Manual inputs need plain variable keys and labels of 1–200 characters.";
             if (Number(next, "noOfSamples", Number(next, "numberOfSamples", 2)) is < 1 or > 100) return "Unsupported sample count.";
-            foreach (var key in Variables(expression))
+            foreach (var key in Variables(LegacyFormulaInputKeys.Normalize(next, expression)))
                 if (!Known(next, key)) return $"Variable :{key} has no input, constant or table binding. Add its manual-input label or correct the reference.";
             return null;
         }
@@ -67,6 +67,7 @@ public static class LegacyFormulaRepairDefinition
         if (Number(config, "type", 0) == 0) return true;
         if (config["constants"] is JsonObject constants && constants.ContainsKey(key) || config["manualVarLabels"] is JsonObject labels && labels.ContainsKey(key)) return true;
         if (Regex.IsMatch(key, @"^(standard|sample\d*)(Avg|SD|RSD)$") || Regex.IsMatch(key, @"^R\d+(standard|sample\d*)$")) return true;
+        if (LegacyFormulaInputKeys.TryBinding(config, key, out _, out _)) return true;
         var match = Regex.Match(key, @"^(standardInput|sampleInput\d*)\.([A-Za-z][A-Za-z0-9_]*)$");
         if (!match.Success) return false;
         var inputs = match.Groups[1].Value == "standardInput" ? config["standardInputs"] as JsonArray
@@ -78,10 +79,11 @@ public static class LegacyFormulaRepairDefinition
     {
         var config = Payload(raw); var universal = Number(config, "type", 0) == 3;
         var count = universal ? Number(config, "numberOfSamples", Number(config, "noOfSamples", 2)) : 1;
+        var normalized = universal ? LegacyFormulaInputKeys.Normalize(config, Text(config, "expression")) : Text(config, "expression");
         var expressions = Enumerable.Range(1, count).Select(sample => universal
-            ? Regex.Replace(Text(config, "expression"), @":sample(Avg|SD|RSD)\b|:sampleInput\.|:R(\d+)sample\b", m => m.Value.StartsWith(":sampleInput", StringComparison.Ordinal)
-                ? $":sampleInput{sample}." : m.Groups[2].Success ? $":R{m.Groups[2].Value}sample{sample}" : $":sample{sample}{m.Groups[1].Value}")
-            : Text(config, "expression")).ToArray();
+            ? LegacyFormulaInputKeys.Expand(config, Regex.Replace(normalized, @":sample(Avg|SD|RSD)\b|:sampleInput\.|:R(\d+)sample\b", m => m.Value.StartsWith(":sampleInput", StringComparison.Ordinal)
+                ? $":sampleInput{sample}." : m.Groups[2].Success ? $":R{m.Groups[2].Value}sample{sample}" : $":sample{sample}{m.Groups[1].Value}"), sample)
+            : normalized).ToArray();
         var definition = JsonSerializer.SerializeToElement(new
         {
             formulaLanguageVersion = "oryx-formula-v1", numericPolicyVersion = Policy,
@@ -135,6 +137,12 @@ public static class LegacyFormulaRepairDefinition
                 var group = match.Groups[1].Value == "standardInput" ? answer["standardInputs"] as JsonObject
                     : (answer["sampleInputs"] as JsonArray)?.ElementAtOrDefault(int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) - 1) as JsonObject;
                 input = group?[match.Groups[3].Value];
+            }
+            if (LegacyFormulaInputKeys.TryBinding(config, key, out var sample, out var inputKey))
+            {
+                var group = sample is null ? answer["standardInputs"] as JsonObject
+                    : (answer["sampleInputs"] as JsonArray)?.ElementAtOrDefault(sample.Value - 1) as JsonObject;
+                input = group?[inputKey];
             }
             var table = Regex.Match(key, @"^(standard|sample(\d+))(Avg|SD|RSD)$");
             if (table.Success && answer["tableData"] is JsonArray rows)

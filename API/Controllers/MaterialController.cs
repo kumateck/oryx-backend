@@ -73,6 +73,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the material details.</returns>
     [HttpGet("{materialId}")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewPackagingMaterialLocationList", "CanViewPackagingMaterials", "CanViewRawMaterialLocationList", "CanViewRawMaterials", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
@@ -91,6 +92,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet]
+    [AnyPermission("CanCreateManufacturer", "CanCreateMaterialStockAdjustment", "CanCreateProductionProduct", "CanCreateVendor", "CanManageSupplierContracts", "CanUpdateManufacturerDetails", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewManufacturers", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterials", "CanViewProcurementReport", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRawMaterials", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials", "CanViewVendors", "CanViewWarehouseReport", "CanViewWaterQuality")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDto>>)
@@ -117,6 +119,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="analysisType">The analysis type the ARD is being created for.</param>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("not-linked-to-ards")]
+    [AnyPermission("CanViewPackagingMaterialArds", "CanViewRawMaterialArds")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDto>>)
@@ -141,6 +144,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialKind">The kind of material being requested</param>
     /// <returns>Returns a paginated list of material categories.</returns>
     [HttpGet("category")]
+    [AnyPermission("CanViewPackageCategories", "CanViewPackagingMaterials", "CanViewRawCategories", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialCategoryDto>))]
     public async Task<IResult> GetMaterialCategories([FromQuery] MaterialKind? materialKind = null)
     {
@@ -153,6 +157,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("all")]
+    [AnyPermission("CanCreateManufacturer", "CanCreateMaterialStockAdjustment", "CanCreateProductionProduct", "CanCreateVendor", "CanManageSupplierContracts", "CanUpdateManufacturerDetails", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewManufacturers", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterials", "CanViewProcurementReport", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRawMaterials", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials", "CanViewVendors", "CanViewWarehouseReport", "CanViewWaterQuality")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
     public async Task<IResult> GetMaterials()
@@ -237,6 +242,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the current stock level of the material.</returns>
     [HttpGet("{materialId}/stock-level")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> CheckStockLevel(Guid materialId)
@@ -251,6 +257,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns a list of material batches.</returns>
     [HttpGet("{materialId}/batches")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialBatchDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialBatchesByMaterialId(Guid materialId)
@@ -265,6 +272,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the stock of material in transit.</returns>
     [HttpGet("{materialId}/in-transit")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(decimal))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialsInTransit(Guid materialId)
@@ -300,6 +308,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="batchId">The ID of the material batch.</param>
     /// <returns>Returns the material batch details.</returns>
     [HttpGet("batch/{batchId}")]
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanCreateUnscheduledQcTestRequest", "CanLinkMaterialRetestTestRequest", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewExpiredMaterials", "CanViewMaterialRetestDetail", "CanViewMaterialRetests", "CanViewPackagingMaterialGoodsReceiptNotes", "CanViewQcCertificate", "CanViewQcEquipment", "CanViewQcOosCases", "CanViewQcSpecifications", "CanViewQcTestRequests", "CanViewRawMaterialGoodsReceiptNotes", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialBatchDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialBatch(Guid batchId)
@@ -316,6 +325,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of material batches.</returns>
     [HttpGet("batch")]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDto>>)
@@ -371,6 +381,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="warehouseId">The ID of the warehouse.</param>
     /// <returns>Returns the total stock quantity of the material in the specified warehouse.</returns>
     [HttpGet("{materialId}/stock/{warehouseId}")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetWarehouseStock(Guid materialId, Guid warehouseId)
@@ -412,6 +423,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId"> The id of the material</param>
     /// <returns></returns>
     [HttpGet("{materialId}/stock/across-warehouses")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanIssueBmr", "CanRemoveProductsFromProductSchedule", "CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewIssuedBmrBprs", "CanViewPackageMaterialRequisitionsForCreation", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewPlannedProducts", "CanViewProductSchedules", "CanViewRawMaterialRequisitionsForCreation", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<WarehouseStockDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialStockAcrossWarehouses(Guid materialId)
@@ -425,6 +437,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Quantities already allocated to warehouse shelves are excluded.
     /// </summary>
     [HttpGet("{materialId}/stock/pipeline")]
+    [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanIssueBmr", "CanRemoveProductsFromProductSchedule", "CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewIssuedBmrBprs", "CanViewPackageMaterialRequisitionsForCreation", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewPlannedProducts", "CanViewProductSchedules", "CanViewRawMaterialRequisitionsForCreation", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialPipelineStockDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialPipelineStock(Guid materialId)
@@ -440,6 +453,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="quantity">The minimum quantity of the stock the department should have.</param>
     /// <returns></returns>
     [HttpGet("{materialId}/department-stock/{quantity}")]
+    [AnyPermission("CanViewPackageMaterialRequisitionsForCreation", "CanViewRawMaterialRequisitionsForCreation")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DepartmentDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity)
@@ -577,6 +591,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("approved-materials")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>)
@@ -615,6 +630,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
     [HttpGet("department/approved-materials")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>)
@@ -651,6 +667,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
     [ReportDepartmentScope]
     [HttpGet("department/approved-materials/v2")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>)
@@ -681,6 +698,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search material</param>
     /// <returns>Returns a paginated list of material batches.</returns>
     [HttpGet("{materialId:guid}/batches/v2/{departmentId:guid}")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<List<ShelfMaterialBatchDto>>)
@@ -715,6 +733,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the stock of the material in all warehouses.</returns>
     [HttpGet("{materialId}/stock/warehouses")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<MaterialStockByWarehouseDto>)
@@ -732,6 +751,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The ID of the material.</param>
     /// <returns>Returns the stock of the material in all departments.</returns>
     [HttpGet("{materialId}/stock/departments")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<MaterialStockByDepartmentDto>)
@@ -795,6 +815,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="kind">The material kind to filter</param>
     /// <returns>Returns the materials that have not been linked.</returns>
     [HttpGet("department/not-linked")]
+    [AnyPermission("CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewPackagingMaterials", "CanViewRawMaterials", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialWithWarehouseStockDto>>)
@@ -834,6 +855,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="sortDirection">The direction to sort the results. 1 for Ascending, 2 for Descending</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("department")]
+    [AnyPermission("CanCreateProductionProduct", "CanUploadOpeningBalances", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewOpeningBalances", "CanViewPackageMaterialRequisitionsForCreation", "CanViewPackagingMaterialLocationList", "CanViewPackagingMaterials", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewRawMaterialLocationList", "CanViewRawMaterialRequisitionsForCreation", "CanViewRawMaterials", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDepartmentWithWarehouseStockDto>>)
@@ -873,6 +895,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialId">The material Id for which you need the uom</param>
     /// <returns>Returns the materials that have not been linked.</returns>
     [HttpGet("{materialId}/uom")]
+    [AnyPermission("CanCreateProductionProduct", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UnitOfMeasureDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetUoMForMaterial(Guid materialId, [FromQuery] Guid? productId = null)
@@ -899,6 +922,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="kind">The material kind you want</param>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("holding")]
+    [AnyPermission("CanIssuePackagingMaterialStockTransfers", "CanIssueRawMaterialStockTransfers", "CanViewPackagingMaterialTransferList", "CanViewRawMaterialTransferList")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<HoldingMaterialTransferDto>>)
@@ -1000,6 +1024,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     [HttpGet("material-specs/not-linked")]
+    [AnyPermission("CanViewPackagingMaterialSpecifications", "CanViewRawMaterialSpecifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     public async Task<IResult> GetMaterialsNotLinkedToSpec(
         [FromQuery] MaterialKind materialKind = 0
@@ -1010,6 +1035,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     }
 
     [HttpGet("rejects")]
+    [AnyPermission("CanViewRejectedPackagingMaterials", "CanViewRejectedRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
     public async Task<IResult> GetMaterialRejects(
         [FromQuery] int page = 1,
@@ -1035,6 +1061,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="onlyAboutToExpire">Flag to include if only about to expire </param>
     /// <returns>Returns the total stock quantity of the material in the specified warehouse.</returns>
     [HttpGet("{materialId}/shelf")]
+    [AnyPermission("CanCreateMaterialStockAdjustment", "CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterialLocationList", "CanViewPackagingMaterialRequisitions", "CanViewRawMaterialLocationList", "CanViewRawMaterialRequisitions")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(IEnumerable<ShelfMaterialBatchDto>)
@@ -1059,6 +1086,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns the total stock quantity of the material in the specified warehouse.</returns>
     [HttpGet("shelf")]
+    [AnyPermission("CanRecordStockDiscrepancy", "CanViewStockDiscrepancy")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(IEnumerable<ShelfMaterialBatchDto>)
@@ -1108,6 +1136,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of material departments.</returns>
     [HttpGet("{materialId}/reserved")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ReservedMaterialReportDto>))]
     public async Task<IResult> GetMaterialReservedQuantity(
         [FromRoute] Guid materialId,
@@ -1141,6 +1170,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns the Excel file containing material stock.</returns>
     [HttpGet("download/stock")]
+    [AnyPermission("CanUploadOpeningBalances", "CanViewOpeningBalances", "CanViewWarehouseReport")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(byte[]))]
     public async Task<IResult> DownloadMaterialStock(
         [FromQuery] Guid? departmentId,
@@ -1175,6 +1205,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId"></param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpGet("batches/distinct/{warehouseId:guid}")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialBatchCountDto))]
     public async Task<IResult> GetMaterialBatchCount(
         [FromRoute] Guid warehouseId,
@@ -1202,6 +1233,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of materials with their batches and production departments.</returns>
     [HttpGet("batches/departments")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialBatchDepartmentDto>>)
@@ -1230,6 +1262,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// Gets a report of inconsistencies between batch aggregates and ledger records.
     /// </summary>
     [HttpGet("diagnostics/inconsistencies")]
+    [AnyPermission("CanFixStockInconsistencies")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(IEnumerable<BatchInconsistencyReport>)

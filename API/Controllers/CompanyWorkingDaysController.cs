@@ -33,6 +33,7 @@ public class CompanyWorkingDaysController(ICompanyWorkingDaysRepository reposito
     /// Returns a paginated list of company working days based on search criteria.
     /// </summary>
     [HttpGet]
+    [AnyPermission("CanViewWorkingDays")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<CompanyWorkingDaysDto>>))]
     public async Task<IResult> GetWorkingDays([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)

@@ -39,6 +39,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository, INFRAS
     /// Retrieves a paginated list of the damage and missing records of the stores the user may read.
     /// </summary>
     [HttpGet]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<DamagedStockDto>>))]
     public async Task<IResult> GetDamagedStocks([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string searchQuery = null, [FromQuery] DOMAIN.Entities.Items.Store? store = null, [FromQuery] DamageStatus? damageStatus = null)
@@ -53,6 +54,7 @@ public class DamagedStocksController(IDamagedStocksRepository repository, INFRAS
     /// Retrieves the details of a damaged stock by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
+    [PermissionCheckedInAction("The key depends on the store of the items involved.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DamagedStockDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetDamagedStock([FromRoute] Guid id)

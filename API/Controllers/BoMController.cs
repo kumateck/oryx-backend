@@ -38,6 +38,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="billOfMaterialId">The ID of the Bill of Material.</param>
     /// <returns>Returns the Bill of Material.</returns>
     [HttpGet("{billOfMaterialId}")]
+    [AnyPermission("CanViewProductionProductBom", "CanViewQaProductBom", "CanViewProductionProducts")]
     //[Authorize] 
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -55,6 +56,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of Bill of Materials.</returns>
     [HttpGet]
+    [AnyPermission("CanViewProductionProductBom", "CanViewQaProductBom", "CanViewProductionProducts")]
     //[Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IResult> GetBillOfMaterials([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null)

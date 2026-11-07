@@ -1,3 +1,4 @@
+using API.Authorization;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Storage;
@@ -19,9 +20,9 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     /// <param name="file">The file to upload.</param>
     /// <returns>The ID of the uploaded file or an error message.</returns>
     [HttpPost("{modelType}/{modelId}/{reference}")]
+    [AttachmentPermission]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [Authorize]
     public async Task<IResult> UploadFile(string modelType, Guid modelId,
         string reference, IFormFile file)
     {
@@ -51,9 +52,9 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     /// <param name="files">The files to upload.</param>
     /// <returns>The ID of the uploaded file or an error message.</returns>
     [HttpPost("{modelType}/{modelId}")]
+    [AttachmentPermission]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [Authorize]
     public async Task<IResult> UploadFile(string modelType, Guid modelId,
       [FromForm] List<IFormFile> files)
     {
@@ -77,9 +78,9 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     /// <param name="modelId">The ID of the model to delete attachments for.</param>
     /// <returns>204 No Content if successful, or an error message.</returns>
     [HttpDelete("{modelId}")]
+    [AttachmentPermission]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [Authorize]
     public async Task<IResult> DeleteAttachments(Guid modelId)
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -96,9 +97,9 @@ public class FileController(IFileRepository fileRepository, IBlobStorageService 
     /// <param name="reference">The reference of the attachment to delete.</param>
     /// <returns>204 No Content if successful, or an error message.</returns>
     [HttpDelete("{modelId}/{reference}")]
+    [AttachmentPermission]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [Authorize]
     public async Task<IResult> DeleteSpecificAttachment(Guid modelId, string reference)
     {
         var userId = (string)HttpContext.Items["Sub"];
