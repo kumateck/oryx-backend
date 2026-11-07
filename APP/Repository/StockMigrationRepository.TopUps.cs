@@ -1,4 +1,7 @@
+using APP.Services.Materials;
+using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Materials.StockMigrations;
+using DOMAIN.Entities.Warehouses;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -11,7 +14,8 @@ public partial class StockMigrationRepository
             ? Error.Validation("StockMigration.Reason", "Enter a top-up reason of at most 2,000 characters.")
             : null;
 
-    // Receipt references belong to the lot identity in a top-up. Existing lots are never reused.
+    // Receipt references belong to the lot identity in a top-up. An existing lot is reused only through
+    // ExistingLots, when its batch number, AR number and dates all match.
     internal static (string Batch, Guid UnbatchedLine, string Grn, string Ar) BatchIdentity(
         StockMigration migration, Guid lineId, string batchNumber, string grn, string ar)
     {
@@ -64,9 +68,92 @@ public partial class StockMigrationRepository
         return migration.Id;
     }
 
+    /// <summary>A top-up row as the existing-lot match needs it.</summary>
+    internal sealed record TopUpLot(Guid LineId, Guid MaterialId, string BatchNumber, string ArNumber,
+        DateTime? Made, DateTime? Expires, bool ExactDates, Guid? UoMId);
+
     /// <summary>
-    /// A top-up adds new lots, so a batch number already in stock, or already waiting in another top-up
-    /// draft, may be the same stock entered twice. The person checking decides; it is not refused.
+    /// The existing lot a top-up row adds to, or, when a lot with that batch number is in the department's
+    /// stores but differs, what differs. Rows whose batch number is not in the department's stores are absent.
+    /// </summary>
+    internal sealed record ExistingLot(Guid? BatchId, string Differs);
+
+    /// <summary>
+    /// A top-up row whose batch number is already on the department's shelves adds to that lot when the AR
+    /// number, manufacturing date, expiry date and unit are the same; otherwise it becomes a separate lot.
+    /// Only usable lots (available, or consumed and refilled) are matched.
+    /// </summary>
+    private async Task<Dictionary<Guid, ExistingLot>> ExistingLots(Guid departmentId, IReadOnlyCollection<TopUpLot> lots)
+    {
+        var numbered = lots.Where(l => !string.IsNullOrWhiteSpace(l.BatchNumber)).ToList();
+        if (numbered.Count == 0) return [];
+        var materials = numbered.Select(l => l.MaterialId).Distinct().ToList();
+        var numbers = numbered.Select(l => Norm(l.BatchNumber)).Distinct().ToList();
+        var storeIds = await context.Warehouses.IgnoreQueryFilters()
+            .Where(w => w.DepartmentId == departmentId && w.DeletedAt == null
+                && (w.Type == WarehouseType.RawMaterialStorage || w.Type == WarehouseType.PackagedStorage))
+            .Select(w => w.Id).ToListAsync();
+        var candidates = await context.MaterialBatches.AsNoTracking().IgnoreAutoIncludes()
+            .Where(b => materials.Contains(b.MaterialId) && numbers.Contains(b.BatchNumber.Trim().ToUpper())
+                && (b.Status == BatchStatus.Available || b.Status == BatchStatus.Consumed)
+                && context.ShelfMaterialBatches.IgnoreQueryFilters().Any(s => s.MaterialBatchId == b.Id && s.DeletedAt == null
+                    && storeIds.Contains(s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId)))
+            .OrderBy(b => b.DateReceived).ThenBy(b => b.Id)
+            .Select(b => new { b.Id, b.MaterialId, Number = b.BatchNumber.Trim().ToUpper(), b.ManufacturingDate, b.ExpiryDate, b.UoMId })
+            .ToListAsync();
+        var references = new Dictionary<Guid, string>();
+        foreach (var candidate in candidates)
+            references[candidate.Id] = References(await MigrationBatchReferences.Current(context, candidate.Id));
+
+        var found = new Dictionary<Guid, ExistingLot>();
+        foreach (var lot in numbered)
+        {
+            var same = candidates.Where(c => c.MaterialId == lot.MaterialId && c.Number == Norm(lot.BatchNumber)).ToList();
+            if (same.Count == 0) continue;
+            var expires = lot.ExactDates ? lot.Expires : OpeningBalanceDates.ExpiryMonthEnd(lot.Expires);
+            List<string> Differences(Guid id, DateTime? made, DateTime? expiry, Guid unit)
+            {
+                var differs = new List<string>();
+                if (references[id] != References(lot.ArNumber)) differs.Add("AR number");
+                if (!SameDate(made, lot.Made, lot.ExactDates)) differs.Add("manufacturing date");
+                if (!SameDate(expiry, expires, lot.ExactDates)) differs.Add("expiry date");
+                if (unit != lot.UoMId) differs.Add("unit");
+                return differs;
+            }
+            var match = same.FirstOrDefault(c => Differences(c.Id, c.ManufacturingDate, c.ExpiryDate, c.UoMId).Count == 0);
+            found[lot.LineId] = match != null
+                ? new ExistingLot(match.Id, null)
+                : new ExistingLot(null, Words(Differences(same[0].Id, same[0].ManufacturingDate, same[0].ExpiryDate, same[0].UoMId)));
+        }
+        return found;
+    }
+
+    private static string Norm(string value) => (value ?? string.Empty).Trim().ToUpperInvariant();
+
+    // A lot refilled by several rows reads back as "AR-1, ar-1"; compare the distinct references.
+    private static string References(string value) =>
+        string.Join(", ", (value ?? string.Empty).Split(',').Select(Norm).Where(r => r.Length > 0).Distinct().Order());
+
+    // Sheet top-ups give months, so a month-precision row matches any day in the same month.
+    private static bool SameDate(DateTime? existing, DateTime? entered, bool exact) =>
+        existing is null || entered is null
+            ? existing is null && entered is null
+            : exact ? existing.Value.Date == entered.Value.Date
+            : existing.Value.Year == entered.Value.Year && existing.Value.Month == entered.Value.Month;
+
+    private static string Words(List<string> items) =>
+        items.Count <= 1 ? string.Join("", items) : string.Join(", ", items[..^1]) + " and " + items[^1];
+
+    private static List<TopUpLot> TopUpLots(IEnumerable<StockMigrationLine> lines) =>
+        lines.Where(l => l.ResolvedMaterialId.HasValue)
+            .Select(l => new TopUpLot(l.Id, l.ResolvedMaterialId!.Value, l.BatchNumber, l.ArNumber,
+                l.ManufacturingDate, l.ExpiryDate, l.ExactDates, l.UoMId))
+            .ToList();
+
+    /// <summary>
+    /// A batch number already in stock, or already waiting in another top-up draft, may be the same stock
+    /// entered twice. The person checking decides; it is not refused. When the AR number and dates match a
+    /// lot on the department's shelves, approval adds the quantity to that lot instead of a new one.
     /// </summary>
     private async Task WarnRepeatedTopUpBatches(StockMigration migration)
     {
@@ -79,6 +166,7 @@ public partial class StockMigrationRepository
                 .Where(b => materials.Contains(b.MaterialId) && numbers.Contains(b.BatchNumber.Trim().ToUpper()))
                 .Select(b => new { b.MaterialId, Number = b.BatchNumber.Trim().ToUpper() }).ToListAsync())
             .Select(b => (b.MaterialId, b.Number)).ToHashSet();
+        var existing = await ExistingLots(migration.DepartmentId, TopUpLots(numbered));
         var drafted = (await context.StockMigrationLines.AsNoTracking().IgnoreAutoIncludes()
                 .Where(l => l.StockMigrationId != migration.Id && !l.Excluded
                     && l.StockMigration.Mode == StockMigrationMode.TopUp && l.StockMigration.Status == StockMigrationStatus.Draft
@@ -89,11 +177,16 @@ public partial class StockMigrationRepository
         foreach (var line in numbered)
         {
             var key = (line.ResolvedMaterialId!.Value, line.BatchNumber.Trim().ToUpperInvariant());
+            var number = line.BatchNumber.Trim();
             var notes = new List<string>();
-            if (inStock.Contains(key))
-                notes.Add($"Batch {line.BatchNumber.Trim()} of this material is already in stock. Check this is new stock and not entered twice; approval adds it as a separate lot.");
+            if (existing.TryGetValue(line.Id, out var lot))
+                notes.Add(lot.BatchId.HasValue
+                    ? $"Batch {number} of this material is already in stock with the same AR number, manufacturing and expiry dates. Approval adds this quantity to that batch."
+                    : $"Batch {number} of this material is already in stock with a different {lot.Differs}. Check this is new stock and not entered twice; approval adds it as a separate lot.");
+            else if (inStock.Contains(key))
+                notes.Add($"Batch {number} of this material is already in stock. Check this is new stock and not entered twice; approval adds it as a separate lot.");
             if (drafted.Contains(key))
-                notes.Add($"Batch {line.BatchNumber.Trim()} of this material is also in another top-up draft waiting for approval.");
+                notes.Add($"Batch {number} of this material is also in another top-up draft waiting for approval.");
             if (notes.Count == 0) continue;
             line.Warnings = Join([.. Split(line.Warnings), .. notes]);
             if (line.Status == StockMigrationLineStatus.Ok) line.Status = StockMigrationLineStatus.Warning;

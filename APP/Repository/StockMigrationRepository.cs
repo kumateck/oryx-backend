@@ -343,6 +343,7 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
 
         var kinds = await LoadedKinds(id);
         var rows = new Dictionary<Guid, StockMigrationComparisonDto>();
+        var currentBatchIds = new HashSet<Guid>();
 
         if (migration.Status == StockMigrationStatus.Approved)
         {
@@ -377,14 +378,21 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
                 row.Current = group.Sum(c => c.Quantity);
                 row.CurrentBatches = group.Select(c => c.MaterialBatchId).Distinct().Count();
             }
+            currentBatchIds = current.Select(c => c.MaterialBatchId).ToHashSet();
         }
 
         var loaded = await context
             .StockMigrationLines.AsNoTracking()
             .Where(l => l.StockMigrationId == id && l.ResolvedMaterialId != null
                 && (l.Status == StockMigrationLineStatus.Ok || l.Status == StockMigrationLineStatus.Warning))
-            .Select(l => new { l.Id, l.ResolvedMaterialId, l.BatchNumber, l.Grn, l.ArNumber, l.Quantity, Unit = l.UoM.Symbol })
+            .Select(l => new { l.Id, l.ResolvedMaterialId, l.BatchNumber, l.Grn, l.ArNumber, l.Quantity, Unit = l.UoM.Symbol,
+                l.ManufacturingDate, l.ExpiryDate, l.ExactDates, l.UoMId })
             .ToListAsync();
+        // A draft top-up row that adds to a lot already on the shelves is not a new lot.
+        var existingLots = migration.Mode == StockMigrationMode.TopUp && migration.Status == StockMigrationStatus.Draft
+            ? await ExistingLots(migration.DepartmentId, loaded.Select(l => new TopUpLot(l.Id, l.ResolvedMaterialId.Value,
+                l.BatchNumber, l.ArNumber, l.ManufacturingDate, l.ExpiryDate, l.ExactDates, l.UoMId)).ToList())
+            : new Dictionary<Guid, ExistingLot>();
         var materialIds = loaded.Select(l => l.ResolvedMaterialId.Value).Distinct().ToList();
         var materials = await context.Materials.IgnoreQueryFilters().Where(m => materialIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
         foreach (var group in loaded.GroupBy(l => l.ResolvedMaterialId.Value))
@@ -392,7 +400,11 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
             var row = Row(rows, materials[group.Key], group.First().Unit);
             row.New = group.Sum(l => l.Quantity ?? 0);
             row.Added = group.Sum(l => l.Quantity ?? 0);
-            row.NewBatches = group.Select(l => BatchIdentity(migration, l.Id, l.BatchNumber, l.Grn, l.ArNumber)).Distinct().Count();
+            row.NewBatches = group
+                .Where(l => existingLots.GetValueOrDefault(l.Id)?.BatchId is not { } lot || !currentBatchIds.Contains(lot))
+                .Select(l => existingLots.GetValueOrDefault(l.Id)?.BatchId is { } lot
+                    ? (object)lot : BatchIdentity(migration, l.Id, l.BatchNumber, l.Grn, l.ArNumber))
+                .Distinct().Count();
             if (migration.Mode == StockMigrationMode.TopUp)
             {
                 row.New += row.Current;
@@ -513,12 +525,29 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
 
         }
 
-        // 2. Load the counted stock as new batches.
+        // A top-up row matching a lot on the department's shelves (batch, AR number, dates) adds to that lot.
+        var existingLots = migration.Mode == StockMigrationMode.TopUp
+            ? await ExistingLots(migration.DepartmentId, TopUpLots(toLoad))
+            : new Dictionary<Guid, ExistingLot>();
+        var refilledShelves = new Dictionary<(Guid Batch, Guid Shelf), ShelfMaterialBatch>();
+
+        // 2. Load the counted stock as new batches, or onto the matching lot.
         foreach (var group in toLoad.GroupBy(l => (Material: l.ResolvedMaterialId!.Value, Identity: BatchIdentity(migration, l.Id, l.BatchNumber, l.Grn, l.ArNumber))))
         {
             var first = group.First();
             var total = group.Sum(l => l.Quantity ?? 0);
-            var batch = new MaterialBatch
+            var targetId = existingLots.GetValueOrDefault(first.Id)?.BatchId;
+            var batch = targetId is { } existingId
+                ? await context.MaterialBatches.IgnoreAutoIncludes().FirstAsync(b => b.Id == existingId)
+                : null;
+            if (batch != null)
+            {
+                batch.TotalQuantity += total;
+                batch.QuantityAssigned += total;
+                if (batch.Status == BatchStatus.Consumed)
+                    batch.Status = BatchStatus.Available;
+            }
+            else batch = new MaterialBatch
             {
                 Id = Guid.NewGuid(),
                 MaterialId = group.Key.Material,
@@ -535,7 +564,8 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
                 ExpiryDate = first.ExactDates ? first.ExpiryDate : OpeningBalanceDates.ExpiryMonthEnd(first.ExpiryDate),
                 RetestDate = first.RetestDate,
             };
-            context.MaterialBatches.Add(batch);
+            if (targetId == null)
+                context.MaterialBatches.Add(batch);
 
             foreach (var onShelf in group.GroupBy(l => l.ResolvedShelfId!.Value))
             {
@@ -549,14 +579,27 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
                     balance += receiptBalances.GetValueOrDefault(key);
                     receiptBalances[key] = balance;
                 }
-                context.ShelfMaterialBatches.Add(new ShelfMaterialBatch
+                var shelfRow = targetId == null ? null
+                    : refilledShelves.GetValueOrDefault((batch.Id, onShelf.Key))
+                        ?? await context.ShelfMaterialBatches.IgnoreQueryFilters()
+                            .Where(s => s.MaterialBatchId == batch.Id && s.WarehouseLocationShelfId == onShelf.Key && s.DeletedAt == null)
+                            .OrderBy(s => s.CreatedAt).FirstOrDefaultAsync();
+                if (shelfRow != null)
+                    shelfRow.Quantity += quantity;
+                else
                 {
-                    WarehouseLocationShelfId = onShelf.Key,
-                    MaterialBatchId = batch.Id,
-                    Quantity = quantity,
-                    UoMId = batch.UoMId,
-                    Note = Clip($"{stamp}. GRN: {grn}. AR: {ar}", 1000),
-                });
+                    shelfRow = new ShelfMaterialBatch
+                    {
+                        WarehouseLocationShelfId = onShelf.Key,
+                        MaterialBatchId = batch.Id,
+                        Quantity = quantity,
+                        UoMId = batch.UoMId,
+                        Note = Clip($"{stamp}. GRN: {grn}. AR: {ar}", 1000),
+                    };
+                    context.ShelfMaterialBatches.Add(shelfRow);
+                }
+                if (targetId != null)
+                    refilledShelves[(batch.Id, onShelf.Key)] = shelfRow;
                 context.BinCardInformation.Add(new BinCardInformation
                 {
                     MaterialBatchId = batch.Id,
