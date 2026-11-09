@@ -357,3 +357,21 @@ test("demo and customer formula services keep the same container hardening", () 
   assert.match(demo, /3101\/health/);
   assert.match(customer, /3101\/ready/);
 });
+
+
+test("first installation creates the empty formula volume before the model preflight", () => {
+  const f = fixture();
+  try {
+    const result = f.run("deploy");
+    assert.equal(result.status, 0, result.stderr);
+    const events = f.events();
+    const volume = events.findIndex(event => event.tool === "docker" && event.args[0] === "volume"
+      && event.args[1] === "create" && event.args[2] === "oryx-backend-formula-secrets");
+    const model = events.findIndex(event => contains(event, "has-pending-model-changes"));
+    const secret = events.findIndex(event => event.tool === "docker" && event.args[0] === "run" && event.args.includes("--network"));
+    const stop = events.findIndex(event => contains(event, "stop"));
+    assert.ok(volume >= 0 && volume < model, "model jobs mount the external volume on first install");
+    assert.ok(model < secret && secret < stop, "trusted secret provisioning follows model validation and precedes API downtime");
+    assert.ok(f.events().some(event => event.args.includes("--formula-readiness")));
+  } finally { f.close(); }
+});
