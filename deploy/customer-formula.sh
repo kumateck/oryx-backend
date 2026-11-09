@@ -95,6 +95,9 @@ PY
   if [[ ! -f "$archive" ]]; then cp "$bundle/image.tar" "$archive.tmp"; mv "$archive.tmp" "$archive"; fi
   printf '%s\n' "$archive" > "$RELEASE/formula-archive"
   formula_restore_image "$RELEASE" "$archive_hash"
+  # The model-check job mounts the API overlay before secret provisioning. Compose requires
+  # its external volume to exist even while it is empty; retain the existing volume on upgrades.
+  docker volume create "$PROJECT-formula-secrets" >/dev/null
 }
 
 # Copy the root-only master secret into the release's Docker volume. The one-shot helper runs the
