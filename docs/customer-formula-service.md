@@ -1,5 +1,19 @@
 # Customer formula calculation service
 
+## First-install volume bootstrap (2026-11-09)
+
+Preparation creates the external formula secret volume before the model-check
+job mounts it. The volume is initially empty; the trusted API helper populates
+it from the existing root-only master secret after model validation and before
+formula health checks or API downtime. Reusing an existing volume does not rotate
+the token or change its permissions. This fixes first installs failing with
+`external volume "<compose-project>-formula-secrets" not found` at
+`model-consistency`. Existing backup/migration and readiness gates still apply.
+
+The customer recovery confirmed local Docker HTTP, authenticated backend formula
+readiness, a healthy hardened formula container with no published ports, and LAN
+site availability. No remote calculation service or HTTPS requirement is added.
+
 The authoritative runtime is owned by **oryx-live-desktop**, in
 `services/formula-calculation`. It uses that repository's existing formula core.
 The obsolete Next application is not built, pulled or contacted. The API remains

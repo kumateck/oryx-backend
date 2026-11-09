@@ -27,6 +27,8 @@ if (tool === "git") {
   if (command[0] === "worktree" && command[1] === "remove") rmSync(command[3] ?? "", { recursive: true, force: true });
 } else if (tool === "docker") {
   if (args[0] === "build") fail("build");
+  const volumeMarker = join(fixture.directory, "formula-volume-created");
+  if (args[0] === "volume" && args[1] === "create") writeFileSync(volumeMarker, "created");
   if (args[0] === "inspect" && args.includes("--format")) {
     const format = args[args.indexOf("--format") + 1] ?? "";
     if (format === "{{json .}}") {
@@ -63,7 +65,13 @@ if (tool === "git") {
       ...(fixture.smtp ? { SMTP_HOST: "mail.example.test", SMTP_USERNAME: "erp@example.test", SMTP_PASSWORD: "fixture" } : { SMTP_HOST: "" }),
     } } } }));
     if (args.includes("run")) {
-      if (args.includes("has-pending-model-changes")) fail("model");
+      if (args.includes("has-pending-model-changes")) {
+        if (!existsSync(volumeMarker)) {
+          process.stderr.write('external volume "oryx-backend-formula-secrets" not found\n');
+          process.exit(1);
+        }
+        fail("model");
+      }
       else fail("migration");
     }
     if (args.includes("up") && args.includes("formula-calculation")) fail("formula-health");
