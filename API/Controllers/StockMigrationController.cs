@@ -1,4 +1,6 @@
 using APP.Extensions;
+using API.Authorization;
+using DOMAIN.Entities.Materials;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Materials.StockMigrations;
@@ -18,6 +20,33 @@ namespace API.Controllers;
 // Someone signed in to a department acts only for that department; someone with no department may act for any.
 public class StockMigrationController(IStockMigrationRepository repository, ICurrentUserService user) : ControllerBase
 {
+    /// <summary>Preview missing links and storage defaults for one material kind in a draft.</summary>
+    [HttpGet("{id:guid}/material-links/{kind}", Name = "PreviewStockMigrationMaterialLinks")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
+    [MaterialKindPermission(PermissionKeys.CanLinkRawMaterials, PermissionKeys.CanLinkPackagingMaterials)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockMigrationMaterialLinkDto>))]
+    public async Task<IResult> PreviewMaterialLinks(Guid id, MaterialKind kind)
+    {
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (await Refusal(id) is { } refused) return refused;
+        var result = await repository.PreviewMaterialLinks(id, kind, actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Create only still-missing draft links, preserving existing links, then recheck rows. No stock is posted.</summary>
+    [HttpPost("{id:guid}/material-links/{kind}", Name = "CreateStockMigrationMaterialLinks")]
+    [Authorize(PermissionKeys.CanCorrectOpeningBalances)]
+    [MaterialKindPermission(PermissionKeys.CanLinkRawMaterials, PermissionKeys.CanLinkPackagingMaterials)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockMigrationMaterialLinksResult))]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> CreateMaterialLinks(Guid id, MaterialKind kind, [FromBody] CreateStockMigrationMaterialLinksRequest request)
+    {
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        if (await Refusal(id) is { } refused) return refused;
+        var result = await repository.CreateMaterialLinks(id, kind, request, actor);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Save an additive migration top-up from the existing stock workbook format. No stock is posted.</summary>
     [HttpPost("top-ups/upload")]
     [Authorize(PermissionKeys.CanUploadOpeningBalances)]

@@ -7,6 +7,8 @@ namespace APP.IRepository;
 
 public interface IStockMigrationRepository
 {
+    Task<Result<List<StockMigrationMaterialLinkDto>>> PreviewMaterialLinks(Guid id, DOMAIN.Entities.Materials.MaterialKind kind, Guid actor);
+    Task<Result<StockMigrationMaterialLinksResult>> CreateMaterialLinks(Guid id, DOMAIN.Entities.Materials.MaterialKind kind, CreateStockMigrationMaterialLinksRequest request, Guid actor);
     Task<Result<Guid>> Upload(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, Guid userId);
     Task<Result<Guid>> UploadTopUp(IFormFile file, Guid departmentId, string massUnit, string volumeUnit, string reason, Guid userId);
     Task<Result<Guid>> CreateTopUp(CreateStockTopUpRequest request, Guid userId);
