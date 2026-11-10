@@ -53,6 +53,46 @@ the reported `dateOfBirth` JSON conversion failure. No employee data migration
 is needed. The desktop change is in
 `oryx-live-desktop` branch `codex/fix-employee-year-one-date`.
 
+## Invalid production packing-style repair
+
+The screenshot's blocked batch was caused by a saved packing-style reference
+that was missing or no longer belonged to the product. The merged backend fix
+prevents deleting any style still referenced by a scheduled batch and validates
+that new schedule batches use an active style for their product. For a legacy
+running batch, the packaging-repair preview proposes the first active style in
+alphabetical order (ID breaks ties), names it for operator review, and includes
+the choice in the preview hash and audit evidence. Applying the repair updates
+the style and packaging allocation atomically under the existing
+`CanRepairPackaging`, stock and approval rules. No schema migration or new
+permission was added.
+
+This work is already merged in [backend PR #1784](https://github.com/kumateck/oryx-backend/pull/1784)
+and [desktop PR #172](https://github.com/kumateck/oryx-live-desktop/pull/172).
+The backend PR reported `git diff --check` passing; the backend build did not
+finish within five minutes and no tests were run. The desktop web typecheck and
+diff check passed; no desktop tests were run.
+
+## Related work from this conversation already merged
+
+These changes are already in their target branches and have their own detailed
+PR descriptions and feature documentation:
+
+- Customer formula runtime ownership and hardened backend installation:
+  [backend #1759](https://github.com/kumateck/oryx-backend/pull/1759),
+  [desktop #154](https://github.com/kumateck/oryx-live-desktop/pull/154), plus
+  [backend hardening #1762](https://github.com/kumateck/oryx-backend/pull/1762)
+  and [desktop hardening #158](https://github.com/kumateck/oryx-live-desktop/pull/158).
+- Signed desktop update mirroring for customer LAN servers:
+  [desktop #168](https://github.com/kumateck/oryx-live-desktop/pull/168).
+- Migration top-up quantity adds to a matching existing batch:
+  [backend #1776](https://github.com/kumateck/oryx-backend/pull/1776) and
+  [desktop #163](https://github.com/kumateck/oryx-live-desktop/pull/163).
+- Missing material department links can be created from migration drafts:
+  [backend #1779](https://github.com/kumateck/oryx-backend/pull/1779) and
+  [desktop #167](https://github.com/kumateck/oryx-live-desktop/pull/167).
+- Employee reporting-manager assignment validation:
+  [backend #1758](https://github.com/kumateck/oryx-backend/pull/1758).
+
 ## Verification recorded
 
 - Backend focused tests: 32 passed; API build completed with no errors.
