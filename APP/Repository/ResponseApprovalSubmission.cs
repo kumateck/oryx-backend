@@ -29,7 +29,10 @@ internal static class ResponseApprovalSubmission
             && stages.Count == 0)
             return Error.Conflict("Response.QaApprovalRequired",
                 "Material and product test responses require an assigned QA Response approval document.");
-        if (stages.Any(item => !item.UserId.HasValue && !item.RoleId.HasValue))
+        if (stages.Count > 0 && !stages.Any(item => item.Required))
+            return Error.Conflict("Response.RequiredApproval",
+                "Mark at least one stage of the Response approval workflow as required.");
+        if (stages.Any(item => item.UserId.HasValue == item.RoleId.HasValue))
             return Error.Validation("Response.ApprovalAssignment",
                 "Every response approval stage must be assigned to a user or role.");
 

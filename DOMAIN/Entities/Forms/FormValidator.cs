@@ -1,3 +1,4 @@
+using DOMAIN.Entities.QualityRoutines;
 using SHARED;
 
 namespace DOMAIN.Entities.Forms;
@@ -12,15 +13,19 @@ public static class FormValidator
         return Result.Success();
     }
 
-    public static Result ValidateForUse(Form form)
+    public static Result ValidateForUse(Form form, AnalysisType analysisType)
     {
         var draftValidation = Validate(form);
         if (draftValidation.IsFailure)
             return draftValidation;
 
-        var errors = form.Sections
-            .Where(section => section.Fields == null || section.Fields.Count == 0)
-            .Select(section => FormErrors.SectionWithoutQuestions(section.Name))
+        var sections = form.Sections.Where(section => section.DeletedAt == null)
+            .OrderBy(section => section.Order).ThenBy(section => section.Id).ToList();
+        var errors = sections.Select((section, index) => new { Section = section, Position = index + 1 })
+            .Where(item => item.Section.AnalysisType == null || item.Section.AnalysisType == analysisType)
+            .Where(item => item.Section.Fields?.Any(field =>
+                field.DeletedAt == null && field.Question is { DeletedAt: null }) != true)
+            .Select(item => FormErrors.SectionWithoutQuestions(form.Name, item.Section.Name, item.Position))
             .ToList();
 
         return errors.Count != 0 ? Result.Failure(errors) : Result.Success();

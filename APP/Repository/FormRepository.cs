@@ -1562,7 +1562,8 @@ public class FormRepository(
             await LegacyFormulaConfigurationReader.Latest(context, [formResponse.Id]));
         await FormulaResultProjectionService.AttachAsync(
             context, formResponse.FormResponses, detail.FormResponses);
-        detail.HasPendingApproval = ResponseApprovalRoundManager.Current(formResponse.Approvals)
+        detail.HasPendingApproval = !formResponse.Approved && !formResponse.Rejected
+            && ResponseApprovalRoundManager.Current(formResponse.Approvals)
             .Any(item => item.Status == ApprovalStatus.Pending);
         return detail;
     }

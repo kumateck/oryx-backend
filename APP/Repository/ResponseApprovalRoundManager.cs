@@ -38,7 +38,9 @@ internal static class ResponseApprovalRoundManager
             throw new InvalidOperationException(
                 "A versioned response requires authoritative formula submission evidence.");
         var round = existing.Count == 0 ? 1 : existing.Max(item => item.ApprovalRound) + 1;
-        var firstOrder = stages.Min(item => item.Order);
+        if (!stages.Any(item => item.Required))
+            throw new InvalidOperationException("A response approval workflow requires at least one required stage.");
+        var now = DateTime.UtcNow;
         var rows = stages.Select(stage => new ResponseApproval
         {
             ResponseId = responseId,
@@ -48,15 +50,28 @@ internal static class ResponseApprovalRoundManager
             Order = stage.Order,
             UserId = stage.UserId,
             RoleId = stage.RoleId,
-            ActivatedAt = stage.Order == firstOrder ? DateTime.UtcNow : null,
             FormulaSubmissionSetId = submissionSetId,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = now,
         }).ToList();
+
+        ActivateEligible(rows, now);
 
         response.Approved = false;
         response.Rejected = false;
         await context.ResponseApprovals.AddRangeAsync(rows);
         await context.SaveChangesAsync();
         return true;
+    }
+    internal static void ActivateEligible(IReadOnlyCollection<ResponseApproval> rows, DateTime now)
+    {
+        var nextRequired = rows.Where(row => row.Required && row.Status == ApprovalStatus.Pending)
+            .Min(row => (int?)row.Order);
+        if (!nextRequired.HasValue) return;
+
+        foreach (var row in rows)
+        {
+            if (row.Status == ApprovalStatus.Pending && row.Order <= nextRequired.Value)
+                row.ActivatedAt ??= now;
+        }
     }
 }
