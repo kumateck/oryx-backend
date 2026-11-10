@@ -25,10 +25,12 @@ internal static class ResponseApprovalRoundManager
         var existing = await context.ResponseApprovals
             .Where(item => item.ResponseId == responseId).ToListAsync();
         var current = Current(existing);
-        if (current.Any(item => item.Status == ApprovalStatus.Pending)) return false;
 
         var response = await context.Responses.FirstOrDefaultAsync(item => item.Id == responseId)
             ?? throw new InvalidOperationException($"Response {responseId} was not found.");
+        if (!response.Approved && !response.Rejected && current.Any(item => item.Status == ApprovalStatus.Pending))
+            return false;
+
         var submissionSetId = await context.ResponseFormulaSubmissionSets.AsNoTracking()
             .Where(item => item.ResponseId == responseId)
             .OrderByDescending(item => item.Sequence)

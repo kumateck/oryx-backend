@@ -734,6 +734,10 @@ public class ApprovalAutomaticPolicyTests
         var lateDecision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [optionalRole]);
         Assert.Equal("Response.ApprovalClosed", lateDecision.Error.Code);
         Assert.Single(context.ApprovalActionLogs);
+        var resubmission = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
+        Assert.Equal("Response.AlreadyApproved", resubmission.Error.Code);
+        Assert.True(await ResponseApprovalRoundManager.StartAsync(context, response.Id, approval.ApprovalStages, approval));
+        Assert.Equal(2, await context.ResponseApprovals.MaxAsync(row => row.ApprovalRound));
     }
 
     [Fact]

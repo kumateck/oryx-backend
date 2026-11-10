@@ -39,15 +39,18 @@ internal static class ResponseApprovalSubmission
         var existing = await context.ResponseApprovals.AsNoTracking()
             .Where(item => item.ResponseId == responseId).ToListAsync();
         var current = ResponseApprovalRoundManager.Current(existing);
-        if (current.Any(item => item.Status == ApprovalStatus.Pending))
-            return Error.Conflict("Response.ApprovalPending",
-                "This response already has a pending approval round.");
-        if (response.Approved || current.Any(item => item.Status == ApprovalStatus.Approved))
+        if (response.Approved)
             return Error.Conflict("Response.AlreadyApproved",
                 "This response has already been approved. Start an audited revision instead.");
         if (response.Rejected || current.Any(item => item.Status == ApprovalStatus.Rejected))
             return Error.Conflict("Response.RevisionRequired",
                 "This response was rejected. Start an audited revision before resubmitting.");
+        if (current.Any(item => item.Status == ApprovalStatus.Pending))
+            return Error.Conflict("Response.ApprovalPending",
+                "This response already has a pending approval round.");
+        if (current.Any(item => item.Status == ApprovalStatus.Approved))
+            return Error.Conflict("Response.AlreadyApproved",
+                "This response has already been approved. Start an audited revision instead.");
         if (existing.Count > 0)
             return Error.Conflict("Response.RevisionRequired",
                 "This response has a completed approval round. Start an audited revision before resubmitting.");
