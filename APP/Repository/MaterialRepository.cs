@@ -951,13 +951,15 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .ThenInclude(mb => mb.Checklist)
                     .ThenInclude(cl => cl.Manufacturer)
             .Where(m =>
-                m.MaterialBatch.MaterialId == materialId
+                m.DeletedAt == null && m.Quantity > 0 && m.MaterialBatch.DeletedAt == null
+                && m.MaterialBatch.MaterialId == materialId
                 && m.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
                 && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id
                     == warehouse.Id
                 && m.MaterialBatch.Status == BatchStatus.Available
             )
             .OrderBy(MaterialValidity.DateFor<ShelfMaterialBatch>(m => m.MaterialBatch))
+            .ThenBy(m => m.Id)
             .AsQueryable();
 
         return await PaginationHelper.GetPaginatedResultAsync(

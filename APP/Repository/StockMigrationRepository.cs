@@ -266,11 +266,11 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
         line.BatchNumber = batch;
         line.UnitSymbol = request.UnitSymbol?.Trim();
         line.QuantityInSheet = request.QuantityInSheet is > 0 ? request.QuantityInSheet : null;
-        line.ManufacturingDate = Date(request.ManufacturingDate, line.ExactDates);
-        line.ExpiryDate = Date(request.ExpiryDate, line.ExactDates);
+        line.ManufacturingDate = Utc(request.ManufacturingDate);
+        line.ExpiryDate = Utc(request.ExpiryDate);
         // Older clients do not send the retest date, so an empty one keeps what was saved.
         if (request.ClearRetestDate) line.RetestDate = null;
-        else if (request.RetestDate != null) line.RetestDate = Day(request.RetestDate);
+        else if (request.RetestDate != null) line.RetestDate = OpeningBalanceDates.ExpiryMonthEnd(request.RetestDate);
         line.Excluded = request.Excluded;
         if (request.Grn != null) line.Grn = request.Grn.Trim();
         if (request.ArNumber != null) line.ArNumber = request.ArNumber.Trim();
@@ -386,12 +386,12 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
             .Where(l => l.StockMigrationId == id && l.ResolvedMaterialId != null
                 && (l.Status == StockMigrationLineStatus.Ok || l.Status == StockMigrationLineStatus.Warning))
             .Select(l => new { l.Id, l.ResolvedMaterialId, l.BatchNumber, l.Grn, l.ArNumber, l.Quantity, Unit = l.UoM.Symbol,
-                l.ManufacturingDate, l.ExpiryDate, l.ExactDates, l.UoMId })
+                l.ManufacturingDate, l.ExpiryDate, l.RetestDate, l.UoMId })
             .ToListAsync();
         // A draft top-up row that adds to a lot already on the shelves is not a new lot.
         var existingLots = migration.Mode == StockMigrationMode.TopUp && migration.Status == StockMigrationStatus.Draft
             ? await ExistingLots(migration.DepartmentId, loaded.Select(l => new TopUpLot(l.Id, l.ResolvedMaterialId.Value,
-                l.BatchNumber, l.ArNumber, l.ManufacturingDate, l.ExpiryDate, l.ExactDates, l.UoMId)).ToList())
+                l.BatchNumber, l.ArNumber, l.ManufacturingDate, l.ExpiryDate, l.RetestDate, l.UoMId)).ToList())
             : new Dictionary<Guid, ExistingLot>();
         var materialIds = loaded.Select(l => l.ResolvedMaterialId.Value).Distinct().ToList();
         var materials = await context.Materials.IgnoreQueryFilters().Where(m => materialIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
@@ -561,7 +561,7 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
                 DateReceived = now,
                 DateApproved = now,
                 ManufacturingDate = first.ManufacturingDate,
-                ExpiryDate = first.ExactDates ? first.ExpiryDate : OpeningBalanceDates.ExpiryMonthEnd(first.ExpiryDate),
+                ExpiryDate = OpeningBalanceDates.ExpiryMonthEnd(first.ExpiryDate),
                 RetestDate = first.RetestDate,
             };
             if (targetId == null)
@@ -668,6 +668,15 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
     {
         if (migration.Mode == StockMigrationMode.OpeningBalance)
             OpeningBalanceDates.Reconcile(migration.Lines);
+        // Working values use calendar months, including legacy drafts sent with ExactDates=true.
+        // Sheet* fields remain the original evidence. Approved rows are never rechecked or rewritten here.
+        foreach (var line in migration.Lines)
+        {
+            line.ExactDates = false;
+            line.ManufacturingDate = Utc(line.ManufacturingDate);
+            line.ExpiryDate = Utc(line.ExpiryDate);
+            line.RetestDate = OpeningBalanceDates.ExpiryMonthEnd(line.RetestDate);
+        }
         var lines = migration.Lines;
         var department = await context.Departments.IgnoreQueryFilters().Where(d => d.Id == migration.DepartmentId).Select(d => d.Name).FirstAsync();
         var stores = await Stores(migration.DepartmentId);
@@ -821,23 +830,23 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
                     ? "No supplier batch number was supplied. This row is retained as separate top-up stock without a batch number."
                     : "No supplier batch or GRN was supplied. This row is retained as separate opening stock without a batch number.");
             }
-            // Sheet dates are months; manually entered top-up dates are full days.
-            var now = line.ExactDates ? today : thisMonth;
+            // Manufacturing, expiry and retest are month/year values.
+            var now = thisMonth;
             if (line.ExpiryDate is { } expiry && expiry < now)
-                warnings.Add(line.ExactDates ? $"Expired ({expiry:dd MMM yyyy})." : $"Expired ({expiry:MMM yyyy}).");
+                warnings.Add($"Expired ({expiry:MMM yyyy}).");
             if (line.ManufacturingDate is { } made && line.ExpiryDate is { } expires && made > expires)
                 blockers.Add("The manufacturing date is after the expiry date.");
             if (line.ManufacturingDate is { } future && future > now)
                 blockers.Add("The manufacturing date is in the future.");
             if (line.RetestDate is { } retest)
             {
-                var lastDay = line.ExactDates ? line.ExpiryDate : OpeningBalanceDates.ExpiryMonthEnd(line.ExpiryDate);
+                var lastDay = OpeningBalanceDates.ExpiryMonthEnd(line.ExpiryDate);
                 if (lastDay is { } ends && retest > ends)
                     blockers.Add("The retest date is after the expiry date.");
                 if (line.ManufacturingDate is { } madeOn && retest < madeOn)
                     blockers.Add("The retest date is before the manufacturing date.");
                 if (retest < today)
-                    warnings.Add($"The retest date ({retest:dd MMM yyyy}) has passed, so the lot is due for retest as soon as it is added.");
+                    warnings.Add($"The retest date ({retest:MMM yyyy}) has passed, so the lot is due for retest as soon as it is added.");
             }
 
             line.Blockers = Join(blockers);
@@ -1017,11 +1026,7 @@ public partial class StockMigrationRepository(ApplicationDbContext context) : IS
     private static DateTime? Utc(DateTime? date) =>
         date is { } d ? new DateTime(d.Year, d.Month, 1, 0, 0, 0, DateTimeKind.Utc) : null;
 
-    /// <summary>A full date, kept to the day (manual top-up dates and retest dates).</summary>
-    internal static DateTime? Day(DateTime? date) =>
-        date is { } d ? new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Utc) : null;
 
-    private static DateTime? Date(DateTime? date, bool exact) => exact ? Day(date) : Utc(date);
 
     private static List<string> Split(string text) =>
         string.IsNullOrEmpty(text) ? [] : text.Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();

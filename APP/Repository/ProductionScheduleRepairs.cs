@@ -66,13 +66,15 @@ internal static partial class ProductionScheduleRepairs
                 else
                 {
                     var materialKind = kind == ScheduleRepairKind.Bom ? MaterialKind.Raw : MaterialKind.Package;
+                    var packingStyleOverride = plan.PackingStyleOverrides.GetValueOrDefault(batch.BatchId);
+                    Guid? selectedPackingStyle = plan.PackingStyleOverrides.ContainsKey(batch.BatchId) ? packingStyleOverride : null;
                     // Earlier batches can change the remaining free stock. Re-plan under the same
                     // locks; any later shortage refuses and rolls back the entire product repair.
-                    var fresh = await ProductionMaterialRepairs.Preview(db, activityId, actorId, materialKind);
+                    var fresh = await ProductionMaterialRepairs.Preview(db, activityId, actorId, materialKind, selectedPackingStyle);
                     if (fresh.IsFailure) return fresh.Error;
                     var repaired = await ProductionMaterialRepairs.Apply(db, approvals, activityId, actorId, materialKind,
                         new ApplyProductionMaterialRepair { RequestId = BatchRequestId(request.RequestId, batch.BatchId),
-                            PreviewHash = fresh.Value.PreviewHash, Reason = request.Reason.Trim() });
+                            PreviewHash = fresh.Value.PreviewHash, Reason = request.Reason.Trim() }, selectedPackingStyle);
                     if (repaired.IsFailure) return repaired.Error;
                     if (repaired.Value.ApprovalRequired) result.RequiringApproval++;
                 }

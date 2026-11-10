@@ -436,6 +436,10 @@ public static class PermissionKeys
     public const string CanUploadOpeningBalances = "CanUploadOpeningBalances";
     public const string CanCorrectOpeningBalances = "CanCorrectOpeningBalances";
     public const string CanApproveOpeningBalances = "CanApproveOpeningBalances";
+    /// <summary>Consolidate an unused approved raw-material migration top-up into its matching lot.</summary>
+    public const string CanConsolidateRawMaterialTopUps = "CanConsolidateRawMaterialTopUps";
+    /// <summary>Consolidate an unused approved packaging-material migration top-up into its matching lot.</summary>
+    public const string CanConsolidatePackagingMaterialTopUps = "CanConsolidatePackagingMaterialTopUps";
     // Procurement
     public const string CanViewPurchaseRequisitions = "CanViewPurchaseRequisitions";
     public const string CanSourcePurchaseRequisition = "CanSourcePurchaseRequisition";
@@ -1475,6 +1479,8 @@ public static class PermissionUtils
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanUploadOpeningBalances);
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanCorrectOpeningBalances);
         addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanApproveOpeningBalances);
+        addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanConsolidateRawMaterialTopUps);
+        addPermission(PermissionModules.Settings, "Opening Balances", PermissionKeys.CanConsolidatePackagingMaterialTopUps);
 
         // Procurement
         addPermission(
