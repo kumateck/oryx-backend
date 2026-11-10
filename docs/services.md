@@ -244,6 +244,9 @@ and it does not authenticate an actor, select BMR/BPR masters or perform effects
 
 ## Formula dependency and deployment boundary (2026-09-07)
 
+For a customer-side draft-save 500, use the read-only log capture helper in
+[`formula-draft-500-diagnostics.md`](formula-draft-500-diagnostics.md).
+
 Customer installation now uses the authoritative Node runtime owned and released
 by `oryx-live-desktop`, sharing its existing formula core. It consumes a verified
 offline image bundle, reuses a root-only master secret via read-only volume

@@ -721,6 +721,20 @@
     "description": "Allows the user to  approve opening balances."
   },
   {
+    "module": "Settings",
+    "submodule": "Opening Balances",
+    "key": "CanConsolidateRawMaterialTopUps",
+    "name": "Can Consolidate Raw Material Top Ups",
+    "description": "Allows the user to  consolidate raw material top ups."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Opening Balances",
+    "key": "CanConsolidatePackagingMaterialTopUps",
+    "name": "Can Consolidate Packaging Material Top Ups",
+    "description": "Allows the user to  consolidate packaging material top ups."
+  },
+  {
     "module": "Procurement",
     "submodule": "Purchase Requisition",
     "key": "CanViewPurchaseRequisitions",
