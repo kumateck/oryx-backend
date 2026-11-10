@@ -6,11 +6,14 @@ must explicitly enable **Convert BOM mg to stock volume using density**.
 
 ## Configure a material
 
-In Materials, edit the department link for the raw material and enter its
-measured density in **g/mL**. Do not use a range midpoint or a generic default.
-The customer reported 1.35–1.56 g/mL for the affected materials; enter the
-measured value that applies to each material. A missing or nonpositive density
-prevents the conversion from being saved or applied to a production batch.
+Configure an active unit with the symbol `g/mL` in the unit catalog. In
+Materials, edit the raw material's department link and enter its verified
+measurement in **Density (g/mL)**. Stock level edits preserve the previous
+density and unit. A positive value with no unit, a deleted unit, or a different
+unit is ineligible for conversion. Check the source measurement before
+entering its g/mL equivalent. The system never relabels legacy values. For raw links the current desktop
+edit action requires `CanEditLinkedRawMaterials`, and the existing department
+link endpoint requires `CanLinkRawMaterials`.
 
 The department link's stock unit must be a liquid unit (`ml` or `l`). The
 conversion source is mg. When the toggle is enabled, the backend stores the
@@ -33,6 +36,32 @@ department's stock unit. Warehouse stock and picking continue to show that
 same stock unit. The BOM keeps its authored mg amount. At production start,
 Oryx snapshots the exact density, units and converted stock quantity on the
 batch, so later material-link edits do not change an active batch.
+
+## Audit existing density records before enabling conversion
+
+Run this read-only query against an approved copy or read replica. Review the
+rows for the intended materials and all of their substitutes. For
+`REVIEW` rows, use the original measurement to verify or correct the value
+through Materials before enabling any BOM line. Review eligible rows against
+the original measurement as well. The query checks metadata and cannot verify
+how a measurement was taken.
+
+```sql
+SELECT link."DepartmentId", link."MaterialId", link."Density",
+       link."DensityUoMId", density_unit."Symbol" AS density_unit,
+       stock_unit."Symbol" AS stock_unit,
+       CASE WHEN link."Density" > 0
+                 AND density_unit."DeletedAt" IS NULL
+                 AND lower(btrim(density_unit."Symbol")) = 'g/ml'
+                 AND stock_unit."DeletedAt" IS NULL
+                 AND lower(btrim(stock_unit."Symbol")) IN ('ml', 'l')
+            THEN 'ELIGIBLE' ELSE 'REVIEW' END AS conversion_status
+FROM "MaterialDepartments" link
+LEFT JOIN "UnitOfMeasures" density_unit ON density_unit."Id" = link."DensityUoMId"
+LEFT JOIN "UnitOfMeasures" stock_unit ON stock_unit."Id" = link."UoMId"
+WHERE link."DeletedAt" IS NULL
+ORDER BY conversion_status DESC, link."DepartmentId", link."MaterialId";
+```
 
 ## Release and rollback
 

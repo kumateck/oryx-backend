@@ -25,6 +25,31 @@ The desktop implementation is in the companion `oryx-live-desktop`
 in [BOM mass-to-volume conversion](bom-density-conversion.md); the desktop repo
 also carries the UI/API contract notes and its own feature guide.
 
+## Review follow-up for PRs #1790, #177 and #178
+
+- A density must be explicitly linked to an active `g/mL` unit to be used
+  for BOM validation, forecasting or a production allocation. Existing
+  metadata is preserved on stock-only saves. The operator guide includes a
+  read-only query for reviewing legacy data before enabling conversion.
++- The BOM editor waits for its scoped density lookup, offers a retry, and
+  shows the converted volume with one unit.
++- Production-start logging now covers transaction acquisition. Secondary
+  rollback and disposal failures are logged without replacing the original
+  exception. Production requisitions accept a density-derived quantity that
+  round-trips through browser JSON, then restore the exact saved quantity
+  used for reservation and issue.
++- The employee regression covers loading an existing year-one record and
+  sending a profile update through the desktop editor in Africa/Accra.
+
+The follow-up backend run passed 56 tests with one optional test skipped.
+The PostgreSQL fixture exercised a real lock timeout, the migration up and
+down, reservations, requisition quantity validation and warehouse issuance.
+Full and half batches in mL and L, and a substitute with a different density,
+passed the focused tests. EF Core reported no pending model changes. The
+focused desktop runs passed 31 BOM/material tests and 8 employee tests. The
+customer density inventory and a combined deployment were outside these
+local checks.
+
 ## Production-start and requisition HTTP 500s
 
 The customer report did not include an exception or trace for either failed

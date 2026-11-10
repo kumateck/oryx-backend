@@ -59,11 +59,13 @@ public class BomMaterialUnitTests
         await using var context = Context();
         var (product, material, _, mg) = await Seed(context);
         var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
-        context.UnitOfMeasures.Add(ml);
+        var densityUnit = new UnitOfMeasure { Name = "Grams per milliliter", Symbol = "g/mL" };
+        context.UnitOfMeasures.AddRange(ml, densityUnit);
         var link = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
         link.UoM = ml;
         link.UoMId = ml.Id;
         link.Density = 1.45m;
+        link.DensityUoM = densityUnit;
         await context.SaveChangesAsync();
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
@@ -76,8 +78,12 @@ public class BomMaterialUnitTests
         Assert.True(saved.UseDensityConversion);
     }
 
-    [Fact]
-    public async Task Density_conversion_cannot_be_saved_without_a_positive_density()
+    [Theory]
+    [InlineData(0, "g/mL", false)]
+    [InlineData(1, null, false)]
+    [InlineData(1, "kg/m³", false)]
+    [InlineData(1, "g/mL", true)]
+    public async Task Density_conversion_refuses_unverified_density(int density, string? symbol, bool deleted)
     {
         await using var context = Context();
         var (product, material, _, _) = await Seed(context);
@@ -86,6 +92,9 @@ public class BomMaterialUnitTests
         var link = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
         link.UoM = ml;
         link.UoMId = ml.Id;
+        link.Density = density;
+        if (symbol is not null)
+            link.DensityUoM = new UnitOfMeasure { Name = symbol, Symbol = symbol, DeletedAt = deleted ? DateTime.UtcNow : null };
         await context.SaveChangesAsync();
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
@@ -103,12 +112,14 @@ public class BomMaterialUnitTests
         var (product, material, _, _) = await Seed(context);
         var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
         var substitute = new Material { Name = "Substitute", Code = "RMS002", Kind = MaterialKind.Raw };
-        context.UnitOfMeasures.Add(ml);
-        context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = ml, Density = 1.4m });
+        var densityUnit = new UnitOfMeasure { Name = "Grams per milliliter", Symbol = "g/mL" };
+        context.UnitOfMeasures.AddRange(ml, densityUnit);
+        context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = ml, Density = 1.4m, DensityUoM = densityUnit });
         var primaryLink = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
         primaryLink.UoM = ml;
         primaryLink.UoMId = ml.Id;
         primaryLink.Density = 1.45m;
+        primaryLink.DensityUoM = densityUnit;
         await context.SaveChangesAsync();
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
@@ -125,12 +136,14 @@ public class BomMaterialUnitTests
         var (product, material, _, _) = await Seed(context);
         var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
         var substitute = new Material { Name = "Substitute", Code = "RMS003", Kind = MaterialKind.Raw };
-        context.UnitOfMeasures.Add(ml);
+        var densityUnit = new UnitOfMeasure { Name = "Grams per milliliter", Symbol = "g/mL" };
+        context.UnitOfMeasures.AddRange(ml, densityUnit);
         context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = ml, Density = 0 });
         var primaryLink = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
         primaryLink.UoM = ml;
         primaryLink.UoMId = ml.Id;
         primaryLink.Density = 1.45m;
+        primaryLink.DensityUoM = densityUnit;
         await context.SaveChangesAsync();
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()

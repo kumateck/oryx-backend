@@ -314,10 +314,11 @@ public partial class ProductionScheduleRepository(
         Guid userId
     )
     {
-        await using var transaction = await ProductionMaterialTransaction.Begin(context);
-
+        ProductionMaterialTransaction? transaction = null;
+        var traceId = Activity.Current?.TraceId.ToString() ?? "unavailable";
         try
         {
+            transaction = await ProductionMaterialTransaction.Begin(context, logger);
             if (context.Database.IsRelational())
                 await context.Database.ExecuteSqlRawAsync("LOCK TABLE \"ProductionActivities\", \"ProductionScheduleProducts\" IN SHARE ROW EXCLUSIVE MODE");
             if (
@@ -469,13 +470,35 @@ public partial class ProductionScheduleRepository(
         {
             logger?.LogError(e,
                 "Failed to start production activity for batch {ProductionScheduleProductId} by user {UserId}; trace {TraceId}",
-                productionScheduleProductId, userId, Activity.Current?.TraceId.ToString() ?? "unavailable");
-            await transaction.RollbackAsync();
+                productionScheduleProductId, userId, traceId);
+            if (transaction is not null)
+            {
+                try { await transaction.RollbackAsync(); }
+                catch (Exception rollbackError)
+                {
+                    logger?.LogError(rollbackError,
+                        "Failed to roll back production start for batch {ProductionScheduleProductId}; trace {TraceId}",
+                        productionScheduleProductId, traceId);
+                }
+            }
             context.ChangeTracker.Clear();
             return Error.Failure(
                 "Production.Start",
                 "Failed to start production activity. Check the server error log and contact support."
             );
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                try { await transaction.DisposeAsync(); }
+                catch (Exception cleanupError)
+                {
+                    logger?.LogError(cleanupError,
+                        "Failed to dispose production start transaction for batch {ProductionScheduleProductId}; trace {TraceId}",
+                        productionScheduleProductId, traceId);
+                }
+            }
         }
     }
 
@@ -1284,6 +1307,7 @@ public partial class ProductionScheduleRepository(
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
+            .Include(m => m.DensityUoM)
             .Include(m => m.Material)
             .Include(m => m.Department)
             .Where(m =>
@@ -1350,7 +1374,7 @@ public partial class ProductionScheduleRepository(
             {
                 if (!materialDepartments.TryGetValue(materialId, out var departmentLink)) continue;
                 var quantity = item.UseDensityConversion
-                    ? UomConverter.ConvertWithDensity(sourceQuantity, item.BaseUoM?.Symbol, departmentLink.UoM?.Symbol, departmentLink.Density)
+                    ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, departmentLink)
                     : sourceQuantity;
                 if (item.UseDensityConversion && (quantity is null or <= 0))
                     return Error.Validation("Production.Materials", $"{departmentLink.Material.Name}: set a positive density in g/mL and a liquid stock unit before using this BOM conversion.");
@@ -4957,6 +4981,7 @@ public partial class ProductionScheduleRepository(
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
+            .Include(m => m.DensityUoM)
             .Where(m =>
                 activeBoM
                     .BillOfMaterial.Items.Select(i => i.MaterialId)
@@ -4984,7 +5009,7 @@ public partial class ProductionScheduleRepository(
             var sourceQuantity = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
             var link = rawMaterialDepartments[item.MaterialId];
             var quantity = item.UseDensityConversion
-                ? UomConverter.ConvertWithDensity(sourceQuantity, item.BaseUoM?.Symbol, link.UoM?.Symbol, link.Density)
+                ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, link)
                 : sourceQuantity;
             if (item.UseDensityConversion && (quantity is null or <= 0))
                 return Error.Validation("Production.Materials", $"{item.Material.Name}: set a positive density in g/mL and a liquid stock unit before forecasting this BOM.");

@@ -54,9 +54,6 @@ public class RequisitionRepository(
     // Create Stock Requisition
     public async Task<Result> CreateRequisition(CreateRequisitionRequest request, Guid userId)
     {
-        if (request.RequisitionType == RequisitionType.Purchase && await context.Materials.AnyAsync(material =>
-            material.IsWhitePlacebo && request.Items.Select(item => item.MaterialId).Contains(material.Id)))
-            return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if ((request.RequisitionType == RequisitionType.Stock || request.ProductionScheduleProductId.HasValue)
             && context.Database.IsRelational() && context.Database.CurrentTransaction is null)
         {
@@ -72,6 +69,9 @@ public class RequisitionRepository(
                 return Error.Failure("Requisition.Create", "Failed to create requisition. Check the server error log and contact support.");
             }
         }
+        if (request.RequisitionType == RequisitionType.Purchase && await context.Materials.AnyAsync(material =>
+            material.IsWhitePlacebo && request.Items.Select(item => item.MaterialId).Contains(material.Id)))
+            return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if (request.RequisitionType == RequisitionType.Purchase && request.ProductionScheduleProductId.HasValue)
         {
             var consistent = await ProductionMaterialRequisitionRules.ValidateProcurement(context, request.ProductionScheduleProductId.Value, request.Items);

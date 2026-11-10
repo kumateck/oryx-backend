@@ -27,7 +27,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         var materialIds = request.Items.SelectMany(item => item.SubstituteMaterialIds.Append(item.MaterialId)).Distinct().ToList();
         var links = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
-            .Include(link => link.UoM).Where(link => materialIds.Contains(link.MaterialId)
+            .Include(link => link.UoM).Include(link => link.DensityUoM).Where(link => materialIds.Contains(link.MaterialId)
                 && link.DepartmentId == product.DepartmentId && link.DeletedAt == null).ToListAsync();
         if (product.DepartmentId is null)
             return Error.Conflict("Bom.MaterialUnit", "The product must belong to a department with linked material units.");
@@ -58,8 +58,8 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
                     if (candidateLinks.Count != 1)
                         return Error.Conflict("Bom.MaterialUnit", "A BOM material and each substitute need exactly one active department stock-unit link.");
                     var candidate = candidateLinks[0];
-                    if (candidate.Density <= 0 || UomConverter.ConvertWithDensity(1m, "mg", candidate.UoM.Symbol, candidate.Density) is null)
-                        return Error.Conflict("Bom.Density", $"Configure a positive density in g/mL and a liquid stock unit for material {candidate.MaterialId} before enabling conversion.");
+                    if (MaterialDensity.ConvertBomMass(1m, "mg", candidate) is null)
+                        return Error.Conflict("Bom.Density", $"Configure a positive measured density with an active g/mL unit and a liquid stock unit for material {candidate.MaterialId} before enabling conversion.");
                 }
                 // The conversion mode has one defined source unit: BOM quantity is authored in mg.
                 item.BaseUoMId = densitySourceUnit.Id;

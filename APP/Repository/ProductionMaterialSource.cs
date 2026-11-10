@@ -103,7 +103,7 @@ internal static class ProductionMaterialSources
             blockers.Add("The product must have nonempty, unique material requirements for this batch.");
         var ids = definitions.SelectMany(item => item.Substitutes.Append(item.MaterialId)).Distinct().ToList();
         var departments = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
-            .Include(item => item.Material).Include(item => item.UoM)
+            .Include(item => item.Material).Include(item => item.UoM).Include(item => item.DensityUoM)
             .Where(item => ids.Contains(item.MaterialId) && item.DepartmentId == departmentId && item.DeletedAt == null).ToListAsync();
         var units = await context.UnitOfMeasures.IgnoreQueryFilters().AsNoTracking().Where(item => item.DeletedAt == null).ToListAsync();
         var current = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
@@ -130,10 +130,15 @@ internal static class ProductionMaterialSources
             { blockers.Add($"{link.Material.Name}: choose a valid BOM source unit before starting production."); continue; }
             var quantity = definition.Prescribed / (batch.BatchSize == BatchSize.Half ? 2 : 1) + definition.Allowance;
             var converted = definition.UseDensityConversion
-                ? UomConverter.ConvertWithDensity(quantity, sourceUnit?.Symbol, link.UoM.Symbol, link.Density)
+                ? MaterialDensity.ConvertBomMass(quantity, sourceUnit.Symbol, link)
                 : UomConverter.Convert(quantity, sourceUnit?.Symbol, link.UoM.Symbol);
             if (definition.Prescribed <= 0 || definition.Allowance < 0 || converted is null or <= 0)
-            { blockers.Add($"{link.Material.Name}: correct the quantity and compatible units on the product first."); continue; }
+            {
+                blockers.Add(definition.UseDensityConversion
+                    ? $"{link.Material.Name}: verify the BOM quantity, measured density with an active g/mL unit, and liquid stock unit."
+                    : $"{link.Material.Name}: correct the quantity and compatible units on the product first.");
+                continue;
+            }
             requirements.Add(new ProductionMaterialRequirement
             {
                 SourceMaterialId = definition.MaterialId, MaterialId = selected, Name = link.Material.Name,
