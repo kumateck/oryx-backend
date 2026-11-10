@@ -758,6 +758,17 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 );
             }
 
+            var scheduledBatchNumbers = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Where(batch => batch.ProductPackingId.HasValue && toDeleteIds.Contains(batch.ProductPackingId.Value))
+                .Select(batch => batch.BatchNumber ?? "Unnumbered batch")
+                .Distinct().OrderBy(batchNumber => batchNumber).ToListAsync();
+            if (scheduledBatchNumbers.Count != 0)
+            {
+                var usedNames = toDelete.Select(item => item.Name).Distinct().ToList();
+                return Error.Failure("ProductPacking.Delete",
+                    $"Cannot remove packing styles {string.Join(", ", usedNames)} while they are assigned to scheduled batches: {string.Join(", ", scheduledBatchNumbers)}.");
+            }
+
             await context
                 .ProductPackings.Where(p => toDeleteIds.Contains(p.Id))
                 .ExecuteDeleteAsync();
