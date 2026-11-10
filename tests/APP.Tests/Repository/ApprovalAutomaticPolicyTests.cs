@@ -699,6 +699,58 @@ public class ApprovalAutomaticPolicyTests
         Assert.Empty(context.ApprovalActionLogs);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Required_response_role_can_finish_without_the_optional_role(bool requiredFirst)
+    {
+        await using var context = CreateContext();
+        var requiredRole = Guid.NewGuid();
+        var optionalRole = Guid.NewGuid();
+        var form = new Form { Id = Guid.NewGuid() };
+        var response = new Response { Id = Guid.NewGuid(), FormId = form.Id };
+        var approval = new Approval
+        {
+            ItemType = nameof(Response),
+            ApprovalStages =
+            [
+                new() { Required = true, Order = requiredFirst ? 1 : 2, RoleId = requiredRole },
+                new() { Required = false, Order = requiredFirst ? 2 : 1, RoleId = optionalRole }
+            ]
+        };
+        context.AddRange(form, response, approval);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+        await repository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        var stages = await context.ResponseApprovals.ToListAsync();
+        Assert.NotNull(Assert.Single(stages, row => row.Required).ActivatedAt);
+
+        var decision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [requiredRole]);
+        Assert.True(decision.IsSuccess, decision.Error.Description);
+        Assert.True(response.Approved);
+        Assert.Equal(ApprovalStatus.Pending, Assert.Single(stages, row => !row.Required).Status);
+
+        var lateDecision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [optionalRole]);
+        Assert.Equal("Response.ApprovalClosed", lateDecision.Error.Code);
+        Assert.Single(context.ApprovalActionLogs);
+        var resubmission = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
+        Assert.Equal("Response.AlreadyApproved", resubmission.Error.Code);
+        Assert.True(await ResponseApprovalRoundManager.StartAsync(context, response.Id, approval.ApprovalStages, approval));
+        Assert.Equal(2, await context.ResponseApprovals.MaxAsync(row => row.ApprovalRound));
+    }
+
+    [Fact]
+    public void Workflow_configuration_rejects_all_optional_stages()
+    {
+        var request = new CreateApprovalRequest
+        {
+            ItemType = nameof(Response),
+            ApprovalStages = [new() { Order = 1, RoleId = Guid.NewGuid(), Required = false }]
+        };
+        Assert.Equal("Approval.RequiredStage", ApprovalConfigurationValidator.Validate(request).Error.Code);
+    }
+
     private static Approval ConfiguredApproval(string itemType, Guid approverId)
     {
         var approval = new Approval

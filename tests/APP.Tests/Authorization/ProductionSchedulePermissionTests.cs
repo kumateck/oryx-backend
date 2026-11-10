@@ -60,12 +60,14 @@ public sealed class ProductionSchedulePermissionTests
         var foil = new Material { Id = Guid.NewGuid(), Code = "PM-1", Name = "Foil", Kind = MaterialKind.Package };
         var api = new Material { Id = Guid.NewGuid(), Code = "RM-1", Name = "Paracetamol", Kind = MaterialKind.Raw };
         var transfer = new StockTransfer { Id = Guid.NewGuid(), Code = "ST-1", MaterialId = foil.Id };
+        var source = new StockTransferSource { Id = Guid.NewGuid(), StockTransfer = transfer };
         var extra = new ProductionExtraPacking { Id = Guid.NewGuid(), MaterialId = api.Id };
         db.Materials.AddRange(foil, api);
-        db.StockTransfers.Add(transfer);
+        db.StockTransferSources.Add(source);
         db.ProductionExtraPackings.Add(extra);
         await db.SaveChangesAsync();
         Assert.Equal([MaterialKind.Package], await MaterialKindPermissionAttribute.Kinds(db, new Dictionary<string, object> { ["stockTransferId"] = transfer.Id }));
+        Assert.Equal([MaterialKind.Package], await MaterialKindPermissionAttribute.Kinds(db, new Dictionary<string, object> { ["stockTransferId"] = source.Id }));
         Assert.Equal([MaterialKind.Raw], await MaterialKindPermissionAttribute.Kinds(db, new Dictionary<string, object> { ["productionExtraPackingId"] = extra.Id }));
     }
 

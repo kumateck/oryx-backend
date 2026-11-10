@@ -24,7 +24,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         if (!Enum.IsDefined(request.AnalysisType))
             return Error.Validation("MaterialArd.AnalysisType", "Invalid analysis type.");
         var form = await context
-            .Forms.Include(item => item.Sections)
+            .Forms.AsNoTracking().AsSplitQuery().Include(item => item.Sections)
                 .ThenInclude(section => section.Fields)
                 .ThenInclude(field => field.Question)
             .FirstOrDefaultAsync(item => item.Id == request.FormId);
@@ -34,7 +34,7 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
 
-        var formValidation = FormValidator.ValidateForUse(form);
+        var formValidation = FormValidator.ValidateForUse(form, request.AnalysisType);
         if (formValidation.IsFailure)
             return formValidation.Errors;
 

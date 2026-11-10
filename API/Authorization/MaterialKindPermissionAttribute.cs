@@ -89,7 +89,8 @@ public sealed class MaterialKindPermissionAttribute(string rawKey, string packag
             materials.AddRange((await db.DistributedRequisitionMaterials.IgnoreQueryFilters().AsNoTracking()
                 .Where(item => distributed.Contains(item.Id) && item.MaterialId != null).Select(item => item.MaterialId).ToListAsync()).OfType<Guid>());
         if (transfers.Count > 0)
-            materials.AddRange(await db.StockTransfers.IgnoreQueryFilters().AsNoTracking().Where(transfer => transfers.Contains(transfer.Id))
+            materials.AddRange(await db.StockTransfers.IgnoreQueryFilters().AsNoTracking().Where(transfer => transfers.Contains(transfer.Id)
+                    || transfer.Sources.Any(source => source.DeletedAt == null && transfers.Contains(source.Id)))
                 .Select(transfer => transfer.MaterialId).ToListAsync());
         if (extraPackings.Count > 0)
             materials.AddRange(await db.ProductionExtraPackings.IgnoreQueryFilters().AsNoTracking().Where(extra => extraPackings.Contains(extra.Id))
