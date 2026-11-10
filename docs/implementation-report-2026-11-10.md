@@ -59,8 +59,11 @@ is needed. The desktop change is in
 - EF Core reports no pending model changes after the migration was generated.
 - Desktop full web suite: 2,116 tests across 367 files passed.
 - Desktop typecheck, route check, generated API check, and focused conversion
-  tests passed. The required customer-release Docker pre-push validation is
-  running; its result will be available with the desktop PR checks.
+  tests passed.
+- Required exact-commit customer-release Docker validation passed for desktop
+  commits `70a686e41f641c2e0bc39786ebc5658f28412457` and
+  `6e8ac300e3461e3569867a40767255170f07dcec`, including Nginx, health/version,
+  SPA routes, HTTP API proxy, compatibility and runtime smoke checks.
 - Employee year-one date test and employee typecheck passed.
 
 ## Limits and operational notes
