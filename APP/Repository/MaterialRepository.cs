@@ -3103,6 +3103,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 existing.MaximumStockLevel = dto.MaximumStockLevel;
                 existing.UoMId = dto.UoMId;
                 existing.Density = dto.Density;
+                existing.DensityUoMId = dto.DensityUoMId;
             }
             else
             {
@@ -3116,6 +3117,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                         MaximumStockLevel = dto.MaximumStockLevel,
                         MinimumStockLevel = dto.MinimumStockLevel,
                         Density = dto.Density,
+                        DensityUoMId = dto.DensityUoMId,
                         UoMId = dto.UoMId,
                     }
                 );

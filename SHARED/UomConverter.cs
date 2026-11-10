@@ -69,6 +69,37 @@ public static class UomConverter
     }
 
     /// <summary>
+    /// Converts between mass and liquid volume using an explicitly configured density in
+    /// grams per milliliter. Returns null for same-dimension, unsupported, or invalid inputs.
+    /// </summary>
+    public static decimal? ConvertWithDensity(decimal quantity, string fromSymbol, string toSymbol,
+        decimal densityGramsPerMilliliter)
+    {
+        if (densityGramsPerMilliliter <= 0 || string.IsNullOrWhiteSpace(fromSymbol) || string.IsNullOrWhiteSpace(toSymbol))
+            return null;
+
+        var from = fromSymbol.Trim().ToLowerInvariant();
+        var to = toSymbol.Trim().ToLowerInvariant();
+        var fromIsMass = from is "mg" or "g" or "kg";
+        var toIsMass = to is "mg" or "g" or "kg";
+        var fromIsVolume = from is "ml" or "l";
+        var toIsVolume = to is "ml" or "l";
+        if (fromIsMass && toIsVolume)
+        {
+            var grams = from switch { "mg" => quantity / 1_000m, "g" => quantity, "kg" => quantity * 1_000m, _ => 0m };
+            var milliliters = grams / densityGramsPerMilliliter;
+            return to == "ml" ? milliliters : milliliters / 1_000m;
+        }
+        if (fromIsVolume && toIsMass)
+        {
+            var milliliters = from == "ml" ? quantity : quantity * 1_000m;
+            var grams = milliliters * densityGramsPerMilliliter;
+            return to switch { "mg" => grams * 1_000m, "g" => grams, "kg" => grams / 1_000m, _ => null };
+        }
+        return null;
+    }
+
+    /// <summary>
     /// True when a line counted in <paramref name="quantityUoM"/> can be priced per
     /// <paramref name="priceUoM"/>: the price unit is given and the two convert. A blank or
     /// unrelated price unit makes the line impossible to cost (650 kg at 1.2 per nothing was

@@ -78,7 +78,8 @@ internal static class ProductionMaterialSources
                 return Error.Validation("Repair.Bom", "The current BOM is ambiguous. Correct the product's active BOM first.");
             var items = bom.BillOfMaterial.Items.Where(item => item.DeletedAt == null).OrderBy(item => item.Order).ThenBy(item => item.MaterialId).ToList();
             definitions.AddRange(items.Select(item => new SourceLine(item.MaterialId, item.BaseUoMId, item.BaseQuantity,
-                item.PrescribedQuantity, 0, 0, null, item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
+                item.PrescribedQuantity, 0, 0, null, item.UseDensityConversion,
+                item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
             source = Json(new { bom.Id, bom.EffectiveDate, bom.UpdatedAt, bom.BillOfMaterial.Version, Definitions = definitions,
                 Items = items.Select(item => new { item.Id, item.UpdatedAt, item.Grade, item.CasNumber, item.Order, item.IsSubstitutable }) });
         }
@@ -94,7 +95,7 @@ internal static class ProductionMaterialSources
             packages = ProductPackagingSelection.ForStyle(packages, packingStyleId);
             definitions.AddRange(packages.Select(item => new SourceLine(item.MaterialId, null, item.BaseQuantity,
                 item.PrescribedQuantity, item.Loose, item.UnitCapacity, item.DirectLinkMaterialId,
-                item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
+                false, item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
             source = Json(new { PackingStyleId = packingStyleId, Items = packages.Select(item => new { item.Id, item.UpdatedAt, item.ProductPackingId,
                 item.PackingExcessMargin, item.MaterialThickness, item.OtherStandards }).ToList(), Definitions = definitions });
         }
@@ -125,8 +126,12 @@ internal static class ProductionMaterialSources
             { blockers.Add($"Material {selected} needs one valid stock unit and department link of the correct material kind."); continue; }
             var link = links[0];
             var sourceUnit = kind == MaterialKind.Raw ? units.SingleOrDefault(unit => unit.Id == definition.BaseUnitId) : link.UoM;
+            if (sourceUnit is null || sourceUnit.DeletedAt.HasValue)
+            { blockers.Add($"{link.Material.Name}: choose a valid BOM source unit before starting production."); continue; }
             var quantity = definition.Prescribed / (batch.BatchSize == BatchSize.Half ? 2 : 1) + definition.Allowance;
-            var converted = UomConverter.Convert(quantity, sourceUnit?.Symbol, link.UoM.Symbol);
+            var converted = definition.UseDensityConversion
+                ? UomConverter.ConvertWithDensity(quantity, sourceUnit?.Symbol, link.UoM.Symbol, link.Density)
+                : UomConverter.Convert(quantity, sourceUnit?.Symbol, link.UoM.Symbol);
             if (definition.Prescribed <= 0 || definition.Allowance < 0 || converted is null or <= 0)
             { blockers.Add($"{link.Material.Name}: correct the quantity and compatible units on the product first."); continue; }
             requirements.Add(new ProductionMaterialRequirement
@@ -135,7 +140,8 @@ internal static class ProductionMaterialSources
                 UnitId = link.UoMId, Unit = link.UoM.Symbol, Quantity = converted.Value,
                 BaseQuantity = definition.BaseQuantity, PrescribedQuantity = definition.Prescribed,
                 BaseUnitId = sourceUnit.Id, BaseUnit = sourceUnit.Symbol,
-                Allowance = definition.Allowance, UnitCapacity = definition.Capacity, DirectLinkMaterialId = definition.DirectLink
+                Allowance = definition.Allowance, UnitCapacity = definition.Capacity, DirectLinkMaterialId = definition.DirectLink,
+                UseDensityConversion = definition.UseDensityConversion, DensityGramsPerMilliliter = definition.UseDensityConversion ? link.Density : 0
             });
         }
         if (requirements.GroupBy(item => item.MaterialId).Any(group => group.Count() > 1))
@@ -146,5 +152,5 @@ internal static class ProductionMaterialSources
     }
 
     private sealed record SourceLine(Guid MaterialId, Guid? BaseUnitId, decimal BaseQuantity, decimal Prescribed,
-        decimal Allowance, decimal Capacity, Guid? DirectLink, List<Guid> Substitutes);
+        decimal Allowance, decimal Capacity, Guid? DirectLink, bool UseDensityConversion, List<Guid> Substitutes);
 }

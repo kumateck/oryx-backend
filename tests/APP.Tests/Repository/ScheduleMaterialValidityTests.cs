@@ -1,4 +1,6 @@
 using APP.Repository;
+using DOMAIN.Entities.Base;
+using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products.Production;
@@ -51,6 +53,46 @@ public class ScheduleMaterialValidityTests
         Assert.Equal(0, row.FrozenQuantity);
         Assert.Equal(quantity > 0 ? MaterialRequisitionStatus.InHouse : MaterialRequisitionStatus.None, row.Status);
         Assert.False(await fixture.Harness.Db.ProductionActivities.AnyAsync());
+    }
+
+    [Fact]
+    public async Task Density_enabled_BOM_is_converted_to_the_department_stock_unit_for_production()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var db = fixture.Harness.Db;
+        var mg = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Milligram", Symbol = "mg" };
+        var ml = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Milliliter", Symbol = "ml" };
+        db.UnitOfMeasures.AddRange(mg, ml);
+        fixture.Lot.UoMId = ml.Id;
+        fixture.Lot.UoM = ml;
+        fixture.Shelf.UoMId = ml.Id;
+        var link = await db.MaterialDepartments.SingleAsync(item => item.MaterialId == fixture.Lot.MaterialId);
+        link.UoMId = ml.Id;
+        link.UoM = ml;
+        link.Density = 1.5m;
+        var item = await db.BillOfMaterialItems.SingleAsync();
+        item.BaseUoMId = mg.Id;
+        item.BaseUoM = mg;
+        item.BaseQuantity = 1_000_000;
+        item.PrescribedQuantity = 1_000_000;
+        item.UseDensityConversion = true;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var source = await ProductionMaterialSources.Load(db, fixture.Batch.Id, MaterialKind.Raw);
+        Assert.True(source.IsSuccess, source.Error.Description);
+        var requirement = Assert.Single(source.Value.Requirements);
+        Assert.Equal(666.66666666666666666666666667m, requirement.Quantity);
+        Assert.Equal("ml", requirement.Unit);
+        Assert.Equal("mg", requirement.BaseUnit);
+        Assert.Equal(1.5m, requirement.DensityGramsPerMilliliter);
+        Assert.True(requirement.UseDensityConversion);
+
+        var rows = await fixture.Repository.CheckMaterialStockLevelsForProductionSchedule(fixture.Batch.Id, null);
+        Assert.True(rows.IsSuccess, rows.Error.Description);
+        Assert.Equal(requirement.Quantity, Assert.Single(rows.Value).QuantityNeeded);
+        Assert.Equal("ml", Assert.Single(rows.Value).MaterialDepartment.UoM.Symbol);
     }
 
     [Theory]

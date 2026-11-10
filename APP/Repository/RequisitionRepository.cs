@@ -27,6 +27,7 @@ using DOMAIN.Entities.Users;
 using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using SHARED;
 using SHARED.Services.Identity;
 using APP.Services.Authorization;
@@ -58,7 +59,19 @@ public class RequisitionRepository(
             return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if ((request.RequisitionType == RequisitionType.Stock || request.ProductionScheduleProductId.HasValue)
             && context.Database.IsRelational() && context.Database.CurrentTransaction is null)
-            return await ProductionMaterialTransaction.Run(context, () => CreateRequisition(request, userId));
+        {
+            try
+            {
+                return await ProductionMaterialTransaction.Run(context, () => CreateRequisition(request, userId));
+            }
+            catch (Exception error)
+            {
+                logger?.LogError(error,
+                    "Failed to create {RequisitionType} requisition for production batch {ProductionScheduleProductId} by user {UserId}; trace {TraceId}",
+                    request.RequisitionType, request.ProductionScheduleProductId, userId, Activity.Current?.TraceId.ToString() ?? "unavailable");
+                return Error.Failure("Requisition.Create", "Failed to create requisition. Check the server error log and contact support.");
+            }
+        }
         if (request.RequisitionType == RequisitionType.Purchase && request.ProductionScheduleProductId.HasValue)
         {
             var consistent = await ProductionMaterialRequisitionRules.ValidateProcurement(context, request.ProductionScheduleProductId.Value, request.Items);

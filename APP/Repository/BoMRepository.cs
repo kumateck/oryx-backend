@@ -25,14 +25,50 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         if (product is null) return ProductErrors.NotFound(request.ProductId);
 
-        var materialIds = request.Items.Select(item => item.MaterialId).Distinct().ToList();
+        var materialIds = request.Items.SelectMany(item => item.SubstituteMaterialIds.Append(item.MaterialId)).Distinct().ToList();
         var links = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(link => link.UoM).Where(link => materialIds.Contains(link.MaterialId)
                 && link.DepartmentId == product.DepartmentId && link.DeletedAt == null).ToListAsync();
-        if (product.DepartmentId is null || request.Items.Any(item =>
-            links.Count(link => link.MaterialId == item.MaterialId && link.UoMId == item.BaseUoMId
-                && link.UoM != null && !link.UoM.DeletedAt.HasValue) != 1))
-            return Error.Conflict("Bom.MaterialUnit", "A BOM material unit no longer matches the department material linkage. Reload the linked units and review the quantities before saving.");
+        if (product.DepartmentId is null)
+            return Error.Conflict("Bom.MaterialUnit", "The product must belong to a department with linked material units.");
+
+        var densityItems = request.Items.Where(item => item.UseDensityConversion).ToList();
+        DOMAIN.Entities.Base.UnitOfMeasure? densitySourceUnit = null;
+        if (densityItems.Count != 0)
+        {
+            var candidates = await context.UnitOfMeasures.IgnoreQueryFilters().AsNoTracking()
+                .Where(unit => unit.DeletedAt == null && unit.Symbol.ToLower() == "mg").ToListAsync();
+            densitySourceUnit = candidates.Count == 1 ? candidates[0] : null;
+            if (densitySourceUnit is null)
+                return Error.Conflict("Bom.DensityUnit", "The canonical mg unit must exist exactly once before density conversion can be enabled.");
+        }
+
+        foreach (var item in request.Items)
+        {
+            var matching = links.Where(link => link.MaterialId == item.MaterialId && link.UoM != null && !link.UoM.DeletedAt.HasValue).ToList();
+            if (matching.Count != 1)
+                return Error.Conflict("Bom.MaterialUnit", "A BOM material needs exactly one active department stock-unit link.");
+            var link = matching[0];
+            if (item.UseDensityConversion)
+            {
+                foreach (var candidateId in item.SubstituteMaterialIds.Append(item.MaterialId).Distinct())
+                {
+                    var candidateLinks = links.Where(candidate => candidate.MaterialId == candidateId
+                        && candidate.UoM != null && !candidate.UoM.DeletedAt.HasValue).ToList();
+                    if (candidateLinks.Count != 1)
+                        return Error.Conflict("Bom.MaterialUnit", "A BOM material and each substitute need exactly one active department stock-unit link.");
+                    var candidate = candidateLinks[0];
+                    if (candidate.Density <= 0 || UomConverter.ConvertWithDensity(1m, "mg", candidate.UoM.Symbol, candidate.Density) is null)
+                        return Error.Conflict("Bom.Density", $"Configure a positive density in g/mL and a liquid stock unit for material {candidate.MaterialId} before enabling conversion.");
+                }
+                // The conversion mode has one defined source unit: BOM quantity is authored in mg.
+                item.BaseUoMId = densitySourceUnit.Id;
+            }
+            else if (link.UoMId != item.BaseUoMId)
+            {
+                return Error.Conflict("Bom.MaterialUnit", "A BOM material unit no longer matches the department material linkage. Reload the linked units and review the quantities before saving.");
+            }
+        }
 
         if (product.BillOfMaterials.Count != 0)
         {

@@ -70,6 +70,21 @@ public sealed partial class EmployeeAssignmentTests
         Assert.Equal(manager.Id, (await db.Employees.SingleAsync()).ReportingManagerId);
     }
 
+    [Fact]
+    public async Task User_creation_requires_employee_email_before_identity_validation()
+    {
+        await using var db = InMemory();
+        var employee = new Employee { Id = Guid.NewGuid(), FirstName = "No", LastName = "Email", Email = " " };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await Repository(db).CreateEmployeeUser(new() { EmployeeId = employee.Id, RoleId = Guid.NewGuid() });
+
+        Assert.Equal("Employee.EmailRequired", result.Error.Code);
+        Assert.Equal(SHARED.ErrorType.Validation, result.Error.Type);
+        Assert.Empty(await db.Users.ToListAsync());
+    }
+
     [Theory]
     [InlineData("missing")]
     [InlineData("employee-id")]

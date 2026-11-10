@@ -44,6 +44,8 @@ public sealed record ProductionMaterialRequirement
     public string BaseUnit { get; init; } = string.Empty;
     public decimal PrescribedQuantity { get; init; }
     public decimal Allowance { get; init; }
+    public bool UseDensityConversion { get; init; }
+    public decimal DensityGramsPerMilliliter { get; init; }
     public decimal UnitCapacity { get; init; }
     public Guid? DirectLinkMaterialId { get; init; }
 }
