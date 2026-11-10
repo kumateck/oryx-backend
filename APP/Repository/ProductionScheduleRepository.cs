@@ -46,6 +46,8 @@ public partial class ProductionScheduleRepository(
         Guid userId
     )
     {
+        var packingStyles = await ValidatePackingStyles(request.Products);
+        if (packingStyles.IsFailure) return packingStyles.Error;
         if (request.ScheduledEndTime < request.ScheduledStartTime)
         {
             return Error.Validation(
@@ -215,6 +217,9 @@ public partial class ProductionScheduleRepository(
             );
         }
 
+        var packingStyles = await ValidatePackingStyles(request.Products);
+        if (packingStyles.IsFailure) return packingStyles.Error;
+
         var newProducts = mapper.Map<List<ProductionScheduleProduct>>(request.Products);
         foreach (var product in newProducts)
         {
@@ -226,6 +231,26 @@ public partial class ProductionScheduleRepository(
         context.ProductionSchedules.Update(existingSchedule);
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    private async Task<Result> ValidatePackingStyles(IEnumerable<CreateProductionScheduleProduct> products)
+    {
+        var requestedProducts = products.ToList();
+        if (requestedProducts.Any(item => !item.ProductPackingId.HasValue))
+            return Error.Validation("ProductionSchedule.PackingStyle", "Choose an active packing style for every scheduled product.");
+        var selections = requestedProducts
+            .Select(item => (item.ProductId, PackingId: item.ProductPackingId.GetValueOrDefault())).Distinct().ToList();
+        if (selections.Count == 0) return Result.Success();
+        var productIds = selections.Select(item => item.ProductId).Distinct().ToList();
+        var packingIds = selections.Select(item => item.PackingId).Distinct().ToList();
+        var valid = await context.ProductPackings.IgnoreQueryFilters().AsNoTracking()
+            .Where(item => item.DeletedAt == null && productIds.Contains(item.ProductId) && packingIds.Contains(item.Id))
+            .Select(item => new { item.ProductId, item.Id }).ToListAsync();
+        var hasInvalid = selections.Any(selection => !valid.Any(style =>
+            style.ProductId == selection.ProductId && style.Id == selection.PackingId));
+        return hasInvalid
+            ? Error.Validation("ProductionSchedule.PackingStyle", "Choose an active packing style that belongs to every selected product.")
+            : Result.Success();
     }
 
     public async Task<Result> RemoveProductFromSchedule(Guid productionScheduleProductId)

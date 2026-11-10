@@ -37,7 +37,7 @@ public sealed class StockTopUpManualEntryPostgresTests
     private static DateTime Day(int year, int month, int day) => new(year, month, day, 0, 0, 0, DateTimeKind.Utc);
 
     [PostgresFact]
-    public async Task Manual_entry_keeps_exact_dates_and_retest_date_and_flags_repeated_batches()
+    public async Task Manual_and_legacy_exact_entry_use_months_and_keep_original_date_evidence()
     {
         var database = "oryx_topup_manual_" + Guid.NewGuid().ToString("N");
         var connection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ORYX_STOCK_TOPUP_TEST_CONNECTION"));
@@ -76,8 +76,8 @@ public sealed class StockTopUpManualEntryPostgresTests
             var draft = await repository.CreateTopUp(request, actor.UserId.Value);
             Assert.True(draft.IsSuccess, draft.Error?.Description);
             var lines = await db.StockMigrationLines.AsNoTracking().Where(l => l.StockMigrationId == draft.Value).OrderBy(l => l.RowNumber).ToListAsync();
-            Assert.All(lines, line => Assert.True(line.ExactDates));
-            Assert.Equal((made, expires, retest), (lines[0].ManufacturingDate!.Value, lines[0].ExpiryDate!.Value, lines[0].RetestDate!.Value));
+            Assert.All(lines, line => Assert.False(line.ExactDates));
+            Assert.Equal((Day(2026, 8, 1), Day(2029, 7, 1), Day(2027, 8, 31)), (lines[0].ManufacturingDate!.Value, lines[0].ExpiryDate!.Value, lines[0].RetestDate!.Value));
             Assert.Equal("2029-07-14", lines[0].SheetExpiryDate);
             Assert.Equal(StockMigrationLineStatus.Ok, lines[0].Status);
             Assert.Equal(25_000_000, lines[0].Quantity);
@@ -95,7 +95,7 @@ public sealed class StockTopUpManualEntryPostgresTests
             var invalid = await repository.CreateTopUp(new CreateStockTopUpRequest { DepartmentId = department.Id, Reason = "Bad dates", ExactDates = true, Lines = [
                 new() { MaterialId = material.Id, ShelfId = shelf.Id, BatchNumber = "LOT-A", UnitSymbol = "mg", QuantityInSheet = 1, ExpiryDate = Day(2028, 1, 31), RetestDate = Day(2028, 2, 1) },
                 new() { MaterialId = material.Id, ShelfId = shelf.Id, BatchNumber = "LOT-B", UnitSymbol = "mg", QuantityInSheet = 1, ManufacturingDate = Day(2026, 5, 1), RetestDate = Day(2026, 4, 30) },
-                new() { MaterialId = material.Id, ShelfId = shelf.Id, BatchNumber = "LOT-C", UnitSymbol = "mg", QuantityInSheet = 1, RetestDate = DateTime.UtcNow.Date.AddDays(-1) },
+                new() { MaterialId = material.Id, ShelfId = shelf.Id, BatchNumber = "LOT-C", UnitSymbol = "mg", QuantityInSheet = 1, RetestDate = DateTime.UtcNow.Date.AddMonths(-1) },
             ] }, actor.UserId.Value);
             var checkedLines = await db.StockMigrationLines.AsNoTracking().Where(l => l.StockMigrationId == invalid.Value).OrderBy(l => l.RowNumber).ToListAsync();
             Assert.Contains("retest date is after the expiry", checkedLines[0].Blockers);
@@ -110,7 +110,7 @@ public sealed class StockTopUpManualEntryPostgresTests
             correction.ExpiryDate = Day(2029, 7, 20);
             Assert.True((await repository.UpdateLine(draft.Value, lines[0].Id, correction)).IsSuccess);
             var corrected = await db.StockMigrationLines.AsNoTracking().SingleAsync(l => l.Id == lines[0].Id);
-            Assert.Equal((retest, Day(2029, 7, 20)), (corrected.RetestDate!.Value, corrected.ExpiryDate!.Value));
+            Assert.Equal((Day(2027, 8, 31), Day(2029, 7, 1)), (corrected.RetestDate!.Value, corrected.ExpiryDate!.Value));
             correction.ClearRetestDate = true;
             Assert.True((await repository.UpdateLine(draft.Value, lines[0].Id, correction)).IsSuccess);
             Assert.Null((await db.StockMigrationLines.AsNoTracking().SingleAsync(l => l.Id == lines[0].Id)).RetestDate);
@@ -118,11 +118,11 @@ public sealed class StockTopUpManualEntryPostgresTests
             correction.RetestDate = retest;
             Assert.True((await repository.UpdateLine(draft.Value, lines[0].Id, correction)).IsSuccess);
 
-            // Approval posts the exact expiry day and the retest date onto the new lot.
+            // Approval posts month-end expiry/retest and month-start manufacturing onto the new lot.
             var approval = await repository.Approve(draft.Value, actor.UserId.Value);
             Assert.True(approval.IsSuccess, approval.Error?.Description);
             var lot = await db.MaterialBatches.AsNoTracking().SingleAsync(b => b.BatchNumber == "LOT-NEW");
-            Assert.Equal((Day(2029, 7, 20), retest, made), (lot.ExpiryDate!.Value, lot.RetestDate!.Value, lot.ManufacturingDate!.Value));
+            Assert.Equal((Day(2029, 7, 31), Day(2027, 8, 31), Day(2026, 8, 1)), (lot.ExpiryDate!.Value, lot.RetestDate!.Value, lot.ManufacturingDate!.Value));
             Assert.Equal(25_000_000, await db.ShelfMaterialBatches.Where(s => s.MaterialBatchId == lot.Id).SumAsync(s => s.Quantity));
             Assert.Equal(2, await db.MaterialBatches.CountAsync(b => b.BatchNumber.ToUpper() == "LOT-OLD"));
 

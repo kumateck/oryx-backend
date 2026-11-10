@@ -55,9 +55,9 @@ public partial class StockMigrationRepository
                 WarehouseName = line.WarehouseName?.Trim(), ShelfName = line.ShelfName?.Trim(), ShelfId = line.ShelfId,
                 BatchNumber = line.BatchNumber?.Trim(), UnitSymbol = line.UnitSymbol?.Trim(),
                 QuantityInSheet = line.QuantityInSheet is > 0 ? line.QuantityInSheet : null,
-                ManufacturingDate = Date(line.ManufacturingDate, request.ExactDates),
-                ExpiryDate = Date(line.ExpiryDate, request.ExactDates),
-                RetestDate = Day(line.RetestDate), ExactDates = request.ExactDates,
+                ManufacturingDate = Utc(line.ManufacturingDate),
+                ExpiryDate = Utc(line.ExpiryDate),
+                RetestDate = OpeningBalanceDates.ExpiryMonthEnd(line.RetestDate), ExactDates = false,
                 Grn = line.Grn?.Trim(), ArNumber = line.ArNumber?.Trim(), Excluded = line.Excluded,
             }).ToList(),
         };
@@ -70,7 +70,7 @@ public partial class StockMigrationRepository
 
     /// <summary>A top-up row as the existing-lot match needs it.</summary>
     internal sealed record TopUpLot(Guid LineId, Guid MaterialId, string BatchNumber, string ArNumber,
-        DateTime? Made, DateTime? Expires, bool ExactDates, Guid? UoMId);
+        DateTime? Made, DateTime? Expires, DateTime? Retest, Guid? UoMId);
 
     /// <summary>
     /// The existing lot a top-up row adds to, or, when a lot with that batch number is in the department's
@@ -80,7 +80,7 @@ public partial class StockMigrationRepository
 
     /// <summary>
     /// A top-up row whose batch number is already on the department's shelves adds to that lot when the AR
-    /// number, manufacturing date, expiry date and unit are the same; otherwise it becomes a separate lot.
+    /// number, manufacturing/expiry/retest months and unit are the same; otherwise it becomes a separate lot.
     /// Only usable lots (available, or consumed and refilled) are matched.
     /// </summary>
     private async Task<Dictionary<Guid, ExistingLot>> ExistingLots(Guid departmentId, IReadOnlyCollection<TopUpLot> lots)
@@ -99,7 +99,7 @@ public partial class StockMigrationRepository
                 && context.ShelfMaterialBatches.IgnoreQueryFilters().Any(s => s.MaterialBatchId == b.Id && s.DeletedAt == null
                     && storeIds.Contains(s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId)))
             .OrderBy(b => b.DateReceived).ThenBy(b => b.Id)
-            .Select(b => new { b.Id, b.MaterialId, Number = b.BatchNumber.Trim().ToUpper(), b.ManufacturingDate, b.ExpiryDate, b.UoMId })
+            .Select(b => new { b.Id, b.MaterialId, Number = b.BatchNumber.Trim().ToUpper(), b.ManufacturingDate, b.ExpiryDate, b.RetestDate, b.UoMId })
             .ToListAsync();
         var references = new Dictionary<Guid, string>();
         foreach (var candidate in candidates)
@@ -110,20 +110,21 @@ public partial class StockMigrationRepository
         {
             var same = candidates.Where(c => c.MaterialId == lot.MaterialId && c.Number == Norm(lot.BatchNumber)).ToList();
             if (same.Count == 0) continue;
-            var expires = lot.ExactDates ? lot.Expires : OpeningBalanceDates.ExpiryMonthEnd(lot.Expires);
-            List<string> Differences(Guid id, DateTime? made, DateTime? expiry, Guid unit)
+            var expires = lot.Expires;
+            List<string> Differences(Guid id, DateTime? made, DateTime? expiry, DateTime? retest, Guid unit)
             {
                 var differs = new List<string>();
                 if (references[id] != References(lot.ArNumber)) differs.Add("AR number");
-                if (!SameDate(made, lot.Made, lot.ExactDates)) differs.Add("manufacturing date");
-                if (!SameDate(expiry, expires, lot.ExactDates)) differs.Add("expiry date");
+                if (!SameMonth(made, lot.Made)) differs.Add("manufacturing date");
+                if (!SameMonth(expiry, expires)) differs.Add("expiry date");
+                if (!SameMonth(retest, lot.Retest)) differs.Add("retest month");
                 if (unit != lot.UoMId) differs.Add("unit");
                 return differs;
             }
-            var match = same.FirstOrDefault(c => Differences(c.Id, c.ManufacturingDate, c.ExpiryDate, c.UoMId).Count == 0);
+            var match = same.FirstOrDefault(c => Differences(c.Id, c.ManufacturingDate, c.ExpiryDate, c.RetestDate, c.UoMId).Count == 0);
             found[lot.LineId] = match != null
                 ? new ExistingLot(match.Id, null)
-                : new ExistingLot(null, Words(Differences(same[0].Id, same[0].ManufacturingDate, same[0].ExpiryDate, same[0].UoMId)));
+                : new ExistingLot(null, Words(Differences(same[0].Id, same[0].ManufacturingDate, same[0].ExpiryDate, same[0].RetestDate, same[0].UoMId)));
         }
         return found;
     }
@@ -134,11 +135,10 @@ public partial class StockMigrationRepository
     private static string References(string value) =>
         string.Join(", ", (value ?? string.Empty).Split(',').Select(Norm).Where(r => r.Length > 0).Distinct().Order());
 
-    // Sheet top-ups give months, so a month-precision row matches any day in the same month.
-    private static bool SameDate(DateTime? existing, DateTime? entered, bool exact) =>
+    // Manufacturing, expiry and retest match by calendar month, including historical exact-day lots.
+    internal static bool SameMonth(DateTime? existing, DateTime? entered) =>
         existing is null || entered is null
             ? existing is null && entered is null
-            : exact ? existing.Value.Date == entered.Value.Date
             : existing.Value.Year == entered.Value.Year && existing.Value.Month == entered.Value.Month;
 
     private static string Words(List<string> items) =>
@@ -147,7 +147,7 @@ public partial class StockMigrationRepository
     private static List<TopUpLot> TopUpLots(IEnumerable<StockMigrationLine> lines) =>
         lines.Where(l => l.ResolvedMaterialId.HasValue)
             .Select(l => new TopUpLot(l.Id, l.ResolvedMaterialId!.Value, l.BatchNumber, l.ArNumber,
-                l.ManufacturingDate, l.ExpiryDate, l.ExactDates, l.UoMId))
+                l.ManufacturingDate, l.ExpiryDate, l.RetestDate, l.UoMId))
             .ToList();
 
     /// <summary>
@@ -181,7 +181,7 @@ public partial class StockMigrationRepository
             var notes = new List<string>();
             if (existing.TryGetValue(line.Id, out var lot))
                 notes.Add(lot.BatchId.HasValue
-                    ? $"Batch {number} of this material is already in stock with the same AR number, manufacturing and expiry dates. Approval adds this quantity to that batch."
+                    ? $"Batch {number} of this material is already in stock with the same AR number and manufacturing, expiry and retest months. Approval adds this quantity to that batch."
                     : $"Batch {number} of this material is already in stock with a different {lot.Differs}. Check this is new stock and not entered twice; approval adds it as a separate lot.");
             else if (inStock.Contains(key))
                 notes.Add($"Batch {number} of this material is already in stock. Check this is new stock and not entered twice; approval adds it as a separate lot.");
