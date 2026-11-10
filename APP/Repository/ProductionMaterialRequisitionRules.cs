@@ -4,6 +4,7 @@ using DOMAIN.Entities.Requisitions.Request;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
+using System.Globalization;
 
 namespace APP.Repository;
 
@@ -48,6 +49,7 @@ internal static class ProductionMaterialRequisitionRules
         var materials = await context.Materials.Where(item => items.Select(line => line.MaterialId).Contains(item.Id))
             .Select(item => new { item.Id, item.Kind }).ToListAsync();
         if (materials.Count != items.Count) return Error.Validation("Requisition.Materials", "A material no longer exists.");
+        var roundTrippedQuantities = new List<(CreateRequisitionItemRequest Item, decimal Quantity)>();
         foreach (var kind in materials.Select(item => item.Kind).Distinct())
         {
             var configuration = await context.ProductionMaterialConfigurations.AsNoTracking()
@@ -55,10 +57,26 @@ internal static class ProductionMaterialRequisitionRules
             if (configuration is null) continue;
             var requirements = ProductionMaterialSources.Requirements(configuration.RequirementsJson);
             var selected = items.Where(item => materials.Any(material => material.Id == item.MaterialId && material.Kind == kind)).ToList();
-            if (selected.Count != requirements.Count || requirements.Any(requirement => !selected.Any(item =>
-                item.MaterialId == requirement.MaterialId && item.UomId == requirement.UnitId && item.Quantity == requirement.Quantity)))
-                return Error.Conflict("Requisition.StaleConfiguration", "The batch requirements changed. Reload the batch before requesting stock.");
+            var stale = Error.Conflict("Requisition.StaleConfiguration", "The batch requirements changed. Reload the batch before requesting stock.");
+            if (selected.Count != requirements.Count) return stale;
+            foreach (var requirement in requirements)
+            {
+                var item = selected.FirstOrDefault(line => line.MaterialId == requirement.MaterialId && line.UomId == requirement.UnitId);
+                if (item is null) return stale;
+                if (item.Quantity == requirement.Quantity) continue;
+                if (!requirement.UseDensityConversion || item.Quantity <= 0 ||
+                    BrowserNumber(item.Quantity) != BrowserNumber(requirement.Quantity))
+                    return stale;
+                roundTrippedQuantities.Add((item, requirement.Quantity));
+            }
         }
+
+        // JSON numbers pass through an IEEE-754 double in the browser. Accept the same
+        // representable value and persist the exact snapshot used by allocation and issuance.
+        foreach (var (item, quantity) in roundTrippedQuantities) item.Quantity = quantity;
         return Result.Success();
     }
+
+    private static double BrowserNumber(decimal quantity) =>
+        double.Parse(quantity.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 }

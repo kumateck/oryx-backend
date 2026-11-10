@@ -98,9 +98,13 @@ public partial class EmployeeRepository(ApplicationDbContext context,
         if (employee is null)
             return Error.NotFound("Employee.NotFound", "Employee not found");
 
+        var email = employee.Email?.Trim();
+        if (string.IsNullOrWhiteSpace(email))
+            return Error.Validation("Employee.EmailRequired", "Add an email address to this employee before creating a user account.");
+
         var existingUser = await context.Users
             .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Email == employee.Email);
+            .FirstOrDefaultAsync(u => u.Email == email);
 
         var role = await context.Roles.FirstOrDefaultAsync(r => r.Id == employeeUserDto.RoleId);
 
@@ -135,7 +139,7 @@ public partial class EmployeeRepository(ApplicationDbContext context,
             logger.LogInformation("Creating new user for email: {Email}", employee.Email);
 
             var newUser = mapper.Map<User>(employee);
-            newUser.Email = newUser.UserName = employee.Email;
+            newUser.Email = newUser.UserName = email;
 
             // No fixed password: the account is unusable until its owner sets one from the emailed link.
             var createResult = await userManager.CreateAsync(newUser, password: APP.Services.Employees.OnboardingTokens.TemporaryPassword());

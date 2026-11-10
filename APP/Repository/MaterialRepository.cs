@@ -3091,6 +3091,17 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             )
             .ToDictionaryAsync(m => m.MaterialId, m => m);
 
+        var densityUnitIds = materialDepartments.Where(item => item.DensityUoMId.HasValue)
+            .Select(item => item.DensityUoMId.GetValueOrDefault()).Distinct().ToList();
+        if (densityUnitIds.Count > 0)
+        {
+            var activeDensityUnits = await context.UnitOfMeasures
+                .CountAsync(unit => densityUnitIds.Contains(unit.Id) && unit.DeletedAt == null);
+            if (activeDensityUnits != densityUnitIds.Count ||
+                materialDepartments.Any(item => item.DensityUoMId.HasValue && item.Density <= 0))
+                return Error.Validation("MaterialDepartment.Density", "A measured density must be positive and use an active unit.");
+        }
+
         var newEntities = new List<MaterialDepartment>();
 
         foreach (var dto in materialDepartments)
@@ -3102,7 +3113,17 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 existing.MinimumStockLevel = dto.MinimumStockLevel;
                 existing.MaximumStockLevel = dto.MaximumStockLevel;
                 existing.UoMId = dto.UoMId;
-                existing.Density = dto.Density;
+                // Stock-only edits omit the density pair. Older clients may still send a
+                // unitless measurement, which must never overwrite an explicitly tagged one.
+                if (dto.DensityUoMId.HasValue)
+                {
+                    existing.Density = dto.Density;
+                    existing.DensityUoMId = dto.DensityUoMId;
+                }
+                else if (!existing.DensityUoMId.HasValue && dto.Density != 0)
+                {
+                    existing.Density = dto.Density;
+                }
             }
             else
             {
@@ -3116,6 +3137,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                         MaximumStockLevel = dto.MaximumStockLevel,
                         MinimumStockLevel = dto.MinimumStockLevel,
                         Density = dto.Density,
+                        DensityUoMId = dto.DensityUoMId,
                         UoMId = dto.UoMId,
                     }
                 );

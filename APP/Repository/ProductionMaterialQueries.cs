@@ -55,7 +55,8 @@ internal static class ProductionMaterialQueries
     private static MaterialDepartmentDetails Department(IMapper mapper, Row row) => new()
     {
         Department = mapper.Map<CollectionItemDto>(row.Department?.Department), UoM = mapper.Map<UnitOfMeasureDto>(row.Unit),
-        Density = row.Department?.Density ?? 0, ReOrderLevel = row.Department?.ReOrderLevel ?? 0,
+        Density = row.Requirement.UseDensityConversion ? row.Requirement.DensityGramsPerMilliliter : row.Department?.Density ?? 0,
+        ReOrderLevel = row.Department?.ReOrderLevel ?? 0,
         MinimumStockLevel = row.Department?.MinimumStockLevel ?? 0, MaximumStockLevel = row.Department?.MaximumStockLevel ?? 0
     };
 

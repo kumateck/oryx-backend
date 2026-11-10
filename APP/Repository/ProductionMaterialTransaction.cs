@@ -1,6 +1,7 @@
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 using System.Runtime.CompilerServices;
 using SHARED;
 
@@ -33,7 +34,7 @@ internal sealed class ProductionMaterialTransaction(ApplicationDbContext context
         "IssuedBmrChange", "IssuedBmrRevision", "AnalyticalTestRequest", "TestRequestSubject", "OosInvestigation", "Coa", "CoaRow", "WorkOrder"
     ];
 
-    public static async Task<ProductionMaterialTransaction> Begin(ApplicationDbContext context)
+    public static async Task<ProductionMaterialTransaction> Begin(ApplicationDbContext context, ILogger? logger = null)
     {
         if (!context.Database.IsRelational() || context.Database.CurrentTransaction is not null)
             return new ProductionMaterialTransaction(context, null);
@@ -54,7 +55,11 @@ internal sealed class ProductionMaterialTransaction(ApplicationDbContext context
         }
         catch
         {
-            await transaction.DisposeAsync();
+            try { await transaction.DisposeAsync(); }
+            catch (Exception cleanupError)
+            {
+                logger?.LogError(cleanupError, "Failed to dispose the production transaction after lock acquisition failed.");
+            }
             throw;
         }
     }
