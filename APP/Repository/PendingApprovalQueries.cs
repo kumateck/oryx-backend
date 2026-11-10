@@ -130,7 +130,7 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
 
     internal IQueryable<Response> Responses => departmentScope.Apply(context.Responses
         .Where(bs =>
-            bs.Approvals.Any(a =>
+            !bs.Approved && !bs.Rejected && bs.Approvals.Any(a =>
                 a.ApprovalRound == bs.Approvals.Max(item => item.ApprovalRound)
                 &&
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))

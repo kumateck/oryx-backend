@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using SHARED;
 
 namespace DOMAIN.Entities.Forms;
@@ -13,8 +15,17 @@ public static class FormErrors
     public static Error SectionMissing() =>
         Error.Validation("Form.Section", "Form must have at least one section.");
 
-    public static Error SectionWithoutQuestions(string sectionTitle) =>
-        Error.Validation("Form.Question", $"Section '{sectionTitle}' must have at least one question.");
+    public static Error SectionWithoutQuestions(string formName, string sectionTitle, int position)
+    {
+        static string PlainText(string value) =>
+            WebUtility.HtmlDecode(Regex.Replace(value ?? "", "<[^<>]*>", " ")).Replace('\u00a0', ' ').Trim();
+
+        var title = PlainText(sectionTitle);
+        var name = PlainText(formName);
+        var section = title.Length > 0 ? $"Section {position} (‘{title}’)" : $"Section {position}";
+        return Error.Validation("Form.Question",
+            $"{section} in template ‘{name}’ has no active saved questions. Open the template linked to this specification, add or replace a question in that section, and save before creating the ARD.");
+    }
 
     public static Error InvalidQuestionOptions(string questionLabel, string questionType) =>
         Error.Validation("Form.Question.Options", $"Question '{questionLabel}' of type '{questionType}' should not have options.");
