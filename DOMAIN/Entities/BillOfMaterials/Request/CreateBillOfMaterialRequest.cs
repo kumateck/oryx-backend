@@ -17,5 +17,6 @@ public class CreateBoMItemsRequest
     public Guid? BaseUoMId { get; set; }
     public int Order { get; set; }
     public decimal PrescribedQuantity { get; set; }
+    public bool UseDensityConversion { get; set; }
     public List<Guid> SubstituteMaterialIds { get; set; } = [];
 }

@@ -54,6 +54,107 @@ public class BomMaterialUnitTests
     }
 
     [Fact]
+    public async Task Density_conversion_saves_mg_source_for_a_liquid_stock_link()
+    {
+        await using var context = Context();
+        var (product, material, _, mg) = await Seed(context);
+        var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
+        var densityUnit = new UnitOfMeasure { Name = "Grams per milliliter", Symbol = "g/mL" };
+        context.UnitOfMeasures.AddRange(ml, densityUnit);
+        var link = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
+        link.UoM = ml;
+        link.UoMId = ml.Id;
+        link.Density = 1.45m;
+        link.DensityUoM = densityUnit;
+        await context.SaveChangesAsync();
+
+        var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1_000_000,
+            PrescribedQuantity = 1_000_000, UseDensityConversion = true }] }, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        var saved = await context.BillOfMaterialItems.SingleAsync();
+        Assert.Equal(mg.Id, saved.BaseUoMId);
+        Assert.True(saved.UseDensityConversion);
+    }
+
+    [Theory]
+    [InlineData(0, "g/mL", false)]
+    [InlineData(1, null, false)]
+    [InlineData(1, "kg/m³", false)]
+    [InlineData(1, "g/mL", true)]
+    public async Task Density_conversion_refuses_unverified_density(int density, string? symbol, bool deleted)
+    {
+        await using var context = Context();
+        var (product, material, _, _) = await Seed(context);
+        var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
+        context.UnitOfMeasures.Add(ml);
+        var link = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
+        link.UoM = ml;
+        link.UoMId = ml.Id;
+        link.Density = density;
+        if (symbol is not null)
+            link.DensityUoM = new UnitOfMeasure { Name = symbol, Symbol = symbol, DeletedAt = deleted ? DateTime.UtcNow : null };
+        await context.SaveChangesAsync();
+
+        var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1,
+            PrescribedQuantity = 1, UseDensityConversion = true }] }, Guid.NewGuid());
+
+        Assert.Equal("Bom.Density", result.Error.Code);
+        Assert.Empty(await context.BillOfMaterials.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Density_conversion_requires_every_substitute_to_have_density_and_a_liquid_stock_unit()
+    {
+        await using var context = Context();
+        var (product, material, _, _) = await Seed(context);
+        var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
+        var substitute = new Material { Name = "Substitute", Code = "RMS002", Kind = MaterialKind.Raw };
+        var densityUnit = new UnitOfMeasure { Name = "Grams per milliliter", Symbol = "g/mL" };
+        context.UnitOfMeasures.AddRange(ml, densityUnit);
+        context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = ml, Density = 1.4m, DensityUoM = densityUnit });
+        var primaryLink = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
+        primaryLink.UoM = ml;
+        primaryLink.UoMId = ml.Id;
+        primaryLink.Density = 1.45m;
+        primaryLink.DensityUoM = densityUnit;
+        await context.SaveChangesAsync();
+
+        var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1,
+            PrescribedQuantity = 1, UseDensityConversion = true, SubstituteMaterialIds = [substitute.Id] }] }, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+    }
+
+    [Fact]
+    public async Task Density_conversion_refuses_a_substitute_without_a_valid_density()
+    {
+        await using var context = Context();
+        var (product, material, _, _) = await Seed(context);
+        var ml = new UnitOfMeasure { Name = "Milliliter", Symbol = "ml", Category = UnitOfMeasureCategory.Volume };
+        var substitute = new Material { Name = "Substitute", Code = "RMS003", Kind = MaterialKind.Raw };
+        var densityUnit = new UnitOfMeasure { Name = "Grams per milliliter", Symbol = "g/mL" };
+        context.UnitOfMeasures.AddRange(ml, densityUnit);
+        context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = ml, Density = 0 });
+        var primaryLink = await context.MaterialDepartments.SingleAsync(item => item.MaterialId == material.Id);
+        primaryLink.UoM = ml;
+        primaryLink.UoMId = ml.Id;
+        primaryLink.Density = 1.45m;
+        primaryLink.DensityUoM = densityUnit;
+        await context.SaveChangesAsync();
+
+        var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1,
+            PrescribedQuantity = 1, UseDensityConversion = true, SubstituteMaterialIds = [substitute.Id] }] }, Guid.NewGuid());
+
+        Assert.Equal("Bom.Density", result.Error.Code);
+        Assert.Empty(await context.BillOfMaterials.ToListAsync());
+    }
+
+    [Fact]
     public async Task A_stock_requisition_using_mg_for_a_piece_link_requires_BOM_repair()
     {
         await using var context = Context();
