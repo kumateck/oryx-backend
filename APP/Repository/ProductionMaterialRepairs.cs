@@ -12,18 +12,19 @@ namespace APP.Repository;
 internal static class ProductionMaterialRepairs
 {
     internal static async Task<Result<ProductionMaterialRepairPreview>> Preview(ApplicationDbContext context,
-        Guid activityId, Guid actorId, MaterialKind kind)
+        Guid activityId, Guid actorId, MaterialKind kind, Guid? packingStyleOverride = null)
     {
         var batchId = await context.ProductionActivities.IgnoreQueryFilters().Where(item => item.Id == activityId)
             .Select(item => item.ProductionScheduleProductId).SingleOrDefaultAsync();
         var access = await ProductionMaterialSources.Authorize(context, actorId, batchId, kind);
         if (access.IsFailure) return access.Error;
-        var plan = await ProductionMaterialRepairPlanning.Build(context, activityId, kind);
+        var plan = await ProductionMaterialRepairPlanning.Build(context, activityId, kind, packingStyleOverride);
         return plan.IsSuccess ? plan.Value.Preview : plan.Error;
     }
 
     internal static async Task<Result<ProductionMaterialRepairResult>> Apply(ApplicationDbContext context,
-        IApprovalRepository approvals, Guid activityId, Guid actorId, MaterialKind kind, ApplyProductionMaterialRepair request)
+        IApprovalRepository approvals, Guid activityId, Guid actorId, MaterialKind kind, ApplyProductionMaterialRepair request,
+        Guid? packingStyleOverride = null)
     {
         if (request.RequestId == Guid.Empty || request.PreviewHash?.Length != 64 || string.IsNullOrWhiteSpace(request.Reason)
             || request.Reason.Trim().Length < 5 || request.Reason.Length > 2000)
@@ -44,19 +45,28 @@ internal static class ProductionMaterialRepairs
                 var saved = JsonSerializer.Deserialize<ProductionMaterialRepairResult>(previous.ResultJson);
                 return saved is not null ? saved : Error.Conflict("Repair.Result", "The saved repair result could not be verified.");
             }
-            var planned = await ProductionMaterialRepairPlanning.Build(context, activityId, kind);
+            var planned = await ProductionMaterialRepairPlanning.Build(context, activityId, kind, packingStyleOverride);
             if (planned.IsFailure) return planned.Error;
             var plan = planned.Value;
             if (request.PreviewHash != plan.Preview.PreviewHash)
                 return Error.Conflict("Repair.StalePreview", "The saved product or batch stock changed. Get a fresh preview before applying.");
             if (plan.Preview.Blockers.Count != 0)
                 return Error.Conflict("Repair.Blocked", string.Join(" ", plan.Preview.Blockers));
-            if (!plan.Preview.HasChanges)
+            var packingStyleChanged = kind == MaterialKind.Package && packingStyleOverride.HasValue
+                && plan.Source.Batch.ProductPackingId != packingStyleOverride;
+            if (!plan.Preview.HasChanges && !packingStyleChanged)
                 return new ProductionMaterialRepairResult { Changed = false, Revision = plan.Configuration?.Revision ?? 0 };
+            if (packingStyleChanged)
+            {
+                var batch = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                    .SingleAsync(item => item.Id == batchId);
+                batch.ProductPackingId = packingStyleOverride;
+            }
             var before = ProductionMaterialSources.Json(new
             {
                 Configuration = plan.Configuration?.RequirementsJson,
                 SourceHash = plan.Configuration?.SourceHash, Revision = plan.Configuration?.Revision,
+                PackingStyleId = plan.Source.Batch.ProductPackingId,
                 Reservations = plan.Reservations.Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseId,
                     item.WarehouseLocationShelfId, item.Quantity, item.UoMId }),
                 Requisition = plan.Requisition is null ? null : new
@@ -122,6 +132,7 @@ internal static class ProductionMaterialRepairs
                 Id = request.RequestId, ActorId = actorId, ProductionScheduleProductId = batchId, Kind = kind,
                 PreviewHash = request.PreviewHash, Reason = request.Reason.Trim(), BeforeJson = before,
                 AfterJson = ProductionMaterialSources.Json(new { configuration.Revision, plan.Source.SourceHash,
+                    PackingStyleId = packingStyleOverride ?? plan.Source.Batch.ProductPackingId,
                     plan.Source.DefinitionJson, plan.Source.Requirements, plan.Allocation.Allocations, RequisitionId = plan.Requisition?.Id, ContentRevision = plan.Requisition?.ContentRevision }),
                 ResultJson = ProductionMaterialSources.Json(result)
             });

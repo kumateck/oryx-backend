@@ -19,12 +19,13 @@ internal sealed record ProductionMaterialRepairPlan(ProductionMaterialSource Sou
 
 internal static class ProductionMaterialRepairPlanning
 {
-    internal static async Task<Result<ProductionMaterialRepairPlan>> Build(ApplicationDbContext context, Guid activityId, MaterialKind kind)
+    internal static async Task<Result<ProductionMaterialRepairPlan>> Build(ApplicationDbContext context, Guid activityId, MaterialKind kind,
+        Guid? packingStyleOverride = null)
     {
         var activity = await context.ProductionActivities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .SingleOrDefaultAsync(item => item.Id == activityId);
         if (activity is null) return Error.NotFound("Repair.Activity", "The production run was not found.");
-        var loaded = await ProductionMaterialSources.Load(context, activity.ProductionScheduleProductId, kind);
+        var loaded = await ProductionMaterialSources.Load(context, activity.ProductionScheduleProductId, kind, packingStyleOverride);
         if (loaded.IsFailure) return loaded.Error;
         var source = loaded.Value;
         var blockers = source.Blockers.ToList();
@@ -92,7 +93,8 @@ internal static class ProductionMaterialRepairPlanning
         if (!documentsMatch && !await context.ApprovalStages.AnyAsync(stage => stage.Required
                 && stage.Approval.ItemType == "StockRequisition" && stage.Approval.DeletedAt == null))
             blockers.Add("Configure a stock-requisition approval workflow with a required stage before changing a requisition.");
-        var changed = snapshot is null || snapshot.SourceHash != source.SourceHash || ProductionMaterialSources.Json(before) != ProductionMaterialSources.Json(source.Requirements)
+        var changed = snapshot is null || snapshot.SourceHash != source.SourceHash || packingStyleOverride.HasValue && source.Batch.ProductPackingId != packingStyleOverride
+            || ProductionMaterialSources.Json(before) != ProductionMaterialSources.Json(source.Requirements)
             || ProductionMaterialSources.Json(desired) != ProductionMaterialSources.Json(existing) || !documentsMatch;
         var hash = ProductionMaterialSources.Hash(new
         {

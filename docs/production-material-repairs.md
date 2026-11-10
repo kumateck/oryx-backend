@@ -225,3 +225,15 @@ passed; strict typechecks, web build, API reproducibility and route checks passe
 React Doctor reported no issues (91/100), and the targeted UI detector returned no
 findings. Synthetic visual checks covered 1366×768, 1280×720, 1024×576 and 854×480;
 the smaller viewports simulate scaling, not native Windows acceptance.
+
+## Invalid packing-style references
+
+Product packing edits are blocked while a schedule batch references a removed
+style, including batches that have not yet created packaging records. New
+schedule create/add operations require an active style belonging to each
+product. For a running batch with a legacy invalid reference, the
+product-within-schedule packaging preview proposes the first active style by
+name, with ID as the tie-breaker. The selected style is included in the preview
+hash and in immutable repair evidence. Applying the repair changes the saved
+style and packaging allocations under the existing permission, stock and
+approval rules. No new permission or schema migration is required.

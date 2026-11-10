@@ -12,7 +12,9 @@ using SHARED;
 
 namespace APP.Repository;
 
-internal sealed record ScheduleRepairPlan(ScheduleRepairPreview Preview, Dictionary<Guid, string> Procedures);
+internal sealed record ScheduleRepairPlan(ScheduleRepairPreview Preview, Dictionary<Guid, string> Procedures,
+    Dictionary<Guid, Guid> PackingStyleOverrides);
+internal sealed record RepairPackingStyle(Guid Id, string Name);
 
 internal static partial class ProductionScheduleRepairs
 {
@@ -48,6 +50,13 @@ internal static partial class ProductionScheduleRepairs
         if (status is ProductionStatus.Completed or ProductionStatus.Cancelled)
             preview.Blockers.Add("Completed or cancelled schedules cannot be repaired.");
         var procedures = new Dictionary<Guid, string>();
+        var packingStyleOverrides = new Dictionary<Guid, Guid>();
+        var packingStyles = kind == ScheduleRepairKind.Packaging
+            ? await db.ProductPackings.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+                .Where(item => item.ProductId == productId && item.DeletedAt == null)
+                .OrderBy(item => item.Name).ThenBy(item => item.Id)
+                .Select(item => new RepairPackingStyle(item.Id, item.Name)).ToListAsync()
+            : new List<RepairPackingStyle>();
         var batches = await db.ProductionScheduleProducts.AsNoTracking().IgnoreAutoIncludes()
             .Where(batch => batch.ProductionScheduleId == scheduleId && batch.ProductId == productId).OrderBy(batch => batch.Id).ToListAsync();
         var ids = batches.Select(batch => batch.Id).ToList();
@@ -74,20 +83,34 @@ internal static partial class ProductionScheduleRepairs
             }
             else
             {
+                Guid? packingStyleOverride = null;
+                string packingStyleMessage = "";
+                if (kind == ScheduleRepairKind.Packaging && !packingStyles.Any(style => style.Id == batch.ProductPackingId))
+                {
+                    var firstStyle = packingStyles.FirstOrDefault();
+                    if (firstStyle is null)
+                    {
+                        Block(row, "Add an active packing style to this product before repairing its packaging.");
+                        continue;
+                    }
+                    packingStyleOverride = firstStyle.Id;
+                    packingStyleOverrides[batch.Id] = firstStyle.Id;
+                    packingStyleMessage = $"The saved packing style is unavailable. This repair will assign the first active style, '{firstStyle.Name}', to the batch.";
+                }
                 var material = await ProductionMaterialRepairs.Preview(db, run.Id, actorId,
-                    kind == ScheduleRepairKind.Bom ? MaterialKind.Raw : MaterialKind.Package);
+                    kind == ScheduleRepairKind.Bom ? MaterialKind.Raw : MaterialKind.Package, packingStyleOverride);
                 if (material.IsFailure) { Block(row, material.Error.Description); continue; }
                 row.Materials = material.Value;
                 row.EvidenceHash = material.Value.PreviewHash;
                 row.Status = material.Value.Blockers.Count != 0 ? "blocked" : material.Value.HasChanges ? "ready" : "unchanged";
-                row.Message = string.Join(" ", material.Value.Blockers);
+                row.Message = string.Join(" ", new[] { packingStyleMessage, string.Join(" ", material.Value.Blockers) }.Where(message => message.Length != 0));
             }
         }
         if (preview.Batches.Any(row => row.Status == "blocked"))
             preview.Blockers.Add("Resolve the blocked batches before applying this product repair. Nothing will be changed while any batch is blocked.");
         preview.CanApply = preview.Blockers.Count == 0 && preview.Batches.Any(row => row.Status == "ready");
         preview.PreviewHash = ProductionMaterialSources.Hash(new { scheduleId, productId, kind, preview.Batches });
-        return new ScheduleRepairPlan(preview, procedures);
+        return new ScheduleRepairPlan(preview, procedures, packingStyleOverrides);
     }
 
     private static void Block(ScheduleRepairBatchPreview row, string message) { row.Status = "blocked"; row.Message = message; }

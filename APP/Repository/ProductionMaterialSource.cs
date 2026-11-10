@@ -45,7 +45,8 @@ internal static class ProductionMaterialSources
         return Result.Success();
     }
 
-    internal static async Task<Result<ProductionMaterialSource>> Load(ApplicationDbContext context, Guid batchId, MaterialKind kind)
+    internal static async Task<Result<ProductionMaterialSource>> Load(ApplicationDbContext context, Guid batchId, MaterialKind kind,
+        Guid? packingStyleOverride = null)
     {
         var batch = await context.ProductionScheduleProducts.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(item => item.Product).Include(item => item.ProductionSchedule).SingleOrDefaultAsync(item => item.Id == batchId);
@@ -83,17 +84,18 @@ internal static class ProductionMaterialSources
         }
         else
         {
-            if (!batch.ProductPackingId.HasValue || !await context.ProductPackings.IgnoreQueryFilters()
-                .AnyAsync(item => item.Id == batch.ProductPackingId && item.ProductId == batch.ProductId && item.DeletedAt == null))
+            var packingStyleId = packingStyleOverride ?? batch.ProductPackingId;
+            if (!packingStyleId.HasValue || !await context.ProductPackings.IgnoreQueryFilters()
+                .AnyAsync(item => item.Id == packingStyleId && item.ProductId == batch.ProductId && item.DeletedAt == null))
                 return Error.Validation("Repair.PackingStyle", "The batch's saved packing style is missing or no longer belongs to this product.");
             var packages = await context.ProductPackages.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
                 .Include(item => item.Substitutes).Where(item => item.ProductId == batch.ProductId && item.DeletedAt == null
-                    && (item.ProductPackingId == null || item.ProductPackingId == batch.ProductPackingId)).OrderBy(item => item.MaterialId).ToListAsync();
-            packages = ProductPackagingSelection.ForStyle(packages, batch.ProductPackingId);
+                    && (item.ProductPackingId == null || item.ProductPackingId == packingStyleId)).OrderBy(item => item.MaterialId).ToListAsync();
+            packages = ProductPackagingSelection.ForStyle(packages, packingStyleId);
             definitions.AddRange(packages.Select(item => new SourceLine(item.MaterialId, null, item.BaseQuantity,
                 item.PrescribedQuantity, item.Loose, item.UnitCapacity, item.DirectLinkMaterialId,
                 item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
-            source = Json(new { Items = packages.Select(item => new { item.Id, item.UpdatedAt, item.ProductPackingId,
+            source = Json(new { PackingStyleId = packingStyleId, Items = packages.Select(item => new { item.Id, item.UpdatedAt, item.ProductPackingId,
                 item.PackingExcessMargin, item.MaterialThickness, item.OtherStandards }).ToList(), Definitions = definitions });
         }
         if (definitions.Count == 0 || definitions.GroupBy(item => item.MaterialId).Any(group => group.Count() != 1))
@@ -138,7 +140,7 @@ internal static class ProductionMaterialSources
         }
         if (requirements.GroupBy(item => item.MaterialId).Any(group => group.Count() > 1))
             blockers.Add("A material is selected for more than one requirement. Correct the overlapping substitutes first.");
-        var hash = Hash(new { source, batch.ProductId, batch.BatchSize, batch.Quantity, batch.ProductPackingId,
+        var hash = Hash(new { source, batch.ProductId, batch.BatchSize, batch.Quantity, PackingStyleId = kind == MaterialKind.Package ? packingStyleOverride ?? batch.ProductPackingId : null,
             batch.Product.UpdatedAt, DepartmentId = departmentId, StorageId = storage[0].Id, ProductionId = production[0].Id, Requirements = requirements });
         return new ProductionMaterialSource(batch, departmentId.Value, storage[0].Id, production[0].Id, requirements, hash, source, blockers);
     }
