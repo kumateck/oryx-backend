@@ -36,6 +36,18 @@ public class StockTopUpTests
     }
 
     [Fact]
+    public void Lot_dates_compare_month_and_year_only()
+    {
+        Assert.True(StockMigrationRepository.SameMonth(new DateTime(2028, 2, 1), new DateTime(2028, 2, 29)));
+        Assert.False(StockMigrationRepository.SameMonth(new DateTime(2028, 2, 29), new DateTime(2028, 3, 1)));
+        Assert.False(StockMigrationRepository.SameMonth(new DateTime(2028, 2, 1), null));
+        Assert.True(StockMigrationRepository.SameMonth(null, null));
+        var draft = new StockMigration { Mode = StockMigrationMode.TopUp };
+        Assert.NotEqual(StockMigrationRepository.BatchIdentity(draft, Guid.NewGuid(), "", "", ""),
+            StockMigrationRepository.BatchIdentity(draft, Guid.NewGuid(), "", "", ""));
+    }
+
+    [Fact]
     public void Top_up_endpoints_keep_the_existing_separate_permissions()
     {
         Assert.Contains(typeof(StockMigrationController).GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>(),

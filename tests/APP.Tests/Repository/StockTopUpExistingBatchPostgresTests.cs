@@ -115,6 +115,27 @@ public sealed class StockTopUpExistingBatchPostgresTests
             var after = Assert.Single((await repository.Comparison(second)).Value);
             Assert.Equal((100m, 155m, 1, 4), (after.Current, after.New, after.CurrentBatches, after.NewBatches));
 
+            // Legacy full-day entries match by month. Keep the existing lot's saved dates and receipt audit.
+            var monthTopUp = await Draft(Row("DXL034/21", "NQC/RM/22/153-01", 6, Day(2026, 1, 29)));
+            await db.StockMigrationLines.Where(l => l.StockMigrationId == monthTopUp).ExecuteUpdateAsync(set => set
+                .SetProperty(l => l.ExactDates, true).SetProperty(l => l.ExpiryDate, Day(2028, 1, 1)));
+            db.ChangeTracker.Clear();
+            Assert.True((await repository.Approve(monthTopUp, actor.UserId.Value)).IsSuccess);
+            var topped = await db.MaterialBatches.AsNoTracking().SingleAsync(b => b.Id == lot.Id);
+            Assert.Equal((146m, Day(2026, 1, 1), expires), (topped.TotalQuantity, topped.ManufacturingDate, topped.ExpiryDate));
+            Assert.Equal(lot.Id, (await db.StockMigrationLines.AsNoTracking().SingleAsync(l => l.StockMigrationId == monthTopUp)).ImportedBatchId);
+
+            // A retest in a different month stays distinct; missing supplier batch numbers never merge.
+            var separate = await Draft(Row("DXL034/21", "NQC/RM/22/153-01", 2), Row("", "", 3), Row("", "", 4));
+            var separateRows = await db.StockMigrationLines.Where(l => l.StockMigrationId == separate).OrderBy(l => l.RowNumber).ToListAsync();
+            separateRows[0].RetestDate = Day(2027, 1, 12);
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            Assert.True((await repository.Approve(separate, actor.UserId.Value)).IsSuccess);
+            var posted = await db.StockMigrationLines.AsNoTracking().Where(l => l.StockMigrationId == separate).ToListAsync();
+            Assert.Equal(3, posted.Select(l => l.ImportedBatchId).Distinct().Count());
+            Assert.All(posted, row => Assert.NotEqual(lot.Id, row.ImportedBatchId));
+
             // A lot that was used up is refilled and becomes available again.
             await db.ShelfMaterialBatches.Where(s => s.MaterialBatchId == lot.Id).ExecuteUpdateAsync(s => s.SetProperty(x => x.Quantity, 0));
             await db.MaterialBatches.Where(b => b.Id == lot.Id).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, BatchStatus.Consumed));
@@ -122,16 +143,16 @@ public sealed class StockTopUpExistingBatchPostgresTests
             var third = await Draft(Row("DXL034/21", "NQC/RM/22/153-01", 9));
             Assert.True((await repository.Approve(third, actor.UserId.Value)).IsSuccess);
             var revived = await db.MaterialBatches.AsNoTracking().SingleAsync(b => b.Id == lot.Id);
-            Assert.Equal((BatchStatus.Available, 149m), (revived.Status, revived.TotalQuantity));
+            Assert.Equal((BatchStatus.Available, 155m), (revived.Status, revived.TotalQuantity));
             Assert.Equal(9, await db.ShelfMaterialBatches.AsNoTracking().Where(s => s.MaterialBatchId == lot.Id).SumAsync(s => s.Quantity));
 
             // A rejected lot is never refilled.
-            await db.MaterialBatches.Where(b => b.Id == lot.Id).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, BatchStatus.Rejected));
+            await db.MaterialBatches.Where(b => b.BatchNumber == "DXL034/21").ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, BatchStatus.Rejected));
             db.ChangeTracker.Clear();
             var fourth = await Draft(Row("DXL034/21", "NQC/RM/22/153-01", 2));
             Assert.Contains("approval adds it as a separate lot", (await db.StockMigrationLines.AsNoTracking().SingleAsync(l => l.StockMigrationId == fourth)).Warnings);
             Assert.True((await repository.Approve(fourth, actor.UserId.Value)).IsSuccess);
-            Assert.Equal(149, (await db.MaterialBatches.AsNoTracking().SingleAsync(b => b.Id == lot.Id)).TotalQuantity);
+            Assert.Equal(155, (await db.MaterialBatches.AsNoTracking().SingleAsync(b => b.Id == lot.Id)).TotalQuantity);
         }
         finally
         {
