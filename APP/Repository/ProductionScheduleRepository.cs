@@ -4,6 +4,7 @@ using APP.IRepository;
 using APP.Services.Background;
 using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Utils;
+using System.Diagnostics;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
@@ -23,6 +24,7 @@ using DOMAIN.Entities.Warehouses;
 using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SHARED;
 
 namespace APP.Repository;
@@ -34,7 +36,8 @@ public partial class ProductionScheduleRepository(
     IMaterialRepository materialRepository,
     IBackgroundWorkerService backgroundWorkerService,
     IApprovalRepository approvalRepository,
-    IProductionActivityStepEventPublisher stepEventPublisher
+    IProductionActivityStepEventPublisher stepEventPublisher,
+    ILogger<ProductionScheduleRepository>? logger = null
 ) : IProductionScheduleRepository
 {
     public Task<Result<ProductionStepRecordsDto>> GetProductionStepRecords(Guid activityId, Guid stepId,
@@ -311,10 +314,11 @@ public partial class ProductionScheduleRepository(
         Guid userId
     )
     {
-        await using var transaction = await ProductionMaterialTransaction.Begin(context);
-
+        ProductionMaterialTransaction? transaction = null;
+        var traceId = Activity.Current?.TraceId.ToString() ?? "unavailable";
         try
         {
+            transaction = await ProductionMaterialTransaction.Begin(context, logger);
             if (context.Database.IsRelational())
                 await context.Database.ExecuteSqlRawAsync("LOCK TABLE \"ProductionActivities\", \"ProductionScheduleProducts\" IN SHARE ROW EXCLUSIVE MODE");
             if (
@@ -464,12 +468,37 @@ public partial class ProductionScheduleRepository(
         }
         catch (Exception e)
         {
-            await transaction.RollbackAsync();
+            logger?.LogError(e,
+                "Failed to start production activity for batch {ProductionScheduleProductId} by user {UserId}; trace {TraceId}",
+                productionScheduleProductId, userId, traceId);
+            if (transaction is not null)
+            {
+                try { await transaction.RollbackAsync(); }
+                catch (Exception rollbackError)
+                {
+                    logger?.LogError(rollbackError,
+                        "Failed to roll back production start for batch {ProductionScheduleProductId}; trace {TraceId}",
+                        productionScheduleProductId, traceId);
+                }
+            }
             context.ChangeTracker.Clear();
             return Error.Failure(
                 "Production.Start",
-                $"Failed to start production activity: {e.Message}"
+                "Failed to start production activity. Check the server error log and contact support."
             );
+        }
+        finally
+        {
+            if (transaction is not null)
+            {
+                try { await transaction.DisposeAsync(); }
+                catch (Exception cleanupError)
+                {
+                    logger?.LogError(cleanupError,
+                        "Failed to dispose production start transaction for batch {ProductionScheduleProductId}; trace {TraceId}",
+                        productionScheduleProductId, traceId);
+                }
+            }
         }
     }
 
@@ -1278,6 +1307,7 @@ public partial class ProductionScheduleRepository(
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
+            .Include(m => m.DensityUoM)
             .Include(m => m.Material)
             .Include(m => m.Department)
             .Where(m =>
@@ -1335,14 +1365,28 @@ public partial class ProductionScheduleRepository(
                 && p.Status == ProductionStatus.InProgress
             );
 
+        var neededByMaterial = new Dictionary<(Guid BomItemId, Guid MaterialId), decimal>();
+        foreach (var item in activeBoM.BillOfMaterial.Items)
+        {
+            var sourceQuantity = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
+            var candidates = new[] { item.MaterialId }.Concat(item.Substitutes.Select(substitute => substitute.SubstituteMaterialId));
+            foreach (var materialId in candidates)
+            {
+                if (!materialDepartments.TryGetValue(materialId, out var departmentLink)) continue;
+                var quantity = item.UseDensityConversion
+                    ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, departmentLink)
+                    : sourceQuantity;
+                if (item.UseDensityConversion && (quantity is null or <= 0))
+                    return Error.Validation("Production.Materials", $"{departmentLink.Material.Name}: set a positive density in g/mL and a liquid stock unit before using this BOM conversion.");
+                neededByMaterial[(item.Id, materialId)] = quantity ?? sourceQuantity;
+            }
+        }
+
         var materialDetails = activeBoM
             .BillOfMaterial.Items.Where(i => materialDepartments.ContainsKey(i.MaterialId))
             .SelectMany(item =>
             {
-                var quantityNeeded =
-                    batchSize == BatchSize.Full
-                        ? item.PrescribedQuantity
-                        : item.PrescribedQuantity / 2;
+                var quantityNeeded = neededByMaterial.GetValueOrDefault((item.Id, item.MaterialId));
 
                 ProductionScheduleProcurementDto CreateProcurementDto(
                     Guid materialId,
@@ -1363,18 +1407,19 @@ public partial class ProductionScheduleRepository(
                     var consumedQuantity = consumedQuantities.GetValueOrDefault(materialId, 0);
 
                     var extraQuantity = extraPackings.GetValueOrDefault(materialId, 0);
+                    var candidateQuantityNeeded = neededByMaterial.GetValueOrDefault((item.Id, materialId), quantityNeeded);
 
                     return new ProductionScheduleProcurementDto
                     {
                         Material = mapper.Map<MaterialDto>(material),
                         BaseUoM = mapper.Map<UnitOfMeasureDto>(item.BaseUoM),
                         BaseQuantity = item.BaseQuantity,
-                        QuantityNeeded = quantityNeeded,
+                        QuantityNeeded = candidateQuantityNeeded,
                         QuantityOnHand = quantityOnHand,
                         Status =
                             currentActivityStep is { Order: > 2 }
                                 ? MaterialRequisitionStatus.Supplied
-                            : quantityOnHand >= quantityNeeded || reservedQuantity == quantityNeeded
+                            : quantityOnHand >= candidateQuantityNeeded || reservedQuantity == candidateQuantityNeeded
                                 ? MaterialRequisitionStatus.InHouse
                             : GetStatusOfProductionMaterial(
                                 stockTransfers,
@@ -1432,7 +1477,7 @@ public partial class ProductionScheduleRepository(
                     || mainProcurement.FrozenQuantity == quantityNeeded;
                 var availableSubstitutes = substitutes
                     .Where(s =>
-                        s.QuantityOnHand >= quantityNeeded || s.FrozenQuantity == quantityNeeded
+                        s.QuantityOnHand >= s.QuantityNeeded || s.FrozenQuantity == s.QuantityNeeded
                     )
                     .ToList();
 
@@ -4936,6 +4981,7 @@ public partial class ProductionScheduleRepository(
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
+            .Include(m => m.DensityUoM)
             .Where(m =>
                 activeBoM
                     .BillOfMaterial.Items.Select(i => i.MaterialId)
@@ -4957,16 +5003,26 @@ public partial class ProductionScheduleRepository(
             .GroupBy(r => r.MaterialBatch.MaterialId)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
 
+        var forecastQuantityByMaterial = new Dictionary<Guid, decimal>();
+        foreach (var item in activeBoM.BillOfMaterial.Items.Where(item => rawMaterialDepartments.ContainsKey(item.MaterialId)))
+        {
+            var sourceQuantity = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
+            var link = rawMaterialDepartments[item.MaterialId];
+            var quantity = item.UseDensityConversion
+                ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, link)
+                : sourceQuantity;
+            if (item.UseDensityConversion && (quantity is null or <= 0))
+                return Error.Validation("Production.Materials", $"{item.Material.Name}: set a positive density in g/mL and a liquid stock unit before forecasting this BOM.");
+            forecastQuantityByMaterial[item.MaterialId] = quantity ?? sourceQuantity;
+        }
+
         var materialDetails = activeBoM
             .BillOfMaterial.Items.Where(i => rawMaterialDepartments.ContainsKey(i.MaterialId))
             .Select(item =>
             {
                 var quantityOnHand = rawStockLevels.GetValueOrDefault(item.MaterialId, 0);
 
-                var quantityNeeded =
-                    batchSize == BatchSize.Full
-                        ? item.PrescribedQuantity
-                        : item.PrescribedQuantity / 2;
+                var quantityNeeded = forecastQuantityByMaterial.GetValueOrDefault(item.MaterialId);
 
                 return new ForecastMaterialDto
                 {

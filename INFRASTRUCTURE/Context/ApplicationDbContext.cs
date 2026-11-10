@@ -1239,6 +1239,7 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Items).AutoInclude();
         modelBuilder.Entity<BillOfMaterial>().Navigation(bom => bom.Product).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Material).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItem>().Property(bomi => bomi.UseDensityConversion).HasDefaultValue(false);
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Substitutes).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItemSubstitute>().Navigation(bomis => bomis.SubstituteMaterial).AutoInclude();
         modelBuilder

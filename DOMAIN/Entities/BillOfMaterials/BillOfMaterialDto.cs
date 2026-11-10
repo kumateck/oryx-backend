@@ -24,6 +24,7 @@ public class BillOfMaterialItemDto
     public UnitOfMeasureDto BaseUoM { get; set; }
     public int Order { get; set; }
     public decimal PrescribedQuantity { get; set; }
+    public bool UseDensityConversion { get; set; }
     public List<BillOfMaterialItemSubstituteDto> Substitutes { get; set; } = [];
 }
 
