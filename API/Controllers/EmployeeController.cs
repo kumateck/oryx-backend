@@ -134,7 +134,9 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateEmployee([FromRoute] Guid id, [FromBody] UpdateEmployeeRequest request)
     {
-        var result = await repository.UpdateEmployee(id, request);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actorId)) return TypedResults.Unauthorized();
+
+        var result = await repository.UpdateEmployee(id, request, actorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -203,7 +205,7 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     }
 
     /// <summary>
-    /// Deletes a specific employee by its ID.
+    /// Updates the email of an employee and their linked user account.
     /// </summary>
     [HttpPut("email/{id:guid}")]
     [Authorize(PermissionKeys.CanUpdateEmployeeEmail)]
@@ -211,10 +213,9 @@ public class EmployeeController(IEmployeeRepository repository, INFRASTRUCTURE.C
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateEmployeeEmail([FromRoute] Guid id, [FromQuery] string email)
     {
-        var userId = (string)HttpContext.Items["Sub"];
-        if (userId == null) return TypedResults.Unauthorized();
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actorId)) return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateEmployeeEmail(id, email);
+        var result = await repository.UpdateEmployeeEmail(id, email, actorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
