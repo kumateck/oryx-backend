@@ -10,7 +10,7 @@ internal static class StockTransferPicking
     internal sealed record AvailableShelf(ShelfMaterialBatch Shelf, decimal Quantity);
 
     internal static async Task<List<AvailableShelf>> Load(
-        ApplicationDbContext context, Guid materialId, Guid warehouseId, Guid? unitId)
+        ApplicationDbContext context, Guid materialId, Guid warehouseId, Guid unitId)
     {
         var now = DateTime.UtcNow;
         var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes()
@@ -22,7 +22,7 @@ internal static class StockTransferPicking
                 && row.MaterialBatch.Status == BatchStatus.Available
                 && (row.UoMId == null || row.UoMId == row.MaterialBatch.UoMId)
                 && row.MaterialBatch.UoM.DeletedAt == null
-                && (unitId == null || row.MaterialBatch.UoMId == unitId)
+                && row.MaterialBatch.UoMId == unitId
                 && row.WarehouseLocationShelf.DeletedAt == null
                 && row.WarehouseLocationShelf.WarehouseLocationRack.DeletedAt == null
                 && row.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.DeletedAt == null

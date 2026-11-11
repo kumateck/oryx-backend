@@ -29,6 +29,7 @@ public sealed class ProductionSchedulePermissionTests
     [InlineData("CreateFinishedGoodsTransferNote", PermissionKeys.CanCreateFgtn)]
     [InlineData("ApproveTransferNote", PermissionKeys.CanApproveFgtn)]
     [InlineData("CreateExtraPacking", PermissionKeys.CanRequestExtraPacking)]
+    [InlineData("ApproveStockTransfer", PermissionKeys.CanApproveIncomingStockTransferRequest)]
     [InlineData("RejectStockTransfer", PermissionKeys.CanRejectIncomingStockTransferRequest)]
     [InlineData("IssueBatchManufacturingRecord", PermissionKeys.CanIssueBmr)]
     [InlineData("IssueBatchPackagingRecord", PermissionKeys.CanIssueBpr)]
