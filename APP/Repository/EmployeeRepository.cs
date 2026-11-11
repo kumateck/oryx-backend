@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using APP.Services.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -31,7 +33,7 @@ namespace APP.Repository;
 public partial class EmployeeRepository(ApplicationDbContext context,
     ILogger<EmployeeRepository> logger, IEmailService emailService, IMapper mapper,
     IConfiguration configuration, UserManager<User> userManager, IBlobStorageService blobStorage,
-    IHttpContextAccessor httpContextAccessor, IAuthRepository authRepository) : IEmployeeRepository
+    IHttpContextAccessor httpContextAccessor) : IEmployeeRepository
 {
 
     public async Task<Result> UploadAvatar(UploadFileRequest request, Guid employeeId)
@@ -395,43 +397,13 @@ public partial class EmployeeRepository(ApplicationDbContext context,
         };
     }
     
-    public async Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request)
+    public Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request, Guid actorId)
     {
-        var employee = await context.Employees.Include(employee => employee.Department)
-            .FirstOrDefaultAsync(e => e.Id == id);
+        if (request.ActiveStatus is EmployeeActiveStatus.Suspension
+            && (!request.SuspensionStartDate.HasValue || !request.SuspensionEndDate.HasValue))
+            return Task.FromResult(Result.Failure(Error.Validation("Employee.Status", "Employee suspension requires start and end dates")));
 
-        if (employee == null)
-        {
-            return Error.NotFound("Employee.NotFound", "Employee not found");
-        }
-
-        if (request.ActiveStatus is EmployeeActiveStatus.Suspension)
-        {
-            if (!request.SuspensionStartDate.HasValue || !request.SuspensionEndDate.HasValue)
-            {
-                return Error.Validation("Employee.Status", "Employee suspension requires start and end dates");
-            }
-        }
-
-        mapper.Map(request, employee);
-        employee.StaffNumber = request.StaffNumber;
-
-        context.Employees.Update(employee);
-        await context.SaveChangesAsync();
-
-        // ensuring consistency with employee users
-        var user = await userManager.FindByEmailAsync(employee.Email);
-        if (user == null) return Result.Success();
-
-        user.FirstName = employee.FirstName;
-        user.LastName = employee.LastName;
-        user.DateOfBirth = employee.DateOfBirth;
-        user.DepartmentId = employee.DepartmentId;
-        user.Department = employee.Department;
-
-        await userManager.UpdateAsync(user);
-        await context.SaveChangesAsync();
-        return Result.Success();
+        return SaveEmployeeUpdate(id, request.Email, actorId, request);
     }
 
     public async Task<Result> UpdateEmployeeStatus(Guid employeeId, UpdateEmployeeStatus status)
@@ -614,65 +586,106 @@ public partial class EmployeeRepository(ApplicationDbContext context,
         return Result.Success();
     }
 
-    public async Task<Result> UpdateEmployeeEmail(Guid id, string newEmail)
+    public Task<Result> UpdateEmployeeEmail(Guid id, string newEmail, Guid actorId) =>
+        SaveEmployeeUpdate(id, newEmail, actorId, profile: null);
+
+    private async Task<Result> SaveEmployeeUpdate(Guid id, string requestedEmail, Guid actorId, UpdateEmployeeRequest profile)
     {
-        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
-        if (employee == null)
-            return Error.NotFound("Employee.NotFound", "Employee not found");
-
-        if (employee.Email == newEmail)
-            return Result.Success();
-
-        var emailExists = await context.Employees.AnyAsync(e => e.Email == newEmail && e.Id != id)
-                          || await context.Users.AnyAsync(u => u.Email == newEmail);
-        if (emailExists)
-            return Error.Validation("Employee.Email", "Email already exists");
-
-        await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            var oldEmail = employee.Email ?? "";
-            employee.Email = newEmail;
-            context.Employees.Update(employee);
-            await context.SaveChangesAsync();
+            await using var transaction = context.Database.IsRelational()
+                ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+                : null;
 
-            // Find the linked Identity user by the OLD email
-            var user = await userManager.FindByEmailAsync(oldEmail);
-            if (user != null)
+            var employee = await context.Employees.FirstOrDefaultAsync(row => row.Id == id);
+            if (employee is null)
+                return Error.NotFound("Employee.NotFound", "Employee not found");
+
+            var grants = await CurrentPermissionSet.Load(context, actorId);
+            var permission = profile is null ? PermissionKeys.CanUpdateEmployeeEmail : PermissionKeys.CanUpdateEmployeeInfo;
+            if (!grants.Contains(permission))
+                return Error.Forbidden("Employee.Permission", "You do not have permission to make this employee update.");
+
+            var savedEmail = employee.Email;
+            var newEmail = string.IsNullOrWhiteSpace(requestedEmail) ? null : requestedEmail.Trim();
+            var changeEmail = profile is null || !string.Equals(savedEmail?.Trim(), newEmail, StringComparison.Ordinal);
+            var user = employee.UserId is Guid userId
+                ? await context.Users.FirstOrDefaultAsync(row => row.Id == userId)
+                : null;
+
+            if (changeEmail)
             {
-                var emailResult = await userManager.SetEmailAsync(user, newEmail);
-                if (!emailResult.Succeeded)
-                    return Error.Validation("User.Email", string.Join("; ", emailResult.Errors.Select(e => e.Description)));
+                if (employee.UserId.HasValue && !grants.Contains(PermissionKeys.CanUpdateEmployeeEmail))
+                    return Error.Forbidden("Employee.EmailPermission", "Updating a linked account email requires the employee email permission.");
+                if (employee.UserId.HasValue && user is null)
+                    return Error.Conflict("Employee.AccountUnavailable", "The linked user account is unavailable.");
+                if (newEmail is null ? profile is null || user is not null
+                    : newEmail.Length > 100 || !new EmailAddressAttribute().IsValid(newEmail))
+                    return Error.Validation("Employee.Email", "Enter a valid email address of at most 100 characters.");
 
-                var usernameResult = await userManager.SetUserNameAsync(user, newEmail);
-                if (!usernameResult.Succeeded)
-                    return Error.Validation("User.UserName", string.Join("; ", usernameResult.Errors.Select(e => e.Description)));
+                if (user is not null && await context.Employees.AnyAsync(row => row.Id != id && row.UserId == user.Id))
+                    return Error.Conflict("Employee.AccountShared", "More than one employee is linked to this account. Resolve the account links before changing its email.");
 
-                var updateResult = await userManager.UpdateAsync(user);
-                if (!updateResult.Succeeded)
-                    return Error.Validation("User.Update", string.Join("; ", updateResult.Errors.Select(e => e.Description)));
-
-                var resetResult = await authRepository.ForgotPassword(new ForgotPasswordRequest
+                if (newEmail is not null)
                 {
-                    Email = newEmail
-                });
-                if (!resetResult.IsSuccess)
-                {
-                    await transaction.RollbackAsync();
-                    return resetResult;
+                    var address = newEmail.ToLowerInvariant();
+                    var normalized = userManager.NormalizeEmail(newEmail);
+                    if (await context.Employees.AnyAsync(row => row.Id != id && row.Email != null && row.Email.Trim().ToLower() == address)
+                        || await context.Users.AnyAsync(row => row.Id != employee.UserId
+                            && (row.NormalizedEmail == normalized || (row.Email != null && row.Email.Trim().ToLower() == address))))
+                        return Error.Validation("Employee.Email", "Email already exists.");
                 }
             }
 
-            await transaction.CommitAsync();
+            if (profile is not null)
+                mapper.Map(profile, employee);
+            employee.Email = changeEmail ? newEmail : savedEmail;
+
+            if (user is not null)
+            {
+                var accountEmailChanged = changeEmail && user.Email != newEmail;
+                if (accountEmailChanged)
+                {
+                    if (string.IsNullOrWhiteSpace(user.UserName)
+                        || string.Equals(user.UserName, user.Email, StringComparison.OrdinalIgnoreCase))
+                        user.UserName = newEmail;
+
+                    user.Email = newEmail;
+                    user.EmailConfirmed = false;
+                }
+
+                if (profile is not null)
+                {
+                    user.FirstName = employee.FirstName;
+                    user.LastName = employee.LastName;
+                    user.DateOfBirth = employee.DateOfBirth;
+                    user.DepartmentId = employee.DepartmentId;
+                }
+
+                if (accountEmailChanged || profile is not null)
+                {
+                    var updated = accountEmailChanged
+                        ? await userManager.UpdateSecurityStampAsync(user)
+                        : await userManager.UpdateAsync(user);
+                    if (!updated.Succeeded)
+                    {
+                        context.ChangeTracker.Clear();
+                        return Error.Validation("User.Update", string.Join("; ", updated.Errors.Select(error => error.Description)));
+                    }
+                }
+            }
+
+            await context.SaveChangesAsync();
+            if (transaction is not null) await transaction.CommitAsync();
             return Result.Success();
         }
-        catch (Exception ex)
+        catch (Exception error) when ((error is DbUpdateException ? error.InnerException : error) is Npgsql.PostgresException
+            { SqlState: Npgsql.PostgresErrorCodes.SerializationFailure or Npgsql.PostgresErrorCodes.UniqueViolation })
         {
-            await transaction.RollbackAsync();
-            return Error.Failure("Employee.UpdateEmail", $"Failed to update email: {ex.Message}");
+            context.ChangeTracker.Clear();
+            return Error.Conflict("Employee.UpdateConflict", "The employee or user account changed during this update. Reload the employee and try again.");
         }
     }
-
 
     public async Task<Result> ImportEmployeesFromExcel(IFormFile file)
     {

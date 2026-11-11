@@ -19,7 +19,7 @@ public class HrOwnershipAndOnboardingTests
         new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, new CurrentUser());
     private static IMapper Mapper() => new MapperConfiguration(c => c.AddProfile<OryxMapper>()).CreateMapper();
     private static EmployeeRepository Employees(ApplicationDbContext c) =>
-        new(c, Microsoft.Extensions.Logging.Abstractions.NullLogger<EmployeeRepository>.Instance, null!, Mapper(), null!, null!, null!, null!, null!);
+        new(c, Microsoft.Extensions.Logging.Abstractions.NullLogger<EmployeeRepository>.Instance, null!, Mapper(), null!, null!, null!, null!);
 
     private static async Task<(string token, Country country)> Invite(ApplicationDbContext c, EmployeeType type = EmployeeType.Permanent, DateTime? expires = null)
     {

@@ -112,8 +112,14 @@ public sealed class FormulaDefinitionServiceTests
         Assert.Contains(await context.FormulaRevisionAudits.ToListAsync(),
             item => item.Action == "Approved" && item.ActorId == approverId);
 
+        var library = await FormulaQuestionPreviewTests.Repository(context).GetQuestions(new QuestionFilter());
+        Assert.Equal(approved.Value.AuthoringPayload, Assert.Single(Assert.Single(library.Value.Data).Options).Name);
+        Assert.Equal(option.Name, (await context.QuestionOptions.SingleAsync()).Name);
+
         var replacement = await service.CreateDraftAsync(
             question.Id, request, authorId, Guid.NewGuid());
+        var withDraft = await FormulaQuestionPreviewTests.Repository(context).GetQuestions(new QuestionFilter());
+        Assert.Equal(approved.Value.AuthoringPayload, Assert.Single(Assert.Single(withDraft.Value.Data).Options).Name);
         var replacementTransition = new FormulaRevisionTransitionRequest(
             request.DefinitionHash, "Approve a controlled replacement revision.");
         Assert.True((await service.SubmitForReviewAsync(replacement.Value.Id,

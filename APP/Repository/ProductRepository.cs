@@ -38,7 +38,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         var priceCurrency = await ListPriceCurrency(request.PriceCurrencyId, null);
         if (priceCurrency.Error is not null) return priceCurrency.Error;
 
+        var batchStem = request.BatchStem?.Trim();
+        if (batchStem?.Length > 99)
+            return Error.Validation("Product.BatchStem", "The batch stem cannot exceed 99 characters.");
         var product = mapper.Map<Product>(request);
+        product.BatchStem = string.IsNullOrEmpty(batchStem) ? null : batchStem;
         product.CreatedById = userId;
         // A product may be created unpriced; its list price is then set in Finance → Costing.
         if (request.Price > 0)
@@ -171,6 +175,10 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return ProductErrors.NotFound(productId);
         }
 
+        var batchStem = request.BatchStem?.Trim();
+        if (batchStem?.Length > 99)
+            return Error.Validation("Product.BatchStem", "The batch stem cannot exceed 99 characters.");
+        var savedBatchStem = existingProduct.BatchStem;
         var priceCurrency = await ListPriceCurrency(request.PriceCurrencyId, existingProduct.PriceCurrencyId);
         if (priceCurrency.Error is not null) return priceCurrency.Error;
         // A request without a price (0) keeps the current list price; prices are set in Finance → Costing.
@@ -189,6 +197,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         }
 
         mapper.Map(request, existingProduct);
+        existingProduct.BatchStem = batchStem is null ? savedBatchStem : batchStem.Length == 0 ? null : batchStem;
         existingProduct.LastUpdatedById = userId;
 
         context.Products.Update(existingProduct);
