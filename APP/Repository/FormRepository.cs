@@ -8,6 +8,7 @@ using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
+using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Products.Production;
@@ -1941,11 +1942,36 @@ public class FormRepository(
             query = query.Where(q => typesToFilter.Contains(q.Type));
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var page = await PaginationHelper.GetPaginatedResultAsync(
             query,
             filter,
             mapper.Map<QuestionDto>
         );
+        var rows = page.Data.ToList();
+        var formulaIds = rows.Where(row => row.Type == QuestionType.Formula)
+            .Select(row => row.Id).ToList();
+        if (formulaIds.Count > 0)
+        {
+            var now = DateTime.UtcNow;
+            var approved = await context.QuestionFormulaDefinitions.AsNoTracking()
+                .Where(link => formulaIds.Contains(link.QuestionId))
+                .SelectMany(link => context.FormulaRevisions
+                    .Where(revision => revision.FormulaDefinitionId == link.FormulaDefinitionId
+                        && revision.Status == FormulaRevisionStatus.Approved
+                        && revision.EffectiveAt <= now
+                        && revision.AuthoringPayloadJson != null && revision.AuthoringPayloadJson.Trim() != "")
+                    .Select(revision => new { link.QuestionId, Payload = revision.AuthoringPayloadJson }))
+                .ToDictionaryAsync(row => row.QuestionId, row => row.Payload);
+            foreach (var row in rows)
+            {
+                if (!approved.TryGetValue(row.Id, out var payload)) continue;
+                // Project the approved configuration without rewriting the original option or historical forms.
+                if (row.Options.Count == 0) row.Options.Add(new QuestionOptionDto());
+                row.Options[0].Name = payload;
+            }
+        }
+        page.Data = rows;
+        return page;
     }
 
     public async Task<Result> UpdateQuestion(CreateQuestionRequest request, Guid id, Guid userId)
