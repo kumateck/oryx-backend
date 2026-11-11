@@ -14,6 +14,7 @@ namespace DOMAIN.Entities.Materials.Batch;
 public class MaterialBatchDto : IGrnEnrichedDto
 {
     public bool IsOpeningBalanceBatch { get; set; }
+    public string MigrationGrnNumber { get; set; }
     public Guid Id { get; set; }
     public CollectionItemDto Material { get; set; }
     public string BatchNumber { get; set; }

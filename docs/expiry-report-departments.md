@@ -37,10 +37,30 @@ and issued, unconsumed reservations. The existing `UnissuedReservations` rules
 exclude holds still physically on source shelves, preventing double counting and
 premature attribution to production. This same distinction applies to expiry
 ownership labels and assigned-department access. Returned rows combine only the
-same batch, department and unit ID. Manufacturer/supplier, deterministic active AR
-number and original manufacture/expiry/retest dates accompany each quantity.
-Existing effective-validity rules determine the expired subset. No stock/audit
-writes or schema migration are introduced; old reports retain their APIs.
+same batch, department and unit ID. The response includes manufacturer, supplier,
+manufacture, expiry, retest, AR number and GRN number. A migrated batch's corrected
+AR takes priority, including a recorded clear. Otherwise the report uses active
+sampling or the reference from the approved import. GRN is the receipt number for
+ordinary stock and the saved reference for migrated stock. Existing effective
+validity rules determine the expired subset.
+
+The companion desktop presents these as **Item Code | Material | GRN No | Batch |
+AR Number | MFG | EXP | Manufacturer | Supplier | Quantity**. Item Code is the
+material code.
+
+## Migrated batch corrections
+
+Use **Correct migrated batch details** on the batch expiry detail to change the
+manufacturing month, expiry month or GRN reference. Supply a reason. Manufacture
+uses the first of the selected month and expiry uses the last. The endpoint
+`PUT /api/v1/material/batch/{batchId}/migration-details` requires
+`CanUpdateMigrationBatchDetails` and validates the actor's warehouse scope,
+prior saved values, date order and retest restrictions. The correction and its
+audit entry save together. The approved import remains available for review.
+`AddMigrationBatchDetailsCorrections` grants the new permission to roles with
+the existing migration retest correction permission. Apply it before the
+desktop release. The focused PostgreSQL run for this release passed 56 tests
+covering this workflow, report data and product batch stems.
 
 Focused verification: department/kind/validity/ownership, fresh account changes,
 unknown/disabled account refusal, reservation issue/release lifecycle, unit

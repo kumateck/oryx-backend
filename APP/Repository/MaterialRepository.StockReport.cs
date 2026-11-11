@@ -1,6 +1,7 @@
 using APP.Services.Authorization;
 using APP.Extensions;
 using DOMAIN.Entities.Materials.Batch;
+using DOMAIN.Entities.Materials.StockMigrations;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
 
@@ -31,6 +32,18 @@ public partial class MaterialRepository
             .Select(group => { var row = group.First(); row.Quantity = group.Sum(value => value.Quantity); return row; })
             .OrderBy(row => row.MaterialName).ThenBy(row => row.MaterialCode).ThenBy(row => row.BatchNumber)
             .ThenBy(row => row.DepartmentName).ThenBy(row => row.BatchId).ThenBy(row => row.UoMId).ToList();
+        var missingAr = rows.Where(row => row.ArNumber is null).Select(row => row.BatchId).Distinct().ToArray();
+        if (missingAr.Length > 0)
+        {
+            var references = await context.StockMigrationLines.AsNoTracking()
+                .Where(line => line.ImportedBatchId.HasValue && missingAr.Contains(line.ImportedBatchId.Value)
+                    && line.StockMigration.Status == StockMigrationStatus.Approved && line.ArNumber != null && line.ArNumber != "")
+                .Select(line => new { BatchId = line.ImportedBatchId.Value, line.ArNumber }).Distinct()
+                .OrderBy(line => line.ArNumber).ToListAsync();
+            var byBatch = references.ToLookup(line => line.BatchId, line => line.ArNumber);
+            foreach (var row in rows.Where(row => row.ArNumber is null && byBatch.Contains(row.BatchId)))
+                row.ArNumber = string.Join(", ", byBatch[row.BatchId]);
+        }
         return Result.Success(new MaterialStockReportDto { GeneratedAt = now, DepartmentId = departmentId,
             DepartmentName = department?.Name, MaterialKind = filter.MaterialKind, ExpiredOnly = filter.ExpiredOnly, Rows = rows });
     }
