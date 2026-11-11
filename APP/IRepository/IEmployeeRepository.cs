@@ -22,11 +22,11 @@ public interface IEmployeeRepository
     Task<Result<IEnumerable<EmployeeDto>>> GetEmployeesByDepartment(Guid departmentId);
     Task<Result<IEnumerable<MinimalEmployeeInfoDto>>> GetAvailableEmployeesByDepartment(Guid shiftScheduleId, DateTime date);
     Task<Result<EmployeeDto>> GetEmployee(Guid id);
-    Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request);
+    Task<Result> UpdateEmployee(Guid id, UpdateEmployeeRequest request, Guid actorId);
     Task<Result> UpdateEmployeeStatus(Guid employeeId, UpdateEmployeeStatus status);
     Task<Result> AssignEmployee(Guid id, AssignEmployeeDto employeeDto);
     Task<Result> ChangeEmployeeType(Guid id, EmployeeType employeeType);
     Task<Result> DeleteEmployee(Guid id, Guid userId);
-    Task<Result> UpdateEmployeeEmail(Guid id, string email);
+    Task<Result> UpdateEmployeeEmail(Guid id, string email, Guid actorId);
     Task<Result> ImportEmployeesFromExcel(IFormFile file);
 }

@@ -163,7 +163,7 @@ public sealed partial class EmployeeAssignmentTests
             Options.Create(new IdentityOptions()), new PasswordHasher<User>(), [], [],
             new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(), null,
             NullLogger<UserManager<User>>.Instance);
-        return new EmployeeRepository(db, NullLogger<EmployeeRepository>.Instance, null!, Mapper, null!, users, null!, null!, null!);
+        return new EmployeeRepository(db, NullLogger<EmployeeRepository>.Instance, null!, Mapper, null!, users, null!, null!);
     }
 
     private sealed class AnonymousActor : ICurrentUserService
