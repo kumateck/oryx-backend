@@ -2007,6 +2007,10 @@ public partial class ApplicationDbContext(
                 && !entity.FromDepartment.DeletedAt.HasValue
                 && !entity.ToDepartment.DeletedAt.HasValue
             ); // && entity.Status == BatchStatus.Available);
+        modelBuilder.Entity<HoldingMaterialTransfer>()
+            .HasOne(row => row.StockTransferSource).WithOne()
+            .HasForeignKey<HoldingMaterialTransfer>(row => row.StockTransferSourceId)
+            .OnDelete(DeleteBehavior.Restrict);
         #endregion
 
         #region Equipment

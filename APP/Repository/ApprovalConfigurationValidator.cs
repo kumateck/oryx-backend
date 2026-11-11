@@ -35,6 +35,9 @@ internal static class ApprovalConfigurationValidator
                 "Approval.StageOrder",
                 "Approval stage orders must be positive and unique.");
 
+        if (!stages.Any(stage => stage.Required))
+            return Error.Validation("Approval.RequiredStage", "Mark at least one approval stage as required.");
+
         return Result.Success();
     }
 }

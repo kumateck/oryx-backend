@@ -27,7 +27,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             return Error.Validation("ProductArd.AnalysisType",
                 "Microbial analysis is configured for finished product stage only.");
         var form = await context
-            .Forms.Include(item => item.Sections)
+            .Forms.AsNoTracking().AsSplitQuery().Include(item => item.Sections)
                 .ThenInclude(section => section.Fields)
                 .ThenInclude(field => field.Question)
             .FirstOrDefaultAsync(item => item.Id == request.FormId);
@@ -37,7 +37,7 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             return Error.Validation("Form.Invalid", "Form is invalid.");
         }
 
-        var formValidation = FormValidator.ValidateForUse(form);
+        var formValidation = FormValidator.ValidateForUse(form, request.AnalysisType);
         if (formValidation.IsFailure)
             return formValidation.Errors;
 

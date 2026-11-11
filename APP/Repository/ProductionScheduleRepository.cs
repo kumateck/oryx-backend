@@ -1,3 +1,4 @@
+using APP.Services.Authorization;
 using APP.Services.Production;
 using APP.Extensions;
 using APP.IRepository;
@@ -3136,6 +3137,8 @@ public partial class ProductionScheduleRepository(
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
             return await ProductionMaterialTransaction.Run(context, () => CreateStockTransfer(request, userId));
+        if (request.UoMId is not Guid unitId || !await context.UnitOfMeasures.AnyAsync(unit => unit.Id == unitId))
+            return Error.Validation("StockTransfer.Unit", "Choose an active unit of measure for the transfer.");
         var batch = request.ProductionActivityStepId.HasValue
             ? await context.ProductionActivitySteps.IgnoreQueryFilters().AsNoTracking().Where(item => item.Id == request.ProductionActivityStepId)
                 .Select(item => new { BatchId = item.ProductionActivity.ProductionScheduleProductId,
@@ -3374,230 +3377,203 @@ public partial class ProductionScheduleRepository(
         );
     }
 
-    public async Task<Result> ApproveStockTransfer(Guid id, Guid userId)
+    public Task<Result> ApproveStockTransfer(Guid id, Guid userId) =>
+        DecideStockTransfer(id, userId, StockTransferStatus.Approved);
+
+    public Task<Result> RejectStockTransfer(Guid id, Guid userId) =>
+        DecideStockTransfer(id, userId, StockTransferStatus.Rejected);
+
+    private async Task<Result> DecideStockTransfer(Guid id, Guid userId, StockTransferStatus decision)
     {
-        var stockTransfer = await context.StockTransferSources.FirstOrDefaultAsync(st =>
-            st.Id == id
-        );
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => DecideStockTransfer(id, userId, decision));
 
-        if (stockTransfer == null)
+        var source = await context.StockTransferSources.FirstOrDefaultAsync(row => row.Id == id);
+        if (source is null) return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+        if (!await IsStockTransferSupplier(source, userId))
+            return Error.Forbidden("StockTransfer.Department", "Only the supplying department can decide this transfer.");
+        if (source.Status != StockTransferStatus.InProgress || source.IssuedAt.HasValue)
+            return Error.Conflict("StockTransfer.Status", "This transfer is no longer awaiting a decision.");
+
+        var key = decision == StockTransferStatus.Approved
+            ? PermissionKeys.CanApproveIncomingStockTransferRequest : PermissionKeys.CanRejectIncomingStockTransferRequest;
+        var grants = await CurrentPermissionSet.Load(context, userId);
+        if (!grants.Contains(key))
+            return Error.Forbidden("StockTransfer.Permission", "You do not have permission to make this transfer decision.");
+        if (await TransferIssueRecords(source).AnyAsync())
+            return StockTransferIssueRecorded();
+
+        if (decision == StockTransferStatus.Approved)
         {
-            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+            source.ApprovedAt = DateTime.UtcNow;
+            source.ApprovedById = userId;
         }
-
-        stockTransfer.ApprovedAt = DateTime.UtcNow;
-        stockTransfer.ApprovedById = userId;
-        stockTransfer.Status = StockTransferStatus.Approved;
-        context.StockTransferSources.Update(stockTransfer);
+        source.Status = decision;
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result> RejectStockTransfer(Guid id, Guid userId)
+    public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForStockTransfer(Guid stockTransferId)
     {
-        var stockTransfer = await context.StockTransferSources.FirstOrDefaultAsync(st =>
-            st.Id == id
-        );
+        var source = await context.StockTransferSources.AsNoTracking().AsSplitQuery()
+            .Include(row => row.StockTransfer).ThenInclude(transfer => transfer.Material)
+            .FirstOrDefaultAsync(row => row.Id == stockTransferId);
+        if (source is null) return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+        if (source.Status == StockTransferStatus.Issued || source.IssuedAt.HasValue)
+            return await IssuedStockTransferBatches(source);
+        if (source.Status == StockTransferStatus.Rejected) return new List<BatchToSupply>();
+        if (await TransferIssueRecords(source).AnyAsync())
+            return StockTransferIssueRecorded();
 
-        if (stockTransfer == null)
+        var transfer = source.StockTransfer;
+        if (transfer.UoMId is not Guid unitId)
+            return Error.Validation("StockTransfer.Unit", "This transfer has no saved unit. Raise a replacement request with the intended unit.");
+        var warehouse = await FindTransferWarehouse(source.FromDepartmentId, transfer.Material.Kind);
+        if (warehouse is null) return UserErrors.WarehouseNotFound(transfer.Material.Kind);
+
+        var available = await StockTransferPicking.Load(context, transfer.MaterialId, warehouse.Id, unitId);
+        var picks = StockTransferPicking.Pick(available, source.Quantity);
+        var shortfall = source.Quantity - picks.Sum(pick => pick.Quantity);
+        if (shortfall > 0)
+            return Error.Failure("StockTransfer.InsufficientStock",
+                $"The supplying warehouse is short by {shortfall} in available stock for this transfer.");
+
+        return picks.Select(pick => new BatchToSupply
         {
-            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
-        }
-
-        stockTransfer.Status = StockTransferStatus.Rejected;
-        context.StockTransferSources.Update(stockTransfer);
-        await context.SaveChangesAsync();
-        return Result.Success();
+            Batch = mapper.Map<MaterialBatchListDto>(pick.Shelf.MaterialBatch),
+            QuantityToTake = pick.Quantity,
+            WarehouseLocationShelfId = pick.Shelf.WarehouseLocationShelfId,
+            WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(pick.Shelf.WarehouseLocationShelf)
+        }).ToList();
     }
 
-    public async Task<Result<List<BatchToSupply>>> BatchesToSupplyForStockTransfer(
-        Guid stockTransferId
-    )
+    private async Task<List<BatchToSupply>> IssuedStockTransferBatches(StockTransferSource source)
     {
-        var stockTransferSource = await context
-            .StockTransferSources.AsSplitQuery()
-            .Include(st => st.StockTransfer)
-                .ThenInclude(s => s.Material)
-            .FirstOrDefaultAsync(st => st.Id == stockTransferId);
-
-        if (stockTransferSource == null)
+        var holdings = TransferIssueRecords(source);
+        var holdingId = await holdings.Where(row => row.StockTransferSourceId == source.Id)
+            .Select(row => (Guid?)row.Id).SingleOrDefaultAsync();
+        if (!holdingId.HasValue)
         {
-            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+            // Older issue records only identify the parent transfer and warehouse pair.
+            var matchingSources = await context.StockTransferSources.IgnoreQueryFilters().CountAsync(row =>
+                row.StockTransferId == source.StockTransferId && row.FromDepartmentId == source.FromDepartmentId
+                && row.ToDepartmentId == source.ToDepartmentId);
+            if (matchingSources != 1) return [];
+
+            var candidates = await holdings.Where(row => row.StockTransferSourceId == null)
+                .Select(row => row.Id).Take(2).ToListAsync();
+            if (candidates.Count != 1) return [];
+            holdingId = candidates[0];
         }
 
-        var materialKind = stockTransferSource.StockTransfer.Material.Kind;
-
-        var warehouse =
-            materialKind == MaterialKind.Raw
-                ? await context
-                    .Warehouses.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(w =>
-                        w.DepartmentId == stockTransferSource.FromDepartmentId
-                        && w.Type == WarehouseType.RawMaterialStorage
-                    )
-                : await context
-                    .Warehouses.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(w =>
-                        w.DepartmentId == stockTransferSource.FromDepartmentId
-                        && w.Type == WarehouseType.PackagedStorage
-                    );
-
-        if (warehouse is null)
-            return UserErrors.WarehouseNotFound(materialKind);
-
-        return await materialRepository.BatchesToSupplyForGivenQuantity(
-            stockTransferSource.StockTransfer.MaterialId,
-            warehouse.Id,
-            stockTransferSource.Quantity
-        );
+        var batches = await context.HoldingMaterialTransferBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Where(row => row.HoldingMaterialTransferId == holdingId)
+            .Include(row => row.MaterialBatch).ThenInclude(batch => batch.UoM)
+            .OrderBy(row => row.MaterialBatch.BatchNumber).ThenBy(row => row.Id).ToListAsync();
+        return batches.Select(row => new BatchToSupply
+        {
+            Batch = mapper.Map<MaterialBatchListDto>(row.MaterialBatch),
+            QuantityToTake = row.Quantity
+        }).ToList();
     }
 
-    // Issue Stock Transfer with Batch Selection
-    public async Task<Result> IssueStockTransfer(
-        Guid id,
-        List<BatchTransferRequest> batches,
-        Guid userId
-    )
+    public async Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId)
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
             return await ProductionMaterialTransaction.Run(context, () => IssueStockTransfer(id, batches, userId));
 
-        var stockTransferSource = await context
-            .StockTransferSources.AsSplitQuery()
-            .Include(st => st.StockTransfer)
-                .ThenInclude(st => st.Material)
-            .FirstOrDefaultAsync(st => st.Id == id);
+        var source = await context.StockTransferSources.AsSplitQuery()
+            .Include(row => row.StockTransfer).ThenInclude(transfer => transfer.Material)
+            .FirstOrDefaultAsync(row => row.Id == id);
+        if (source is null) return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
 
-        if (stockTransferSource == null)
+        if (!await IsStockTransferSupplier(source, userId))
+            return Error.Forbidden("StockTransfer.Department", "Only the supplying department can issue this transfer.");
+        if (source.Status != StockTransferStatus.Approved || source.IssuedAt.HasValue)
+            return Error.Conflict("StockTransfer.Status", "This transfer must be approved and awaiting issue.");
+
+        var transfer = source.StockTransfer;
+        var kind = transfer.Material.Kind;
+        var issueKey = kind == MaterialKind.Raw
+            ? PermissionKeys.CanIssueRawMaterialStockTransfers : PermissionKeys.CanIssuePackagingMaterialStockTransfers;
+        var grants = await CurrentPermissionSet.Load(context, userId);
+        if (!grants.Contains(issueKey))
+            return Error.Forbidden("StockTransfer.Permission", "You do not have permission to issue this material transfer.");
+
+        if (await TransferIssueRecords(source).AnyAsync())
+            return StockTransferIssueRecorded();
+        if (transfer.UoMId is not Guid unitId)
+            return Error.Validation("StockTransfer.Unit", "This transfer has no saved unit. Raise a replacement request with the intended unit.");
+        if (source.Quantity <= 0 || batches.Count == 0 || batches.Any(row => row.BatchId == Guid.Empty || row.Quantity <= 0)
+            || batches.Sum(row => row.Quantity) != source.Quantity)
+            return Error.Validation("StockTransfer.Quantity", "The selected batches must cover exactly the approved transfer quantity.");
+
+        var fromWarehouse = await FindTransferWarehouse(source.FromDepartmentId, kind);
+        var toWarehouse = await FindTransferWarehouse(source.ToDepartmentId, kind);
+        if (fromWarehouse is null || toWarehouse is null) return UserErrors.WarehouseNotFound(kind);
+
+        var available = await StockTransferPicking.Load(context, transfer.MaterialId, fromWarehouse.Id, unitId);
+        var availableByBatch = available.ToLookup(entry => entry.Shelf.MaterialBatchId);
+        var picks = new List<StockTransferPicking.AvailableShelf>();
+        foreach (var batch in batches.GroupBy(row => row.BatchId))
         {
-            return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
+            var quantity = batch.Sum(row => row.Quantity);
+            var selected = StockTransferPicking.Pick(availableByBatch[batch.Key], quantity);
+            if (selected.Sum(pick => pick.Quantity) != quantity)
+                return Error.Conflict("StockTransfer.StockChanged",
+                    "The selected batches no longer cover the transfer with available stock. Reload the transfer to pick current batches.");
+            picks.AddRange(selected);
         }
 
-        var fromWarehouse =
-            stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
-                ? await context
-                    .Warehouses.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(w =>
-                        w.DepartmentId == stockTransferSource.FromDepartmentId
-                        && w.Type == WarehouseType.RawMaterialStorage
-                    )
-                : await context
-                    .Warehouses.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(w =>
-                        w.DepartmentId == stockTransferSource.FromDepartmentId
-                        && w.Type == WarehouseType.PackagedStorage
-                    );
-
-        var toWarehouse =
-            stockTransferSource.StockTransfer.Material.Kind == MaterialKind.Raw
-                ? await context
-                    .Warehouses.IgnoreQueryFilters()
-                    .Include(w => w.ArrivalLocation)
-                    .FirstOrDefaultAsync(w =>
-                        w.DepartmentId == stockTransferSource.ToDepartmentId
-                        && w.Type == WarehouseType.RawMaterialStorage
-                    )
-                : await context
-                    .Warehouses.IgnoreQueryFilters()
-                    .Include(w => w.ArrivalLocation)
-                    .FirstOrDefaultAsync(w =>
-                        w.DepartmentId == stockTransferSource.ToDepartmentId
-                        && w.Type == WarehouseType.PackagedStorage
-                    );
-
-        var remainingQuantity = stockTransferSource.Quantity;
-
-        foreach (var batchRequest in batches)
+        foreach (var pick in picks)
         {
-            var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
-                b.Id == batchRequest.BatchId
-            );
-
-            if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
-            {
-                return Error.Failure(
-                    "Batch.InsufficientStock",
-                    $"Not enough stock in batch {batchRequest.BatchId}"
-                );
-            }
-
-            batch.QuantityAssigned = 0;
-            var shelfMaterialBatches = await context
-                .ShelfMaterialBatches.IgnoreQueryFilters()
-                .OrderBy(s => s.Quantity)
-                .Where(sb =>
-                    sb.MaterialBatchId == batch.Id
-                    && sb.WarehouseLocationShelf
-                        .WarehouseLocationRack
-                        .WarehouseLocation
-                        .Warehouse
-                        .DepartmentId == stockTransferSource.FromDepartmentId
-                    && !sb.DeletedAt.HasValue
-                )
-                .ToListAsync();
-
-            var totalAvailable = shelfMaterialBatches.Sum(sb => sb.Quantity);
-
-            if (totalAvailable < batchRequest.Quantity)
-            {
-                return Error.Failure(
-                    "Batch.InsufficientStock",
-                    $"Not enough stock in batch {batchRequest.BatchId}"
-                );
-            }
-
-            var quantityToDeduct = batchRequest.Quantity;
-
-            foreach (var shelfMaterialBatch in shelfMaterialBatches)
-            {
-                if (quantityToDeduct <= 0)
-                    break;
-
-                var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
-                shelfMaterialBatch.Quantity -= deductAmount;
-                quantityToDeduct -= deductAmount;
-
-                if (shelfMaterialBatch.Quantity <= 0)
-                {
-                    context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
-                }
-            }
-
-            remainingQuantity -= batchRequest.Quantity;
-            if (remainingQuantity <= 0)
-                break;
+            pick.Shelf.Quantity -= pick.Quantity;
+            if (pick.Shelf.Quantity == 0) context.ShelfMaterialBatches.Remove(pick.Shelf);
         }
 
-        if (remainingQuantity > 0)
-        {
-            return Error.Failure(
-                "StockTransfer.InsufficientStock",
-                "Not enough batches to fulfill the transfer"
-            );
-        }
-
-        var holdingMaterial = new HoldingMaterialTransfer
+        var holding = new HoldingMaterialTransfer
         {
             ModelType = nameof(StockTransfer),
-            StockTransferId = stockTransferSource.StockTransferId,
-            Batches = batches
-                .Select(b => new HoldingMaterialTransferBatch
-                {
-                    MaterialBatchId = b.BatchId,
-                    Quantity = b.Quantity,
-                    SourceWarehouseId = fromWarehouse.Id,
-                    DestinationWarehouseId = toWarehouse.Id,
-                })
-                .ToList(),
+            StockTransferId = source.StockTransferId,
+            StockTransferSourceId = source.Id
         };
-
-        await context.HoldingMaterialTransfers.AddAsync(holdingMaterial);
-        stockTransferSource.IssuedAt = DateTime.UtcNow;
-        stockTransferSource.IssuedById = userId;
-        stockTransferSource.Status = StockTransferStatus.Issued;
-        context.StockTransferSources.Update(stockTransferSource);
+        foreach (var group in picks.GroupBy(pick => pick.Shelf.MaterialBatch))
+        {
+            var quantity = group.Sum(pick => pick.Quantity);
+            group.Key.QuantityAssigned = Math.Max(0, group.Key.QuantityAssigned - quantity);
+            holding.Batches.Add(new HoldingMaterialTransferBatch
+            {
+                MaterialBatchId = group.Key.Id, UoMId = group.Key.UoMId, Quantity = quantity,
+                SourceWarehouseId = fromWarehouse.Id, DestinationWarehouseId = toWarehouse.Id
+            });
+        }
+        await context.HoldingMaterialTransfers.AddAsync(holding);
+        source.IssuedAt = DateTime.UtcNow;
+        source.IssuedById = userId;
+        source.Status = StockTransferStatus.Issued;
         await context.SaveChangesAsync();
         return Result.Success();
+    }
+
+    private Task<bool> IsStockTransferSupplier(StockTransferSource source, Guid userId) =>
+        context.Users.AnyAsync(user => user.Id == userId && user.DepartmentId == source.FromDepartmentId);
+
+    private IQueryable<HoldingMaterialTransfer> TransferIssueRecords(StockTransferSource source) =>
+        context.HoldingMaterialTransfers.IgnoreQueryFilters().AsNoTracking()
+            .Where(row => row.ModelType == nameof(StockTransfer) && row.StockTransferId == source.StockTransferId
+                && (row.StockTransferSourceId == source.Id || (row.StockTransferSourceId == null
+                    && row.Batches.Any() && row.Batches.All(batch =>
+                        batch.SourceWarehouse.DepartmentId == source.FromDepartmentId
+                        && batch.DestinationWarehouse.DepartmentId == source.ToDepartmentId))));
+
+    private static Error StockTransferIssueRecorded() => Error.Conflict("StockTransfer.IssueRecorded",
+        "An issue record already exists for this transfer and warehouse pair. Review the recorded issue before trying again.");
+
+    private Task<Warehouse> FindTransferWarehouse(Guid departmentId, MaterialKind kind)
+    {
+        var type = kind == MaterialKind.Raw ? WarehouseType.RawMaterialStorage : WarehouseType.PackagedStorage;
+        return context.Warehouses.IgnoreQueryFilters().AsNoTracking()
+            .FirstOrDefaultAsync(row => row.DepartmentId == departmentId && row.Type == type && row.DeletedAt == null);
     }
 
     public async Task<

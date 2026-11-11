@@ -29,22 +29,28 @@ internal static class ResponseApprovalSubmission
             && stages.Count == 0)
             return Error.Conflict("Response.QaApprovalRequired",
                 "Material and product test responses require an assigned QA Response approval document.");
-        if (stages.Any(item => !item.UserId.HasValue && !item.RoleId.HasValue))
+        if (stages.Count > 0 && !stages.Any(item => item.Required))
+            return Error.Conflict("Response.RequiredApproval",
+                "Mark at least one stage of the Response approval workflow as required.");
+        if (stages.Any(item => item.UserId.HasValue == item.RoleId.HasValue))
             return Error.Validation("Response.ApprovalAssignment",
                 "Every response approval stage must be assigned to a user or role.");
 
         var existing = await context.ResponseApprovals.AsNoTracking()
             .Where(item => item.ResponseId == responseId).ToListAsync();
         var current = ResponseApprovalRoundManager.Current(existing);
-        if (current.Any(item => item.Status == ApprovalStatus.Pending))
-            return Error.Conflict("Response.ApprovalPending",
-                "This response already has a pending approval round.");
-        if (response.Approved || current.Any(item => item.Status == ApprovalStatus.Approved))
+        if (response.Approved)
             return Error.Conflict("Response.AlreadyApproved",
                 "This response has already been approved. Start an audited revision instead.");
         if (response.Rejected || current.Any(item => item.Status == ApprovalStatus.Rejected))
             return Error.Conflict("Response.RevisionRequired",
                 "This response was rejected. Start an audited revision before resubmitting.");
+        if (current.Any(item => item.Status == ApprovalStatus.Pending))
+            return Error.Conflict("Response.ApprovalPending",
+                "This response already has a pending approval round.");
+        if (current.Any(item => item.Status == ApprovalStatus.Approved))
+            return Error.Conflict("Response.AlreadyApproved",
+                "This response has already been approved. Start an audited revision instead.");
         if (existing.Count > 0)
             return Error.Conflict("Response.RevisionRequired",
                 "This response has a completed approval round. Start an audited revision before resubmitting.");
