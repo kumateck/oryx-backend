@@ -754,6 +754,34 @@ public class ApprovalAutomaticPolicyTests
     }
 
     [Fact]
+    public async Task Response_decision_uses_required_stage_when_actor_holds_both_roles()
+    {
+        await using var context = CreateContext();
+        var optionalRole = Guid.NewGuid();
+        var requiredRole = Guid.NewGuid();
+        var response = new Response { Form = new Form() };
+        var approval = new Approval
+        {
+            ItemType = nameof(Response),
+            ApprovalStages =
+            [
+                new() { Order = 1, RoleId = optionalRole, Required = false },
+                new() { Order = 2, RoleId = requiredRole, Required = true }
+            ]
+        };
+        context.AddRange(response, approval);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+        await repository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        var decision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [optionalRole, requiredRole]);
+
+        Assert.True(decision.IsSuccess, decision.Error.Description);
+        Assert.True(response.Approved);
+        Assert.Equal(ApprovalStatus.Pending, Assert.Single(context.ResponseApprovals, stage => !stage.Required).Status);
+    }
+
+    [Fact]
     public void Workflow_configuration_rejects_all_optional_stages()
     {
         var request = new CreateApprovalRequest

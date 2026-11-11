@@ -1300,41 +1300,9 @@ public class ApprovalRepository(
                     return Error.Conflict("Response.RequiredApproval",
                         "This response round has no required approver. Configure the Response workflow and use the audited revision process.");
 
-                var responseApprovalStages = currentResponseApprovals
-                    .Select(item => new ResponsibleApprovalStage
-                    {
-                        RoleId = item.RoleId,
-                        UserId = item.UserId,
-                        Order = item.Order,
-                        Status = item.Status,
-                        Required = item.Required,
-                        ApprovalTime = item.ApprovalTime,
-                        ActivatedAt = item.ActivatedAt,
-                        Comments = item.Comments,
-                    })
-                    .ToList();
-
-                var responseCurrentApprovals = GetCurrentApprovalStage(
-                    responseApprovalStages,
-                    userId,
-                    roleIds
-                );
-
-                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
-
-                if (responseApprovingStage == null)
-                {
-                    return Error.Validation(
-                        "Approval.Unauthorized",
-                        "You are not authorized to approve this resource at this time."
-                    );
-                }
-
-                // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = currentResponseApprovals.First(stage =>
-                    stage.Status == ApprovalStatus.Pending
-                    && stage.Order == responseApprovingStage.Order
-                );
+                var stageToApproveRe = ResponseApprovalRoundManager.DecisionStage(currentResponseApprovals, userId, roleIds);
+                if (stageToApproveRe is null)
+                    return Error.Validation("Approval.Unauthorized", "You are not authorized to decide this response at this time.");
 
                 stageToApproveRe.Status = ApprovalStatus.Approved;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
@@ -2818,41 +2786,9 @@ public class ApprovalRepository(
                 var currentResponseApprovals = ResponseApprovalRoundManager.Current(
                     response.Approvals
                 );
-                var responseApprovalStages = currentResponseApprovals
-                    .Select(item => new ResponsibleApprovalStage
-                    {
-                        RoleId = item.RoleId,
-                        UserId = item.UserId,
-                        Order = item.Order,
-                        Status = item.Status,
-                        Required = item.Required,
-                        ApprovalTime = item.ApprovalTime,
-                        ActivatedAt = item.ActivatedAt,
-                        Comments = item.Comments,
-                    })
-                    .ToList();
-
-                var responseCurrentApprovals = GetCurrentApprovalStage(
-                    responseApprovalStages,
-                    userId,
-                    roleIds
-                );
-
-                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
-
-                if (responseApprovingStage == null)
-                {
-                    return Error.Validation(
-                        "Approval.Unauthorized",
-                        "You are not authorized to approve this resource at this time."
-                    );
-                }
-
-                // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = currentResponseApprovals.First(stage =>
-                    stage.Status == ApprovalStatus.Pending
-                    && stage.Order == responseApprovingStage.Order
-                );
+                var stageToApproveRe = ResponseApprovalRoundManager.DecisionStage(currentResponseApprovals, userId, roleIds);
+                if (stageToApproveRe is null)
+                    return Error.Validation("Approval.Unauthorized", "You are not authorized to decide this response at this time.");
 
                 stageToApproveRe.Status = ApprovalStatus.Rejected;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;

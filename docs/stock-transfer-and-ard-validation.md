@@ -19,7 +19,10 @@ Only the supplying department can approve or reject a transfer, using the
 corresponding incoming transfer permission. A decision is accepted while the
 request is awaiting approval. Issuance is accepted once after approval.
 Approval, rejection, and issue use the same database transaction lock.
-An existing issue timestamp also blocks a repeated issue on older records.
+An existing issue timestamp or holding record also blocks a repeated issue
+on older records, even when the recorded status is stale.
+New transfer requests require an active unit of measure. Replace an older
+unissued request that has no saved unit before issuing stock against it.
 
 **Issued batches** shows the lot and quantity recorded when stock left the
 supplying warehouse. Apply the `LinkStockTransferIssueSource` migration
@@ -58,7 +61,8 @@ the two roles and mark the role that must sign as **Required approval**.
 Either role can be optional. The workflow requires at least one required
 stage. Optional approvers can sign while the round is open, regardless of
 where they appear in the workflow. Required approvers still sign in their
-configured order. Once all required stages approve, the round closes.
+configured order. If an approver holds both roles, their decision applies
+to the active required stage. Once all required stages approve, the round closes.
 
 The server routes material and product test results through the existing
 `Response` document key. The old route-specific labels are retained for
@@ -78,7 +82,7 @@ It checked both stage orders and verified that the required role can complete
 the round without the optional role. The desktop approval and transfer
 regressions passed 26 tests.
 
-The follow-up passed 70 backend tests with PostgreSQL enabled. It verified
+The follow-up passed 71 backend tests with PostgreSQL enabled. It verified
 that simultaneous requests produce one issue, processed holding records
 still provide the issued quantities, ambiguous legacy matches are omitted,
 and optional approvers can sign in either position. The migration test

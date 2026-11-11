@@ -64,6 +64,10 @@ public sealed class StockTransferPickingTests
             .ExecuteUpdateAsync(update => update.SetProperty(row => row.StockTransferSourceId, (Guid?)null));
         var legacyHistory = await Repository(db).BatchesToSupplyForStockTransfer(transfer.Id);
         Assert.Equal(lot.Id, Assert.Single(legacyHistory.Value).Batch.Id);
+
+        await db.StockTransferSources.Where(row => row.Id == transfer.Id).ExecuteUpdateAsync(update => update
+            .SetProperty(row => row.IssuedAt, (DateTime?)null).SetProperty(row => row.Status, StockTransferStatus.Approved));
+        Assert.Equal("StockTransfer.IssueRecorded", (await Issue()).Error.Code);
     }
 
     [RepairPostgresFact]
@@ -89,7 +93,7 @@ public sealed class StockTransferPickingTests
 
         var held = await db.MaterialBatchReservedQuantities.Where(row => row.MaterialBatchId == valid.MaterialBatchId)
             .SumAsync(row => row.Quantity);
-        var picks = await StockTransferPicking.Load(db, valid.MaterialBatch.MaterialId, fixture.SourceId, valid.UoMId);
+        var picks = await StockTransferPicking.Load(db, valid.MaterialBatch.MaterialId, fixture.SourceId, valid.MaterialBatch.UoMId);
         var picked = Assert.Single(picks);
         Assert.Equal(valid.Id, picked.Shelf.Id);
         Assert.Equal(valid.Quantity - held, picked.Quantity);
@@ -150,6 +154,8 @@ public sealed class StockTransferPickingTests
 
         var denied = await fixture.Repository.ApproveStockTransfer(transfer.Id, fixture.Actor.Id);
         Assert.Equal("StockTransfer.Permission", denied.Error.Code);
+        var unitlessRequest = await fixture.Repository.CreateStockTransfer(new() { MaterialId = available.MaterialId }, fixture.Actor.Id);
+        Assert.Equal("StockTransfer.Unit", unitlessRequest.Error.Code);
 
         var role = new Role { Name = "Raw issue fixture" };
         var otherActor = new User { Id = Guid.NewGuid(), DepartmentId = fixture.OtherDepartment.Id, UserName = "other-department" };
@@ -169,11 +175,33 @@ public sealed class StockTransferPickingTests
         await db.SaveChangesAsync();
         var wrongDepartment = await fixture.Repository.RejectStockTransfer(transfer.Id, otherActor.Id);
         Assert.Equal("StockTransfer.Department", wrongDepartment.Error.Code);
+        var separateRequest = new StockTransferSource
+        {
+            StockTransfer = new StockTransfer { MaterialId = available.MaterialId, UoMId = available.UoMId },
+            FromDepartmentId = transfer.FromDepartmentId, ToDepartmentId = transfer.ToDepartmentId
+        };
+        db.StockTransferSources.Add(separateRequest);
+        await db.SaveChangesAsync();
+        var rejected = await fixture.Repository.RejectStockTransfer(separateRequest.Id, fixture.Actor.Id);
+        Assert.True(rejected.IsSuccess, rejected.Error.Description);
+        var rejectedApproval = await fixture.Repository.ApproveStockTransfer(separateRequest.Id, fixture.Actor.Id);
+        Assert.Equal("StockTransfer.Status", rejectedApproval.Error.Code);
         var approval = await fixture.Repository.ApproveStockTransfer(transfer.Id, fixture.Actor.Id);
         Assert.True(approval.IsSuccess, approval.Error.Description);
         var deniedIssue = await fixture.Repository.IssueStockTransfer(transfer.Id,
             [new() { BatchId = available.Id, Quantity = 90 }], fixture.Creator.Id);
         Assert.Equal("StockTransfer.Permission", deniedIssue.Error.Code);
+
+        transfer.StockTransfer.UoMId = null;
+        await db.SaveChangesAsync();
+        var unitlessPreview = await fixture.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
+        Assert.Equal("StockTransfer.Unit", unitlessPreview.Error.Code);
+        var unitlessIssue = await fixture.Repository.IssueStockTransfer(transfer.Id,
+            [new() { BatchId = available.Id, Quantity = 90 }], fixture.Actor.Id);
+        Assert.Equal("StockTransfer.Unit", unitlessIssue.Error.Code);
+        Assert.Equal(100, fixture.Shelf.Quantity);
+        transfer.StockTransfer.UoMId = available.UoMId;
+        await db.SaveChangesAsync();
 
         var stale = await fixture.Repository.IssueStockTransfer(transfer.Id,
             [new() { BatchId = available.Id, Quantity = 90 }], fixture.Actor.Id);
@@ -216,6 +244,13 @@ public sealed class StockTransferPickingTests
         var legacyBatches = await fixture.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
         Assert.Equal(available.Id, Assert.Single(legacyBatches.Value).Batch.Id);
 
+        transfer.IssuedAt = null;
+        await db.SaveChangesAsync();
+        var missingIssueTimestamp = await fixture.Repository.IssueStockTransfer(transfer.Id,
+            [new() { BatchId = available.Id, Quantity = 90 }], fixture.Actor.Id);
+        Assert.Equal("StockTransfer.IssueRecorded", missingIssueTimestamp.Error.Code);
+        Assert.Equal(10, fixture.Shelf.Quantity);
+        transfer.IssuedAt = DateTime.UtcNow;
         var duplicateSource = new StockTransferSource
         {
             StockTransferId = transfer.StockTransferId, FromDepartmentId = transfer.FromDepartmentId,
@@ -223,10 +258,6 @@ public sealed class StockTransferPickingTests
         };
         db.StockTransferSources.Add(duplicateSource);
         await db.SaveChangesAsync();
-        var rejected = await fixture.Repository.RejectStockTransfer(duplicateSource.Id, fixture.Actor.Id);
-        Assert.True(rejected.IsSuccess, rejected.Error.Description);
-        var rejectedApproval = await fixture.Repository.ApproveStockTransfer(duplicateSource.Id, fixture.Actor.Id);
-        Assert.Equal("StockTransfer.Status", rejectedApproval.Error.Code);
         var ambiguousBatches = await fixture.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
         Assert.Empty(ambiguousBatches.Value);
     }

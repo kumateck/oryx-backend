@@ -76,4 +76,10 @@ internal static class ResponseApprovalRoundManager
                 row.ActivatedAt ??= now;
         }
     }
+
+    internal static ResponseApproval DecisionStage(
+        IReadOnlyCollection<ResponseApproval> rows, Guid userId, IReadOnlyCollection<Guid> roleIds) =>
+        rows.Where(row => row.Status == ApprovalStatus.Pending && row.ActivatedAt.HasValue
+                && (row.UserId == userId || (row.RoleId.HasValue && roleIds.Contains(row.RoleId.Value))))
+            .OrderByDescending(row => row.Required).ThenBy(row => row.Order).FirstOrDefault();
 }
