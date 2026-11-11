@@ -15,6 +15,8 @@ using DOMAIN.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using INFRASTRUCTURE.Context;
 using Xunit;
 
@@ -23,6 +25,66 @@ namespace APP.Tests.Repository;
 public class MigrationRetestDateTests
 {
     private sealed class ArReference { public string ArNumber { get; set; } = string.Empty; }
+
+    [Fact]
+    public void Batch_details_correction_has_a_specific_registered_permission()
+    {
+        var method = typeof(MaterialController).GetMethod(nameof(MaterialController.UpdateMigrationBatchDetails))!;
+        Assert.Equal(PermissionKeys.CanUpdateMigrationBatchDetails, Assert.Single(method.GetCustomAttributes<AuthorizeAttribute>()).Policy);
+        Assert.Empty(method.GetCustomAttributes<AllowAnonymousAttribute>());
+        Assert.Single(PermissionUtils.GeneratePermissions(), permission => permission.Key == PermissionKeys.CanUpdateMigrationBatchDetails);
+    }
+
+    [RepairPostgresFact]
+    public async Task Migrated_details_are_audited_and_used_in_the_stock_report()
+    {
+        await using var fixture = new IssuedMaterialRepairFixture();
+        await fixture.Seed(DOMAIN.Entities.Products.Production.IssuedMaterialRepairKind.Bom, issueStock: false);
+        await using var db = fixture.Open();
+        var actor = fixture.Actor.UserId.GetValueOrDefault();
+        var batch = await db.MaterialBatches.OrderBy(row => row.Id).FirstAsync();
+        var previousExpiry = batch.ExpiryDate;
+        var source = new StockMigrationLine
+        {
+            StockMigration = new StockMigration { DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(), Status = StockMigrationStatus.Approved },
+            ImportedBatchId = batch.Id, ArNumber = "AR-IMPORT"
+        };
+        db.StockMigrationLines.Add(source);
+        await db.SaveChangesAsync();
+        var request = new UpdateMigrationBatchDetails
+        {
+            ExpectedExpiryDate = previousExpiry, ManufacturingDate = new DateTime(2020, 5, 20, 0, 0, 0, DateTimeKind.Utc),
+            ExpiryDate = new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc), GrnNumber = " GRN-MIG-42 ", Reason = "Checked source ledger"
+        };
+        var repository = new MaterialRepository(db, null!);
+        Assert.Equal("MigrationBatch.Permission", (await repository.UpdateMigrationBatchDetails(batch.Id, request, actor)).Error.Code);
+
+        const string key = PermissionKeys.CanUpdateMigrationRetestDate;
+        db.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = 804, RoleId = fixture.RoleId, ClaimType = AppConstants.Permission, ClaimValue = key });
+        db.PermissionTypes.Add(new PermissionType { RoleClaimId = 804, Key = key, Type = "Action" });
+        await db.SaveChangesAsync();
+        var migration = new INFRASTRUCTURE.Migrations.AddMigrationBatchDetailsCorrections();
+        var sql = db.GetService<IMigrationsSqlGenerator>();
+        foreach (var command in sql.Generate(migration.DownOperations, db.Model))
+            await db.Database.ExecuteSqlRawAsync(command.CommandText);
+        await db.Database.ExecuteSqlRawAsync("SELECT setval(pg_get_serial_sequence('roleclaims', 'Id'), MAX(\"Id\")) FROM \"roleclaims\"");
+        foreach (var command in sql.Generate(migration.UpOperations, db.Model))
+            await db.Database.ExecuteSqlRawAsync(command.CommandText);
+        var updated = await repository.UpdateMigrationBatchDetails(batch.Id, request, actor);
+        Assert.True(updated.IsSuccess, updated.Error.Description);
+        Assert.Equal("MigrationBatch.Changed", (await repository.UpdateMigrationBatchDetails(batch.Id, request, actor)).Error.Code);
+        var audit = await db.MigrationRetestDateChanges.AsNoTracking().SingleAsync();
+        Assert.Equal(previousExpiry, audit.ExpiryDate);
+        Assert.Equal(new DateTime(2020, 5, 1, 0, 0, 0, DateTimeKind.Utc), audit.NewManufacturingDate);
+        Assert.Equal(new DateTime(2025, 2, 28, 0, 0, 0, DateTimeKind.Utc), audit.NewExpiryDate);
+        Assert.Equal("GRN-MIG-42", audit.NewGrnNumber);
+        Assert.Equal("AR-IMPORT", (await db.StockMigrationLines.AsNoTracking().SingleAsync()).ArNumber);
+        var report = await repository.GetMaterialStockReport(new() { ExpiredOnly = true }, actor);
+        var row = Assert.Single(report.Value.Rows);
+        Assert.Equal("GRN-MIG-42", row.GrnNumber);
+        Assert.Equal("AR-IMPORT", row.ArNumber);
+        Assert.Equal(audit.NewExpiryDate, row.ExpiryDate);
+    }
 
     [Fact]
     public void Correction_lookup_translates_with_later_QC_sampling_exclusion()

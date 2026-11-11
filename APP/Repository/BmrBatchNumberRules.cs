@@ -6,6 +6,19 @@ namespace APP.Repository;
 
 internal static class BmrBatchNumberRules
 {
+    internal static async Task<Result> ValidateForIssue(
+        ApplicationDbContext context, string batchNumber, Guid scheduleProductId, Guid recordId)
+    {
+        var stem = await context.ProductionScheduleProducts.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Where(batch => batch.Id == scheduleProductId)
+            .Select(batch => batch.Product.BatchStem).SingleOrDefaultAsync();
+        var number = batchNumber?.Trim();
+        if (!string.IsNullOrEmpty(stem) && (number is null || number.Length <= stem.Length
+            || !number.StartsWith(stem, StringComparison.Ordinal) || !number.Skip(stem.Length).All(char.IsAsciiDigit)))
+            return Error.Validation("Bmr.BatchStem", $"Enter the product's batch stem '{stem}' followed by digits.");
+        return await Validate(context, batchNumber, recordId);
+    }
+
     internal static async Task<Result> Validate(ApplicationDbContext context, string batchNumber, Guid? currentId = null)
     {
         var number = batchNumber?.Trim();

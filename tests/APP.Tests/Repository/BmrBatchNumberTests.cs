@@ -102,6 +102,57 @@ public class BmrBatchNumberTests
     }
 
     [Fact]
+    public async Task Product_stem_is_saved_and_legacy_edits_can_omit_it()
+    {
+        await using var db = Context();
+        var repository = new ProductRepository(db, ProductMapper(db));
+        var actor = Guid.NewGuid();
+        db.Departments.Add(new Department { Id = DepartmentId, Name = "Production" });
+        await db.SaveChangesAsync();
+        var created = await repository.CreateProduct(new() { Name = "Stem product", Code = "STEM", BatchStem = " LJK ", DepartmentId = DepartmentId }, actor);
+        Assert.True(created.IsSuccess, created.Error.Description);
+        var product = await db.Products.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal("LJK", product.BatchStem);
+        var update = new UpdateProductRequest { Name = product.Name, Code = product.Code, DepartmentId = DepartmentId };
+        Assert.True((await repository.UpdateProduct(update, product.Id, actor)).IsSuccess);
+        Assert.Equal("LJK", product.BatchStem);
+        update.BatchStem = "";
+        Assert.True((await repository.UpdateProduct(update, product.Id, actor)).IsSuccess);
+        Assert.Null(product.BatchStem);
+    }
+
+    [Fact]
+    public async Task Product_stem_is_required_at_save_and_issue_and_preserves_leading_zeros()
+    {
+        await using var db = Context();
+        var record = await Existing(db, "LEGACY-1");
+        record.ProductionScheduleProduct.Product.BatchStem = "LJK";
+        db.BatchPackagingRecords.Add(new BatchPackagingRecord
+        {
+            ProductionScheduleProductId = record.ProductionScheduleProductId,
+            ProductionActivityStepId = record.ProductionActivityStepId,
+            BatchNumber = "LEGACY-1"
+        });
+        await db.SaveChangesAsync();
+        var repository = Repository(db);
+
+        Assert.Equal("Bmr.BatchStem", (await repository.IssueBatchManufacturingRecord(record.Id, Guid.NewGuid())).Error.Code);
+        foreach (var invalid in new[] { "LJK", "098", "LJK9A", "LJK٠٩٨" })
+        {
+            var rejected = await repository.UpdateBatchManufacturingRecord(new() { BatchNumber = invalid }, record.Id);
+            Assert.Equal("Bmr.BatchStem", rejected.Error.Code);
+        }
+        Assert.Equal("LEGACY-1", record.BatchNumber);
+
+        var accepted = await repository.UpdateBatchManufacturingRecord(new() { BatchNumber = "LJK098" }, record.Id);
+        Assert.True(accepted.IsSuccess, accepted.Error.Description);
+        Assert.Equal("LJK098", record.BatchNumber);
+        Assert.Equal("LJK098", (await db.BatchPackagingRecords.SingleAsync()).BatchNumber);
+        Assert.Equal("LJK098", record.ProductionScheduleProduct.BatchNumber);
+        Assert.Equal("LJK", (await repository.GetBatchManufacturingRecord(record.Id)).Value.ProductionScheduleProduct.Product.BatchStem);
+    }
+
+    [Fact]
     public async Task Create_refuses_duplicates_before_inserting_a_record()
     {
         await using var db = Context();
@@ -139,11 +190,14 @@ public class BmrBatchNumberTests
         return record;
     }
 
-    private static ProductionScheduleRepository Repository(ApplicationDbContext db)
+    private static ProductionScheduleRepository Repository(ApplicationDbContext db) =>
+        new(db, ProductMapper(db), null!, null!, null!, null!, new NoOpProductionActivityStepEventPublisher());
+
+    private static IMapper ProductMapper(ApplicationDbContext db)
     {
         var services = new ServiceCollection(); services.AddLogging(); services.AddHttpContextAccessor(); services.AddSingleton(db);
         services.AddAutoMapper(configuration => { }, typeof(APP.Mapper.OryxMapper));
-        return new(db, services.BuildServiceProvider().GetRequiredService<IMapper>(), null!, null!, null!, null!, new NoOpProductionActivityStepEventPublisher());
+        return services.BuildServiceProvider().GetRequiredService<IMapper>();
     }
     private static ApplicationDbContext Context() => new(new DbContextOptionsBuilder<ApplicationDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, new CurrentUser());

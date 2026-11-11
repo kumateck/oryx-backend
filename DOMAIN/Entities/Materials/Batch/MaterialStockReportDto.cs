@@ -29,6 +29,7 @@ public class MaterialStockReportRow
     public string? MaterialName { get; set; }
     public string? MaterialCode { get; set; }
     public string? BatchNumber { get; set; }
+    public string? GrnNumber { get; set; }
     public string? ArNumber { get; set; }
     public string? ManufacturerName { get; set; }
     public string? SupplierName { get; set; }

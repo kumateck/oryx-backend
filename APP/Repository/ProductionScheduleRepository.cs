@@ -2862,7 +2862,7 @@ public partial class ProductionScheduleRepository(
             return ProductErrors.NotFound(id);
         }
 
-        var number = await BmrBatchNumberRules.Validate(context, request.BatchNumber, id);
+        var number = await BmrBatchNumberRules.ValidateForIssue(context, request.BatchNumber, batchRecord.ProductionScheduleProductId, id);
         if (batchRecord.IssuedDate.HasValue)
             return Error.Conflict("Bmr.AlreadyIssued", "Use Issued BMR records for batch-number corrections or an approved date revision.");
         if (number.IsFailure) return number;
@@ -2918,7 +2918,7 @@ public partial class ProductionScheduleRepository(
             return BmrRetired();
         if (batchRecord.IssuedDate.HasValue)
             return Error.Conflict("Bmr.AlreadyIssued", "This BMR has already been issued.");
-        var number = await BmrBatchNumberRules.Validate(context, batchRecord.BatchNumber, id);
+        var number = await BmrBatchNumberRules.ValidateForIssue(context, batchRecord.BatchNumber, batchRecord.ProductionScheduleProductId, id);
         if (number.IsFailure) return number;
         batchRecord.ProductionActivityStep.Status = ProductionStatus.Completed;
         batchRecord.ProductionActivityStep.CompletedAt = DateTime.UtcNow;

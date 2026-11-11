@@ -7,6 +7,13 @@
     "description": "Allows the user to  update migration retest date."
   },
   {
+    "module": "Warehouse",
+    "submodule": "Expired Materials",
+    "key": "CanUpdateMigrationBatchDetails",
+    "name": "Can Update Migration Batch Details",
+    "description": "Allows the user to  update migration batch details."
+  },
+  {
     "module": "Procurement",
     "submodule": "Store Item GRNs",
     "key": "CanCreateItemGrn",

@@ -35,6 +35,19 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Corrects the manufacture date, expiry date, and receipt reference of approved opening stock.</summary>
+    [HttpPut("batch/{batchId:guid}/migration-details")]
+    [Authorize(PermissionKeys.CanUpdateMigrationBatchDetails)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> UpdateMigrationBatchDetails(Guid batchId, [FromBody] UpdateMigrationBatchDetails request)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.UpdateMigrationBatchDetails(batchId, request, actor);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>Corrects the retest extension of an approved raw-material opening balance, without a QC retest.</summary>
     [HttpPut("batch/{batchId:guid}/migration-retest-date")]
     [Authorize(PermissionKeys.CanUpdateMigrationRetestDate)]
