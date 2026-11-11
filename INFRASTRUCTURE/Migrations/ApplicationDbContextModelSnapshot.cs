@@ -11196,6 +11196,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("StockTransferId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("StockTransferSourceId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -11208,6 +11211,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("StockTransferId");
+
+                    b.HasIndex("StockTransferSourceId")
+                        .IsUnique();
 
                     b.ToTable("HoldingMaterialTransfers");
                 });
@@ -33228,6 +33234,11 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("StockTransferId");
 
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransferSource", "StockTransferSource")
+                        .WithOne()
+                        .HasForeignKey("DOMAIN.Entities.Materials.HoldingMaterialTransfer", "StockTransferSourceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("LastDeletedBy");
@@ -33235,6 +33246,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("StockTransfer");
+
+                    b.Navigation("StockTransferSource");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.HoldingMaterialTransferBatch", b =>

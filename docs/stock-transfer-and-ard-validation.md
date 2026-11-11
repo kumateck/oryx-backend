@@ -15,6 +15,20 @@ review the new picks. The desktop shows the effective validity date and uses
 the server's expired flag where available. The existing API contract and
 permission keys cover this change.
 
+Only the supplying department can approve or reject a transfer, using the
+corresponding incoming transfer permission. A decision is accepted while the
+request is awaiting approval. Issuance is accepted once after approval.
+Approval, rejection, and issue use the same database transaction lock.
+An existing issue timestamp also blocks a repeated issue on older records.
+
+**Issued batches** shows the lot and quantity recorded when stock left the
+supplying warehouse. Apply the `LinkStockTransferIssueSource` migration
+before deploying the desktop change. It links each new issue to its exact
+transfer source and enforces a single linked issue per source. For older
+records, history is available when one existing issue matches the transfer
+and supplying and receiving departments. Ambiguous or missing history is
+shown as unavailable.
+
 ## Creating analytical raw data records
 
 Product and material ARD creation validate shared sections and the sections
@@ -42,15 +56,17 @@ Four desktop stock transfer tests and the desktop TypeScript check passed.
 In **Settings → Approvals**, create or edit **Test results (Response)**. Add
 the two roles and mark the role that must sign as **Required approval**.
 Either role can be optional. The workflow requires at least one required
-stage. A required approver can act while earlier optional stages are
-pending. Once all required stages approve, the round closes.
+stage. Optional approvers can sign while the round is open, regardless of
+where they appear in the workflow. Required approvers still sign in their
+configured order. Once all required stages approve, the round closes.
 
 The server routes material and product test results through the existing
 `Response` document key. The old route-specific labels are retained for
 recognizing saved configurations. They are omitted from the list of new
 workflow types. If a Response workflow already exists, edit that one.
-Saved approval decisions are retained. This configuration applies when a new
-round starts, and it does not replace the assigned approvers in an open round.
+Changes to workflow assignments apply when a new round starts. The migration
+activates eligible pending stages in open rounds using their existing
+assignments. It preserves saved approval decisions and activation times.
 
 The existing `CanCreateNewApproval` and `CanEditApprovalWorkflow` permissions
 cover workflow changes. The existing decision permissions and assignee checks
@@ -61,3 +77,9 @@ The combined regression run passed 75 backend tests with PostgreSQL enabled.
 It checked both stage orders and verified that the required role can complete
 the round without the optional role. The desktop approval and transfer
 regressions passed 26 tests.
+
+The follow-up passed 70 backend tests with PostgreSQL enabled. It verified
+that simultaneous requests produce one issue, processed holding records
+still provide the issued quantities, ambiguous legacy matches are omitted,
+and optional approvers can sign in either position. The migration test
+also checked that closed rounds and saved activation times are preserved.

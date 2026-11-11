@@ -15,6 +15,8 @@ public class HoldingMaterialTransfer : BaseEntity
     [StringLength(1000)] public string ModelType { get; set; }
     public Guid? StockTransferId { get; set; }
     public StockTransfer StockTransfer { get; set; }
+    public Guid? StockTransferSourceId { get; set; }
+    public StockTransferSource StockTransferSource { get; set; }
     public HoldingMaterialTransferStatus Status { get; set; }
     public List<HoldingMaterialTransferBatch> Batches { get; set; } = [];
 }

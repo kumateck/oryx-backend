@@ -40,6 +40,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using SHARED;
 
 namespace APP.Repository;
@@ -1272,6 +1273,7 @@ public class ApprovalRepository(
                 return Result.Success();
 
             case nameof(Response):
+            try
             {
                 await using var responseApprovalTransaction = context.Database.IsRelational()
                     && context.Database.CurrentTransaction is null
@@ -1379,6 +1381,11 @@ public class ApprovalRepository(
                 }
 
                 return Result.Success();
+            }
+            catch (Exception error) when (IsResponseDecisionConflict(error))
+            {
+                context.ChangeTracker.Clear();
+                return Error.Conflict("Response.ApprovalChanged", "Another decision changed this approval. Reload the response before trying again.");
             }
 
             case nameof(ProformaInvoice):
@@ -2781,6 +2788,7 @@ public class ApprovalRepository(
                 break;
 
             case nameof(Response):
+            try
             {
                 if (string.IsNullOrWhiteSpace(comments) || comments.Length > 2000)
                     return Error.Validation("Response.RejectionReason", "QA must record a reason of at most 2000 characters.");
@@ -2931,6 +2939,11 @@ public class ApprovalRepository(
                 await context.SaveChangesAsync();
                 if (responseDecision is not null) await responseDecision.CommitAsync();
                 break;
+            }
+            catch (Exception error) when (IsResponseDecisionConflict(error))
+            {
+                context.ChangeTracker.Clear();
+                return Error.Conflict("Response.ApprovalChanged", "Another decision changed this approval. Reload the response before trying again.");
             }
 
             case nameof(ProformaInvoice):
@@ -5295,6 +5308,10 @@ public class ApprovalRepository(
         await context.ProformaInvoiceApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
+
+    private static bool IsResponseDecisionConflict(Exception error) =>
+        (error is DbUpdateException ? error.InnerException : error) is PostgresException
+        { SqlState: PostgresErrorCodes.SerializationFailure };
 
     private async Task AddApprovalLogs(CreateApprovalLog log)
     {

@@ -72,7 +72,7 @@ internal static class ResponseApprovalRoundManager
 
         foreach (var row in rows)
         {
-            if (row.Status == ApprovalStatus.Pending && row.Order <= nextRequired.Value)
+            if (row.Status == ApprovalStatus.Pending && (!row.Required || row.Order == nextRequired.Value))
                 row.ActivatedAt ??= now;
         }
     }
