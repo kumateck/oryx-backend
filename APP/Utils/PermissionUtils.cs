@@ -215,6 +215,8 @@ public static class PermissionSubmodules
 
 public static class PermissionKeys
 {
+    /// <summary>Correct the manufacture date, expiry date, and GRN reference of migrated stock.</summary>
+    public const string CanUpdateMigrationBatchDetails = "CanUpdateMigrationBatchDetails";
     public const string CanUpdateMigrationRetestDate = "CanUpdateMigrationRetestDate";
     // Warehouse and sourcing tasks no page offers yet; granted to nobody (permissions audit phase 4).
     /// <summary>Create an arrival location.</summary>
@@ -1374,6 +1376,7 @@ public static class PermissionUtils
         };
 
         addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationRetestDate);
+        addPermission(PermissionModules.Warehouse, "Expired Materials", PermissionKeys.CanUpdateMigrationBatchDetails);
         addPermission(PermissionModules.Procurement, "Store Item GRNs", PermissionKeys.CanCreateItemGrn);
         addPermission(PermissionModules.Procurement, "Store Item GRNs", PermissionKeys.CanEditItemGrn);
         addPermission(PermissionModules.Procurement, "Store Item GRNs", PermissionKeys.CanDeleteItemGrn);

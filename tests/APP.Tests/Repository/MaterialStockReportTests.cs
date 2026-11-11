@@ -8,6 +8,7 @@ using APP.Tests.QcWorksheets;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Departments;
+using DOMAIN.Entities.Grns;
 using DOMAIN.Entities.MaterialSampling;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -59,6 +60,7 @@ public class MaterialStockReportTests
         harness.Db.Users.AddRange(actor, global, quality);
         var batch = await harness.SeedMaterialBatch("SHARED", BatchStatus.Available);
         batch.Material.Name = "Cyanocobalamin"; batch.Material.Kind = kind;
+        batch.Grn = new Grn { GrnNumber = "GRN-001" };
         batch.ManufacturingDate = DateTime.UtcNow.AddYears(-3); batch.ExpiryDate = DateTime.UtcNow.AddDays(-30);
         batch.Checklist = new Checklist { Id = Guid.NewGuid(), Manufacturer = new Manufacturer { Id = Guid.NewGuid(), Name = "Maker" }, Supplier = new Supplier { Id = Guid.NewGuid(), Name = "Supplier" } };
         harness.Db.Checklists.Add(batch.Checklist);
@@ -95,6 +97,7 @@ public class MaterialStockReportTests
         filter.ExpiredOnly = true;
         var expiredRows = (await repository.GetMaterialStockReport(filter, actor.Id)).Value.Rows;
         Assert.Equal(2, expiredRows.Count);
+        Assert.All(expiredRows, item => Assert.Equal("GRN-001", item.GrnNumber));
         Assert.Contains(expiredRows, item => item.BatchId == batch.Id && item.UoM == "kg" && item.Quantity == 8);
         Assert.Contains(expiredRows, item => item.BatchId == batch.Id && item.UoM == "g" && item.Quantity == 300);
         filter.DepartmentId = other.Id;

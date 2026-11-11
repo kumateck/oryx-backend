@@ -7,6 +7,9 @@ public class CreateProductRequest
     [StringLength(255)]
     public string Code { get; set; }
 
+    [StringLength(99)]
+    public string BatchStem { get; set; }
+
     [StringLength(255)]
     public string Name { get; set; }
 

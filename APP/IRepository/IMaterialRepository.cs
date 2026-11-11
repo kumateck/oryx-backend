@@ -41,6 +41,7 @@ public interface IMaterialRepository
         List<CreateMaterialBatchRequest> request,
         Guid userId
     );
+    Task<Result> UpdateMigrationBatchDetails(Guid batchId, UpdateMigrationBatchDetails request, Guid actorId);
     Task<Result> UpdateMigrationRetestDate(Guid batchId, UpdateMigrationRetestDate request, Guid actorId);
     Task<Result<MaterialBatchDto>> GetMaterialBatch(Guid batchId);
     Task<Result<Paginateable<IEnumerable<MaterialBatchDto>>>> GetMaterialBatches(

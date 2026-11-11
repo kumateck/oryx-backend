@@ -10673,6 +10673,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("MigrationGrnNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<int>("NumberOfContainers")
                         .HasColumnType("integer");
 
@@ -11088,6 +11092,16 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("NewDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("NewExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NewGrnNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("NewManufacturingDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -11099,6 +11113,13 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("PreviousDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreviousGrnNumber")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("PreviousManufacturingDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Reason")
@@ -16243,6 +16264,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<Guid?>("BaseUomId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("BatchStem")
+                        .HasMaxLength(99)
+                        .HasColumnType("character varying(99)");
 
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
