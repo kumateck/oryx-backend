@@ -40,6 +40,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using SHARED;
 
 namespace APP.Repository;
@@ -1272,6 +1273,7 @@ public class ApprovalRepository(
                 return Result.Success();
 
             case nameof(Response):
+            try
             {
                 await using var responseApprovalTransaction = context.Database.IsRelational()
                     && context.Database.CurrentTransaction is null
@@ -1298,41 +1300,9 @@ public class ApprovalRepository(
                     return Error.Conflict("Response.RequiredApproval",
                         "This response round has no required approver. Configure the Response workflow and use the audited revision process.");
 
-                var responseApprovalStages = currentResponseApprovals
-                    .Select(item => new ResponsibleApprovalStage
-                    {
-                        RoleId = item.RoleId,
-                        UserId = item.UserId,
-                        Order = item.Order,
-                        Status = item.Status,
-                        Required = item.Required,
-                        ApprovalTime = item.ApprovalTime,
-                        ActivatedAt = item.ActivatedAt,
-                        Comments = item.Comments,
-                    })
-                    .ToList();
-
-                var responseCurrentApprovals = GetCurrentApprovalStage(
-                    responseApprovalStages,
-                    userId,
-                    roleIds
-                );
-
-                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
-
-                if (responseApprovingStage == null)
-                {
-                    return Error.Validation(
-                        "Approval.Unauthorized",
-                        "You are not authorized to approve this resource at this time."
-                    );
-                }
-
-                // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = currentResponseApprovals.First(stage =>
-                    stage.Status == ApprovalStatus.Pending
-                    && stage.Order == responseApprovingStage.Order
-                );
+                var stageToApproveRe = ResponseApprovalRoundManager.DecisionStage(currentResponseApprovals, userId, roleIds);
+                if (stageToApproveRe is null)
+                    return Error.Validation("Approval.Unauthorized", "You are not authorized to decide this response at this time.");
 
                 stageToApproveRe.Status = ApprovalStatus.Approved;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
@@ -1379,6 +1349,11 @@ public class ApprovalRepository(
                 }
 
                 return Result.Success();
+            }
+            catch (Exception error) when (IsResponseDecisionConflict(error))
+            {
+                context.ChangeTracker.Clear();
+                return Error.Conflict("Response.ApprovalChanged", "Another decision changed this approval. Reload the response before trying again.");
             }
 
             case nameof(ProformaInvoice):
@@ -2781,6 +2756,7 @@ public class ApprovalRepository(
                 break;
 
             case nameof(Response):
+            try
             {
                 if (string.IsNullOrWhiteSpace(comments) || comments.Length > 2000)
                     return Error.Validation("Response.RejectionReason", "QA must record a reason of at most 2000 characters.");
@@ -2810,41 +2786,9 @@ public class ApprovalRepository(
                 var currentResponseApprovals = ResponseApprovalRoundManager.Current(
                     response.Approvals
                 );
-                var responseApprovalStages = currentResponseApprovals
-                    .Select(item => new ResponsibleApprovalStage
-                    {
-                        RoleId = item.RoleId,
-                        UserId = item.UserId,
-                        Order = item.Order,
-                        Status = item.Status,
-                        Required = item.Required,
-                        ApprovalTime = item.ApprovalTime,
-                        ActivatedAt = item.ActivatedAt,
-                        Comments = item.Comments,
-                    })
-                    .ToList();
-
-                var responseCurrentApprovals = GetCurrentApprovalStage(
-                    responseApprovalStages,
-                    userId,
-                    roleIds
-                );
-
-                var responseApprovingStage = responseCurrentApprovals.FirstOrDefault();
-
-                if (responseApprovingStage == null)
-                {
-                    return Error.Validation(
-                        "Approval.Unauthorized",
-                        "You are not authorized to approve this resource at this time."
-                    );
-                }
-
-                // Approve the leave request stage in the actual tracked list
-                var stageToApproveRe = currentResponseApprovals.First(stage =>
-                    stage.Status == ApprovalStatus.Pending
-                    && stage.Order == responseApprovingStage.Order
-                );
+                var stageToApproveRe = ResponseApprovalRoundManager.DecisionStage(currentResponseApprovals, userId, roleIds);
+                if (stageToApproveRe is null)
+                    return Error.Validation("Approval.Unauthorized", "You are not authorized to decide this response at this time.");
 
                 stageToApproveRe.Status = ApprovalStatus.Rejected;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
@@ -2931,6 +2875,11 @@ public class ApprovalRepository(
                 await context.SaveChangesAsync();
                 if (responseDecision is not null) await responseDecision.CommitAsync();
                 break;
+            }
+            catch (Exception error) when (IsResponseDecisionConflict(error))
+            {
+                context.ChangeTracker.Clear();
+                return Error.Conflict("Response.ApprovalChanged", "Another decision changed this approval. Reload the response before trying again.");
             }
 
             case nameof(ProformaInvoice):
@@ -5295,6 +5244,10 @@ public class ApprovalRepository(
         await context.ProformaInvoiceApprovals.AddRangeAsync(approvals);
         await context.SaveChangesAsync();
     }
+
+    private static bool IsResponseDecisionConflict(Exception error) =>
+        (error is DbUpdateException ? error.InnerException : error) is PostgresException
+        { SqlState: PostgresErrorCodes.SerializationFailure };
 
     private async Task AddApprovalLogs(CreateApprovalLog log)
     {

@@ -17,7 +17,10 @@ using DOMAIN.Entities.Shipments;
 using DOMAIN.Entities.StaffRequisitions;
 using DOMAIN.Entities.StockAdjustments;
 using INFRASTRUCTURE.Context;
+using INFRASTRUCTURE.Migrations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Logging.Abstractions;
 using SHARED.Services.Identity;
 using Xunit;
@@ -700,9 +703,11 @@ public class ApprovalAutomaticPolicyTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task Required_response_role_can_finish_without_the_optional_role(bool requiredFirst)
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task Either_response_role_can_sign_or_be_skipped_when_optional(bool requiredFirst, bool optionalSigns)
     {
         await using var context = CreateContext();
         var requiredRole = Guid.NewGuid();
@@ -725,19 +730,55 @@ public class ApprovalAutomaticPolicyTests
         await repository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         var stages = await context.ResponseApprovals.ToListAsync();
         Assert.NotNull(Assert.Single(stages, row => row.Required).ActivatedAt);
+        var optional = Assert.Single(stages, row => !row.Required);
+        Assert.NotNull(optional.ActivatedAt);
+        if (optionalSigns)
+        {
+            var optionalDecision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [optionalRole]);
+            Assert.True(optionalDecision.IsSuccess, optionalDecision.Error.Description);
+            Assert.False(response.Approved);
+        }
 
         var decision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [requiredRole]);
         Assert.True(decision.IsSuccess, decision.Error.Description);
         Assert.True(response.Approved);
-        Assert.Equal(ApprovalStatus.Pending, Assert.Single(stages, row => !row.Required).Status);
+        Assert.Equal(optionalSigns ? ApprovalStatus.Approved : ApprovalStatus.Pending, optional.Status);
 
         var lateDecision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [optionalRole]);
         Assert.Equal("Response.ApprovalClosed", lateDecision.Error.Code);
-        Assert.Single(context.ApprovalActionLogs);
+        Assert.Equal(optionalSigns ? 2 : 1, context.ApprovalActionLogs.Count());
         var resubmission = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
         Assert.Equal("Response.AlreadyApproved", resubmission.Error.Code);
         Assert.True(await ResponseApprovalRoundManager.StartAsync(context, response.Id, approval.ApprovalStages, approval));
         Assert.Equal(2, await context.ResponseApprovals.MaxAsync(row => row.ApprovalRound));
+    }
+
+    [Fact]
+    public async Task Response_decision_uses_required_stage_when_actor_holds_both_roles()
+    {
+        await using var context = CreateContext();
+        var optionalRole = Guid.NewGuid();
+        var requiredRole = Guid.NewGuid();
+        var response = new Response { Form = new Form() };
+        var approval = new Approval
+        {
+            ItemType = nameof(Response),
+            ApprovalStages =
+            [
+                new() { Order = 1, RoleId = optionalRole, Required = false },
+                new() { Order = 2, RoleId = requiredRole, Required = true }
+            ]
+        };
+        context.AddRange(response, approval);
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+        await repository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        var decision = await repository.ApproveItem(nameof(Response), response.Id, Guid.NewGuid(), [optionalRole, requiredRole]);
+
+        Assert.True(decision.IsSuccess, decision.Error.Description);
+        Assert.True(response.Approved);
+        Assert.Equal(ApprovalStatus.Pending, Assert.Single(context.ResponseApprovals, stage => !stage.Required).Status);
     }
 
     [Fact]
@@ -749,6 +790,52 @@ public class ApprovalAutomaticPolicyTests
             ApprovalStages = [new() { Order = 1, RoleId = Guid.NewGuid(), Required = false }]
         };
         Assert.Equal("Approval.RequiredStage", ApprovalConfigurationValidator.Validate(request).Error.Code);
+    }
+
+    [RepairPostgresFact]
+    public async Task Migration_activates_eligible_open_round_stages_and_preserves_history()
+    {
+        await using var fixture = new IssuedMaterialRepairFixture();
+        await fixture.Seed(issueStock: false);
+        await using var context = fixture.Open();
+        var migration = new LinkStockTransferIssueSource();
+        var generator = context.GetService<IMigrationsSqlGenerator>();
+        foreach (var command in generator.Generate(migration.DownOperations, context.Model))
+            await context.Database.ExecuteSqlRawAsync(command.CommandText);
+
+        var form = new Form { Name = "Response migration fixture" };
+        var open = new Response { Form = form };
+        var closed = new Response { Form = form, Approved = true };
+        var approval = new Approval { ItemType = nameof(Response) };
+        ResponseApproval Stage(Response response, int round, int order, bool required) => new()
+        {
+            Response = response, Approval = approval, ApprovalRound = round, Order = order,
+            Required = required, UserId = fixture.Actor.UserId
+        };
+
+        var prior = Stage(open, 1, 1, required: false);
+        var firstRequired = Stage(open, 2, 1, required: true);
+        var activated = Stage(open, 2, 2, required: false);
+        var previousActivation = new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
+        activated.ActivatedAt = previousActivation;
+        var laterRequired = Stage(open, 2, 3, required: true);
+        var optionalLast = Stage(open, 2, 4, required: false);
+        var closedOptional = Stage(closed, 1, 1, required: false);
+        var closedRequired = Stage(closed, 1, 2, required: true);
+        context.AddRange(prior, firstRequired, activated, laterRequired, optionalLast, closedOptional, closedRequired);
+        await context.SaveChangesAsync();
+
+        foreach (var command in generator.Generate(migration.UpOperations, context.Model))
+            await context.Database.ExecuteSqlRawAsync(command.CommandText);
+
+        var stages = await context.ResponseApprovals.AsNoTracking().ToDictionaryAsync(stage => stage.Id);
+        Assert.NotNull(stages[firstRequired.Id].ActivatedAt);
+        Assert.NotNull(stages[optionalLast.Id].ActivatedAt);
+        Assert.Equal(previousActivation, stages[activated.Id].ActivatedAt);
+        Assert.Null(stages[prior.Id].ActivatedAt);
+        Assert.Null(stages[laterRequired.Id].ActivatedAt);
+        Assert.Null(stages[closedOptional.Id].ActivatedAt);
+        Assert.Null(stages[closedRequired.Id].ActivatedAt);
     }
 
     private static Approval ConfiguredApproval(string itemType, Guid approverId)
