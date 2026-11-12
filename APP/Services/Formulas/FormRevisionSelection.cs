@@ -12,22 +12,21 @@ internal static class FormRevisionSelection
         CancellationToken cancellationToken = default)
     {
         var revisionId = await EffectiveIdAsync(context, formId, cancellationToken);
-        if (!revisionId.HasValue)
-        {
-            var hasGovernedQuestion = await context.FormFields.AsNoTracking().AnyAsync(field =>
-                field.FormSection.FormId == formId &&
-                field.Question.Type == QuestionType.Formula &&
-                context.QuestionFormulaDefinitions.Any(link =>
-                    link.QuestionId == field.QuestionId), cancellationToken);
-            var hasGovernedPlacement = await context.FormFieldFormulaConfigurations
-                .AsNoTracking().AnyAsync(configuration =>
-                    configuration.FormFieldRevision.FormRevision.FormId == formId,
-                    cancellationToken);
-            if (hasGovernedQuestion || hasGovernedPlacement)
-                return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
-        }
+        if (!revisionId.HasValue && await RequiresApprovedRevisionAsync(context, formId, cancellationToken))
+            return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
         return Result.Success(revisionId);
     }
+
+    public static async Task<bool> RequiresApprovedRevisionAsync(
+        ApplicationDbContext context, Guid formId,
+        CancellationToken cancellationToken = default) =>
+        await context.FormFields.AsNoTracking().AnyAsync(field =>
+            field.FormSection.FormId == formId &&
+            field.Question.Type == QuestionType.Formula &&
+            context.QuestionFormulaDefinitions.Any(link =>
+                link.QuestionId == field.QuestionId), cancellationToken)
+        || await context.FormFieldFormulaConfigurations.AsNoTracking().AnyAsync(configuration =>
+            configuration.FormFieldRevision.FormRevision.FormId == formId, cancellationToken);
 
     public static async Task<IReadOnlyList<Guid>> MissingRequiredFieldsAsync(
         ApplicationDbContext context, Response response,

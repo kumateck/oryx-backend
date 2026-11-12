@@ -1,5 +1,6 @@
 using APP.IRepository;
 using APP.Repository;
+using APP.Services.Storage;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Formulas;
@@ -64,6 +65,34 @@ public class FormDraftAttachmentTests
         Assert.Equal(1, await context.FormResponses.CountAsync());
     }
 
+    [RepairPostgresFact]
+    public async Task Draft_upload_shares_the_worksheet_transaction()
+    {
+        var userId = Guid.NewGuid();
+        var actor = new Actor();
+        await using var database = new FormulaTriggerDatabase();
+        await database.CreateAsync(actor, userId);
+        await using var context = database.Open(actor);
+        var form = new Form { Id = Guid.NewGuid(), Name = "Test" };
+        var section = new FormSection { Id = Guid.NewGuid(), FormId = form.Id, Name = "Evidence" };
+        var question = new Question { Id = Guid.NewGuid(), Type = QuestionType.FileUpload, Label = "Evidence file" };
+        var field = new FormField { Id = Guid.NewGuid(), FormSectionId = section.Id, QuestionId = question.Id };
+        context.AddRange(form, section, question, field);
+        await context.SaveChangesAsync();
+        var files = new FileRepository(context, new SuccessfulUpload(), null!);
+        var repository = new FormRepository(context, null!, files, null!, null!);
+
+        var draft = await repository.SaveFormResponseDraft(new SaveResponseDraftRequest
+        {
+            FormId = form.Id, FormFieldId = field.Id, Value = "data:image/png;base64,QQ=="
+        }, userId);
+
+        Assert.True(draft.IsSuccess);
+        var answer = await context.FormResponses.SingleAsync();
+        Assert.Equal(draft.Value, answer.ResponseId);
+        Assert.Equal(answer.Id, (await context.Attachments.SingleAsync()).ModelId);
+    }
+
     [Fact]
     public async Task Failed_storage_does_not_report_a_successful_draft()
     {
@@ -78,4 +107,21 @@ public class FormDraftAttachmentTests
         Assert.Equal("File.Upload", result.Error.Code);
         Assert.Equal(EntityState.Added, context.Entry(Assert.Single(response.FormResponses)).State);
     }
+}
+
+file sealed class SuccessfulUpload : IBlobStorageService
+{
+    public Task<Result> UploadBlobAsync(string bucketName, IFormFile file, string objectName, string previousObjectName = null!) =>
+        Task.FromResult(Result.Success());
+    public Result UploadBlob(string bucketName, IFormFile file, string objectName, string previousObjectName = null!) =>
+        throw new NotSupportedException();
+    public Task<Result<(Stream Stream, string ContentType, string Name)>> GetBlobAsync(string bucketName, string objectName) =>
+        throw new NotSupportedException();
+    public Task<Result<(Stream Stream, string ContentType, string Name)>> GetBlobAsync(string bucketName, string modelId, string reference) =>
+        throw new NotSupportedException();
+    public Task<Result<bool>> BlobExistsAsync(string bucketName, string objectName) => throw new NotSupportedException();
+    public Task<Result> UploadChunkAsync(string bucketName, IFormFile chunk, string objectName, int chunkIndex) =>
+        throw new NotSupportedException();
+    public Task<Result> CombineChunksAsync(string bucketName, string objectName, int totalChunks) =>
+        throw new NotSupportedException();
 }

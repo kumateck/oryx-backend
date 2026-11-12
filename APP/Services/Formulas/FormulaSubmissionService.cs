@@ -20,7 +20,11 @@ public sealed class FormulaSubmissionService(
             .SingleOrDefaultAsync(item => item.Id == responseId, cancellationToken);
         if (response is null) return FormulaResponseRuntimeErrors.NotFound;
         if (!response.FormRevisionId.HasValue)
+        {
+            if (await FormRevisionSelection.RequiresApprovedRevisionAsync(context, response.FormId, cancellationToken))
+                return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
             return Result.Success<FormulaSubmissionSetDto?>(null);
+        }
         var snapshots = await runtime.EnsureInitialSnapshotsAsync(
             responseId, actorId, cancellationToken);
         if (snapshots.IsFailure)

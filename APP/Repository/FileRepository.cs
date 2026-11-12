@@ -1,6 +1,7 @@
 using APP.IRepository;
 using APP.Services.Storage;
 using DOMAIN.Entities.Attachments;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.ProformaInvoices;
 using DOMAIN.Entities.PurchaseOrders;
 using INFRASTRUCTURE.Context;
@@ -24,7 +25,10 @@ public class FileRepository(
         Guid? userId
     )
     {
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        // Worksheet attachments are saved in the enclosing draft transaction.
+        await using var transaction = modelType == nameof(FormResponse) && context.Database.CurrentTransaction is not null
+            ? null
+            : await context.Database.BeginTransactionAsync();
 
         var attachment = new Attachment
         {
@@ -46,10 +50,10 @@ public class FileRepository(
             );
             if (result.IsFailure)
             {
-                await transaction.RollbackAsync();
+                if (transaction is not null) await transaction.RollbackAsync();
                 return result.Error;
             }
-            await transaction.CommitAsync();
+            if (transaction is not null) await transaction.CommitAsync();
 
             switch (modelType)
             {
@@ -87,7 +91,7 @@ public class FileRepository(
                     break;
             }
         }
-        catch (Exception)
+        catch (Exception) when (transaction is not null)
         {
             await transaction.RollbackAsync();
         }
