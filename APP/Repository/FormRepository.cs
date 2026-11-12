@@ -1730,20 +1730,26 @@ public class FormRepository(
                     .ThenInclude(s => s.Fields)
                         .ThenInclude(fld => fld.Question)
                             .ThenInclude(q => q.Options)
-            .Include(fa => fa.FieldAssignees)
+            .Include(fa => fa.FieldAssignees.Where(field => !field.DeletedAt.HasValue))
                 .ThenInclude(af => af.FormField)
-            .Include(fa => fa.FieldAssignees)
+            .Include(fa => fa.FieldAssignees.Where(field => !field.DeletedAt.HasValue))
                 .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
-            .Where(fa => fa.MaterialBatchId == materialBatchId);
+            .Where(fa => fa.MaterialBatchId == materialBatchId && !fa.DeletedAt.HasValue);
 
+        if (!stage.HasValue && !productionActivityStepId.HasValue)
+        {
+            var sample = await MaterialSampleBinding.ResolveAsync(context, materialBatchId, null);
+            if (sample.IsFailure) return sample.Errors;
+            query = query.Where(item => item.MaterialSamplingId == sample.Value);
+        }
         if (stage.HasValue)
             query = query.Where(fa => fa.Stage == stage.Value);
         if (productionActivityStepId.HasValue)
             query = query.Where(fa => fa.ProductionActivityStepId == productionActivityStepId.Value);
 
         var formAssignee = await query
-            .OrderByDescending(fa => fa.CreatedAt)
+            .OrderByDescending(fa => fa.CreatedAt).ThenByDescending(fa => fa.Id)
             .FirstOrDefaultAsync();
 
         if (formAssignee == null)
@@ -1765,20 +1771,21 @@ public class FormRepository(
                     .ThenInclude(s => s.Fields)
                         .ThenInclude(fld => fld.Question)
                             .ThenInclude(q => q.Options)
-            .Include(fa => fa.FieldAssignees)
+            .Include(fa => fa.FieldAssignees.Where(field => !field.DeletedAt.HasValue))
                 .ThenInclude(af => af.FormField)
-            .Include(fa => fa.FieldAssignees)
+            .Include(fa => fa.FieldAssignees.Where(field => !field.DeletedAt.HasValue))
                 .ThenInclude(af => af.Assignee)
             .Include(fa => fa.CreatedBy)
-            .Where(fa => fa.BatchManufacturingRecordId == bmrId);
+            .Where(fa => fa.BatchManufacturingRecordId == bmrId && !fa.DeletedAt.HasValue && fa.RoutineTrackId == null);
 
         if (stage.HasValue)
-            query = query.Where(fa => fa.Stage == stage.Value);
+            query = query.Where(fa => fa.Stage == stage.Value || (productionActivityStepId.HasValue && fa.Stage == null));
         if (productionActivityStepId.HasValue)
             query = query.Where(fa => fa.ProductionActivityStepId == productionActivityStepId.Value);
 
         var formAssignee = await query
-            .OrderByDescending(fa => fa.CreatedAt)
+            .OrderByDescending(fa => !stage.HasValue || fa.Stage == stage)
+            .ThenByDescending(fa => fa.CreatedAt).ThenByDescending(fa => fa.Id)
             .FirstOrDefaultAsync();
 
         if (formAssignee == null)

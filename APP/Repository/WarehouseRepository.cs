@@ -1373,14 +1373,16 @@ public class WarehouseRepository(
             .AsSplitQuery()
             .Where(s => batchIds.Contains(s.MaterialBatchId))
             .Include(s => s.CreatedBy)
+            .OrderByDescending(item => item.SampleDate).ThenByDescending(item => item.CreatedAt)
             .ToListAsync();
 
         var formAssignees = await context
             .FormAssignees.AsNoTracking()
             .AsSplitQuery()
-            .Where(b => b.MaterialBatchId.HasValue && batchIds.Contains(b.MaterialBatchId.Value))
+            .Where(b => b.MaterialBatchId.HasValue && batchIds.Contains(b.MaterialBatchId.Value) && !b.DeletedAt.HasValue)
             .Include(f => f.FieldAssignees)
                 .ThenInclude(fa => fa.Assignee)
+            .OrderByDescending(item => item.CreatedAt).ThenByDescending(item => item.Id)
             .ToListAsync();
 
         return grns.Select(grn =>
@@ -1426,14 +1428,17 @@ public class WarehouseRepository(
             dto.SampleQuantity = sampling.SampleQuantity;
         }
 
-        var formAssignee = formAssignees.FirstOrDefault(f => f.MaterialBatchId == batch.Id);
+        var sampleId = sampling?.ChemicalArdId.HasValue == true ? sampling.Id : (Guid?)null;
+        var formAssignee = formAssignees.FirstOrDefault(item =>
+            item.MaterialBatchId == batch.Id && item.MaterialSamplingId == sampleId);
         if (formAssignee != null)
         {
             dto.AnalysedBy = string.Join(
                 ",",
-                formAssignee
-                    .FieldAssignees.Select(f => $"{f.Assignee.FirstName} {f.Assignee.LastName}")
-                    .ToList()
+                formAssignee.FieldAssignees.Where(field => field.Assignee is not null && !field.DeletedAt.HasValue)
+                    .Select(field => field.Assignee)
+                    .DistinctBy(analyst => analyst.Id)
+                    .Select(analyst => $"{analyst.FirstName} {analyst.LastName}".Trim())
             );
             dto.AnalysedDate = formAssignee.CreatedAt;
         }
