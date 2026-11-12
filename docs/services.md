@@ -289,11 +289,11 @@ The formula v1 boundary now includes authenticated application services and HTTP
   client-supplied result as authoritative.
 - Existing final response submission now creates a hash-bound formula submission set before the
   business status transition. Response approval rounds bind to that set.
-- `POST /api/v1/form/responses/draft` preserves mixed legacy-form compatibility: an approved form
-  revision is required only when a formula question is linked through
-  `QuestionFormulaDefinitions` or the form has governed placement history. A legacy JSON formula
-  alone does not make unrelated scalar fields depend on a governed configuration; governed and
-  retired placements remain fail-closed.
+- `POST /api/v1/form/responses/draft` accepts ordinary answers while a governed worksheet awaits
+  its first approved form revision. Formula answers and final submission require the approved
+  revision when a question is linked through `QuestionFormulaDefinitions` or the form has governed
+  placement history. The first save after approval pins the draft and its earlier answers to that
+  revision. Worksheets with only legacy JSON formulas can still use the legacy draft workflow.
 - Form-response reads attach `FormulaGoverned`, `FormulaResultFinalized`, `FormulaExecutionId`, and
   `FormulaDisplayResultsJson`. A finalized projection is selected from the latest immutable
   submission set; a pre-submission projection may use the latest valid authoritative execution.

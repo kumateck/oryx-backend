@@ -1,8 +1,9 @@
 using System.Data;
 using APP.Extensions;
 using APP.IRepository;
-using APP.Utils;
+using APP.Services.Authorization;
 using APP.Services.Formulas;
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
@@ -450,6 +451,38 @@ public class FormRepository(
             context, request.MaterialBatchId, request.MaterialSamplingId);
         if (sample.IsFailure) return sample.Errors;
         var boundSampleId = sample.Value;
+        var formField = await context
+            .FormFields.AsSplitQuery()
+            .Include(f => f.Question)
+            .Include(f => f.FormSection)
+            .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
+
+        if (formField is null)
+            return Error.Validation(
+                "Response.FormField",
+                $"FormField not found {request.FormFieldId}"
+            );
+
+        if (formField.FormSection.FormId != request.FormId)
+            return Error.Validation(
+                "Response.FormMismatch",
+                "The submitted field does not belong to the response form."
+            );
+
+        var isFormula = formField.Question.Type == QuestionType.Formula;
+        var isAttachment = formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload;
+        await using var draftTransaction = context.Database.IsRelational()
+            && context.Database.CurrentTransaction is null ? await context.Database.BeginTransactionAsync() : null;
+        // Serialise writes to the draft so revision pinning and field saves see the same answers.
+        if (isFormula && context.Database.IsRelational())
+            await LegacyFormulaConfigurationReader.LockQuestion(context, formField.QuestionId, shared: true);
+        if (request.ResponseId is Guid responseId && context.Database.IsRelational())
+        {
+            var lockKey = $"form-response-draft:{responseId}";
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))");
+        }
+
         var response = await context
             .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
@@ -485,10 +518,6 @@ public class FormRepository(
 
         if (response is null)
         {
-            var revisionSelection = await FormRevisionSelection.ForNewResponseAsync(
-                context, request.FormId);
-            if (revisionSelection.IsFailure) return revisionSelection.Errors;
-            var formRevisionId = revisionSelection.Value;
             if (request.BatchManufacturingRecordId.HasValue)
             {
                 var existingBmrResponse = await context.Responses.FirstOrDefaultAsync(r =>
@@ -540,43 +569,10 @@ public class FormRepository(
                 BatchManufacturingRecordId = request.BatchManufacturingRecordId,
                 ProductionActivityStepId = request.ProductionActivityStepId,
                 RoutineTrackId = request.RoutineTrackId,
-                FormRevisionId = formRevisionId,
                 CreatedById = userId,
                 FormResponses = [],
             };
-            await context.Responses.AddAsync(response);
         }
-
-        var formField = await context
-            .FormFields.AsSplitQuery()
-            .Include(f => f.Question)
-            .Include(f => f.FormSection)
-            .FirstOrDefaultAsync(f => f.Id == request.FormFieldId);
-
-        if (formField is null)
-            return Error.Validation(
-                "Response.FormField",
-                $"FormField not found {request.FormFieldId}"
-            );
-
-        // Hold the question's repair lock (shared) from the configuration check until the answer is written.
-        await using var formulaTransaction = formField.Question.Type == QuestionType.Formula && context.Database.IsRelational()
-            && context.Database.CurrentTransaction is null ? await context.Database.BeginTransactionAsync() : null;
-        if (formulaTransaction is not null) await LegacyFormulaConfigurationReader.LockQuestion(context, formField.QuestionId, shared: true);
-        var staleFormula = await LegacyFormulaConfigurationReader.ValidateWrite(context, response, formField, request.FormulaConfigurationHash);
-        if (staleFormula is not null) return staleFormula;
-        var formFieldRevisionId = await FormRevisionSelection.FieldIdAsync(
-            context, response.FormRevisionId, formField.Id);
-        if (response.FormRevisionId.HasValue && !formFieldRevisionId.HasValue)
-            return Error.Conflict(
-                "Response.FormRevisionMismatch",
-                "The field is not part of the approved form revision.");
-
-        if (formField.FormSection.FormId != request.FormId)
-            return Error.Validation(
-                "Response.FormMismatch",
-                "The submitted field does not belong to the response form."
-            );
 
         // 🧩 VALIDATION: Check if user is allowed in this specific context
         var fieldAssignee = await context.FormFieldAssignees.FirstOrDefaultAsync(a =>
@@ -597,8 +593,55 @@ public class FormRepository(
                 "You are not assigned to this field in this context."
             );
 
+        var isNewDraft = !request.ResponseId.HasValue;
+        var revisionId = isNewDraft
+            ? await FormRevisionSelection.EffectiveIdAsync(context, request.FormId)
+            : response.FormRevisionId;
+        var unpinnedGovernedDraft = !revisionId.HasValue &&
+            await FormRevisionSelection.RequiresApprovedRevisionAsync(context, request.FormId);
+        if (unpinnedGovernedDraft)
+        {
+            if (!isNewDraft)
+                revisionId = await FormRevisionSelection.EffectiveIdAsync(context, request.FormId);
+            if (isFormula && !revisionId.HasValue)
+                return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
+        }
+
+        var staleFormula = await LegacyFormulaConfigurationReader.ValidateWrite(
+            context, response, formField, request.FormulaConfigurationHash);
+        if (staleFormula is not null) return staleFormula;
+
+        var formFieldRevisionId = await FormRevisionSelection.FieldIdAsync(context, revisionId, formField.Id);
+        if (revisionId.HasValue && !formFieldRevisionId.HasValue)
+            return Error.Conflict(
+                "Response.FormRevisionMismatch",
+                "The field is not part of the approved form revision.");
+
+        Dictionary<Guid, Guid> fieldRevisions = null;
+        if (!response.FormRevisionId.HasValue && revisionId.HasValue && response.FormResponses.Count > 0)
+        {
+            var savedFieldIds = response.FormResponses.Select(answer => answer.FormFieldId).Distinct().ToList();
+            fieldRevisions = await context.FormFieldRevisions.AsNoTracking()
+                .Where(field => field.FormRevisionId == revisionId && savedFieldIds.Contains(field.FormFieldId))
+                .ToDictionaryAsync(field => field.FormFieldId, field => field.Id);
+            if (fieldRevisions.Count != savedFieldIds.Count)
+                return Error.Conflict("Response.FormRevisionMismatch",
+                    "The approved form revision does not include every field already saved in this draft.");
+        }
+
+        if (unpinnedGovernedDraft && !await CanSaveGovernedDraftAsync(userId))
+            return DraftPermissionDenied;
+
+        // Pin the earlier answers together with the draft when approval becomes available.
+        if (fieldRevisions is not null)
+            foreach (var answer in response.FormResponses)
+                answer.FormFieldRevisionId = fieldRevisions[answer.FormFieldId];
+        response.FormRevisionId = revisionId;
+        if (isNewDraft)
+            await context.Responses.AddAsync(response);
+
         // Handle file-based questions
-        if (formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload)
+        if (isAttachment)
         {
             var upload = await APP.Services.Forms.FormDraftAttachments.Save(
                 response, formField, formFieldRevisionId, request.Value, userId, fileRepository, context);
@@ -659,9 +702,34 @@ public class FormRepository(
             context.ProductSpecifications.Update(productSpecification);
         }
 
+        if (unpinnedGovernedDraft && isAttachment && !await CanSaveGovernedDraftAsync(userId))
+            return DraftPermissionDenied;
+
         await context.SaveChangesAsync();
-        if (formulaTransaction is not null) await formulaTransaction.CommitAsync();
+        if (draftTransaction is not null) await draftTransaction.CommitAsync();
         return Result.Success(response.Id);
+    }
+
+    private static Error DraftPermissionDenied =>
+        Error.Forbidden("Response.DraftPermission", "Your current permissions do not allow saving this draft.");
+
+    private async Task<bool> CanSaveGovernedDraftAsync(Guid actorId)
+    {
+        // Keep the same grants as the shared draft action when deferring or attaching approval.
+        var grants = await CurrentPermissionSet.Load(context, actorId);
+        return grants.Overlaps([
+            PermissionKeys.CanCreatePackagingMaterialSpecification,
+            PermissionKeys.CanCreateProductSpecification,
+            PermissionKeys.CanCreateRawMaterialSpecification,
+            PermissionKeys.CanEditPackagingMaterialSpecification,
+            PermissionKeys.CanEditProductSpecification,
+            PermissionKeys.CanEditRawMaterialSpecification,
+            PermissionKeys.CanExecuteFormulaResponse,
+            PermissionKeys.CanPerformRoutineTest,
+            PermissionKeys.CanStartPackagingMaterialTest,
+            PermissionKeys.CanStartProductTest,
+            PermissionKeys.CanStartRawMaterialTest
+        ]);
     }
 
     public async Task<Result> SubmitFormResponseFinal(Guid responseId, Guid userId)
