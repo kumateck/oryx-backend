@@ -218,9 +218,19 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         var materialSampling = await context
             .MaterialSamplings.AsSplitQuery()
-            .IgnoreQueryFilters()
             .Include(m => m.CreatedBy)
-            .FirstOrDefaultAsync(m => m.MaterialBatchId == materialBatchId);
+            .Where(m => m.MaterialBatchId == materialBatchId)
+            .OrderByDescending(m => m.SampleDate).ThenByDescending(m => m.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        var samplingId = materialSampling?.ChemicalArdId.HasValue == true ? materialSampling.Id : (Guid?)null;
+        var worksheet = await context.Responses.AsNoTracking()
+            .Where(response => response.MaterialBatchId == materialBatchId && response.MaterialSamplingId == samplingId
+                && response.RoutineTrackId == null && response.BatchManufacturingRecordId == null
+                && response.ProductionActivityStepId == null)
+            .OrderByDescending(response => response.ReworkSequence).ThenByDescending(response => response.CreatedAt)
+            .Select(response => new { response.Id, response.FormId })
+            .FirstOrDefaultAsync();
 
         var checkList = await context
             .Checklists.AsSplitQuery()
@@ -251,6 +261,8 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
 
         return new MaterialBatchArd
         {
+            WorksheetResponseId = worksheet?.Id,
+            WorksheetFormId = worksheet?.FormId,
             MaterialBatch = mapper.Map<MaterialBatchReducedDto>(materialBatch),
             ArNumber = materialSampling?.ArNumber,
             GrnNumber = materialBatch.Grn.GrnNumber,

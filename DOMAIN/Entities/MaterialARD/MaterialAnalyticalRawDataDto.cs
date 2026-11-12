@@ -22,6 +22,8 @@ public class MaterialAnalyticalRawDataDto : WithAttachment
 
 public class MaterialBatchArd
 {
+    public Guid? WorksheetResponseId { get; set; }
+    public Guid? WorksheetFormId { get; set; }
     public MaterialBatchReducedDto MaterialBatch { get; set; }
     public string ArNumber { get; set; }
     public string GrnNumber { get; set; }

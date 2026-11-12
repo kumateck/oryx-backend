@@ -89,26 +89,64 @@ public class AnalyticalTestRequestRepository(
         }
 
         var result = await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            entity =>
-            {
-                var dto = mapper.Map<AnalyticalTestRequestDto>(entity);
-                dto.Assignees = entity
-                    .Assignees.Select(a => new UserDto
-                    {
-                        Id = a.UserId,
-                        FirstName = a.User.FirstName,
-                        LastName = a.User.LastName,
-                    })
-                    .ToList();
-                return dto;
-            }
-        );
-
-        return Result.Success(result);
+            query.OrderByDescending(test => test.CreatedAt).ThenByDescending(test => test.Id), page, pageSize);
+        var tests = await result.Data.ToListAsync();
+        var assignments = await GetWorksheetAnalysts(tests);
+        return Result.Success(new Paginateable<IEnumerable<AnalyticalTestRequestDto>>
+        {
+            Data = tests.Select(test => MapWithAnalysts(test, assignments)).ToList(),
+            PageIndex = result.PageIndex,
+            PageCount = result.PageCount,
+            TotalRecordCount = result.TotalRecordCount,
+            NumberOfPagesToShow = result.NumberOfPagesToShow,
+            StartPageIndex = result.StartPageIndex,
+            StopPageIndex = result.StopPageIndex
+        });
     }
+
+    private async Task<Dictionary<(Guid? Batch, Guid? Step, TestStage? Stage), List<UserDto>>> GetWorksheetAnalysts(
+        IReadOnlyCollection<AnalyticalTestRequest> tests)
+    {
+        var steps = tests.Select(test => test.ProductionActivityStepId).Distinct().ToArray();
+        if (steps.Length == 0) return [];
+
+        var assignments = await context.FormAssignees.AsNoTracking().AsSplitQuery()
+            .Where(item => item.ProductionActivityStepId.HasValue && steps.Contains(item.ProductionActivityStepId.Value)
+                && item.BatchManufacturingRecordId.HasValue && item.MaterialBatchId == null
+                && item.RoutineTrackId == null && !item.DeletedAt.HasValue)
+            .Include(item => item.FieldAssignees).ThenInclude(item => item.Assignee)
+            .OrderByDescending(item => item.CreatedAt).ThenByDescending(item => item.Id)
+            .ToListAsync();
+
+        return assignments.GroupBy(item => (item.BatchManufacturingRecordId, item.ProductionActivityStepId, item.Stage))
+            .ToDictionary(group => group.Key, group => group.First().FieldAssignees
+                .Where(field => field.Assignee is not null && !field.DeletedAt.HasValue)
+                .Select(field => field.Assignee)
+                .DistinctBy(user => user.Id)
+                .Select(ToAnalyst)
+                .ToList());
+    }
+
+    private AnalyticalTestRequestDto MapWithAnalysts(
+        AnalyticalTestRequest test, Dictionary<(Guid? Batch, Guid? Step, TestStage? Stage), List<UserDto>> assignments)
+    {
+        var dto = mapper.Map<AnalyticalTestRequestDto>(test);
+        var key = (test.BatchManufacturingRecordId, test.ProductionActivityStepId, test.Stage);
+        if (assignments.TryGetValue(key, out var analysts) ||
+            assignments.TryGetValue((test.BatchManufacturingRecordId, test.ProductionActivityStepId, null), out analysts))
+            dto.Assignees = analysts;
+        else
+            dto.Assignees = test.Assignees.Where(item => item.User is not null && !item.DeletedAt.HasValue)
+                .Select(item => ToAnalyst(item.User)).ToList();
+        return dto;
+    }
+
+    private static UserDto ToAnalyst(User user) => new()
+    {
+        Id = user.Id,
+        FirstName = user.FirstName,
+        LastName = user.LastName
+    };
 
     public async Task<Result<AnalyticalTestRequestDto>> GetAnalyticalTestRequest(Guid id)
     {
@@ -127,10 +165,11 @@ public class AnalyticalTestRequestRepository(
             .Include(s => s.AcknowledgedBy)
             .Include(s => s.TestedBy)
             .Include(s => s.IssuedBy)
+            .Include(s => s.Assignees).ThenInclude(item => item.User)
             .FirstOrDefaultAsync(atr => atr.Id == id);
         return test is null
             ? Error.NotFound("ATR.NotFound", "Analytical test request not found")
-            : mapper.Map<AnalyticalTestRequestDto>(test);
+            : MapWithAnalysts(test, await GetWorksheetAnalysts([test]));
     }
 
     public async Task<Result> UpdateAnalyticalTestRequest(
