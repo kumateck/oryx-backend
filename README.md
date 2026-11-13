@@ -4,7 +4,10 @@ Formula repair (2026-11-13): assigned, open product tests can be repaired before
 any readings or response have been saved. Preview is read-only. Apply creates an
 empty response and its audited configuration pins in the existing transaction.
 Field assignment, department, lifecycle and current repair grants still apply.
-Recalculation continues to require saved readings. No database migration is needed.
+Recalculation continues to require saved readings. Shared formula links and approvals
+do not enable governed execution on every legacy form. Approval is required when
+the worksheet explicitly places a formula in a form revision. No database migration
+is needed.
 
 
 Customer-host backend deployment (2026-10-28): after merging to backend `main`,

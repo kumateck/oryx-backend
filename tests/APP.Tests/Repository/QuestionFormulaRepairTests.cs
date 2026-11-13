@@ -186,6 +186,19 @@ public sealed class QuestionFormulaRepairTests
     }
 
     [Fact]
+    public async Task An_unrelated_governed_response_does_not_block_repairing_a_legacy_test()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        (await f.Db.Responses.SingleAsync(r => r.Id == f.Historical)).FormRevisionId = Guid.NewGuid();
+        await f.Db.SaveChangesAsync();
+        Assert.Empty((await f.Service.Context(f.Question)).Value.Blockers);
+        var legacyOnly = await f.Request(f.Candidate(false, true));
+        Assert.True((await f.Service.Apply(f.Question, legacyOnly)).IsSuccess);
+        var shared = await f.Service.Preview(f.Question, f.Candidate(true, false));
+        Assert.NotEmpty(shared.Value.Blockers);
+    }
+
+    [Fact]
     public async Task Combined_repair_pins_unanswered_history_and_invalidates_only_selected_test()
     {
         await using var f = new Fixture(); await f.Seed();

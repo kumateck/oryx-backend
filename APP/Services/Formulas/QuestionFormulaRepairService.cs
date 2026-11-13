@@ -47,11 +47,13 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         return new(question, question.Options[0], fields, responses, answers, pins);
     }
 
-    private async Task<List<string>> GlobalBlockers(Impact impact)
+    private async Task<List<string>> GlobalBlockers(Impact impact, bool updateQuestion)
     {
         var blockers = new List<string>();
-        if (await db.QuestionFormulaDefinitions.AnyAsync(q => q.QuestionId == impact.Question.Id)) blockers.Add("This question is governed. Use an approved revision and a reviewed response rebase.");
-        if (impact.Responses.Any(r => r.FormRevisionId.HasValue)) blockers.Add("A governed response uses this question. Direct legacy repair cannot change its revision.");
+        if (updateQuestion && await db.FormFieldFormulaConfigurations.AnyAsync(configuration =>
+            configuration.FormFieldRevision.QuestionId == impact.Question.Id))
+            blockers.Add("A governed worksheet uses this question. Use an approved revision and a reviewed response rebase.");
+        if (updateQuestion && impact.Responses.Any(r => r.FormRevisionId.HasValue)) blockers.Add("A governed response uses this question. Direct legacy repair cannot change its revision.");
         if (impact.Responses.Count > 2000) blockers.Add("This question needs a separately reviewed large-impact repair.");
         return blockers;
     }
@@ -134,7 +136,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         }
         return new FormulaRepairContextDto(questionId, impact.Question.Label, impact.Option.Name, LegacyFormulaRepairDefinition.Hash(impact.Option.Name),
             grants.Contains(PermissionKeys.CanRepairQuestionFormula), grants.Contains(PermissionKeys.CanRepairTestFormula),
-            impact.Fields.Select(f => f.FormSection.FormId).Distinct().Count(), impact.Responses.Count, tests, await GlobalBlockers(impact));
+            impact.Fields.Select(f => f.FormSection.FormId).Distinct().Count(), impact.Responses.Count, tests, await GlobalBlockers(impact, updateQuestion: false));
     }
 
     private static string CapturedDefinition(Impact impact, Response response, FormField field)
@@ -181,7 +183,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         if (!candidate.UpdateQuestion && candidate.Targets.Count == 0 || candidate.Targets.Count > 100 || candidate.Targets.Distinct().Count() != candidate.Targets.Count)
             return Conflict("Choose the question and/or 1–100 distinct test fields.");
         var impact = await Load(questionId); if (impact is null) return Conflict("One live formula definition is required.");
-        var blockers = await GlobalBlockers(impact);
+        var blockers = await GlobalBlockers(impact, candidate.UpdateQuestion);
         if (candidate.Definition == impact.Option.Name && candidate.UpdateQuestion && candidate.Targets.Count == 0)
             blockers.Add("The corrected configuration is identical to the current question. Change the expression or labels first.");
         var invalid = LegacyFormulaRepairDefinition.Validate(impact.Option.Name, candidate.Definition);
@@ -203,8 +205,8 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             selected.Add(row);
         }
         if (selected.GroupBy(s => (s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId))
-            .Any(group => group.Select(s => s.Atr.Id).Distinct().Count() > 1))
-            blockers.Add("Choose only one ATR per production step.");
+            .Any(group => group.Select(s => (s.Atr.Id, s.Field.FormSection.FormId)).Distinct().Count() > 1))
+            blockers.Add("Choose only one ATR and form per production step.");
         if (candidate.UpdateQuestion)
             foreach (var response in impact.Responses)
                 foreach (var field in impact.Fields.Where(f => f.FormSection.FormId == response.FormId))

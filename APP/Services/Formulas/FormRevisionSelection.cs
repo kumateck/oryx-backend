@@ -20,12 +20,9 @@ internal static class FormRevisionSelection
     public static async Task<bool> RequiresApprovedRevisionAsync(
         ApplicationDbContext context, Guid formId,
         CancellationToken cancellationToken = default) =>
-        await context.FormFields.AsNoTracking().AnyAsync(field =>
-            field.FormSection.FormId == formId &&
-            field.Question.Type == QuestionType.Formula &&
-            context.QuestionFormulaDefinitions.Any(link =>
-                link.QuestionId == field.QuestionId), cancellationToken)
-        || await context.FormFieldFormulaConfigurations.AsNoTracking().AnyAsync(configuration =>
+        // A reusable question's draft or approval does not opt every legacy worksheet into
+        // governed execution. That starts with an explicit placement in a form revision.
+        await context.FormFieldFormulaConfigurations.AsNoTracking().AnyAsync(configuration =>
             configuration.FormFieldRevision.FormRevision.FormId == formId, cancellationToken);
 
     public static async Task<IReadOnlyList<Guid>> MissingRequiredFieldsAsync(
