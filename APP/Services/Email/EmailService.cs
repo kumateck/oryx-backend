@@ -4,6 +4,7 @@ using MailKit.Security;
 using DOMAIN.Entities.Notifications;
 using Microsoft.Extensions.Logging;
 using MimeKit;
+using System.Net.Sockets;
 
 namespace APP.Services.Email;
 
@@ -58,13 +59,22 @@ public class EmailService : IEmailService
             message.Body = multipart;
 
             using var client = createClient();
+            using var originSocket = smtp.ConnectAddress is null ? null :
+                new Socket(smtp.ConnectAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             // Retain MailKit's OS-managed TLS defaults so secure TLS 1.3 endpoints can negotiate.
             client.Timeout = 30_000; // Bound inactive network reads/writes, including the SMTP greeting.
             stage = "connecting";
             using (var connectionDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
             {
                 var security = smtp.Port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable;
-                client.Connect(smtp.Host, smtp.Port, security, connectionDeadline.Token);
+                if (originSocket is null)
+                    client.Connect(smtp.Host, smtp.Port, security, connectionDeadline.Token);
+                else
+                {
+                    originSocket.ConnectAsync(smtp.ConnectAddress, smtp.Port, connectionDeadline.Token).GetAwaiter().GetResult();
+                    // Keep the configured hostname for TLS SNI and certificate validation.
+                    client.Connect(originSocket, smtp.Host, smtp.Port, security, connectionDeadline.Token);
+                }
             }
             stage = "authenticating";
             client.Authenticate(smtp.Username, smtp.Password);

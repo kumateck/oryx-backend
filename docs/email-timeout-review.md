@@ -1,5 +1,17 @@
 # Email timeout review — 2026-11-02
 
+## Verified origin connection (13 November 2026)
+
+The client SMTP hostname resolved to the web proxy. Direct connection to the
+mail origin passed certificate verification for its configured SMTP hostname
+and authenticated successfully with the existing account.
+
+An optional `SMTP_CONNECT_ADDRESS` IPv4 or IPv6 address now selects the TCP
+endpoint while `SMTP_HOST` remains the TLS hostname. Connection deadlines and
+normal certificate validation apply. Blank uses hostname DNS resolution. Set
+both in the protected customer environment and deploy through the normal backend
+pipeline. Verify TLS and authentication before selecting an origin address.
+
 ## Evidence and limits
 
 The two Entrance error reports at 08:47:47 GMT have the same request trace

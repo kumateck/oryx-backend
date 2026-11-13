@@ -1,6 +1,8 @@
+using System.Net;
+
 namespace APP.Services.Email;
 
-public record SmtpSettings(string Host, int Port, string Username, string Password, string Sender)
+public record SmtpSettings(string Host, int Port, string Username, string Password, string Sender, IPAddress ConnectAddress = null)
 {
     public static SmtpSettings FromEnvironment() => Read(Environment.GetEnvironmentVariable);
 
@@ -25,6 +27,9 @@ public record SmtpSettings(string Host, int Port, string Username, string Passwo
                 $"Email is not configured: {string.Join(", ", missing)} must be set in the API container before sending email");
 
         var port = int.TryParse(Get("SMTP_PORT"), out var parsed) ? parsed : 587;
-        return new SmtpSettings(host!, port, username!, password!, sender!);
+        var origin = Get("SMTP_CONNECT_ADDRESS");
+        if (origin is not null && !IPAddress.TryParse(origin, out _))
+            throw new InvalidOperationException("SMTP_CONNECT_ADDRESS must be an IPv4 or IPv6 address.");
+        return new SmtpSettings(host!, port, username!, password!, sender!, origin is null ? null : IPAddress.Parse(origin));
     }
 }
