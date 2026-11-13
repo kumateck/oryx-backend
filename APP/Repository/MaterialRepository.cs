@@ -609,17 +609,15 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             )
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
-        var reservedQuantities = await context
+        var activeWarehouseReservations = context
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
             .AsSplitQuery()
             .Where(r =>
                 materialIds.Contains(r.MaterialBatch.MaterialId)
                 && r.WarehouseId == warehouse.Id
                 && r.DeletedAt == null
-            )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Total = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
+            );
+        var reservedQuantities = await ReservationTotals.ByMaterialAsync(activeWarehouseReservations, context.Database.IsNpgsql());
 
         var materialDetails = paginatedResult
             .Data.Select(m => new MaterialDetailsDto
@@ -710,14 +708,14 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     "Unit of measure not found for this department."
                 );
 
-            var reservedQuantity = await context
+            var warehouseReservations = context
                 .MaterialBatchReservedQuantities.AsSplitQuery()
                 .Where(r =>
                     r.MaterialBatch.MaterialId == m.Id
                     && r.WarehouseId == warehouse.Id
                     && r.DeletedAt == null
-                )
-                .SumAsync(r => r.Quantity);
+                );
+            var reservedQuantity = await ReservationTotals.SumAsync(warehouseReservations, context.Database.IsNpgsql());
 
             materialDetails.Add(
                 new MaterialDetailsDto
@@ -820,10 +818,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             reservedQuery = reservedQuery.Where(r => r.Warehouse.DepartmentId == departmentId);
         }
 
-        var reservedQuantities = await reservedQuery
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Total = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
+        var reservedQuantities = await ReservationTotals.ByMaterialAsync(reservedQuery, context.Database.IsNpgsql());
 
         var result = raw.Select(r => new MaterialDetailsDto
             {
