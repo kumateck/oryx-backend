@@ -4,7 +4,7 @@ namespace APP.Services.Formulas;
 public sealed record FormulaRepairTarget(Guid AtrId, Guid FormFieldId);
 public sealed record FormulaRepairCandidate(string Definition, bool UpdateQuestion, List<FormulaRepairTarget> Targets);
 public sealed record ApplyFormulaRepairRequest(FormulaRepairCandidate Candidate, string PreviewToken, Guid RequestId, string Reason);
-public sealed record FormulaRepairTestDto(Guid AtrId, Guid ResponseId, Guid FormFieldId, string Label, bool Eligible, string? Blocker);
+public sealed record FormulaRepairTestDto(Guid AtrId, Guid? ResponseId, Guid FormFieldId, string Label, bool Eligible, string? Blocker);
 public sealed record FormulaRepairContextDto(Guid QuestionId, string Label, string Definition, string DefinitionHash,
     bool CanRepairQuestion, bool CanRepairTests, int FormsUsingQuestion, int ResponsesAffected,
     List<FormulaRepairTestDto> Tests, List<string> Blockers);

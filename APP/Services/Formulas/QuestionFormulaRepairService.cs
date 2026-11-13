@@ -22,7 +22,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
 {
     private sealed record Impact(Question Question, QuestionOption Option, List<FormField> Fields,
         List<Response> Responses, List<FormResponse> Answers, List<LegacyFormulaConfigurationPin> Pins);
-    private sealed record Selected(FormulaRepairTarget Target, Response Response, FormField Field);
+    private sealed record Selected(FormulaRepairTarget Target, AnalyticalTestRequest Atr, Response? Response, FormField Field);
     private sealed record Plan(Impact Impact, List<Selected> Selected, FormulaRepairPreviewDto Preview, string Evidence);
     private static Error Denied() => Error.Forbidden("FormulaRepair.Permission", "Your current permissions, department or field assignment do not allow this repair.");
     private static Error Conflict(string text) => Error.Conflict("FormulaRepair.Blocked", text);
@@ -57,7 +57,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>Repair permission never widens record access: department, test permissions and field assignment still apply.</summary>
-    private async Task<bool> CanAccess(AnalyticalTestRequest atr, FormField field, Response response, HashSet<string> grants)
+    private async Task<bool> CanAccess(AnalyticalTestRequest atr, FormField field, HashSet<string> grants)
     {
         if (!grants.Contains(PermissionKeys.CanStartProductTest) ||
             !(grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequests) || grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing))) return false;
@@ -68,16 +68,28 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             .Select(p => p.Product.DepartmentId).SingleOrDefaultAsync();
         if (actor.Type != DepartmentType.NonProduction && productDepartment != department) return false;
         return await db.FormFieldAssignees.AnyAsync(a => a.FormFieldId == field.Id && a.AssigneeId == identity.UserId &&
-            a.FormAssignee.FormId == response.FormId && a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
+            a.FormAssignee.FormId == field.FormSection.FormId && a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
             a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId && a.FormAssignee.MaterialBatchId == null && a.FormAssignee.RoutineTrackId == null);
     }
 
-    private async Task<string?> Closed(Response response, AnalyticalTestRequest atr)
+    private async Task<string?> Closed(Selected selected)
     {
-        if (response.DeletedAt.HasValue || response.CheckedAt.HasValue || response.Approved || response.Rejected || response.FormRevisionId.HasValue)
-            return "The response is closed, deleted or governed.";
+        var atr = selected.Atr;
+        var response = selected.Response;
+        var field = selected.Field;
         if (atr.ReleasedAt.HasValue || atr.Status is not (AnalyticalTestStatus.Testing or AnalyticalTestStatus.Assigned))
             return "Only assigned or testing ATRs can be repaired.";
+        if (response is null)
+        {
+            if (await db.Responses.IgnoreQueryFilters().AnyAsync(r =>
+                r.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
+                r.ProductionActivityStepId == atr.ProductionActivityStepId))
+                return "An existing response for this production step does not match the test.";
+            var revision = await FormRevisionSelection.ForNewResponseAsync(db, field.FormSection.FormId);
+            return revision.IsFailure || revision.Value.HasValue ? "This form requires a governed response." : null;
+        }
+        if (response.DeletedAt.HasValue || response.CheckedAt.HasValue || response.Approved || response.Rejected || response.FormRevisionId.HasValue)
+            return "The response is closed, deleted or governed.";
         if (await db.ResponseApprovals.AnyAsync(a => a.ResponseId == response.Id) ||
             await db.ResponseFormulaSubmissionSets.AnyAsync(s => s.ResponseId == response.Id) ||
             await db.ResponseFormulaSnapshots.AnyAsync(s => s.ResponseId == response.Id))
@@ -86,7 +98,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>Resolves ATR, response and placement on the server; a browser-supplied response ID is never trusted.</summary>
-    private async Task<(Selected Row, AnalyticalTestRequest Atr)?> Resolve(Impact impact, FormulaRepairTarget target, HashSet<string> grants, AnalyticalTestRequest? known = null)
+    private async Task<Selected?> Resolve(Impact impact, FormulaRepairTarget target, HashSet<string> grants, AnalyticalTestRequest? known = null)
     {
         var field = impact.Fields.SingleOrDefault(f => f.Id == target.FormFieldId && !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue);
         var atr = known ?? await db.AnalyticalTestRequests.SingleOrDefaultAsync(a => a.Id == target.AtrId);
@@ -95,8 +107,8 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         if (!formIds.Contains(field.FormSection.FormId)) return null;
         var responses = impact.Responses.Where(r => r.FormId == field.FormSection.FormId && !r.DeletedAt.HasValue &&
             r.BatchManufacturingRecordId == atr.BatchManufacturingRecordId && r.ProductionActivityStepId == atr.ProductionActivityStepId).ToList();
-        if (responses.Count != 1 || !await CanAccess(atr, field, responses[0], grants)) return null;
-        return (new(target, responses[0], field), atr);
+        if (responses.Count > 1 || !await CanAccess(atr, field, grants)) return null;
+        return new(target, atr, responses.SingleOrDefault(), field);
     }
 
     public async Task<Result<FormulaRepairContextDto>> Context(Guid questionId)
@@ -105,17 +117,20 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         if (!CanRead(grants)) return Denied();
         var impact = await Load(questionId); if (impact is null) return Conflict("One live formula question with one definition is required.");
         var tests = new List<FormulaRepairTestDto>();
-        var bmrIds = impact.Responses.Where(r => r.BatchManufacturingRecordId.HasValue).Select(r => r.BatchManufacturingRecordId!.Value).Distinct().ToList();
-        var atrs = await db.AnalyticalTestRequests.Where(a => bmrIds.Contains(a.BatchManufacturingRecordId)).ToListAsync();
+        var fieldIds = impact.Fields.Where(f => !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue).Select(f => f.Id).ToList();
+        var assignments = db.FormFieldAssignees.Where(a => a.AssigneeId == identity.UserId && fieldIds.Contains(a.FormFieldId));
+        var atrs = await db.AnalyticalTestRequests.Where(atr => assignments.Any(a =>
+            a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
+            a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId)).ToListAsync();
         var placements = impact.Fields.Where(f => !f.DeletedAt.HasValue).ToList();
         foreach (var atr in atrs.OrderBy(a => a.ArNumber))
         foreach (var field in placements)
         {
             var resolved = await Resolve(impact, new(atr.Id, field.Id), grants, atr);
             if (resolved is not { } found) continue;
-            var blocker = await Closed(found.Row.Response, atr);
+            var blocker = await Closed(found);
             var section = string.IsNullOrWhiteSpace(field.FormSection.Name) ? "Formula field" : field.FormSection.Name.Trim();
-            tests.Add(new(atr.Id, found.Row.Response.Id, field.Id, $"{atr.ArNumber ?? "ATR without AR number"} · {section}", blocker is null, blocker));
+            tests.Add(new(atr.Id, found.Response?.Id, field.Id, $"{atr.ArNumber ?? "ATR without AR number"} · {section}", blocker is null, blocker));
         }
         return new FormulaRepairContextDto(questionId, impact.Question.Label, impact.Option.Name, LegacyFormulaRepairDefinition.Hash(impact.Option.Name),
             grants.Contains(PermissionKeys.CanRepairQuestionFormula), grants.Contains(PermissionKeys.CanRepairTestFormula),
@@ -175,19 +190,21 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         var selected = new List<Selected>(); var missing = new List<string>(); var labels = new List<FormulaRepairPreviewTestDto>();
         foreach (var target in candidate.Targets)
         {
-            var resolved = await Resolve(impact, target, grants); if (resolved is not { } found) return Denied();
-            var (row, atr) = found;
-            var closed = await Closed(row.Response, atr); if (closed is not null) blockers.Add(closed);
-            var captured = CapturedDefinition(impact, row.Response, row.Field);
+            var row = await Resolve(impact, target, grants); if (row is null) return Denied();
+            var closed = await Closed(row); if (closed is not null) blockers.Add(closed);
+            var captured = row.Response is { } response ? CapturedDefinition(impact, response, row.Field) : impact.Option.Name;
             var compatibility = LegacyFormulaRepairDefinition.Validate(captured, candidate.Definition);
             if (compatibility is not null) blockers.Add(compatibility);
-            var answer = LatestAnswer(impact, row.Response.Id, row.Field.Id);
+            var answer = row.Response is { } saved ? LatestAnswer(impact, saved.Id, row.Field.Id) : null;
             var complete = invalid is null && APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, QuestionType.Formula, candidate.Definition);
-            var label = $"{atr.ArNumber ?? "ATR without AR number"} · {row.Field.FormSection.Name?.Trim() ?? "Formula field"}";
+            var label = $"{row.Atr.ArNumber ?? "ATR without AR number"} · {row.Field.FormSection.Name?.Trim() ?? "Formula field"}";
             if (!complete) missing.Add($"{label}: complete and save all required readings, then recalculate.");
             labels.Add(new(target.AtrId, target.FormFieldId, label, answer is not null, captured != candidate.Definition, !complete));
             selected.Add(row);
         }
+        if (selected.GroupBy(s => (s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId))
+            .Any(group => group.Select(s => s.Atr.Id).Distinct().Count() > 1))
+            blockers.Add("Choose only one ATR per production step.");
         if (candidate.UpdateQuestion)
             foreach (var response in impact.Responses)
                 foreach (var field in impact.Fields.Where(f => f.FormSection.FormId == response.FormId))
@@ -199,6 +216,11 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         var responseIds = impact.Responses.Select(r => r.Id).ToList();
         var evidence = JsonSerializer.Serialize(new { questionId, actorId = identity.UserId, candidate, question = new { impact.Option.Name, impact.Question.UpdatedAt, impact.Question.DeletedAt },
             fields = impact.Fields.OrderBy(f => f.Id).Select(f => new { f.Id, f.FormSectionId, f.FormSection.FormId, f.DeletedAt }),
+            targets = selected.OrderBy(s => s.Target.AtrId).ThenBy(s => s.Field.Id).Select(s => new
+            {
+                s.Target, s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId, s.Atr.Status,
+                s.Atr.ReleasedAt, s.Atr.ChemicalArdId, s.Atr.MicrobialArdId, ResponseId = s.Response?.Id
+            }),
             responses = impact.Responses.OrderBy(r => r.Id).Select(r => new { r.Id, r.FormId, r.FormRevisionId, r.CheckedAt, r.Approved, r.Rejected, r.DeletedAt, r.UpdatedAt }),
             answers = impact.Answers.OrderBy(a => a.Id).Select(a => new { a.Id, a.ResponseId, a.FormFieldId, a.Value, a.DeletedAt, a.UpdatedAt }),
             pins = impact.Pins.OrderBy(p => p.Id), approvals = await db.ResponseApprovals.Where(a => responseIds.Contains(a.ResponseId)).OrderBy(a => a.Id).Select(a => new { a.Id, a.ResponseId, a.Status }).ToListAsync(),
@@ -206,7 +228,8 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             snapshots = await db.ResponseFormulaSnapshots.Where(s => responseIds.Contains(s.ResponseId)).OrderBy(s => s.Id).Select(s => s.Id).ToListAsync() });
         var captures = candidate.UpdateQuestion
             ? impact.Responses.Sum(r => impact.Fields.Count(f => f.FormSection.FormId == r.FormId && !impact.Pins.Any(p => p.ResponseId == r.Id && p.FormFieldId == f.Id)))
-            : selected.Count(s => !impact.Pins.Any(p => p.ResponseId == s.Response.Id && p.FormFieldId == s.Field.Id));
+                + selected.Count(s => s.Response is null)
+            : selected.Count(s => !impact.Pins.Any(p => p.ResponseId == s.Response?.Id && p.FormFieldId == s.Field.Id));
         return new Plan(impact, selected, new(LegacyFormulaRepairDefinition.Hash(evidence), impact.Option.Name, candidate.Definition, captures,
             selected.Count, missing, blockers.Distinct().ToList(), labels), evidence);
     }
