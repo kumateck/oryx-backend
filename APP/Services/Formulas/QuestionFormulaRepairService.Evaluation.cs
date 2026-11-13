@@ -22,13 +22,14 @@ public sealed partial class QuestionFormulaRepairService
         var field = await db.FormFields.AsNoTracking().SingleOrDefaultAsync(f => f.Id == target.FormFieldId);
         if (field is null) return Conflict("Formula field not found.");
         var impact = await Load(field.QuestionId); if (impact is null) return Conflict("Formula question unavailable.");
-        if (await Resolve(impact, target, grants) is not { } found) return Denied();
-        var (selected, atr) = found;
-        var closed = await Closed(selected.Response, atr); if (closed is not null) return Conflict(closed);
-        var pin = impact.Pins.SingleOrDefault(p => p.ResponseId == selected.Response.Id && p.FormFieldId == field.Id);
+        var selected = await Resolve(impact, target, grants);
+        if (selected is null) return Denied();
+        var closed = await Closed(selected); if (closed is not null) return Conflict(closed);
+        if (selected.Response is not { } response) return Conflict("Complete and save all required readings before recalculating.");
+        var pin = impact.Pins.SingleOrDefault(p => p.ResponseId == response.Id && p.FormFieldId == field.Id);
         if (pin is null || !pin.RequiresRecalculation || pin.DefinitionHash != expectedConfigurationHash)
             return Error.Conflict("FormulaRepair.StaleConfiguration", "The repair configuration changed. Reload the test.");
-        var answer = LatestAnswer(impact, selected.Response.Id, field.Id);
+        var answer = LatestAnswer(impact, response.Id, field.Id);
         if (answer is null || !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer.Value, QuestionType.Formula, pin.Definition))
             return Conflict("Complete and save all required readings before recalculating.");
         var inputHash = LegacyFormulaRepairDefinition.InputHash(answer.Value);
@@ -71,10 +72,11 @@ public sealed partial class QuestionFormulaRepairService
         // Recheck everything the result depends on; any change means the analyst must reload and retry.
         grants = await Grants();
         if (!grants.Contains(PermissionKeys.CanExecuteFormulaResponse)) return Denied();
-        var freshResponse = await db.Responses.AsNoTracking().SingleAsync(r => r.Id == selected.Response.Id);
-        var freshAtr = await db.AnalyticalTestRequests.AsNoTracking().SingleAsync(a => a.Id == atr.Id);
-        if (!await CanAccess(freshAtr, selected.Field, freshResponse, grants)) return Denied();
-        closed = await Closed(freshResponse, freshAtr); if (closed is not null) return Conflict(closed);
+        var freshResponse = await db.Responses.AsNoTracking().SingleAsync(r => r.Id == response.Id);
+        var freshAtr = await db.AnalyticalTestRequests.AsNoTracking().SingleAsync(a => a.Id == selected.Atr.Id);
+        if (!await CanAccess(freshAtr, selected.Field, grants)) return Denied();
+        closed = await Closed(selected with { Atr = freshAtr, Response = freshResponse });
+        if (closed is not null) return Conflict(closed);
         var latestPin = (await LegacyFormulaConfigurationReader.Latest(db, [freshResponse.Id])).SingleOrDefault(p => p.FormFieldId == field.Id);
         var latestValue = await db.FormResponses.AsNoTracking().Where(a => a.ResponseId == freshResponse.Id && a.FormFieldId == field.Id && !a.DeletedAt.HasValue)
             .OrderByDescending(a => a.CreatedAt).Select(a => a.Value).FirstOrDefaultAsync();

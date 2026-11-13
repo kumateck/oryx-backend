@@ -1,5 +1,6 @@
 using System.Data;
 using System.Text.Json;
+using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Formulas;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -35,7 +36,8 @@ public sealed partial class QuestionFormulaRepairService
             if (plan.Preview.Blockers.Count > 0) return Conflict(string.Join(" ", plan.Preview.Blockers));
             if (plan.Preview.PreviewToken != request.PreviewToken) return Error.Conflict("FormulaRepair.StalePreview", "The question, tests or permissions changed since the preview. Review a fresh preview.");
             var now = DateTime.UtcNow;
-            var invalidated = plan.Selected.Select(s => LatestAnswer(plan.Impact, s.Response.Id, s.Field.Id)).OfType<DOMAIN.Entities.Forms.FormResponse>()
+            var invalidated = plan.Selected.Where(s => s.Response is not null)
+                .Select(s => LatestAnswer(plan.Impact, s.Response!.Id, s.Field.Id)).OfType<FormResponse>()
                 .Select(a => new { answerId = a.Id, a.ResponseId, a.FormFieldId, inputHash = LegacyFormulaConfigurationReader.SafeInputHash(a.Value) }).ToList();
             var evidence = JsonSerializer.Serialize(new { preImage = JsonDocument.Parse(plan.Evidence).RootElement, targets = plan.Preview.Tests,
                 plan.Preview.MissingInputs, invalidatedResults = invalidated, request.RequestId,
@@ -46,7 +48,7 @@ public sealed partial class QuestionFormulaRepairService
             foreach (var response in plan.Impact.Responses)
             foreach (var field in plan.Impact.Fields.Where(f => f.FormSection.FormId == response.FormId))
             {
-                var selected = plan.Selected.Any(s => s.Response.Id == response.Id && s.Field.Id == field.Id);
+                var selected = plan.Selected.Any(s => s.Response?.Id == response.Id && s.Field.Id == field.Id);
                 if (!request.Candidate.UpdateQuestion && !selected) continue;
                 var previous = plan.Impact.Pins.SingleOrDefault(p => p.ResponseId == response.Id && p.FormFieldId == field.Id);
                 // Capture what the test used before this repair, so a shared-question change never alters its history.
@@ -55,6 +57,27 @@ public sealed partial class QuestionFormulaRepairService
                 if (selected) db.LegacyFormulaConfigurationPins.Add(Pin(response.Id, field.Id, (previous?.Sequence ?? 1) + 1,
                     request.RequestId, request.Candidate.Definition, true, now));
             }
+            foreach (var targets in plan.Selected.Where(s => s.Response is null).GroupBy(s => s.Atr.Id))
+            {
+                var first = targets.First();
+                var draft = new Response
+                {
+                    Id = Guid.NewGuid(), FormId = first.Field.FormSection.FormId,
+                    BatchManufacturingRecordId = first.Atr.BatchManufacturingRecordId,
+                    ProductionActivityStepId = first.Atr.ProductionActivityStepId,
+                    CreatedById = identity.UserId,
+                };
+                db.Responses.Add(draft);
+                var fields = request.Candidate.UpdateQuestion
+                    ? plan.Impact.Fields.Where(field => field.FormSection.FormId == draft.FormId).ToList()
+                    : targets.Select(target => target.Field).ToList();
+                foreach (var field in fields)
+                    db.LegacyFormulaConfigurationPins.Add(Pin(draft.Id, field.Id, 1, request.RequestId, plan.Impact.Option.Name, false, now));
+                foreach (var target in targets)
+                {
+                    db.LegacyFormulaConfigurationPins.Add(Pin(draft.Id, target.Field.Id, 2, request.RequestId, request.Candidate.Definition, true, now));
+                }
+            }
             if (request.Candidate.UpdateQuestion)
             {
                 plan.Impact.Option.Name = request.Candidate.Definition;
@@ -62,7 +85,12 @@ public sealed partial class QuestionFormulaRepairService
                 plan.Impact.Question.LastUpdatedById = identity.UserId; plan.Impact.Question.UpdatedAt = now;
             }
             // Permissions are rechecked immediately before the write, inside the locked transaction.
-            if (!Covers(await Grants(), request.Candidate)) { db.ChangeTracker.Clear(); return Denied(); }
+            grants = await Grants();
+            if (!CanRead(grants) || !Covers(grants, request.Candidate))
+            { db.ChangeTracker.Clear(); return Denied(); }
+            foreach (var target in plan.Selected)
+                if (!await CanAccess(target.Atr, target.Field, grants))
+                { db.ChangeTracker.Clear(); return Denied(); }
             await db.SaveChangesAsync(); if (transaction is not null) await transaction.CommitAsync();
             return await Receipt(request.RequestId, false);
         }
@@ -108,7 +136,7 @@ public sealed partial class QuestionFormulaRepairService
         await LegacyFormulaConfigurationReader.LockQuestion(db, questionId, shared: false);
         await db.Database.ExecuteSqlRawAsync("""
             LOCK TABLE "Questions", "QuestionOptions", "FormFields", "FormSections", "Responses", "FormResponses",
-              "QuestionFormulaDefinitions", "FormFieldFormulaConfigurations", "ResponseFormulaSnapshots", "ResponseFormulaSubmissionSets",
+              "Forms", "FormRevisions", "QuestionFormulaDefinitions", "FormFieldFormulaConfigurations", "ResponseFormulaSnapshots", "ResponseFormulaSubmissionSets",
               "ResponseApprovals", "AnalyticalTestRequests", "FormFieldAssignees", "FormAssignees", "QuestionFormulaRepairs",
               "LegacyFormulaConfigurationPins", "LegacyFormulaRepairEvaluations"
             IN SHARE ROW EXCLUSIVE MODE;

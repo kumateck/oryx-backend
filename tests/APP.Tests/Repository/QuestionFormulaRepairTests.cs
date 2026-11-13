@@ -7,6 +7,7 @@ using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Products;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
@@ -68,7 +69,7 @@ public sealed class QuestionFormulaRepairTests
             Db = new(options.Options, Actor);
             Service = new(Db, Actor, Calculation);
         }
-        public async Task Seed()
+        public async Task Seed(bool includeOpenResponse = true)
         {
             var role = Guid.NewGuid(); var form = Guid.NewGuid(); var section = Guid.NewGuid(); var product = Guid.NewGuid();
             var batch = Guid.NewGuid(); var bmr = Guid.NewGuid(); var step = Guid.NewGuid(); var ard = Guid.NewGuid();
@@ -88,10 +89,14 @@ public sealed class QuestionFormulaRepairTests
             Db.Questions.Add(new Question { Id = Question, Label = "Assay", Type = QuestionType.Formula });
             Db.QuestionOptions.Add(new QuestionOption { Id = Guid.NewGuid(), QuestionId = Question, Name = Before });
             Db.FormFields.Add(new FormField { Id = Field, FormSectionId = section, QuestionId = Question });
-            Db.Responses.AddRange(new Response { Id = Response, FormId = form, BatchManufacturingRecordId = bmr, ProductionActivityStepId = step, CreatedById = Actor.UserId },
-                new Response { Id = Historical, FormId = form, CheckedAt = DateTime.UtcNow, Approved = true });
+            if (includeOpenResponse)
+                Db.Responses.Add(new Response { Id = Response, FormId = form, BatchManufacturingRecordId = bmr, ProductionActivityStepId = step, CreatedById = Actor.UserId });
+            Db.Responses.Add(new Response { Id = Historical, FormId = form, CheckedAt = DateTime.UtcNow, Approved = true });
             Db.Products.Add(new Product { Id = product, Name = "Product", DepartmentId = Actor.DepartmentId!.Value });
             Db.ProductionScheduleProducts.Add(new ProductionScheduleProduct { Id = batch, ProductId = product });
+            Db.ProductionActivitySteps.Add(new ProductionActivityStep { Id = step });
+            Db.BatchManufacturingRecords.Add(new BatchManufacturingRecord
+            { Id = bmr, ProductionScheduleProductId = batch, ProductionActivityStepId = step, BatchNumber = "TEST" });
             Db.ProductAnalyticalRawData.Add(new DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData { Id = ard, FormId = form });
             Db.AnalyticalTestRequests.Add(new AnalyticalTestRequest { Id = Atr, ProductionScheduleProductId = batch, BatchManufacturingRecordId = bmr,
                 ProductionActivityStepId = step, ChemicalArdId = ard, ArNumber = "AR-TEST", Status = AnalyticalTestStatus.Testing });
@@ -108,6 +113,89 @@ public sealed class QuestionFormulaRepairTests
             return new(candidate, preview.Value.PreviewToken, Guid.NewGuid(), "Correct a confirmed formula configuration error.");
         }
         public ValueTask DisposeAsync() => Db.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Test_repair_before_any_readings_creates_only_an_empty_draft_and_audited_configuration()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+
+        var context = await f.Service.Context(f.Question);
+        var test = Assert.Single(context.Value.Tests);
+        Assert.True(test.Eligible);
+        Assert.Null(test.ResponseId);
+        Assert.Single(f.Db.Responses);
+        var candidate = f.Candidate(false, true);
+        var request = await f.Request(candidate);
+        Assert.Single(f.Db.Responses);
+        Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
+
+        var draft = await f.Db.Responses.SingleAsync(r => r.Id != f.Historical);
+        Assert.Empty(f.Db.FormResponses);
+        Assert.Null(draft.CheckedAt);
+        Assert.False(draft.Approved);
+        Assert.Equal(Before, (await f.Db.QuestionOptions.SingleAsync()).Name);
+        var pin = Assert.Single(await LegacyFormulaConfigurationReader.Latest(f.Db, [draft.Id]));
+        Assert.Equal(After, pin.Definition);
+        Assert.True(pin.RequiresRecalculation);
+        Assert.Equal(draft.Id, Assert.Single((await f.Service.Apply(f.Question, request)).Value.ResponseIds));
+        Assert.Equal(2, await f.Db.Responses.CountAsync());
+        Assert.Single(f.Db.QuestionFormulaRepairs);
+        Assert.True((await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash)).IsFailure);
+    }
+
+    [Fact]
+    public async Task Unsaved_test_repair_rechecks_state_assignment_permission_and_preview_before_creating_a_draft()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+        var request = await f.Request(f.Candidate(false, true));
+        var atr = await f.Db.AnalyticalTestRequests.SingleAsync();
+        atr.Status = AnalyticalTestStatus.TestTaken;
+        await f.Db.SaveChangesAsync();
+        Assert.True((await f.Service.Apply(f.Question, request)).IsFailure);
+        Assert.Single(f.Db.Responses);
+        atr.Status = AnalyticalTestStatus.Testing;
+        await f.Db.SaveChangesAsync();
+        request = await f.Request(f.Candidate(false, true));
+        var assignment = await f.Db.FormFieldAssignees.SingleAsync();
+        assignment.AssigneeId = Guid.NewGuid();
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(ErrorType.Forbidden, Assert.Single((await f.Service.Apply(f.Question, request)).Errors).Type);
+        assignment.AssigneeId = f.Actor.UserId;
+        await f.Db.SaveChangesAsync();
+        request = await f.Request(f.Candidate(false, true));
+        var claim = await f.Db.RoleClaims.SingleAsync(c => c.ClaimValue == PermissionKeys.CanRepairTestFormula);
+        f.Db.RoleClaims.Remove(claim);
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(ErrorType.Forbidden, Assert.Single((await f.Service.Apply(f.Question, request)).Errors).Type);
+        Assert.Single(f.Db.Responses);
+        Assert.Empty(f.Db.QuestionFormulaRepairs);
+    }
+
+    [Fact]
+    public async Task A_draft_created_after_preview_requires_a_fresh_review()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+        var request = await f.Request(f.Candidate(false, true));
+        var atr = await f.Db.AnalyticalTestRequests.SingleAsync();
+        f.Db.Responses.Add(new Response { Id = f.Response, FormId = (await f.Db.Forms.SingleAsync()).Id,
+            BatchManufacturingRecordId = atr.BatchManufacturingRecordId, ProductionActivityStepId = atr.ProductionActivityStepId });
+        await f.Db.SaveChangesAsync();
+        Assert.Equal("FormulaRepair.StalePreview", (await f.Service.Apply(f.Question, request)).Error.Code);
+        Assert.Empty(f.Db.QuestionFormulaRepairs);
+    }
+
+    [Fact]
+    public async Task An_unrelated_governed_response_does_not_block_repairing_a_legacy_test()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        (await f.Db.Responses.SingleAsync(r => r.Id == f.Historical)).FormRevisionId = Guid.NewGuid();
+        await f.Db.SaveChangesAsync();
+        Assert.Empty((await f.Service.Context(f.Question)).Value.Blockers);
+        var legacyOnly = await f.Request(f.Candidate(false, true));
+        Assert.True((await f.Service.Apply(f.Question, legacyOnly)).IsSuccess);
+        var shared = await f.Service.Preview(f.Question, f.Candidate(true, false));
+        Assert.NotEmpty(shared.Value.Blockers);
     }
 
     [Fact]
@@ -278,6 +366,46 @@ public sealed class QuestionFormulaRepairTests
         (await f.Db.FormFieldAssignees.SingleAsync()).AssigneeId = Guid.NewGuid(); await f.Db.SaveChangesAsync();
         Assert.Equal(ErrorType.Forbidden, (await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash)).Error.Type);
         Assert.Empty(f.Db.LegacyFormulaRepairEvaluations);
+    }
+
+    [PostgresFact]
+    public async Task Postgres_repair_can_create_an_empty_test_draft_atomically()
+    {
+        var admin = new Npgsql.NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ORYX_FORMULA_REPAIR_TEST_CONNECTION"));
+        var database = "oryx_formula_unsaved_" + Guid.NewGuid().ToString("N");
+        await using var connection = new Npgsql.NpgsqlConnection(admin.ConnectionString);
+        await connection.OpenAsync();
+        await using (var create = new Npgsql.NpgsqlCommand($"CREATE DATABASE \"{database}\"", connection))
+            await create.ExecuteNonQueryAsync();
+        var target = new Npgsql.NpgsqlConnectionStringBuilder(admin.ConnectionString) { Database = database }.ConnectionString;
+        try
+        {
+            await using var f = new Fixture(target);
+            await f.Db.Database.EnsureCreatedAsync();
+            await using (var seed = await f.Db.Database.BeginTransactionAsync())
+            {
+                await f.Db.Database.ExecuteSqlRawAsync("SET LOCAL session_replication_role = replica");
+                await f.Seed(includeOpenResponse: false);
+                await seed.CommitAsync();
+            }
+            var test = Assert.Single((await f.Service.Context(f.Question)).Value.Tests);
+            Assert.Null(test.ResponseId);
+            var request = await f.Request(f.Candidate(false, true));
+            var result = await f.Service.Apply(f.Question, request);
+            Assert.True(result.IsSuccess, result.Error?.Description);
+            var draft = await f.Db.Responses.SingleAsync(r => r.Id != f.Historical);
+            Assert.Equal(draft.Id, Assert.Single(result.Value.ResponseIds));
+            Assert.Empty(f.Db.FormResponses);
+            Assert.Equal(2, await f.Db.LegacyFormulaConfigurationPins.CountAsync());
+            Assert.True((await f.Service.Apply(f.Question, request)).Value.AlreadyApplied);
+            Assert.Equal(2, await f.Db.Responses.CountAsync());
+        }
+        finally
+        {
+            Npgsql.NpgsqlConnection.ClearAllPools();
+            await using var drop = new Npgsql.NpgsqlCommand($"DROP DATABASE \"{database}\" WITH (FORCE)", connection);
+            await drop.ExecuteNonQueryAsync();
+        }
     }
 
     [PostgresFact]
