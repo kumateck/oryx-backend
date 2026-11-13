@@ -1,3 +1,4 @@
+using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Materials;
 using INFRASTRUCTURE.Context;
@@ -19,12 +20,8 @@ public class ReservedMaterialStockResolver(ApplicationDbContext dbContext) :
             return reservedByMaterialId.GetValueOrDefault(source.Id, 0);
         }
 
-        return dbContext.MaterialBatchReservedQuantities
-                .AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(m => m.Warehouse)
-                .Include(materialBatchReservedQuantity => materialBatchReservedQuantity.UoM)
-                .Where(m => m.MaterialBatch.MaterialId == source.Id && !m.DeletedAt.HasValue && m.ReleasedAt == null)
-                .Sum(m => m.Quantity);
+        var reservations = dbContext.MaterialBatchReservedQuantities.IgnoreQueryFilters()
+            .Where(m => m.MaterialBatch.MaterialId == source.Id && !m.DeletedAt.HasValue && m.ReleasedAt == null);
+        return ReservationTotals.Sum(reservations, dbContext.Database.IsNpgsql());
     }
 }
