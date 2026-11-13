@@ -43,10 +43,54 @@ public sealed class FormRevisionSelectionCompatibilityTests
     }
 
     [Fact]
-    public async Task GovernedWorksheet_AllowsOrdinaryDraftButRequiresApprovalForFormulaAndFinalization()
+    public async Task LinkedQuestionWithoutFormRevision_UsesLegacyDraftAndFinalization()
     {
         await using var context = CreateContext();
-        await VerifyPendingApprovalAsync(context, Guid.NewGuid());
+        await VerifyLegacyDraftAsync(context, Guid.NewGuid());
+    }
+
+    [RepairPostgresFact]
+    public async Task Published_question_without_a_form_revision_does_not_require_worksheet_approval()
+    {
+        var actorId = Guid.NewGuid();
+        var approverId = Guid.NewGuid();
+        var user = new RevisionSelectionCurrentUser();
+        await using var database = new FormulaTriggerDatabase();
+        await database.CreateAsync(user, actorId, approverId);
+        await using var context = database.Open(user);
+        var (draftId, formId, _, formulaFieldId) = await VerifyLegacyDraftAsync(context, actorId);
+        await ApproveFormulaAsync(context, actorId, approverId);
+        Assert.Empty(context.FormRevisions);
+        var request = RequestFor(formId, formulaFieldId);
+        request.ResponseId = draftId;
+        var result = await CreateRepository(context).SaveFormResponseDraft(request, actorId);
+        Assert.True(result.IsSuccess);
+        Assert.Null((await context.Responses.SingleAsync()).FormRevisionId);
+    }
+
+    [Fact]
+    public async Task Explicit_formula_placement_still_requires_an_approved_form_revision()
+    {
+        await using var context = CreateContext();
+        var setup = CreateMixedForm();
+        context.AddRange(setup.Form, setup.Section, setup.ShortAnswerField, setup.LegacyFormulaField);
+        context.FormFieldFormulaConfigurations.Add(new FormFieldFormulaConfiguration
+        {
+            Id = Guid.NewGuid(), BindingsJson = "[]", ResultTargetsJson = "[]", DisplayPolicyJson = "{}",
+            ConfigurationHash = new string('a', 64), MethodReference = "assay",
+            FormFieldRevision = new FormFieldRevision
+            {
+                Id = Guid.NewGuid(), FormFieldId = setup.LegacyFormulaField.Id, QuestionId = setup.LegacyFormulaField.QuestionId,
+                PlacementKey = "assay", FieldHash = new string('b', 64),
+                FormRevision = new FormRevision { Id = Guid.NewGuid(), FormId = setup.Form.Id,
+                    Status = FormRevisionStatus.Draft, ContentHash = new string('c', 64) }
+            }
+        });
+        await context.SaveChangesAsync();
+        var result = await CreateRepository(context).SaveFormResponseDraft(
+            RequestFor(setup.Form.Id, setup.LegacyFormulaField.Id), Guid.NewGuid());
+        Assert.Equal("FormulaRuntime.ConfigurationUnavailable", result.Error.Code);
+        Assert.Empty(context.Responses);
     }
 
     [RepairPostgresFact]
@@ -59,7 +103,7 @@ public sealed class FormRevisionSelectionCompatibilityTests
         await using var database = new FormulaTriggerDatabase();
         await database.CreateAsync(user, actorId, reviewerId, approverId);
         await using var context = database.Open(user);
-        var (draftId, formId, textFieldId, formulaFieldId) = await VerifyPendingApprovalAsync(context, actorId);
+        var (draftId, formId, textFieldId, formulaFieldId) = await VerifyLegacyDraftAsync(context, actorId);
         var formulaRevisionId = await ApproveFormulaAsync(context, actorId, approverId);
         var revisions = new FormRevisionService(context, new RuntimeFormulaClient());
         var placement = new FormulaPlacementDraftRequest(formulaFieldId, "assay", formulaRevisionId,
@@ -99,7 +143,7 @@ public sealed class FormRevisionSelectionCompatibilityTests
         Assert.Equal(formulaReadings, answers[formulaFieldId].Value);
     }
 
-    private static async Task<(Guid DraftId, Guid FormId, Guid TextFieldId, Guid FormulaFieldId)> VerifyPendingApprovalAsync(
+    private static async Task<(Guid DraftId, Guid FormId, Guid TextFieldId, Guid FormulaFieldId)> VerifyLegacyDraftAsync(
         ApplicationDbContext context, Guid actorId)
     {
         var setup = CreateMixedForm();
@@ -121,24 +165,22 @@ public sealed class FormRevisionSelectionCompatibilityTests
         var repository = CreateRepository(context);
         var formulaRequest = RequestFor(setup.Form.Id, setup.LegacyFormulaField.Id);
         var formulaFirst = await repository.SaveFormResponseDraft(formulaRequest, actorId);
-        Assert.Equal("FormulaRuntime.ConfigurationUnavailable", formulaFirst.Error.Code);
-        Assert.Empty(context.Responses);
+        Assert.True(formulaFirst.IsSuccess);
+        Assert.Null((await context.Responses.SingleAsync()).FormRevisionId);
 
         var textRequest = RequestFor(setup.Form.Id, setup.ShortAnswerField.Id);
-        var denied = await repository.SaveFormResponseDraft(textRequest, Guid.NewGuid());
-        Assert.Equal("Response.DraftPermission", denied.Error.Code);
-        Assert.Empty(context.Responses);
-
+        textRequest.ResponseId = formulaFirst.Value;
         var draft = await repository.SaveFormResponseDraft(textRequest, actorId);
         Assert.True(draft.IsSuccess);
         formulaRequest.ResponseId = draft.Value;
         var formulaLater = await repository.SaveFormResponseDraft(formulaRequest, actorId);
-        Assert.Equal("FormulaRuntime.ConfigurationUnavailable", formulaLater.Error.Code);
+        Assert.True(formulaLater.IsSuccess);
 
-        var submission = await repository.SubmitFormResponseFinal(draft.Value, actorId);
-        Assert.Equal("FormulaRuntime.ConfigurationUnavailable", Assert.Single(submission.Errors).Code);
+        var submission = await new FormulaSubmissionService(context, null!, null!).FinalizeAsync(draft.Value, actorId);
+        Assert.True(submission.IsSuccess);
+        Assert.Null(submission.Value);
         Assert.Null((await context.Responses.SingleAsync()).FormRevisionId);
-        Assert.Equal("complies", (await context.FormResponses.SingleAsync()).Value);
+        Assert.Equal("complies", (await context.FormResponses.SingleAsync(answer => answer.FormFieldId == setup.ShortAnswerField.Id)).Value);
         return (draft.Value, setup.Form.Id, setup.ShortAnswerField.Id, setup.LegacyFormulaField.Id);
     }
 
