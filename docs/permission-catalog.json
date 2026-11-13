@@ -2424,6 +2424,13 @@
   {
     "module": "Quality Control",
     "submodule": "Material Specification",
+    "key": "CanExportRawMaterialSpecification",
+    "name": "Can Export Raw Material Specification",
+    "description": "Allows the user to  export raw material specification."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
     "key": "CanCreateRawMaterialSpecification",
     "name": "Can Create Raw Material Specification",
     "description": "Allows the user to  create raw material specification."
@@ -2448,6 +2455,13 @@
     "key": "CanViewPackagingMaterialSpecifications",
     "name": "Can View Packaging Material Specifications",
     "description": "Allows the user to  view packaging material specifications."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanExportPackagingMaterialSpecification",
+    "name": "Can Export Packaging Material Specification",
+    "description": "Allows the user to  export packaging material specification."
   },
   {
     "module": "Quality Control",
@@ -2560,6 +2574,13 @@
     "key": "CanViewProductSpecifications",
     "name": "Can View Product Specifications",
     "description": "Allows the user to  view product specifications."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanExportProductSpecification",
+    "name": "Can Export Product Specification",
+    "description": "Allows the user to  export product specification."
   },
   {
     "module": "Quality Control",

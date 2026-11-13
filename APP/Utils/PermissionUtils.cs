@@ -688,12 +688,16 @@ public static class PermissionKeys
     public const string CanEditPackagingMaterialStp = "CanEditPackagingMaterialStp";
     public const string CanDeletePackagingMaterialStp = "CanDeletePackagingMaterialStp";
     public const string CanViewRawMaterialSpecifications = "CanViewRawMaterialSpecifications";
+    /// <summary>Print raw material specifications with their recorded revisions.</summary>
+    public const string CanExportRawMaterialSpecification = "CanExportRawMaterialSpecification";
     public const string CanCreateRawMaterialSpecification = "CanCreateRawMaterialSpecification";
     public const string CanEditRawMaterialSpecification = "CanEditRawMaterialSpecification";
     public const string CanDeleteRawMaterialSpecification = "CanDeleteRawMaterialSpecification";
     public const string CanVerifyRawMaterialSpecification = "CanVerifyRawMaterialSpecification";
     public const string CanViewPackagingMaterialSpecifications =
         "CanViewPackagingMaterialSpecifications";
+    /// <summary>Print packaging material specifications with their recorded revisions.</summary>
+    public const string CanExportPackagingMaterialSpecification = "CanExportPackagingMaterialSpecification";
     public const string CanCreatePackagingMaterialSpecification =
         "CanCreatePackagingMaterialSpecification";
     public const string CanEditPackagingMaterialSpecification =
@@ -717,6 +721,8 @@ public static class PermissionKeys
     public const string CanEditProductStp = "CanEditProductStp";
     public const string CanDeleteProductStp = "CanDeleteProductStp";
     public const string CanViewProductSpecifications = "CanViewProductSpecifications";
+    /// <summary>Print product specifications with their recorded revisions.</summary>
+    public const string CanExportProductSpecification = "CanExportProductSpecification";
     public const string CanCreateProductSpecification = "CanCreateProductSpecification";
     public const string CanEditProductSpecification = "CanEditProductSpecification";
     public const string CanDeleteProductSpecification = "CanDeleteProductSpecification";
@@ -2606,6 +2612,8 @@ public static class PermissionUtils
             PermissionSubmodules.MaterialSpecification,
             PermissionKeys.CanViewRawMaterialSpecifications
         );
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanExportRawMaterialSpecification);
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.MaterialSpecification,
@@ -2626,6 +2634,8 @@ public static class PermissionUtils
             PermissionSubmodules.MaterialSpecification,
             PermissionKeys.CanViewPackagingMaterialSpecifications
         );
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification,
+            PermissionKeys.CanExportPackagingMaterialSpecification);
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.MaterialSpecification,
@@ -2706,6 +2716,8 @@ public static class PermissionUtils
             PermissionSubmodules.ProductSpecification,
             PermissionKeys.CanViewProductSpecifications
         );
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification,
+            PermissionKeys.CanExportProductSpecification);
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.ProductSpecification,
