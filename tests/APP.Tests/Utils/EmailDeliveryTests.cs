@@ -14,6 +14,38 @@ namespace APP.Tests.Utils;
 public class EmailDeliveryTests
 {
     [Fact]
+    public async Task Origin_socket_uses_the_configured_hostname_for_tls_validation()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var client = new OriginProbe();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var service = new EmailService(NullLogger<EmailService>.Instance,
+            () => new SmtpSettings("mail.example.invalid", port, "user", "password", "from@example.invalid", IPAddress.Loopback),
+            () => client);
+        var accepted = listener.AcceptSocketAsync();
+        var send = Task.Run(() => Record.Exception(() => service.SendMail("Recipient", "to@example.invalid", "Test", "body", [])));
+        using var peer = await accepted.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Same(client.Failure, await send.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal("mail.example.invalid", client.Host);
+        Assert.Equal(System.Security.Authentication.SslProtocols.None, client.SslProtocols);
+    }
+
+    private sealed class OriginProbe : SmtpClient
+    {
+        public string? Host { get; private set; }
+        public IOException Failure { get; } = new("Probe connection");
+        public override void Connect(Socket socket, string host, int port = 0,
+            SecureSocketOptions options = SecureSocketOptions.Auto, CancellationToken cancellationToken = default)
+        {
+            Assert.True(socket.Connected);
+            Assert.True(cancellationToken.CanBeCanceled);
+            Host = host;
+            throw Failure;
+        }
+    }
+
+    [Fact]
     public void Connection_failure_preserves_the_transport_exception_and_stack()
     {
         using var client = new ConnectionProbe();
