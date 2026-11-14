@@ -577,6 +577,8 @@ public static class PermissionKeys
     public const string CanViewRawMaterialRequisitions = "CanViewRawMaterialRequisitions";
     public const string CanIssueRawMaterialRequisitions = "CanIssueRawMaterialRequisitions";
     public const string CanSwapRawMaterialRequisitions = "CanSwapRawMaterialRequisitions";
+    /// <summary>Choose which BOM option (main material or a substitute) a raw-material stock requisition line is issued as, before issue.</summary>
+    public const string CanChooseRawMaterialRequisitionSubstitute = "CanChooseRawMaterialRequisitionSubstitute";
     public const string CanViewPackagingMaterialRequisitions =
         "CanViewPackagingMaterialRequisitions";
     public const string CanIssuePackagingMaterialRequisitions =
@@ -2146,6 +2148,11 @@ public static class PermissionUtils
             PermissionModules.Warehouse,
             PermissionSubmodules.IssueStockRequisitions,
             PermissionKeys.CanSwapRawMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanChooseRawMaterialRequisitionSubstitute
         );
         addPermission(
             PermissionModules.Warehouse,

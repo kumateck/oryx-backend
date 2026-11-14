@@ -1696,6 +1696,13 @@
   {
     "module": "Warehouse",
     "submodule": "Issue Stock Requisitions",
+    "key": "CanChooseRawMaterialRequisitionSubstitute",
+    "name": "Can Choose Raw Material Requisition Substitute",
+    "description": "Allows the user to  choose raw material requisition substitute."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
     "key": "CanViewPackagingMaterialRequisitions",
     "name": "Can View Packaging Material Requisitions",
     "description": "Allows the user to  view packaging material requisitions."

@@ -1200,6 +1200,12 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("BaseQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid?>("BaseUoMId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("BillOfMaterialItemId")
                         .HasColumnType("uuid");
 
@@ -1218,6 +1224,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("PrescribedQuantity")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("SubstituteMaterialId")
                         .HasColumnType("uuid");
 
@@ -1225,6 +1234,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BaseUoMId");
 
                     b.HasIndex("BillOfMaterialItemId");
 
@@ -22425,6 +22436,91 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("StockRequisitionIssueApprovals");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Requisitions.StockRequisitionMaterialChoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ChosenAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ChosenById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FromMaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("FromQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("FromUnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductionScheduleProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequisitionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceMaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ToMaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("ToQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("ToUnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChosenById");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FromMaterialId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("SourceMaterialId");
+
+                    b.HasIndex("ToMaterialId");
+
+                    b.HasIndex("RequisitionId", "ChosenAt");
+
+                    b.ToTable("StockRequisitionMaterialChoices");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SupplierQuotation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -27709,6 +27805,11 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.BillOfMaterials.BillOfMaterialItemSubstitute", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "BaseUoM")
+                        .WithMany()
+                        .HasForeignKey("BaseUoMId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("DOMAIN.Entities.BillOfMaterials.BillOfMaterialItem", "BillOfMaterialItem")
                         .WithMany("Substitutes")
                         .HasForeignKey("BillOfMaterialItemId")
@@ -27732,6 +27833,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("SubstituteMaterialId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("BaseUoM");
 
                     b.Navigation("BillOfMaterialItem");
 
@@ -39739,6 +39842,67 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("StockRequisitionIssue");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Requisitions.StockRequisitionMaterialChoice", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "ChosenBy")
+                        .WithMany()
+                        .HasForeignKey("ChosenById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", "FromMaterial")
+                        .WithMany()
+                        .HasForeignKey("FromMaterialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Requisitions.Requisition", "Requisition")
+                        .WithMany()
+                        .HasForeignKey("RequisitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", "SourceMaterial")
+                        .WithMany()
+                        .HasForeignKey("SourceMaterialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", "ToMaterial")
+                        .WithMany()
+                        .HasForeignKey("ToMaterialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ChosenBy");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("FromMaterial");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Requisition");
+
+                    b.Navigation("SourceMaterial");
+
+                    b.Navigation("ToMaterial");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SupplierQuotation", b =>

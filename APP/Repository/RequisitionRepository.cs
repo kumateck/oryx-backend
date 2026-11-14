@@ -414,6 +414,7 @@ public class RequisitionRepository(
 
         var result = mapper.Map<RequisitionDto>(requisition);
         await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
+        await APP.Services.Production.StockRequisitionMaterialChoiceRead.Apply(context, result);
         if (preparation != null)
         {
             result.WhitePlaceboPreparationId = preparation.Id;

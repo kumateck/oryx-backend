@@ -135,7 +135,8 @@ public class ScheduleMaterialValidityTests
         var item = await db.BillOfMaterialItems.SingleAsync();
         item.UseDensityConversion = true;
         item.PrescribedQuantity = 1_000_000m;
-        item.Substitutes.Add(new() { SubstituteMaterial = substitute });
+        // The substitute's own quantity, in mg like the main line, converted with its own density.
+        item.Substitutes.Add(new() { SubstituteMaterial = substitute, BaseUoMId = fixture.Lot.UoMId, BaseQuantity = 1m, PrescribedQuantity = 1_000_000m });
         db.Requisitions.Add(new()
         {
             ProductionScheduleProductId = fixture.Batch.Id, RequisitionType = RequisitionType.Stock,

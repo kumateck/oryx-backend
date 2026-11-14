@@ -822,6 +822,7 @@ public partial class ApplicationDbContext(
     public DbSet<StockDiscrepancy> StockDiscrepancies { get; set; }
     public DbSet<StockRequisitionIssue> StockRequisitionIssues { get; set; }
     public DbSet<StockRequisitionIssueApproval> StockRequisitionIssueApprovals { get; set; }
+    public DbSet<StockRequisitionMaterialChoice> StockRequisitionMaterialChoices { get; set; }
     public DbSet<StockDiscrepancyApproval> StockDiscrepancyApprovals { get; set; }
     public DbSet<InventoryLedger> InventoryLedgers { get; set; }
     #endregion
@@ -1242,6 +1243,7 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<BillOfMaterialItem>().Property(bomi => bomi.UseDensityConversion).HasDefaultValue(false);
         modelBuilder.Entity<BillOfMaterialItem>().Navigation(bomi => bomi.Substitutes).AutoInclude();
         modelBuilder.Entity<BillOfMaterialItemSubstitute>().Navigation(bomis => bomis.SubstituteMaterial).AutoInclude();
+        modelBuilder.Entity<BillOfMaterialItemSubstitute>().Navigation(bomis => bomis.BaseUoM).AutoInclude();
         modelBuilder
             .Entity<BillOfMaterialItem>()
             .Navigation(bomi => bomi.MaterialType)
@@ -2623,6 +2625,15 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<StockRequisitionIssue>()
             .HasOne(issue => issue.IssuedBy).WithMany().HasForeignKey(issue => issue.IssuedById)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StockRequisitionMaterialChoice>(choice =>
+        {
+            choice.HasOne(item => item.Requisition).WithMany().HasForeignKey(item => item.RequisitionId).OnDelete(DeleteBehavior.Restrict);
+            choice.HasOne(item => item.SourceMaterial).WithMany().HasForeignKey(item => item.SourceMaterialId).OnDelete(DeleteBehavior.Restrict);
+            choice.HasOne(item => item.FromMaterial).WithMany().HasForeignKey(item => item.FromMaterialId).OnDelete(DeleteBehavior.Restrict);
+            choice.HasOne(item => item.ToMaterial).WithMany().HasForeignKey(item => item.ToMaterialId).OnDelete(DeleteBehavior.Restrict);
+            choice.HasOne(item => item.ChosenBy).WithMany().HasForeignKey(item => item.ChosenById).OnDelete(DeleteBehavior.Restrict);
+            choice.HasIndex(item => new { item.RequisitionId, item.ChosenAt });
+        });
         modelBuilder.Entity<StockRequisitionIssueApproval>()
             .HasIndex(a => new { a.ApprovalId, a.StockRequisitionIssueId, a.Order, a.UserId, a.RoleId }).IsUnique()
             .HasDatabaseName("IX_StockRequisitionIssueApprovals_StageUnique");
@@ -2868,6 +2879,13 @@ public partial class ApplicationDbContext(
             .WithMany()
             .HasForeignKey(s => s.SubstituteMaterialId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BillOfMaterialItemSubstitute>()
+            .HasOne(s => s.BaseUoM)
+            .WithMany()
+            .HasForeignKey(s => s.BaseUoMId)
+            .OnDelete(DeleteBehavior.Restrict);
+
 
         #endregion
 

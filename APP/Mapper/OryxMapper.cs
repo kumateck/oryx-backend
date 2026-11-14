@@ -330,11 +330,19 @@ public class OryxMapper : Profile
         CreateMap<CreateBillOfMaterialRequest, BillOfMaterial>();
         CreateMap<BillOfMaterial, BillOfMaterialDto>();
         CreateMap<CreateBoMItemsRequest, BillOfMaterialItem>()
+            .ForMember(dest => dest.Substitutes, opt => opt.Ignore())
             .AfterMap(
                 (src, dest) =>
                 {
-                    dest.Substitutes = src
-                        .SubstituteMaterialIds.Select(id => new BillOfMaterialItemSubstitute
+                    dest.Substitutes = src.Substitutes.Count != 0
+                        ? src.Substitutes.Select(substitute => new BillOfMaterialItemSubstitute
+                        {
+                            SubstituteMaterialId = substitute.MaterialId,
+                            BaseQuantity = substitute.BaseQuantity,
+                            BaseUoMId = substitute.BaseUoMId,
+                            PrescribedQuantity = substitute.PrescribedQuantity,
+                        }).ToList()
+                        : src.SubstituteMaterialIds.Select(id => new BillOfMaterialItemSubstitute
                         {
                             SubstituteMaterialId = id,
                         })
