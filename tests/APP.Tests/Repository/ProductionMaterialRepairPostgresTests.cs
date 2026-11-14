@@ -432,7 +432,9 @@ public class ProductionMaterialRepairPostgresTests
             var shelf = await edit.ShelfMaterialBatches.SingleAsync(item => item.MaterialBatchId == RawBatch);
             edit.Materials.Add(new Material { Id = substituteId, Kind = MaterialKind.Raw, Name = "Selected substitute", Code = "RM-SUB" });
             edit.MaterialDepartments.Add(new MaterialDepartment { MaterialId = substituteId, DepartmentId = DepartmentId, UoMId = UnitId });
-            edit.BillOfMaterialItemSubstitutes.Add(new BillOfMaterialItemSubstitute { BillOfMaterialItemId = line.Id, SubstituteMaterialId = substituteId });
+            // The substitute's own quantity: 16 mg replaces the main material's 20 mg.
+            edit.BillOfMaterialItemSubstitutes.Add(new BillOfMaterialItemSubstitute { BillOfMaterialItemId = line.Id, SubstituteMaterialId = substituteId,
+                BaseUoMId = UnitId, BaseQuantity = 0.8m, PrescribedQuantity = 16 });
             var physical = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = substituteId, UoMId = UnitId, BatchNumber = "SUB-LOT",
                 Status = BatchStatus.Available, TotalQuantity = 100, ExpiryDate = DateTime.UtcNow.AddYears(1) };
             edit.MaterialBatches.Add(physical);
@@ -449,7 +451,58 @@ public class ProductionMaterialRepairPostgresTests
         var configuration = await db.ProductionMaterialConfigurations.SingleAsync();
         var requirement = Assert.Single(ProductionMaterialSources.Requirements(configuration.RequirementsJson));
         Assert.Equal(MaterialId, requirement.SourceMaterialId); Assert.Equal(substituteId, requirement.MaterialId);
-        Assert.Equal(20, requirement.Quantity);
+        Assert.Equal(16, requirement.Quantity);
+    }
+
+    [MaterialRepairFact]
+    public async Task The_store_moves_the_reservation_and_requisition_line_to_a_substitute_at_its_own_quantity()
+    {
+        await Seed();
+        var substituteId = Guid.NewGuid();
+        await using (var edit = Context())
+        {
+            var line = await edit.BillOfMaterialItems.SingleAsync(); line.IsSubstitutable = true;
+            var shelf = await edit.ShelfMaterialBatches.SingleAsync(item => item.MaterialBatchId == RawBatch);
+            edit.Materials.Add(new Material { Id = substituteId, Kind = MaterialKind.Raw, Name = "Dry substitute", Code = "RM-DRY" });
+            edit.MaterialDepartments.Add(new MaterialDepartment { MaterialId = substituteId, DepartmentId = DepartmentId, UoMId = UnitId });
+            edit.BillOfMaterialItemSubstitutes.Add(new BillOfMaterialItemSubstitute { BillOfMaterialItemId = line.Id, SubstituteMaterialId = substituteId,
+                BaseUoMId = UnitId, BaseQuantity = 0.8m, PrescribedQuantity = 16 });
+            var physical = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = substituteId, UoMId = UnitId, BatchNumber = "DRY-LOT",
+                Status = BatchStatus.Available, TotalQuantity = 100, ExpiryDate = DateTime.UtcNow.AddMonths(3) };
+            edit.MaterialBatches.Add(physical);
+            edit.ShelfMaterialBatches.Add(new ShelfMaterialBatch { MaterialBatchId = physical.Id, WarehouseLocationShelfId = shelf.WarehouseLocationShelfId, UoMId = UnitId, Quantity = 100 });
+            edit.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = 703, RoleId = (await edit.UserRoles.SingleAsync()).RoleId, ClaimType = AppConstants.Permission,
+                ClaimValue = PermissionKeys.CanChooseRawMaterialRequisitionSubstitute });
+            edit.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), Key = PermissionKeys.CanChooseRawMaterialRequisitionSubstitute, RoleClaimId = 703, Type = "assigned" });
+            await edit.SaveChangesAsync();
+        }
+        await using (var repair = Context())
+        {
+            var preview = await Preview(repair);
+            var applied = await ProductionMaterialRepairs.Apply(repair, Approvals(repair), ActivityId, Actor, MaterialKind.Raw, Request(preview));
+            Assert.True(applied.IsSuccess, applied.IsFailure ? applied.Error.Description : null);
+        }
+        await using var db = Context();
+        var service = new APP.Services.Production.StockRequisitionMaterialChoiceService(db, null!);
+        var revision = (await db.ProductionMaterialConfigurations.AsNoTracking().SingleAsync(item => item.Kind == MaterialKind.Raw)).Revision;
+        var requisition = await db.Requisitions.AsNoTracking().Where(item => item.ProductionScheduleProductId == BatchId && item.DeletedAt == null)
+            .OrderByDescending(item => item.CreatedAt).Select(item => item.Id).FirstAsync();
+
+        var chosen = await service.Choose(requisition, new() { SourceMaterialId = MaterialId, MaterialId = substituteId, Revision = revision,
+            Reason = "The dry lot expires first" }, Actor);
+
+        Assert.True(chosen.IsSuccess, chosen.IsFailure ? chosen.Error.Description : null);
+        await using var check = Context();
+        var holds = await check.MaterialBatchReservedQuantities.IgnoreAutoIncludes().Include(item => item.MaterialBatch)
+            .Where(item => item.ProductionScheduleProductId == BatchId && item.ReleasedAt == null && item.MaterialBatch.Material.Kind == MaterialKind.Raw).ToListAsync();
+        var hold = Assert.Single(holds);
+        Assert.Equal((substituteId, 16m), (hold.MaterialBatch.MaterialId, hold.Quantity));
+        var item = await check.RequisitionItems.SingleAsync(row => row.RequisitionId == requisition && row.DeletedAt == null && row.Material.Kind == MaterialKind.Raw);
+        Assert.Equal((substituteId, 16m), (item.MaterialId, item.Quantity));
+        Assert.Equal("The dry lot expires first", (await check.StockRequisitionMaterialChoices.SingleAsync()).Reason);
+        // The configuration still matches the BOM, so no repair is reported afterwards.
+        var configuration = await check.ProductionMaterialConfigurations.SingleAsync(row => row.Kind == MaterialKind.Raw);
+        Assert.Equal((await ProductionMaterialSources.Load(check, BatchId, MaterialKind.Raw)).Value.SourceHash, configuration.SourceHash);
     }
 
     [MaterialRepairFact]

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using APP.Services.Authorization;
 using APP.Utils;
 using DOMAIN.Entities.Departments;
@@ -45,8 +46,9 @@ internal static class ProductionMaterialSources
         return Result.Success();
     }
 
+    /// <param name="preferred">For a line nothing is allocated or requested for yet: the option (by main material id) to use instead of the main material.</param>
     internal static async Task<Result<ProductionMaterialSource>> Load(ApplicationDbContext context, Guid batchId, MaterialKind kind,
-        Guid? packingStyleOverride = null)
+        Guid? packingStyleOverride = null, IReadOnlyDictionary<Guid, Guid> preferred = null)
     {
         var batch = await context.ProductionScheduleProducts.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(item => item.Product).Include(item => item.ProductionSchedule).SingleOrDefaultAsync(item => item.Id == batchId);
@@ -79,7 +81,8 @@ internal static class ProductionMaterialSources
             var items = bom.BillOfMaterial.Items.Where(item => item.DeletedAt == null).OrderBy(item => item.Order).ThenBy(item => item.MaterialId).ToList();
             definitions.AddRange(items.Select(item => new SourceLine(item.MaterialId, item.BaseUoMId, item.BaseQuantity,
                 item.PrescribedQuantity, 0, 0, null, item.UseDensityConversion,
-                item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
+                item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList(),
+                SubstituteQuantities(item.Substitutes))));
             source = Json(new { bom.Id, bom.EffectiveDate, bom.UpdatedAt, bom.BillOfMaterial.Version, Definitions = definitions,
                 Items = items.Select(item => new { item.Id, item.UpdatedAt, item.Grade, item.CasNumber, item.Order, item.IsSubstitutable }) });
         }
@@ -115,39 +118,64 @@ internal static class ProductionMaterialSources
             .Select(item => item.MaterialId).Distinct().ToListAsync();
         current = current.Union(requested).ToList();
         var requirements = new List<ProductionMaterialRequirement>();
+        // One material option in its department stock unit, or the reason it cannot be used.
+        (ProductionMaterialOption Option, string Blocker) Resolve(SourceLine definition, Guid materialId, Guid? baseUnitId, decimal baseQuantity, decimal prescribed)
+        {
+            var links = departments.Where(item => item.MaterialId == materialId).ToList();
+            if (links.Count != 1 || links[0].Material.DeletedAt.HasValue || links[0].Material.Kind != kind
+                || links[0].UoM is null || links[0].UoM.DeletedAt.HasValue)
+                return (null, $"Material {materialId} needs one valid stock unit and department link of the correct material kind.");
+            var link = links[0];
+            var sourceUnit = kind == MaterialKind.Raw ? units.SingleOrDefault(unit => unit.Id == baseUnitId) : link.UoM;
+            if (sourceUnit is null || sourceUnit.DeletedAt.HasValue)
+                return (null, $"{link.Material.Name}: choose a valid BOM source unit before starting production.");
+            var quantity = prescribed / (batch.BatchSize == BatchSize.Half ? 2 : 1) + definition.Allowance;
+            var converted = definition.UseDensityConversion
+                ? MaterialDensity.ConvertBomMass(quantity, sourceUnit.Symbol, link)
+                : UomConverter.Convert(quantity, sourceUnit.Symbol, link.UoM.Symbol);
+            if (prescribed <= 0 || definition.Allowance < 0 || converted is null or <= 0)
+                return (null, definition.UseDensityConversion
+                    ? $"{link.Material.Name}: verify the BOM quantity, measured density with an active g/mL unit, and liquid stock unit."
+                    : $"{link.Material.Name}: correct the quantity and compatible units on the product first.");
+            return (new ProductionMaterialOption
+            {
+                MaterialId = materialId, Name = link.Material.Name, UnitId = link.UoMId, Unit = link.UoM.Symbol, Quantity = converted.Value,
+                BaseQuantity = baseQuantity, BaseUnitId = sourceUnit.Id, BaseUnit = sourceUnit.Symbol, PrescribedQuantity = prescribed,
+                DensityGramsPerMilliliter = definition.UseDensityConversion ? link.Density : 0
+            }, null);
+        }
+
         foreach (var definition in definitions)
         {
             var choices = current.Where(id => id == definition.MaterialId || definition.Substitutes.Contains(id)).ToList();
             if (choices.Count > 1) { blockers.Add("More than one main/substitute allocation exists for a material. Reconcile it before repair."); continue; }
-            var selected = choices.Count == 1 ? choices[0] : definition.MaterialId;
-            var links = departments.Where(item => item.MaterialId == selected).ToList();
-            if (links.Count != 1 || links[0].Material.DeletedAt.HasValue || links[0].Material.Kind != kind
-                || links[0].UoM is null || links[0].UoM.DeletedAt.HasValue)
-            { blockers.Add($"Material {selected} needs one valid stock unit and department link of the correct material kind."); continue; }
-            var link = links[0];
-            var sourceUnit = kind == MaterialKind.Raw ? units.SingleOrDefault(unit => unit.Id == definition.BaseUnitId) : link.UoM;
-            if (sourceUnit is null || sourceUnit.DeletedAt.HasValue)
-            { blockers.Add($"{link.Material.Name}: choose a valid BOM source unit before starting production."); continue; }
-            var quantity = definition.Prescribed / (batch.BatchSize == BatchSize.Half ? 2 : 1) + definition.Allowance;
-            var converted = definition.UseDensityConversion
-                ? MaterialDensity.ConvertBomMass(quantity, sourceUnit.Symbol, link)
-                : UomConverter.Convert(quantity, sourceUnit?.Symbol, link.UoM.Symbol);
-            if (definition.Prescribed <= 0 || definition.Allowance < 0 || converted is null or <= 0)
+            var selected = choices.Count == 1 ? choices[0]
+                : preferred is not null && preferred.TryGetValue(definition.MaterialId, out var wanted) && definition.Substitutes.Contains(wanted) ? wanted
+                : definition.MaterialId;
+            var main = Resolve(definition, definition.MaterialId, definition.BaseUnitId, definition.BaseQuantity, definition.Prescribed);
+            if (main.Option is null) { blockers.Add(main.Blocker); continue; }
+            // A substitute carries its own quantity: it may differ in strength or water content from the main material.
+            var substitutes = (definition.SubstituteQuantities ?? []).Where(item => definition.Substitutes.Contains(item.MaterialId))
+                .Select(item => (item.MaterialId, Resolved: Resolve(definition, item.MaterialId, item.BaseUnitId, item.BaseQuantity, item.Prescribed))).ToList();
+            ProductionMaterialOption chosen = main.Option;
+            if (selected != definition.MaterialId)
             {
-                blockers.Add(definition.UseDensityConversion
-                    ? $"{link.Material.Name}: verify the BOM quantity, measured density with an active g/mL unit, and liquid stock unit."
-                    : $"{link.Material.Name}: correct the quantity and compatible units on the product first.");
-                continue;
+                var substitute = substitutes.SingleOrDefault(item => item.MaterialId == selected);
+                if (substitute.Resolved.Option is null)
+                {
+                    var name = departments.FirstOrDefault(item => item.MaterialId == selected)?.Material?.Name ?? selected.ToString();
+                    blockers.Add(substitute.Resolved.Blocker ?? $"{name}: this substitute is allocated to the batch but has no quantity of its own on the BOM. Set the substitute's quantity on the product BOM first.");
+                    continue;
+                }
+                chosen = substitute.Resolved.Option;
             }
-            requirements.Add(new ProductionMaterialRequirement
+            var options = substitutes.Where(item => item.Resolved.Option is not null).Select(item => item.Resolved.Option).ToList();
+            requirements.Add(Requirement(new ProductionMaterialRequirement
             {
-                SourceMaterialId = definition.MaterialId, MaterialId = selected, Name = link.Material.Name,
-                UnitId = link.UoMId, Unit = link.UoM.Symbol, Quantity = converted.Value,
-                BaseQuantity = definition.BaseQuantity, PrescribedQuantity = definition.Prescribed,
-                BaseUnitId = sourceUnit.Id, BaseUnit = sourceUnit.Symbol,
-                Allowance = definition.Allowance, UnitCapacity = definition.Capacity, DirectLinkMaterialId = definition.DirectLink,
-                UseDensityConversion = definition.UseDensityConversion, DensityGramsPerMilliliter = definition.UseDensityConversion ? link.Density : 0
-            });
+                SourceMaterialId = definition.MaterialId, Allowance = definition.Allowance, UnitCapacity = definition.Capacity,
+                DirectLinkMaterialId = definition.DirectLink, UseDensityConversion = definition.UseDensityConversion,
+                Options = options.Count == 0 ? null : options.Prepend(main.Option).ToList()
+            }, chosen));
         }
         if (requirements.GroupBy(item => item.MaterialId).Any(group => group.Count() > 1))
             blockers.Add("A material is selected for more than one requirement. Correct the overlapping substitutes first.");
@@ -156,6 +184,26 @@ internal static class ProductionMaterialSources
         return new ProductionMaterialSource(batch, departmentId.Value, storage[0].Id, production[0].Id, requirements, hash, source, blockers);
     }
 
+    /// <summary>The requirement issued as <paramref name="option"/>; every other field, including the options, is kept.</summary>
+    internal static ProductionMaterialRequirement Requirement(ProductionMaterialRequirement requirement, ProductionMaterialOption option) => requirement with
+    {
+        MaterialId = option.MaterialId, Name = option.Name, UnitId = option.UnitId, Unit = option.Unit, Quantity = option.Quantity,
+        BaseQuantity = option.BaseQuantity, PrescribedQuantity = option.PrescribedQuantity, BaseUnitId = option.BaseUnitId,
+        BaseUnit = option.BaseUnit, DensityGramsPerMilliliter = option.DensityGramsPerMilliliter
+    };
+
+    /// <summary>Substitutes saved with their own quantity; null when none has one, so older definitions hash as before.</summary>
+    private static List<SubstituteLine> SubstituteQuantities(IEnumerable<DOMAIN.Entities.BillOfMaterials.BillOfMaterialItemSubstitute> substitutes)
+    {
+        var lines = substitutes.Where(sub => sub.DeletedAt == null && sub.PrescribedQuantity.HasValue && sub.BaseQuantity.HasValue)
+            .OrderBy(sub => sub.SubstituteMaterialId)
+            .Select(sub => new SubstituteLine(sub.SubstituteMaterialId, sub.BaseUoMId, sub.BaseQuantity.Value, sub.PrescribedQuantity.Value)).ToList();
+        return lines.Count == 0 ? null : lines;
+    }
+
     private sealed record SourceLine(Guid MaterialId, Guid? BaseUnitId, decimal BaseQuantity, decimal Prescribed,
-        decimal Allowance, decimal Capacity, Guid? DirectLink, bool UseDensityConversion, List<Guid> Substitutes);
+        decimal Allowance, decimal Capacity, Guid? DirectLink, bool UseDensityConversion, List<Guid> Substitutes,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<SubstituteLine> SubstituteQuantities = null);
+
+    private sealed record SubstituteLine(Guid MaterialId, Guid? BaseUnitId, decimal BaseQuantity, decimal Prescribed);
 }

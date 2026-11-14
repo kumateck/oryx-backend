@@ -38,6 +38,8 @@ public class RequisitionItemDto
     public decimal Quantity { get; set; }
     /// <summary>Original signed quantity when Quantity includes an audited post-issue correction.</summary>
     public decimal? ApprovedQuantity { get; set; }
+    /// <summary>The BOM line's main material when the store chose to issue a substitute (or back) in its place.</summary>
+    public CollectionItemDto SubstituteFor { get; set; }
     public decimal QuantityReceived { get; set; }
     public RequestStatus Status { get; set; }
     public List<BatchToSupply> Batches { get; set; } = [];

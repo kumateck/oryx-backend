@@ -39,12 +39,20 @@ public static class ProductSectionChanges
             .Where(link => link.ProductId == request.ProductId && link.IsActive && link.DeletedAt == null)
             .SelectMany(link => link.BillOfMaterial.Items.Where(item => item.DeletedAt == null))
             .Select(item => new { item.MaterialId, item.BaseQuantity, item.Grade, item.Order, item.IsSubstitutable,
-                Substitutes = item.Substitutes.Select(substitute => substitute.SubstituteMaterialId).ToList() })
+                Substitutes = item.Substitutes.Where(substitute => substitute.DeletedAt == null)
+                    .Select(substitute => new { substitute.SubstituteMaterialId, substitute.BaseQuantity }).ToList() })
             .ToListAsync();
+        // A substitute's own quantity is part of the line: changing it is an edit.
+        static string Substitutes(IEnumerable<(Guid Id, decimal? Quantity)> rows) =>
+            string.Join(",", rows.OrderBy(row => row.Id).Select(row => $"{row.Id}={(row.Quantity.HasValue ? Number(row.Quantity.Value) : "")}"));
         return Compare(
-            stored.Select(item => (item.MaterialId.ToString(), $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};{Ids(item.Substitutes)}")),
+            stored.Select(item => (item.MaterialId.ToString(), $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};"
+                + Substitutes(item.Substitutes.Select(substitute => (substitute.SubstituteMaterialId, substitute.BaseQuantity))))),
             (request.Items ?? []).Select(item => (item.MaterialId.ToString(),
-                $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};{Ids(item.SubstituteMaterialIds ?? [])}")));
+                $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};"
+                + Substitutes(item.Substitutes is { Count: > 0 }
+                    ? item.Substitutes.Select(substitute => (substitute.MaterialId, (decimal?)substitute.BaseQuantity))
+                    : (item.SubstituteMaterialIds ?? []).Select(id => (id, (decimal?)null))))));
     }
 
     public static async Task<HashSet<ProductVerb>> PackingMaterials(ApplicationDbContext db, Guid productId, IReadOnlyCollection<CreateProductPackageRequest> rows)
