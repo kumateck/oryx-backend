@@ -1369,11 +1369,14 @@ public partial class ProductionScheduleRepository(
         var neededByMaterial = new Dictionary<(Guid BomItemId, Guid MaterialId), decimal>();
         foreach (var item in activeBoM.BillOfMaterial.Items)
         {
-            var sourceQuantity = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
-            var candidates = new[] { item.MaterialId }.Concat(item.Substitutes.Select(substitute => substitute.SubstituteMaterialId));
-            foreach (var materialId in candidates)
+            // A substitute has its own quantity (it can differ in strength or water content); one without is not usable.
+            var candidates = new[] { (MaterialId: item.MaterialId, Prescribed: (decimal?)item.PrescribedQuantity) }
+                .Concat(item.Substitutes.Where(substitute => substitute.DeletedAt == null)
+                    .Select(substitute => (MaterialId: substitute.SubstituteMaterialId, Prescribed: substitute.PrescribedQuantity)));
+            foreach (var (materialId, prescribed) in candidates)
             {
-                if (!materialDepartments.TryGetValue(materialId, out var departmentLink)) continue;
+                if (!prescribed.HasValue || !materialDepartments.TryGetValue(materialId, out var departmentLink)) continue;
+                var sourceQuantity = batchSize == BatchSize.Full ? prescribed.Value : prescribed.Value / 2;
                 var quantity = item.UseDensityConversion
                     ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, departmentLink)
                     : sourceQuantity;
@@ -1455,7 +1458,7 @@ public partial class ProductionScheduleRepository(
 
                 var mainProcurement = CreateProcurementDto(item.MaterialId, item.Material, false);
                 var substitutes = item
-                    .Substitutes.Where(s => materialDepartments.ContainsKey(s.SubstituteMaterialId))
+                    .Substitutes.Where(s => s.DeletedAt == null && s.PrescribedQuantity.HasValue && materialDepartments.ContainsKey(s.SubstituteMaterialId))
                     .Select(s =>
                         CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true)
                     )
@@ -3859,6 +3862,7 @@ public partial class ProductionScheduleRepository(
 
         var result = mapper.Map<RequisitionDto>(requisition);
         await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
+        await APP.Services.Production.StockRequisitionMaterialChoiceRead.Apply(context, result);
         return result;
     }
 
@@ -3893,6 +3897,7 @@ public partial class ProductionScheduleRepository(
 
         var result = mapper.Map<RequisitionDto>(requisition);
         await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
+        await APP.Services.Production.StockRequisitionMaterialChoiceRead.Apply(context, result);
         return result;
     }
 

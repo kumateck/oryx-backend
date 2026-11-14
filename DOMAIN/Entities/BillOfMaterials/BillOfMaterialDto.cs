@@ -32,4 +32,8 @@ public class BillOfMaterialItemSubstituteDto
 {
     public Guid Id { get; set; }
     public MaterialDto SubstituteMaterial { get; set; }
+    /// <summary>Null when the substitute was saved without its own quantity.</summary>
+    public decimal? BaseQuantity { get; set; }
+    public UnitOfMeasureDto BaseUoM { get; set; }
+    public decimal? PrescribedQuantity { get; set; }
 }
