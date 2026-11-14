@@ -40,4 +40,14 @@ public class BillOfMaterialItemSubstitute : BaseEntity
     public BillOfMaterialItem BillOfMaterialItem { get; set; }
     public Guid SubstituteMaterialId { get; set; }
     public Material SubstituteMaterial { get; set; }
+    /// <summary>
+    /// The substitute's own quantity per unit of product, in <see cref="BaseUoM"/>. A substitute can differ in
+    /// strength or water content from the main material, so it never borrows the main material's quantity.
+    /// Null on substitutes saved before quantities existed; those cannot be used until the BOM is saved again.
+    /// </summary>
+    public decimal? BaseQuantity { get; set; }
+    public Guid? BaseUoMId { get; set; }
+    public UnitOfMeasure BaseUoM { get; set; }
+    /// <summary>The substitute's quantity for a full batch, in <see cref="BaseUoM"/>.</summary>
+    public decimal? PrescribedQuantity { get; set; }
 }

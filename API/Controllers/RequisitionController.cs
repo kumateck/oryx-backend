@@ -135,6 +135,39 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// The BOM lines on a raw-material stock requisition that can be issued as another material (the main material or a
+    /// substitute with its own quantity), with each option's usable stock, earliest expiry and the batches it would use.
+    /// </summary>
+    [HttpGet("{requisitionId:guid}/material-options")]
+    [Authorize(PermissionKeys.CanViewRawMaterialRequisitions)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockRequisitionMaterialOptionsDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterialOptions(Guid requisitionId, [FromServices] APP.Services.Production.StockRequisitionMaterialChoiceService service)
+    {
+        var result = await service.Options(requisitionId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Issues a BOM line as another option the BOM allows. Before issue only: the batch's reservation moves to the chosen
+    /// material at its own quantity and the requisition line changes with it. The reason is recorded.
+    /// </summary>
+    [HttpPost("{requisitionId:guid}/material-options")]
+    [Authorize(PermissionKeys.CanChooseRawMaterialRequisitionSubstitute)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> ChooseMaterialOption(Guid requisitionId, [FromBody] ChooseStockRequisitionMaterialRequest request,
+        [FromServices] APP.Services.Production.StockRequisitionMaterialChoiceService service)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await service.Choose(requisitionId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /*[HttpPost("issue-stock-requisition/{productId}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -186,6 +186,18 @@ internal static class ProductionMaterialRepairs
                 return Error.Conflict("Production.Reservations", "Existing material allocations need reconciliation before starting this batch.");
             }
             var allocation = await ProductionMaterialAllocator.Plan(context, source, []);
+            // A BOM line short of its main material starts on the first substitute (its own quantity) that is fully in stock.
+            // The store issuing the requisition can still change the choice before issue.
+            var fallback = await ProductionMaterialChoices.FirstCoveredOptions(context, source, allocation);
+            if (fallback.Count != 0)
+            {
+                var reloaded = await ProductionMaterialSources.Load(context, batchId, kind, preferred: fallback);
+                if (reloaded.IsSuccess)
+                {
+                    source = reloaded.Value;
+                    allocation = await ProductionMaterialAllocator.Plan(context, source, []);
+                }
+            }
             if (source.Blockers.Count != 0 || allocation.Blockers.Count != 0 || allocation.Shortages.Values.Any(value => value > 0))
             {
                 if (!required) continue;

@@ -23,7 +23,7 @@ internal sealed class ProductionMaterialTransaction(ApplicationDbContext context
         "ProductionActivityStepResource", "ProductionActivityStepWorkCenter", "ProductionActivityStepUser", "RoleDepartment",
         "ProductAnalyticalRawData", "Operation", "Workflow",
         "ShelfMaterialBatch", "MaterialBatch", "Requisition", "RequisitionItem", "RequisitionApproval",
-        "StockRequisitionIssue", "ProductionActivity", "ProductionActivityStep", "ProductionExtraPacking",
+        "StockRequisitionIssue", "StockRequisitionMaterialChoice", "ProductionActivity", "ProductionActivityStep", "ProductionExtraPacking",
         "ProductionExtraPackingApproval", "MaterialReturnNote", "MaterialReturnNoteFullReturn",
         "MaterialReturnNotePartialReturn", "SwapRequest", "StockTransfer", "StockTransferSource", "ProductionScheduleProduct",
         "Product", "ProductPacking", "ProductPackingList", "ProductPackage", "ProductPackageSubstitute", "ProductBillOfMaterial", "BillOfMaterial",

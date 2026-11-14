@@ -155,6 +155,46 @@ public class BomMaterialUnitTests
     }
 
     [Fact]
+    public async Task A_substitute_is_saved_with_its_own_quantity_in_its_own_stock_unit()
+    {
+        await using var context = Context();
+        var (product, material, piece, _) = await Seed(context);
+        var gram = new UnitOfMeasure { Name = "Gram", Symbol = "g" };
+        var substitute = new Material { Name = "Anhydrous form", Code = "RMS010", Kind = MaterialKind.Raw };
+        context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = gram });
+        await context.SaveChangesAsync();
+
+        var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = piece.Id, BaseQuantity = 2, PrescribedQuantity = 1000,
+            Substitutes = [new() { MaterialId = substitute.Id, BaseUoMId = gram.Id, BaseQuantity = 0.8m, PrescribedQuantity = 400 }] }] }, Guid.NewGuid());
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        var saved = await context.BillOfMaterialItemSubstitutes.SingleAsync();
+        Assert.Equal((substitute.Id, (Guid?)gram.Id, (decimal?)0.8m, (decimal?)400), (saved.SubstituteMaterialId, saved.BaseUoMId, saved.BaseQuantity, saved.PrescribedQuantity));
+        Assert.True((await context.BillOfMaterialItems.SingleAsync()).IsSubstitutable);
+    }
+
+    [Theory]
+    [InlineData(0, false, "Bom.SubstituteQuantity")]
+    [InlineData(400, true, "Bom.MaterialUnit")]
+    public async Task A_substitute_needs_a_positive_quantity_in_its_linked_unit(int prescribed, bool wrongUnit, string code)
+    {
+        await using var context = Context();
+        var (product, material, piece, mg) = await Seed(context);
+        var gram = new UnitOfMeasure { Name = "Gram", Symbol = "g" };
+        var substitute = new Material { Name = "Anhydrous form", Code = "RMS011", Kind = MaterialKind.Raw };
+        context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = gram });
+        await context.SaveChangesAsync();
+
+        var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = piece.Id, BaseQuantity = 2, PrescribedQuantity = 1000,
+            Substitutes = [new() { MaterialId = substitute.Id, BaseUoMId = wrongUnit ? mg.Id : gram.Id, BaseQuantity = prescribed / 500m, PrescribedQuantity = prescribed }] }] }, Guid.NewGuid());
+
+        Assert.Equal(code, result.Error.Code);
+        Assert.Empty(await context.BillOfMaterials.ToListAsync());
+    }
+
+    [Fact]
     public async Task A_stock_requisition_using_mg_for_a_piece_link_requires_BOM_repair()
     {
         await using var context = Context();

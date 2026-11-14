@@ -25,6 +25,18 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         if (product is null) return ProductErrors.NotFound(request.ProductId);
 
+        foreach (var item in request.Items)
+        {
+            item.Substitutes ??= [];
+            item.SubstituteMaterialIds ??= [];
+            // With quantities the substitutes are the quantified list; the id-only list is kept for older callers.
+            if (item.Substitutes.Count != 0) item.SubstituteMaterialIds = item.Substitutes.Select(substitute => substitute.MaterialId).ToList();
+            if (item.SubstituteMaterialIds.Contains(item.MaterialId) || item.SubstituteMaterialIds.Distinct().Count() != item.SubstituteMaterialIds.Count)
+                return Error.Validation("Bom.Substitute", "List each substitute once, and never the line's own material.");
+            if (item.Substitutes.Any(substitute => substitute.BaseQuantity <= 0 || substitute.PrescribedQuantity <= 0))
+                return Error.Validation("Bom.SubstituteQuantity", "Each substitute needs its own quantity greater than zero.");
+            item.IsSubstitutable = item.SubstituteMaterialIds.Count != 0;
+        }
         var materialIds = request.Items.SelectMany(item => item.SubstituteMaterialIds.Append(item.MaterialId)).Distinct().ToList();
         var links = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(link => link.UoM).Include(link => link.DensityUoM).Where(link => materialIds.Contains(link.MaterialId)
@@ -63,10 +75,22 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
                 }
                 // The conversion mode has one defined source unit: BOM quantity is authored in mg.
                 item.BaseUoMId = densitySourceUnit.Id;
+                foreach (var substitute in item.Substitutes) substitute.BaseUoMId = densitySourceUnit.Id;
             }
-            else if (link.UoMId != item.BaseUoMId)
+            else
             {
-                return Error.Conflict("Bom.MaterialUnit", "A BOM material unit no longer matches the department material linkage. Reload the linked units and review the quantities before saving.");
+                if (link.UoMId != item.BaseUoMId)
+                    return Error.Conflict("Bom.MaterialUnit", "A BOM material unit no longer matches the department material linkage. Reload the linked units and review the quantities before saving.");
+                // A substitute's quantity is in its own department stock unit.
+                foreach (var substitute in item.Substitutes)
+                {
+                    var substituteLinks = links.Where(candidate => candidate.MaterialId == substitute.MaterialId
+                        && candidate.UoM != null && !candidate.UoM.DeletedAt.HasValue).ToList();
+                    if (substituteLinks.Count != 1)
+                        return Error.Conflict("Bom.MaterialUnit", "Each substitute needs exactly one active department stock-unit link.");
+                    if (substituteLinks[0].UoMId != substitute.BaseUoMId)
+                        return Error.Conflict("Bom.MaterialUnit", "A substitute's unit no longer matches its department material linkage. Reload the linked units and review the substitute quantities before saving.");
+                }
             }
         }
 

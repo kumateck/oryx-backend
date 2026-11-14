@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials;
@@ -48,6 +49,28 @@ public sealed record ProductionMaterialRequirement
     public decimal DensityGramsPerMilliliter { get; init; }
     public decimal UnitCapacity { get; init; }
     public Guid? DirectLinkMaterialId { get; init; }
+    /// <summary>
+    /// Every material this BOM line may be issued as (the main material first, then substitutes with their own
+    /// quantity), pinned when the batch was configured. Null when the line has no usable substitute, which keeps
+    /// configurations without substitutes byte-identical to earlier ones.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<ProductionMaterialOption> Options { get; init; }
+}
+
+/// <summary>One material a BOM line may be issued as, with its own quantity in its department stock unit.</summary>
+public sealed record ProductionMaterialOption
+{
+    public Guid MaterialId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public Guid UnitId { get; init; }
+    public string Unit { get; init; } = string.Empty;
+    public decimal Quantity { get; init; }
+    public decimal BaseQuantity { get; init; }
+    public Guid BaseUnitId { get; init; }
+    public string BaseUnit { get; init; } = string.Empty;
+    public decimal PrescribedQuantity { get; init; }
+    public decimal DensityGramsPerMilliliter { get; init; }
 }
 
 public sealed record ProductionMaterialRepairLine
