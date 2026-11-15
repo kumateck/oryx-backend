@@ -69,9 +69,9 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     /// <summary>
     /// Retrieves a paginated list of warehouses based on search criteria.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
+    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload, OrAnyHubReport = true)]
     [HttpGet]
-    [AnyPermission("CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewInactiveEmployee", "CanViewLocations", "CanViewNewEmployee", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", "CanViewWarehouses")]
+    [AnyPermission("CanViewActiveEmployee", "CanViewDepartmentEmployee", "CanViewEmployeeDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewInactiveEmployee", "CanViewLocations", "CanViewNewEmployee", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", "CanViewWarehouses", OrAnyHubReport = true)]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,

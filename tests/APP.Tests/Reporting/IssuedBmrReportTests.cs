@@ -128,6 +128,58 @@ public class IssuedBmrReportTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Repository(db).GetIssuedBmrReport(Filter(), actor.Id, cancel.Token));
     }
 
+    private static IssuedBmrByProductFilter ByProduct(Guid productId) => new() { ProductId = productId };
+    private static Task<User> SeedByProduct(ApplicationDbContext db, bool grant = true, bool production = false) =>
+        Seed(db, grant, production: production, key: PermissionKeys.CanViewBmrIssuedByProductReport);
+
+    [Fact]
+    public async Task By_product_lists_every_issued_batch_of_that_product_over_all_time()
+    {
+        await using var db = Memory(); var actor = await SeedByProduct(db);
+        var first = AddRecord(db, actor.DepartmentId, Utc(1).AddYears(-2));
+        var product = first.ProductionScheduleProduct.Product;
+        var later = AddRecord(db, actor.DepartmentId, Utc(20), product);
+        later.DeletedAt = Utc(21); // Archived history stays in the list.
+        AddRecord(db, actor.DepartmentId, null, product); // Requested but never issued.
+        AddRecord(db, actor.DepartmentId, Utc(5)); // Another product.
+        await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+        var result = await Repository(db).GetIssuedBmrByProductReport(ByProduct(product.Id), actor.Id);
+        Assert.True(result.IsSuccess, string.Join("; ", result.Errors.Select(error => error.Description)));
+        Assert.Equal(new[] { first.Id, later.Id }, result.Value.Rows.Select(row => row.Id));
+        Assert.Equal(2, result.Value.TotalIssued);
+        Assert.Equal("P-1", result.Value.ProductCode);
+        Assert.True(result.Value.Rows[1].IsArchived);
+        var filter = ByProduct(product.Id); filter.StartDate = new(2026, 11, 1); filter.EndDate = new(2026, 11, 30);
+        var period = await Repository(db).GetIssuedBmrByProductReport(filter, actor.Id);
+        Assert.Equal(new[] { later.Id }, period.Value.Rows.Select(row => row.Id));
+    }
+
+    [Fact]
+    public async Task By_product_needs_its_own_key_not_the_period_report_key()
+    {
+        await using var db = Memory(); var actor = await Seed(db);
+        var record = AddRecord(db, actor.DepartmentId, Utc(1)); await db.SaveChangesAsync();
+        var result = await Repository(db).GetIssuedBmrByProductReport(ByProduct(record.ProductionScheduleProduct.ProductId), actor.Id);
+        Assert.Equal(ErrorType.Forbidden, Assert.Single(result.Errors).Type);
+    }
+
+    [Fact]
+    public async Task By_product_keeps_production_users_to_their_department_and_refuses_half_a_date_range()
+    {
+        await using var db = Memory(); var actor = await SeedByProduct(db, production: true);
+        var own = AddRecord(db, actor.DepartmentId, Utc(1));
+        var other = new Department { Id = Guid.NewGuid(), Name = "Other production", Type = DepartmentType.Production };
+        db.Departments.Add(other);
+        var foreign = AddRecord(db, other.Id, Utc(1));
+        await db.SaveChangesAsync();
+        Assert.True((await Repository(db).GetIssuedBmrByProductReport(ByProduct(own.ProductionScheduleProduct.ProductId), actor.Id)).IsSuccess);
+        Assert.Equal(ErrorType.NotFound, Assert.Single((await Repository(db)
+            .GetIssuedBmrByProductReport(ByProduct(foreign.ProductionScheduleProduct.ProductId), actor.Id)).Errors).Type);
+        var half = ByProduct(own.ProductionScheduleProduct.ProductId); half.StartDate = new(2026, 11, 1);
+        Assert.Equal(ErrorType.Validation, Assert.Single((await Repository(db).GetIssuedBmrByProductReport(half, actor.Id)).Errors).Type);
+        Assert.Equal(ErrorType.Validation, Assert.Single((await Repository(db).GetIssuedBmrByProductReport(new(), actor.Id)).Errors).Type);
+    }
+
     [LocalIssuedBmrFact]
     public async Task PostgreSQL_executes_the_historical_projection_with_nullable_issuer_and_date_boundaries()
     {
@@ -140,7 +192,8 @@ public class IssuedBmrReportTests
         await VerifyReport(db);
     }
 
-    private static async Task<User> Seed(ApplicationDbContext db, bool grant = true, bool disabled = false, bool production = false)
+    private static async Task<User> Seed(ApplicationDbContext db, bool grant = true, bool disabled = false, bool production = false,
+        string key = PermissionKeys.CanViewBmrIssuedReport)
     {
         var department = new Department { Id = Guid.NewGuid(), Name = "Production", Type = DepartmentType.Production };
         var qa = new Department { Id = Guid.NewGuid(), Name = "QA", Type = DepartmentType.NonProduction };
@@ -152,7 +205,7 @@ public class IssuedBmrReportTests
         {
             var role = new Role { Id = Guid.NewGuid(), Name = "Report reader" }; db.Roles.Add(role);
             db.UserRoles.Add(new IdentityUserRole<Guid> { RoleId = role.Id, UserId = actor.Id });
-            var claim = new IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanViewQcAndQaReport };
+            var claim = new IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = key };
             db.RoleClaims.Add(claim); await db.SaveChangesAsync();
             db.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim.Id, Key = claim.ClaimValue, Type = "View" });
         }
@@ -160,10 +213,10 @@ public class IssuedBmrReportTests
         return new User { Id = actor.Id, DepartmentId = department.Id };
     }
 
-    private static BatchManufacturingRecord AddRecord(ApplicationDbContext db, Guid? departmentId, DateTime? issue)
+    private static BatchManufacturingRecord AddRecord(ApplicationDbContext db, Guid? departmentId, DateTime? issue, Product? shared = null)
     {
         var unit = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Milligrams", Symbol = "mg" };
-        var product = new Product { Id = Guid.NewGuid(), Code = "P-1", Name = "Example product", DepartmentId = departmentId, BaseUoM = unit };
+        var product = shared ?? new Product { Id = Guid.NewGuid(), Code = "P-1", Name = "Example product", DepartmentId = departmentId, BaseUoM = unit };
         var packing = new ProductPacking { Id = Guid.NewGuid(), Name = "10 × 10", Product = product };
         var schedule = new ProductionSchedule { Id = Guid.NewGuid(), Code = "PLAN-1" };
         var batch = new ProductionScheduleProduct { Id = Guid.NewGuid(), Product = product, ProductionSchedule = schedule, ProductPacking = packing };

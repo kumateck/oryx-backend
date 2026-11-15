@@ -25,7 +25,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <summary>Current physical stock for printable count sheets, scoped to the current account's department.</summary>
     [ReportDepartmentScope]
     [HttpGet("batches/stock-report")]
-    [Authorize(PermissionKeys.CanViewWarehouseReport)]
+    [AnyPermission(PermissionKeys.CanViewStockCountSheetReport, PermissionKeys.CanViewExpiredStockReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialStockReportDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IResult> GetMaterialStockReport([FromQuery] MaterialStockReportFilter filter)
@@ -89,7 +89,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewPackagingMaterialLocationList", "CanViewPackagingMaterials", "CanViewRawMaterialLocationList", "CanViewRawMaterials", "CanViewResponseReworkTaskDetail", "CanViewResponseReworkTasks", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport, OrAnyHubReport = true)]
     public async Task<IResult> GetMaterial(Guid materialId)
     {
         var result = await repository.GetMaterial(materialId);
@@ -105,12 +105,12 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet]
-    [AnyPermission("CanCreateManufacturer", "CanCreateMaterialStockAdjustment", "CanCreateProductionProduct", "CanCreateVendor", "CanManageSupplierContracts", "CanUpdateManufacturerDetails", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewManufacturers", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterials", "CanViewProcurementReport", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRawMaterials", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials", "CanViewVendors", "CanViewWarehouseReport", "CanViewWaterQuality")]
+    [AnyPermission("CanCreateManufacturer", "CanCreateMaterialStockAdjustment", "CanCreateProductionProduct", "CanCreateVendor", "CanManageSupplierContracts", "CanUpdateManufacturerDetails", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewManufacturers", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterials", "CanViewProcurementReport", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRawMaterials", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials", "CanViewVendors", "CanViewWarehouseReport", "CanViewWaterQuality", OrAnyHubReport = true)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDto>>)
     )]
-    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport, OrAnyHubReport = true)]
     public async Task<IResult> GetMaterials(
         [FromQuery] MaterialKind kind,
         [FromQuery] int page = 1,
@@ -170,9 +170,9 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <returns>Returns a paginated list of materials.</returns>
     [HttpGet("all")]
-    [AnyPermission("CanCreateManufacturer", "CanCreateMaterialStockAdjustment", "CanCreateProductionProduct", "CanCreateVendor", "CanManageSupplierContracts", "CanUpdateManufacturerDetails", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewManufacturers", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterials", "CanViewProcurementReport", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRawMaterials", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials", "CanViewVendors", "CanViewWarehouseReport", "CanViewWaterQuality")]
+    [AnyPermission("CanCreateManufacturer", "CanCreateMaterialStockAdjustment", "CanCreateProductionProduct", "CanCreateVendor", "CanManageSupplierContracts", "CanUpdateManufacturerDetails", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewLinkedPackagingMaterials", "CanViewLinkedRawMaterials", "CanViewManufacturers", "CanViewMaterialStockAdjustment", "CanViewPackagingMaterials", "CanViewProcurementReport", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts", "CanViewQcAndQaReport", "CanViewRawMaterials", "CanViewRoutineSetup", "CanViewRoutineTests", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewUnlinkedPackagingMaterials", "CanViewUnlinkedRawMaterials", "CanViewVendors", "CanViewWarehouseReport", "CanViewWaterQuality", OrAnyHubReport = true)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialDto>))]
-    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport)]
+    [ReportHistory(PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewProcurementReport, OrAnyHubReport = true)]
     public async Task<IResult> GetMaterials()
     {
         var result = await repository.GetMaterials();
@@ -677,10 +677,10 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="materialCategoryId">The material category id.</param>
     /// <param name="departmentId">The department id for filtering results.</param>
     /// <returns>Returns a paginated list of approved raw materials.</returns>
-    [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportHistory(PermissionKeys.CanViewMaterialsPerDepartmentReport)]
     [ReportDepartmentScope]
     [HttpGet("department/approved-materials/v2")]
-    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials")]
+    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewRawMaterialStock", "CanViewRawMaterials", "CanViewMaterialsPerDepartmentReport")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<MaterialDetailsDto>>)

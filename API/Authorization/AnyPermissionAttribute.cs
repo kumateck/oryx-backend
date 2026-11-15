@@ -13,7 +13,13 @@ namespace API.Authorization;
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class AnyPermissionAttribute(params string[] keys) : Attribute, IAsyncActionFilter
 {
-    public IReadOnlyList<string> Keys { get; } = keys;
+    /// <summary>
+    /// For a filter lookup that every report in the reports hub uses (departments, materials, products): the key of
+    /// any one report is enough to load the choices. The report itself still needs its own key.
+    /// </summary>
+    public bool OrAnyHubReport { get; init; }
+
+    public IReadOnlyList<string> Keys => OrAnyHubReport ? [.. keys.Concat(APP.Utils.ReportPermissions.Hub).Distinct()] : keys;
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {

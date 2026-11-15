@@ -10,12 +10,20 @@ namespace APP.Repository;
 
 public partial class ReportRepository
 {
+    /// <summary>The monthly and daily schedule reports and product readiness all read this one report.</summary>
+    private static readonly string[] ProductionReadinessReports =
+    [
+        PermissionKeys.CanViewMonthlyProductionScheduleReport,
+        PermissionKeys.CanViewDailyProductionScheduleReport,
+        PermissionKeys.CanViewProductReadinessReport,
+    ];
+
     public async Task<Result<ProductionReadinessReportDto>> GetProductionReadinessReport(
         ProductionReadinessFilter filter, Guid userId, CancellationToken cancellationToken = default)
     {
         var permissions = await CurrentPermissionSet.Load(context, userId);
-        if (!permissions.Contains(PermissionKeys.CanViewQcAndQaReport))
-            return Error.Forbidden("Report.Permission", "QC and QA report access is required.");
+        if (!ProductionReadinessReports.Any(permissions.Contains))
+            return Error.Forbidden("Report.Permission", "Production schedule or product readiness report access is required.");
         if (!filter.DepartmentId.HasValue || filter.DepartmentId == Guid.Empty
             || !filter.StartDate.HasValue || !filter.EndDate.HasValue
             || filter.StartDate > filter.EndDate || filter.EndDate == DateOnly.MaxValue)
@@ -83,8 +91,8 @@ public partial class ReportRepository
 
         // Recheck live grants after reading; a revoked report must not be disclosed.
         var refreshed = await CurrentPermissionSet.Load(context, userId);
-        if (!refreshed.Contains(PermissionKeys.CanViewQcAndQaReport))
-            return Error.Forbidden("Report.Permission", "QC and QA report access is required.");
+        if (!ProductionReadinessReports.Any(refreshed.Contains))
+            return Error.Forbidden("Report.Permission", "Production schedule or product readiness report access is required.");
         cancellationToken.ThrowIfCancellationRequested();
         return ProductionReadinessReportBuilder.Build(department.Id, department.Name,
             filter.StartDate.Value, filter.EndDate.Value, source);
