@@ -31,6 +31,7 @@ public sealed class GrantPerReportViewKeys : Migration
         ('CanViewQcAndQaReport', 'CanViewDailyProductionScheduleReport'),
         ('CanViewQcAndQaReport', 'CanViewProductReadinessReport'),
         ('CanViewQcAndQaReport', 'CanViewBmrIssuedReport'),
+        ('CanViewQcAndQaReport', 'CanViewBmrIssuedByProductReport'),
         ('CanViewFgtnReport', 'CanViewProductListReport'),
         ('CanViewQcAndQaReport', 'CanViewDepartmentProductListReport'),
         ('CanViewFgtnReport', 'CanViewProductStockSummaryReport'),

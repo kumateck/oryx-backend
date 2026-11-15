@@ -51,6 +51,7 @@ public sealed class ReportPermissionTests
     [InlineData("vendor-item", PermissionKeys.CanViewVendorItemMappingDetailReport)]
     [InlineData("vendor-item/summary", PermissionKeys.CanViewVendorItemMappingSummaryReport)]
     [InlineData("bmr-issued", PermissionKeys.CanViewBmrIssuedReport)]
+    [InlineData("bmr-issued/by-product", PermissionKeys.CanViewBmrIssuedByProductReport)]
     // Register reports outside the reports hub keep their group key.
     [InlineData("expired-materials", PermissionKeys.CanViewWarehouseReport)]
     public void A_report_needs_its_own_key(string route, string key)
@@ -177,7 +178,7 @@ public sealed class ReportPermissionTests
     public void Every_hub_report_key_is_registered_once_under_reports()
     {
         var catalog = PermissionUtils.GeneratePermissions().ToList();
-        Assert.Equal(37, ReportPermissions.Hub.Count);
+        Assert.Equal(38, ReportPermissions.Hub.Count);
         Assert.Equal(ReportPermissions.Hub.Count, ReportPermissions.Hub.Distinct().Count());
         Assert.All(ReportPermissions.Hub, key =>
             Assert.Equal(PermissionModules.Reports, Assert.Single(catalog, permission => permission.Key == key).Module));

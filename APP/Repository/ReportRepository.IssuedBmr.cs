@@ -1,5 +1,6 @@
 using APP.Services.Authorization;
 using APP.Utils;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Reports;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.EntityFrameworkCore;
@@ -45,7 +46,25 @@ public partial class ReportRepository
         if (departmentId.HasValue)
             query = query.Where(item => item.ProductionScheduleProduct.Product.DepartmentId == departmentId);
         var rows = await query.OrderBy(item => item.IssuedDate).ThenBy(item => item.Id)
-            .Select(item => new IssuedBmrReportRowDto
+            .Select(IssuedRow).ToListAsync(cancellationToken);
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewBmrIssuedReport))
+            return Error.Forbidden("Report.Permission", "BMR issued report access is required.");
+        // Do not disclose data under an assignment that changed while the report loaded.
+        var current = await context.Users.IgnoreAutoIncludes().AsNoTracking()
+            .Where(user => user.Id == userId && !user.IsDisabled)
+            .Select(user => new { user.DepartmentId, Type = (DepartmentType?)user.Department.Type })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (current is null || current.DepartmentId != actor.DepartmentId || current.Type != actor.Type)
+            return Error.Forbidden("Report.DepartmentScope", "Your department changed. Reload before generating the report.");
+        cancellationToken.ThrowIfCancellationRequested();
+        return new IssuedBmrReportDto { StartDate = filter.StartDate.Value, EndDate = filter.EndDate.Value,
+            DepartmentId = departmentId, DepartmentName = department?.Name, GeneratedAt = DateTime.UtcNow,
+            TotalIssued = rows.Count, Rows = rows };
+    }
+
+    /// <summary>One issued BMR as both issued-BMR reports show it.</summary>
+    private static readonly System.Linq.Expressions.Expression<Func<BatchManufacturingRecord, IssuedBmrReportRowDto>> IssuedRow = item =>
+        new IssuedBmrReportRowDto
             {
                 Id = item.Id, ScheduleProductId = item.ProductionScheduleProductId,
                 ProductId = item.ProductionScheduleProduct.ProductId,
@@ -67,9 +86,48 @@ public partial class ReportRepository
                     || item.ProductionScheduleProduct.ProductionSchedule.DeletedAt.HasValue
                     || item.ProductionActivityStep.DeletedAt.HasValue,
                 IsCancelled = item.ProductionScheduleProduct.Cancelled
-            }).ToListAsync(cancellationToken);
-        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewBmrIssuedReport))
-            return Error.Forbidden("Report.Permission", "BMR issued report access is required.");
+            };
+
+    public async Task<Result<IssuedBmrByProductReportDto>> GetIssuedBmrByProductReport(
+        IssuedBmrByProductFilter filter, Guid userId, CancellationToken cancellationToken = default)
+    {
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewBmrIssuedByProductReport))
+            return Error.Forbidden("Report.Permission", "BMR issued by product report access is required.");
+        if (!filter.ProductId.HasValue || filter.ProductId == Guid.Empty || filter.DepartmentId == Guid.Empty
+            || filter.StartDate.HasValue != filter.EndDate.HasValue || filter.StartDate > filter.EndDate || filter.EndDate == DateOnly.MaxValue)
+            return Error.Validation("Report.Scope", "Choose a product, and either both issue dates or neither.");
+        var actor = await context.Users.IgnoreAutoIncludes().AsNoTracking()
+            .Where(user => user.Id == userId && !user.IsDisabled)
+            .Select(user => new { user.DepartmentId, Type = (DepartmentType?)user.Department.Type })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (actor?.Type is null)
+            return Error.Forbidden("Report.DepartmentScope", "An assigned department is required.");
+        var departmentId = filter.DepartmentId;
+        if (actor.Type == DepartmentType.Production)
+        {
+            if (departmentId.HasValue && departmentId != actor.DepartmentId)
+                return Error.Forbidden("Report.DepartmentScope", "Production users can only report on their own department.");
+            departmentId = actor.DepartmentId;
+        }
+        // Archived products and departments still have issued history.
+        var product = await context.Products.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Where(item => item.Id == filter.ProductId)
+            .Select(item => new { item.Id, item.Code, item.Name, item.DepartmentId, DepartmentName = item.Department.Name })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (product is null || (departmentId.HasValue && product.DepartmentId != departmentId))
+            return Error.NotFound("Report.Product", "The product was not found in your department.");
+        // IssuedDate is the issuance evidence; completed, released and archived BMRs stay in the list.
+        var query = context.BatchManufacturingRecords.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Where(item => item.IssuedDate.HasValue && item.ProductionScheduleProduct.ProductId == product.Id);
+        if (filter.StartDate.HasValue && filter.EndDate.HasValue)
+        {
+            var start = filter.StartDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endExclusive = filter.EndDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            query = query.Where(item => item.IssuedDate >= start && item.IssuedDate < endExclusive);
+        }
+        var rows = await query.OrderBy(item => item.IssuedDate).ThenBy(item => item.Id).Select(IssuedRow).ToListAsync(cancellationToken);
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewBmrIssuedByProductReport))
+            return Error.Forbidden("Report.Permission", "BMR issued by product report access is required.");
         // Do not disclose data under an assignment that changed while the report loaded.
         var current = await context.Users.IgnoreAutoIncludes().AsNoTracking()
             .Where(user => user.Id == userId && !user.IsDisabled)
@@ -78,8 +136,8 @@ public partial class ReportRepository
         if (current is null || current.DepartmentId != actor.DepartmentId || current.Type != actor.Type)
             return Error.Forbidden("Report.DepartmentScope", "Your department changed. Reload before generating the report.");
         cancellationToken.ThrowIfCancellationRequested();
-        return new IssuedBmrReportDto { StartDate = filter.StartDate.Value, EndDate = filter.EndDate.Value,
-            DepartmentId = departmentId, DepartmentName = department?.Name, GeneratedAt = DateTime.UtcNow,
-            TotalIssued = rows.Count, Rows = rows };
+        return new IssuedBmrByProductReportDto { ProductId = product.Id, ProductCode = product.Code, ProductName = product.Name,
+            StartDate = filter.StartDate, EndDate = filter.EndDate, DepartmentId = product.DepartmentId, DepartmentName = product.DepartmentName,
+            GeneratedAt = DateTime.UtcNow, TotalIssued = rows.Count, Rows = rows };
     }
 }

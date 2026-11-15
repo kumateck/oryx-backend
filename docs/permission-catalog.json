@@ -6224,6 +6224,13 @@
   },
   {
     "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewBmrIssuedByProductReport",
+    "name": "Can View Bmr Issued By Product Report",
+    "description": "Allows the user to  view bmr issued by product report."
+  },
+  {
+    "module": "Reports",
     "submodule": "Product and Finished Goods Reports",
     "key": "CanViewProductListReport",
     "name": "Can View Product List Report",

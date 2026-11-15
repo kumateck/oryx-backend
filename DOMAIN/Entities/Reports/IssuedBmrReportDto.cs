@@ -11,6 +11,17 @@ public sealed class IssuedBmrReportFilter
     public Guid? DepartmentId { get; set; }
 }
 
+/// <summary>Every BMR issued for one product, over all time unless dates are given.</summary>
+public sealed class IssuedBmrByProductFilter
+{
+    [Required] public Guid? ProductId { get; set; }
+    /// <summary>Optional inclusive UTC calendar dates, applied to the recorded BMR issue time.</summary>
+    public DateOnly? StartDate { get; set; }
+    public DateOnly? EndDate { get; set; }
+    /// <summary>Production users are limited to their own department, as on the other report pages.</summary>
+    public Guid? DepartmentId { get; set; }
+}
+
 public sealed class IssuedBmrReportRowDto
 {
     public Guid Id { get; set; }
@@ -38,6 +49,20 @@ public sealed class IssuedBmrReportDto
 {
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public string? DepartmentName { get; set; }
+    public DateTime GeneratedAt { get; set; }
+    public int TotalIssued { get; set; }
+    public List<IssuedBmrReportRowDto> Rows { get; set; } = [];
+}
+
+public sealed class IssuedBmrByProductReportDto
+{
+    public Guid ProductId { get; set; }
+    public string? ProductCode { get; set; }
+    public string? ProductName { get; set; }
+    public DateOnly? StartDate { get; set; }
+    public DateOnly? EndDate { get; set; }
     public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
     public DateTime GeneratedAt { get; set; }

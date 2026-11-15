@@ -243,6 +243,7 @@ public static class ReportPermissions
         PermissionKeys.CanViewDailyProductionScheduleReport,
         PermissionKeys.CanViewProductReadinessReport,
         PermissionKeys.CanViewBmrIssuedReport,
+        PermissionKeys.CanViewBmrIssuedByProductReport,
         PermissionKeys.CanViewProductListReport,
         PermissionKeys.CanViewDepartmentProductListReport,
         PermissionKeys.CanViewProductStockSummaryReport,
@@ -1447,6 +1448,8 @@ public static class PermissionKeys
     public const string CanViewProductReadinessReport = "CanViewProductReadinessReport";
     /// <summary>Run and print the BMR issued report.</summary>
     public const string CanViewBmrIssuedReport = "CanViewBmrIssuedReport";
+    /// <summary>Run and print the list of BMRs issued for one product.</summary>
+    public const string CanViewBmrIssuedByProductReport = "CanViewBmrIssuedByProductReport";
     /// <summary>Run and print the product list report.</summary>
     public const string CanViewProductListReport = "CanViewProductListReport";
     /// <summary>Run and print the department product list report.</summary>
@@ -5274,6 +5277,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewDailyProductionScheduleReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewProductReadinessReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewBmrIssuedReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewBmrIssuedByProductReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductListReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewDepartmentProductListReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductStockSummaryReport);

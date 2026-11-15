@@ -69,6 +69,22 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Every BMR issued for one product, over all time unless issue dates are given.</summary>
+    [ReportDepartmentScope]
+    [HttpGet("bmr-issued/by-product", Name = "GetIssuedBmrByProductReport")]
+    [Authorize(PermissionKeys.CanViewBmrIssuedByProductReport)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrByProductReportDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetIssuedBmrByProductReport([FromQuery] IssuedBmrByProductFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetIssuedBmrByProductReport(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Complete market-grouped production plan and current product configuration readiness.</summary>
     [ReportDepartmentScope]
     [HttpGet("production-readiness", Name = "GetProductionReadinessReport")]
