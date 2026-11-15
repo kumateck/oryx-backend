@@ -57,7 +57,7 @@ public class DepartmentController(IDepartmentRepository repository) : Controller
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <param name="type">The type of the department. (Product or Non Product Department)</param>
     /// <returns>Returns a paginated list of departments.</returns>
-    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload)]
+    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport, PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload, OrAnyHubReport = true)]
     [HttpGet]
     [SignedInUser("The organisation's department list, a reference lookup used by most pages and by department switching.")]
     [Authorize]

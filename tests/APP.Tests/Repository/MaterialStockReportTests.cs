@@ -34,7 +34,6 @@ public class MaterialStockReportTests
     }
 
     [Theory]
-    [InlineData(nameof(MaterialController.GetMaterialStockReport), PermissionKeys.CanViewWarehouseReport)]
     [InlineData(nameof(MaterialController.GetExpiredMaterialBatches), PermissionKeys.CanViewExpiredMaterials)]
     [InlineData(nameof(MaterialController.GetAboutToExpireMaterialBatches), PermissionKeys.CanViewAboutToExpireMaterials)]
     public void Reports_require_the_existing_specific_permission_without_role_bypasses(string action, string permission)
@@ -42,6 +41,15 @@ public class MaterialStockReportTests
         var method = Assert.IsAssignableFrom<MethodInfo>(typeof(MaterialController).GetMethod(action));
         var policy = Assert.Single(method.GetCustomAttributes<AuthorizeAttribute>());
         Assert.Equal(permission, policy.Policy); Assert.Null(policy.Roles);
+    }
+
+    [Fact]
+    public void Stock_count_and_expired_stock_reports_share_the_batch_stock_report()
+    {
+        var method = Assert.IsAssignableFrom<MethodInfo>(typeof(MaterialController).GetMethod(nameof(MaterialController.GetMaterialStockReport)));
+        Assert.Empty(method.GetCustomAttributes<AuthorizeAttribute>());
+        Assert.Equal([PermissionKeys.CanViewStockCountSheetReport, PermissionKeys.CanViewExpiredStockReport],
+            Assert.Single(method.GetCustomAttributes<API.Authorization.AnyPermissionAttribute>()).Keys);
     }
 
     [Theory]

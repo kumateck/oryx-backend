@@ -26,6 +26,8 @@ public interface IReportRepository
         ProductionMaterialForecastFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<IssuedBmrReportDto>> GetIssuedBmrReport(
         IssuedBmrReportFilter filter, Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<IssuedBmrByProductReportDto>> GetIssuedBmrByProductReport(
+        IssuedBmrByProductFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<ProductionReadinessReportDto>> GetProductionReadinessReport(
         ProductionReadinessFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId);

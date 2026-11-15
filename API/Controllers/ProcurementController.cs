@@ -65,7 +65,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of manufacturers.</returns>
     [HttpGet("manufacturer")]
-    [AnyPermission("CanCreateManufacturer", "CanUpdateManufacturerDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewManufacturers", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
+    [AnyPermission("CanCreateManufacturer", "CanUpdateManufacturerDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewManufacturers", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", OrAnyHubReport = true)]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -189,7 +189,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     /// <param name="searchQuery">Search query for filtering results.</param>
     /// <returns>Returns a paginated list of suppliers.</returns>
     [HttpGet("supplier")]
-    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors", "CanViewWarehouseReport")]
+    [AnyPermission("CanCreateVendor", "CanManageSupplierContracts", "CanUpdateVendorDetails", "CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewSupplierCertifications", "CanViewSupplierPerformance", "CanViewSupplierSpend", "CanViewVendors", "CanViewWarehouseReport", OrAnyHubReport = true)]
     [Authorize]
     [ProducesResponseType(
         StatusCodes.Status200OK,

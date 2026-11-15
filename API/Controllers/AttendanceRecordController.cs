@@ -31,7 +31,7 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// </summary>
     [ReportDepartmentScope]
     [HttpGet("daily-summary")]
-    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
+    [AnyPermission(PermissionKeys.CanViewDailyAttendanceReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<AttendanceRecordDepartmentDto>))]
     public async Task<IResult> DepartmentDailySummaryAttendance([FromQuery] string departmentName,
         [FromQuery] DateTime date)
@@ -43,10 +43,10 @@ public class AttendanceRecordController(IAttendanceRepository repository) : Cont
     /// <summary>
     /// Get a daily attendance record summary based on and the date.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewAttendanceReportUpload)]
+    [ReportHistory(PermissionKeys.CanViewAttendanceReportUpload, PermissionKeys.CanViewDepartmentAttendanceReport)]
     [ReportDepartmentScope]
     [HttpGet("general-summary")]
-    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
+    [AnyPermission(PermissionKeys.CanViewDepartmentAttendanceReport, PermissionKeys.CanViewAttendanceReportUpload)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GeneralAttendanceReportResponse))]
     public async Task<IResult> GeneralDailySummary([FromQuery] Guid? departmentId = null)
     {
