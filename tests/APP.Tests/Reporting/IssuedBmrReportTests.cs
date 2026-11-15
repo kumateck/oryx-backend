@@ -152,7 +152,7 @@ public class IssuedBmrReportTests
         {
             var role = new Role { Id = Guid.NewGuid(), Name = "Report reader" }; db.Roles.Add(role);
             db.UserRoles.Add(new IdentityUserRole<Guid> { RoleId = role.Id, UserId = actor.Id });
-            var claim = new IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanViewQcAndQaReport };
+            var claim = new IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanViewBmrIssuedReport };
             db.RoleClaims.Add(claim); await db.SaveChangesAsync();
             db.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim.Id, Key = claim.ClaimValue, Type = "View" });
         }

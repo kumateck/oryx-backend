@@ -12,8 +12,8 @@ public partial class ReportRepository
     public async Task<Result<IssuedBmrReportDto>> GetIssuedBmrReport(
         IssuedBmrReportFilter filter, Guid userId, CancellationToken cancellationToken = default)
     {
-        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewQcAndQaReport))
-            return Error.Forbidden("Report.Permission", "QC and QA report access is required.");
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewBmrIssuedReport))
+            return Error.Forbidden("Report.Permission", "BMR issued report access is required.");
         if (!filter.StartDate.HasValue || !filter.EndDate.HasValue || filter.StartDate > filter.EndDate
             || filter.EndDate == DateOnly.MaxValue || filter.DepartmentId == Guid.Empty)
             return Error.Validation("Report.Scope", "Choose a valid inclusive issue-date range and department.");
@@ -68,8 +68,8 @@ public partial class ReportRepository
                     || item.ProductionActivityStep.DeletedAt.HasValue,
                 IsCancelled = item.ProductionScheduleProduct.Cancelled
             }).ToListAsync(cancellationToken);
-        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewQcAndQaReport))
-            return Error.Forbidden("Report.Permission", "QC and QA report access is required.");
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanViewBmrIssuedReport))
+            return Error.Forbidden("Report.Permission", "BMR issued report access is required.");
         // Do not disclose data under an assignment that changed while the report loaded.
         var current = await context.Users.IgnoreAutoIncludes().AsNoTracking()
             .Where(user => user.Id == userId && !user.IsDisabled)

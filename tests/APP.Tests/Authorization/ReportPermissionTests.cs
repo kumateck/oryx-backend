@@ -32,16 +32,44 @@ public sealed class ReportPermissionTests
     }
 
     [Theory]
-    [InlineData("hr/employee-master-list", PermissionKeys.CanViewHumanResourcesReport)]
-    [InlineData("staff-turnover-report", PermissionKeys.CanViewHumanResourcesReport)]
-    [InlineData("warehouse/materials-stock-summary", PermissionKeys.CanViewWarehouseReport)]
+    [InlineData("hr/employee-master-list", PermissionKeys.CanViewEmployeeMasterListReport)]
+    [InlineData("staff-report", PermissionKeys.CanViewStaffGradeReport)]
+    [InlineData("employee-movement", PermissionKeys.CanViewNewHiresAndExitsReport)]
+    [InlineData("staff-total-report", PermissionKeys.CanViewStaffTotalReport)]
+    [InlineData("staff-gender-ratio-report", PermissionKeys.CanViewStaffGenderRatioReport)]
+    [InlineData("staff-leave-report", PermissionKeys.CanViewLeaveOverviewReport)]
+    [InlineData("staff-turnover-report", PermissionKeys.CanViewStaffTurnoverReport)]
+    [InlineData("warehouse/materials-stock-summary", PermissionKeys.CanViewMaterialStockSummaryReport)]
+    [InlineData("warehouse/materials-stock-batch-detail", PermissionKeys.CanViewMaterialStockDetailReport)]
+    [InlineData("warehouse/inventory-valuation-detail", PermissionKeys.CanViewInventoryValuationReport)]
+    [InlineData("purchase-orders", PermissionKeys.CanViewPurchaseOrdersReport)]
+    [InlineData("finished-goods-transfer-summary", PermissionKeys.CanViewFinishedGoodsTransferSummaryReport)]
+    [InlineData("finished-goods-transfer-detailed", PermissionKeys.CanViewFinishedGoodsTransferDetailReport)]
+    [InlineData("product-stock-detailed", PermissionKeys.CanViewProductStockDetailReport)]
+    [InlineData("invoiced-products-summary", PermissionKeys.CanViewInvoicedProductsReport)]
+    [InlineData("stock-summary-per-store-type", PermissionKeys.CanViewStoreStockReport)]
+    [InlineData("vendor-item", PermissionKeys.CanViewVendorItemMappingDetailReport)]
+    [InlineData("vendor-item/summary", PermissionKeys.CanViewVendorItemMappingSummaryReport)]
+    [InlineData("bmr-issued", PermissionKeys.CanViewBmrIssuedReport)]
+    // Register reports outside the reports hub keep their group key.
     [InlineData("expired-materials", PermissionKeys.CanViewWarehouseReport)]
-    [InlineData("purchase-orders", PermissionKeys.CanViewProcurementReport)]
-    [InlineData("invoiced-products-summary", PermissionKeys.CanViewFgtnReport)]
-    [InlineData("vendor-item/summary", PermissionKeys.CanViewStoreAndInventoryReport)]
-    [InlineData("bmr-issued", PermissionKeys.CanViewQcAndQaReport)]
-    [InlineData("production-readiness", PermissionKeys.CanViewQcAndQaReport)]
-    public void A_report_needs_its_family_key(string route, string key) => Assert.Equal(key, Policy(route));
+    public void A_report_needs_its_own_key(string route, string key)
+    {
+        Assert.Equal(key, Policy(route));
+        Assert.Empty(Action(route).GetCustomAttributes<AllowAnonymousAttribute>());
+    }
+
+    [Theory]
+    [InlineData("production-readiness", "CanViewMonthlyProductionScheduleReport,CanViewDailyProductionScheduleReport,CanViewProductReadinessReport")]
+    [InlineData("supplier-materials", "CanViewApprovedManufacturerListReport,CanViewSupplierMappingSummaryReport,CanViewSupplierMappingDetailReport")]
+    [InlineData("items-per-store-type", "CanViewStoreItemsReport,CanViewStoreStockReport,CanViewVendorItemMappingSummaryReport,CanViewVendorItemMappingDetailReport")]
+    [InlineData("purchased-po-report", "CanViewProcurementDashboard,CanViewInvoicedPurchaseOrdersReport")]
+    public void Reports_built_from_the_same_data_list_each_report_key(string route, string keys)
+    {
+        var action = Action(route);
+        Assert.Empty(action.GetCustomAttributes<AuthorizeAttribute>());
+        Assert.Equal(keys.Split(','), Assert.Single(action.GetCustomAttributes<AnyPermissionAttribute>()).Keys);
+    }
 
     private static MethodInfo Action(string route) => Assert.Single(typeof(ReportController).GetMethods(),
         method => method.GetCustomAttributes<HttpGetAttribute>().Any(get => get.Template == route));
@@ -51,10 +79,10 @@ public sealed class ReportPermissionTests
     [InlineData("hr-kpi/employee-gender-ratio", "CanViewHrDashboard,CanViewHrExecutiveSummary")]
     [InlineData("hr-kpi/employee-headcount", "CanViewHrExecutiveSummary")]
     [InlineData("kpi/fgtn-pending-approval", "CanViewProductionHealthDashboard,CanViewFgtnDashboard")]
-    [InlineData("product-stock-summary", "CanViewFgtnDashboard,CanViewFgtnReport")]
+    [InlineData("product-stock-summary", "CanViewFgtnDashboard,CanViewProductStockSummaryReport")]
     [InlineData("warehouse-kpi/expiry-risk-index", "CanViewWarehouseDashboard,CanViewInventoryCommandCenter")]
     [InlineData("warehouse/slow-moving-inventory", "CanViewInventoryCommandCenter")]
-    [InlineData("shipment", "CanViewLogisticsDashboard,CanViewProcurementReport")]
+    [InlineData("shipment", "CanViewLogisticsDashboard,CanViewShipmentsReport")]
     [InlineData("qa-dashboard", "CanViewQcDashboard,CanViewQaDashboard")]
     [InlineData("general-inventory-dashboard", "CanViewStoresDashboard")]
     [InlineData("services-dashboard", "CanViewServicesDashboard")]
@@ -133,5 +161,61 @@ public sealed class ReportPermissionTests
         // An old page key no longer opens the dashboard by itself.
         Assert.False(await Allowed(shared, PermissionKeys.CanViewAnalyticalTestRequests));
         Assert.False(await Allowed(shared));
+    }
+
+    [Theory]
+    [InlineData("daily-summary", PermissionKeys.CanViewDailyAttendanceReport)]
+    [InlineData("general-summary", PermissionKeys.CanViewDepartmentAttendanceReport)]
+    public void Attendance_reports_open_with_their_own_key_or_the_attendance_summary_key(string route, string key)
+    {
+        var action = Assert.Single(typeof(AttendanceRecordController).GetMethods(),
+            method => method.GetCustomAttributes<HttpGetAttribute>().Any(get => get.Template == route));
+        Assert.Equal([key, PermissionKeys.CanViewAttendanceReportUpload], Assert.Single(action.GetCustomAttributes<AnyPermissionAttribute>()).Keys);
+    }
+
+    [Fact]
+    public void Every_hub_report_key_is_registered_once_under_reports()
+    {
+        var catalog = PermissionUtils.GeneratePermissions().ToList();
+        Assert.Equal(37, ReportPermissions.Hub.Count);
+        Assert.Equal(ReportPermissions.Hub.Count, ReportPermissions.Hub.Distinct().Count());
+        Assert.All(ReportPermissions.Hub, key =>
+            Assert.Equal(PermissionModules.Reports, Assert.Single(catalog, permission => permission.Key == key).Module));
+    }
+
+    [Fact]
+    public void The_migration_grants_every_hub_report_key_from_one_group_key()
+    {
+        var registered = PermissionUtils.GeneratePermissions().Select(permission => permission.Key).ToHashSet();
+        var pairs = System.Text.RegularExpressions.Regex.Matches(
+                (string)typeof(GrantPerReportViewKeys).GetField("Pairs", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!,
+                @"\('(\w+)', '(\w+)'\)")
+            .Select(match => (Group: match.Groups[1].Value, Report: match.Groups[2].Value)).ToList();
+        Assert.Equal(ReportPermissions.Hub.Order(), pairs.Select(pair => pair.Report).Order());
+        Assert.All(pairs, pair => Assert.Contains(pair.Group, registered));
+        Assert.Contains((PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewApprovedManufacturerListReport), pairs);
+        Assert.Contains((PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewBmrIssuedReport), pairs);
+    }
+
+    [Fact]
+    public async Task A_report_opens_with_its_own_key_and_not_with_a_neighbour_or_its_old_group_key()
+    {
+        var aml = Assert.Single(Action("supplier-materials").GetCustomAttributes<AnyPermissionAttribute>());
+        Assert.True(await Allowed(aml, PermissionKeys.CanViewApprovedManufacturerListReport));
+        Assert.False(await Allowed(aml, PermissionKeys.CanViewProcurementReport));
+        Assert.False(await Allowed(aml, PermissionKeys.CanViewPurchaseOrdersReport));
+        Assert.False(await Allowed(aml));
+    }
+
+    [Fact]
+    public async Task Filter_lookups_open_for_any_one_report_key()
+    {
+        var materials = typeof(MaterialController).GetMethods()
+            .Single(method => method.Name == nameof(MaterialController.GetMaterials) && method.GetParameters().Length > 0);
+        var lookup = Assert.Single(materials.GetCustomAttributes<AnyPermissionAttribute>());
+        Assert.True(lookup.OrAnyHubReport);
+        Assert.True(await Allowed(lookup, PermissionKeys.CanViewApprovedManufacturerListReport));
+        Assert.True(await Allowed(lookup, PermissionKeys.CanViewStaffTurnoverReport));
+        Assert.False(await Allowed(lookup, PermissionKeys.CanViewHrDashboard));
     }
 }

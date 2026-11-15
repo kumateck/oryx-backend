@@ -261,11 +261,11 @@ public class ProductionReadinessRepositoryTests
             context.Roles.Add(role);
             context.UserRoles.Add(new IdentityUserRole<Guid> { UserId = user.Id, RoleId = role.Id });
             var claim = new IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = AppConstants.Permission,
-                ClaimValue = PermissionKeys.CanViewQcAndQaReport };
+                ClaimValue = PermissionKeys.CanViewProductReadinessReport };
             context.RoleClaims.Add(claim);
             await context.SaveChangesAsync();
             context.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim.Id,
-                Key = PermissionKeys.CanViewQcAndQaReport, Type = "View" });
+                Key = PermissionKeys.CanViewProductReadinessReport, Type = "View" });
         }
         await context.SaveChangesAsync();
         // Return the requested production scope separately from the authenticated user's QA department.

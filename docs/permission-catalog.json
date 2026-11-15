@@ -6104,6 +6104,265 @@
     "description": "Allows the user to  view fgtn report."
   },
   {
+    "module": "Reports",
+    "submodule": "Suppliers and Manufacturers Reports",
+    "key": "CanViewApprovedManufacturerListReport",
+    "name": "Can View Approved Manufacturer List Report",
+    "description": "Allows the user to  view approved manufacturer list report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Suppliers and Manufacturers Reports",
+    "key": "CanViewSupplierMappingSummaryReport",
+    "name": "Can View Supplier Mapping Summary Report",
+    "description": "Allows the user to  view supplier mapping summary report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Suppliers and Manufacturers Reports",
+    "key": "CanViewSupplierMappingDetailReport",
+    "name": "Can View Supplier Mapping Detail Report",
+    "description": "Allows the user to  view supplier mapping detail report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Purchasing and Shipment Reports",
+    "key": "CanViewPurchaseOrdersReport",
+    "name": "Can View Purchase Orders Report",
+    "description": "Allows the user to  view purchase orders report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Purchasing and Shipment Reports",
+    "key": "CanViewInvoicedPurchaseOrdersReport",
+    "name": "Can View Invoiced Purchase Orders Report",
+    "description": "Allows the user to  view invoiced purchase orders report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Purchasing and Shipment Reports",
+    "key": "CanViewShipmentsReport",
+    "name": "Can View Shipments Report",
+    "description": "Allows the user to  view shipments report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewMaterialListReport",
+    "name": "Can View Material List Report",
+    "description": "Allows the user to  view material list report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewMaterialsPerDepartmentReport",
+    "name": "Can View Materials Per Department Report",
+    "description": "Allows the user to  view materials per department report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewMaterialStockSummaryReport",
+    "name": "Can View Material Stock Summary Report",
+    "description": "Allows the user to  view material stock summary report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewMaterialStockDetailReport",
+    "name": "Can View Material Stock Detail Report",
+    "description": "Allows the user to  view material stock detail report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewStockCountSheetReport",
+    "name": "Can View Stock Count Sheet Report",
+    "description": "Allows the user to  view stock count sheet report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewExpiredStockReport",
+    "name": "Can View Expired Stock Report",
+    "description": "Allows the user to  view expired stock report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Material Reports",
+    "key": "CanViewInventoryValuationReport",
+    "name": "Can View Inventory Valuation Report",
+    "description": "Allows the user to  view inventory valuation report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewMonthlyProductionScheduleReport",
+    "name": "Can View Monthly Production Schedule Report",
+    "description": "Allows the user to  view monthly production schedule report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewDailyProductionScheduleReport",
+    "name": "Can View Daily Production Schedule Report",
+    "description": "Allows the user to  view daily production schedule report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewProductReadinessReport",
+    "name": "Can View Product Readiness Report",
+    "description": "Allows the user to  view product readiness report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewBmrIssuedReport",
+    "name": "Can View Bmr Issued Report",
+    "description": "Allows the user to  view bmr issued report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewProductListReport",
+    "name": "Can View Product List Report",
+    "description": "Allows the user to  view product list report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewDepartmentProductListReport",
+    "name": "Can View Department Product List Report",
+    "description": "Allows the user to  view department product list report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewProductStockSummaryReport",
+    "name": "Can View Product Stock Summary Report",
+    "description": "Allows the user to  view product stock summary report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewProductStockDetailReport",
+    "name": "Can View Product Stock Detail Report",
+    "description": "Allows the user to  view product stock detail report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewFinishedGoodsTransferSummaryReport",
+    "name": "Can View Finished Goods Transfer Summary Report",
+    "description": "Allows the user to  view finished goods transfer summary report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewFinishedGoodsTransferDetailReport",
+    "name": "Can View Finished Goods Transfer Detail Report",
+    "description": "Allows the user to  view finished goods transfer detail report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Product and Finished Goods Reports",
+    "key": "CanViewInvoicedProductsReport",
+    "name": "Can View Invoiced Products Report",
+    "description": "Allows the user to  view invoiced products report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "General Store Reports",
+    "key": "CanViewStoreItemsReport",
+    "name": "Can View Store Items Report",
+    "description": "Allows the user to  view store items report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "General Store Reports",
+    "key": "CanViewStoreStockReport",
+    "name": "Can View Store Stock Report",
+    "description": "Allows the user to  view store stock report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "General Store Reports",
+    "key": "CanViewVendorItemMappingSummaryReport",
+    "name": "Can View Vendor Item Mapping Summary Report",
+    "description": "Allows the user to  view vendor item mapping summary report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "General Store Reports",
+    "key": "CanViewVendorItemMappingDetailReport",
+    "name": "Can View Vendor Item Mapping Detail Report",
+    "description": "Allows the user to  view vendor item mapping detail report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewEmployeeMasterListReport",
+    "name": "Can View Employee Master List Report",
+    "description": "Allows the user to  view employee master list report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewStaffGradeReport",
+    "name": "Can View Staff Grade Report",
+    "description": "Allows the user to  view staff grade report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewStaffTotalReport",
+    "name": "Can View Staff Total Report",
+    "description": "Allows the user to  view staff total report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewStaffGenderRatioReport",
+    "name": "Can View Staff Gender Ratio Report",
+    "description": "Allows the user to  view staff gender ratio report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewNewHiresAndExitsReport",
+    "name": "Can View New Hires And Exits Report",
+    "description": "Allows the user to  view new hires and exits report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewStaffTurnoverReport",
+    "name": "Can View Staff Turnover Report",
+    "description": "Allows the user to  view staff turnover report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewLeaveOverviewReport",
+    "name": "Can View Leave Overview Report",
+    "description": "Allows the user to  view leave overview report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewDailyAttendanceReport",
+    "name": "Can View Daily Attendance Report",
+    "description": "Allows the user to  view daily attendance report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "People Reports",
+    "key": "CanViewDepartmentAttendanceReport",
+    "name": "Can View Department Attendance Report",
+    "description": "Allows the user to  view department attendance report."
+  },
+  {
     "module": "Audit",
     "submodule": "Quality Audits",
     "key": "CanViewQualityAudits",

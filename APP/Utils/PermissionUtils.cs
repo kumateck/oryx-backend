@@ -211,6 +211,59 @@ public static class PermissionSubmodules
 
     // Reports
     public const string Reports = "Reports";
+    public const string SupplierReports = "Suppliers and Manufacturers Reports";
+    public const string PurchasingReports = "Purchasing and Shipment Reports";
+    public const string MaterialReports = "Material Reports";
+    public const string ProductionReports = "Production and Batch Record Reports";
+    public const string ProductReports = "Product and Finished Goods Reports";
+    public const string GeneralStoreReports = "General Store Reports";
+    public const string PeopleReports = "People Reports";
+}
+
+/// <summary>Lists of report keys that several endpoints check together.</summary>
+public static class ReportPermissions
+{
+    /// <summary>One key per report in the reports hub. Filter lookups that every report uses accept any of them.</summary>
+    public static readonly IReadOnlyList<string> Hub =
+    [
+        PermissionKeys.CanViewApprovedManufacturerListReport,
+        PermissionKeys.CanViewSupplierMappingSummaryReport,
+        PermissionKeys.CanViewSupplierMappingDetailReport,
+        PermissionKeys.CanViewPurchaseOrdersReport,
+        PermissionKeys.CanViewInvoicedPurchaseOrdersReport,
+        PermissionKeys.CanViewShipmentsReport,
+        PermissionKeys.CanViewMaterialListReport,
+        PermissionKeys.CanViewMaterialsPerDepartmentReport,
+        PermissionKeys.CanViewMaterialStockSummaryReport,
+        PermissionKeys.CanViewMaterialStockDetailReport,
+        PermissionKeys.CanViewStockCountSheetReport,
+        PermissionKeys.CanViewExpiredStockReport,
+        PermissionKeys.CanViewInventoryValuationReport,
+        PermissionKeys.CanViewMonthlyProductionScheduleReport,
+        PermissionKeys.CanViewDailyProductionScheduleReport,
+        PermissionKeys.CanViewProductReadinessReport,
+        PermissionKeys.CanViewBmrIssuedReport,
+        PermissionKeys.CanViewProductListReport,
+        PermissionKeys.CanViewDepartmentProductListReport,
+        PermissionKeys.CanViewProductStockSummaryReport,
+        PermissionKeys.CanViewProductStockDetailReport,
+        PermissionKeys.CanViewFinishedGoodsTransferSummaryReport,
+        PermissionKeys.CanViewFinishedGoodsTransferDetailReport,
+        PermissionKeys.CanViewInvoicedProductsReport,
+        PermissionKeys.CanViewStoreItemsReport,
+        PermissionKeys.CanViewStoreStockReport,
+        PermissionKeys.CanViewVendorItemMappingSummaryReport,
+        PermissionKeys.CanViewVendorItemMappingDetailReport,
+        PermissionKeys.CanViewEmployeeMasterListReport,
+        PermissionKeys.CanViewStaffGradeReport,
+        PermissionKeys.CanViewStaffTotalReport,
+        PermissionKeys.CanViewStaffGenderRatioReport,
+        PermissionKeys.CanViewNewHiresAndExitsReport,
+        PermissionKeys.CanViewStaffTurnoverReport,
+        PermissionKeys.CanViewLeaveOverviewReport,
+        PermissionKeys.CanViewDailyAttendanceReport,
+        PermissionKeys.CanViewDepartmentAttendanceReport,
+    ];
 }
 
 public static class PermissionKeys
@@ -1358,6 +1411,82 @@ public static class PermissionKeys
     public const string CanViewStoreAndInventoryReport = "CanViewStoreAndInventoryReport";
     public const string CanViewProcurementReport = "CanViewProcurementReport";
     public const string CanViewFgtnReport = "CanViewFgtnReport";
+
+    // One key per report (reports hub). The group keys above still guard the older register reports.
+    /// <summary>Run and print the approved manufacturer list for raw and packaging materials.</summary>
+    public const string CanViewApprovedManufacturerListReport = "CanViewApprovedManufacturerListReport";
+    /// <summary>Run and print the supplier and manufacturer mapping, summary.</summary>
+    public const string CanViewSupplierMappingSummaryReport = "CanViewSupplierMappingSummaryReport";
+    /// <summary>Run and print the supplier and manufacturer mapping, detail.</summary>
+    public const string CanViewSupplierMappingDetailReport = "CanViewSupplierMappingDetailReport";
+    /// <summary>Run and print the purchase orders report.</summary>
+    public const string CanViewPurchaseOrdersReport = "CanViewPurchaseOrdersReport";
+    /// <summary>Run and print the invoiced purchase orders report.</summary>
+    public const string CanViewInvoicedPurchaseOrdersReport = "CanViewInvoicedPurchaseOrdersReport";
+    /// <summary>Run and print the shipments report.</summary>
+    public const string CanViewShipmentsReport = "CanViewShipmentsReport";
+    /// <summary>Run and print the material list report.</summary>
+    public const string CanViewMaterialListReport = "CanViewMaterialListReport";
+    /// <summary>Run and print the materials per department report.</summary>
+    public const string CanViewMaterialsPerDepartmentReport = "CanViewMaterialsPerDepartmentReport";
+    /// <summary>Run and print the material stock report, summary.</summary>
+    public const string CanViewMaterialStockSummaryReport = "CanViewMaterialStockSummaryReport";
+    /// <summary>Run and print the material stock report, detail by batch.</summary>
+    public const string CanViewMaterialStockDetailReport = "CanViewMaterialStockDetailReport";
+    /// <summary>Run and print the stock count sheet.</summary>
+    public const string CanViewStockCountSheetReport = "CanViewStockCountSheetReport";
+    /// <summary>Run and print the expired stock report.</summary>
+    public const string CanViewExpiredStockReport = "CanViewExpiredStockReport";
+    /// <summary>Run and print the inventory valuation report.</summary>
+    public const string CanViewInventoryValuationReport = "CanViewInventoryValuationReport";
+    /// <summary>Run and print the monthly production schedule report.</summary>
+    public const string CanViewMonthlyProductionScheduleReport = "CanViewMonthlyProductionScheduleReport";
+    /// <summary>Run and print the daily production schedule report.</summary>
+    public const string CanViewDailyProductionScheduleReport = "CanViewDailyProductionScheduleReport";
+    /// <summary>Run and print the product readiness report.</summary>
+    public const string CanViewProductReadinessReport = "CanViewProductReadinessReport";
+    /// <summary>Run and print the BMR issued report.</summary>
+    public const string CanViewBmrIssuedReport = "CanViewBmrIssuedReport";
+    /// <summary>Run and print the product list report.</summary>
+    public const string CanViewProductListReport = "CanViewProductListReport";
+    /// <summary>Run and print the department product list report.</summary>
+    public const string CanViewDepartmentProductListReport = "CanViewDepartmentProductListReport";
+    /// <summary>Run and print the product stock report, summary.</summary>
+    public const string CanViewProductStockSummaryReport = "CanViewProductStockSummaryReport";
+    /// <summary>Run and print the product stock report, detail by batch.</summary>
+    public const string CanViewProductStockDetailReport = "CanViewProductStockDetailReport";
+    /// <summary>Run and print the finished goods transfer report, summary.</summary>
+    public const string CanViewFinishedGoodsTransferSummaryReport = "CanViewFinishedGoodsTransferSummaryReport";
+    /// <summary>Run and print the finished goods transfer report, detail.</summary>
+    public const string CanViewFinishedGoodsTransferDetailReport = "CanViewFinishedGoodsTransferDetailReport";
+    /// <summary>Run and print the invoiced products report.</summary>
+    public const string CanViewInvoicedProductsReport = "CanViewInvoicedProductsReport";
+    /// <summary>Run and print the store items report.</summary>
+    public const string CanViewStoreItemsReport = "CanViewStoreItemsReport";
+    /// <summary>Run and print the store stock report.</summary>
+    public const string CanViewStoreStockReport = "CanViewStoreStockReport";
+    /// <summary>Run and print the vendor item mapping, summary.</summary>
+    public const string CanViewVendorItemMappingSummaryReport = "CanViewVendorItemMappingSummaryReport";
+    /// <summary>Run and print the vendor item mapping, detail.</summary>
+    public const string CanViewVendorItemMappingDetailReport = "CanViewVendorItemMappingDetailReport";
+    /// <summary>Run and print the employee master list.</summary>
+    public const string CanViewEmployeeMasterListReport = "CanViewEmployeeMasterListReport";
+    /// <summary>Run and print the staff count by grade report.</summary>
+    public const string CanViewStaffGradeReport = "CanViewStaffGradeReport";
+    /// <summary>Run and print the staff total report.</summary>
+    public const string CanViewStaffTotalReport = "CanViewStaffTotalReport";
+    /// <summary>Run and print the staff gender ratio report.</summary>
+    public const string CanViewStaffGenderRatioReport = "CanViewStaffGenderRatioReport";
+    /// <summary>Run and print the new hires and exits report.</summary>
+    public const string CanViewNewHiresAndExitsReport = "CanViewNewHiresAndExitsReport";
+    /// <summary>Run and print the staff turnover report.</summary>
+    public const string CanViewStaffTurnoverReport = "CanViewStaffTurnoverReport";
+    /// <summary>Run and print the leave overview report.</summary>
+    public const string CanViewLeaveOverviewReport = "CanViewLeaveOverviewReport";
+    /// <summary>Run and print the daily attendance report.</summary>
+    public const string CanViewDailyAttendanceReport = "CanViewDailyAttendanceReport";
+    /// <summary>Run and print the department attendance report.</summary>
+    public const string CanViewDepartmentAttendanceReport = "CanViewDepartmentAttendanceReport";
 
     // IT Support Tickets
     public const string CanCreateTicket = "CanCreateTicket";
@@ -5128,6 +5257,43 @@ public static class PermissionUtils
             PermissionSubmodules.Reports,
             PermissionKeys.CanViewFgtnReport
         );
+        addPermission(PermissionModules.Reports, PermissionSubmodules.SupplierReports, PermissionKeys.CanViewApprovedManufacturerListReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.SupplierReports, PermissionKeys.CanViewSupplierMappingSummaryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.SupplierReports, PermissionKeys.CanViewSupplierMappingDetailReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PurchasingReports, PermissionKeys.CanViewPurchaseOrdersReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PurchasingReports, PermissionKeys.CanViewInvoicedPurchaseOrdersReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PurchasingReports, PermissionKeys.CanViewShipmentsReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewMaterialListReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewMaterialsPerDepartmentReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewMaterialStockSummaryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewMaterialStockDetailReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewStockCountSheetReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewExpiredStockReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.MaterialReports, PermissionKeys.CanViewInventoryValuationReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewMonthlyProductionScheduleReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewDailyProductionScheduleReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewProductReadinessReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewBmrIssuedReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductListReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewDepartmentProductListReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductStockSummaryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductStockDetailReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewFinishedGoodsTransferSummaryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewFinishedGoodsTransferDetailReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewInvoicedProductsReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.GeneralStoreReports, PermissionKeys.CanViewStoreItemsReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.GeneralStoreReports, PermissionKeys.CanViewStoreStockReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.GeneralStoreReports, PermissionKeys.CanViewVendorItemMappingSummaryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.GeneralStoreReports, PermissionKeys.CanViewVendorItemMappingDetailReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewEmployeeMasterListReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewStaffGradeReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewStaffTotalReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewStaffGenderRatioReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewNewHiresAndExitsReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewStaffTurnoverReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewLeaveOverviewReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewDailyAttendanceReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.PeopleReports, PermissionKeys.CanViewDepartmentAttendanceReport);
 
         // Audit
         addPermission(
