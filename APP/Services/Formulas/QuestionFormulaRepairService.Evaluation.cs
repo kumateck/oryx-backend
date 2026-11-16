@@ -25,7 +25,7 @@ public sealed partial class QuestionFormulaRepairService
         var selected = await Resolve(impact, target, grants);
         if (selected is null) return Denied();
         var closed = await Closed(selected); if (closed is not null) return Conflict(closed);
-        if (selected.Response is not { } response) return Conflict("Complete and save all required readings before recalculating.");
+        if (selected.Response is not { } response) return Conflict("No readings are saved for this test yet. Enter the readings, save, then recalculate.");
         var pin = impact.Pins.SingleOrDefault(p => p.ResponseId == response.Id && p.FormFieldId == field.Id);
         if (pin is null || !pin.RequiresRecalculation || pin.DefinitionHash != expectedConfigurationHash)
             return Error.Conflict("FormulaRepair.StaleConfiguration", "The repair configuration changed. Reload the test.");
@@ -33,8 +33,10 @@ public sealed partial class QuestionFormulaRepairService
         // A pin set from an approved revision is calculated with that revision's reviewed, compiled definition (named
         // expressions, derived columns and averages included); any other repair with this repair's own compilation.
         var approved = await ApprovedRevisionFor(field.QuestionId, pin.Definition);
-        if (answer is null || approved is null && !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer.Value, QuestionType.Formula, pin.Definition))
-            return Conflict("Complete and save all required readings before recalculating.");
+        // Recalculation works from whatever is saved now: every input the formula uses is read from the saved answer and
+        // the result is recalculated, replacing any earlier one. It stops only when an input truly has no value, and names it.
+        if (answer is null || string.IsNullOrWhiteSpace(answer.Value) || answer.Value.Trim() == "{}")
+            return Conflict("No readings are saved for this field yet. Enter the readings, save, then recalculate.");
         var inputHash = LegacyFormulaRepairDefinition.InputHash(answer.Value);
         var existing = await db.LegacyFormulaRepairEvaluations.SingleOrDefaultAsync(e => e.PinId == pin.Id && e.InputHash == inputHash);
         if (existing is not null) return existing.Id;
@@ -52,14 +54,15 @@ public sealed partial class QuestionFormulaRepairService
             }
             var keys = compiled.Definition.GetProperty("variables").EnumerateArray().Select(v => v.GetProperty("key").GetString() ?? "").ToList();
             inputs = LegacyFormulaRepairDefinition.ResolveInputs(pin.Definition, answer.Value, keys, cells);
-            var missing = inputs.Where(pair => string.IsNullOrWhiteSpace(pair.Value)).Select(pair => pair.Key).ToList();
-            if (missing.Count > 0) return Conflict($"Enter and save these readings before recalculating: {string.Join(", ", missing)}.");
         }
         else
         {
             compiled = LegacyFormulaRepairDefinition.Compile(pin.Definition);
             inputs = LegacyFormulaRepairDefinition.ResolveInputs(pin.Definition, answer.Value);
         }
+        var missing = inputs.Where(pair => string.IsNullOrWhiteSpace(pair.Value))
+            .Select(pair => LegacyFormulaRepairDefinition.InputLabel(pin.Definition, pair.Key)).Distinct().ToList();
+        if (missing.Count > 0) return Conflict($"Enter and save these readings, then recalculate: {string.Join("; ", missing)}.");
         var placement = $"repair-{pin.Id:N}";
         var configuration = JsonSerializer.SerializeToElement(new
         {
