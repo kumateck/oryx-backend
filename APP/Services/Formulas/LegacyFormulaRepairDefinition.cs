@@ -135,6 +135,32 @@ public static class LegacyFormulaRepairDefinition
         return Hash(value.ToJsonString());
     }
 
+    /// <summary>
+    /// The name an analyst knows an input by: its manual-input label, its standard or sample input label, the readings
+    /// table column a statistic comes from, or the variable key when nothing better is recorded.
+    /// </summary>
+    public static string InputLabel(string definition, string key)
+    {
+        try
+        {
+            var config = Payload(definition);
+            if (config["manualVarLabels"] is JsonObject labels && labels[key] is JsonValue label && label.TryGetValue<string>(out var text) && !string.IsNullOrWhiteSpace(text))
+                return $"{text.Trim()} ({key})";
+            if (LegacyFormulaInputKeys.TryBinding(config, key, out var sample, out var inputKey))
+            {
+                var inputs = sample is null ? config["standardInputs"] as JsonArray : (config["sampleInputs"] as JsonArray)?.FirstOrDefault() as JsonArray;
+                var name = inputs?.OfType<JsonObject>().FirstOrDefault(input => Text(input, "key") == inputKey) is { } input && Text(input, "label") is { Length: > 0 } inputLabel ? inputLabel : inputKey;
+                return sample is null ? $"standard {name}" : $"sample {sample} {name}";
+            }
+            var table = Regex.Match(key, @"^(standard|sample(\d+))(Avg|SD|RSD)$");
+            if (table.Success) return table.Groups[1].Value == "standard" ? "the standard column of the readings table" : $"the Sample {table.Groups[2].Value} column of the readings table";
+            var cell = Regex.Match(key, @"^R(\d+)(standard|sample(\d+))$");
+            if (cell.Success) return $"reading {cell.Groups[1].Value} of {(cell.Groups[2].Value == "standard" ? "the standard" : $"Sample {cell.Groups[3].Value}")}";
+        }
+        catch (Exception error) when (error is JsonException or ArgumentException or InvalidOperationException) { }
+        return key;
+    }
+
     private static string? NullIfBlank(string text) => string.IsNullOrWhiteSpace(text) ? null : text;
 
     public static Dictionary<string, string?> ResolveInputs(string definition, string value) =>

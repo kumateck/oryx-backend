@@ -730,4 +730,25 @@ public sealed class QuestionFormulaRepairTests
         Assert.Equal("2", sent.GetProperty("resolvedInputs").GetProperty("a").GetString());
         Assert.Equal("4", sent.GetProperty("resolvedInputs").GetProperty("b").GetString());
     }
+
+    [Fact]
+    public async Task Recalculation_uses_the_saved_readings_and_names_only_inputs_that_have_no_value()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        var answer = new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field, Value = "{\"a\":\"2\"}" };
+        f.Db.FormResponses.Add(answer);
+        await f.Db.SaveChangesAsync();
+        var request = await f.Request(f.Candidate(question: false));
+        Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
+
+        var missing = await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
+        Assert.Contains("Enter and save these readings, then recalculate: b", missing.Error.Description);
+
+        answer.Value = "{\"a\":\"2\",\"b\":\"4\"}";
+        await f.Db.SaveChangesAsync();
+        var recalculated = await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
+        Assert.True(recalculated.IsSuccess, recalculated.Error?.Description);
+        Assert.Equal("2", f.Calculation.Evaluated!.Value.GetProperty("resolvedInputs").GetProperty("a").GetString());
+    }
 }

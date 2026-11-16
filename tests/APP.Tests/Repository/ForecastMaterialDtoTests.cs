@@ -44,4 +44,27 @@ public class ForecastMaterialDtoTests
 
         Assert.True(dto.IsAvailable);
     }
+
+    [Fact]
+    public void IsAvailable_StockReservedForOtherBatches_IsNotCounted()
+    {
+        // Propylene glycol on PS017: 1,510 L usable, 1,500 L reserved for other batches, 300 L needed.
+        var dto = new ForecastMaterialDto
+        {
+            QuantityOnHand = 1_510m,
+            ExpiredQuantity = 0m,
+            ReservedQuantity = 1_500m,
+            QuantityNeeded = 300m,
+        };
+
+        Assert.False(dto.IsAvailable);
+    }
+
+    [Fact]
+    public void IsAvailable_FreeStockExactlyCoveringTheNeed_IsEnough()
+    {
+        var dto = new ForecastMaterialDto { QuantityOnHand = 500m, ReservedQuantity = 200m, QuantityNeeded = 300m };
+
+        Assert.True(dto.IsAvailable);
+    }
 }
