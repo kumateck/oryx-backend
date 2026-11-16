@@ -59,19 +59,24 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>Repair permission never widens record access: department, test permissions and field assignment still apply.</summary>
-    private async Task<bool> CanAccess(AnalyticalTestRequest atr, FormField field, HashSet<string> grants)
+    private async Task<bool> CanAccess(AnalyticalTestRequest atr, FormField field, HashSet<string> grants) =>
+        await AccessProblem(atr, field, grants) is null;
+
+    private async Task<string?> AccessProblem(AnalyticalTestRequest atr, FormField field, HashSet<string> grants)
     {
         if (!grants.Contains(PermissionKeys.CanStartProductTest) ||
-            !(grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequests) || grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing))) return false;
+            !(grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequests) || grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing)))
+            return "You need CanStartProductTest and a product test view permission to repair this test.";
         var actor = await db.Users.Where(u => u.Id == identity.UserId && !u.IsDisabled)
             .Select(u => new { u.DepartmentId, Type = (DepartmentType?)u.Department.Type }).SingleOrDefaultAsync();
-        if (actor?.DepartmentId is not { } department) return false;
+        if (actor?.DepartmentId is not { } department) return "Your account has no department, so it cannot repair tests.";
         var productDepartment = await db.ProductionScheduleProducts.Where(p => p.Id == atr.ProductionScheduleProductId)
             .Select(p => p.Product.DepartmentId).SingleOrDefaultAsync();
-        if (actor.Type != DepartmentType.NonProduction && productDepartment != department) return false;
+        if (actor.Type != DepartmentType.NonProduction && productDepartment != department) return "This test belongs to another department's product.";
         return await db.FormFieldAssignees.AnyAsync(a => a.FormFieldId == field.Id && a.AssigneeId == identity.UserId &&
             a.FormAssignee.FormId == field.FormSection.FormId && a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
-            a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId && a.FormAssignee.MaterialBatchId == null && a.FormAssignee.RoutineTrackId == null);
+            a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId && a.FormAssignee.MaterialBatchId == null && a.FormAssignee.RoutineTrackId == null)
+            ? null : "You are not assigned to this field on this test.";
     }
 
     private async Task<string?> Closed(Selected selected)
@@ -100,20 +105,46 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>Resolves ATR, response and placement on the server; a browser-supplied response ID is never trusted.</summary>
-    private async Task<Selected?> Resolve(Impact impact, FormulaRepairTarget target, HashSet<string> grants, AnalyticalTestRequest? known = null)
+    private async Task<Selected?> Resolve(Impact impact, FormulaRepairTarget target, HashSet<string> grants, AnalyticalTestRequest? known = null) =>
+        (await Locate(impact, target, grants, known)).Selected;
+
+    /// <summary>
+    /// Like <see cref="Resolve"/>, but says why a field on the test's own form cannot be repaired. <c>OnForm</c> is false when the
+    /// field is not on the test's raw data form at all, so it is not one of the test's fields.
+    /// </summary>
+    private async Task<(Selected? Selected, bool OnForm, string? Problem)> Locate(Impact impact, FormulaRepairTarget target, HashSet<string> grants,
+        AnalyticalTestRequest? known = null)
     {
         var field = impact.Fields.SingleOrDefault(f => f.Id == target.FormFieldId && !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue);
         var atr = known ?? await db.AnalyticalTestRequests.SingleOrDefaultAsync(a => a.Id == target.AtrId);
-        if (field is null || atr is null) return null;
+        if (field is null || atr is null) return (null, false, null);
         var formIds = await db.ProductAnalyticalRawData.Where(ard => ard.Id == atr.ChemicalArdId || ard.Id == atr.MicrobialArdId).Select(ard => ard.FormId).ToListAsync();
-        if (!formIds.Contains(field.FormSection.FormId)) return null;
+        if (!formIds.Contains(field.FormSection.FormId)) return (null, false, null);
         var responses = impact.Responses.Where(r => r.FormId == field.FormSection.FormId && !r.DeletedAt.HasValue &&
             r.BatchManufacturingRecordId == atr.BatchManufacturingRecordId && r.ProductionActivityStepId == atr.ProductionActivityStepId).ToList();
-        if (responses.Count > 1 || !await CanAccess(atr, field, grants)) return null;
-        return new(target, atr, responses.SingleOrDefault(), field);
+        if (responses.Count > 1) return (null, true, "This test has more than one worksheet response for its production step. Reconcile them before repairing.");
+        var problem = await AccessProblem(atr, field, grants);
+        return problem is null ? (new(target, atr, responses.SingleOrDefault(), field), true, null) : (null, true, problem);
     }
 
-    public async Task<Result<FormulaRepairContextDto>> Context(Guid questionId)
+    /// <summary>The formula of the question's approved, effective revision, as the question list shows it.</summary>
+    private async Task<(string Definition, int Revision)?> Approved(Guid questionId)
+    {
+        var now = DateTime.UtcNow;
+        var row = await db.QuestionFormulaDefinitions.AsNoTracking().Where(link => link.QuestionId == questionId)
+            .SelectMany(link => db.FormulaRevisions.Where(revision => revision.FormulaDefinitionId == link.FormulaDefinitionId
+                && revision.Status == FormulaRevisionStatus.Approved && revision.EffectiveAt <= now
+                && revision.AuthoringPayloadJson != null && revision.AuthoringPayloadJson.Trim() != ""))
+            .OrderByDescending(revision => revision.Revision)
+            .Select(revision => new { revision.AuthoringPayloadJson, revision.Revision }).FirstOrDefaultAsync();
+        return row is null ? null : (row.AuthoringPayloadJson, row.Revision);
+    }
+
+    /// <summary>
+    /// The repair workspace for a question. With <paramref name="atrId"/>, that test's fields are always listed, with the reason
+    /// when one cannot be repaired, so a test opened from its worksheet is never silently missing.
+    /// </summary>
+    public async Task<Result<FormulaRepairContextDto>> Context(Guid questionId, Guid? atrId = null)
     {
         var grants = await Grants();
         if (!CanRead(grants)) return Denied();
@@ -124,19 +155,37 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         var atrs = await db.AnalyticalTestRequests.Where(atr => assignments.Any(a =>
             a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
             a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId)).ToListAsync();
-        var placements = impact.Fields.Where(f => !f.DeletedAt.HasValue).ToList();
+        if (atrId is { } opened && atrs.All(a => a.Id != opened) &&
+            await db.AnalyticalTestRequests.SingleOrDefaultAsync(a => a.Id == opened) is { } openedAtr) atrs.Add(openedAtr);
+        var placements = impact.Fields.Where(f => !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue).ToList();
         foreach (var atr in atrs.OrderBy(a => a.ArNumber))
         foreach (var field in placements)
         {
-            var resolved = await Resolve(impact, new(atr.Id, field.Id), grants, atr);
-            if (resolved is not { } found) continue;
-            var blocker = await Closed(found);
             var section = string.IsNullOrWhiteSpace(field.FormSection.Name) ? "Formula field" : field.FormSection.Name.Trim();
-            tests.Add(new(atr.Id, found.Response?.Id, field.Id, $"{atr.ArNumber ?? "ATR without AR number"} · {section}", blocker is null, blocker));
+            var label = $"{atr.ArNumber ?? "ATR without AR number"} · {section}";
+            var located = await Locate(impact, new(atr.Id, field.Id), grants, atr);
+            if (located.Selected is not { } found)
+            {
+                // Only the opened test explains a refusal; other tests the user cannot reach stay out of the list.
+                if (located.OnForm && atr.Id == atrId) tests.Add(new(atr.Id, null, field.Id, label, false, located.Problem));
+                continue;
+            }
+            var blocker = await Closed(found);
+            tests.Add(new(atr.Id, found.Response?.Id, field.Id, label, blocker is null, blocker, CurrentFor(impact, found)));
         }
+        var approved = await Approved(questionId);
         return new FormulaRepairContextDto(questionId, impact.Question.Label, impact.Option.Name, LegacyFormulaRepairDefinition.Hash(impact.Option.Name),
             grants.Contains(PermissionKeys.CanRepairQuestionFormula), grants.Contains(PermissionKeys.CanRepairTestFormula),
-            impact.Fields.Select(f => f.FormSection.FormId).Distinct().Count(), impact.Responses.Count, tests, await GlobalBlockers(impact, updateQuestion: false));
+            impact.Fields.Select(f => f.FormSection.FormId).Distinct().Count(), impact.Responses.Count, tests, await GlobalBlockers(impact, updateQuestion: false),
+            approved?.Definition, approved?.Revision);
+    }
+
+    /// <summary>The formula a test calculates with now: its repaired configuration, or what its saved answer captured, or the question's.</summary>
+    private static string CurrentFor(Impact impact, Selected selected)
+    {
+        if (selected.Response is not { } response) return impact.Option.Name;
+        try { return CapturedDefinition(impact, response, selected.Field); }
+        catch (Exception error) when (error is JsonException or ArgumentException) { return impact.Option.Name; }
     }
 
     private static string CapturedDefinition(Impact impact, Response response, FormField field)
@@ -186,6 +235,8 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         var blockers = await GlobalBlockers(impact, candidate.UpdateQuestion);
         if (candidate.Definition == impact.Option.Name && candidate.UpdateQuestion && candidate.Targets.Count == 0)
             blockers.Add("The corrected configuration is identical to the current question. Change the expression or labels first.");
+        if (await Approved(questionId) is { } approved && candidate.Definition != approved.Definition)
+            blockers.Add($"This formula has approved revision {approved.Revision}. A repair applies that approved formula; make any other correction through a new revision.");
         var invalid = LegacyFormulaRepairDefinition.Validate(impact.Option.Name, candidate.Definition);
         if (invalid is not null) blockers.Add(invalid);
         else if (engineBlocker is not null) blockers.Add(engineBlocker);

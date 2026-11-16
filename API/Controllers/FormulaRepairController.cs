@@ -20,7 +20,7 @@ public sealed class FormulaRepairController(QuestionFormulaRepairService service
     [ProducesResponseType(typeof(FormulaRepairContextDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public Task<IResult> Context(Guid questionId) => Run(() => service.Context(questionId));
+    public Task<IResult> Context(Guid questionId, [FromQuery] Guid? atrId = null) => Run(() => service.Context(questionId, atrId));
 
     [HttpPost("questions/{questionId:guid}/preview", Name = "PreviewFormulaRepair")]
     [PermissionCheckedInAction("The formula repair service checks the question repair key.")]
