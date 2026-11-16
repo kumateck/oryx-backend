@@ -67,12 +67,9 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         if (!grants.Contains(PermissionKeys.CanStartProductTest) ||
             !(grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequests) || grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing)))
             return "You need CanStartProductTest and a product test view permission to repair this test.";
-        var actor = await db.Users.Where(u => u.Id == identity.UserId && !u.IsDisabled)
-            .Select(u => new { u.DepartmentId, Type = (DepartmentType?)u.Department.Type }).SingleOrDefaultAsync();
-        if (actor?.DepartmentId is not { } department) return "Your account has no department, so it cannot repair tests.";
-        var productDepartment = await db.ProductionScheduleProducts.Where(p => p.Id == atr.ProductionScheduleProductId)
-            .Select(p => p.Product.DepartmentId).SingleOrDefaultAsync();
-        if (actor.Type != DepartmentType.NonProduction && productDepartment != department) return "This test belongs to another department's product.";
+        // The same people who enter this field's readings may repair it: the test permissions and the field assignment.
+        // Analysts test other departments' products, so the product's department is not a rule here, as on the worksheet.
+        if (!await db.Users.AnyAsync(u => u.Id == identity.UserId && !u.IsDisabled)) return "Your account is disabled.";
         return await db.FormFieldAssignees.AnyAsync(a => a.FormFieldId == field.Id && a.AssigneeId == identity.UserId &&
             a.FormAssignee.FormId == field.FormSection.FormId && a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
             a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId && a.FormAssignee.MaterialBatchId == null && a.FormAssignee.RoutineTrackId == null)
@@ -161,8 +158,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         foreach (var atr in atrs.OrderBy(a => a.ArNumber))
         foreach (var field in placements)
         {
-            var section = string.IsNullOrWhiteSpace(field.FormSection.Name) ? "Formula field" : field.FormSection.Name.Trim();
-            var label = $"{atr.ArNumber ?? "ATR without AR number"} · {section}";
+            var label = TestLabel(atr, field);
             var located = await Locate(impact, new(atr.Id, field.Id), grants, atr);
             if (located.Selected is not { } found)
             {
@@ -179,6 +175,17 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             impact.Fields.Select(f => f.FormSection.FormId).Distinct().Count(), impact.Responses.Count, tests, await GlobalBlockers(impact, updateQuestion: false),
             approved?.Definition, approved?.Revision);
     }
+
+    /// <summary>"AR number · section", with the section's rich-text markup removed.</summary>
+    private static string TestLabel(AnalyticalTestRequest atr, FormField field)
+    {
+        var section = PlainText(field.FormSection.Name);
+        return $"{atr.ArNumber ?? "ATR without AR number"} · {(section.Length == 0 ? "Formula field" : section)}";
+    }
+
+    private static string PlainText(string? html) => string.IsNullOrWhiteSpace(html) ? "" :
+        System.Text.RegularExpressions.Regex.Replace(System.Net.WebUtility.HtmlDecode(
+            System.Text.RegularExpressions.Regex.Replace(html, "<[^>]*>", " ")), @"\s+", " ").Trim();
 
     /// <summary>The formula a test calculates with now: its repaired configuration, or what its saved answer captured, or the question's.</summary>
     private static string CurrentFor(Impact impact, Selected selected)
@@ -235,9 +242,12 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         var blockers = await GlobalBlockers(impact, candidate.UpdateQuestion);
         if (candidate.Definition == impact.Option.Name && candidate.UpdateQuestion && candidate.Targets.Count == 0)
             blockers.Add("The corrected configuration is identical to the current question. Change the expression or labels first.");
-        if (await Approved(questionId) is { } approved && candidate.Definition != approved.Definition)
-            blockers.Add($"This formula has approved revision {approved.Revision}. A repair applies that approved formula; make any other correction through a new revision.");
-        var invalid = LegacyFormulaRepairDefinition.Validate(impact.Option.Name, candidate.Definition);
+        var approved = await Approved(questionId);
+        if (approved is { } revision && candidate.Definition != revision.Definition)
+            blockers.Add($"This formula has approved revision {revision.Revision}. A repair applies that approved formula; make any other correction through a new revision.");
+        // The approved revision was reviewed as a whole, so its other settings may differ from the original option.
+        var isApproved = approved is { } match && candidate.Definition == match.Definition;
+        var invalid = LegacyFormulaRepairDefinition.Validate(impact.Option.Name, candidate.Definition, isApproved);
         if (invalid is not null) blockers.Add(invalid);
         else if (engineBlocker is not null) blockers.Add(engineBlocker);
         var selected = new List<Selected>(); var missing = new List<string>(); var labels = new List<FormulaRepairPreviewTestDto>();
@@ -246,11 +256,11 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             var row = await Resolve(impact, target, grants); if (row is null) return Denied();
             var closed = await Closed(row); if (closed is not null) blockers.Add(closed);
             var captured = row.Response is { } response ? CapturedDefinition(impact, response, row.Field) : impact.Option.Name;
-            var compatibility = LegacyFormulaRepairDefinition.Validate(captured, candidate.Definition);
+            var compatibility = LegacyFormulaRepairDefinition.Validate(captured, candidate.Definition, isApproved);
             if (compatibility is not null) blockers.Add(compatibility);
             var answer = row.Response is { } saved ? LatestAnswer(impact, saved.Id, row.Field.Id) : null;
             var complete = invalid is null && APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, QuestionType.Formula, candidate.Definition);
-            var label = $"{row.Atr.ArNumber ?? "ATR without AR number"} · {row.Field.FormSection.Name?.Trim() ?? "Formula field"}";
+            var label = TestLabel(row.Atr, row.Field);
             if (!complete) missing.Add($"{label}: complete and save all required readings, then recalculate.");
             labels.Add(new(target.AtrId, target.FormFieldId, label, answer is not null, captured != candidate.Definition, !complete));
             selected.Add(row);
