@@ -11,7 +11,7 @@ public interface IJobRequestRepository
         JobRequestStatus? status = null, JobHandlingType? handlingType = null, Guid? departmentId = null);
     Task<Result<IEnumerable<JobRequestDto>>> GetJobRequestsInJobOrders();
     Task<Result<JobRequestDto>> GetJobRequest(Guid id);
-    Task<Result> UpdateJobRequest(Guid id, UpdateJobRequestRequest request);
+    Task<Result> UpdateJobRequest(Guid id, UpdateJobRequestRequest request, Guid? actorId = null);
     Task<Result> DeleteJobRequest(Guid id, Guid userId);
     Task<Result<Guid>> AssignInternalJob(AssignInternalJobRequest request);
     Task<Result> UpdateJobRequestStatus(Guid id, JobRequestStatus status);

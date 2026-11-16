@@ -97,6 +97,8 @@ Each task uses the key for the record's stored kind; the server checks it on the
 | `CanReview/ReturnStaffRequisition` | confirm or return a staff requisition | nobody |
 | `CanReview/ReturnOvertimeRequest` | confirm or return an overtime request | nobody |
 | `CanReview/ReturnLeaveRequest` | confirm or return a leave request | nobody |
+| `CanReview/ReturnJobRequest` | confirm or return a job request | nobody |
+| `CanReview/ReturnPackingList` | confirm or return a packing list | nobody |
 
 Confirming an order's check keeps `CanCheckForeign/LocalPurchaseOrder`. Sending a returned stock
 requisition back uses `CanUpdateProductionStep` (it is corrected through its batch's Repair action);
@@ -111,8 +113,12 @@ Confirm) is required as well as the key whenever the type is configured.
    requisitions and stock requisitions (raw and packaging).
 2. **Remaining approval documents**, a few at a time, each with its edit-during-review check and
    Review panel. First batch (built): billing sheets, staff requisitions, overtime requests and leave
-   requests. They are corrected through their own edit endpoints, which record the edit on the review
+   requests; second batch (built): job requests and packing lists (`AllocateProductionOrder`). They are
+   corrected through their own edit endpoints, which record the edit on the review
    (a billing sheet's edit and add-charges are allowed while its review is open). Not yet: stock
-   adjustments (no edit endpoint), trial requisitions (no desktop page), and the rest.
+   adjustments, customer quotations and proforma invoices (no edit endpoint, so a returned record
+   could not be corrected), trial requisitions (no desktop page), production orders (created from a
+   quotation that would already have been reviewed), shipment documents and discrepancies (raised by
+   the system on arrival), payroll runs, performance reviews, payments and R&D documents.
 3. **Move the remaining checks onto the engine**: the stock issue check, then QC formula revision
    review.

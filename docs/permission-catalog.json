@@ -6755,6 +6755,34 @@
     "description": "Allows the user to  return leave request."
   },
   {
+    "module": "Service and Store Procurement",
+    "submodule": "Job Requests",
+    "key": "CanReviewJobRequest",
+    "name": "Can Review Job Request",
+    "description": "Allows the user to  review job request."
+  },
+  {
+    "module": "Service and Store Procurement",
+    "submodule": "Job Requests",
+    "key": "CanReturnJobRequest",
+    "name": "Can Return Job Request",
+    "description": "Allows the user to  return job request."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Production Orders",
+    "key": "CanReviewPackingList",
+    "name": "Can Review Packing List",
+    "description": "Allows the user to  review packing list."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Production Orders",
+    "key": "CanReturnPackingList",
+    "name": "Can Return Packing List",
+    "description": "Allows the user to  return packing list."
+  },
+  {
     "module": "Full Procedures",
     "submodule": "Questions & Templates",
     "key": "CanViewQuestionTemplates",

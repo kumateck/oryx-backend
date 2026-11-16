@@ -200,7 +200,7 @@ public class JobRequestRepository(ApplicationDbContext context,
         }
     }
 
-    public async Task<Result> UpdateJobRequest(Guid id, UpdateJobRequestRequest request)
+    public async Task<Result> UpdateJobRequest(Guid id, UpdateJobRequestRequest request, Guid? actorId = null)
     {
         var jobRequest = await context.JobRequests.FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
@@ -226,6 +226,7 @@ public class JobRequestRepository(ApplicationDbContext context,
         context.JobRequests.Update(jobRequest);
         await context.SaveChangesAsync();
 
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(JobRequest), id, actorId);
         return Result.Success();
     }
 
