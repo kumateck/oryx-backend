@@ -24,7 +24,8 @@ public sealed record ReviewTarget(
     IReadOnlyList<string> ReturnKeys,
     IReadOnlyList<string> ResubmitKeys,
     bool AlwaysReviewed,
-    int? Variant = null);
+    int? Variant = null,
+    Guid? ParentId = null);
 
 /// <summary>
 /// The document types that have a review step. A type is listed only once its corrections during review
@@ -41,6 +42,13 @@ public static class ReviewDocumentTypes
     public const string StaffRequisition = "StaffRequisition";
     public const string OvertimeRequest = "OvertimeRequest";
     public const string LeaveRequest = "LeaveRequest";
+    public const string JobRequest = "JobRequest";
+    /// <summary>The warehouse check of issued stock, signed on the voucher as "Checked by".</summary>
+    public const string StockIssue = "StockRequisitionIssue";
+    /// <summary>A QC formula revision: reviewed (with its definition hash and a reason) before it is approved.</summary>
+    public const string FormulaRevision = "FormulaRevision";
+    /// <summary>A packing list: the approval engine calls it an allocation of a production order.</summary>
+    public const string PackingList = "AllocateProductionOrder";
 
     /// <summary>Types with no kind of their own: one key per task, the same for every record.</summary>
     private sealed record SimpleType(string View, string Confirm, string Return, string Edit);
@@ -50,6 +58,8 @@ public static class ReviewDocumentTypes
         [StaffRequisition] = new(PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanEditStaffRequisition),
         [OvertimeRequest] = new(PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanEditOvertimeManagement),
         [LeaveRequest] = new(PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest),
+        [JobRequest] = new(PermissionKeys.CanViewJobRequests, PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReturnJobRequest, PermissionKeys.CanEditJobRequest),
+        [PackingList] = new(PermissionKeys.CanViewPackingList, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReturnPackingList, PermissionKeys.CanGeneratePackingList),
     };
 
     public static readonly IReadOnlyList<ReviewDocumentTypeDto> All =
@@ -62,6 +72,12 @@ public static class ReviewDocumentTypes
         new(StaffRequisition, "Staff requisition", AlwaysReviewed: false),
         new(OvertimeRequest, "Overtime request", AlwaysReviewed: false),
         new(LeaveRequest, "Leave request", AlwaysReviewed: false),
+        new(JobRequest, "Job request", AlwaysReviewed: false),
+        // Issued stock has always been checked; its check is this review.
+        new(StockIssue, "Stock issue check", AlwaysReviewed: true),
+        // Formula revisions have always been reviewed before approval; their review is this one.
+        new(FormulaRevision, "QC formula revision", AlwaysReviewed: true),
+        new(PackingList, "Packing list", AlwaysReviewed: false),
     ];
 
     public static bool IsConfigurable(string itemType) => All.Any(type => type.ItemType == itemType);
@@ -80,10 +96,15 @@ public static class ReviewDocumentTypes
     /// it is finalised or revised instead, because its check already sits before its approvals.
     /// </summary>
     public static bool HeldAtApprovalStart(string modelType) =>
-        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition || Simple.ContainsKey(modelType);
+        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue || Simple.ContainsKey(modelType);
 
     public static bool IsReviewModelType(string modelType) =>
-        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition || Simple.ContainsKey(modelType);
+        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue or FormulaRevision
+        || Simple.ContainsKey(modelType);
+
+    /// <summary>True when every record of the type is reviewed, with or without named reviewers.</summary>
+    public static bool AlwaysReviewedType(string configurationType) =>
+        All.Any(type => type.ItemType == configurationType && type.AlwaysReviewed);
 
     /// <summary>
     /// Loads the record and its keys. The kind always comes from what is stored: a model type in a request
@@ -138,6 +159,38 @@ public static class ReviewDocumentTypes
                     [PermissionKeys.CanUpdateProductionStep],
                     AlwaysReviewed: false);
             }
+            case FormulaRevision:
+            {
+                var revision = await context.FormulaRevisions.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Revision, item.CreatedById, item.FormulaDefinitionId }).FirstOrDefaultAsync(cancellationToken);
+                if (revision is null) return null;
+                var question = await context.QuestionFormulaDefinitions.AsNoTracking()
+                    .Where(item => item.FormulaDefinitionId == revision.FormulaDefinitionId)
+                    .Select(item => new { item.QuestionId, item.Question.Label }).FirstOrDefaultAsync(cancellationToken);
+                if (question is null) return null;
+                return new ReviewTarget(FormulaRevision, FormulaRevision, id, $"{question.Label} · revision {revision.Revision}", revision.CreatedById,
+                    [PermissionKeys.CanViewReviewFormulaRevision], [PermissionKeys.CanReviewFormulaRevision], [PermissionKeys.CanReturnFormulaRevision],
+                    // A returned revision is corrected as a draft and submitted for review again from its question.
+                    [PermissionKeys.CanEditQuestions], AlwaysReviewed: true, ParentId: question.QuestionId);
+            }
+            case StockIssue:
+            {
+                var issue = await context.StockRequisitionIssues.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.RequisitionId, item.Requisition.Code, item.IssuedById }).FirstOrDefaultAsync(cancellationToken);
+                if (issue is null) return null;
+                var kinds = await context.RequisitionItems.AsNoTracking()
+                    .Where(item => item.RequisitionId == issue.RequisitionId && item.DeletedAt == null)
+                    .Select(item => item.Material.Kind).Distinct().ToListAsync(cancellationToken);
+                if (kinds.Count != 1) return null;
+                var raw = kinds[0] == MaterialKind.Raw;
+                return new ReviewTarget(StockIssue, StockIssue, id, issue.Code, issue.IssuedById,
+                    [raw ? PermissionKeys.CanViewRawMaterialRequisitions : PermissionKeys.CanViewPackagingMaterialRequisitions],
+                    [raw ? PermissionKeys.CanCheckRawMaterialIssue : PermissionKeys.CanCheckPackagingMaterialIssue],
+                    [raw ? PermissionKeys.CanReturnRawMaterialIssue : PermissionKeys.CanReturnPackagingMaterialIssue],
+                    // A returned issue is corrected through the issued-material repair, then sent back for check.
+                    [raw ? PermissionKeys.CanRepairIssuedBom : PermissionKeys.CanRepairIssuedPackaging],
+                    AlwaysReviewed: true, Variant: raw ? 0 : 1, ParentId: issue.RequisitionId);
+            }
             default:
                 if (!Simple.TryGetValue(modelType, out var keys)) return null;
                 var record = await SimpleRecordAsync(context, modelType, id, cancellationToken);
@@ -175,6 +228,18 @@ public static class ReviewDocumentTypes
                 var row = await context.LeaveRequests.AsNoTracking().Where(item => item.Id == id)
                     .Select(item => new { item.Employee.FirstName, item.Employee.LastName, item.StartDate, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
                 return row is null ? null : ($"{row.FirstName} {row.LastName} · {row.StartDate:d MMM yyyy}".Trim(), row.CreatedById);
+            }
+            case JobRequest:
+            {
+                var row = await context.JobRequests.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : (row.Code, row.CreatedById);
+            }
+            case PackingList:
+            {
+                var row = await context.AllocateProductionOrders.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.ProductionOrder.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : ($"Packing list · {row.Code}", row.CreatedById);
             }
             default:
                 return null;
@@ -220,6 +285,10 @@ public static class ReviewDocumentTypes
                 context.OvertimeRequestApprovals.Where(item => item.OvertimeRequestId == id),
             LeaveRequest when await context.LeaveRequests.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
                 context.LeaveRequestApprovals.Where(item => item.LeaveRequestId == id),
+            JobRequest when await context.JobRequests.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.JobRequestApprovals.Where(item => item.JobRequestId == id),
+            PackingList when await context.AllocateProductionOrders.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.AllocateProductionOrderApprovals.Where(item => item.AllocateProductionOrderId == id),
             _ => null,
         };
         if (stages is null) return (null, null);

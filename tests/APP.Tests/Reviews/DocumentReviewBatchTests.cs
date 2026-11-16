@@ -31,7 +31,7 @@ file sealed class NoUser : ICurrentUserService
     public string DepartmentType => string.Empty;
 }
 
-/// <summary>Phase 2 document types: billing sheets, staff requisitions, overtime and leave requests.</summary>
+/// <summary>Phase 2 document types: billing sheets, staff requisitions, overtime, leave and job requests, packing lists.</summary>
 public class DocumentReviewBatchTests
 {
     private readonly ApplicationDbContext db = new(new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -76,6 +76,14 @@ public class DocumentReviewBatchTests
             case ReviewDocumentTypes.OvertimeRequest:
                 db.OvertimeRequests.Add(new OvertimeRequest { Id = id, Code = "OT-1", StartTime = "05:00 PM", EndTime = "07:00 PM" });
                 break;
+            case ReviewDocumentTypes.JobRequest:
+                db.JobRequests.Add(new DOMAIN.Entities.JobRequests.JobRequest { Id = id, Code = "JR-1" });
+                break;
+            case ReviewDocumentTypes.PackingList:
+                var order = new DOMAIN.Entities.ProductionOrders.ProductionOrder { Id = Guid.NewGuid(), Code = "PO-77" };
+                db.ProductionOrders.Add(order);
+                db.AllocateProductionOrders.Add(new DOMAIN.Entities.ProductionOrders.AllocateProductionOrder { Id = id, ProductionOrderId = order.Id, ProductionOrder = order });
+                break;
             case ReviewDocumentTypes.LeaveRequest:
                 var employee = new Employee { Id = Guid.NewGuid(), FirstName = "Ama", LastName = "Owusu" };
                 db.Employees.Add(employee);
@@ -103,6 +111,8 @@ public class DocumentReviewBatchTests
         { ReviewDocumentTypes.StaffRequisition, PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanEditStaffRequisition },
         { ReviewDocumentTypes.OvertimeRequest, PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanEditOvertimeManagement },
         { ReviewDocumentTypes.LeaveRequest, PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest },
+        { ReviewDocumentTypes.JobRequest, PermissionKeys.CanViewJobRequests, PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReturnJobRequest, PermissionKeys.CanEditJobRequest },
+        { ReviewDocumentTypes.PackingList, PermissionKeys.CanViewPackingList, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReturnPackingList, PermissionKeys.CanGeneratePackingList },
     };
 
     [Theory]
@@ -164,5 +174,134 @@ public class DocumentReviewBatchTests
         Assert.True((await Service().Confirm(ReviewDocumentTypes.BillingSheet, id, new(), reviewer)).IsSuccess);
         db.ChangeTracker.Clear();
         Assert.Equal("BillingSheet.Pending", (await procurement.UpdateBillingSheet(new UpdateBillingSheetRequest { Code = "BS-1B" }, id, reviewer)).Errors[0].Code);
+    }
+
+    [Fact]
+    public async Task A_record_submitted_again_after_its_review_was_confirmed_is_reviewed_again()
+    {
+        // A packing list edited after its check restarts its approvals; the edit is checked as a new submission.
+        var preparer = await Person("Preparer", PermissionKeys.CanGeneratePackingList);
+        var reviewer = await Person("Reviewer", PermissionKeys.CanReviewPackingList, PermissionKeys.CanViewPackingList);
+        var id = await Record(ReviewDocumentTypes.PackingList, preparer);
+        await Configure(ReviewDocumentTypes.PackingList, reviewer);
+        await Approvals().CreateInitialApprovalsAsync(ReviewDocumentTypes.PackingList, id, preparer);
+        Assert.True((await Service().Confirm(ReviewDocumentTypes.PackingList, id, new(), reviewer)).IsSuccess);
+        await Approvals().CreateInitialApprovalsAsync(ReviewDocumentTypes.PackingList, id, preparer);
+        var reviews = await db.DocumentReviews.AsNoTracking().Where(item => item.ModelId == id).OrderBy(item => item.Submission).ToListAsync();
+        Assert.Equal([DocumentReviewStatus.Confirmed, DocumentReviewStatus.AwaitingReview], reviews.Select(item => item.Status));
+        Assert.Equal(2, reviews[1].Submission);
+        // The print keeps the earlier check until the new submission is confirmed.
+        var state = (await Service().GetState(ReviewDocumentTypes.PackingList, id, reviewer)).Value;
+        Assert.Equal(reviewer, state.Signatures.CheckedBy?.Id);
+    }
+}
+
+/// <summary>Phase 3: the warehouse check of issued stock is the issue's document review.</summary>
+public class StockIssueCheckReviewTests
+{
+    private const string Issue = ReviewDocumentTypes.StockIssue;
+    private readonly ApplicationDbContext db = new(new DbContextOptionsBuilder<ApplicationDbContext>()
+        .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, new NoUser());
+    private int claimId;
+
+    private ApprovalRepository Approvals() => new(db, null!, null!, null!, NullLogger<ApprovalRepository>.Instance, null!,
+        new NoOpProductionActivityStepEventPublisher());
+    private DocumentReviewService Service() => new(db, Approvals(), null!);
+
+    private async Task<Guid> Person(string name, params string[] keys)
+    {
+        var id = Guid.NewGuid();
+        var role = new Role { Id = Guid.NewGuid(), Name = name + " role" };
+        db.Users.Add(new User { Id = id, UserName = name, FirstName = name, LastName = "Tester" });
+        db.Roles.Add(role);
+        db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = id, RoleId = role.Id });
+        foreach (var key in keys)
+        {
+            var claim = ++claimId;
+            db.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = claim, RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = key });
+            db.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim, Key = key, Type = "Access" });
+        }
+        await db.SaveChangesAsync();
+        return id;
+    }
+
+    /// <summary>A raw material stock requisition issued by <paramref name="issuer"/>.</summary>
+    private async Task<Guid> Issued(Guid issuer, DOMAIN.Entities.Materials.MaterialKind kind = DOMAIN.Entities.Materials.MaterialKind.Raw)
+    {
+        var material = new DOMAIN.Entities.Materials.Material { Id = Guid.NewGuid(), Name = "Lactose", Kind = kind };
+        var requisition = new DOMAIN.Entities.Requisitions.Requisition { Id = Guid.NewGuid(), Code = "SR-1", RequisitionType = DOMAIN.Entities.Requisitions.RequisitionType.Stock,
+            Items = [new DOMAIN.Entities.Requisitions.RequisitionItem { Id = Guid.NewGuid(), MaterialId = material.Id, Quantity = 5 }] };
+        var issue = new DOMAIN.Entities.Requisitions.StockRequisitionIssue { Id = Guid.NewGuid(), RequisitionId = requisition.Id, IssuedById = issuer, IssuedAt = DateTime.UtcNow };
+        db.AddRange(material, requisition, issue);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        return issue.Id;
+    }
+
+    private Task<DocumentReview> Review(Guid id) => db.DocumentReviews.AsNoTracking().SingleAsync(item => item.ModelId == id);
+    private async Task<bool> Checked(Guid id) => (await db.StockRequisitionIssues.AsNoTracking().SingleAsync(item => item.Id == id)).Approved;
+
+    [Fact]
+    public async Task Every_issue_waits_for_its_check_and_the_issuer_may_check_it()
+    {
+        var issuer = await Person("Store officer", PermissionKeys.CanCheckRawMaterialIssue, PermissionKeys.CanViewRawMaterialRequisitions);
+        var packaging = await Person("Packaging checker", PermissionKeys.CanCheckPackagingMaterialIssue);
+        var id = await Issued(issuer);
+        // No reviewers are named, yet the issue still waits for its check: issued stock is always checked.
+        await Approvals().CreateInitialApprovalsAsync(Issue, id, issuer);
+        Assert.Equal(DocumentReviewStatus.AwaitingReview, (await Review(id)).Status);
+        Assert.False(await Checked(id));
+
+        Assert.Equal(ErrorType.Forbidden, (await Service().Confirm(Issue, id, new(), packaging)).Errors[0].Type);
+        Assert.True((await Service().Confirm(Issue, id, new(), issuer)).IsSuccess);
+        Assert.True(await Checked(id));
+        var state = (await Service().GetState(Issue, id, issuer)).Value;
+        Assert.Equal("Store officer Tester", state.Signatures.CheckedBy?.Name);
+    }
+
+    [Fact]
+    public async Task A_returned_issue_is_corrected_by_repair_and_sent_back_for_check()
+    {
+        var issuer = await Person("Store officer", PermissionKeys.CanRepairIssuedBom);
+        var checker = await Person("Checker", PermissionKeys.CanCheckRawMaterialIssue, PermissionKeys.CanReturnRawMaterialIssue);
+        var outsider = await Person("Outsider", PermissionKeys.CanCheckRawMaterialIssue);
+        db.ReviewConfigurations.Add(new ReviewConfiguration { Id = Guid.NewGuid(), ItemType = Issue,
+            Assignees = [new ReviewConfigurationAssignee { Id = Guid.NewGuid(), UserId = checker }] });
+        await db.SaveChangesAsync();
+        var id = await Issued(issuer);
+        await Approvals().CreateInitialApprovalsAsync(Issue, id, issuer);
+
+        Assert.Equal(ErrorType.Forbidden, (await Service().Confirm(Issue, id, new(), outsider)).Errors[0].Type);
+        Assert.True((await Service().Return(Issue, id, new() { Comments = "Batch B-12 was issued instead of B-11" }, checker)).IsSuccess);
+        Assert.False(await Checked(id));
+        Assert.True((await Service().Resubmit(Issue, id, new(), issuer)).IsSuccess);
+        Assert.True((await Service().Confirm(Issue, id, new(), checker)).IsSuccess);
+        Assert.True(await Checked(id));
+    }
+
+    [Fact]
+    public async Task An_issue_from_before_the_move_is_checked_on_a_review_opened_then()
+    {
+        var issuer = await Person("Store officer");
+        var checker = await Person("Checker", PermissionKeys.CanCheckRawMaterialIssue);
+        var id = await Issued(issuer);
+        Assert.False(await db.DocumentReviews.AnyAsync());
+        Assert.True((await Service().Confirm(Issue, id, new(), checker)).IsSuccess);
+        Assert.Equal(checker, (await Review(id)).ReviewedById);
+        Assert.True(await Checked(id));
+        // A checked issue cannot be checked again.
+        Assert.Equal(ErrorType.Conflict, (await Service().Confirm(Issue, id, new(), checker)).Errors[0].Type);
+    }
+
+    [Fact]
+    public void The_move_names_the_old_stages_and_grants_their_roles_the_check_keys()
+    {
+        var keys = typeof(INFRASTRUCTURE.Migrations.MoveStockIssueCheckToReview).GetField("Keys",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null) as string;
+        foreach (var key in new[] { PermissionKeys.CanCheckRawMaterialIssue, PermissionKeys.CanCheckPackagingMaterialIssue,
+                     PermissionKeys.CanReturnRawMaterialIssue, PermissionKeys.CanReturnPackagingMaterialIssue, PermissionKeys.CanViewPendingReviews })
+            Assert.Contains($"'{key}'", keys);
+        Assert.True(ReviewDocumentTypes.AlwaysReviewedType(Issue));
+        Assert.Equal(4, PermissionUtils.GeneratePermissions().Count(item => item.Key.EndsWith("MaterialIssue")));
     }
 }

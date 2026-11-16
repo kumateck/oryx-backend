@@ -418,8 +418,7 @@ public class JobRequestController(IJobRequestRepository repository, INFRASTRUCTU
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateJobRequest([FromRoute] Guid id, [FromBody] UpdateJobRequestRequest request)
     {
-
-        var result = await repository.UpdateJobRequest(id, request);
+        var result = await repository.UpdateJobRequest(id, request, Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor) ? actor : null);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

@@ -324,7 +324,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
         [FromBody] AllocateProductionOrderRequest request
     )
     {
-        var result = await repository.UpdateProductOrderAllocation(allocateProductionOrderId, request);
+        var result = await repository.UpdateProductOrderAllocation(allocateProductionOrderId, request, Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor) ? actor : null);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

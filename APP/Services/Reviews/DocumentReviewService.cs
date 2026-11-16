@@ -129,7 +129,7 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
         var approver = await ReviewDocumentTypes.FinalApproverAsync(context, target.ModelType, modelId);
         var people = await People([target.PreparedById, latest?.PreparedById, latest?.ReviewedById, confirmed?.ReviewedById, approver.UserId,
             .. latest?.Events.Select(item => item.ActorId) ?? []]);
-        var eligibility = await Eligibility(target, actorId, grants);
+        var eligibility = await DocumentReviewGate.EligibilityAsync(context, target, actorId, grants);
         var awaiting = latest?.Status == DocumentReviewStatus.AwaitingReview;
         var legacy = await LegacyPurchaseOrderCheck(target);
         return new DocumentReviewStateDto
@@ -144,9 +144,11 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
                 Events = latest.Events.OrderBy(item => item.At).Select(item => new DocumentReviewEventDto
                     { Action = item.Action, Actor = Person(people, item.ActorId), Comments = item.Comments, At = item.At }).ToList(),
             },
-            CanConfirm = eligibility.Confirm && (awaiting || legacy),
+            // A formula revision is confirmed on its own review page, which records its definition hash and a reason.
+            CanConfirm = eligibility.Confirm && (awaiting || legacy) && target.ModelType != ReviewDocumentTypes.FormulaRevision,
             CanReturn = eligibility.Return && (awaiting || legacy),
-            CanResubmit = latest?.Status == DocumentReviewStatus.Returned && target.ResubmitKeys.All(grants.Contains),
+            CanResubmit = latest?.Status == DocumentReviewStatus.Returned && target.ResubmitKeys.All(grants.Contains)
+                && target.ModelType != ReviewDocumentTypes.FormulaRevision,
             Signatures = new DocumentSignaturesDto
             {
                 PreparedBy = Person(people, target.PreparedById),
@@ -173,7 +175,7 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
             if (target is null || !target.ViewKeys.All(grants.Contains)) continue;
             var mine = review.Status == DocumentReviewStatus.Returned
                 ? review.PreparedById == actorId && target.ResubmitKeys.All(grants.Contains)
-                : (await Eligibility(target, actorId, grants)).Confirm;
+                : (await DocumentReviewGate.EligibilityAsync(context, target, actorId, grants)).Confirm;
             if (mine) rows.Add((review, target));
         }
         var slice = rows.Skip((page - 1) * pageSize).Take(pageSize).ToList();
@@ -183,7 +185,7 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
             Data = slice.Select(row => new PendingReviewDto
             {
                 ReviewId = row.Review.Id, ModelType = row.Review.ModelType, DocumentLabel = ReviewDocumentTypes.Label(row.Review.ConfigurationType),
-                ModelId = row.Review.ModelId, Code = row.Target.Code, Variant = row.Target.Variant, Status = row.Review.Status,
+                ModelId = row.Review.ModelId, Code = row.Target.Code, Variant = row.Target.Variant, ParentId = row.Target.ParentId, Status = row.Review.Status,
                 PreparedBy = Person(people, row.Review.PreparedById), SubmittedAt = row.Review.SubmittedAt, Comments = row.Review.Comments,
             }).ToList(),
             PageIndex = page, PageCount = (int)Math.Ceiling(rows.Count / (double)pageSize), TotalRecordCount = rows.Count,
@@ -197,12 +199,14 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
     {
         var target = await ReviewDocumentTypes.LoadAsync(context, modelType, modelId);
         if (target is null) return NotFound;
+        if (target.ModelType == ReviewDocumentTypes.FormulaRevision)
+            return Error.Conflict("DocumentReview.FormulaRecord", "Record the review on the formula review page, with the definition hash and a reason.");
         await using var transaction = context.Database.IsRelational() ? await context.Database.BeginTransactionAsync() : null;
         var review = await DocumentReviewGate.LatestAsync(context, target.ModelType, modelId);
         var grants = await CurrentPermissionSet.Load(context, actorId);
         if (!target.ConfirmKeys.All(grants.Contains))
             return Error.Forbidden("DocumentReview.Permission", $"You need {string.Join(" and ", target.ConfirmKeys)} for this.");
-        if (!(await Eligibility(target, actorId, grants)).Confirm)
+        if (!(await DocumentReviewGate.EligibilityAsync(context, target, actorId, grants)).Confirm)
             return Error.Forbidden("DocumentReview.NotReviewer", "Only a reviewer named for this document type, or its preparer, can confirm its review.");
         var opened = false;
         if (review is not { Status: DocumentReviewStatus.AwaitingReview })
@@ -230,6 +234,16 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
             review.Version++;
             await context.SaveChangesAsync();
         }
+        else if (target.ModelType == ReviewDocumentTypes.StockIssue)
+        {
+            // Nothing follows an issue's check: confirming it is the check, and the voucher is signed.
+            var issue = await context.StockRequisitionIssues.SingleAsync(item => item.Id == modelId);
+            issue.Approved = true;
+            issue.Rejected = false;
+            review.ApprovalsStartedAt = DateTime.UtcNow;
+            review.Version++;
+            await context.SaveChangesAsync();
+        }
         else
         {
             await approvals.CreateInitialApprovalsAsync(target.ModelType, modelId, actorId);
@@ -248,7 +262,7 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
         var grants = await CurrentPermissionSet.Load(context, actorId);
         if (!target.ReturnKeys.All(grants.Contains))
             return Error.Forbidden("DocumentReview.Permission", $"You need {string.Join(" and ", target.ReturnKeys)} for this.");
-        if (!(await Eligibility(target, actorId, grants)).Return)
+        if (!(await DocumentReviewGate.EligibilityAsync(context, target, actorId, grants)).Return)
             return Error.Forbidden("DocumentReview.NotReviewer", "Only a reviewer named for this document type can return it.");
         var opened = false;
         if (review is not { Status: DocumentReviewStatus.AwaitingReview })
@@ -258,6 +272,16 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
             opened = true;
         }
         if (Mismatch(review, request, opened)) return Stale;
+        if (target.ModelType == ReviewDocumentTypes.FormulaRevision)
+        {
+            // The revision goes back to Draft for its author, with an audit row in the same save (the status trigger needs it).
+            var revision = await context.FormulaRevisions.SingleAsync(item => item.Id == modelId);
+            if (revision.Status != DOMAIN.Entities.Formulas.FormulaRevisionStatus.InReview || revision.ReviewedById.HasValue)
+                return Error.Conflict("DocumentReview.FormulaStatus", "Only a revision in review that has not been reviewed yet can be returned.");
+            revision.Status = DOMAIN.Entities.Formulas.FormulaRevisionStatus.Draft;
+            context.FormulaRevisionAudits.Add(APP.Services.Formulas.FormulaDefinitionMapping.Audit(revision,
+                DOMAIN.Entities.Formulas.FormulaRevisionStatus.InReview, revision.Status, "ReturnedForCorrection", comments, actorId, Guid.NewGuid()));
+        }
         review.Status = DocumentReviewStatus.Returned;
         review.ReviewedById = actorId;
         review.ReviewedAt = DateTime.UtcNow;
@@ -273,6 +297,8 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
         var review = await DocumentReviewGate.LatestAsync(context, target.ModelType, modelId);
         if (review is not { Status: DocumentReviewStatus.Returned })
             return Error.Conflict("DocumentReview.NotReturned", "Only a record returned for correction can be sent back for review.");
+        if (target.ModelType == ReviewDocumentTypes.FormulaRevision)
+            return Error.Conflict("DocumentReview.FormulaSubmit", "Correct the draft and submit it for review again from its question.");
         if (Mismatch(review, request, false)) return Stale;
         if (!(await CurrentPermissionSet.Load(context, actorId)).IsSupersetOf(target.ResubmitKeys))
             return Error.Forbidden("DocumentReview.Permission", $"You need {string.Join(" and ", target.ResubmitKeys)} for this.");
@@ -285,32 +311,18 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
 
     // ---------------- Helpers ----------------
 
-    private sealed record ReviewEligibility(bool Confirm, bool Return);
-
-    /// <summary>
-    /// When the type is configured, only its named roles and users may review, and the preparer may confirm
-    /// their own record so work is not held up. Without a configuration (a purchase order, or a type whose
-    /// configuration was removed while records were in review) the review keys alone decide.
-    /// </summary>
-    private async Task<ReviewEligibility> Eligibility(ReviewTarget target, Guid actorId, HashSet<string> grants)
-    {
-        var confirmKeys = target.ConfirmKeys.All(grants.Contains);
-        var returnKeys = target.ReturnKeys.All(grants.Contains);
-        var assignees = await context.ReviewConfigurationAssignees.AsNoTracking()
-            .Where(item => item.ReviewConfiguration.ItemType == target.ConfigurationType && item.ReviewConfiguration.DeletedAt == null)
-            .Select(item => new { item.RoleId, item.UserId }).ToListAsync();
-        if (assignees.Count == 0) return new(confirmKeys, returnKeys);
-        var roles = await context.UserRoles.Where(item => item.UserId == actorId).Select(item => item.RoleId).ToListAsync();
-        var named = assignees.Any(item => item.UserId == actorId || item.RoleId.HasValue && roles.Contains(item.RoleId.Value));
-        return new(confirmKeys && (named || target.PreparedById == actorId), returnKeys && named);
-    }
-
-    /// <summary>A purchase order awaiting check with no open review: one finalised or revised before reviews existed.</summary>
+    /// <summary>A purchase order or stock issue awaiting its check with no open review: one from before its check moved onto reviews.</summary>
     private async Task<bool> LegacyPurchaseOrderCheck(ReviewTarget target) =>
-        target.ModelType == ReviewDocumentTypes.PurchaseOrder
-        && !await DocumentReviewGate.IsOpenAsync(context, target.ModelType, target.ModelId)
-        && await context.PurchaseOrders.AnyAsync(item => item.Id == target.ModelId
-            && (item.Status == PurchaseOrderStatus.PendingCheck || item.Status == PurchaseOrderStatus.Revised));
+        target.ModelType switch
+        {
+            ReviewDocumentTypes.PurchaseOrder => !await DocumentReviewGate.IsOpenAsync(context, target.ModelType, target.ModelId)
+                && await context.PurchaseOrders.AnyAsync(item => item.Id == target.ModelId
+                    && (item.Status == PurchaseOrderStatus.PendingCheck || item.Status == PurchaseOrderStatus.Revised)),
+            // An issue made before its check moved onto reviews (or before any check was set up) and never checked.
+            ReviewDocumentTypes.StockIssue => !await context.DocumentReviews.AnyAsync(item => item.ModelType == target.ModelType && item.ModelId == target.ModelId)
+                && await context.StockRequisitionIssues.AnyAsync(item => item.Id == target.ModelId && !item.Approved && !item.Rejected),
+            _ => false,
+        };
 
     private static Error NotOpen(DocumentReview review) => review?.Status == DocumentReviewStatus.Returned
         ? Error.Conflict("DocumentReview.Returned", "This record was returned for correction. It must be sent back for review first.")

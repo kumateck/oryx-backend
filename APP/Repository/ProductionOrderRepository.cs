@@ -731,7 +731,7 @@ public class ProductionOrderRepository(
     /// pass every check a new packing list passes and take theirs. Approval starts again, because what
     /// was being approved has changed. Everything is saved together, or nothing is.
     /// </summary>
-    public async Task<Result> UpdateProductOrderAllocation(Guid id, AllocateProductionOrderRequest request)
+    public async Task<Result> UpdateProductOrderAllocation(Guid id, AllocateProductionOrderRequest request, Guid? actorId = null)
     {
         var allocation = await context.AllocateProductionOrders
             .AsSplitQuery()
@@ -813,6 +813,8 @@ public class ProductionOrderRepository(
         allocation.Approvals = [];
         await context.SaveChangesAsync();
 
+        // A correction made while the packing list is in review is recorded on its review; it then stays in review.
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(AllocateProductionOrder), allocation.Id, actorId);
         await approvalRepository.CreateInitialApprovalsAsync(nameof(AllocateProductionOrder), allocation.Id);
         if (transaction is not null)
             await transaction.CommitAsync();

@@ -190,8 +190,7 @@ public class ApprovalRepository(
             return await ShipmentDiscrepancyApprovalHandler.ReviewAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
         if (modelType == StockRequisitionIssueApprovalHandler.ModelType)
-            return await StockRequisitionIssueApprovalHandler.ReviewAsync(
-                context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
+            return Error.Conflict("StockRequisitionIssue.Review", "Issued stock is checked on its review: confirm or return it from Pending reviews.");
         if (modelType == nameof(StaffRequisition))
             return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Approved);
@@ -2203,8 +2202,7 @@ public class ApprovalRepository(
             return await ShipmentDiscrepancyApprovalHandler.ReviewAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
         if (modelType == StockRequisitionIssueApprovalHandler.ModelType)
-            return await StockRequisitionIssueApprovalHandler.ReviewAsync(
-                context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
+            return Error.Conflict("StockRequisitionIssue.Review", "Issued stock is checked on its review: confirm or return it from Pending reviews.");
         if (modelType == nameof(StaffRequisition))
             return await StaffAndProductionApprovalHandler.ReviewStaffAsync(
                 context, modelId, userId, roleIds, comments, ApprovalStatus.Rejected);
@@ -3351,15 +3349,7 @@ public class ApprovalRepository(
             }));
         }
 
-        if (modelType is null or StockRequisitionIssueApprovalHandler.ModelType)
-        {
-            var issues = await pending.StockRequisitionIssues.AsSplitQuery()
-                .Include(item => item.Approvals)
-                .Include(item => item.Requisition)
-                .Include(item => item.IssuedBy).ThenInclude(user => user.Department)
-                .ToListAsync();
-            entitiesRequiringApproval.AddRange(issues.Select(item => StockRequisitionIssueEntity(item)));
-        }
+        // Issued stock is checked on its document review (Pending reviews), not in the approval queue.
 
         // 1. Get Purchase Orders requiring approval
         if (modelType is null or "PurchaseOrder")

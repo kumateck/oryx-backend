@@ -26,6 +26,8 @@ public sealed class FormulaQuestionPreviewTests
             configuration.CreateMap<Question, QuestionDto>();
             configuration.CreateMap<Question, CollectionItemDto>();
             configuration.CreateMap<QuestionOption, QuestionOptionDto>();
+            // A question's creator, present when the author is also a stored user (as a formula reviewer is).
+            configuration.CreateMap<DOMAIN.Entities.Users.User, DOMAIN.Entities.Users.UserDto>();
         }).CreateMapper(), null!, null!, null!);
 
     [Theory]
