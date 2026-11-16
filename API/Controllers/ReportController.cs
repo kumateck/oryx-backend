@@ -56,7 +56,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>Issued BMRs by inclusive UTC issue date, including completed and archived history.</summary>
     [ReportDepartmentScope]
     [HttpGet("bmr-issued", Name = "GetIssuedBmrReport")]
-    [Authorize(PermissionKeys.CanViewQcAndQaReport)]
+    [Authorize(PermissionKeys.CanViewBmrIssuedReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrReportDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -69,10 +69,26 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Every BMR issued for one product, over all time unless issue dates are given.</summary>
+    [ReportDepartmentScope]
+    [HttpGet("bmr-issued/by-product", Name = "GetIssuedBmrByProductReport")]
+    [Authorize(PermissionKeys.CanViewBmrIssuedByProductReport)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrByProductReportDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetIssuedBmrByProductReport([FromQuery] IssuedBmrByProductFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetIssuedBmrByProductReport(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Complete market-grouped production plan and current product configuration readiness.</summary>
     [ReportDepartmentScope]
     [HttpGet("production-readiness", Name = "GetProductionReadinessReport")]
-    [Authorize(PermissionKeys.CanViewQcAndQaReport)]
+    [AnyPermission(PermissionKeys.CanViewMonthlyProductionScheduleReport, PermissionKeys.CanViewDailyProductionScheduleReport, PermissionKeys.CanViewProductReadinessReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionReadinessReportDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -211,10 +227,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves the report detailing the grade-wise count of permanent staff across departments.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport)]
+    [ReportHistory(PermissionKeys.CanViewStaffGradeReport)]
     [ReportDepartmentScope]
     [HttpGet("staff-report")]
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewStaffGradeReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PermanentStaffGradeReportDto))]
     public async Task<IResult> GetPermanentStaffGradeReport([FromQuery] Guid? departmentId)
     {
@@ -227,7 +243,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     [ReportDepartmentScope]
     [HttpGet("employee-movement")]
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewNewHiresAndExitsReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMovementReportDto>))]
     public async Task<IResult> GetEmployeeMovementReport([FromQuery] MovementReportFilter filter)
     {
@@ -240,7 +256,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// </summary>
     [ReportDepartmentScope]
     [HttpGet("staff-total-report")]
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewStaffTotalReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTotalReport))]
     public async Task<IResult> GetStaffTotalReport([FromQuery] MovementReportFilter filter)
     {
@@ -255,7 +271,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <returns></returns>
     [ReportDepartmentScope]
     [HttpGet("staff-gender-ratio-report")]
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewStaffGenderRatioReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffGenderRatioReport))]
     public async Task<IResult> GetStaffGenderRatioReport([FromQuery] MovementReportFilter filter)
     {
@@ -266,7 +282,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ReportDepartmentScope]
     [HttpGet("staff-leave-report")]
 
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewLeaveOverviewReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffLeaveSummaryReportDto))]
     public async Task<IResult> GetStaffLeaveSummaryReport([FromQuery] MovementReportFilter filter)
     {
@@ -277,7 +293,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     [ReportDepartmentScope]
     [HttpGet("staff-turnover-report")]
 
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewStaffTurnoverReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StaffTurnoverReportDto))]
     public async Task<IResult> GetStaffTurnoverReport([FromQuery] MovementReportFilter filter)
     {
@@ -361,7 +377,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
 
     [HttpGet("finished-goods-transfer-summary")]
 
-    [Authorize(PermissionKeys.CanViewFgtnReport)]
+    [Authorize(PermissionKeys.CanViewFinishedGoodsTransferSummaryReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<FinishedGoodsTransferSummaryReportDto>)
@@ -383,7 +399,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
 
     [HttpGet("finished-goods-transfer-detailed")]
 
-    [Authorize(PermissionKeys.CanViewFgtnReport)]
+    [Authorize(PermissionKeys.CanViewFinishedGoodsTransferDetailReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<FinishedGoodsTransferDetailedReportDto>)
@@ -406,10 +422,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves the product stock summary report.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewFgtnReport)]
+    [ReportHistory(PermissionKeys.CanViewProductStockSummaryReport)]
     [ReportDepartmentScope]
     [HttpGet("product-stock-summary")]
-    [AnyPermission(PermissionKeys.CanViewFgtnDashboard, PermissionKeys.CanViewFgtnReport)]
+    [AnyPermission(PermissionKeys.CanViewFgtnDashboard, PermissionKeys.CanViewProductStockSummaryReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<ProductStockSummaryReportDto>)
@@ -432,10 +448,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves the detailed product stock report with batch and expiry information.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewFgtnReport)]
+    [ReportHistory(PermissionKeys.CanViewProductStockDetailReport)]
     [ReportDepartmentScope]
     [HttpGet("product-stock-detailed")]
-    [Authorize(PermissionKeys.CanViewFgtnReport)]
+    [Authorize(PermissionKeys.CanViewProductStockDetailReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<ProductStockDetailedReportDto>)
@@ -479,7 +495,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves a report of supplier materials based on filters.
     /// </summary>
     [HttpGet("supplier-materials")]
-    [Authorize(PermissionKeys.CanViewProcurementReport)]
+    [AnyPermission(PermissionKeys.CanViewApprovedManufacturerListReport, PermissionKeys.CanViewSupplierMappingSummaryReport, PermissionKeys.CanViewSupplierMappingDetailReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierMaterialReportDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetSupplierMaterialReport(
@@ -494,9 +510,9 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Retrieves a paginated list of items
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [ReportHistory(PermissionKeys.CanViewStoreItemsReport, PermissionKeys.CanViewStoreStockReport, PermissionKeys.CanViewVendorItemMappingSummaryReport, PermissionKeys.CanViewVendorItemMappingDetailReport)]
     [HttpGet("items-per-store-type")]
-    [Authorize(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [AnyPermission(PermissionKeys.CanViewStoreItemsReport, PermissionKeys.CanViewStoreStockReport, PermissionKeys.CanViewVendorItemMappingSummaryReport, PermissionKeys.CanViewVendorItemMappingDetailReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ItemDto>))]
     public async Task<IResult> GetItemsPerStoreType(
         [FromQuery] Store? store,
@@ -517,9 +533,9 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Provides a stock quantity overview per store type, showing total item quantities.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [ReportHistory(PermissionKeys.CanViewStoreStockReport)]
     [HttpGet("stock-summary-per-store-type")]
-    [Authorize(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [Authorize(PermissionKeys.CanViewStoreStockReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StoreItemStockSummaryDto>))]
     public async Task<IResult> GetStockSummaryPerStoreType()
     {
@@ -530,9 +546,9 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Provides a stock quantity overview per store type, showing total item quantities.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [ReportHistory(PermissionKeys.CanViewVendorItemMappingDetailReport)]
     [HttpGet("vendor-item")]
-    [Authorize(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [Authorize(PermissionKeys.CanViewVendorItemMappingDetailReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<VendorStoreItemStockSummaryDto>)
@@ -558,9 +574,9 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// <summary>
     /// Provides a stock quantity overview per store type, showing total item quantities.
     /// </summary>
-    [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [ReportHistory(PermissionKeys.CanViewVendorItemMappingSummaryReport)]
     [HttpGet("vendor-item/summary")]
-    [Authorize(PermissionKeys.CanViewStoreAndInventoryReport)]
+    [Authorize(PermissionKeys.CanViewVendorItemMappingSummaryReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<VendorStoreItemStockSummaryDto>)
@@ -585,7 +601,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves the shipment report.
     /// </summary>
     [HttpGet("shipment")]
-    [AnyPermission(PermissionKeys.CanViewLogisticsDashboard, PermissionKeys.CanViewProcurementReport)]
+    [AnyPermission(PermissionKeys.CanViewLogisticsDashboard, PermissionKeys.CanViewShipmentsReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ShipmentReportDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetShipmentReport([FromQuery] ShipmentReportFilter filter)
@@ -598,7 +614,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves the purchase order report based on the specified filter.
     /// </summary>
     [HttpGet("purchase-orders")]
-    [Authorize(PermissionKeys.CanViewProcurementReport)]
+    [Authorize(PermissionKeys.CanViewPurchaseOrdersReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchaseOrderReportDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetPurchaseOrderReport([FromQuery] PurchaseOrderFilter filter)
@@ -611,7 +627,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Retrieves the purchased PO report based on the specified filter.
     /// </summary>
     [HttpGet("purchased-po-report")]
-    [AnyPermission(PermissionKeys.CanViewProcurementDashboard, PermissionKeys.CanViewProcurementReport)]
+    [AnyPermission(PermissionKeys.CanViewProcurementDashboard, PermissionKeys.CanViewInvoicedPurchaseOrdersReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<PurchasedPoReportDto>))]
     public async Task<IResult> GetPurchasedPoReport([FromQuery] PurchaseOrderFilter filter)
     {
@@ -815,7 +831,7 @@ public class ReportController(IReportRepository repository) : ControllerBase
     /// Gets summary of invoiced products allocated to customers
     /// </summary>
     [HttpGet("invoiced-products-summary")]
-    [Authorize(PermissionKeys.CanViewFgtnReport)]
+    [Authorize(PermissionKeys.CanViewInvoicedProductsReport)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(List<InvoicedProductsSummaryReportDto>)
@@ -1247,10 +1263,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportHistory(PermissionKeys.CanViewMaterialStockSummaryReport)]
     [ReportDepartmentScope]
     [HttpGet("warehouse/materials-stock-summary")]
-    [Authorize(PermissionKeys.CanViewWarehouseReport)]
+    [Authorize(PermissionKeys.CanViewMaterialStockSummaryReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialsStockSummaryDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetMaterialsStockSummary(
@@ -1262,10 +1278,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportHistory(PermissionKeys.CanViewMaterialStockDetailReport)]
     [ReportDepartmentScope]
     [HttpGet("warehouse/materials-stock-batch-detail")]
-    [Authorize(PermissionKeys.CanViewWarehouseReport)]
+    [Authorize(PermissionKeys.CanViewMaterialStockDetailReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MaterialsStockBatchDetailDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetMaterialsStockBatchDetail(
@@ -1530,10 +1546,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
-    [ReportHistory(PermissionKeys.CanViewWarehouseReport)]
+    [ReportHistory(PermissionKeys.CanViewInventoryValuationReport)]
     [ReportDepartmentScope]
     [HttpGet("warehouse/inventory-valuation-detail")]
-    [Authorize(PermissionKeys.CanViewWarehouseReport)]
+    [Authorize(PermissionKeys.CanViewInventoryValuationReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<InventoryValuationDetailDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetInventoryValuationDetail(
@@ -1754,10 +1770,10 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value.AsEnumerable()) : result.ToProblemDetails();
     }
 
-    [ReportHistory(PermissionKeys.CanViewHumanResourcesReport)]
+    [ReportHistory(PermissionKeys.CanViewEmployeeMasterListReport)]
     [ReportDepartmentScope]
     [HttpGet("hr/employee-master-list")]
-    [Authorize(PermissionKeys.CanViewHumanResourcesReport)]
+    [Authorize(PermissionKeys.CanViewEmployeeMasterListReport)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<EmployeeMasterListReportDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetEmployeeMasterList(

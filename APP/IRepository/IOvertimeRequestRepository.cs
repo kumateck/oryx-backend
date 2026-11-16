@@ -13,7 +13,7 @@ public interface IOvertimeRequestRepository
 
     Task<Result<OvertimeRequestDto>> GetOvertimeRequest(Guid id);
 
-    Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request);
+    Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request, Guid? actorId = null);
 
     Task<Result> DeleteOvertimeRequest(Guid id, Guid userId);
 }

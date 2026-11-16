@@ -63,7 +63,7 @@ public class OvertimeRequestController(IOvertimeRequestRepository repository) : 
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> UpdateOvertimeRequest([FromRoute] Guid id, [FromBody] CreateOvertimeRequest request)
     {
-        var result = await repository.UpdateOvertimeRequest(id, request);
+        var result = await repository.UpdateOvertimeRequest(id, request, Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor) ? actor : null);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

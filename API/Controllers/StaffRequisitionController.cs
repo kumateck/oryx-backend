@@ -68,7 +68,7 @@ public class StaffRequisitionController(IStaffRequisitionRepository repository) 
     public async Task<IResult> UpdateStaffRequisition([FromRoute] Guid id,
         [FromBody] CreateStaffRequisitionRequest request)
     {
-        var result = await repository.UpdateStaffRequisition(id, request);
+        var result = await repository.UpdateStaffRequisition(id, request, Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor) ? actor : null);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

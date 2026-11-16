@@ -17,21 +17,21 @@ namespace API.Controllers;
 public class ReportHistoryController(ApplicationDbContext context, ICurrentUserService user) : ControllerBase
 {
     [HttpGet("capabilities")]
-    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", OrAnyHubReport = true)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ReportHistoryCapabilitiesDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IResult> Capabilities(CancellationToken cancellationToken)
     {
         var permissions = await CurrentPermissionSet.Load(context, user.UserId);
         string[] reportPermissions = [PermissionKeys.CanViewHumanResourcesReport, PermissionKeys.CanViewWarehouseReport,
-            PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload];
+            PermissionKeys.CanViewQcAndQaReport, PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewFgtnReport, PermissionKeys.CanViewProcurementReport, PermissionKeys.CanViewAttendanceReportUpload, .. ReportPermissions.Hub];
         if (!reportPermissions.Any(permissions.Contains)) return TypedResults.Forbid();
         var coverage = await ReportHistoryScope.Coverage(context, cancellationToken);
         return TypedResults.Ok(new ReportHistoryCapabilitiesDto { ServerTime = DateTime.UtcNow, Available = coverage.Count > 0, AvailableFrom = coverage.Count > 0 ? coverage.Values.Max() : null });
     }
     [HttpGet("vendors")]
-    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport")]
-    [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport, RequireForCurrent = true)]
+    [AnyPermission("CanViewFgtnReport", "CanViewHumanResourcesReport", "CanViewProcurementReport", "CanViewQcAndQaReport", "CanViewStoreAndInventoryReport", "CanViewWarehouseReport", OrAnyHubReport = true)]
+    [ReportHistory(PermissionKeys.CanViewStoreAndInventoryReport, PermissionKeys.CanViewVendorItemMappingDetailReport, PermissionKeys.CanViewVendorItemMappingSummaryReport, RequireForCurrent = true)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CollectionItemDto>))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IResult> Vendors(CancellationToken cancellationToken)

@@ -110,6 +110,7 @@ public static class DependencyInjection
         services.AddScoped<IApprovalRepository, ApprovalRepository>();
         services.AddScoped<APP.Services.Approvals.IApprovalDelegationService, APP.Services.Approvals.ApprovalDelegationService>();
         services.AddScoped<IProcurementRepository, ProcurementRepository>();
+        services.AddScoped<APP.Services.Reviews.IDocumentReviewService, APP.Services.Reviews.DocumentReviewService>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<ISupplierRelationshipRepository, SupplierRelationshipRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
