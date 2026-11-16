@@ -104,6 +104,39 @@ public sealed class QuestionFormulaRepairTests
                 FieldAssignees = [new FormFieldAssignee { Id = Guid.NewGuid(), FormFieldId = Field, AssigneeId = Actor.UserId }] });
             await Db.SaveChangesAsync();
         }
+        /// <summary>Approves <paramref name="definition"/> as the question's effective formula revision.</summary>
+        public async Task Approve(string definition, int revision = 2)
+        {
+            var formula = Guid.NewGuid();
+            Db.FormulaDefinitions.Add(new FormulaDefinition { Id = formula, Key = $"question-{Question:N}", Name = "Assay", PresentationPreset = "legacy" });
+            Db.QuestionFormulaDefinitions.Add(new QuestionFormulaDefinition { Id = Guid.NewGuid(), QuestionId = Question, FormulaDefinitionId = formula });
+            var row = new FormulaRevision { Id = Guid.NewGuid(), FormulaDefinitionId = formula, Revision = revision,
+                Status = FormulaRevisionStatus.Draft, AuthoringPayloadJson = definition };
+            Db.FormulaRevisions.Add(row);
+            await Db.SaveChangesAsync();
+            // Revisions are created as drafts and move through review, each step with its audit row.
+            foreach (var next in new[] { FormulaRevisionStatus.InReview, FormulaRevisionStatus.Approved })
+            {
+                var prior = row.Status;
+                row.Status = next;
+                if (next == FormulaRevisionStatus.Approved)
+                { row.ApprovedById = Actor.UserId; row.ApprovedAt = DateTime.UtcNow; row.EffectiveAt = DateTime.UtcNow.AddMinutes(-1); }
+                Db.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(row, prior, next, next.ToString(), "Test fixture.", Actor.UserId!.Value, Guid.NewGuid()));
+                await Db.SaveChangesAsync();
+            }
+        }
+        /// <summary>Puts the same formula question on the worksheet a second time, assigned to the actor.</summary>
+        public async Task<Guid> SecondField()
+        {
+            var first = await Db.FormFields.Include(f => f.FormSection).SingleAsync(f => f.Id == Field);
+            var section = new FormSection { Id = Guid.NewGuid(), FormId = first.FormSection.FormId, Name = "Results (second sample)" };
+            var field = new FormField { Id = Guid.NewGuid(), FormSectionId = section.Id, QuestionId = Question };
+            Db.FormSections.Add(section); Db.FormFields.Add(field);
+            var assignee = await Db.FormAssignees.SingleAsync();
+            Db.FormFieldAssignees.Add(new FormFieldAssignee { Id = Guid.NewGuid(), FormAssigneeId = assignee.Id, FormFieldId = field.Id, AssigneeId = Actor.UserId });
+            await Db.SaveChangesAsync();
+            return field.Id;
+        }
         public FormulaRepairCandidate Candidate(bool question = true, bool test = true) => new(After, question, test ? [new(Atr, Field)] : []);
         public async Task<ApplyFormulaRepairRequest> Request(FormulaRepairCandidate? candidate = null)
         {
@@ -528,5 +561,68 @@ public sealed class QuestionFormulaRepairTests
         Assert.Equal("2", inputs["sampleInput1.wt"]); Assert.Equal("4", inputs["sampleInput2.wt"]);
         Assert.Equal("110", inputs["sample1Avg"]); Assert.Equal("90", inputs["sample2Avg"]);
         Assert.Equal("0.98", inputs["purity"]);
+    }
+
+    [Fact]
+    public async Task Context_offers_the_approved_revision_and_each_test_s_current_formula()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        await f.Approve(After, revision: 3);
+
+        var context = await f.Service.Context(f.Question, f.Atr);
+
+        Assert.True(context.IsSuccess);
+        Assert.Equal(After, context.Value.ApprovedDefinition);
+        Assert.Equal(3, context.Value.ApprovedRevision);
+        Assert.Equal(Before, context.Value.Definition);
+        Assert.Equal(Before, Assert.Single(context.Value.Tests).CurrentDefinition);
+    }
+
+    [Fact]
+    public async Task With_an_approved_revision_only_that_formula_can_be_applied()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        await f.Approve(After);
+        const string typed = "{\"type\":0,\"expression\":\":a/:b*10\",\"decimalPlaces\":2}";
+
+        var other = await f.Service.Preview(f.Question, new(typed, false, [new(f.Atr, f.Field)]));
+        var approved = await f.Service.Preview(f.Question, new(After, false, [new(f.Atr, f.Field)]));
+
+        Assert.Contains(other.Value.Blockers, text => text.Contains("approved revision 2"));
+        Assert.Empty(approved.Value.Blockers);
+    }
+
+    [Fact]
+    public async Task One_repair_fixes_every_field_of_the_formula_on_the_worksheet()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+        var second = await f.SecondField();
+
+        var context = await f.Service.Context(f.Question, f.Atr);
+        Assert.Equal(2, context.Value.Tests.Count(test => test.AtrId == f.Atr && test.Eligible));
+        var request = await f.Request(new(After, false, [new(f.Atr, f.Field), new(f.Atr, second)]));
+        Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
+
+        var draft = await f.Db.Responses.SingleAsync(r => r.Id != f.Historical);
+        var pins = await LegacyFormulaConfigurationReader.Latest(f.Db, [draft.Id]);
+        Assert.Equal(new[] { f.Field, second }.Order(), pins.Select(pin => pin.FormFieldId).Order());
+        Assert.All(pins, pin => Assert.Equal(After, pin.Definition));
+    }
+
+    [Fact]
+    public async Task The_opened_test_explains_why_a_field_cannot_be_repaired()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        // The field is assigned to someone else on this test.
+        foreach (var assignee in f.Db.FormFieldAssignees) assignee.AssigneeId = Guid.NewGuid();
+        await f.Db.SaveChangesAsync();
+
+        var listed = await f.Service.Context(f.Question);
+        var opened = await f.Service.Context(f.Question, f.Atr);
+
+        Assert.Empty(listed.Value.Tests);
+        var test = Assert.Single(opened.Value.Tests);
+        Assert.False(test.Eligible);
+        Assert.Equal("You are not assigned to this field on this test.", test.Blocker);
     }
 }
