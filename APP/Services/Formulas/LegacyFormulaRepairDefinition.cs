@@ -32,21 +32,21 @@ public static class LegacyFormulaRepairDefinition
     }
 
     /// <summary>
-    /// Checks a repaired configuration against the one it replaces. A hand-typed repair may change only the expression and
-    /// manual-input labels. An <paramref name="approvedRevision"/> was itself reviewed and approved, so it may also change other
-    /// settings (the formula editor stores variable scopes and key formats the original option never had), but not the formula
-    /// type. Readings that no longer fit are reported as missing inputs and must be entered again before recalculation.
+    /// Checks a repaired configuration. A hand-typed repair may change only the expression and manual-input labels of the one
+    /// it replaces. An <paramref name="approvedRevision"/> was itself reviewed and approved, so it replaces the test's formula
+    /// whatever that was: it is not compared with the old one at all, only checked as a formula this repair can calculate.
+    /// Readings that no longer fit are reported as missing inputs and must be entered again before recalculation.
     /// </summary>
     public static string? Validate(string before, string after, bool approvedRevision = false)
     {
         try
         {
-            var old = Payload(before); var next = Payload(after);
+            var next = Payload(after);
             if (Number(next, "type", 0) is not (0 or 3)) return "This repair supports Simple and Universal arithmetic formulas. Other formula types need their own repair adapter.";
-            if (Number(old, "type", 0) != Number(next, "type", 0)) return "A repair cannot change the formula type. Create a new question for a different formula type.";
-            var stableOld = (JsonObject)old.DeepClone(); var stableNext = (JsonObject)next.DeepClone();
-            foreach (var key in new[] { "expression", "manualVarLabels" }) { stableOld.Remove(key); stableNext.Remove(key); }
-            if (!approvedRevision && !JsonNode.DeepEquals(stableOld, stableNext))
+            var old = approvedRevision ? null : Payload(before);
+            var stableOld = (JsonObject?)old?.DeepClone(); var stableNext = (JsonObject)next.DeepClone();
+            foreach (var key in new[] { "expression", "manualVarLabels" }) { stableOld?.Remove(key); stableNext.Remove(key); }
+            if (stableOld is not null && !JsonNode.DeepEquals(stableOld, stableNext))
             {
                 var changed = stableOld.Select(pair => pair.Key).Union(stableNext.Select(pair => pair.Key))
                     .Where(key => !JsonNode.DeepEquals(stableOld[key], stableNext[key])).Order(StringComparer.Ordinal);

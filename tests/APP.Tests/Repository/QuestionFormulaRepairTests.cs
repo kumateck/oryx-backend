@@ -646,15 +646,20 @@ public sealed class QuestionFormulaRepairTests
     }
 
     [Fact]
-    public async Task An_approved_revision_cannot_change_the_formula_type()
+    public async Task An_approved_revision_replaces_the_test_s_formula_however_different_it_is()
     {
         await using var f = new Fixture(); await f.Seed();
-        const string universal = "{\"type\":3,\"expression\":\":a/:b\",\"manualVarLabels\":{\"a\":\"A\",\"b\":\"B\"}}";
+        // A different type, inputs and precision: the approved revision still overrides what the test has.
+        const string universal = "{\"type\":3,\"expression\":\":standardWeight/:sampleWeight*:purity\",\"decimalPlaces\":4,"
+            + "\"manualVarLabels\":{\"standardWeight\":\"Standard weight\",\"sampleWeight\":\"Sample weight\",\"purity\":\"Purity\"}}";
         await f.Approve(universal);
 
-        var preview = await f.Service.Preview(f.Question, new(universal, false, [new(f.Atr, f.Field)]));
+        var request = await f.Request(new(universal, false, [new(f.Atr, f.Field)]));
+        Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
 
-        Assert.Contains(preview.Value.Blockers, text => text.StartsWith("A repair cannot change the formula type"));
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single(item => item.FormFieldId == f.Field);
+        Assert.Equal(universal, pin.Definition);
+        Assert.True(pin.RequiresRecalculation);
     }
 
     [Fact]
