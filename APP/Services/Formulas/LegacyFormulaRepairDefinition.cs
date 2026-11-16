@@ -31,15 +31,28 @@ public static class LegacyFormulaRepairDefinition
         throw new ArgumentException("A supported formula configuration is required.");
     }
 
-    public static string? Validate(string before, string after)
+    /// <summary>
+    /// Checks a repaired configuration against the one it replaces. A hand-typed repair may change only the expression and
+    /// manual-input labels. An <paramref name="approvedRevision"/> was itself reviewed and approved, so it may also change other
+    /// settings (the formula editor stores variable scopes and key formats the original option never had), but not the formula
+    /// type. Readings that no longer fit are reported as missing inputs and must be entered again before recalculation.
+    /// </summary>
+    public static string? Validate(string before, string after, bool approvedRevision = false)
     {
         try
         {
             var old = Payload(before); var next = Payload(after);
             if (Number(next, "type", 0) is not (0 or 3)) return "This repair supports Simple and Universal arithmetic formulas. Other formula types need their own repair adapter.";
+            if (Number(old, "type", 0) != Number(next, "type", 0)) return "A repair cannot change the formula type. Create a new question for a different formula type.";
             var stableOld = (JsonObject)old.DeepClone(); var stableNext = (JsonObject)next.DeepClone();
             foreach (var key in new[] { "expression", "manualVarLabels" }) { stableOld.Remove(key); stableNext.Remove(key); }
-            if (!JsonNode.DeepEquals(stableOld, stableNext)) return "Only the expression and manual-input labels can change in this repair. Table shape, units, inputs, constants and precision must stay unchanged.";
+            if (!approvedRevision && !JsonNode.DeepEquals(stableOld, stableNext))
+            {
+                var changed = stableOld.Select(pair => pair.Key).Union(stableNext.Select(pair => pair.Key))
+                    .Where(key => !JsonNode.DeepEquals(stableOld[key], stableNext[key])).Order(StringComparer.Ordinal);
+                return "Only the expression and manual-input labels can change in this repair. Table shape, units, inputs, constants and precision must stay unchanged. Changed: "
+                    + string.Join(", ", changed) + ".";
+            }
             if (next["namedExpressions"] is JsonArray named && named.Count > 0 || next["formulaInTable"]?.GetValue<bool>() == true || next["averageAllResults"]?.GetValue<bool>() == true)
                 return "Named expressions, derived table columns and averaged result sets require their own repair adapter.";
             var expression = Text(next, "expression");
