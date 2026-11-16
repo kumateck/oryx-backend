@@ -1383,6 +1383,14 @@ public static class PermissionKeys
     public const string CanReviewPackingList = "CanReviewPackingList";
     /// <summary>Return a packing list in review to its preparer for correction.</summary>
     public const string CanReturnPackingList = "CanReturnPackingList";
+    /// <summary>Check issued raw material: confirm the issue's review, signed on the voucher as "Checked by".</summary>
+    public const string CanCheckRawMaterialIssue = "CanCheckRawMaterialIssue";
+    /// <summary>Check issued packaging material: confirm the issue's review, signed on the voucher as "Checked by".</summary>
+    public const string CanCheckPackagingMaterialIssue = "CanCheckPackagingMaterialIssue";
+    /// <summary>Return a raw material issue to the store for correction through the issued-material repair.</summary>
+    public const string CanReturnRawMaterialIssue = "CanReturnRawMaterialIssue";
+    /// <summary>Return a packaging material issue to the store for correction through the issued-material repair.</summary>
+    public const string CanReturnPackagingMaterialIssue = "CanReturnPackagingMaterialIssue";
     public const string CanViewSignatureSettings = "CanViewSignatureSettings";
     public const string CanCreateSignatureSettings = "CanCreateSignatureSettings";
     public const string CanViewChangePassword = "CanViewChangePassword";
@@ -5658,6 +5666,27 @@ public static class PermissionUtils
             PermissionModules.FinishedGoodsWarehouse,
             PermissionSubmodules.ProductionOrders,
             PermissionKeys.CanReturnPackingList
+        );
+
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanCheckRawMaterialIssue
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanCheckPackagingMaterialIssue
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanReturnRawMaterialIssue
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanReturnPackagingMaterialIssue
         );
 
         permissions.AddRange(FullProcedurePermissionCatalog.Generate());

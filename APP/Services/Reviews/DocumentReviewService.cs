@@ -183,7 +183,7 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
             Data = slice.Select(row => new PendingReviewDto
             {
                 ReviewId = row.Review.Id, ModelType = row.Review.ModelType, DocumentLabel = ReviewDocumentTypes.Label(row.Review.ConfigurationType),
-                ModelId = row.Review.ModelId, Code = row.Target.Code, Variant = row.Target.Variant, Status = row.Review.Status,
+                ModelId = row.Review.ModelId, Code = row.Target.Code, Variant = row.Target.Variant, ParentId = row.Target.ParentId, Status = row.Review.Status,
                 PreparedBy = Person(people, row.Review.PreparedById), SubmittedAt = row.Review.SubmittedAt, Comments = row.Review.Comments,
             }).ToList(),
             PageIndex = page, PageCount = (int)Math.Ceiling(rows.Count / (double)pageSize), TotalRecordCount = rows.Count,
@@ -226,6 +226,16 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
             // The order's check: its prices are verified, it is marked checked and its approvals start.
             var checkedOrder = await procurement.CheckPurchaseOrder(modelId);
             if (checkedOrder.IsFailure) return checkedOrder;
+            review.ApprovalsStartedAt = DateTime.UtcNow;
+            review.Version++;
+            await context.SaveChangesAsync();
+        }
+        else if (target.ModelType == ReviewDocumentTypes.StockIssue)
+        {
+            // Nothing follows an issue's check: confirming it is the check, and the voucher is signed.
+            var issue = await context.StockRequisitionIssues.SingleAsync(item => item.Id == modelId);
+            issue.Approved = true;
+            issue.Rejected = false;
             review.ApprovalsStartedAt = DateTime.UtcNow;
             review.Version++;
             await context.SaveChangesAsync();
@@ -305,12 +315,18 @@ public class DocumentReviewService(ApplicationDbContext context, IApprovalReposi
         return new(confirmKeys && (named || target.PreparedById == actorId), returnKeys && named);
     }
 
-    /// <summary>A purchase order awaiting check with no open review: one finalised or revised before reviews existed.</summary>
+    /// <summary>A purchase order or stock issue awaiting its check with no open review: one from before its check moved onto reviews.</summary>
     private async Task<bool> LegacyPurchaseOrderCheck(ReviewTarget target) =>
-        target.ModelType == ReviewDocumentTypes.PurchaseOrder
-        && !await DocumentReviewGate.IsOpenAsync(context, target.ModelType, target.ModelId)
-        && await context.PurchaseOrders.AnyAsync(item => item.Id == target.ModelId
-            && (item.Status == PurchaseOrderStatus.PendingCheck || item.Status == PurchaseOrderStatus.Revised));
+        target.ModelType switch
+        {
+            ReviewDocumentTypes.PurchaseOrder => !await DocumentReviewGate.IsOpenAsync(context, target.ModelType, target.ModelId)
+                && await context.PurchaseOrders.AnyAsync(item => item.Id == target.ModelId
+                    && (item.Status == PurchaseOrderStatus.PendingCheck || item.Status == PurchaseOrderStatus.Revised)),
+            // An issue made before its check moved onto reviews (or before any check was set up) and never checked.
+            ReviewDocumentTypes.StockIssue => !await context.DocumentReviews.AnyAsync(item => item.ModelType == target.ModelType && item.ModelId == target.ModelId)
+                && await context.StockRequisitionIssues.AnyAsync(item => item.Id == target.ModelId && !item.Approved && !item.Rejected),
+            _ => false,
+        };
 
     private static Error NotOpen(DocumentReview review) => review?.Status == DocumentReviewStatus.Returned
         ? Error.Conflict("DocumentReview.Returned", "This record was returned for correction. It must be sent back for review first.")

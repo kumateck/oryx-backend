@@ -47,7 +47,8 @@ public static class DocumentReviewGate
             await context.SaveChangesAsync(cancellationToken);
             return false;
         }
-        if (!await IsConfiguredAsync(context, ReviewDocumentTypes.ConfigurationTypeFor(modelType), cancellationToken)) return true;
+        var configurationType = ReviewDocumentTypes.ConfigurationTypeFor(modelType);
+        if (!ReviewDocumentTypes.AlwaysReviewedType(configurationType) && !await IsConfiguredAsync(context, configurationType, cancellationToken)) return true;
         var target = await ReviewDocumentTypes.LoadAsync(context, modelType, modelId, cancellationToken);
         if (target is null) return true;
         Open(context, target, latest, actorId);

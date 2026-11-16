@@ -35,34 +35,19 @@ public class StockRequisitionIssueApprovalTests
         return (issue, issuer, supervisor);
     }
 
+    // Issues are now checked on their document review (tests/APP.Tests/Reviews). These stages remain only for
+    // issues checked before that, whose voucher still names the approver who checked them.
     [Fact]
-    public async Task Issuer_CannotCheckTheirOwnIssue()
-    {
-        await using var context = CreateContext();
-        var (issue, issuer, _) = await SeedIssue(context);
-
-        var result = await StockRequisitionIssueApprovalHandler.ReviewAsync(context, issue.Id, issuer, [], null, ApprovalStatus.Approved);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal("Approval.SelfReview", result.Error.Code);
-        Assert.False((await context.StockRequisitionIssues.SingleAsync()).Approved);
-    }
-
-    [Fact]
-    public async Task SupervisorApproval_ChecksTheIssue_AndBecomesTheChecker()
+    public async Task An_issue_checked_through_its_old_stages_names_that_approver_as_its_checker()
     {
         await using var context = CreateContext();
         var (issue, _, supervisor) = await SeedIssue(context);
-
-        var result = await StockRequisitionIssueApprovalHandler.ReviewAsync(context, issue.Id, supervisor, [], "Quantities verified", ApprovalStatus.Approved);
-
-        Assert.True(result.IsSuccess);
         var saved = await context.StockRequisitionIssues.Include(item => item.Approvals).SingleAsync();
-        Assert.True(saved.Approved);
+        var stage = saved.Approvals.Single();
+        stage.Status = ApprovalStatus.Approved; stage.ApprovedById = supervisor; stage.ApprovalTime = DateTime.UtcNow;
+        saved.Approved = true;
+        await context.SaveChangesAsync();
         Assert.Equal(supervisor, StockRequisitionIssueApprovalHandler.Checker(saved)?.ApprovedById);
-        // A decided check cannot be decided again.
-        var again = await StockRequisitionIssueApprovalHandler.ReviewAsync(context, issue.Id, supervisor, [], null, ApprovalStatus.Rejected);
-        Assert.True(again.IsFailure);
     }
 
     [Fact]

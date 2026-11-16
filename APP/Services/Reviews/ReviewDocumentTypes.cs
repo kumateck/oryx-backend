@@ -24,7 +24,8 @@ public sealed record ReviewTarget(
     IReadOnlyList<string> ReturnKeys,
     IReadOnlyList<string> ResubmitKeys,
     bool AlwaysReviewed,
-    int? Variant = null);
+    int? Variant = null,
+    Guid? ParentId = null);
 
 /// <summary>
 /// The document types that have a review step. A type is listed only once its corrections during review
@@ -42,6 +43,8 @@ public static class ReviewDocumentTypes
     public const string OvertimeRequest = "OvertimeRequest";
     public const string LeaveRequest = "LeaveRequest";
     public const string JobRequest = "JobRequest";
+    /// <summary>The warehouse check of issued stock, signed on the voucher as "Checked by".</summary>
+    public const string StockIssue = "StockRequisitionIssue";
     /// <summary>A packing list: the approval engine calls it an allocation of a production order.</summary>
     public const string PackingList = "AllocateProductionOrder";
 
@@ -68,6 +71,8 @@ public static class ReviewDocumentTypes
         new(OvertimeRequest, "Overtime request", AlwaysReviewed: false),
         new(LeaveRequest, "Leave request", AlwaysReviewed: false),
         new(JobRequest, "Job request", AlwaysReviewed: false),
+        // Issued stock has always been checked; its check is this review.
+        new(StockIssue, "Stock issue check", AlwaysReviewed: true),
         new(PackingList, "Packing list", AlwaysReviewed: false),
     ];
 
@@ -87,10 +92,14 @@ public static class ReviewDocumentTypes
     /// it is finalised or revised instead, because its check already sits before its approvals.
     /// </summary>
     public static bool HeldAtApprovalStart(string modelType) =>
-        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition || Simple.ContainsKey(modelType);
+        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue || Simple.ContainsKey(modelType);
 
     public static bool IsReviewModelType(string modelType) =>
-        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition || Simple.ContainsKey(modelType);
+        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue || Simple.ContainsKey(modelType);
+
+    /// <summary>True when every record of the type is reviewed, with or without named reviewers.</summary>
+    public static bool AlwaysReviewedType(string configurationType) =>
+        All.Any(type => type.ItemType == configurationType && type.AlwaysReviewed);
 
     /// <summary>
     /// Loads the record and its keys. The kind always comes from what is stored: a model type in a request
@@ -144,6 +153,24 @@ public static class ReviewDocumentTypes
                     // A stock requisition is corrected through its batch (Repair) and sent back by production.
                     [PermissionKeys.CanUpdateProductionStep],
                     AlwaysReviewed: false);
+            }
+            case StockIssue:
+            {
+                var issue = await context.StockRequisitionIssues.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.RequisitionId, item.Requisition.Code, item.IssuedById }).FirstOrDefaultAsync(cancellationToken);
+                if (issue is null) return null;
+                var kinds = await context.RequisitionItems.AsNoTracking()
+                    .Where(item => item.RequisitionId == issue.RequisitionId && item.DeletedAt == null)
+                    .Select(item => item.Material.Kind).Distinct().ToListAsync(cancellationToken);
+                if (kinds.Count != 1) return null;
+                var raw = kinds[0] == MaterialKind.Raw;
+                return new ReviewTarget(StockIssue, StockIssue, id, issue.Code, issue.IssuedById,
+                    [raw ? PermissionKeys.CanViewRawMaterialRequisitions : PermissionKeys.CanViewPackagingMaterialRequisitions],
+                    [raw ? PermissionKeys.CanCheckRawMaterialIssue : PermissionKeys.CanCheckPackagingMaterialIssue],
+                    [raw ? PermissionKeys.CanReturnRawMaterialIssue : PermissionKeys.CanReturnPackagingMaterialIssue],
+                    // A returned issue is corrected through the issued-material repair, then sent back for check.
+                    [raw ? PermissionKeys.CanRepairIssuedBom : PermissionKeys.CanRepairIssuedPackaging],
+                    AlwaysReviewed: true, Variant: raw ? 0 : 1, ParentId: issue.RequisitionId);
             }
             default:
                 if (!Simple.TryGetValue(modelType, out var keys)) return null;
