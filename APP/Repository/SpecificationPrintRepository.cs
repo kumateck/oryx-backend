@@ -55,6 +55,7 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
                 v."Payload"->>'SpecificationNumber' AS "SpecificationNumber",
                 v."Payload"->>'RevisionNumber' AS "RevisionNumber",
                 v."Payload"->>'SupersedesNumber' AS "SupersedesNumber",
+                v."Payload"->>'RevisionReason' AS "RevisionReason",
                 (v."Payload"->>'CreatedAt')::timestamptz AS "CreatedAt",
                 (v."Payload"->>'UpdatedAt')::timestamptz AS "UpdatedAt",
                 NULLIF(concat_ws(' ', creator."FirstName", creator."LastName"), '') AS "CreatedBy",
@@ -102,6 +103,7 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
         public string SpecificationNumber { get; set; }
         public string RevisionNumber { get; set; }
         public string SupersedesNumber { get; set; }
+        public string RevisionReason { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string CreatedBy { get; set; }
@@ -109,6 +111,6 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
         public string Content { get; set; }
 
         public SpecificationPrintRevision ToRevision(string action, string actor, DateTime? time) =>
-            new(SpecificationNumber, RevisionNumber, SupersedesNumber, actor, time, action);
+            new(SpecificationNumber, RevisionNumber, SupersedesNumber, actor, time, action, action == "Revised" ? RevisionReason : null);
     }
 }

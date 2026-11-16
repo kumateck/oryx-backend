@@ -248,6 +248,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             );
         }
 
+
+        // Every edit is a revision of the specification and must say why.
+        if (string.IsNullOrWhiteSpace(request.RevisionReason) || request.RevisionReason.Trim().Length < 10)
+            return Error.Validation("MaterialSpecification.RevisionReason", "State the reason for this revision in at least 10 characters.");
+        request.RevisionReason = request.RevisionReason.Trim();
         var specificationNumber = materialSpec.SpecificationNumber;
         var specsToUpdate = await context
             .MaterialSpecifications.Where(ms => ms.SpecificationNumber == specificationNumber)

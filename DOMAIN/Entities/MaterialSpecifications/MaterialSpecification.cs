@@ -10,6 +10,8 @@ public class MaterialSpecification : BaseEntity, IVerifiable
     public string SpecificationNumber { get; set; }
     public string RevisionNumber { get; set; }
     public string SupersedesNumber { get; set; }
+    /// <summary>The reason stated for the latest revision. Earlier reasons are in the row's history versions.</summary>
+    public string RevisionReason { get; set; }
     public DateTime EffectiveDate { get; set; }
     public DateTime ReviewDate { get; set; }
     public Guid FormId { get; set; }

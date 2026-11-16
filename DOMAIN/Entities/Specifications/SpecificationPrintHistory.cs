@@ -12,4 +12,5 @@ public sealed record SpecificationPrintRevision(
     string SupersedesNumber,
     string RecordedBy,
     DateTime? OccurredAt,
-    string Event);
+    string Event,
+    string Reason = null);
