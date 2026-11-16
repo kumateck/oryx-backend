@@ -185,6 +185,9 @@ public static class PermissionSubmodules
     public const string WorkflowBuilder = "Workflow Builder";
     public const string AlertsNotifications = "Alerts & Notifications";
     public const string Approvals = "Approvals";
+    public const string DocumentReviews = "Document Reviews";
+    public const string PendingReviews = "Pending Reviews";
+    public const string RequisitionReviews = "Requisition Reviews";
     public const string SignatureSettings = "Signature Settings";
     public const string ChangePassword = "Change Password";
 
@@ -1324,6 +1327,54 @@ public static class PermissionKeys
     public const string CanCreateNewApproval = "CanCreateNewApproval";
     public const string CanEditApprovalWorkflow = "CanEditApprovalWorkflow";
     public const string CanDeleteApprovals = "CanDeleteApprovals";
+    /// <summary>See which roles and users review each document type.</summary>
+    public const string CanViewDocumentReviewSettings = "CanViewDocumentReviewSettings";
+    /// <summary>Create or change who reviews a document type.</summary>
+    public const string CanEditDocumentReviewSettings = "CanEditDocumentReviewSettings";
+    /// <summary>Remove a document type's review step.</summary>
+    public const string CanDeleteDocumentReviewSettings = "CanDeleteDocumentReviewSettings";
+    /// <summary>See the records waiting for your review or returned to you.</summary>
+    public const string CanViewPendingReviews = "CanViewPendingReviews";
+    /// <summary>Return a foreign purchase order awaiting check to its preparer for correction.</summary>
+    public const string CanReturnForeignPurchaseOrderCheck = "CanReturnForeignPurchaseOrderCheck";
+    /// <summary>Return a local purchase order awaiting check to its preparer for correction.</summary>
+    public const string CanReturnLocalPurchaseOrderCheck = "CanReturnLocalPurchaseOrderCheck";
+    /// <summary>Correct a raw material purchase requisition while it is in review, and send it back for review.</summary>
+    public const string CanEditRawMaterialPurchaseRequisition = "CanEditRawMaterialPurchaseRequisition";
+    /// <summary>Correct a packaging material purchase requisition while it is in review, and send it back for review.</summary>
+    public const string CanEditPackageMaterialPurchaseRequisition = "CanEditPackageMaterialPurchaseRequisition";
+    /// <summary>Confirm the review of a raw material purchase requisition, which sends it for approval.</summary>
+    public const string CanReviewRawMaterialPurchaseRequisition = "CanReviewRawMaterialPurchaseRequisition";
+    /// <summary>Confirm the review of a packaging material purchase requisition, which sends it for approval.</summary>
+    public const string CanReviewPackageMaterialPurchaseRequisition = "CanReviewPackageMaterialPurchaseRequisition";
+    /// <summary>Return a raw material purchase requisition in review to its preparer for correction.</summary>
+    public const string CanReturnRawMaterialPurchaseRequisition = "CanReturnRawMaterialPurchaseRequisition";
+    /// <summary>Return a packaging material purchase requisition in review to its preparer for correction.</summary>
+    public const string CanReturnPackageMaterialPurchaseRequisition = "CanReturnPackageMaterialPurchaseRequisition";
+    /// <summary>Confirm the review of a raw material stock requisition, which sends it for approval.</summary>
+    public const string CanReviewRawMaterialStockRequisition = "CanReviewRawMaterialStockRequisition";
+    /// <summary>Confirm the review of a packaging material stock requisition, which sends it for approval.</summary>
+    public const string CanReviewPackageMaterialStockRequisition = "CanReviewPackageMaterialStockRequisition";
+    /// <summary>Return a raw material stock requisition in review to its preparer for correction.</summary>
+    public const string CanReturnRawMaterialStockRequisition = "CanReturnRawMaterialStockRequisition";
+    /// <summary>Return a packaging material stock requisition in review to its preparer for correction.</summary>
+    public const string CanReturnPackageMaterialStockRequisition = "CanReturnPackageMaterialStockRequisition";
+    /// <summary>Confirm the review of a billing sheet, which sends it for approval.</summary>
+    public const string CanReviewBillingSheet = "CanReviewBillingSheet";
+    /// <summary>Return a billing sheet in review to its preparer for correction.</summary>
+    public const string CanReturnBillingSheet = "CanReturnBillingSheet";
+    /// <summary>Confirm the review of a staff requisition, which sends it for approval.</summary>
+    public const string CanReviewStaffRequisition = "CanReviewStaffRequisition";
+    /// <summary>Return a staff requisition in review to its preparer for correction.</summary>
+    public const string CanReturnStaffRequisition = "CanReturnStaffRequisition";
+    /// <summary>Confirm the review of an overtime request, which sends it for approval.</summary>
+    public const string CanReviewOvertimeRequest = "CanReviewOvertimeRequest";
+    /// <summary>Return an overtime request in review to its preparer for correction.</summary>
+    public const string CanReturnOvertimeRequest = "CanReturnOvertimeRequest";
+    /// <summary>Confirm the review of a leave request, which sends it for approval.</summary>
+    public const string CanReviewLeaveRequest = "CanReviewLeaveRequest";
+    /// <summary>Return a leave request in review to its preparer for correction.</summary>
+    public const string CanReturnLeaveRequest = "CanReturnLeaveRequest";
     public const string CanViewSignatureSettings = "CanViewSignatureSettings";
     public const string CanCreateSignatureSettings = "CanCreateSignatureSettings";
     public const string CanViewChangePassword = "CanViewChangePassword";
@@ -5456,6 +5507,128 @@ public static class PermissionUtils
             PermissionModules.ResearchAndDevelopment,
             PermissionSubmodules.RndTechnologyTransfers,
             PermissionKeys.CanPromoteRndTechnologyTransfer
+        );
+
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DocumentReviews,
+            PermissionKeys.CanViewDocumentReviewSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DocumentReviews,
+            PermissionKeys.CanEditDocumentReviewSettings
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.DocumentReviews,
+            PermissionKeys.CanDeleteDocumentReviewSettings
+        );
+        addPermission(
+            PermissionModules.QualityAssurance,
+            PermissionSubmodules.PendingReviews,
+            PermissionKeys.CanViewPendingReviews
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanReturnForeignPurchaseOrderCheck
+        );
+        addPermission(
+            PermissionModules.Procurement,
+            PermissionSubmodules.CheckPurchaseOrderPage,
+            PermissionKeys.CanReturnLocalPurchaseOrderCheck
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.CreatePurchaseRequisitions,
+            PermissionKeys.CanEditRawMaterialPurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.CreatePurchaseRequisitions,
+            PermissionKeys.CanEditPackageMaterialPurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReviewRawMaterialPurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReviewPackageMaterialPurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReturnRawMaterialPurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReturnPackageMaterialPurchaseRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReviewRawMaterialStockRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReviewPackageMaterialStockRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReturnRawMaterialStockRequisition
+        );
+        addPermission(
+            PermissionModules.Production,
+            PermissionSubmodules.RequisitionReviews,
+            PermissionKeys.CanReturnPackageMaterialStockRequisition
+        );
+
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanReviewBillingSheet
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanReturnBillingSheet
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanReviewStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanReturnStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanReviewOvertimeRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanReturnOvertimeRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanReviewLeaveRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanReturnLeaveRequest
         );
 
         permissions.AddRange(FullProcedurePermissionCatalog.Generate());

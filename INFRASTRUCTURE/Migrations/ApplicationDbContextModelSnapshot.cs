@@ -22635,6 +22635,174 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("SupplierQuotationItems");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalsStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ConfigurationType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ModelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ModelType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("PreparedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Submission")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PreparedById");
+
+                    b.HasIndex("ReviewedById");
+
+                    b.HasIndex("ModelType", "ModelId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DocumentReviews_Open")
+                        .HasFilter("\"Status\" IN (0, 1)");
+
+                    b.HasIndex("Status", "ConfigurationType");
+
+                    b.HasIndex("ModelType", "ModelId", "Submission")
+                        .IsUnique();
+
+                    b.ToTable("DocumentReviews");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReviewEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("DocumentReviewId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("DocumentReviewId");
+
+                    b.ToTable("DocumentReviewEvents");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.ReviewConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ItemType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ItemType")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.ToTable("ReviewConfigurations");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.ReviewConfigurationAssignee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ReviewConfigurationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewConfigurationId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ReviewConfigurationAssignees", t =>
+                        {
+                            t.HasCheckConstraint("CK_ReviewConfigurationAssignees_OneAssignee", "(\"RoleId\" IS NULL) <> (\"UserId\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -39987,6 +40155,87 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("UoM");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReview", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "PreparedBy")
+                        .WithMany()
+                        .HasForeignKey("PreparedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ReviewedBy")
+                        .WithMany()
+                        .HasForeignKey("ReviewedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("PreparedBy");
+
+                    b.Navigation("ReviewedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReviewEvent", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "Actor")
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Reviews.DocumentReview", "DocumentReview")
+                        .WithMany("Events")
+                        .HasForeignKey("DocumentReviewId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Actor");
+
+                    b.Navigation("DocumentReview");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.ReviewConfiguration", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.ReviewConfigurationAssignee", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Reviews.ReviewConfiguration", "ReviewConfiguration")
+                        .WithMany("Assignees")
+                        .HasForeignKey("ReviewConfigurationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ReviewConfiguration");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.RndAnalyticalMethods.RndAnalyticalMethod", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -43568,6 +43817,16 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Requisitions.SupplierQuotation", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReview", b =>
+                {
+                    b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Reviews.ReviewConfiguration", b =>
+                {
+                    b.Navigation("Assignees");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.RndFormulations.RndFormulation", b =>

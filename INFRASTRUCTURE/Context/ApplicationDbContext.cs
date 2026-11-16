@@ -1153,6 +1153,7 @@ public partial class ApplicationDbContext(
         base.OnModelCreating(modelBuilder);
         ConfigureInventoryConcurrency(modelBuilder);
         ConfigureWhitePlacebo(modelBuilder);
+        ConfigureDocumentReviews(modelBuilder);
         ConfigureIssuedMaterialRepair(modelBuilder);
         modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()
             .HasForeignKey(change => change.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);

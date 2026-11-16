@@ -39,7 +39,7 @@ public interface IProcurementRepository
     Task<Result<Guid>> CreatePurchaseOrder(CreatePurchaseOrderRequest request, Guid userId);
     Task<Result<PurchaseOrderDto>> GetPurchaseOrder(Guid purchaseOrderId);
     Task<Result<Paginateable<IEnumerable<PurchaseOrderDto>>>> GetPurchaseOrders(int page, int pageSize, string searchQuery, PurchaseOrderStatus? status, SupplierType? type);
-    Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions);
+    Task<Result> RevisePurchaseOrder(Guid purchaseOrderId, List<CreatePurchaseOrderRevision> revisions, Guid? userId = null);
     Task<Result> UpdatePurchaseOrderSFirstStep(UpdatePurchaseOrderFirstStep request, Guid purchaseOrderId,
         Guid userId);
     Task<Result> CancelPurchaseOrder(Guid purchaseOrderId, Guid userId);

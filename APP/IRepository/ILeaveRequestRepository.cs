@@ -10,7 +10,7 @@ public interface ILeaveRequestRepository
     Task<Result<Paginateable<IEnumerable<LeaveRequestDto>>>> GetLeaveRequests(int page, int pageSize,
         string searchQuery, LeaveStatus? status, RequestCategory? leaveCategory, Guid? departmentId);
     Task<Result<LeaveRequestDto>> GetLeaveRequest(Guid leaveRequestId);
-    Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest);
+    Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest, Guid? actorId = null);
     Task<Result> ReapplyLeaveRequest(Guid leaveRequestId, ReapplyLeaveRequest reapplyLeaveRequest);
     Task<Result> SubmitLeaveRecallRequest(CreateLeaveRecallRequest leaveRecallRequest);
     Task<Result> DeleteLeaveRequest(Guid leaveRequestId, Guid userId);

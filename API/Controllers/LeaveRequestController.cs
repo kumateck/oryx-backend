@@ -99,7 +99,7 @@ public class LeaveRequestController(ILeaveRequestRepository repository) : Contro
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.UpdateLeaveRequest(id, leaveRequest);
+        var result = await repository.UpdateLeaveRequest(id, leaveRequest, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

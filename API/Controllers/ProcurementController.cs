@@ -528,7 +528,7 @@ public class ProcurementController(IProcurementRepository repository) : Controll
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.RevisePurchaseOrder(purchaseOrderId, revisions);
+        var result = await repository.RevisePurchaseOrder(purchaseOrderId, revisions, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
@@ -555,9 +555,15 @@ public class ProcurementController(IProcurementRepository repository) : Controll
     [PurchaseOrderPermission(PermissionKeys.CanCheckForeignPurchaseOrder, PermissionKeys.CanCheckLocalPurchaseOrder)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> CheckPurchaseOrder(Guid purchaseOrderId)
+    public async Task<IResult> CheckPurchaseOrder(Guid purchaseOrderId, [FromServices] APP.Services.Reviews.IDocumentReviewService reviews)
     {
-        var result = await repository.CheckPurchaseOrder(purchaseOrderId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null)
+            return TypedResults.Unauthorized();
+
+        // Checking an order is confirming its review: the checker is recorded and printed as "Checked by".
+        var result = await reviews.Confirm(nameof(DOMAIN.Entities.PurchaseOrders.PurchaseOrder), purchaseOrderId,
+            new DOMAIN.Entities.Reviews.DocumentReviewActionRequest(), Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
