@@ -28,6 +28,10 @@ public interface IReportRepository
         IssuedBmrReportFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<IssuedBmrByProductReportDto>> GetIssuedBmrByProductReport(
         IssuedBmrByProductFilter filter, Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<ProductionMonthlyReportDto>> GetProductionMonthlyReport(
+        ProductionMonthlyFilter filter, Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<StockIssuedReportDto>> GetStockIssuedReport(
+        StockIssuedFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<ProductionReadinessReportDto>> GetProductionReadinessReport(
         ProductionReadinessFilter filter, Guid userId, CancellationToken cancellationToken = default);
     Task<Result<ProductionReportDto>> GetProductionReport(ReportFilter filter, Guid departmentId);

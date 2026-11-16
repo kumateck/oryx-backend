@@ -85,6 +85,38 @@ public class ReportController(IReportRepository repository) : ControllerBase
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Batches of the schedules starting in one month, with expected, packed, retained and transferred quantities and price. Three reports read it.</summary>
+    [ReportDepartmentScope]
+    [HttpGet("production-monthly", Name = "GetProductionMonthlyReport")]
+    [AnyPermission(PermissionKeys.CanViewProductionMonthlyReport, PermissionKeys.CanViewProductionScheduleSummaryReport, PermissionKeys.CanViewProductionBatchValueReport)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductionMonthlyReportDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetProductionMonthlyReport([FromQuery] ProductionMonthlyFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetProductionMonthlyReport(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>Stock issued to production batches: each material batch issued against a stock requisition, and extra packing issues.</summary>
+    [ReportDepartmentScope]
+    [HttpGet("stock-issued", Name = "GetStockIssuedReport")]
+    [Authorize(PermissionKeys.CanViewStockIssuedReport)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StockIssuedReportDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStockIssuedReport([FromQuery] StockIssuedFilter filter, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.GetStockIssuedReport(filter, userId, cancellationToken);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Complete market-grouped production plan and current product configuration readiness.</summary>
     [ReportDepartmentScope]
     [HttpGet("production-readiness", Name = "GetProductionReadinessReport")]
