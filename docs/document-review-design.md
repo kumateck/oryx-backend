@@ -120,5 +120,17 @@ Confirm) is required as well as the key whenever the type is configured.
    could not be corrected), trial requisitions (no desktop page), production orders (created from a
    quotation that would already have been reviewed), shipment documents and discrepancies (raised by
    the system on arrival), payroll runs, performance reviews, payments and R&D documents.
-3. **Move the remaining checks onto the engine**: the stock issue check, then QC formula revision
-   review.
+3. **Move the remaining checks onto the engine** (built):
+   - **Stock issue check.** Every issue waits for its check; confirming it checks the issue and signs the
+     voucher. The issuer may check their own issue (owner's decision). A returned issue is corrected
+     through the issued-material repair and sent back. The approval queue no longer carries issue
+     checks; old stages remain as history. The migration names everyone from the old workflow's
+     stages as reviewers, gives their roles `CanCheck/ReturnRaw/PackagingMaterialIssue` and Pending
+     reviews, and opens reviews for checks still waiting.
+   - **QC formula review.** Submitting a revision opens its review. "Record review" (definition hash
+     and a reason of at least 10 characters) confirms it; when reviewers are named only they or the
+     author may record it, and the reviewer's stored key is re-checked. A reviewer may return a
+     revision to Draft (`CanReturnFormulaRevision`); the formula audit row is written in the same save
+     the status trigger checks. Revisions waiting for review move from the approvals feed to Pending
+     reviews. The migration names the workflow's review stage as reviewer and gives review-key roles
+     the return key and Pending reviews.

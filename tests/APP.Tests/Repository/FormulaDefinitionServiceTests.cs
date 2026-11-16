@@ -94,6 +94,8 @@ public sealed class FormulaDefinitionServiceTests
 
         var transition = new FormulaRevisionTransitionRequest(
             request.DefinitionHash, "Validated against the controlled golden corpus.");
+        // Recording a review re-checks the reviewer's stored key (it is the revision's document review).
+        await GrantReview(context, reviewerId);
         Assert.True((await service.SubmitForReviewAsync(
             created.Value.Id, transition, authorId, Guid.NewGuid())).IsSuccess);
         Assert.True((await service.RecordReviewAsync(created.Value.Id, transition,
@@ -156,6 +158,7 @@ public sealed class FormulaDefinitionServiceTests
         var transition = new FormulaRevisionTransitionRequest(
             request.DefinitionHash, "Reviewed against the controlled formula definition.");
         await service.SubmitForReviewAsync(created.Value.Id, transition, authorId, Guid.NewGuid());
+        await GrantReview(context, authorId);
 
         var beforeReview = await service.ApproveAsync(
             created.Value.Id, transition, Guid.NewGuid(), Guid.NewGuid());
@@ -207,10 +210,12 @@ public sealed class FormulaDefinitionServiceTests
         var transition = new FormulaRevisionTransitionRequest(draft.DefinitionHash, "Checked the controlled formula.");
         await service.SubmitForReviewAsync(created.Value.Id, transition, actors[0], Guid.NewGuid());
         var permissions = new PendingRevisionPermissions(true, true, false, false, false, false, false);
-        var reviewQueue = await PendingRevisionApprovals.GetAsync(
-            context, actors[reviewer], [], permissions, default);
-        Assert.Equal("review", Assert.Single(reviewQueue).Action);
+        // A revision waiting for review is listed in Pending reviews (its document review), not in this feed.
+        Assert.Empty(await PendingRevisionApprovals.GetAsync(context, actors[reviewer], [], permissions, default));
+        Assert.Equal(DOMAIN.Entities.Reviews.DocumentReviewStatus.AwaitingReview,
+            (await context.DocumentReviews.SingleAsync(item => item.ModelId == created.Value.Id)).Status);
 
+        await GrantReview(context, actors[reviewer]);
         await service.RecordReviewAsync(created.Value.Id, transition, actors[reviewer], Guid.NewGuid());
         var approvalQueue = await PendingRevisionApprovals.GetAsync(
             context, actors[approver], [], permissions, default);
@@ -318,5 +323,74 @@ public sealed class FormulaDefinitionServiceTests
             "oryx-decimal-v1-approved", "Simple", definition.RootElement.Clone(),
             tests.RootElement.Clone(),
             "{\"type\":\"Universal\",\"expression\":\":x+1\"}");
+    }
+
+    [Fact]
+    public async Task A_reviewer_returns_a_revision_to_draft_and_the_author_submits_it_again()
+    {
+        var authorId = Guid.NewGuid();
+        var reviewerId = Guid.NewGuid();
+        var outsiderId = Guid.NewGuid();
+        await using var context = CreateContext(authorId);
+        var question = FormulaQuestion();
+        context.Questions.Add(question);
+        context.ReviewConfigurations.Add(new DOMAIN.Entities.Reviews.ReviewConfiguration { Id = Guid.NewGuid(), ItemType = "FormulaRevision",
+            Assignees = [new DOMAIN.Entities.Reviews.ReviewConfigurationAssignee { Id = Guid.NewGuid(), UserId = reviewerId }] });
+        await context.SaveChangesAsync();
+        await GrantReview(context, reviewerId, APP.Utils.PermissionKeys.CanReturnFormulaRevision, APP.Utils.PermissionKeys.CanViewReviewFormulaRevision);
+        await GrantReview(context, outsiderId);
+        var service = new FormulaDefinitionService(context, new ValidFormulaClient());
+        var reviews = new APP.Services.Reviews.DocumentReviewService(context, null!, null!);
+        var draft = DraftRequest();
+        var created = await service.CreateDraftAsync(question.Id, draft, authorId, Guid.NewGuid());
+        var transition = new FormulaRevisionTransitionRequest(draft.DefinitionHash, "Checked the controlled formula.");
+        await service.SubmitForReviewAsync(created.Value.Id, transition, authorId, Guid.NewGuid());
+
+        // Only a named reviewer (or the author) may record the review; the generic confirm is refused for formulas.
+        Assert.Equal("DocumentReview.NotReviewer", Assert.Single((await service.RecordReviewAsync(created.Value.Id, transition, outsiderId, Guid.NewGuid())).Errors).Code);
+        Assert.Equal("DocumentReview.FormulaRecord", (await reviews.Confirm("FormulaRevision", created.Value.Id, new(), reviewerId)).Errors[0].Code);
+        var state = (await reviews.GetState("FormulaRevision", created.Value.Id, reviewerId)).Value;
+        Assert.False(state.CanConfirm);
+        Assert.True(state.CanReturn);
+
+        Assert.True((await reviews.Return("FormulaRevision", created.Value.Id, new() { Comments = "Rounding must be to 2 decimals" }, reviewerId)).IsSuccess);
+        var revision = await context.FormulaRevisions.AsNoTracking().SingleAsync();
+        Assert.Equal(FormulaRevisionStatus.Draft, revision.Status);
+        Assert.Contains(await context.FormulaRevisionAudits.ToListAsync(), item => item.Action == "ReturnedForCorrection"
+            && item.PriorStatus == FormulaRevisionStatus.InReview && item.NewStatus == FormulaRevisionStatus.Draft && item.ActorId == reviewerId);
+        Assert.Equal("DocumentReview.FormulaSubmit", (await reviews.Resubmit("FormulaRevision", created.Value.Id, new(), authorId)).Errors[0].Code);
+
+        context.ChangeTracker.Clear();
+        Assert.True((await service.SubmitForReviewAsync(created.Value.Id, transition, authorId, Guid.NewGuid())).IsSuccess);
+        Assert.Equal(DOMAIN.Entities.Reviews.DocumentReviewStatus.AwaitingReview, (await context.DocumentReviews.AsNoTracking().SingleAsync()).Status);
+        Assert.True((await service.RecordReviewAsync(created.Value.Id, transition, reviewerId, Guid.NewGuid())).IsSuccess);
+        var confirmed = await context.DocumentReviews.AsNoTracking().SingleAsync();
+        Assert.Equal(DOMAIN.Entities.Reviews.DocumentReviewStatus.Confirmed, confirmed.Status);
+        Assert.Equal(reviewerId, confirmed.ReviewedById);
+    }
+
+    /// <summary>Gives <paramref name="user"/> a role holding the formula review key.</summary>
+    private static async Task GrantReview(ApplicationDbContext context, Guid user, params string[] more)
+    {
+        if (!await context.Users.AnyAsync(item => item.Id == user))
+            context.Users.Add(new DOMAIN.Entities.Users.User { Id = user, UserName = $"reviewer-{user:N}", FirstName = "Formula", LastName = "Reviewer",
+                Email = $"reviewer-{user:N}@example.test", CreatedAt = DateTime.UtcNow });
+        var role = new DOMAIN.Entities.Roles.Role { Id = Guid.NewGuid(), Name = $"Formula reviewer {user:N}" };
+        var claim = new Microsoft.AspNetCore.Identity.IdentityRoleClaim<Guid>
+            { RoleId = role.Id, ClaimType = APP.Utils.AppConstants.Permission, ClaimValue = APP.Utils.PermissionKeys.CanReviewFormulaRevision };
+        context.Roles.Add(role);
+        context.UserRoles.Add(new Microsoft.AspNetCore.Identity.IdentityUserRole<Guid> { UserId = user, RoleId = role.Id });
+        context.RoleClaims.Add(claim);
+        await context.SaveChangesAsync();
+        context.PermissionTypes.Add(new DOMAIN.Entities.Permissions.PermissionType
+            { Id = Guid.NewGuid(), RoleClaimId = claim.Id, Key = claim.ClaimValue, Type = "Access" });
+        foreach (var key in more)
+        {
+            var extra = new Microsoft.AspNetCore.Identity.IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = APP.Utils.AppConstants.Permission, ClaimValue = key };
+            context.RoleClaims.Add(extra);
+            await context.SaveChangesAsync();
+            context.PermissionTypes.Add(new DOMAIN.Entities.Permissions.PermissionType { Id = Guid.NewGuid(), RoleClaimId = extra.Id, Key = key, Type = "Access" });
+        }
+        await context.SaveChangesAsync();
     }
 }

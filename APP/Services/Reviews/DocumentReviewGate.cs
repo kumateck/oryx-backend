@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Reviews;
+using SHARED;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -47,7 +48,8 @@ public static class DocumentReviewGate
             await context.SaveChangesAsync(cancellationToken);
             return false;
         }
-        if (!await IsConfiguredAsync(context, ReviewDocumentTypes.ConfigurationTypeFor(modelType), cancellationToken)) return true;
+        var configurationType = ReviewDocumentTypes.ConfigurationTypeFor(modelType);
+        if (!ReviewDocumentTypes.AlwaysReviewedType(configurationType) && !await IsConfiguredAsync(context, configurationType, cancellationToken)) return true;
         var target = await ReviewDocumentTypes.LoadAsync(context, modelType, modelId, cancellationToken);
         if (target is null) return true;
         Open(context, target, latest, actorId);
@@ -116,5 +118,54 @@ public static class DocumentReviewGate
         review.Version++;
         context.DocumentReviewEvents.Add(new DocumentReviewEvent
             { DocumentReviewId = review.Id, Action = action, ActorId = actorId, Comments = comments });
+    }
+
+    public sealed record ReviewEligibility(bool Confirm, bool Return);
+
+    /// <summary>
+    /// When the type is configured, only its named roles and users may review, and the preparer may confirm
+    /// their own record so work is not held up. Without a configuration (a purchase order, or a type whose
+    /// configuration was removed while records were in review) the review keys alone decide.
+    /// </summary>
+    public static async Task<ReviewEligibility> EligibilityAsync(ApplicationDbContext context, ReviewTarget target, Guid actorId, HashSet<string> grants)
+    {
+        var confirmKeys = target.ConfirmKeys.All(grants.Contains);
+        var returnKeys = target.ReturnKeys.All(grants.Contains);
+        var assignees = await context.ReviewConfigurationAssignees.AsNoTracking()
+            .Where(item => item.ReviewConfiguration.ItemType == target.ConfigurationType && item.ReviewConfiguration.DeletedAt == null)
+            .Select(item => new { item.RoleId, item.UserId }).ToListAsync();
+        if (assignees.Count == 0) return new(confirmKeys, returnKeys);
+        var roles = await context.UserRoles.Where(item => item.UserId == actorId).Select(item => item.RoleId).ToListAsync();
+        var named = assignees.Any(item => item.UserId == actorId || item.RoleId.HasValue && roles.Contains(item.RoleId.Value));
+        return new(confirmKeys && (named || target.PreparedById == actorId), returnKeys && named);
+    }
+
+
+    /// <summary>
+    /// Confirms a record's review as part of the record's own review action (a formula revision's "Record review",
+    /// which needs its definition hash and a reason). Checks the review key and that the actor may review it, opens
+    /// a review for a record from before reviews, and leaves the changes for the caller's save.
+    /// </summary>
+    public static async Task<Result> ConfirmForRecordAsync(ApplicationDbContext context, string modelType, Guid modelId,
+        Guid actorId, string comments, CancellationToken cancellationToken = default)
+    {
+        var target = await ReviewDocumentTypes.LoadAsync(context, modelType, modelId, cancellationToken);
+        if (target is null) return Error.NotFound("DocumentReview.NotFound", "The record was not found.");
+        var grants = await APP.Services.Authorization.CurrentPermissionSet.Load(context, actorId);
+        if (!target.ConfirmKeys.All(grants.Contains))
+            return Error.Forbidden("DocumentReview.Permission", $"You need {string.Join(" and ", target.ConfirmKeys)} for this.");
+        if (!(await EligibilityAsync(context, target, actorId, grants)).Confirm)
+            return Error.Forbidden("DocumentReview.NotReviewer", "Only a reviewer named for this document type, or its preparer, can review it.");
+        var review = await LatestAsync(context, target.ModelType, modelId, cancellationToken);
+        if (review is { Status: DocumentReviewStatus.Returned })
+            return Error.Conflict("DocumentReview.Returned", "This record was returned for correction. It must be sent back for review first.");
+        if (review is not { Status: DocumentReviewStatus.AwaitingReview }) review = Open(context, target, review, target.PreparedById);
+        review.Status = DocumentReviewStatus.Confirmed;
+        review.ReviewedById = actorId;
+        review.ReviewedAt = DateTime.UtcNow;
+        review.Comments = string.IsNullOrWhiteSpace(comments) ? null : comments.Trim();
+        review.ApprovalsStartedAt = review.ReviewedAt;
+        Record(context, review, DocumentReviewAction.Confirmed, actorId, review.Comments);
+        return Result.Success();
     }
 }

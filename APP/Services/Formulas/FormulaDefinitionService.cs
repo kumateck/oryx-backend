@@ -134,6 +134,9 @@ public sealed partial class FormulaDefinitionService(
             revision, FormulaRevisionStatus.Draft, revision.Status, "SubmittedForReview",
             request.Reason.Trim(), actorId, correlationId));
         await context.SaveChangesAsync(cancellationToken);
+        // Its review: opened, or sent back to its reviewers after it was returned for correction.
+        await APP.Services.Reviews.DocumentReviewGate.SubmitAsync(context,
+            APP.Services.Reviews.ReviewDocumentTypes.FormulaRevision, revision.Id, actorId, cancellationToken);
         return await ToDtoAsync(revision, cancellationToken);
     }
 
@@ -146,6 +149,10 @@ public sealed partial class FormulaDefinitionService(
                 revision, FormulaRevisionStatus.InReview, request))
             return revision is null ? FormulaDefinitionErrors.NotFound : FormulaDefinitionErrors.Conflict;
         if (revision!.ReviewedById.HasValue) return FormulaDefinitionErrors.Conflict;
+        // Recording the review confirms the revision's document review: a named reviewer or its author may do it.
+        var review = await APP.Services.Reviews.DocumentReviewGate.ConfirmForRecordAsync(context,
+            APP.Services.Reviews.ReviewDocumentTypes.FormulaRevision, revision.Id, actorId, request.Reason, cancellationToken);
+        if (review.IsFailure) return Result.Failure<FormulaRevisionDto>(review.Errors);
         revision.ReviewedById = actorId;
         revision.ReviewedAt = DateTime.UtcNow;
         context.FormulaRevisionAudits.Add(FormulaDefinitionMapping.Audit(

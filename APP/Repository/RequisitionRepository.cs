@@ -723,15 +723,27 @@ public class RequisitionRepository(
             .Where(item => item.RequisitionId == requisition.Id)
             .OrderByDescending(item => item.IssuedAt)
             .FirstOrDefaultAsync();
-        var checker = issue is null ? null : StockRequisitionIssueApprovalHandler.Checker(issue);
+        // The check is the issue's review; issues checked before that keep their approver as the checker.
+        var review = issue is null ? null : await context.DocumentReviews.AsNoTracking().Include(item => item.ReviewedBy)
+            .Where(item => item.ModelType == APP.Services.Reviews.ReviewDocumentTypes.StockIssue && item.ModelId == issue.Id)
+            .OrderByDescending(item => item.Submission).FirstOrDefaultAsync();
+        var checker = issue is null || review is not null ? null : StockRequisitionIssueApprovalHandler.Checker(issue);
+        var checkedBy = review?.Status == DOMAIN.Entities.Reviews.DocumentReviewStatus.Confirmed ? Signatory(review.ReviewedBy, review.ReviewedAt)
+            : checker is null ? null : Signatory(checker.ApprovedBy, checker.ApprovalTime);
         return new StockIssueSignatoriesDto
         {
+            IssueId = issue?.Id,
             IssuedBy = issue is null ? null : Signatory(issue.IssuedBy, issue.IssuedAt),
-            CheckedBy = checker is null ? null : Signatory(checker.ApprovedBy, checker.ApprovalTime),
+            CheckedBy = checkedBy,
             // The requester receives what was issued, so they sign once it has been issued.
             ReceivedBy = issue is null ? null : Signatory(requisition.RequestedBy, null),
-            CheckStatus = issue is null ? null : issue.Approved ? "Checked" : issue.Rejected ? "Rejected"
-                : issue.Approvals.Count == 0 ? "NotAssigned" : "Pending",
+            CheckStatus = issue is null ? null : review?.Status switch
+            {
+                DOMAIN.Entities.Reviews.DocumentReviewStatus.Confirmed => "Checked",
+                DOMAIN.Entities.Reviews.DocumentReviewStatus.Returned => "Returned",
+                DOMAIN.Entities.Reviews.DocumentReviewStatus.AwaitingReview => "Pending",
+                _ => issue.Approved ? "Checked" : issue.Rejected ? "Rejected" : issue.Approvals.Count == 0 ? "NotAssigned" : "Pending",
+            },
         };
     }
 

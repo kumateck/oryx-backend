@@ -49,8 +49,11 @@ public class StockIssueSignatoriesDto
     public VoucherSignatoryDto CheckedBy { get; set; }
     public VoucherSignatoryDto ReceivedBy { get; set; }
     /// <summary>
-    /// Checked, Rejected, Pending (waiting for an approver) or NotAssigned (no issue-check workflow
-    /// was configured when it was issued); null while the requisition has not been issued.
+    /// Checked, Pending (waiting for its check), Returned (returned to the store for correction),
+    /// Rejected or NotAssigned (from before the check moved onto reviews); null while the requisition
+    /// has not been issued.
     /// </summary>
     public string CheckStatus { get; set; }
+    /// <summary>The latest issue, whose check is its document review (model type StockRequisitionIssue).</summary>
+    public Guid? IssueId { get; set; }
 }
