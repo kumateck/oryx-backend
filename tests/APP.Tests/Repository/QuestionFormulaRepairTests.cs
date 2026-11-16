@@ -48,7 +48,21 @@ public sealed class QuestionFormulaRepairTests
             Task.FromResult(Available ? Result.Success(new FormulaServiceResponse("oryx-formula-service-response-v1", 0, "test", 5, "COMPLETED",
                 "test", new string('a', 64), request.GetProperty("definitionHash").GetString(), request.GetProperty("definitionHash").GetString(),
                 null, null, null, null, null, [], [], [], [], null, [])) : Result.Failure<FormulaServiceResponse>(Error.Conflict("Test.Unavailable", "Offline")));
-        public Task<Result<FormulaServiceResponse>> EvaluateAsync(JsonElement request, CancellationToken token = default) => throw new NotSupportedException();
+        public JsonElement? Evaluated { get; private set; }
+        /// <summary>Answers every result of the requested definition with 1.00, echoing the hashes the server checks.</summary>
+        public Task<Result<FormulaServiceResponse>> EvaluateAsync(JsonElement request, CancellationToken token = default)
+        {
+            Evaluated = request.Clone();
+            var results = request.GetProperty("definition").GetProperty("results").EnumerateArray()
+                .Select(result => new { key = result.GetProperty("key").GetString(), roundedResult = "1.00", displayedResult = "1.00", unit = (string?)null }).ToArray();
+            var inputs = JsonSerializer.Deserialize<Dictionary<string, string?>>(request.GetProperty("resolvedInputs").GetRawText())!;
+            return Task.FromResult(Result.Success(new FormulaServiceResponse("oryx-formula-service-response-v1", 1, "test", 5, "COMPLETED", "test", new string('a', 64),
+                request.GetProperty("definitionHash").GetString(), request.GetProperty("definitionHash").GetString(),
+                request.GetProperty("configurationHash").GetString(), request.GetProperty("configurationHash").GetString(),
+                FormulaCanonicalJson.HashJson("oryx:formula-resolved-inputs:v1", JsonSerializer.Serialize(inputs), 262144),
+                request.GetProperty("configuration").GetProperty("placementKey").GetString(), null, [], [], [], [],
+                JsonSerializer.SerializeToElement(new { status = 0, results }), [])));
+        }
     }
     private sealed class Fixture : IAsyncDisposable
     {
@@ -105,13 +119,14 @@ public sealed class QuestionFormulaRepairTests
             await Db.SaveChangesAsync();
         }
         /// <summary>Approves <paramref name="definition"/> as the question's effective formula revision.</summary>
-        public async Task Approve(string definition, int revision = 2)
+        public async Task Approve(string definition, int revision = 2, string? compiled = null)
         {
             var formula = Guid.NewGuid();
             Db.FormulaDefinitions.Add(new FormulaDefinition { Id = formula, Key = $"question-{Question:N}", Name = "Assay", PresentationPreset = "legacy" });
             Db.QuestionFormulaDefinitions.Add(new QuestionFormulaDefinition { Id = Guid.NewGuid(), QuestionId = Question, FormulaDefinitionId = formula });
             var row = new FormulaRevision { Id = Guid.NewGuid(), FormulaDefinitionId = formula, Revision = revision,
-                Status = FormulaRevisionStatus.Draft, AuthoringPayloadJson = definition };
+                Status = FormulaRevisionStatus.Draft, AuthoringPayloadJson = definition,
+                DefinitionJson = compiled ?? "{\"variables\":[],\"results\":[]}", DefinitionHash = new string('d', 64) };
             Db.FormulaRevisions.Add(row);
             await Db.SaveChangesAsync();
             // Revisions are created as drafts and move through review, each step with its audit row.
@@ -675,5 +690,44 @@ public sealed class QuestionFormulaRepairTests
 
         Assert.True(test.Eligible, test.Blocker);
         Assert.Equal("AR-TEST · Assay: Constituted & stored", test.Label);
+    }
+
+    [Fact]
+    public async Task The_approved_revision_replaces_the_readings_and_is_calculated_with_its_own_definition()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        f.Db.FormResponses.Add(new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field, Value = "{\"a\":\"9\",\"b\":\"3\",\"results\":[\"3\"]}" });
+        await f.Db.SaveChangesAsync();
+        // Named expressions and an averaged result: structures only the revision's compiled definition can calculate.
+        const string approved = "{\"type\":0,\"expression\":\":ratio*100\",\"namedExpressions\":[{\"name\":\"ratio\",\"expression\":\":a/:b\"}],\"averageAllResults\":true}";
+        const string compiled = "{\"formulaLanguageVersion\":\"oryx-formula-v1\",\"numericPolicyVersion\":\"oryx-decimal-v1-half-up\","
+            + "\"variables\":[{\"key\":\"a\"},{\"key\":\"b\"}],\"derivedExpressions\":[{\"key\":\"ratio\",\"expression\":\":a/:b\"}],"
+            + "\"results\":[{\"key\":\"sample1\",\"expression\":\":ratio*100\"},{\"key\":\"average\",\"expression\":\":ratio*100\"}]}";
+        await f.Approve(approved, compiled: compiled);
+
+        var preview = await f.Service.Preview(f.Question, new(approved, false, [new(f.Atr, f.Field)]));
+        Assert.Empty(preview.Value.Blockers);
+        Assert.Contains(preview.Value.MissingInputs, text => text.Contains("readings are cleared"));
+        var request = new ApplyFormulaRepairRequest(new(approved, false, [new(f.Atr, f.Field)]), preview.Value.PreviewToken, Guid.NewGuid(), "Apply the approved assay revision.");
+        Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
+
+        // The old readings are cleared (the repair evidence keeps them) and nothing is calculated until they are entered again.
+        var cleared = await f.Db.FormResponses.SingleAsync(a => a.ResponseId == f.Response);
+        Assert.Equal("{}", cleared.Value);
+        Assert.Contains("\\u00229\\u0022", (await f.Db.QuestionFormulaRepairs.SingleAsync()).EvidenceJson.Replace("\\\"", "\\u0022"));
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
+        Assert.Equal(approved, pin.Definition);
+        Assert.True((await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash)).IsFailure);
+
+        cleared.Value = "{\"a\":\"2\",\"b\":\"4\"}";
+        await f.Db.SaveChangesAsync();
+        var evaluated = await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
+
+        Assert.True(evaluated.IsSuccess, evaluated.Error?.Description);
+        var sent = f.Calculation.Evaluated!.Value;
+        Assert.Equal(new string('d', 64), sent.GetProperty("definitionHash").GetString());
+        Assert.Equal(2, sent.GetProperty("definition").GetProperty("results").GetArrayLength());
+        Assert.Equal("2", sent.GetProperty("resolvedInputs").GetProperty("a").GetString());
+        Assert.Equal("4", sent.GetProperty("resolvedInputs").GetProperty("b").GetString());
     }
 }

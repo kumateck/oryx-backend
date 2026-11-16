@@ -20,7 +20,7 @@ public sealed partial class QuestionFormulaRepairService
         var replay = await Replay(request.RequestId, requestHash);
         if (replay is not null) return replay;
         // Validate with the calculation service before locking; the expression alone decides this result.
-        var engine = await EngineCheck(request.Candidate.Definition);
+        var engine = await EngineCheck(questionId, request.Candidate.Definition);
         if (engine.IsFailure) return Result.Failure<FormulaRepairResultDto>(engine.Errors);
 
         await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
@@ -36,6 +36,7 @@ public sealed partial class QuestionFormulaRepairService
             if (plan.Preview.Blockers.Count > 0) return Conflict(string.Join(" ", plan.Preview.Blockers));
             if (plan.Preview.PreviewToken != request.PreviewToken) return Error.Conflict("FormulaRepair.StalePreview", "The question, tests or permissions changed since the preview. Review a fresh preview.");
             var now = DateTime.UtcNow;
+            var approvedRevision = await ApprovedRevisionFor(questionId, request.Candidate.Definition) is not null;
             var invalidated = plan.Selected.Where(s => s.Response is not null)
                 .Select(s => LatestAnswer(plan.Impact, s.Response!.Id, s.Field.Id)).OfType<FormResponse>()
                 .Select(a => new { answerId = a.Id, a.ResponseId, a.FormFieldId, inputHash = LegacyFormulaConfigurationReader.SafeInputHash(a.Value) }).ToList();
@@ -56,6 +57,11 @@ public sealed partial class QuestionFormulaRepairService
                     db.LegacyFormulaConfigurationPins.Add(Pin(response.Id, field.Id, 1, request.RequestId, CapturedDefinition(plan.Impact, response, field), false, now));
                 if (selected) db.LegacyFormulaConfigurationPins.Add(Pin(response.Id, field.Id, (previous?.Sequence ?? 1) + 1,
                     request.RequestId, request.Candidate.Definition, true, now));
+                // The approved revision replaces everything on the field: its readings are emptied and the analyst enters
+                // them again for the new formula. The repair's evidence keeps every answer's value before the repair.
+                if (selected && approvedRevision)
+                    foreach (var answer in plan.Impact.Answers.Where(a => a.ResponseId == response.Id && a.FormFieldId == field.Id && !a.DeletedAt.HasValue))
+                    { answer.Value = "{}"; answer.Complies = null; answer.UpdatedAt = now; answer.LastUpdatedById = identity.UserId; }
             }
             foreach (var targets in plan.Selected.Where(s => s.Response is null).GroupBy(s => s.Atr.Id))
             {

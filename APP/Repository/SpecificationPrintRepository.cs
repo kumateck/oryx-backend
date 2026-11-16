@@ -55,6 +55,8 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
                 v."Payload"->>'SpecificationNumber' AS "SpecificationNumber",
                 v."Payload"->>'RevisionNumber' AS "RevisionNumber",
                 v."Payload"->>'SupersedesNumber' AS "SupersedesNumber",
+                v."Payload"->>'RevisionReason' AS "RevisionReason",
+                (v."Payload"->>'EffectiveDate')::timestamptz AS "EffectiveDate",
                 (v."Payload"->>'CreatedAt')::timestamptz AS "CreatedAt",
                 (v."Payload"->>'UpdatedAt')::timestamptz AS "UpdatedAt",
                 NULLIF(concat_ws(' ', creator."FirstName", creator."LastName"), '') AS "CreatedBy",
@@ -91,9 +93,26 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
             }
             previous = snapshot;
         }
-        revisions.Reverse();
         return new SpecificationPrintHistory(lastRevision?.UpdatedBy,
-            lastRevision?.UpdatedAt ?? lastRevision?.RecordedAt, availableFrom, revisions);
+            lastRevision?.UpdatedAt ?? lastRevision?.RecordedAt, availableFrom, OnePerRevision(revisions));
+    }
+
+    /// <summary>
+    /// The revision history lists each revision number once: its latest record, with the latest reason stated for it.
+    /// Several edits under the same revision number are one revision. Oldest first, as the master copy lists them (00, 01, 02…).
+    /// </summary>
+    public static List<SpecificationPrintRevision> OnePerRevision(IEnumerable<SpecificationPrintRevision> chronological)
+    {
+        var rows = chronological.ToList();
+        return rows.Select((row, index) => (row, index))
+            .GroupBy(item => item.row.RevisionNumber?.Trim() ?? "", StringComparer.OrdinalIgnoreCase)
+            .Select(group =>
+            {
+                var latest = group.MaxBy(item => item.index).row;
+                var reason = group.OrderByDescending(item => item.index).Select(item => item.row.Reason).FirstOrDefault(text => !string.IsNullOrWhiteSpace(text));
+                return (Order: group.Max(item => item.index), Row: latest with { Reason = reason });
+            })
+            .OrderBy(item => item.Order).Select(item => item.Row).ToList();
     }
 
     private sealed class SpecificationSnapshot
@@ -102,6 +121,8 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
         public string SpecificationNumber { get; set; }
         public string RevisionNumber { get; set; }
         public string SupersedesNumber { get; set; }
+        public string RevisionReason { get; set; }
+        public DateTime? EffectiveDate { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string CreatedBy { get; set; }
@@ -109,6 +130,6 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
         public string Content { get; set; }
 
         public SpecificationPrintRevision ToRevision(string action, string actor, DateTime? time) =>
-            new(SpecificationNumber, RevisionNumber, SupersedesNumber, actor, time, action);
+            new(SpecificationNumber, RevisionNumber, SupersedesNumber, actor, time, action, action == "Revised" ? RevisionReason : null, EffectiveDate);
     }
 }

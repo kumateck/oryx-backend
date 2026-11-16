@@ -10,6 +10,8 @@ public class MaterialSpecificationDto : BaseDto
 {
     public string SpecificationNumber { get; set; }
     public string RevisionNumber { get; set; }
+    /// <summary>The reason stated for the latest revision; null before the first revision.</summary>
+    public string RevisionReason { get; set; }
     public string SupersedesNumber { get; set; }
     public DateTime EffectiveDate { get; set; }
     public DateTime ReviewDate { get; set; }
