@@ -36,6 +36,26 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     }
 
     /// <summary>
+    /// Corrects a purchase requisition while it is in review, before its approvals start. The key for every
+    /// material kind on the requisition, before and after the correction, is required.
+    /// </summary>
+    [HttpPut("{requisitionId:guid}/review-correction")]
+    [AnyPermission(PermissionKeys.CanEditRawMaterialPurchaseRequisition, PermissionKeys.CanEditPackageMaterialPurchaseRequisition)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> CorrectPurchaseRequisition([FromRoute] Guid requisitionId, [FromBody] CreateRequisitionRequest request,
+        [FromServices] INFRASTRUCTURE.Context.ApplicationDbContext context)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await APP.Services.Reviews.PurchaseRequisitionCorrection.ApplyAsync(context, requisitionId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>
     /// Retrieves a paginated list of requisitions.
     /// </summary>
     /// <param name="page">The current page number.</param>

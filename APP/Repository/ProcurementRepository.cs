@@ -576,7 +576,8 @@ public class ProcurementRepository(
 
     public async Task<Result> RevisePurchaseOrder(
         Guid purchaseOrderId,
-        List<CreatePurchaseOrderRevision> revisions
+        List<CreatePurchaseOrderRevision> revisions,
+        Guid? userId = null
     )
     {
         var existingOrder = await context
@@ -829,6 +830,9 @@ public class ProcurementRepository(
         context.PurchaseOrders.Update(existingOrder);
         existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
+        // A revised order is checked again before approval: its check is its review.
+        if (existingOrder.Status == PurchaseOrderStatus.Revised)
+            await APP.Services.Reviews.DocumentReviewGate.SubmitAsync(context, nameof(PurchaseOrder), purchaseOrderId, userId);
         return Result.Success();
     }
 
@@ -888,6 +892,8 @@ public class ProcurementRepository(
 
         context.PurchaseOrders.Update(existingOrder);
         await context.SaveChangesAsync();
+        // Finalising the order sends it to be checked: its check is its review.
+        await APP.Services.Reviews.DocumentReviewGate.SubmitAsync(context, nameof(PurchaseOrder), purchaseOrderId, userId);
         return Result.Success();
     }
 
