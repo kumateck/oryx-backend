@@ -10182,6 +10182,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<string>("RevisionNumber")
                         .HasColumnType("text");
 
+                    b.Property<string>("RevisionReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("SpecificationNumber")
                         .HasColumnType("text");
 
@@ -14895,6 +14898,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RevisionNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RevisionReason")
                         .HasColumnType("text");
 
                     b.Property<string>("ShelfLife")
