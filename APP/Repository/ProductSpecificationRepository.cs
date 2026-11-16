@@ -263,6 +263,10 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         }
 
         var specificationNumber = productSpec.SpecificationNumber;
+        // Every edit is a revision of the specification and must say why.
+        if (string.IsNullOrWhiteSpace(request.RevisionReason) || request.RevisionReason.Trim().Length < 10)
+            return Error.Validation("ProductSpecification.RevisionReason", "State the reason for this revision in at least 10 characters.");
+        request.RevisionReason = request.RevisionReason.Trim();
         var specsToUpdate = await context
             .ProductSpecifications.Where(ps => ps.SpecificationNumber == specificationNumber)
             .ToListAsync();

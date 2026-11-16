@@ -25,6 +25,8 @@ public class CreateProductSpecificationRequest
 
 public class UpdateProductSpecificationRequest
 {
+    /// <summary>Why this revision was made. Required on every edit, at least 10 characters; recorded in the revision history.</summary>
+    [Required, StringLength(1000)] public string RevisionReason { get; set; }
     [Required, MinLength(1)] public string SpecificationNumber { get; set; }
     [Required, MinLength(1)] public string RevisionNumber { get; set; }
     [Required, MinLength(1)] public string SupersedesNumber { get; set; }
