@@ -67,11 +67,11 @@ public class SpecificationPrintHistoryTests
 
         var history = SpecificationPrintRepository.OnePerRevision(rows);
 
-        Assert.Equal(new[] { "03", "02" }, history.Select(row => row.RevisionNumber));
-        Assert.Equal(At(12), history[0].OccurredAt);
-        Assert.Equal(At(12), history[0].EffectiveDate);
-        Assert.Equal("Folic acid assay added.", history[0].Reason);
-        Assert.Null(history[1].Reason);
+        Assert.Equal(new[] { "02", "03" }, history.Select(row => row.RevisionNumber));
+        Assert.Equal(At(12), history[1].OccurredAt);
+        Assert.Equal(At(12), history[1].EffectiveDate);
+        Assert.Equal("Folic acid assay added.", history[1].Reason);
+        Assert.Null(history[0].Reason);
     }
 
     [Fact]
@@ -148,9 +148,10 @@ public class SpecificationPrintHistoryTests
         var raw = (await repository.Material(rawId, MaterialKind.Raw, default)).Value;
         Assert.Equal("Kofi Mensah", raw.RevisedBy);
         Assert.Equal(new DateTime(2026, 11, 12, 15, 10, 0, DateTimeKind.Utc), raw.RevisedAt);
+        // Oldest first, one row per revision number.
         Assert.Collection(raw.Revisions,
-            revision => Assert.Equal(("02", "Revised"), (revision.RevisionNumber, revision.Event)),
-            revision => Assert.Equal(("01", "History baseline"), (revision.RevisionNumber, revision.Event)));
+            revision => Assert.Equal(("01", "History baseline"), (revision.RevisionNumber, revision.Event)),
+            revision => Assert.Equal(("02", "Revised"), (revision.RevisionNumber, revision.Event)));
         Assert.Equal("SpecificationPrint.NotFound", (await repository.Material(rawId, MaterialKind.Package, default)).Error.Code);
         var packagingId = Guid.Parse("00000000-0000-0000-0000-000000000007");
         Assert.Single((await repository.Material(packagingId, MaterialKind.Package, default)).Value.Revisions);

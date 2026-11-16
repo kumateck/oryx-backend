@@ -99,7 +99,7 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
 
     /// <summary>
     /// The revision history lists each revision number once: its latest record, with the latest reason stated for it.
-    /// Several edits under the same revision number are one revision. Newest first.
+    /// Several edits under the same revision number are one revision. Oldest first, as the master copy lists them (00, 01, 02…).
     /// </summary>
     public static List<SpecificationPrintRevision> OnePerRevision(IEnumerable<SpecificationPrintRevision> chronological)
     {
@@ -112,7 +112,7 @@ public sealed class SpecificationPrintRepository(ApplicationDbContext context, I
                 var reason = group.OrderByDescending(item => item.index).Select(item => item.row.Reason).FirstOrDefault(text => !string.IsNullOrWhiteSpace(text));
                 return (Order: group.Max(item => item.index), Row: latest with { Reason = reason });
             })
-            .OrderByDescending(item => item.Order).Select(item => item.Row).ToList();
+            .OrderBy(item => item.Order).Select(item => item.Row).ToList();
     }
 
     private sealed class SpecificationSnapshot
