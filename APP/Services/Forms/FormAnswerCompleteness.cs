@@ -76,7 +76,9 @@ internal static class FormAnswerCompleteness
             if (columns == 0) columns = Count(First(config, "numberOfSamples", "noOfSamples"))
                 + (Get(config, "standardInTable").ValueKind == JsonValueKind.True ? 1 : 0);
             var table = Items(Get(answer, "tableData")).ToList();
-            if (table.Count < rows || table.Any(row => !Numbers(row, columns))) return false;
+            // A formula without sample or standard columns has no readings table (the worksheet shows none), however
+            // many readings its settings default to; only its manual and input values are required.
+            if (columns > 0 && (table.Count < rows || table.Any(row => !Numbers(row, columns)))) return false;
             return Properties(standard).Any() || samples.Any(sample => Properties(sample).Any())
                 || manualKeys.Count > 0 || table.Any(row => Items(row).Any());
         }
