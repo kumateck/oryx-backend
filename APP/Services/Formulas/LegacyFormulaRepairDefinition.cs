@@ -42,6 +42,9 @@ public static class LegacyFormulaRepairDefinition
         try
         {
             var next = Payload(after);
+            // An approved revision replaces the test's formula and readings and is calculated with its own reviewed
+            // definition, so neither the old formula nor this repair's calculator limits it.
+            if (approvedRevision) return null;
             if (Number(next, "type", 0) is not (0 or 3)) return "This repair supports Simple and Universal arithmetic formulas. Other formula types need their own repair adapter.";
             var old = approvedRevision ? null : Payload(before);
             var stableOld = (JsonObject?)old?.DeepClone(); var stableNext = (JsonObject)next.DeepClone();
@@ -132,13 +135,25 @@ public static class LegacyFormulaRepairDefinition
         return Hash(value.ToJsonString());
     }
 
-    public static Dictionary<string, string?> ResolveInputs(string definition, string value)
+    private static string? NullIfBlank(string text) => string.IsNullOrWhiteSpace(text) ? null : text;
+
+    public static Dictionary<string, string?> ResolveInputs(string definition, string value) =>
+        ResolveInputs(definition, value, Compile(definition).Definition.GetProperty("variables").EnumerateArray()
+            .Select(variable => variable.GetProperty("key").GetString() ?? ""), null);
+
+    /// <summary>
+    /// Reads each variable's value from a saved worksheet answer. <paramref name="calculatedCells"/> are table cells a
+    /// derived column computed; they replace the stored cell when the column statistics are taken.
+    /// </summary>
+    public static Dictionary<string, string?> ResolveInputs(string definition, string value, IEnumerable<string> keys,
+        IReadOnlyDictionary<(int Row, int Column), string>? calculatedCells)
     {
         var config = Payload(definition); var answer = JsonNode.Parse(value) as JsonObject ?? new();
-        var compiled = Compile(definition); var result = new Dictionary<string, string?>();
-        foreach (var variable in compiled.Definition.GetProperty("variables").EnumerateArray())
+        var result = new Dictionary<string, string?>();
+        string Cell(JsonArray rows, int row, int column) => calculatedCells is not null && calculatedCells.TryGetValue((row, column), out var computed)
+            ? computed : (rows.ElementAtOrDefault(row) as JsonArray)?.ElementAtOrDefault(column)?.ToString() ?? "";
+        foreach (var key in keys)
         {
-            var key = variable.GetProperty("key").GetString() ?? "";
             JsonNode? input = null;
             if (Number(config, "type", 0) == 0) input = answer[key];
             if (config["constants"] is JsonObject constants && constants[key] is { } constant) input = constant;
@@ -161,7 +176,7 @@ public static class LegacyFormulaRepairDefinition
             if (table.Success && answer["tableData"] is JsonArray rows)
             {
                 var column = table.Groups[1].Value == "standard" ? 0 : int.Parse(table.Groups[2].Value, CultureInfo.InvariantCulture) - (config["standardInTable"]?.ToString() == "false" ? 1 : 0);
-                var values = rows.OfType<JsonArray>().Select(row => row.ElementAtOrDefault(column)?.ToString() ?? "");
+                var values = Enumerable.Range(0, rows.Count).Select(row => Cell(rows, row, column));
                 result[key] = FormulaDecimalStatistics.Calculate(values, table.Groups[3].Value == "Avg" ? 0 : table.Groups[3].Value == "SD" ? 1 : 3,
                     Number(config, "inputDecimalPlaces", 12), Number(config, "tableCalculationDecimalPlaces", Number(config, "decimalPlaces", 2)));
                 continue;
@@ -171,7 +186,8 @@ public static class LegacyFormulaRepairDefinition
             {
                 var row = int.Parse(cell.Groups[1].Value, CultureInfo.InvariantCulture) - 1;
                 var col = cell.Groups[2].Value == "standard" ? 0 : int.Parse(cell.Groups[3].Value, CultureInfo.InvariantCulture) - (config["standardInTable"]?.ToString() == "false" ? 1 : 0);
-                input = (tableRows.ElementAtOrDefault(row) as JsonArray)?.ElementAtOrDefault(col);
+                result[key] = row >= 0 && row < tableRows.Count ? NullIfBlank(Cell(tableRows, row, col)) : null;
+                continue;
             }
             result[key] = input?.ToString();
         }

@@ -124,6 +124,17 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         return problem is null ? (new(target, atr, responses.SingleOrDefault(), field), true, null) : (null, true, problem);
     }
 
+    /// <summary>
+    /// The approved revision whose formula is <paramref name="definition"/>, with its compiled definition, or null. A pin set
+    /// from it is calculated with that reviewed definition, which supports every structure the worksheet does.
+    /// </summary>
+    private Task<FormulaRevision?> ApprovedRevisionFor(Guid questionId, string definition) =>
+        db.QuestionFormulaDefinitions.AsNoTracking().Where(link => link.QuestionId == questionId)
+            .SelectMany(link => db.FormulaRevisions.Where(revision => revision.FormulaDefinitionId == link.FormulaDefinitionId
+                && revision.ApprovedAt != null && revision.AuthoringPayloadJson == definition
+                && revision.DefinitionJson != null && revision.DefinitionHash != null))
+            .OrderByDescending(revision => revision.Revision).FirstOrDefaultAsync();
+
     /// <summary>The formula of the question's approved, effective revision, as the question list shows it.</summary>
     private async Task<(string Definition, int Revision)?> Approved(Guid questionId)
     {
@@ -219,8 +230,10 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     /// Asks the calculation service to validate the exact compiled expression. Runs before any lock is taken so a slow
     /// service never holds up worksheet saves. Returns a blocker, or a failure when the service cannot be reached.
     /// </summary>
-    private async Task<Result<string?>> EngineCheck(string definition)
+    private async Task<Result<string?>> EngineCheck(Guid questionId, string definition)
     {
+        // An approved revision's compiled definition was validated by the calculation service when it was approved.
+        if (await ApprovedRevisionFor(questionId, definition) is not null) return Result.Success<string?>(null);
         (JsonElement Definition, string Hash) compiled;
         try { compiled = LegacyFormulaRepairDefinition.Compile(definition); }
         catch (Exception error) when (error is JsonException or ArgumentException or InvalidOperationException or FormatException)
@@ -259,9 +272,11 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             var compatibility = LegacyFormulaRepairDefinition.Validate(captured, candidate.Definition, isApproved);
             if (compatibility is not null) blockers.Add(compatibility);
             var answer = row.Response is { } saved ? LatestAnswer(impact, saved.Id, row.Field.Id) : null;
-            var complete = invalid is null && APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, QuestionType.Formula, candidate.Definition);
+            // The approved revision replaces the test's formula and its readings: they are cleared and entered again.
+            var complete = !isApproved && invalid is null && APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer?.Value, QuestionType.Formula, candidate.Definition);
             var label = TestLabel(row.Atr, row.Field);
-            if (!complete) missing.Add($"{label}: complete and save all required readings, then recalculate.");
+            if (isApproved) missing.Add($"{label}: its readings are cleared. Enter them again with the approved formula, save, then recalculate.");
+            else if (!complete) missing.Add($"{label}: complete and save all required readings, then recalculate.");
             labels.Add(new(target.AtrId, target.FormFieldId, label, answer is not null, captured != candidate.Definition, !complete));
             selected.Add(row);
         }
@@ -301,7 +316,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     {
         var grants = await Grants();
         if (!CanRead(grants) || !Covers(grants, candidate)) return Denied();
-        var engine = await EngineCheck(candidate.Definition);
+        var engine = await EngineCheck(questionId, candidate.Definition);
         if (engine.IsFailure) return Result.Failure<FormulaRepairPreviewDto>(engine.Errors);
         await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead) : null;
         var plan = await Build(questionId, candidate, engine.Value);

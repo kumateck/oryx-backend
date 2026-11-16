@@ -30,12 +30,36 @@ public sealed partial class QuestionFormulaRepairService
         if (pin is null || !pin.RequiresRecalculation || pin.DefinitionHash != expectedConfigurationHash)
             return Error.Conflict("FormulaRepair.StaleConfiguration", "The repair configuration changed. Reload the test.");
         var answer = LatestAnswer(impact, response.Id, field.Id);
-        if (answer is null || !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer.Value, QuestionType.Formula, pin.Definition))
+        // A pin set from an approved revision is calculated with that revision's reviewed, compiled definition (named
+        // expressions, derived columns and averages included); any other repair with this repair's own compilation.
+        var approved = await ApprovedRevisionFor(field.QuestionId, pin.Definition);
+        if (answer is null || approved is null && !APP.Services.Forms.FormAnswerCompleteness.IsComplete(answer.Value, QuestionType.Formula, pin.Definition))
             return Conflict("Complete and save all required readings before recalculating.");
         var inputHash = LegacyFormulaRepairDefinition.InputHash(answer.Value);
         var existing = await db.LegacyFormulaRepairEvaluations.SingleOrDefaultAsync(e => e.PinId == pin.Id && e.InputHash == inputHash);
         if (existing is not null) return existing.Id;
-        var compiled = LegacyFormulaRepairDefinition.Compile(pin.Definition);
+        (JsonElement Definition, string Hash) compiled;
+        Dictionary<string, string?> inputs;
+        if (approved is not null)
+        {
+            using (var parsed = JsonDocument.Parse(approved.DefinitionJson)) compiled = (parsed.RootElement.Clone(), approved.DefinitionHash);
+            IReadOnlyDictionary<(int Row, int Column), string> cells;
+            using (var saved = JsonDocument.Parse(answer.Value))
+            {
+                var derived = await FormulaWorksheetPreprocessor.ResolveAsync(saved.RootElement, approved.DefinitionJson, calculation, CancellationToken.None);
+                if (derived.IsFailure) return Conflict("The derived table columns could not be calculated. Enter every table reading they use, save, then recalculate.");
+                cells = derived.Value;
+            }
+            var keys = compiled.Definition.GetProperty("variables").EnumerateArray().Select(v => v.GetProperty("key").GetString() ?? "").ToList();
+            inputs = LegacyFormulaRepairDefinition.ResolveInputs(pin.Definition, answer.Value, keys, cells);
+            var missing = inputs.Where(pair => string.IsNullOrWhiteSpace(pair.Value)).Select(pair => pair.Key).ToList();
+            if (missing.Count > 0) return Conflict($"Enter and save these readings before recalculating: {string.Join(", ", missing)}.");
+        }
+        else
+        {
+            compiled = LegacyFormulaRepairDefinition.Compile(pin.Definition);
+            inputs = LegacyFormulaRepairDefinition.ResolveInputs(pin.Definition, answer.Value);
+        }
         var placement = $"repair-{pin.Id:N}";
         var configuration = JsonSerializer.SerializeToElement(new
         {
@@ -52,11 +76,11 @@ public sealed partial class QuestionFormulaRepairService
             .OrderBy(t => t["resultKey"]!.ToString(), StringComparer.Ordinal).Select(t => t.DeepClone()).ToArray();
         projection["resultTargets"] = new System.Text.Json.Nodes.JsonArray(targets);
         var configHash = FormulaCanonicalJson.HashJson("oryx:formula-configuration:v1", projection.ToJsonString(), 262144);
-        var inputs = LegacyFormulaRepairDefinition.ResolveInputs(pin.Definition, answer.Value);
         var evaluated = await calculation.EvaluateAsync(JsonSerializer.SerializeToElement(new
         {
             schemaVersion = "oryx-formula-service-evaluate-request-v1", requestId = Guid.NewGuid().ToString("N"),
-            formulaLanguageVersion = "oryx-formula-v1", numericPolicyVersion = LegacyFormulaRepairDefinition.Policy,
+            formulaLanguageVersion = "oryx-formula-v1",
+            numericPolicyVersion = compiled.Definition.TryGetProperty("numericPolicyVersion", out var policy) ? policy.GetString() : LegacyFormulaRepairDefinition.Policy,
             definitionHash = compiled.Hash, definition = compiled.Definition, configurationHash = configHash, configuration,
             resolvedInputs = inputs
         }));
