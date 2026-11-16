@@ -124,6 +124,19 @@ public sealed class FormSubmissionCompletenessTests
         Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula, definition));
     }
 
+    [Theory]
+    [InlineData("""{"manualVars":{"C":"61.0224","A":"29.7506","B":"57.3314"}}""", true)]
+    [InlineData("""{"manualVars":{"C":"61.0224","A":"29.7506","B":""}}""", false)]
+    public void Universal_formula_with_only_manual_inputs_needs_no_readings_table(string answer, bool complete)
+    {
+        // Weight per mL: (C-A)/(B-A), no sample columns, and the editor's default of five readings.
+        const string definition = """
+            {"type":3,"expression":"(:C-:A)/(:B-:A)","noOfSamples":0,"noOfReadings":5,"standardInTable":false,
+             "manualVarLabels":{"C":"Weight of pycnometer & sample","A":"Weight of empty pycnometer","B":"Weight of pycnometer & Water"}}
+            """;
+        Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula, definition));
+    }
+
     [Fact]
     public void Uniformity_OnlyRequiresTheSelectedModesInputs()
     {
