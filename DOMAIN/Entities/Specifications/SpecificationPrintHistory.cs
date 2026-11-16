@@ -13,4 +13,5 @@ public sealed record SpecificationPrintRevision(
     string RecordedBy,
     DateTime? OccurredAt,
     string Event,
-    string Reason = null);
+    string Reason = null,
+    DateTime? EffectiveDate = null);

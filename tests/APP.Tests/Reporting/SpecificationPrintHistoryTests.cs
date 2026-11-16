@@ -54,6 +54,27 @@ public class SpecificationPrintHistoryTests
     }
 
     [Fact]
+    public void The_revision_history_lists_each_revision_number_once_with_its_latest_record_and_reason()
+    {
+        DateTime At(int day) => new(2026, 11, day, 9, 0, 0, DateTimeKind.Utc);
+        var rows = new[]
+        {
+            new DOMAIN.Entities.Specifications.SpecificationPrintRevision("SPC/144", "02", "01", "Winfred", At(1), "Created", null, At(1)),
+            new DOMAIN.Entities.Specifications.SpecificationPrintRevision("SPC/144", "03", "02", "Chavan", At(10), "Revised", "Assay limits widened.", At(10)),
+            new DOMAIN.Entities.Specifications.SpecificationPrintRevision("SPC/144", "03", "02", "Chavan", At(11), "Revised", null, At(10)),
+            new DOMAIN.Entities.Specifications.SpecificationPrintRevision("SPC/144", "03", "02", "Winfred", At(12), "Revised", "Folic acid assay added.", At(12)),
+        };
+
+        var history = SpecificationPrintRepository.OnePerRevision(rows);
+
+        Assert.Equal(new[] { "03", "02" }, history.Select(row => row.RevisionNumber));
+        Assert.Equal(At(12), history[0].OccurredAt);
+        Assert.Equal(At(12), history[0].EffectiveDate);
+        Assert.Equal("Folic acid assay added.", history[0].Reason);
+        Assert.Null(history[1].Reason);
+    }
+
+    [Fact]
     public async Task Product_print_refuses_a_user_with_only_product_view_access()
     {
         var actor = new Actor(Guid.NewGuid());
