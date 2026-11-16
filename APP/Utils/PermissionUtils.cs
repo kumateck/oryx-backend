@@ -1375,6 +1375,14 @@ public static class PermissionKeys
     public const string CanReviewLeaveRequest = "CanReviewLeaveRequest";
     /// <summary>Return a leave request in review to its preparer for correction.</summary>
     public const string CanReturnLeaveRequest = "CanReturnLeaveRequest";
+    /// <summary>Confirm the review of a job request, which sends it for approval.</summary>
+    public const string CanReviewJobRequest = "CanReviewJobRequest";
+    /// <summary>Return a job request in review to its preparer for correction.</summary>
+    public const string CanReturnJobRequest = "CanReturnJobRequest";
+    /// <summary>Confirm the review of a packing list, which sends it for approval.</summary>
+    public const string CanReviewPackingList = "CanReviewPackingList";
+    /// <summary>Return a packing list in review to its preparer for correction.</summary>
+    public const string CanReturnPackingList = "CanReturnPackingList";
     public const string CanViewSignatureSettings = "CanViewSignatureSettings";
     public const string CanCreateSignatureSettings = "CanCreateSignatureSettings";
     public const string CanViewChangePassword = "CanViewChangePassword";
@@ -5629,6 +5637,27 @@ public static class PermissionUtils
             PermissionModules.HumanResources,
             PermissionSubmodules.LeaveManagement,
             PermissionKeys.CanReturnLeaveRequest
+        );
+
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanReviewJobRequest
+        );
+        addPermission(
+            PermissionModules.ServiceAndStoreProcurement,
+            PermissionSubmodules.JobRequests,
+            PermissionKeys.CanReturnJobRequest
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanReviewPackingList
+        );
+        addPermission(
+            PermissionModules.FinishedGoodsWarehouse,
+            PermissionSubmodules.ProductionOrders,
+            PermissionKeys.CanReturnPackingList
         );
 
         permissions.AddRange(FullProcedurePermissionCatalog.Generate());

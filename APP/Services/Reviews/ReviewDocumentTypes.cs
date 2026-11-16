@@ -41,6 +41,9 @@ public static class ReviewDocumentTypes
     public const string StaffRequisition = "StaffRequisition";
     public const string OvertimeRequest = "OvertimeRequest";
     public const string LeaveRequest = "LeaveRequest";
+    public const string JobRequest = "JobRequest";
+    /// <summary>A packing list: the approval engine calls it an allocation of a production order.</summary>
+    public const string PackingList = "AllocateProductionOrder";
 
     /// <summary>Types with no kind of their own: one key per task, the same for every record.</summary>
     private sealed record SimpleType(string View, string Confirm, string Return, string Edit);
@@ -50,6 +53,8 @@ public static class ReviewDocumentTypes
         [StaffRequisition] = new(PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanEditStaffRequisition),
         [OvertimeRequest] = new(PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanEditOvertimeManagement),
         [LeaveRequest] = new(PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest),
+        [JobRequest] = new(PermissionKeys.CanViewJobRequests, PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReturnJobRequest, PermissionKeys.CanEditJobRequest),
+        [PackingList] = new(PermissionKeys.CanViewPackingList, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReturnPackingList, PermissionKeys.CanGeneratePackingList),
     };
 
     public static readonly IReadOnlyList<ReviewDocumentTypeDto> All =
@@ -62,6 +67,8 @@ public static class ReviewDocumentTypes
         new(StaffRequisition, "Staff requisition", AlwaysReviewed: false),
         new(OvertimeRequest, "Overtime request", AlwaysReviewed: false),
         new(LeaveRequest, "Leave request", AlwaysReviewed: false),
+        new(JobRequest, "Job request", AlwaysReviewed: false),
+        new(PackingList, "Packing list", AlwaysReviewed: false),
     ];
 
     public static bool IsConfigurable(string itemType) => All.Any(type => type.ItemType == itemType);
@@ -176,6 +183,18 @@ public static class ReviewDocumentTypes
                     .Select(item => new { item.Employee.FirstName, item.Employee.LastName, item.StartDate, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
                 return row is null ? null : ($"{row.FirstName} {row.LastName} · {row.StartDate:d MMM yyyy}".Trim(), row.CreatedById);
             }
+            case JobRequest:
+            {
+                var row = await context.JobRequests.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : (row.Code, row.CreatedById);
+            }
+            case PackingList:
+            {
+                var row = await context.AllocateProductionOrders.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.ProductionOrder.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : ($"Packing list · {row.Code}", row.CreatedById);
+            }
             default:
                 return null;
         }
@@ -220,6 +239,10 @@ public static class ReviewDocumentTypes
                 context.OvertimeRequestApprovals.Where(item => item.OvertimeRequestId == id),
             LeaveRequest when await context.LeaveRequests.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
                 context.LeaveRequestApprovals.Where(item => item.LeaveRequestId == id),
+            JobRequest when await context.JobRequests.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.JobRequestApprovals.Where(item => item.JobRequestId == id),
+            PackingList when await context.AllocateProductionOrders.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.AllocateProductionOrderApprovals.Where(item => item.AllocateProductionOrderId == id),
             _ => null,
         };
         if (stages is null) return (null, null);

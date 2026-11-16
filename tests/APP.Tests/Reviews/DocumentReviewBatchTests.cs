@@ -31,7 +31,7 @@ file sealed class NoUser : ICurrentUserService
     public string DepartmentType => string.Empty;
 }
 
-/// <summary>Phase 2 document types: billing sheets, staff requisitions, overtime and leave requests.</summary>
+/// <summary>Phase 2 document types: billing sheets, staff requisitions, overtime, leave and job requests, packing lists.</summary>
 public class DocumentReviewBatchTests
 {
     private readonly ApplicationDbContext db = new(new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -76,6 +76,14 @@ public class DocumentReviewBatchTests
             case ReviewDocumentTypes.OvertimeRequest:
                 db.OvertimeRequests.Add(new OvertimeRequest { Id = id, Code = "OT-1", StartTime = "05:00 PM", EndTime = "07:00 PM" });
                 break;
+            case ReviewDocumentTypes.JobRequest:
+                db.JobRequests.Add(new DOMAIN.Entities.JobRequests.JobRequest { Id = id, Code = "JR-1" });
+                break;
+            case ReviewDocumentTypes.PackingList:
+                var order = new DOMAIN.Entities.ProductionOrders.ProductionOrder { Id = Guid.NewGuid(), Code = "PO-77" };
+                db.ProductionOrders.Add(order);
+                db.AllocateProductionOrders.Add(new DOMAIN.Entities.ProductionOrders.AllocateProductionOrder { Id = id, ProductionOrderId = order.Id, ProductionOrder = order });
+                break;
             case ReviewDocumentTypes.LeaveRequest:
                 var employee = new Employee { Id = Guid.NewGuid(), FirstName = "Ama", LastName = "Owusu" };
                 db.Employees.Add(employee);
@@ -103,6 +111,8 @@ public class DocumentReviewBatchTests
         { ReviewDocumentTypes.StaffRequisition, PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanEditStaffRequisition },
         { ReviewDocumentTypes.OvertimeRequest, PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanEditOvertimeManagement },
         { ReviewDocumentTypes.LeaveRequest, PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest },
+        { ReviewDocumentTypes.JobRequest, PermissionKeys.CanViewJobRequests, PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReturnJobRequest, PermissionKeys.CanEditJobRequest },
+        { ReviewDocumentTypes.PackingList, PermissionKeys.CanViewPackingList, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReturnPackingList, PermissionKeys.CanGeneratePackingList },
     };
 
     [Theory]
@@ -164,5 +174,24 @@ public class DocumentReviewBatchTests
         Assert.True((await Service().Confirm(ReviewDocumentTypes.BillingSheet, id, new(), reviewer)).IsSuccess);
         db.ChangeTracker.Clear();
         Assert.Equal("BillingSheet.Pending", (await procurement.UpdateBillingSheet(new UpdateBillingSheetRequest { Code = "BS-1B" }, id, reviewer)).Errors[0].Code);
+    }
+
+    [Fact]
+    public async Task A_record_submitted_again_after_its_review_was_confirmed_is_reviewed_again()
+    {
+        // A packing list edited after its check restarts its approvals; the edit is checked as a new submission.
+        var preparer = await Person("Preparer", PermissionKeys.CanGeneratePackingList);
+        var reviewer = await Person("Reviewer", PermissionKeys.CanReviewPackingList, PermissionKeys.CanViewPackingList);
+        var id = await Record(ReviewDocumentTypes.PackingList, preparer);
+        await Configure(ReviewDocumentTypes.PackingList, reviewer);
+        await Approvals().CreateInitialApprovalsAsync(ReviewDocumentTypes.PackingList, id, preparer);
+        Assert.True((await Service().Confirm(ReviewDocumentTypes.PackingList, id, new(), reviewer)).IsSuccess);
+        await Approvals().CreateInitialApprovalsAsync(ReviewDocumentTypes.PackingList, id, preparer);
+        var reviews = await db.DocumentReviews.AsNoTracking().Where(item => item.ModelId == id).OrderBy(item => item.Submission).ToListAsync();
+        Assert.Equal([DocumentReviewStatus.Confirmed, DocumentReviewStatus.AwaitingReview], reviews.Select(item => item.Status));
+        Assert.Equal(2, reviews[1].Submission);
+        // The print keeps the earlier check until the new submission is confirmed.
+        var state = (await Service().GetState(ReviewDocumentTypes.PackingList, id, reviewer)).Value;
+        Assert.Equal(reviewer, state.Signatures.CheckedBy?.Id);
     }
 }
