@@ -576,7 +576,8 @@ public class ProcurementRepository(
 
     public async Task<Result> RevisePurchaseOrder(
         Guid purchaseOrderId,
-        List<CreatePurchaseOrderRevision> revisions
+        List<CreatePurchaseOrderRevision> revisions,
+        Guid? userId = null
     )
     {
         var existingOrder = await context
@@ -829,6 +830,9 @@ public class ProcurementRepository(
         context.PurchaseOrders.Update(existingOrder);
         existingOrder.RevisedPurchaseOrders.AddRange(mappedRevisions);
         await context.SaveChangesAsync();
+        // A revised order is checked again before approval: its check is its review.
+        if (existingOrder.Status == PurchaseOrderStatus.Revised)
+            await APP.Services.Reviews.DocumentReviewGate.SubmitAsync(context, nameof(PurchaseOrder), purchaseOrderId, userId);
         return Result.Success();
     }
 
@@ -888,6 +892,8 @@ public class ProcurementRepository(
 
         context.PurchaseOrders.Update(existingOrder);
         await context.SaveChangesAsync();
+        // Finalising the order sends it to be checked: its check is its review.
+        await APP.Services.Reviews.DocumentReviewGate.SubmitAsync(context, nameof(PurchaseOrder), purchaseOrderId, userId);
         return Result.Success();
     }
 
@@ -1414,7 +1420,9 @@ public class ProcurementRepository(
             return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
         }
 
-        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid)
+        // While its review is open it may be corrected; once it waits for approval it may not.
+        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid
+            && !await APP.Services.Reviews.DocumentReviewGate.IsOpenAsync(context, nameof(BillingSheet), billingSheetId))
         {
             return Error.Validation("BillingSheet.Pending", "Billing sheet is pending approval");
         }
@@ -1424,6 +1432,7 @@ public class ProcurementRepository(
 
         context.BillingSheets.Update(existingBillingSheet);
         await context.SaveChangesAsync();
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(BillingSheet), billingSheetId, userId);
         return Result.Success();
     }
 
@@ -1443,7 +1452,9 @@ public class ProcurementRepository(
             return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
         }
 
-        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid)
+        // While its review is open it may be corrected; once it waits for approval it may not.
+        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid
+            && !await APP.Services.Reviews.DocumentReviewGate.IsOpenAsync(context, nameof(BillingSheet), billingSheetId))
         {
             return Error.Validation("BillingSheet.Pending", "Billing sheet is pending approval");
         }
@@ -1452,6 +1463,7 @@ public class ProcurementRepository(
         existingBillingSheet.LastUpdatedById = userId;
         context.BillingSheets.Update(existingBillingSheet);
         await context.SaveChangesAsync();
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(BillingSheet), billingSheetId, userId);
         return Result.Success();
     }
 

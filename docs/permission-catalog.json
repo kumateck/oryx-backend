@@ -6587,6 +6587,174 @@
     "description": "Allows the user to  promote rnd technology transfer."
   },
   {
+    "module": "Settings",
+    "submodule": "Document Reviews",
+    "key": "CanViewDocumentReviewSettings",
+    "name": "Can View Document Review Settings",
+    "description": "Allows the user to  view document review settings."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Document Reviews",
+    "key": "CanEditDocumentReviewSettings",
+    "name": "Can Edit Document Review Settings",
+    "description": "Allows the user to  edit document review settings."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Document Reviews",
+    "key": "CanDeleteDocumentReviewSettings",
+    "name": "Can Delete Document Review Settings",
+    "description": "Allows the user to  delete document review settings."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Reviews",
+    "key": "CanViewPendingReviews",
+    "name": "Can View Pending Reviews",
+    "description": "Allows the user to  view pending reviews."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Check Purchase Order Page",
+    "key": "CanReturnForeignPurchaseOrderCheck",
+    "name": "Can Return Foreign Purchase Order Check",
+    "description": "Allows the user to  return foreign purchase order check."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Check Purchase Order Page",
+    "key": "CanReturnLocalPurchaseOrderCheck",
+    "name": "Can Return Local Purchase Order Check",
+    "description": "Allows the user to  return local purchase order check."
+  },
+  {
+    "module": "Production",
+    "submodule": "Create Purchase Requisitions",
+    "key": "CanEditRawMaterialPurchaseRequisition",
+    "name": "Can Edit Raw Material Purchase Requisition",
+    "description": "Allows the user to  edit raw material purchase requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Create Purchase Requisitions",
+    "key": "CanEditPackageMaterialPurchaseRequisition",
+    "name": "Can Edit Package Material Purchase Requisition",
+    "description": "Allows the user to  edit package material purchase requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReviewRawMaterialPurchaseRequisition",
+    "name": "Can Review Raw Material Purchase Requisition",
+    "description": "Allows the user to  review raw material purchase requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReviewPackageMaterialPurchaseRequisition",
+    "name": "Can Review Package Material Purchase Requisition",
+    "description": "Allows the user to  review package material purchase requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReturnRawMaterialPurchaseRequisition",
+    "name": "Can Return Raw Material Purchase Requisition",
+    "description": "Allows the user to  return raw material purchase requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReturnPackageMaterialPurchaseRequisition",
+    "name": "Can Return Package Material Purchase Requisition",
+    "description": "Allows the user to  return package material purchase requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReviewRawMaterialStockRequisition",
+    "name": "Can Review Raw Material Stock Requisition",
+    "description": "Allows the user to  review raw material stock requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReviewPackageMaterialStockRequisition",
+    "name": "Can Review Package Material Stock Requisition",
+    "description": "Allows the user to  review package material stock requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReturnRawMaterialStockRequisition",
+    "name": "Can Return Raw Material Stock Requisition",
+    "description": "Allows the user to  return raw material stock requisition."
+  },
+  {
+    "module": "Production",
+    "submodule": "Requisition Reviews",
+    "key": "CanReturnPackageMaterialStockRequisition",
+    "name": "Can Return Package Material Stock Requisition",
+    "description": "Allows the user to  return package material stock requisition."
+  },
+  {
+    "module": "Logistics",
+    "submodule": "Billing Sheet",
+    "key": "CanReviewBillingSheet",
+    "name": "Can Review Billing Sheet",
+    "description": "Allows the user to  review billing sheet."
+  },
+  {
+    "module": "Logistics",
+    "submodule": "Billing Sheet",
+    "key": "CanReturnBillingSheet",
+    "name": "Can Return Billing Sheet",
+    "description": "Allows the user to  return billing sheet."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Staff Requisition",
+    "key": "CanReviewStaffRequisition",
+    "name": "Can Review Staff Requisition",
+    "description": "Allows the user to  review staff requisition."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Staff Requisition",
+    "key": "CanReturnStaffRequisition",
+    "name": "Can Return Staff Requisition",
+    "description": "Allows the user to  return staff requisition."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Overtime Management",
+    "key": "CanReviewOvertimeRequest",
+    "name": "Can Review Overtime Request",
+    "description": "Allows the user to  review overtime request."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Overtime Management",
+    "key": "CanReturnOvertimeRequest",
+    "name": "Can Return Overtime Request",
+    "description": "Allows the user to  return overtime request."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Management",
+    "key": "CanReviewLeaveRequest",
+    "name": "Can Review Leave Request",
+    "description": "Allows the user to  review leave request."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Management",
+    "key": "CanReturnLeaveRequest",
+    "name": "Can Return Leave Request",
+    "description": "Allows the user to  return leave request."
+  },
+  {
     "module": "Full Procedures",
     "submodule": "Questions & Templates",
     "key": "CanViewQuestionTemplates",

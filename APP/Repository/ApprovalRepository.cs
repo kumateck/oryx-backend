@@ -4607,6 +4607,9 @@ public class ApprovalRepository(
 
     public async Task CreateInitialApprovalsAsync(string modelType, Guid modelId, Guid? triggeringActorId = null)
     {
+        // A document type with a review step goes to review first; its approvals start when the review is confirmed.
+        if (!await APP.Services.Reviews.DocumentReviewGate.MayStartApprovalsAsync(context, modelType, modelId, triggeringActorId))
+            return;
         var configurationType = ApprovalDocumentPolicy.ConfigurationTypeFor(modelType);
         var approval = await context.Approvals.FirstOrDefaultAsync(item =>
             item.ItemType == configurationType

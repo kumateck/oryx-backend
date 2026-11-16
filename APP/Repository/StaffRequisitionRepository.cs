@@ -123,7 +123,7 @@ public class StaffRequisitionRepository(
             : mapper.Map<StaffRequisitionDto>(requisition);
     }
 
-    public async Task<Result> UpdateStaffRequisition(Guid id, CreateStaffRequisitionRequest request)
+    public async Task<Result> UpdateStaffRequisition(Guid id, CreateStaffRequisitionRequest request, Guid? actorId = null)
     {
 
         var requisition = await context.StaffRequisitions.FirstOrDefaultAsync(sr => sr.Id == id);
@@ -149,6 +149,7 @@ public class StaffRequisitionRepository(
         context.StaffRequisitions.Update(requisition);
         await context.SaveChangesAsync();
 
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, "StaffRequisition", id, actorId);
         return Result.Success();
     }
 

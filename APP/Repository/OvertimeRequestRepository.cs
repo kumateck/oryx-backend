@@ -156,7 +156,7 @@ public class OvertimeRequestRepository(
             : Result.Success(mapper.Map<OvertimeRequestDto>(overtimeRequest));
     }
 
-    public async Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request)
+    public async Task<Result> UpdateOvertimeRequest(Guid id, CreateOvertimeRequest request, Guid? actorId = null)
     {
         var overtimeRequest = await context
             .OvertimeRequests.AsSplitQuery()
@@ -217,6 +217,7 @@ public class OvertimeRequestRepository(
 
         context.OvertimeRequests.Update(overtimeRequest);
         await context.SaveChangesAsync();
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, "OvertimeRequest", id, actorId);
         return Result.Success();
     }
 
