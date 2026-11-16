@@ -6238,6 +6238,34 @@
   },
   {
     "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewStockIssuedReport",
+    "name": "Can View Stock Issued Report",
+    "description": "Allows the user to  view stock issued report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewProductionMonthlyReport",
+    "name": "Can View Production Monthly Report",
+    "description": "Allows the user to  view production monthly report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewProductionScheduleSummaryReport",
+    "name": "Can View Production Schedule Summary Report",
+    "description": "Allows the user to  view production schedule summary report."
+  },
+  {
+    "module": "Reports",
+    "submodule": "Production and Batch Record Reports",
+    "key": "CanViewProductionBatchValueReport",
+    "name": "Can View Production Batch Value Report",
+    "description": "Allows the user to  view production batch value report."
+  },
+  {
+    "module": "Reports",
     "submodule": "Product and Finished Goods Reports",
     "key": "CanViewProductListReport",
     "name": "Can View Product List Report",
