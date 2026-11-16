@@ -247,6 +247,10 @@ public static class ReportPermissions
         PermissionKeys.CanViewProductReadinessReport,
         PermissionKeys.CanViewBmrIssuedReport,
         PermissionKeys.CanViewBmrIssuedByProductReport,
+        PermissionKeys.CanViewStockIssuedReport,
+        PermissionKeys.CanViewProductionMonthlyReport,
+        PermissionKeys.CanViewProductionScheduleSummaryReport,
+        PermissionKeys.CanViewProductionBatchValueReport,
         PermissionKeys.CanViewProductListReport,
         PermissionKeys.CanViewDepartmentProductListReport,
         PermissionKeys.CanViewProductStockSummaryReport,
@@ -1519,6 +1523,14 @@ public static class PermissionKeys
     public const string CanViewBmrIssuedReport = "CanViewBmrIssuedReport";
     /// <summary>Run and print the list of BMRs issued for one product.</summary>
     public const string CanViewBmrIssuedByProductReport = "CanViewBmrIssuedByProductReport";
+    /// <summary>Run and print the stock issued to production batches.</summary>
+    public const string CanViewStockIssuedReport = "CanViewStockIssuedReport";
+    /// <summary>Run and print the production monthly report, one row per batch.</summary>
+    public const string CanViewProductionMonthlyReport = "CanViewProductionMonthlyReport";
+    /// <summary>Run and print the monthly production schedule summary by product and market.</summary>
+    public const string CanViewProductionScheduleSummaryReport = "CanViewProductionScheduleSummaryReport";
+    /// <summary>Run and print the batch value report: packing style, unit price, expected and actual quantity.</summary>
+    public const string CanViewProductionBatchValueReport = "CanViewProductionBatchValueReport";
     /// <summary>Run and print the product list report.</summary>
     public const string CanViewProductListReport = "CanViewProductListReport";
     /// <summary>Run and print the department product list report.</summary>
@@ -5352,6 +5364,10 @@ public static class PermissionUtils
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewProductReadinessReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewBmrIssuedReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewBmrIssuedByProductReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewStockIssuedReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewProductionMonthlyReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewProductionScheduleSummaryReport);
+        addPermission(PermissionModules.Reports, PermissionSubmodules.ProductionReports, PermissionKeys.CanViewProductionBatchValueReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductListReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewDepartmentProductListReport);
         addPermission(PermissionModules.Reports, PermissionSubmodules.ProductReports, PermissionKeys.CanViewProductStockSummaryReport);

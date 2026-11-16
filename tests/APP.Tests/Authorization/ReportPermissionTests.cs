@@ -52,6 +52,7 @@ public sealed class ReportPermissionTests
     [InlineData("vendor-item/summary", PermissionKeys.CanViewVendorItemMappingSummaryReport)]
     [InlineData("bmr-issued", PermissionKeys.CanViewBmrIssuedReport)]
     [InlineData("bmr-issued/by-product", PermissionKeys.CanViewBmrIssuedByProductReport)]
+    [InlineData("stock-issued", PermissionKeys.CanViewStockIssuedReport)]
     // Register reports outside the reports hub keep their group key.
     [InlineData("expired-materials", PermissionKeys.CanViewWarehouseReport)]
     public void A_report_needs_its_own_key(string route, string key)
@@ -65,6 +66,7 @@ public sealed class ReportPermissionTests
     [InlineData("supplier-materials", "CanViewApprovedManufacturerListReport,CanViewSupplierMappingSummaryReport,CanViewSupplierMappingDetailReport")]
     [InlineData("items-per-store-type", "CanViewStoreItemsReport,CanViewStoreStockReport,CanViewVendorItemMappingSummaryReport,CanViewVendorItemMappingDetailReport")]
     [InlineData("purchased-po-report", "CanViewProcurementDashboard,CanViewInvoicedPurchaseOrdersReport")]
+    [InlineData("production-monthly", "CanViewProductionMonthlyReport,CanViewProductionScheduleSummaryReport,CanViewProductionBatchValueReport")]
     public void Reports_built_from_the_same_data_list_each_report_key(string route, string keys)
     {
         var action = Action(route);
@@ -178,7 +180,7 @@ public sealed class ReportPermissionTests
     public void Every_hub_report_key_is_registered_once_under_reports()
     {
         var catalog = PermissionUtils.GeneratePermissions().ToList();
-        Assert.Equal(38, ReportPermissions.Hub.Count);
+        Assert.Equal(42, ReportPermissions.Hub.Count);
         Assert.Equal(ReportPermissions.Hub.Count, ReportPermissions.Hub.Distinct().Count());
         Assert.All(ReportPermissions.Hub, key =>
             Assert.Equal(PermissionModules.Reports, Assert.Single(catalog, permission => permission.Key == key).Module));
@@ -188,9 +190,11 @@ public sealed class ReportPermissionTests
     public void The_migration_grants_every_hub_report_key_from_one_group_key()
     {
         var registered = PermissionUtils.GeneratePermissions().Select(permission => permission.Key).ToHashSet();
-        var pairs = System.Text.RegularExpressions.Regex.Matches(
-                (string)typeof(GrantPerReportViewKeys).GetField("Pairs", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!,
-                @"\('(\w+)', '(\w+)'\)")
+        // Keys added after the first grant come from their own later migration.
+        var pairs = new[] { typeof(GrantPerReportViewKeys), typeof(GrantProductionMonthlyReportKeys) }
+            .SelectMany(migration => System.Text.RegularExpressions.Regex.Matches(
+                (string)migration.GetField("Pairs", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!,
+                @"\('(\w+)', '(\w+)'\)"))
             .Select(match => (Group: match.Groups[1].Value, Report: match.Groups[2].Value)).ToList();
         Assert.Equal(ReportPermissions.Hub.Order(), pairs.Select(pair => pair.Report).Order());
         Assert.All(pairs, pair => Assert.Contains(pair.Group, registered));
