@@ -6699,6 +6699,62 @@
     "description": "Allows the user to  return package material stock requisition."
   },
   {
+    "module": "Logistics",
+    "submodule": "Billing Sheet",
+    "key": "CanReviewBillingSheet",
+    "name": "Can Review Billing Sheet",
+    "description": "Allows the user to  review billing sheet."
+  },
+  {
+    "module": "Logistics",
+    "submodule": "Billing Sheet",
+    "key": "CanReturnBillingSheet",
+    "name": "Can Return Billing Sheet",
+    "description": "Allows the user to  return billing sheet."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Staff Requisition",
+    "key": "CanReviewStaffRequisition",
+    "name": "Can Review Staff Requisition",
+    "description": "Allows the user to  review staff requisition."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Staff Requisition",
+    "key": "CanReturnStaffRequisition",
+    "name": "Can Return Staff Requisition",
+    "description": "Allows the user to  return staff requisition."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Overtime Management",
+    "key": "CanReviewOvertimeRequest",
+    "name": "Can Review Overtime Request",
+    "description": "Allows the user to  review overtime request."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Overtime Management",
+    "key": "CanReturnOvertimeRequest",
+    "name": "Can Return Overtime Request",
+    "description": "Allows the user to  return overtime request."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Management",
+    "key": "CanReviewLeaveRequest",
+    "name": "Can Review Leave Request",
+    "description": "Allows the user to  review leave request."
+  },
+  {
+    "module": "Human Resources",
+    "submodule": "Leave Management",
+    "key": "CanReturnLeaveRequest",
+    "name": "Can Return Leave Request",
+    "description": "Allows the user to  return leave request."
+  },
+  {
     "module": "Full Procedures",
     "submodule": "Questions & Templates",
     "key": "CanViewQuestionTemplates",

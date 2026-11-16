@@ -1359,6 +1359,22 @@ public static class PermissionKeys
     public const string CanReturnRawMaterialStockRequisition = "CanReturnRawMaterialStockRequisition";
     /// <summary>Return a packaging material stock requisition in review to its preparer for correction.</summary>
     public const string CanReturnPackageMaterialStockRequisition = "CanReturnPackageMaterialStockRequisition";
+    /// <summary>Confirm the review of a billing sheet, which sends it for approval.</summary>
+    public const string CanReviewBillingSheet = "CanReviewBillingSheet";
+    /// <summary>Return a billing sheet in review to its preparer for correction.</summary>
+    public const string CanReturnBillingSheet = "CanReturnBillingSheet";
+    /// <summary>Confirm the review of a staff requisition, which sends it for approval.</summary>
+    public const string CanReviewStaffRequisition = "CanReviewStaffRequisition";
+    /// <summary>Return a staff requisition in review to its preparer for correction.</summary>
+    public const string CanReturnStaffRequisition = "CanReturnStaffRequisition";
+    /// <summary>Confirm the review of an overtime request, which sends it for approval.</summary>
+    public const string CanReviewOvertimeRequest = "CanReviewOvertimeRequest";
+    /// <summary>Return an overtime request in review to its preparer for correction.</summary>
+    public const string CanReturnOvertimeRequest = "CanReturnOvertimeRequest";
+    /// <summary>Confirm the review of a leave request, which sends it for approval.</summary>
+    public const string CanReviewLeaveRequest = "CanReviewLeaveRequest";
+    /// <summary>Return a leave request in review to its preparer for correction.</summary>
+    public const string CanReturnLeaveRequest = "CanReturnLeaveRequest";
     public const string CanViewSignatureSettings = "CanViewSignatureSettings";
     public const string CanCreateSignatureSettings = "CanCreateSignatureSettings";
     public const string CanViewChangePassword = "CanViewChangePassword";
@@ -5572,6 +5588,47 @@ public static class PermissionUtils
             PermissionModules.Production,
             PermissionSubmodules.RequisitionReviews,
             PermissionKeys.CanReturnPackageMaterialStockRequisition
+        );
+
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanReviewBillingSheet
+        );
+        addPermission(
+            PermissionModules.Logistics,
+            PermissionSubmodules.BillingSheet,
+            PermissionKeys.CanReturnBillingSheet
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanReviewStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.StaffRequisition,
+            PermissionKeys.CanReturnStaffRequisition
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanReviewOvertimeRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.OvertimeManagement,
+            PermissionKeys.CanReturnOvertimeRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanReviewLeaveRequest
+        );
+        addPermission(
+            PermissionModules.HumanResources,
+            PermissionSubmodules.LeaveManagement,
+            PermissionKeys.CanReturnLeaveRequest
         );
 
         permissions.AddRange(FullProcedurePermissionCatalog.Generate());

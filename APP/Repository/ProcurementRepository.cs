@@ -1420,7 +1420,9 @@ public class ProcurementRepository(
             return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
         }
 
-        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid)
+        // While its review is open it may be corrected; once it waits for approval it may not.
+        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid
+            && !await APP.Services.Reviews.DocumentReviewGate.IsOpenAsync(context, nameof(BillingSheet), billingSheetId))
         {
             return Error.Validation("BillingSheet.Pending", "Billing sheet is pending approval");
         }
@@ -1430,6 +1432,7 @@ public class ProcurementRepository(
 
         context.BillingSheets.Update(existingBillingSheet);
         await context.SaveChangesAsync();
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(BillingSheet), billingSheetId, userId);
         return Result.Success();
     }
 
@@ -1449,7 +1452,9 @@ public class ProcurementRepository(
             return Error.NotFound("BillingSheet.NotFound", "Billing sheet not found");
         }
 
-        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid)
+        // While its review is open it may be corrected; once it waits for approval it may not.
+        if (!existingBillingSheet.Approved && existingBillingSheet.Status != BillingSheetStatus.Paid
+            && !await APP.Services.Reviews.DocumentReviewGate.IsOpenAsync(context, nameof(BillingSheet), billingSheetId))
         {
             return Error.Validation("BillingSheet.Pending", "Billing sheet is pending approval");
         }
@@ -1458,6 +1463,7 @@ public class ProcurementRepository(
         existingBillingSheet.LastUpdatedById = userId;
         context.BillingSheets.Update(existingBillingSheet);
         await context.SaveChangesAsync();
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(BillingSheet), billingSheetId, userId);
         return Result.Success();
     }
 

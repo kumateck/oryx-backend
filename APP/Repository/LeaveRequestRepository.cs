@@ -332,7 +332,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
             Result.Success(mapper.Map<LeaveRequestDto>(leaveRequest, opts => opts.Items[AppConstants.ModelType] = nameof(LeaveRequest)));
     }
 
-    public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest)
+    public async Task<Result> UpdateLeaveRequest(Guid leaveRequestId, CreateLeaveRequest leaveRequest, Guid? actorId = null)
     {
         var existingLeaveRequest = await context.LeaveRequests
             .FirstOrDefaultAsync(l => l.Id == leaveRequestId);
@@ -372,6 +372,7 @@ public class LeaveRequestRepository(ApplicationDbContext context, IMapper mapper
         context.LeaveRequests.Update(existingLeaveRequest);
 
         await context.SaveChangesAsync();
+        await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, "LeaveRequest", leaveRequestId, actorId);
         return Result.Success();
     }
 

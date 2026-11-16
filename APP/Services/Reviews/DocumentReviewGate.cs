@@ -36,7 +36,17 @@ public static class DocumentReviewGate
             await context.SaveChangesAsync(cancellationToken);
             return true;
         }
-        if (latest is { Status: DocumentReviewStatus.AwaitingReview or DocumentReviewStatus.Returned }) return false;
+        if (latest is { Status: DocumentReviewStatus.AwaitingReview }) return false;
+        if (latest is { Status: DocumentReviewStatus.Returned })
+        {
+            // Submitted again through the record's own flow: it goes back to its reviewers.
+            latest.Status = DocumentReviewStatus.AwaitingReview;
+            latest.ReviewedById = null;
+            latest.ReviewedAt = null;
+            Record(context, latest, DocumentReviewAction.Resubmitted, actorId, null);
+            await context.SaveChangesAsync(cancellationToken);
+            return false;
+        }
         if (!await IsConfiguredAsync(context, ReviewDocumentTypes.ConfigurationTypeFor(modelType), cancellationToken)) return true;
         var target = await ReviewDocumentTypes.LoadAsync(context, modelType, modelId, cancellationToken);
         if (target is null) return true;

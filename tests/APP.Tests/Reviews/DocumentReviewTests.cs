@@ -304,7 +304,7 @@ public class DocumentReviewTests
             PermissionKeys.CanDeleteDocumentReviewSettings);
         var reviewer = await Person("Reviewer");
         var service = Service();
-        Assert.Equal(ErrorType.Validation, (await service.SaveConfiguration(new() { ItemType = "LeaveRequest", Assignees = [new() { UserId = reviewer }] }, admin)).Errors[0].Type);
+        Assert.Equal(ErrorType.Validation, (await service.SaveConfiguration(new() { ItemType = "PayrollRun", Assignees = [new() { UserId = reviewer }] }, admin)).Errors[0].Type);
         Assert.Equal(ErrorType.Validation, (await service.SaveConfiguration(new() { ItemType = PR, Assignees = [] }, admin)).Errors[0].Type);
         Assert.Equal(ErrorType.Validation, (await service.SaveConfiguration(new() { ItemType = PR,
             Assignees = [new() { UserId = reviewer, RoleId = await RoleOf(reviewer) }] }, admin)).Errors[0].Type);

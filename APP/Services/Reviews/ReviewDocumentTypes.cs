@@ -37,6 +37,20 @@ public static class ReviewDocumentTypes
     public const string StockRequisition = "StockRequisition";
     public const string RawStockRequisition = "RawStockRequisition";
     public const string PackageStockRequisition = "PackageStockRequisition";
+    public const string BillingSheet = "BillingSheet";
+    public const string StaffRequisition = "StaffRequisition";
+    public const string OvertimeRequest = "OvertimeRequest";
+    public const string LeaveRequest = "LeaveRequest";
+
+    /// <summary>Types with no kind of their own: one key per task, the same for every record.</summary>
+    private sealed record SimpleType(string View, string Confirm, string Return, string Edit);
+    private static readonly IReadOnlyDictionary<string, SimpleType> Simple = new Dictionary<string, SimpleType>
+    {
+        [BillingSheet] = new(PermissionKeys.CanViewBillingSheet, PermissionKeys.CanReviewBillingSheet, PermissionKeys.CanReturnBillingSheet, PermissionKeys.CanEditBillingSheet),
+        [StaffRequisition] = new(PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanEditStaffRequisition),
+        [OvertimeRequest] = new(PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanEditOvertimeManagement),
+        [LeaveRequest] = new(PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest),
+    };
 
     public static readonly IReadOnlyList<ReviewDocumentTypeDto> All =
     [
@@ -44,6 +58,10 @@ public static class ReviewDocumentTypes
         new(PurchaseOrder, "Purchase order", AlwaysReviewed: true),
         new(PurchaseRequisition, "Purchase requisition", AlwaysReviewed: false),
         new(StockRequisition, "Stock requisition", AlwaysReviewed: false),
+        new(BillingSheet, "Billing sheet", AlwaysReviewed: false),
+        new(StaffRequisition, "Staff requisition", AlwaysReviewed: false),
+        new(OvertimeRequest, "Overtime request", AlwaysReviewed: false),
+        new(LeaveRequest, "Leave request", AlwaysReviewed: false),
     ];
 
     public static bool IsConfigurable(string itemType) => All.Any(type => type.ItemType == itemType);
@@ -62,10 +80,10 @@ public static class ReviewDocumentTypes
     /// it is finalised or revised instead, because its check already sits before its approvals.
     /// </summary>
     public static bool HeldAtApprovalStart(string modelType) =>
-        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition;
+        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition || Simple.ContainsKey(modelType);
 
     public static bool IsReviewModelType(string modelType) =>
-        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition;
+        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition || Simple.ContainsKey(modelType);
 
     /// <summary>
     /// Loads the record and its keys. The kind always comes from what is stored: a model type in a request
@@ -121,6 +139,44 @@ public static class ReviewDocumentTypes
                     AlwaysReviewed: false);
             }
             default:
+                if (!Simple.TryGetValue(modelType, out var keys)) return null;
+                var record = await SimpleRecordAsync(context, modelType, id, cancellationToken);
+                return record is null ? null : new ReviewTarget(modelType, modelType, id, record.Value.Code, record.Value.PreparedById,
+                    [keys.View], [keys.Confirm], [keys.Return], [keys.Edit], AlwaysReviewed: false);
+        }
+    }
+
+    /// <summary>A record's display number (or, without one, what names it) and who prepared it.</summary>
+    private static async Task<(string Code, Guid? PreparedById)?> SimpleRecordAsync(ApplicationDbContext context, string modelType, Guid id,
+        CancellationToken cancellationToken)
+    {
+        switch (modelType)
+        {
+            case BillingSheet:
+            {
+                var row = await context.BillingSheets.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : (row.Code, row.CreatedById);
+            }
+            case StaffRequisition:
+            {
+                var row = await context.StaffRequisitions.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { Name = item.Designation.Name, item.StaffRequired, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : ($"{row.StaffRequired} × {row.Name}", row.CreatedById);
+            }
+            case OvertimeRequest:
+            {
+                var row = await context.OvertimeRequests.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : (row.Code, row.CreatedById);
+            }
+            case LeaveRequest:
+            {
+                var row = await context.LeaveRequests.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Employee.FirstName, item.Employee.LastName, item.StartDate, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : ($"{row.FirstName} {row.LastName} · {row.StartDate:d MMM yyyy}".Trim(), row.CreatedById);
+            }
+            default:
                 return null;
         }
     }
@@ -153,6 +209,23 @@ public static class ReviewDocumentTypes
                 .Select(item => new { item.ApprovedById, item.ApprovalTime }).FirstOrDefaultAsync(cancellationToken);
             return (stage?.ApprovedById, stage?.ApprovalTime);
         }
-        return (null, null);
+        // The highest approved stage of a record that is approved: its final approver.
+        IQueryable<DOMAIN.Entities.Approvals.ResponsibleApprovalStage> stages = modelType switch
+        {
+            BillingSheet when await context.BillingSheets.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.BillingSheetApprovals.Where(item => item.BillingSheetId == id),
+            StaffRequisition when await context.StaffRequisitions.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.StaffRequisitionApprovals.Where(item => item.StaffRequisitionId == id),
+            OvertimeRequest when await context.OvertimeRequests.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.OvertimeRequestApprovals.Where(item => item.OvertimeRequestId == id),
+            LeaveRequest when await context.LeaveRequests.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
+                context.LeaveRequestApprovals.Where(item => item.LeaveRequestId == id),
+            _ => null,
+        };
+        if (stages is null) return (null, null);
+        var last = await stages.AsNoTracking().Where(item => item.Status == ApprovalStatus.Approved && item.ApprovedById != null)
+            .OrderByDescending(item => item.Order).ThenByDescending(item => item.ApprovalTime)
+            .Select(item => new { item.ApprovedById, item.ApprovalTime }).FirstOrDefaultAsync(cancellationToken);
+        return (last?.ApprovedById, last?.ApprovalTime);
     }
 }

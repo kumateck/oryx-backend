@@ -73,7 +73,8 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
     /// <summary>A record's review, its history, its signatures and what the caller may do.</summary>
     [HttpGet("{modelType}/{modelId:guid}")]
     [AnyPermission(PermissionKeys.CanViewForeignPurchaseOrder, PermissionKeys.CanViewLocalPurchaseOrder,
-        PermissionKeys.CanViewRawMaterialRequisitionsForProduction, PermissionKeys.CanViewPackagingMaterialRequisitionsForProduction)]
+        PermissionKeys.CanViewRawMaterialRequisitionsForProduction, PermissionKeys.CanViewPackagingMaterialRequisitionsForProduction,
+        PermissionKeys.CanViewBillingSheet, PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanViewLeaveRequests)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DocumentReviewStateDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -88,7 +89,8 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
     [HttpPost("{modelType}/{modelId:guid}/confirm")]
     [AnyPermission(PermissionKeys.CanCheckForeignPurchaseOrder, PermissionKeys.CanCheckLocalPurchaseOrder,
         PermissionKeys.CanReviewRawMaterialPurchaseRequisition, PermissionKeys.CanReviewPackageMaterialPurchaseRequisition,
-        PermissionKeys.CanReviewRawMaterialStockRequisition, PermissionKeys.CanReviewPackageMaterialStockRequisition)]
+        PermissionKeys.CanReviewRawMaterialStockRequisition, PermissionKeys.CanReviewPackageMaterialStockRequisition,
+        PermissionKeys.CanReviewBillingSheet, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReviewLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -103,7 +105,8 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
     [HttpPost("{modelType}/{modelId:guid}/return")]
     [AnyPermission(PermissionKeys.CanReturnForeignPurchaseOrderCheck, PermissionKeys.CanReturnLocalPurchaseOrderCheck,
         PermissionKeys.CanReturnRawMaterialPurchaseRequisition, PermissionKeys.CanReturnPackageMaterialPurchaseRequisition,
-        PermissionKeys.CanReturnRawMaterialStockRequisition, PermissionKeys.CanReturnPackageMaterialStockRequisition)]
+        PermissionKeys.CanReturnRawMaterialStockRequisition, PermissionKeys.CanReturnPackageMaterialStockRequisition,
+        PermissionKeys.CanReturnBillingSheet, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanReturnLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -119,7 +122,8 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
     [HttpPost("{modelType}/{modelId:guid}/resubmit")]
     [AnyPermission(PermissionKeys.CanCreateForeignPurchaseOrder, PermissionKeys.CanCreateLocalPurchaseOrder,
         PermissionKeys.CanEditRawMaterialPurchaseRequisition, PermissionKeys.CanEditPackageMaterialPurchaseRequisition,
-        PermissionKeys.CanUpdateProductionStep)]
+        PermissionKeys.CanUpdateProductionStep,
+        PermissionKeys.CanEditBillingSheet, PermissionKeys.CanEditStaffRequisition, PermissionKeys.CanEditOvertimeManagement, PermissionKeys.CanEditLeaveRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

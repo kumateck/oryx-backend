@@ -49,7 +49,8 @@ Every document type starts its approvals through one method,
 4. While a review is Awaiting review or Returned, the record is editable through its normal edit
    page by anyone holding that type's edit key. Edits are recorded on the review history with who
    and when.
-5. When an approver later rejects the record and it is resubmitted, it is reviewed again: each
+5. A returned record that is submitted again through its own flow goes back to review, not to
+   approval. When an approver later rejects the record and it is resubmitted, it is reviewed again: each
    submission gets its own review. Prints show the review of the submission that was approved.
 
 Tables:
@@ -92,6 +93,10 @@ Each task uses the key for the record's stored kind; the server checks it on the
 | `CanReturnRaw/PackageMaterialPurchaseRequisition` | return a purchase requisition | nobody |
 | `CanReviewRaw/PackageMaterialStockRequisition` | confirm a stock requisition's review | nobody |
 | `CanReturnRaw/PackageMaterialStockRequisition` | return a stock requisition | nobody |
+| `CanReview/ReturnBillingSheet` | confirm or return a billing sheet | nobody |
+| `CanReview/ReturnStaffRequisition` | confirm or return a staff requisition | nobody |
+| `CanReview/ReturnOvertimeRequest` | confirm or return an overtime request | nobody |
+| `CanReview/ReturnLeaveRequest` | confirm or return a leave request | nobody |
 
 Confirming an order's check keeps `CanCheckForeign/LocalPurchaseOrder`. Sending a returned stock
 requisition back uses `CanUpdateProductionStep` (it is corrected through its batch's Repair action);
@@ -104,7 +109,10 @@ Confirm) is required as well as the key whenever the type is configured.
 1. **Engine and first documents** (built): tables, gate, configuration, Pending reviews, Review
    panel, Prepared / Checked / Approved on prints, for purchase orders (their check), purchase
    requisitions and stock requisitions (raw and packaging).
-2. **Remaining approval documents**, a few per pull request, each with its edit-during-review check
-   and Review panel.
+2. **Remaining approval documents**, a few at a time, each with its edit-during-review check and
+   Review panel. First batch (built): billing sheets, staff requisitions, overtime requests and leave
+   requests. They are corrected through their own edit endpoints, which record the edit on the review
+   (a billing sheet's edit and add-charges are allowed while its review is open). Not yet: stock
+   adjustments (no edit endpoint), trial requisitions (no desktop page), and the rest.
 3. **Move the remaining checks onto the engine**: the stock issue check, then QC formula revision
    review.
