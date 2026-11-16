@@ -280,12 +280,16 @@ public sealed class QuestionFormulaRepairTests
     }
 
     [Fact]
-    public async Task Assignment_and_department_are_independent_of_repair_permission()
+    public async Task Assignment_and_test_permissions_are_independent_of_repair_permission()
     {
         await using var f = new Fixture(); await f.Seed(); var assignment = await f.Db.FormFieldAssignees.SingleAsync();
         assignment.AssigneeId = Guid.NewGuid(); await f.Db.SaveChangesAsync();
         Assert.True((await f.Service.Preview(f.Question, f.Candidate())).IsFailure);
-        assignment.AssigneeId = f.Actor.UserId; (await f.Db.Products.SingleAsync()).DepartmentId = Guid.NewGuid(); await f.Db.SaveChangesAsync();
+        // Assigned again, but without the permission to run product tests.
+        assignment.AssigneeId = f.Actor.UserId;
+        var start = await f.Db.RoleClaims.SingleAsync(claim => claim.ClaimValue == PermissionKeys.CanStartProductTest);
+        f.Db.PermissionTypes.RemoveRange(f.Db.PermissionTypes.Where(type => type.RoleClaimId == start.Id)); f.Db.RoleClaims.Remove(start);
+        await f.Db.SaveChangesAsync();
         Assert.True((await f.Service.Preview(f.Question, f.Candidate())).IsFailure);
     }
 
@@ -624,5 +628,52 @@ public sealed class QuestionFormulaRepairTests
         var test = Assert.Single(opened.Value.Tests);
         Assert.False(test.Eligible);
         Assert.Equal("You are not assigned to this field on this test.", test.Blocker);
+    }
+
+    [Fact]
+    public async Task An_approved_revision_may_carry_settings_the_original_option_never_had()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        // The formula editor stores variable scopes; a hand-typed repair may not change them, the approved revision may.
+        const string edited = "{\"type\":0,\"expression\":\":a/:b*100\",\"decimalPlaces\":2,\"variableScopes\":{}}";
+
+        var typed = await f.Service.Preview(f.Question, new(edited, false, [new(f.Atr, f.Field)]));
+        Assert.Contains(typed.Value.Blockers, text => text.EndsWith("Changed: variableScopes."));
+
+        await f.Approve(edited);
+        var approved = await f.Service.Preview(f.Question, new(edited, false, [new(f.Atr, f.Field)]));
+        Assert.Empty(approved.Value.Blockers);
+    }
+
+    [Fact]
+    public async Task An_approved_revision_replaces_the_test_s_formula_however_different_it_is()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        // A different type, inputs and precision: the approved revision still overrides what the test has.
+        const string universal = "{\"type\":3,\"expression\":\":standardWeight/:sampleWeight*:purity\",\"decimalPlaces\":4,"
+            + "\"manualVarLabels\":{\"standardWeight\":\"Standard weight\",\"sampleWeight\":\"Sample weight\",\"purity\":\"Purity\"}}";
+        await f.Approve(universal);
+
+        var request = await f.Request(new(universal, false, [new(f.Atr, f.Field)]));
+        Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
+
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single(item => item.FormFieldId == f.Field);
+        Assert.Equal(universal, pin.Definition);
+        Assert.True(pin.RequiresRecalculation);
+    }
+
+    [Fact]
+    public async Task An_assigned_analyst_repairs_another_department_s_product_and_sees_a_plain_label()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        // QC analysts are assigned to fields on every department's products, as on the worksheet itself.
+        foreach (var product in f.Db.Products) product.DepartmentId = Guid.NewGuid();
+        foreach (var section in f.Db.FormSections) section.Name = "<p><span style=\"color: black;\"><strong>Assay: </strong>Constituted &amp; stored</span></p>";
+        await f.Db.SaveChangesAsync();
+
+        var test = Assert.Single((await f.Service.Context(f.Question, f.Atr)).Value.Tests);
+
+        Assert.True(test.Eligible, test.Blocker);
+        Assert.Equal("AR-TEST · Assay: Constituted & stored", test.Label);
     }
 }
