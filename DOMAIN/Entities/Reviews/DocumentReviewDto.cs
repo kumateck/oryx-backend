@@ -106,6 +106,8 @@ public class PendingReviewDto
     public string Code { get; set; }
     /// <summary>For a purchase order, its supplier type (0 foreign, 1 local), which its page needs.</summary>
     public int? Variant { get; set; }
+    /// <summary>The record the page is opened on, when it is not the reviewed record itself (a stock issue's requisition).</summary>
+    public Guid? ParentId { get; set; }
     public DocumentReviewStatus Status { get; set; }
     public ReviewPersonDto PreparedBy { get; set; }
     public DateTime SubmittedAt { get; set; }

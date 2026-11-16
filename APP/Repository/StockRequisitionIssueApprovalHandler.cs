@@ -7,7 +7,8 @@ using SHARED;
 namespace APP.Repository;
 
 /// <summary>
-/// The warehouse check of an issued stock requisition. Its approver signs the voucher as "Checked by".
+/// The warehouse check of an issued stock requisition, as approval stages: it now happens on the issue's
+/// document review. Stages remain for issues checked before that, whose voucher still names their checker.
 /// </summary>
 internal static class StockRequisitionIssueApprovalHandler
 {
@@ -32,56 +33,6 @@ internal static class StockRequisitionIssueApprovalHandler
                 ActivatedAt = stage.Order == first ? now : null,
             }));
         await context.SaveChangesAsync();
-    }
-
-    internal static async Task<Result> ReviewAsync(ApplicationDbContext context, Guid id,
-        Guid reviewerId, IReadOnlyCollection<Guid> roles, string comments, ApprovalStatus decision)
-    {
-        var issue = await context.StockRequisitionIssues.Include(item => item.Approvals)
-            .SingleOrDefaultAsync(item => item.Id == id);
-        if (issue is null)
-            return Error.NotFound("StockRequisitionIssue.NotFound", "Issued stock requisition not found.");
-        if (issue.Approved || issue.Rejected)
-            return Error.Validation("StockRequisitionIssue.Final", "This issue has already been checked.");
-        if (issue.IssuedById == reviewerId)
-            return Error.Validation("Approval.SelfReview", "The person who issued the stock cannot check their own issue.");
-        var stage = issue.Approvals
-            .Where(item => item.Status == ApprovalStatus.Pending && item.ActivatedAt.HasValue)
-            .Where(item => item.UserId == reviewerId ||
-                (item.RoleId.HasValue && roles.Contains(item.RoleId.Value)))
-            .OrderBy(item => item.Order).FirstOrDefault();
-        if (stage is null)
-            return Error.Validation("Approval.Unauthorized", "No active approval stage is assigned to you.");
-        var now = DateTime.UtcNow;
-        stage.Status = decision;
-        stage.ApprovalTime = now;
-        stage.ApprovedById = reviewerId;
-        stage.Comments = comments;
-        if (decision == ApprovalStatus.Rejected) issue.Rejected = true;
-        else
-        {
-            if (issue.Approvals.Where(item => item.Required && item.Order == stage.Order)
-                .All(item => item.Status == ApprovalStatus.Approved))
-            {
-                var nextOrder = issue.Approvals
-                    .Where(item => item.Required && item.Order > stage.Order && item.Status == ApprovalStatus.Pending)
-                    .Select(item => (int?)item.Order).Min();
-                if (nextOrder.HasValue)
-                    foreach (var next in issue.Approvals.Where(item => item.Order == nextOrder.Value && !item.ActivatedAt.HasValue))
-                        next.ActivatedAt = now;
-            }
-            issue.Approved = issue.Approvals.Where(item => item.Required)
-                .All(item => item.Status == ApprovalStatus.Approved);
-        }
-        context.ApprovalActionLogs.Add(new ApprovalActionLog
-        {
-            ModelId = id,
-            UserId = reviewerId,
-            Status = decision,
-            Comments = comments,
-        });
-        await context.SaveChangesAsync();
-        return Result.Success();
     }
 
     /// <summary>The person whose approval completed the check: the last required approver.</summary>

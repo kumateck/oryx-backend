@@ -5425,6 +5425,13 @@
     "description": "Allows the user to  approve formula revision."
   },
   {
+    "module": "Settings",
+    "submodule": "Workflow Builder",
+    "key": "CanReturnFormulaRevision",
+    "name": "Can Return Formula Revision",
+    "description": "Allows the user to  return formula revision."
+  },
+  {
     "module": "Quality Control",
     "submodule": "Testing",
     "key": "CanExecuteFormulaResponse",
@@ -6781,6 +6788,34 @@
     "key": "CanReturnPackingList",
     "name": "Can Return Packing List",
     "description": "Allows the user to  return packing list."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanCheckRawMaterialIssue",
+    "name": "Can Check Raw Material Issue",
+    "description": "Allows the user to  check raw material issue."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanCheckPackagingMaterialIssue",
+    "name": "Can Check Packaging Material Issue",
+    "description": "Allows the user to  check packaging material issue."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanReturnRawMaterialIssue",
+    "name": "Can Return Raw Material Issue",
+    "description": "Allows the user to  return raw material issue."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanReturnPackagingMaterialIssue",
+    "name": "Can Return Packaging Material Issue",
+    "description": "Allows the user to  return packaging material issue."
   },
   {
     "module": "Full Procedures",
