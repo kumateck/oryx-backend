@@ -45,6 +45,8 @@ public static class ReviewDocumentTypes
     public const string JobRequest = "JobRequest";
     /// <summary>The warehouse check of issued stock, signed on the voucher as "Checked by".</summary>
     public const string StockIssue = "StockRequisitionIssue";
+    /// <summary>A QC formula revision: reviewed (with its definition hash and a reason) before it is approved.</summary>
+    public const string FormulaRevision = "FormulaRevision";
     /// <summary>A packing list: the approval engine calls it an allocation of a production order.</summary>
     public const string PackingList = "AllocateProductionOrder";
 
@@ -73,6 +75,8 @@ public static class ReviewDocumentTypes
         new(JobRequest, "Job request", AlwaysReviewed: false),
         // Issued stock has always been checked; its check is this review.
         new(StockIssue, "Stock issue check", AlwaysReviewed: true),
+        // Formula revisions have always been reviewed before approval; their review is this one.
+        new(FormulaRevision, "QC formula revision", AlwaysReviewed: true),
         new(PackingList, "Packing list", AlwaysReviewed: false),
     ];
 
@@ -95,7 +99,8 @@ public static class ReviewDocumentTypes
         modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue || Simple.ContainsKey(modelType);
 
     public static bool IsReviewModelType(string modelType) =>
-        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue || Simple.ContainsKey(modelType);
+        modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue or FormulaRevision
+        || Simple.ContainsKey(modelType);
 
     /// <summary>True when every record of the type is reviewed, with or without named reviewers.</summary>
     public static bool AlwaysReviewedType(string configurationType) =>
@@ -153,6 +158,20 @@ public static class ReviewDocumentTypes
                     // A stock requisition is corrected through its batch (Repair) and sent back by production.
                     [PermissionKeys.CanUpdateProductionStep],
                     AlwaysReviewed: false);
+            }
+            case FormulaRevision:
+            {
+                var revision = await context.FormulaRevisions.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.Revision, item.CreatedById, item.FormulaDefinitionId }).FirstOrDefaultAsync(cancellationToken);
+                if (revision is null) return null;
+                var question = await context.QuestionFormulaDefinitions.AsNoTracking()
+                    .Where(item => item.FormulaDefinitionId == revision.FormulaDefinitionId)
+                    .Select(item => new { item.QuestionId, item.Question.Label }).FirstOrDefaultAsync(cancellationToken);
+                if (question is null) return null;
+                return new ReviewTarget(FormulaRevision, FormulaRevision, id, $"{question.Label} · revision {revision.Revision}", revision.CreatedById,
+                    [PermissionKeys.CanViewReviewFormulaRevision], [PermissionKeys.CanReviewFormulaRevision], [PermissionKeys.CanReturnFormulaRevision],
+                    // A returned revision is corrected as a draft and submitted for review again from its question.
+                    [PermissionKeys.CanEditQuestions], AlwaysReviewed: true, ParentId: question.QuestionId);
             }
             case StockIssue:
             {

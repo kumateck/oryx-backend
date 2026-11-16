@@ -5425,6 +5425,13 @@
     "description": "Allows the user to  approve formula revision."
   },
   {
+    "module": "Settings",
+    "submodule": "Workflow Builder",
+    "key": "CanReturnFormulaRevision",
+    "name": "Can Return Formula Revision",
+    "description": "Allows the user to  return formula revision."
+  },
+  {
     "module": "Quality Control",
     "submodule": "Testing",
     "key": "CanExecuteFormulaResponse",

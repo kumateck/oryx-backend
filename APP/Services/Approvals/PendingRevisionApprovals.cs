@@ -57,7 +57,9 @@ public static class PendingRevisionApprovals
         foreach (var item in candidates)
         {
             var revision = item.revision;
-            var action = revision.ReviewedById.HasValue ? "approve" : "review";
+            // A revision waiting for its review is listed in Pending reviews; only approvals are listed here.
+            if (!revision.ReviewedById.HasValue) continue;
+            var action = "approve";
             if (action == "review" && !canReview ||
                 action == "approve" && (!canApprove ||
                     !FormulaRevisionParticipation.AllowsApproval(

@@ -1311,6 +1311,8 @@ public static class PermissionKeys
     public const string CanReviewFormulaRevision = "CanReviewFormulaRevision";
     public const string CanViewApproveFormulaRevision = "CanViewApproveFormulaRevision";
     public const string CanApproveFormulaRevision = "CanApproveFormulaRevision";
+    /// <summary>Return a formula revision in review to draft, with a comment, for its author to correct.</summary>
+    public const string CanReturnFormulaRevision = "CanReturnFormulaRevision";
     public const string CanExecuteFormulaResponse = "CanExecuteFormulaResponse";
     public const string CanReviewFormRevision = "CanReviewFormRevision";
     public const string CanApproveFormRevision = "CanApproveFormRevision";
@@ -4847,6 +4849,11 @@ public static class PermissionUtils
             PermissionModules.Settings,
             PermissionSubmodules.WorkflowBuilder,
             PermissionKeys.CanApproveFormulaRevision
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.WorkflowBuilder,
+            PermissionKeys.CanReturnFormulaRevision
         );
         addPermission(
             PermissionModules.QualityControl,
