@@ -94,7 +94,7 @@ public sealed partial class QuestionFormulaRepairService
             !evaluation.TryGetProperty("status", out var status) || status.GetInt32() != 0 ||
             !evaluation.TryGetProperty("results", out var values) || values.ValueKind != JsonValueKind.Array ||
             values.GetArrayLength() != compiled.Definition.GetProperty("results").GetArrayLength())
-            return Conflict("The server could not calculate valid results from these saved readings. Check missing inputs and zero denominators, then retry.");
+            return Conflict(EngineRefusal(result, pin.Definition, inputs));
         await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted) : null;
         // Recheck everything the result depends on; any change means the analyst must reload and retry.
         grants = await Grants();
@@ -117,5 +117,36 @@ public sealed partial class QuestionFormulaRepairService
         db.LegacyFormulaRepairEvaluations.Add(execution);
         await db.SaveChangesAsync(); if (transaction is not null) await transaction.CommitAsync();
         return execution.Id;
+    }
+
+    /// <summary>Says why the engine gave no valid result, naming the reading it refused where it can.</summary>
+    internal static string EngineRefusal(FormulaServiceResponse result, string definition, IReadOnlyDictionary<string, string?> inputs)
+    {
+        string Label(string? key) => string.IsNullOrWhiteSpace(key) ? "" : LegacyFormulaRepairDefinition.InputLabel(definition, key)
+            + (inputs.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? $" = \"{value}\"" : "");
+        if (result.Status != 5 || result.Evaluation is not { } evaluation || !evaluation.TryGetProperty("status", out var status))
+        {
+            var issues = result.RequestIssues.Select(i => i.Message)
+                .Concat(result.DefinitionIssues.Concat(result.ConfigurationIssues).Select(i => i.VariableKey is null ? i.Message : $"{Label(i.VariableKey)}: {i.Message}"))
+                .Where(m => !string.IsNullOrWhiteSpace(m)).Distinct().Take(3).ToList();
+            return $"The calculation service refused the request ({result.StatusName})" + (issues.Count > 0 ? ": " + string.Join("; ", issues) : "") + ". Reload the test and try again; if it repeats, repair the field again.";
+        }
+        var errors = evaluation.TryGetProperty("errors", out var list) && list.ValueKind == JsonValueKind.Array
+            ? list.EnumerateArray().Select(e =>
+            {
+                var key = e.TryGetProperty("variableKey", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
+                var message = e.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
+                return key is null ? message : $"{Label(key)}{(string.IsNullOrWhiteSpace(message) ? "" : $" ({message})")}";
+            }).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct().Take(3).ToList()
+            : [];
+        var detail = errors.Count > 0 ? ": " + string.Join("; ", errors) : "";
+        return status.GetInt32() switch
+        {
+            0 => "The calculation service returned results that do not match this repair. Reload the test and recalculate again.",
+            1 => $"A reading the formula needs has no value{detail}. Enter and save it, then recalculate.",
+            2 => $"A saved reading is not a number the formula can use{detail}. Correct it, save, then recalculate.",
+            3 => $"The formula divides by zero with these readings{detail}. Check the readings, save, then recalculate.",
+            _ => $"The formula could not be calculated from these readings{detail}. Check them, save, then recalculate."
+        };
     }
 }

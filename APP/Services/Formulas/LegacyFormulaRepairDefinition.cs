@@ -161,6 +161,8 @@ public static class LegacyFormulaRepairDefinition
         return key;
     }
 
+    private static JsonNode? Present(JsonNode? node) => node is null || string.IsNullOrWhiteSpace(node.ToString()) ? null : node;
+
     private static string? NullIfBlank(string text) => string.IsNullOrWhiteSpace(text) ? null : text;
 
     public static Dictionary<string, string?> ResolveInputs(string definition, string value) =>
@@ -184,7 +186,9 @@ public static class LegacyFormulaRepairDefinition
             if (Number(config, "type", 0) == 0) input = answer[key];
             if (config["constants"] is JsonObject constants && constants[key] is { } constant) input = constant;
             if (answer["manualVars"] is JsonObject manual && manual[key] is { } entry)
-                input = entry is JsonObject obj ? obj["raw"] ?? obj["value"] : entry;
+                // As the normal formula runtime does: the worksheet's evaluated number, not the text the analyst typed
+                // (which may be an expression such as "25 x 4" or carry separators the engine refuses).
+                input = entry is JsonObject obj ? Present(obj["evaluated"]) ?? Present(obj["value"]) ?? obj["raw"] : entry;
             var match = Regex.Match(key, @"^(standardInput|sampleInput(\d+))\.(.+)$");
             if (match.Success)
             {
