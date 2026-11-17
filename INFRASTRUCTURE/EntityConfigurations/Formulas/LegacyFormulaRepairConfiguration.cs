@@ -48,3 +48,16 @@ public sealed class LegacyFormulaEvaluationConfiguration : IEntityTypeConfigurat
         b.HasOne<User>().WithMany().HasForeignKey(x => x.ActorId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public sealed class LegacyFormulaFinalizationConfiguration : IEntityTypeConfiguration<LegacyFormulaRepairFinalization>
+{
+    public void Configure(EntityTypeBuilder<LegacyFormulaRepairFinalization> b)
+    {
+        b.ToTable("LegacyFormulaRepairFinalizations"); b.HasKey(x => x.Id);
+        b.HasIndex(x => x.EvaluationId).IsUnique();
+        b.HasIndex(x => x.ResponseId);
+        b.HasOne<LegacyFormulaRepairEvaluation>().WithMany().HasForeignKey(x => x.EvaluationId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<Response>().WithMany().HasForeignKey(x => x.ResponseId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<User>().WithMany().HasForeignKey(x => x.ActorId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

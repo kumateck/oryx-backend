@@ -4438,6 +4438,36 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("LegacyFormulaRepairEvaluations", (string)null);
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaRepairFinalization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EvaluationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("EvaluationId")
+                        .IsUnique();
+
+                    b.HasIndex("ResponseId");
+
+                    b.ToTable("LegacyFormulaRepairFinalizations", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyKeyMapping", b =>
                 {
                     b.Property<Guid>("Id")
@@ -29815,6 +29845,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Formulas.LegacyFormulaConfigurationPin", null)
                         .WithMany()
                         .HasForeignKey("PinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaRepairFinalization", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Formulas.LegacyFormulaRepairEvaluation", null)
+                        .WithMany()
+                        .HasForeignKey("EvaluationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
