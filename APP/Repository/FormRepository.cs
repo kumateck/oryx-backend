@@ -650,9 +650,12 @@ public class FormRepository(
         else
         {
             // Update or insert text-based responses
-            var existingFormResponse = response.FormResponses.FirstOrDefault(fr =>
-                fr.FormFieldId == formField.Id
-            );
+            // Write to the newest answer for the field: recalculation, submission and the worksheet all read that one.
+            // Older duplicates (there is no unique index) must not swallow the readings.
+            var existingFormResponse = response.FormResponses
+                .Where(fr => fr.FormFieldId == formField.Id)
+                .OrderByDescending(fr => fr.CreatedAt)
+                .FirstOrDefault();
             if (existingFormResponse != null)
             {
                 existingFormResponse.Value = request.Value;

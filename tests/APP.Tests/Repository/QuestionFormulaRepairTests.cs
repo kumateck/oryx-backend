@@ -4,6 +4,7 @@ using APP.Utils;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Forms;
+using DOMAIN.Entities.Forms.Request;
 using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.Permissions;
 using DOMAIN.Entities.Products;
@@ -403,6 +404,41 @@ public sealed class QuestionFormulaRepairTests
         var result = await repository.UpdateForm(new DOMAIN.Entities.Forms.Request.CreateFormRequest { Name = "Assay" }, form.Id, f.Actor.UserId!.Value);
         Assert.True(result.IsFailure); Assert.Equal("Form.FormulaRepairHistory", result.Error.Code);
         Assert.Single(f.Db.FormFields);
+    }
+
+    [Fact]
+    public async Task Saving_readings_writes_the_newest_answer_and_recalculation_needs_no_separate_step()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        Assert.True((await f.Service.Apply(f.Question, await f.Request(f.Candidate(false, true)))).IsSuccess);
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
+        var response = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
+        var form = (await f.Db.FormFields.Include(x => x.FormSection).SingleAsync(x => x.Id == f.Field)).FormSection.FormId;
+        // Two answer rows for the field (there is no unique index): recalculation reads the newest, so the save must write it.
+        var older = new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field, Value = "{}" };
+        var newest = new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field, Value = "{}" };
+        f.Db.FormResponses.AddRange(older, newest); await f.Db.SaveChangesAsync();
+        older.CreatedAt = DateTime.UtcNow.AddHours(-1); newest.CreatedAt = DateTime.UtcNow; await f.Db.SaveChangesAsync();
+        var repository = new APP.Repository.FormRepository(f.Db, null!, null!, null!, null!);
+        async Task Save(string value) => Assert.True((await repository.SaveFormResponseDraft(new SaveResponseDraftRequest
+        {
+            ResponseId = f.Response, FormId = form, FormFieldId = f.Field, Value = value, FormulaConfigurationHash = pin.DefinitionHash,
+            BatchManufacturingRecordId = response.BatchManufacturingRecordId, ProductionActivityStepId = response.ProductionActivityStepId,
+        }, f.Actor.UserId!.Value)).IsSuccess);
+
+        await Save("{\"a\":\"1.23\"}");
+        Assert.Equal("{\"a\":\"1.23\"}", (await f.Db.FormResponses.AsNoTracking().SingleAsync(a => a.Id == newest.Id)).Value);
+        // Readings still missing: the field stays pending and the reason names the formula, nothing is recorded.
+        var missing = await f.Service.RecalculatePending(f.Response, f.Field);
+        Assert.Contains(missing, problem => problem.StartsWith("Assay:", StringComparison.Ordinal));
+        Assert.Empty(f.Db.LegacyFormulaRepairEvaluations);
+
+        await Save("{\"a\":\"1.23\",\"b\":\"2\"}");
+        Assert.Empty(await f.Service.RecalculatePending(f.Response, f.Field));
+        Assert.False(await LegacyFormulaConfigurationReader.Pending(f.Db, response));
+        // Submission's recalculation finds nothing left to do and records nothing twice.
+        Assert.Empty(await f.Service.RecalculatePending(f.Response));
+        Assert.Single(f.Db.LegacyFormulaRepairEvaluations);
     }
 
     [Fact]
