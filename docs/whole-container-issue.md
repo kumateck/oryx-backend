@@ -14,7 +14,7 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
 2. **The requirement is never rounded.** The requisition and BOM keep the exact quantity needed.
 3. **The store records how much it actually issues** on each packaging line, over or under the requested quantity.
 4. **The warehouse supervisor makes that call.** The suggestion is the nearest whole container: 18.75 from packs of 10 suggests 20, and from packs of 9 suggests 18. The supervisor may issue the other whole-container quantity, or any quantity the sealed packs allow.
-5. **Leftovers come back through Final Packing**, not the material return note.
+5. **Leftovers come back through Final Packing's reconciliation.** Final Packing raises a **material return note** with a **partial return** for each packaging material left over. The reconciliation must be checked against those partial returns.
 
 ## How it would work
 
@@ -37,7 +37,9 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
   returned = received − (packed + rejected + sampled)
   ```
 
-  It then returns the leftover to the store (`returnedMaterials` in `modules/activities/lib/final-packing.ts`).
+  On save, it posts the leftovers to `POST /api/v1/production-schedule/return-after-production` (`returnedMaterials` in `modules/activities/lib/final-packing.ts`). `ProductionScheduleRepository.ReturnLeftOverStockAfterProductionEnds` then creates a `MaterialReturnNote` for the batch, with a `MaterialReturnNotePartialReturn` per material, returning to the store it came from.
+- **Reconciliation check:** for each packaging material, the partial returns on the batch's return notes must equal the reconciliation's "returned", that is issued + extra deliveries − packed − rejected − sampled. A difference is flagged on the reconciliation and on the return note.
+- **Batch attribution:** a partial return is currently booked against the *first* reserved batch of that material. When an over-issue came from a particular batch, the leftover should go back to that batch: the last one issued from. This needs fixing alongside.
 - **The one change:** "received" becomes the **issued** quantity, not the requested one. Overs then come back as leftover automatically: issued 20, packed 18.75, returned 1.25.
 - **A shortage** (issued 18 of 18.75): production asks for the rest through the existing extra-material request. Extra deliveries are already added to "received". If none is delivered, the shortage shows in the reconciliation's percentage loss with its reason, as any loss does today.
 
@@ -59,7 +61,8 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
 - **Desktop:**
   - the issue screen, which gets an editable issued quantity for supervisors, the suggestion and the over/under;
   - the voucher;
-  - Final Packing's packing materials, where "received" takes the issued quantity.
+  - Final Packing's packing materials, where "received" takes the issued quantity, with the partial-return check;
+  - `ReturnLeftOverStockAfterProductionEnds`, which books each leftover to the batch it was over-issued from.
 
 ## Open points
 
