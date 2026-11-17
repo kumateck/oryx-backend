@@ -98,6 +98,21 @@ internal static class FormAnswerCompleteness
             using var nested = JsonDocument.Parse(value.GetString()!);
             value = nested.RootElement.Clone();
         }
+        // The question editor stores a Simple formula as { type, expression: "<builder settings JSON>" }; read the inner settings.
+        if (Get(value, "expression") is { ValueKind: JsonValueKind.String } wrapped && wrapped.GetString()!.TrimStart().StartsWith('{'))
+        {
+            try
+            {
+                using var inner = JsonDocument.Parse(wrapped.GetString()!);
+                if (Text(Get(inner.RootElement, "expression")))
+                {
+                    var merged = Properties(value).ToDictionary(item => item.Name, item => item.Value.Clone());
+                    foreach (var item in Properties(inner.RootElement)) merged[item.Name] = item.Value.Clone();
+                    return JsonSerializer.SerializeToElement(merged);
+                }
+            }
+            catch (JsonException) { }
+        }
         foreach (var key in new[] { "schema", "data", "value", "settings", "formula" })
         {
             if (Text(Get(value, "expression")) || Text(Get(value, "mode"))) break;
