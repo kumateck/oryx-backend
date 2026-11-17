@@ -393,6 +393,8 @@ public class RequisitionRepository(
             .Include(r => r.RequestedBy)
             .Include(r => r.Items.Where(item => item.DeletedAt == null))
                 .ThenInclude(i => i.Material)
+            .Include(r => r.Items.Where(item => item.DeletedAt == null))
+                .ThenInclude(i => i.IssueAdjustedBy)
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
         if (requisition is null)
@@ -760,6 +762,52 @@ public class RequisitionRepository(
         };
     }
 
+    /// <summary>
+    /// A warehouse supervisor sets how much of a packaging line will be issued when whole packs make it differ from the
+    /// requirement. The reason is required; the requirement itself clears the adjustment. Stock moves only at issue.
+    /// </summary>
+    public async Task<Result> AdjustIssuedQuantity(Guid requisitionId, Guid itemId, AdjustIssuedQuantityRequest request, Guid userId)
+    {
+        await using var transaction = await ProductionMaterialTransaction.Begin(context);
+        var grants = await CurrentPermissionSet.Load(context, userId);
+        if (!grants.Contains(PermissionKeys.CanAdjustPackagingMaterialIssueQuantity))
+            return Error.Forbidden("Stock.IssuedQuantity", "Changing how much packaging is issued needs the packaging issue-quantity permission.");
+        var item = await context.RequisitionItems.Include(line => line.Material).Include(line => line.UoM).Include(line => line.Requisition)
+            .FirstOrDefaultAsync(line => line.Id == itemId && line.RequisitionId == requisitionId && line.DeletedAt == null);
+        if (item is null) return RequisitionErrors.NotFound(requisitionId);
+        if (item.Requisition.RequisitionType != RequisitionType.Stock)
+            return Error.Validation("Stock.IssuedQuantity", "Only stock requisitions are issued from the store.");
+        if (item.Requisition.Status is RequestStatus.Completed or RequestStatus.Rejected || item.Status == RequestStatus.Completed)
+            return Error.Conflict("Stock.AlreadyIssued", "This line has already been issued or the requisition was rejected.");
+        var problem = PackagingIssueAdjustment.Problem(item, request.Quantity, request.Reason);
+        if (problem is not null) return Error.Validation("Stock.IssuedQuantity", problem);
+
+        if (request.Quantity == item.Quantity)
+        {
+            item.IssuedQuantity = null;
+            item.IssueAdjustmentReason = null;
+        }
+        else
+        {
+            var reservations = item.Requisition.ProductionScheduleProductId is { } scheduleProductId
+                ? await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().Include(row => row.UoM).Include(row => row.MaterialBatch)
+                    .Where(row => row.ProductionScheduleProductId == scheduleProductId && row.MaterialBatch.MaterialId == item.MaterialId
+                        && row.DeletedAt == null && row.ReleasedAt == null)
+                    .ToListAsync()
+                : [];
+            // Checked now so the supervisor hears at once; checked again, and applied, when the stock is issued.
+            var stock = await PackagingIssueAdjustment.Apply(context, item, request.Quantity, request.Reason, reservations, checkOnly: true);
+            if (stock.IsFailure) return stock;
+            item.IssuedQuantity = request.Quantity;
+            item.IssueAdjustmentReason = request.Reason.Trim();
+        }
+        item.IssueAdjustedById = userId;
+        item.IssueAdjustedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return Result.Success();
+    }
+
     public async Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId)
     {
         await using var transaction = await ProductionMaterialTransaction.Begin(context);
@@ -882,6 +930,15 @@ public class RequisitionRepository(
         var quantityValidation = StockIssueQuantityValidator.Validate(stockRequisition, reservedBatches);
         if (quantityValidation.IsFailure)
             return quantityValidation;
+
+        // Packaging lines a supervisor set to be issued over or under their requirement: the batches set aside follow suit.
+        foreach (var item in stockRequisition.Items.Where(line => line.IssuedQuantity.HasValue))
+        {
+            var adjusted = await PackagingIssueAdjustment.Apply(context, item, item.IssuedQuantity!.Value, item.IssueAdjustmentReason,
+                reservedBatchesByMaterial.GetValueOrDefault(item.MaterialId) ?? []);
+            if (adjusted.IsFailure)
+                return adjusted;
+        }
 
         var allBatchIds = reservedBatches.Select(b => b.MaterialBatchId).Distinct().ToList();
         var validCount = await context.MaterialBatches
@@ -1040,6 +1097,9 @@ public class RequisitionRepository(
 
                 foreach (var batch in batchesToConsume)
                 {
+                    // A batch an under-issue left nothing to take from moves no stock.
+                    if (batch.Quantity <= 0)
+                        continue;
                     if (
                         !materialBatchesMap.TryGetValue(
                             batch.MaterialBatchId,
