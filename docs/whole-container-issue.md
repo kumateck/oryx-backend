@@ -15,6 +15,7 @@ Today Oryx reserves and issues the exact requested quantity, so the voucher says
 5. **The store issues the nearest whole number of containers** (confirmed 17 November 2026):
    - 18.75 kg from 10 kg boxes is 1.875 boxes, so **2 boxes, 20 kg**: production returns 1.25 kg.
    - 18.75 kg from 9 kg containers is 2.08 containers, so **2 containers, 18 kg**: 0.75 kg less than required.
+6. **The warehouse supervisor decides each line** (confirmed 17 November 2026). The nearest whole container count is proposed. Before issuing, a supervisor may switch a line to the other whole-container quantity either side of the requirement: 18 kg or 27 kg from 9 kg containers, 10 kg or 20 kg from 10 kg boxes. The choice, who made it and when are recorded on the line. Issuing fewer containers than needed is the supervisor's decision, and the shortfall is recorded on the line.
 3. **Only whole, sealed containers are issued.** For now the store never issues part of a container.
 4. **Production returns the leftover** through the material return note's existing partial return.
 
@@ -67,10 +68,7 @@ The BMR material reconciliation reads: issued − used − returned = 0.
 
 ## Open points to confirm
 
-- **Rounding down leaves the batch short** (18 kg issued for 18.75 kg). How production makes up the 0.75 kg is not yet decided:
-  - an accepted variance recorded against the batch;
-  - a top-up issued from an already-opened container;
-  - a separate requisition.
+- **What production does with a shortfall the supervisor accepted** (for example 0.75 kg). It could stand as a recorded variance on the batch, or be raised as a separate requisition. The design records the shortfall either way.
 - **Exactly half a container**, for example 15 kg from 10 kg boxes, rounds up to the next container unless decided otherwise.
 - Should production be able to keep a leftover for the next batch of the same product, or must it always be returned?
 - Container size per batch comes from its GRN. Should materials also carry a default container size for batches received without one?
@@ -87,4 +85,8 @@ The BMR material reconciliation reads: issued − used − returned = 0.
 
 ## Permissions
 
-No new keys are expected. Issuing keeps the existing raw and packaging issue keys, and returns keep theirs.
+- Issuing keeps the existing raw and packaging issue keys, and returns keep theirs.
+- Changing a line's container count is a separate supervisor task, so it gets its own keys, one per variant:
+  - `CanAdjustRawMaterialIssueContainers`
+  - `CanAdjustPackagingMaterialIssueContainers`
+- Both are granted to nobody until an administrator assigns them to the warehouse supervisor role.
