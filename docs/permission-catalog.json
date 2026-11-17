@@ -2912,6 +2912,13 @@
     "description": "Allows the user to  transfer approval rights."
   },
   {
+    "module": "IT Support",
+    "submodule": "Approval Rights Transfer",
+    "key": "CanTransferAnyApprovalRights",
+    "name": "Can Transfer Any Approval Rights",
+    "description": "Allows the user to  transfer any approval rights."
+  },
+  {
     "module": "Quality Assurance",
     "submodule": "OOS Investigations",
     "key": "CanInitiateOosInvestigation",

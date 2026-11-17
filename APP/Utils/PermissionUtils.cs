@@ -849,6 +849,7 @@ public static class PermissionKeys
     public const string CanApproveResponse = "CanApproveResponse";
     public const string CanRejectResponse = "CanRejectResponse";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
+    public const string CanTransferAnyApprovalRights = "CanTransferAnyApprovalRights";
     public const string CanInitiateOosInvestigation = "CanInitiateOosInvestigation";
     public const string CanViewOosInvestigations = "CanViewOosInvestigations";
     public const string CanSubmitOosInvestigation = "CanSubmitOosInvestigation";
@@ -3100,6 +3101,7 @@ public static class PermissionUtils
             PermissionSubmodules.TransferApprovalRights,
             PermissionKeys.CanTransferApprovalRights
         );
+        addPermission(PermissionModules.ItSupport, "Approval Rights Transfer", PermissionKeys.CanTransferAnyApprovalRights);
 
         foreach (var key in new[] { PermissionKeys.CanInitiateOosInvestigation, PermissionKeys.CanViewOosInvestigations,
                      PermissionKeys.CanSubmitOosInvestigation, PermissionKeys.CanReviewOosInvestigation })
