@@ -12,6 +12,9 @@ Today Oryx reserves and issues the exact requested quantity, so the voucher says
 
 1. **Applies to raw and packaging materials.**
 2. **Nothing is rounded in what is needed.** The requisition and the BOM keep the exact quantity, 18.75 kg. Only the quantity issued is counted in whole containers.
+5. **The store issues the nearest whole number of containers** (confirmed 17 November 2026):
+   - 18.75 kg from 10 kg boxes is 1.875 boxes, so **2 boxes, 20 kg**: production returns 1.25 kg.
+   - 18.75 kg from 9 kg containers is 2.08 containers, so **2 containers, 18 kg**: 0.75 kg less than required.
 3. **Only whole, sealed containers are issued.** For now the store never issues part of a container.
 4. **Production returns the leftover** through the material return note's existing partial return.
 
@@ -32,11 +35,13 @@ This needs an explicit marker on the batch, not a guess. Migration rows can be r
 `ProductionMaterialAllocation` reserves batches soonest-expiry first, as now. For each batch it reserves whole containers instead of an exact amount:
 
 ```
-containers from a batch = ceil(still needed ÷ container size), limited to the sealed containers available
+containers from a batch = round(still needed ÷ container size) to the nearest whole container, limited to the sealed containers available
 reserved from the batch = containers × container size
 ```
 
-Example: 18.75 kg needed from 10 kg boxes. Two boxes, 20 kg, are reserved, and **1.25 kg is expected back**.
+Examples:
+- 18.75 kg from 10 kg boxes: two boxes, 20 kg, are reserved, and **1.25 kg is expected back**.
+- 18.75 kg from 9 kg containers: two containers, 18 kg, are reserved, and the line is **0.75 kg under** the requirement.
 
 - **Sealed containers available** on a shelf are `floor(shelf quantity ÷ container size)`. Oryx does not track individual containers, so a remainder smaller than a container is treated as an already-opened container and is not issued.
 - When the sealed containers run out on one batch, the next batch is used. On the last batch only enough whole containers are taken to cover the need.
@@ -46,10 +51,9 @@ Example: 18.75 kg needed from 10 kg boxes. Two boxes, 20 kg, are reserved, and *
 
 - `StockIssueQuantityValidator` changes from "reserved equals requested" to:
   - each batch's reserved quantity is a whole number of its containers (or exact, for an unknown container size);
-  - the total covers the request;
-  - the total exceeds it by less than one container of the last batch used, so a whole container is never issued needlessly.
+  - the total is the nearest whole number of containers to the request, so it differs from the request by at most half a container of the last batch used.
 - The full reserved quantity, 20 kg, moves to production's warehouse, as stock moves today.
-- The requisition line records **required 18.75 kg**, **issued 20 kg (2 × 10 kg)** and **expected back 1.25 kg**.
+- The requisition line records **required 18.75 kg**, **issued 20 kg (2 × 10 kg)** and **expected back 1.25 kg**, or, when it is rounded down, **issued 18 kg (2 × 9 kg)** and **under by 0.75 kg**.
 
 ### The voucher and issue screen
 
@@ -63,7 +67,11 @@ The BMR material reconciliation reads: issued − used − returned = 0.
 
 ## Open points to confirm
 
-- The 9 kg example. With 9 kg containers, 18.75 kg needs three containers (27 kg). "Only 18 kg" would mean issuing less than needed. Was the example for a requirement of 18 kg, or should the store issue fewer containers when it would otherwise exceed the need by most of a container?
+- **Rounding down leaves the batch short** (18 kg issued for 18.75 kg). How production makes up the 0.75 kg is not yet decided:
+  - an accepted variance recorded against the batch;
+  - a top-up issued from an already-opened container;
+  - a separate requisition.
+- **Exactly half a container**, for example 15 kg from 10 kg boxes, rounds up to the next container unless decided otherwise.
 - Should production be able to keep a leftover for the next batch of the same product, or must it always be returned?
 - Container size per batch comes from its GRN. Should materials also carry a default container size for batches received without one?
 
