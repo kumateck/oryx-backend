@@ -1,6 +1,6 @@
 # Issuing packaging materials as they come: overs and shortages
 
-**Status: proposed, revised 17 November 2026 with the user's clarifications.** Not implemented.
+**Status: agreed 17 November 2026; ready to build.** Not implemented yet.
 
 ## The need
 
@@ -16,6 +16,7 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
 4. **The warehouse supervisor makes that call.** The suggestion is the nearest whole container: 18.75 from packs of 10 suggests 20, and from packs of 9 suggests 18. The supervisor may issue the other whole-container quantity, or any quantity the sealed packs allow.
 5. **Leftovers come back through Final Packing's reconciliation.** Final Packing raises a **material return note** with a **partial return** for each packaging material left over. The reconciliation must be checked against those partial returns.
 6. **Any difference from the requirement needs a reason** (confirmed 17 November 2026). Issuing **more or less** than required, the supervisor writes why: "sealed packs of 10" for an over, for example. The reason is stored on the line and printed on the voucher beside the over or shortage.
+7. **No cap on over-issue** (confirmed 17 November 2026). A supervisor may issue any quantity the batch's free stock allows, with a reason.
 
 ## How it would work
 
@@ -64,7 +65,3 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
   - the voucher;
   - Final Packing's packing materials, where "received" takes the issued quantity, with the partial-return check;
   - `ReturnLeftOverStockAfterProductionEnds`, which books each leftover to the batch it was over-issued from.
-
-## Open points
-
-- Is there a limit on how far over the requirement a supervisor may issue, for example at most one extra container?
