@@ -15,7 +15,7 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
 3. **The store records how much it actually issues** on each packaging line, over or under the requested quantity.
 4. **The warehouse supervisor makes that call.** The suggestion is the nearest whole container: 18.75 from packs of 10 suggests 20, and from packs of 9 suggests 18. The supervisor may issue the other whole-container quantity, or any quantity the sealed packs allow.
 5. **Leftovers come back through Final Packing's reconciliation.** Final Packing raises a **material return note** with a **partial return** for each packaging material left over. The reconciliation must be checked against those partial returns.
-6. **Issuing under the requirement needs a reason** (confirmed 17 November 2026). The supervisor writes why less is issued. The reason is stored on the line and printed on the voucher beside the shortfall. Issuing over the requirement needs no reason, because the leftover comes back through Final Packing.
+6. **Any difference from the requirement needs a reason** (confirmed 17 November 2026). Issuing **more or less** than required, the supervisor writes why: "sealed packs of 10" for an over, for example. The reason is stored on the line and printed on the voucher beside the over or shortage.
 
 ## How it would work
 
@@ -25,7 +25,7 @@ Today Oryx issues and records exactly the requested quantity, so the voucher, th
 - **Changing it:** a supervisor can change a batch line's issued quantity before issuing.
   - **The suggestion:** the nearest whole container, from the batch's `QuantityPerContainer` recorded at its GRN. Batches whose container size is unknown, such as migrated stock recorded as one container, get no suggestion.
   - **The limit:** a batch can give up to its stock on that shelf that is not reserved for anything else.
-- **Recorded on the line:** requested, issued, the difference (over or under), who changed it and when, and the reason when it is under. The server refuses an under-issue without a reason.
+- **Recorded on the line:** requested, issued, the difference (over or under), who changed it and when, and the reason. The server refuses any over- or under-issue without a reason.
 - **The voucher** prints Qty required and Qty issued, and marks each over or under.
 - **Stock:** the issued quantity, not the requested one, moves to production's warehouse. The reservation is settled for the issued quantity, and anything extra is taken from free stock on the same batch.
 
