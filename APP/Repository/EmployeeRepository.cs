@@ -69,17 +69,24 @@ public partial class EmployeeRepository(ApplicationDbContext context,
             return Error.Validation("Employee.Exists", "Employee already exists.");
         }
 
-        var country = await context.Countries
-            .FirstOrDefaultAsync(c => c.Id == Guid.Parse(request.Nationality));
-
-        if (country != null)
+        // Nationality is optional; when given it is a country id, stored as the country's name.
+        if (string.IsNullOrWhiteSpace(request.Nationality))
         {
-            request.Nationality = country.Name;
+            request.Nationality = null;
         }
         else
         {
-            logger.LogWarning("Nationality ID {Id} not found in countries table.", request.Nationality);
-            return Error.Validation("Nationality.Invalid", "Invalid Nationality.");
+            var country = Guid.TryParse(request.Nationality, out var countryId)
+                ? await context.Countries.FirstOrDefaultAsync(c => c.Id == countryId)
+                : null;
+
+            if (country == null)
+            {
+                logger.LogWarning("Nationality ID {Id} not found in countries table.", request.Nationality);
+                return Error.Validation("Nationality.Invalid", "Invalid Nationality.");
+            }
+
+            request.Nationality = country.Name;
         }
 
         var employee = mapper.Map<Employee>(request);

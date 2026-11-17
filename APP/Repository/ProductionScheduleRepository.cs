@@ -1300,9 +1300,7 @@ public partial class ProductionScheduleRepository(
                 && s.MaterialBatch.Status == BatchStatus.Available
             )
             .WhereMaterialDate(s => s.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
+            .ToTotalsByAsync(s => s.MaterialBatch.MaterialId, s => s.Quantity, context.Database.IsNpgsql());
 
         var materialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -1324,9 +1322,7 @@ public partial class ProductionScheduleRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.DeletedAt == null
             )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
         var totalReservedQuantities = await context
             .MaterialBatchReservedQuantities.Where(r =>
@@ -1334,9 +1330,7 @@ public partial class ProductionScheduleRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.DeletedAt == null
             )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
         var consumedQuantities = await context
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null).Where(r =>
@@ -1344,18 +1338,14 @@ public partial class ProductionScheduleRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
             )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
         var extraPackings = await context
             .ProductionExtraPackings.Where(p =>
                 p.ProductionScheduleProductId == productionScheduleProductId
                 && p.Status == ProductionExtraPackingStatus.Approved
             )
-            .GroupBy(p => p.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(p => p.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(p => p.MaterialId, p => p.Quantity, context.Database.IsNpgsql());
 
         var currentActivityStep = await context
             .ProductionActivitySteps.IgnoreQueryFilters()
@@ -1678,9 +1668,7 @@ public partial class ProductionScheduleRepository(
                     == warehouse.Id
                 && !s.DeletedAt.HasValue
             )
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, TotalQuantity = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.TotalQuantity);
+            .ToTotalsByAsync(s => s.MaterialBatch.MaterialId, s => s.Quantity, context.Database.IsNpgsql());
 
         var materialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -1701,9 +1689,7 @@ public partial class ProductionScheduleRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.DeletedAt == null
             )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
         var totalReservedQuantities = await context
             .MaterialBatchReservedQuantities.Where(r =>
@@ -1711,9 +1697,7 @@ public partial class ProductionScheduleRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.DeletedAt == null
             )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
         var consumedQuantities = await context
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null).Where(r =>
@@ -1721,18 +1705,14 @@ public partial class ProductionScheduleRepository(
                 && r.WarehouseId == productionWarehouse.Id
                 && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
             )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(r => r.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
         var extraPackings = await context
             .ProductionExtraPackings.Where(p =>
                 p.ProductionScheduleProductId == productionScheduleProductId
                 && p.Status == ProductionExtraPackingStatus.Approved
             )
-            .GroupBy(p => p.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Quantity = g.Sum(p => p.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Quantity);
+            .ToTotalsByAsync(p => p.MaterialId, p => p.Quantity, context.Database.IsNpgsql());
 
         var currentActivityStep = await context
             .ProductionActivitySteps.IgnoreQueryFilters()

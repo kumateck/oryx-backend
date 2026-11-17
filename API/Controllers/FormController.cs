@@ -8,6 +8,8 @@ using DOMAIN.Entities.Forms.Request;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using APP.Services.Authorization;
+using APP.Services.Formulas;
+using SHARED;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -336,14 +338,26 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request)
+    public async Task<IResult> SaveFormResponseDraft([FromBody] SaveResponseDraftRequest request,
+        [FromServices] QuestionFormulaRepairService repairs)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
             return TypedResults.Unauthorized();
 
         var result = await repository.SaveFormResponseDraft(request, Guid.Parse(userId));
-        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+        if (result.IsFailure) return result.ToProblemDetails();
+        // A repaired field is recalculated from the readings just saved, so the analyst never recalculates by hand.
+        // The save already succeeded: a field that cannot be calculated yet stays pending and submission retries it.
+        await RecalculateQuietly(repairs, result.Value, request.FormFieldId);
+        return TypedResults.Ok(result.Value);
+    }
+
+    private static async Task<List<string>> RecalculateQuietly(QuestionFormulaRepairService repairs, Guid responseId, Guid? fieldId = null)
+    {
+        try { return await repairs.RecalculatePending(responseId, fieldId); }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException or DbUpdateException)
+        { return ["The calculation service could not be reached. Try again."]; }
     }
 
     /// <summary>
@@ -357,12 +371,19 @@ public class FormController(IFormRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> SubmitFormResponseFinal(Guid responseId)
+    public async Task<IResult> SubmitFormResponseFinal(Guid responseId, [FromServices] QuestionFormulaRepairService repairs)
     {
         var userId = HttpContext.Items["Sub"] as string;
         if (!Guid.TryParse(userId, out var actorId)) return TypedResults.Unauthorized();
+        // Submission first recalculates any repaired field still pending from its saved readings; its results are then
+        // finalized with the submission. Only a field that truly cannot be calculated stops it, and says why.
+        var problems = await RecalculateQuietly(repairs, responseId);
         var result = await repository.SubmitFormResponseFinal(responseId, actorId);
-        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+        if (result.IsSuccess) return TypedResults.NoContent();
+        if (problems.Count > 0 && result.Errors.Any(e => e.Code == "FormulaRepair.RecalculationRequired"))
+            return Result.Failure(Error.Conflict("FormulaRepair.RecalculationRequired",
+                "Repaired formula results could not be calculated: " + string.Join(" ", problems))).ToProblemDetails();
+        return result.ToProblemDetails();
     }
 
     /// <summary>

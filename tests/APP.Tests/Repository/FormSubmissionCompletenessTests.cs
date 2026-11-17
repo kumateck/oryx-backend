@@ -165,6 +165,21 @@ public sealed class FormSubmissionCompletenessTests
         Assert.False(FormAnswerCompleteness.IsComplete("[]", QuestionType.Instrument, null));
     }
 
+    // Assay: Paracetamol's approved revision keeps a standard Weight input in its settings, but standard inputs are off,
+    // so the worksheet never shows that box. Only the inputs the worksheet shows are required.
+    private const string Paracetamol = """
+        {"type":3,"expression":"(:sampleAvg/:A)*(:dil/:sampleWeight)*:wt*5*(1000/:Claim)*:purity","constants":{"Claim":120,"A":715,"dil":200},
+         "headers":["Sample 1","Sample 2"],"numberOfReadings":2,"numberOfSamples":2,"standardInput":false,"standardInTable":false,
+         "standardInputs":[{"key":"weight"}],"sampleInput":true,"sampleInTable":true,"sampleInputs":[[{"key":"weight"}],[{"key":"weight"}]],
+         "manualVarLabels":{"wt":"","purity":""}}
+        """;
+
+    [Theory]
+    [InlineData("""{"standardInputs":{},"sampleInputs":[{"weight":"5.6613"},{"weight":"5.6822"}],"tableData":[["0.4468","0.4474"],["0.4465","0.4470"]],"manualVars":{"wt":{"raw":"1.13","evaluated":1.13},"purity":{"raw":"100","evaluated":100}}}""", true)]
+    [InlineData("""{"standardInputs":{},"sampleInputs":[{"weight":"5.6613"},{}],"tableData":[["0.4468","0.4474"],["0.4465","0.4470"]],"manualVars":{"wt":{"raw":"1.13","evaluated":1.13},"purity":{"raw":"100","evaluated":100}}}""", false)]
+    public void UniversalFormula_RequiresOnlyTheInputsTheWorksheetShows(string answer, bool complete) =>
+        Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula, Paracetamol));
+
     [Fact]
     public void Table_RequiresEveryConfiguredEditableCell()
     {

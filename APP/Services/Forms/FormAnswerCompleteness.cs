@@ -52,9 +52,12 @@ internal static class FormAnswerCompleteness
                     && Properties(answer).All(item => Numeric(item.Value));
             }
             var standard = Get(answer, "standardInputs");
-            if (!Inputs(Get(config, "standardInputs"), standard)) return false;
+            // Only the inputs the worksheet shows are required. A formula whose standard (or sample) inputs are switched
+            // off can still list them in its settings; the analyst never sees those boxes, so they can never be filled.
+            var standardShown = Shown(config, "standardInput", "standardInputs") && Get(config, "standardInTable").ValueKind == JsonValueKind.True;
+            if (!Inputs(standardShown ? Get(config, "standardInputs") : default, standard)) return false;
             var samples = Items(Get(answer, "sampleInputs")).ToList();
-            var configuredSamples = Items(Get(config, "sampleInputs")).ToList();
+            var configuredSamples = Shown(config, "sampleInput", "sampleInputs") ? Items(Get(config, "sampleInputs")).ToList() : [];
             if (samples.Count < configuredSamples.Count || samples.Where((sample, index) =>
                 !Inputs(index < configuredSamples.Count ? configuredSamples[index] : default, sample)).Any()) return false;
             var manual = Get(answer, "manualVars");
@@ -133,6 +136,12 @@ internal static class FormAnswerCompleteness
         return value;
     }
 
+    private static bool Shown(JsonElement config, string flag, string inputs) => Get(config, flag).ValueKind switch
+    {
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        _ => Items(Get(config, inputs)).Any(),
+    };
     private static JsonElement Get(JsonElement value, string key) =>
         value.ValueKind == JsonValueKind.Object && value.TryGetProperty(key, out var item) ? item : default;
     private static JsonElement First(JsonElement value, string first, string second) =>
