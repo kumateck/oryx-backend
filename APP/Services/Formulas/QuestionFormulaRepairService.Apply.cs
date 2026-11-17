@@ -57,11 +57,12 @@ public sealed partial class QuestionFormulaRepairService
                     db.LegacyFormulaConfigurationPins.Add(Pin(response.Id, field.Id, 1, request.RequestId, CapturedDefinition(plan.Impact, response, field), false, now));
                 if (selected) db.LegacyFormulaConfigurationPins.Add(Pin(response.Id, field.Id, (previous?.Sequence ?? 1) + 1,
                     request.RequestId, request.Candidate.Definition, true, now));
-                // The approved revision replaces everything on the field: its readings are emptied and the analyst enters
-                // them again for the new formula. The repair's evidence keeps every answer's value before the repair.
+                // The approved revision replaces everything on the field, which starts again as if it were new: every answer
+                // row is removed (soft-deleted, so the audit trail keeps it) and the analyst's next save creates a fresh one.
+                // Emptying the rows instead left stale and duplicate answers behind. The repair's evidence keeps every value.
                 if (selected && approvedRevision)
                     foreach (var answer in plan.Impact.Answers.Where(a => a.ResponseId == response.Id && a.FormFieldId == field.Id && !a.DeletedAt.HasValue))
-                    { answer.Value = "{}"; answer.Complies = null; answer.UpdatedAt = now; answer.LastUpdatedById = identity.UserId; }
+                    { answer.DeletedAt = now; answer.LastDeletedById = identity.UserId; }
             }
             foreach (var targets in plan.Selected.Where(s => s.Response is null).GroupBy(s => s.Atr.Id))
             {
