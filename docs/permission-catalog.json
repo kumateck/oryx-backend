@@ -1779,6 +1779,13 @@
   },
   {
     "module": "Warehouse",
+    "submodule": "Expired Materials",
+    "key": "CanViewExpiryAcrossDepartments",
+    "name": "Can View Expiry Across Departments",
+    "description": "Allows the user to  view expiry across departments."
+  },
+  {
+    "module": "Warehouse",
     "submodule": "Material Location",
     "key": "CanViewRawMaterialLocationChartList",
     "name": "Can View Raw Material Location Chart List",
