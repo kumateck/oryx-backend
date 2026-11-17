@@ -103,6 +103,17 @@ public sealed class FormSubmissionCompletenessTests
         Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula,
             "{\"type\":0,\"expression\":\":a + :b\"}"));
 
+    // pH of sample as the question editor stores it (ATR 01a1cb57): the expression holds the builder's settings JSON.
+    private const string WrappedPh = """
+        {"type":0,"expression":"{\"expression\":\"(:ph1+:ph2)/2\",\"decimalPlaces\":2,\"percent\":false,\"type\":0,\"variables\":{\"ph1\":{\"value\":\"\",\"label\":\"pH reading 1\"},\"ph2\":{\"value\":\"\",\"label\":\"pH reading 2\"}},\"constants\":{}}"}
+        """;
+
+    [Theory]
+    [InlineData("{\"ph1\":5.1232,\"ph2\":5.1126}", true)]
+    [InlineData("{\"ph1\":5.1232}", false)]
+    public void SimpleFormula_StoredInsideTheExpression_ReadsTheInnerSettings(string answer, bool complete) =>
+        Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula, WrappedPh));
+
     [Theory]
     [InlineData("", "1", 100, false)]
     [InlineData("0.321", "", 100, false)]
