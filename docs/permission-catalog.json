@@ -1717,6 +1717,13 @@
   {
     "module": "Warehouse",
     "submodule": "Issue Stock Requisitions",
+    "key": "CanAdjustPackagingMaterialIssueQuantity",
+    "name": "Can Adjust Packaging Material Issue Quantity",
+    "description": "Allows the user to  adjust packaging material issue quantity."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
     "key": "CanSwapPackagingMaterialRequisitions",
     "name": "Can Swap Packaging Material Requisitions",
     "description": "Allows the user to  swap packaging material requisitions."

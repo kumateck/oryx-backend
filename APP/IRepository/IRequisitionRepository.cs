@@ -20,6 +20,7 @@ public interface IRequisitionRepository
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
         string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId, MaterialKind? kind, bool? issued = null);
     Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId);
+    Task<Result> AdjustIssuedQuantity(Guid requisitionId, Guid itemId, AdjustIssuedQuantityRequest request, Guid userId);
     Task<Result> IssueTrialRequisition(Guid requisitionId, Guid userId);
     Task<Result> ApproveRequisition(ApproveRequisitionRequest request, Guid requisitionId, Guid userId, List<Guid> roleIds);
     //Task<Result> ProcessRequisition(CreateRequisitionRequest request, Guid requisitionId, Guid userId);

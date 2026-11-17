@@ -22200,6 +22200,19 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("IssueAdjustedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IssueAdjustedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IssueAdjustmentReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal?>("IssuedQuantity")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -22233,6 +22246,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("IssueAdjustedById");
 
                     b.HasIndex("LastDeletedById");
 
@@ -39884,6 +39899,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
+                    b.HasOne("DOMAIN.Entities.Users.User", "IssueAdjustedBy")
+                        .WithMany()
+                        .HasForeignKey("IssueAdjustedById");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -39909,6 +39928,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("UoMId");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("IssueAdjustedBy");
 
                     b.Navigation("LastDeletedBy");
 

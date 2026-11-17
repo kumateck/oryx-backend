@@ -45,6 +45,16 @@ public class RequisitionItem : BaseEntity
     public decimal Quantity { get; set; }
     public decimal QuantityReceived { get; set; }
     public RequestStatus Status { get; set; }
+    /// <summary>
+    /// What the store will hand over for a packaging line when it differs from <see cref="Quantity"/>: packs are
+    /// issued whole, so a line may be issued over or under the requirement. Null means exactly as requested.
+    /// </summary>
+    public decimal? IssuedQuantity { get; set; }
+    /// <summary>Why the issued quantity differs from the requirement. Required whenever <see cref="IssuedQuantity"/> is set.</summary>
+    [StringLength(500)] public string IssueAdjustmentReason { get; set; }
+    public Guid? IssueAdjustedById { get; set; }
+    public User IssueAdjustedBy { get; set; }
+    public DateTime? IssueAdjustedAt { get; set; }
 }
 
 public class RequisitionApproval : ResponsibleApprovalStage

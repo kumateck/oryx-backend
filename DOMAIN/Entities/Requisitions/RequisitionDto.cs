@@ -43,6 +43,18 @@ public class RequisitionItemDto
     public decimal QuantityReceived { get; set; }
     public RequestStatus Status { get; set; }
     public List<BatchToSupply> Batches { get; set; } = [];
+    /// <summary>A packaging line issued over or under its requirement; null when issued exactly as requested.</summary>
+    public decimal? IssuedQuantity { get; set; }
+    public string IssueAdjustmentReason { get; set; }
+    public CollectionItemDto IssueAdjustedBy { get; set; }
+    public DateTime? IssueAdjustedAt { get; set; }
+}
+
+/// <summary>A warehouse supervisor's issued quantity for a packaging line, with the reason it differs from the requirement.</summary>
+public class AdjustIssuedQuantityRequest
+{
+    public decimal Quantity { get; set; }
+    public string Reason { get; set; }
 }
 
 

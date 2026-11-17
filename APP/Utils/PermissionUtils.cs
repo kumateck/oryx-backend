@@ -644,6 +644,8 @@ public static class PermissionKeys
         "CanViewPackagingMaterialRequisitions";
     public const string CanIssuePackagingMaterialRequisitions =
         "CanIssuePackagingMaterialRequisitions";
+    /// <summary>Set how much of a packaging stock requisition line is issued when whole packs make it differ from the requirement, with a reason.</summary>
+    public const string CanAdjustPackagingMaterialIssueQuantity = "CanAdjustPackagingMaterialIssueQuantity";
     public const string CanSwapPackagingMaterialRequisitions =
         "CanSwapPackagingMaterialRequisitions";
     public const string CanViewMaterialsReturnNote = "CanViewMaterialsReturnNote";
@@ -2378,6 +2380,11 @@ public static class PermissionUtils
             PermissionModules.Warehouse,
             PermissionSubmodules.IssueStockRequisitions,
             PermissionKeys.CanIssuePackagingMaterialRequisitions
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanAdjustPackagingMaterialIssueQuantity
         );
         addPermission(
             PermissionModules.Warehouse,
