@@ -4124,13 +4124,17 @@ public partial class ProductionScheduleRepository(
 
                 UoMId = r.UoMId,
                 Quantity = r.Quantity,
+                // The leftover is from the last batch in picking order: the one whose pack production opened.
                 MaterialBatchId = context
-                    .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
-                    .FirstOrDefault(mb =>
-                        mb.MaterialBatch.MaterialId == r.MaterialId
-                        && mb.WarehouseId == productionWarehouse.Id
-                        && mb.ProductionScheduleProductId == productionScheduleProductId
-                    )
+                    .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null
+                        && reservation.MaterialBatch.MaterialId == r.MaterialId
+                        && reservation.WarehouseId == productionWarehouse.Id
+                        && reservation.ProductionScheduleProductId == productionScheduleProductId
+                        && reservation.Quantity > 0)
+                    .OrderBy(reservation => reservation.MaterialBatch.ReturnDate != null)
+                    .ThenByDescending(reservation => reservation.MaterialBatch.ExpiryDate)
+                    .ThenByDescending(reservation => reservation.Id)
+                    .FirstOrDefault()
                     ?.MaterialBatchId,
                 DestinationWarehouseId =
                     context.Materials.FirstOrDefault(m => m.Id == r.MaterialId)?.Kind

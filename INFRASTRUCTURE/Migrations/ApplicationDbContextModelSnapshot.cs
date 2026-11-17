@@ -4438,6 +4438,36 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("LegacyFormulaRepairEvaluations", (string)null);
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaRepairFinalization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EvaluationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("EvaluationId")
+                        .IsUnique();
+
+                    b.HasIndex("ResponseId");
+
+                    b.ToTable("LegacyFormulaRepairFinalizations", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyKeyMapping", b =>
                 {
                     b.Property<Guid>("Id")
@@ -22170,6 +22200,19 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("IssueAdjustedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IssueAdjustedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IssueAdjustmentReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal?>("IssuedQuantity")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -22203,6 +22246,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("IssueAdjustedById");
 
                     b.HasIndex("LastDeletedById");
 
@@ -29815,6 +29860,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Formulas.LegacyFormulaConfigurationPin", null)
                         .WithMany()
                         .HasForeignKey("PinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Formulas.LegacyFormulaRepairFinalization", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Formulas.LegacyFormulaRepairEvaluation", null)
+                        .WithMany()
+                        .HasForeignKey("EvaluationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -39833,6 +39899,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById");
 
+                    b.HasOne("DOMAIN.Entities.Users.User", "IssueAdjustedBy")
+                        .WithMany()
+                        .HasForeignKey("IssueAdjustedById");
+
                     b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
                         .WithMany()
                         .HasForeignKey("LastDeletedById");
@@ -39858,6 +39928,8 @@ namespace INFRASTRUCTURE.Migrations
                         .HasForeignKey("UoMId");
 
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("IssueAdjustedBy");
 
                     b.Navigation("LastDeletedBy");
 

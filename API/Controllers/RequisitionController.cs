@@ -85,18 +85,19 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="status">Filter by status of the requisition.</param>
     /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
     /// <param name="kind"></param>
+    /// <param name="issued">True for issued requisitions only; false for those still awaiting issue (not issued or rejected).</param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet("department")]
     [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions", "CanViewRawMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitionsForDepartment([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] RequestStatus? status = null, [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null)
+        [FromQuery] RequestStatus? status = null, [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null, [FromQuery] bool? issued = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind, issued);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -200,6 +201,28 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
         var result = await repository.IssueStockRequisitionVoucher(batchQuantities, productId,Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }*/
+
+    /// <summary>
+    /// Sets how much of a packaging line will be issued when whole packs make it differ from the requirement.
+    /// A quantity other than the requirement needs a reason; the requirement itself clears the adjustment.
+    /// </summary>
+    /// <param name="requisitionId">The stock requisition.</param>
+    /// <param name="itemId">The packaging line.</param>
+    /// <param name="request">The quantity to issue, in the line's unit, and the reason it differs.</param>
+    [HttpPut("{requisitionId:guid}/items/{itemId:guid}/issued-quantity")]
+    [Authorize(PermissionKeys.CanAdjustPackagingMaterialIssueQuantity)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> AdjustIssuedQuantity(Guid requisitionId, Guid itemId, [FromBody] AdjustIssuedQuantityRequest request)
+    {
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+
+        var result = await repository.AdjustIssuedQuantity(requisitionId, itemId, request, Guid.Parse(userId));
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
 
     [HttpPost("issue-stock-requisition/{stockRequisitionId}")]
     [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialRequisitions, PermissionKeys.CanIssuePackagingMaterialRequisitions)]

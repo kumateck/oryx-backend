@@ -1717,6 +1717,13 @@
   {
     "module": "Warehouse",
     "submodule": "Issue Stock Requisitions",
+    "key": "CanAdjustPackagingMaterialIssueQuantity",
+    "name": "Can Adjust Packaging Material Issue Quantity",
+    "description": "Allows the user to  adjust packaging material issue quantity."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
     "key": "CanSwapPackagingMaterialRequisitions",
     "name": "Can Swap Packaging Material Requisitions",
     "description": "Allows the user to  swap packaging material requisitions."
@@ -2364,6 +2371,13 @@
     "key": "CanCheckProductTest",
     "name": "Can Check Product Test",
     "description": "Allows the user to  check product test."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanPrintProductAnalyticalTestRequest",
+    "name": "Can Print Product Analytical Test Request",
+    "description": "Allows the user to  print product analytical test request."
   },
   {
     "module": "Quality Control",

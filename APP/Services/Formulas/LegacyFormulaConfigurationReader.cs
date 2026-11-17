@@ -43,6 +43,9 @@ public static class LegacyFormulaConfigurationReader
         var sourceById = sources.ToDictionary(a => a.Id);
         var pinIds = pins.Select(p => p.Id).ToList();
         var evaluations = await db.LegacyFormulaRepairEvaluations.AsNoTracking().Where(e => pinIds.Contains(e.PinId)).ToListAsync();
+        var evaluationIds = evaluations.Select(e => e.Id).ToList();
+        var finalized = (await db.LegacyFormulaRepairFinalizations.AsNoTracking().Where(f => evaluationIds.Contains(f.EvaluationId))
+            .Select(f => f.EvaluationId).ToListAsync()).ToHashSet();
         foreach (var dto in destinations)
         {
             if (!sourceById.TryGetValue(dto.Id, out var answer) || !byField.TryGetValue((answer.ResponseId, answer.FormFieldId), out var pin)) continue;
@@ -51,6 +54,7 @@ public static class LegacyFormulaConfigurationReader
             var execution = evaluations.FirstOrDefault(e => e.PinId == pin.Id && e.InputHash == inputHash);
             dto.FormulaRepairPending = pin.RequiresRecalculation && execution is null;
             dto.FormulaRepairEvaluated = pin.RequiresRecalculation && execution is not null;
+            if (pin.RequiresRecalculation) dto.FormulaResultFinalized = execution is not null && finalized.Contains(execution.Id);
             if (pin.RequiresRecalculation)
             {
                 dto.FormulaDisplayResultsJson = execution?.ResultsJson;
@@ -71,6 +75,26 @@ public static class LegacyFormulaConfigurationReader
     {
         try { return value is null ? null : LegacyFormulaRepairDefinition.InputHash(value); }
         catch (Exception error) when (error is System.Text.Json.JsonException or ArgumentException) { return null; }
+    }
+
+    /// <summary>
+    /// Records, for the submission of <paramref name="response"/>, that each repaired field's result for its saved readings
+    /// is final. Call after <see cref="Pending"/> has confirmed every repaired field is recalculated; the caller saves.
+    /// </summary>
+    public static async Task Finalize(ApplicationDbContext db, Response response, Guid actorId)
+    {
+        var pins = (await Latest(db, [response.Id])).Where(p => p.RequiresRecalculation).ToList();
+        if (pins.Count == 0) return;
+        var ids = pins.Select(p => p.Id).ToList();
+        var evaluations = await db.LegacyFormulaRepairEvaluations.AsNoTracking().Where(e => ids.Contains(e.PinId)).ToListAsync();
+        var answers = await db.FormResponses.AsNoTracking().Where(a => a.ResponseId == response.Id).ToListAsync();
+        var used = pins.Select(pin => evaluations.FirstOrDefault(e => e.PinId == pin.Id && e.InputHash == SafeInputHash(answers
+            .Where(a => a.FormFieldId == pin.FormFieldId).OrderByDescending(a => a.CreatedAt).FirstOrDefault()?.Value)))
+            .OfType<LegacyFormulaRepairEvaluation>().Select(e => e.Id).ToList();
+        var already = await db.LegacyFormulaRepairFinalizations.Where(f => used.Contains(f.EvaluationId)).Select(f => f.EvaluationId).ToListAsync();
+        var now = DateTime.UtcNow;
+        db.LegacyFormulaRepairFinalizations.AddRange(used.Except(already).Select(id => new LegacyFormulaRepairFinalization
+            { Id = Guid.NewGuid(), EvaluationId = id, ResponseId = response.Id, ActorId = actorId, FinalizedAt = now }));
     }
 
     public static async Task<bool> Pending(ApplicationDbContext db, Response response)

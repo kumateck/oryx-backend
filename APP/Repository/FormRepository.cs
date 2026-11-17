@@ -778,6 +778,8 @@ public class FormRepository(
             response.Id, userId);
         if (formulaSubmission.IsFailure)
             return formulaSubmission.Errors;
+        // Repaired fields have no governed execution; their recalculated results become final with this submission.
+        await LegacyFormulaConfigurationReader.Finalize(context, response, userId);
 
         // Perform final entity updates
         if (response.BatchManufacturingRecordId.HasValue || response.MaterialBatchId.HasValue)
