@@ -226,6 +226,28 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         return Result.Success();
     }
 
+    /// <summary>What still uses a product, as "2 production schedules", for the delete refusal.</summary>
+    private async Task<List<string>> ProductUses(Guid productId)
+    {
+        static string Count(int count, string one, string many) => $"{count} {(count == 1 ? one : many)}";
+        var uses = new List<string>();
+        var schedules = await context.ProductionScheduleProducts
+            .Where(item => item.ProductId == productId && item.ProductionSchedule.DeletedAt == null)
+            .Select(item => item.ProductionScheduleId).Distinct().CountAsync();
+        if (schedules > 0) uses.Add(Count(schedules, "production schedule", "production schedules"));
+        var orders = await context.ProductionOrders.CountAsync(order => order.Products.Any(item => item.ProductId == productId));
+        if (orders > 0) uses.Add(Count(orders, "production order", "production orders"));
+        var quotations = await context.CustomerQuotationItems
+            .Where(item => item.ProductId == productId && item.CustomerQuotation.DeletedAt == null)
+            .Select(item => item.CustomerQuotationId).Distinct().CountAsync();
+        if (quotations > 0) uses.Add(Count(quotations, "customer quotation", "customer quotations"));
+        var proformas = await context.ProformaInvoiceProducts
+            .Where(item => item.ProductId == productId && item.ProformaInvoice.DeletedAt == null)
+            .Select(item => item.ProformaInvoiceId).Distinct().CountAsync();
+        if (proformas > 0) uses.Add(Count(proformas, "proforma invoice", "proforma invoices"));
+        return uses;
+    }
+
     public async Task<Result> DeleteProduct(Guid productId, Guid userId)
     {
         var product = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
@@ -233,6 +255,11 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         {
             return ProductErrors.NotFound(productId);
         }
+
+        // A product that production, sales or planning already uses is kept: deleting it would leave those records
+        // pointing at a product nobody can see. Only an unused product can be deleted.
+        var uses = await ProductUses(productId);
+        if (uses.Count > 0) return ProductErrors.InUse(uses);
 
         product.DeletedAt = DateTime.UtcNow;
         product.LastDeletedById = userId;
