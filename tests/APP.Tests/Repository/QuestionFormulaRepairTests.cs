@@ -323,25 +323,24 @@ public sealed class QuestionFormulaRepairTests
     }
 
     [Fact]
-    public async Task Worksheet_saves_must_carry_the_configuration_they_were_opened_with()
+    public async Task Saving_a_repaired_field_is_never_refused_whatever_configuration_the_page_was_opened_with()
     {
         await using var f = new Fixture(); await f.Seed();
-        var field = await f.Db.FormFields.Include(a => a.Question).SingleAsync();
-        var open = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
-        var historical = await f.Db.Responses.SingleAsync(r => r.Id == f.Historical);
-        // Never repaired: legacy clients that send no hash keep working.
-        Assert.Null(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, open, field, null));
         Assert.True((await f.Service.Apply(f.Question, await f.Request())).IsSuccess);
-        var repaired = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
-        Assert.NotNull(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, open, field, null));
-        Assert.NotNull(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, open, field, LegacyFormulaRepairDefinition.Hash(Before)));
-        Assert.Null(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, open, field, repaired.DefinitionHash));
-        // An unselected test keeps the definition it was opened with.
-        Assert.Null(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, historical, field, LegacyFormulaRepairDefinition.Hash(Before)));
-        // A test started after the repair uses the repaired question.
-        var fresh = new Response { Id = Guid.NewGuid(), FormId = open.FormId };
-        Assert.Null(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, fresh, field, LegacyFormulaRepairDefinition.Hash(After)));
-        Assert.NotNull(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, fresh, field, LegacyFormulaRepairDefinition.Hash(Before)));
+        var response = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
+        var form = (await f.Db.FormFields.Include(x => x.FormSection).SingleAsync(x => x.Id == f.Field)).FormSection.FormId;
+        var repository = new APP.Repository.FormRepository(f.Db, null!, null!, null!, null!);
+        // A page opened before the repair (old hash) or an older client (no hash) still saves: the field behaves as new.
+        foreach (var hash in new[] { null, LegacyFormulaRepairDefinition.Hash(Before) })
+        {
+            var saved = await repository.SaveFormResponseDraft(new SaveResponseDraftRequest
+            {
+                ResponseId = f.Response, FormId = form, FormFieldId = f.Field, Value = "{\"a\":\"1\"}", FormulaConfigurationHash = hash,
+                BatchManufacturingRecordId = response.BatchManufacturingRecordId, ProductionActivityStepId = response.ProductionActivityStepId,
+            }, f.Actor.UserId!.Value);
+            Assert.True(saved.IsSuccess, saved.Error?.Description);
+        }
+        Assert.Equal("{\"a\":\"1\"}", (await f.Db.FormResponses.AsNoTracking().SingleAsync(a => a.ResponseId == f.Response && a.FormFieldId == f.Field)).Value);
     }
 
     [Fact]
@@ -574,10 +573,7 @@ public sealed class QuestionFormulaRepairTests
         var applied = await service.Apply(f.Question, new(f.Candidate(), preview.Value.PreviewToken, Guid.NewGuid(), "Confirmed against the controlled arithmetic example."));
         Assert.True(applied.IsSuccess, applied.Error?.Description);
         var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
-        var field = await f.Db.FormFields.Include(a => a.Question).SingleAsync(); var response = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
-        Assert.NotNull(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, response, field, null));
-        Assert.NotNull(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, response, field, LegacyFormulaRepairDefinition.Hash(Before)));
-        Assert.Null(await LegacyFormulaConfigurationReader.ValidateWrite(f.Db, response, field, pin.DefinitionHash));
+        var response = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
         var evaluated = await service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
         Assert.True(evaluated.IsSuccess, evaluated.Error?.Description);
         Assert.False(await LegacyFormulaConfigurationReader.Pending(f.Db, response));
@@ -747,19 +743,30 @@ public sealed class QuestionFormulaRepairTests
         var request = new ApplyFormulaRepairRequest(new(approved, false, [new(f.Atr, f.Field)]), preview.Value.PreviewToken, Guid.NewGuid(), "Apply the approved assay revision.");
         Assert.True((await f.Service.Apply(f.Question, request)).IsSuccess);
 
-        // The old readings are cleared (the repair evidence keeps them) and nothing is calculated until they are entered again.
-        var cleared = await f.Db.FormResponses.SingleAsync(a => a.ResponseId == f.Response);
-        Assert.Equal("{}", cleared.Value);
+        // The field starts again as if new: its old answer is removed (kept soft-deleted for the audit trail, and in the
+        // repair evidence), so nothing is shown or calculated until readings are entered again.
+        var removed = await f.Db.FormResponses.IgnoreQueryFilters().SingleAsync(a => a.ResponseId == f.Response);
+        Assert.NotNull(removed.DeletedAt);
+        Assert.Equal(f.Actor.UserId, removed.LastDeletedById);
+        Assert.Empty(f.Db.FormResponses.Where(a => a.ResponseId == f.Response));
         Assert.Contains("\\u00229\\u0022", (await f.Db.QuestionFormulaRepairs.SingleAsync()).EvidenceJson.Replace("\\\"", "\\u0022"));
         var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
         Assert.Equal(approved, pin.Definition);
         Assert.True((await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash)).IsFailure);
 
-        cleared.Value = "{\"a\":\"2\",\"b\":\"4\"}";
-        await f.Db.SaveChangesAsync();
-        var evaluated = await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
-
-        Assert.True(evaluated.IsSuccess, evaluated.Error?.Description);
+        // An ordinary save writes a fresh answer, and the server calculates it in the same step.
+        var response = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
+        var form = (await f.Db.FormFields.Include(x => x.FormSection).SingleAsync(x => x.Id == f.Field)).FormSection.FormId;
+        var repository = new APP.Repository.FormRepository(f.Db, null!, null!, null!, null!);
+        Assert.True((await repository.SaveFormResponseDraft(new SaveResponseDraftRequest
+        {
+            ResponseId = f.Response, FormId = form, FormFieldId = f.Field, Value = "{\"a\":\"2\",\"b\":\"4\"}", FormulaConfigurationHash = pin.DefinitionHash,
+            BatchManufacturingRecordId = response.BatchManufacturingRecordId, ProductionActivityStepId = response.ProductionActivityStepId,
+        }, f.Actor.UserId!.Value)).IsSuccess);
+        var fresh = await f.Db.FormResponses.AsNoTracking().SingleAsync(a => a.ResponseId == f.Response);
+        Assert.NotEqual(removed.Id, fresh.Id);
+        Assert.Empty(await f.Service.RecalculatePending(f.Response, f.Field));
+        Assert.False(await LegacyFormulaConfigurationReader.Pending(f.Db, response));
         var sent = f.Calculation.Evaluated!.Value;
         Assert.Equal(new string('d', 64), sent.GetProperty("definitionHash").GetString());
         Assert.Equal(2, sent.GetProperty("definition").GetProperty("results").GetArrayLength());
@@ -778,7 +785,9 @@ public sealed class QuestionFormulaRepairTests
         await f.Approve(approved, compiled: "{\"variables\":[{\"key\":\"a\"},{\"key\":\"b\"}],\"results\":[{\"key\":\"sample1\",\"expression\":\":a/:b\"}]}");
         var preview = await f.Service.Preview(f.Question, new(approved, false, [new(f.Atr, f.Field)]));
         Assert.True((await f.Service.Apply(f.Question, new(new(approved, false, [new(f.Atr, f.Field)]), preview.Value.PreviewToken, Guid.NewGuid(), "Apply the approved revision."))).IsSuccess);
-        answer.Value = "{\"a\":\"2\",\"b\":\"4\"}";
+        // The repair removed the old answer; the analyst's readings arrive as a fresh one.
+        answer = new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field, Value = "{\"a\":\"2\",\"b\":\"4\"}" };
+        f.Db.FormResponses.Add(answer);
         await f.Db.SaveChangesAsync();
         var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
         Assert.True((await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash)).IsSuccess);
