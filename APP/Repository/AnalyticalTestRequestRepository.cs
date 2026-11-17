@@ -367,12 +367,12 @@ public class AnalyticalTestRequestRepository(
         Guid activityStepId
     )
     {
-        var analyticalTest = await context.AnalyticalTestRequests.FirstOrDefaultAsync(atr =>
-            atr.ProductionActivityStepId == activityStepId
-        );
-        if (analyticalTest is null)
-            return Error.NotFound("ATR.NotFound", "Analytical test request not found");
-        return mapper.Map<AnalyticalTestRequestDto>(analyticalTest);
+        var id = await context.AnalyticalTestRequests.Where(atr => atr.ProductionActivityStepId == activityStepId)
+            .Select(atr => (Guid?)atr.Id).FirstOrDefaultAsync();
+        // The same full request as by id: the approval page prints its request form from it.
+        return id is { } found
+            ? await GetAnalyticalTestRequest(found)
+            : Error.NotFound("ATR.NotFound", "Analytical test request not found");
     }
 
     // Create QC Equipment

@@ -166,11 +166,18 @@ public sealed class QcWorksheetReadTests
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
 
-        var details = (await new AnalyticalTestRequestRepository(db, services.GetRequiredService<IMapper>(), null!).GetAnalyticalTestRequest(atr.Id)).Value;
+        var repository = new AnalyticalTestRequestRepository(db, services.GetRequiredService<IMapper>(), null!);
 
-        Assert.Equal("Liquid", details.State?.Name);
-        Assert.Equal("1 x 100 mL", details.ProductionScheduleProduct.ProductPacking?.Name);
-        Assert.Equal("100 mL", details.Filled);
+        // By id (the ATR page) and by production step (the certificate's approval page) return the same full request.
+        foreach (var details in new[] { (await repository.GetAnalyticalTestRequest(atr.Id)).Value,
+                     (await repository.GetAnalyticalTestRequestByActivityStep(atr.ProductionActivityStep.Id)).Value })
+        {
+            Assert.Equal("Liquid", details.State?.Name);
+            Assert.Equal("1 x 100 mL", details.ProductionScheduleProduct.ProductPacking?.Name);
+            Assert.Equal("Paracetamol Syrup", details.ProductionScheduleProduct.Product?.Name);
+            Assert.Equal("100 mL", details.Filled);
+        }
+        Assert.True((await repository.GetAnalyticalTestRequestByActivityStep(Guid.NewGuid())).IsFailure);
     }
 
     private static ApplicationDbContext NewContext() => new(
