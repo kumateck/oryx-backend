@@ -144,6 +144,35 @@ public sealed class QcWorksheetReadTests
         Assert.Equal(currentAssignment.Id, (await forms.GetFormAssigneeByBatch(batch.Id, null, null)).Value.Id);
     }
 
+    [Fact]
+    public async Task Atr_details_carry_the_product_state_and_pack_style_for_the_request_form()
+    {
+        await using var db = NewContext();
+        using var services = MapperServices(db);
+        var product = new Product { Id = Guid.NewGuid(), Name = "Paracetamol Syrup" };
+        var atr = new AnalyticalTestRequest
+        {
+            Id = Guid.NewGuid(), Status = AnalyticalTestStatus.Testing, Stage = TestStage.Bulk,
+            State = new ProductState { Id = Guid.NewGuid(), Name = "Liquid" }, Filled = "100 mL",
+            ProductionScheduleProduct = new ProductionScheduleProduct
+            {
+                Id = Guid.NewGuid(), Product = product, ProductionSchedule = new ProductionSchedule { Id = Guid.NewGuid() },
+                ProductPacking = new ProductPacking { Id = Guid.NewGuid(), Product = product, Name = "1 x 100 mL" }
+            },
+            BatchManufacturingRecord = new BatchManufacturingRecord { Id = Guid.NewGuid() },
+            ProductionActivityStep = new ProductionActivityStep { Id = Guid.NewGuid() }
+        };
+        db.Add(atr);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var details = (await new AnalyticalTestRequestRepository(db, services.GetRequiredService<IMapper>(), null!).GetAnalyticalTestRequest(atr.Id)).Value;
+
+        Assert.Equal("Liquid", details.State?.Name);
+        Assert.Equal("1 x 100 mL", details.ProductionScheduleProduct.ProductPacking?.Name);
+        Assert.Equal("100 mL", details.Filled);
+    }
+
     private static ApplicationDbContext NewContext() => new(
         new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options,
         new QcReader());

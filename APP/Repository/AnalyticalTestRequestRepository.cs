@@ -157,6 +157,9 @@ public class AnalyticalTestRequestRepository(
                 .ThenInclude(s => s.Product)
             .Include(p => p.ProductionScheduleProduct)
                 .ThenInclude(s => s.ProductionSchedule)
+            // The request form and certificate show the product's pack style.
+            .Include(p => p.ProductionScheduleProduct)
+                .ThenInclude(s => s.ProductPacking)
             .Include(s => s.ProductionActivityStep)
             .Include(s => s.BatchManufacturingRecord)
             .Include(s => s.CreatedBy)
@@ -167,9 +170,10 @@ public class AnalyticalTestRequestRepository(
             .Include(s => s.IssuedBy)
             .Include(s => s.Assignees).ThenInclude(item => item.User)
             .FirstOrDefaultAsync(atr => atr.Id == id);
-        return test is null
-            ? Error.NotFound("ATR.NotFound", "Analytical test request not found")
-            : MapWithAnalysts(test, await GetWorksheetAnalysts([test]));
+        if (test is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
+        // Loaded on its own: the state is required, so an Include would join it and hide a request whose state row is missing.
+        test.State = await context.Set<ProductState>().IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(state => state.Id == test.StateId);
+        return MapWithAnalysts(test, await GetWorksheetAnalysts([test]));
     }
 
     public async Task<Result> UpdateAnalyticalTestRequest(
