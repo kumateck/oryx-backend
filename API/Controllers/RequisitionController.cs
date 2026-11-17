@@ -85,18 +85,19 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// <param name="status">Filter by status of the requisition.</param>
     /// <param name="type">Filter between stock and purchase requisitions. (Stock = 0, Purchase =  1)</param>
     /// <param name="kind"></param>
+    /// <param name="issued">True for issued requisitions only; false for those still awaiting issue (not issued or rejected).</param>
     /// <returns>Returns a paginated list of requisitions.</returns>
     [HttpGet("department")]
     [AnyPermission("CanIssuePackagingMaterialRequisitions", "CanIssueRawMaterialRequisitions", "CanViewPackagingMaterialRequisitions", "CanViewRawMaterialRequisitions")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<RequisitionDto>>))]
     public async Task<IResult> GetRequisitionsForDepartment([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchQuery = null,
-        [FromQuery] RequestStatus? status = null, [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null)
+        [FromQuery] RequestStatus? status = null, [FromQuery] RequisitionType? type = null, [FromQuery] MaterialKind? kind = null, [FromQuery] bool? issued = null)
     {
         var departmentId = (string)HttpContext.Items["Department"];
         if (string.IsNullOrEmpty(departmentId)) return TypedResults.Unauthorized();
 
-        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind);
+        var result = await repository.GetRequisitions(page, pageSize, searchQuery, status, type, Guid.Parse(departmentId), kind, issued);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

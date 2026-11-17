@@ -1500,7 +1500,8 @@ public class RequisitionRepository(
         RequestStatus? status,
         RequisitionType? requisitionType,
         Guid? departmentId,
-        MaterialKind? materialKind
+        MaterialKind? materialKind,
+        bool? issued = null
     )
     {
         var actorId = identity?.UserId;
@@ -1533,6 +1534,10 @@ public class RequisitionRepository(
         {
             query = query.Where(q => q.DepartmentId == departmentId);
         }
+
+        // The store's queues: issued (completed) requisitions, or those still awaiting issue (neither completed nor rejected).
+        if (issued == true) query = query.Where(r => r.Status == RequestStatus.Completed);
+        else if (issued == false) query = query.Where(r => r.Status != RequestStatus.Completed && r.Status != RequestStatus.Rejected);
 
         if (status.HasValue)
         {
