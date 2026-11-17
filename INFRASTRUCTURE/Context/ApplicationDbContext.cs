@@ -1955,7 +1955,8 @@ public partial class ApplicationDbContext(
             .HasQueryFilter(a => !a.User.DeletedAt.HasValue && !a.Form.DeletedAt.HasValue);
         modelBuilder
             .Entity<FormResponse>()
-            .HasQueryFilter(a => a.FormField != null && !a.FormField.DeletedAt.HasValue);
+            // A removed answer (a formula repair starts its field afresh) is never read as the field's answer.
+            .HasQueryFilter(a => !a.DeletedAt.HasValue && a.FormField != null && !a.FormField.DeletedAt.HasValue);
         modelBuilder.Entity<Response>().HasQueryFilter(a => !a.Form.DeletedAt.HasValue);
         modelBuilder.Entity<Response>()
             .HasIndex(a => a.BatchManufacturingRecordId);

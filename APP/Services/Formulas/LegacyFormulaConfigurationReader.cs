@@ -118,15 +118,4 @@ public static class LegacyFormulaConfigurationReader
             ? db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock_shared(hashtext({key}))")
             : db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({key}))");
     }
-
-    public static async Task<Error?> ValidateWrite(ApplicationDbContext db, Response response, FormField field, string? observedHash)
-    {
-        if (field.Question.Type != QuestionType.Formula) return null;
-        var pin = (await Latest(db, [response.Id])).SingleOrDefault(p => p.FormFieldId == field.Id);
-        var repaired = pin is not null || await db.QuestionFormulaRepairs.AnyAsync(r => r.QuestionId == field.QuestionId);
-        if (!repaired) return null;
-        var expected = pin?.DefinitionHash ?? LegacyFormulaRepairDefinition.Hash(await db.QuestionOptions
-            .Where(o => o.QuestionId == field.QuestionId).Select(o => o.Name).SingleAsync());
-        return expected == observedHash ? null : Error.Conflict("FormulaRepair.StaleConfiguration", "This formula changed. Reload the worksheet before saving its readings.");
-    }
 }
