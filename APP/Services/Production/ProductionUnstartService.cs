@@ -79,9 +79,14 @@ public sealed partial class ProductionUnstartService(ApplicationDbContext db, IC
             foreach (var record in plan.Bprs) { record.DeletedAt = now; record.LastDeletedById = identity.UserId; }
             foreach (var reservation in plan.Reservations) { reservation.DeletedAt = now; reservation.ReleasedAt = now; reservation.LastDeletedById = identity.UserId; reservation.ProductionUnstartRepairId = request.RequestId; }
             foreach (var configuration in plan.Configurations) { configuration.DeletedAt = now; configuration.LastDeletedById = identity.UserId; }
+            foreach (var requisition in plan.Requisitions)
+            {
+                requisition.DeletedAt = now; requisition.LastDeletedById = identity.UserId;
+                foreach (var line in requisition.Items.Where(line => line.DeletedAt == null)) { line.DeletedAt = now; line.LastDeletedById = identity.UserId; }
+            }
             plan.Schedule.Status = (ProductionStatus)plan.Preview.ScheduleStatusAfter;
             db.ProductionActivityLogs.Add(new() { ProductionActivityId = activityId, UserId = identity.UserId, Timestamp = now,
-                Message = $"Production unstarted before BMR issue. Repair {request.RequestId}." });
+                Message = $"Production unstarted before any stock was issued; BMR and BPR retired, {plan.Requisitions.Count} unissued requisition(s) cancelled. Repair {request.RequestId}." });
             await db.SaveChangesAsync();
             access = await Access(activityId);
             if (access.IsFailure)

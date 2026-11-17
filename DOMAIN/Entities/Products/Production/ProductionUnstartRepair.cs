@@ -35,6 +35,8 @@ public sealed class ProductionUnstartPreviewDto
     public List<string> Blockers { get; set; } = [];
     public int StepsToArchive { get; set; }
     public int DraftDocumentsToArchive { get; set; }
+    /// <summary>Stock requisitions for the batch that were requested but not issued; unstarting cancels them.</summary>
+    public List<string> RequisitionsToCancel { get; set; } = [];
     public int ScheduleStatusBefore { get; set; }
     public int ScheduleStatusAfter { get; set; }
     public List<ProductionUnstartReservationDto> Reservations { get; set; } = [];

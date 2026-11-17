@@ -2,6 +2,7 @@ using System.Data;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
 using DOMAIN.Entities.Products.Production;
+using DOMAIN.Entities.Requisitions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -32,7 +33,7 @@ public sealed partial class ProductionUnstartService
     }
 
     private async Task<List<string>> Dependencies(ProductionActivity run, List<ProductionActivityStep> steps,
-        List<BatchManufacturingRecord> bmrs, List<BatchPackagingRecord> bprs)
+        List<BatchManufacturingRecord> bmrs, List<BatchPackagingRecord> bprs, Guid[] cancelledRequisitions)
     {
         var reservationIds = await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(item => item.ProductionScheduleProductId == run.ProductionScheduleProductId)
             .Select(item => item.Id).ToArrayAsync();
@@ -49,8 +50,12 @@ public sealed partial class ProductionUnstartService
             var column = key.Properties[0].GetColumnName(table);
             await using var command = db.Database.GetDbConnection().CreateCommand();
             command.Transaction = db.Database.CurrentTransaction.GetDbTransaction();
-            command.CommandText = $"SELECT EXISTS (SELECT 1 FROM {Table(key.DeclaringEntityType)} WHERE {Quote(column)} = ANY(@ids))";
+            // Unissued stock requisitions for the batch are cancelled with the run, so they do not count as dependants.
+            var skip = key.DeclaringEntityType.ClrType == typeof(Requisition) && cancelledRequisitions.Length > 0;
+            command.CommandText = $"SELECT EXISTS (SELECT 1 FROM {Table(key.DeclaringEntityType)} WHERE {Quote(column)} = ANY(@ids)"
+                + (skip ? " AND NOT (\"Id\" = ANY(@skip))" : "") + ")";
             var parameter = command.CreateParameter(); parameter.ParameterName = "ids"; parameter.Value = values; command.Parameters.Add(parameter);
+            if (skip) { var excluded = command.CreateParameter(); excluded.ParameterName = "skip"; excluded.Value = cancelledRequisitions; command.Parameters.Add(excluded); }
             if (await command.ExecuteScalarAsync() is true)
                 blockers.Add($"Existing {key.DeclaringEntityType.GetTableName()} records depend on this batch or run. Reconcile them before unstarting.");
         }
