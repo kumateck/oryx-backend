@@ -644,6 +644,8 @@ public static class PermissionKeys
         "CanViewPackagingMaterialRequisitions";
     public const string CanIssuePackagingMaterialRequisitions =
         "CanIssuePackagingMaterialRequisitions";
+    /// <summary>Set how much of a packaging stock requisition line is issued when whole packs make it differ from the requirement, with a reason.</summary>
+    public const string CanAdjustPackagingMaterialIssueQuantity = "CanAdjustPackagingMaterialIssueQuantity";
     public const string CanSwapPackagingMaterialRequisitions =
         "CanSwapPackagingMaterialRequisitions";
     public const string CanViewMaterialsReturnNote = "CanViewMaterialsReturnNote";
@@ -741,6 +743,8 @@ public static class PermissionKeys
     public const string CanReassignProductTest = "CanReassignProductTest";
     public const string CanStartProductTest = "CanStartProductTest";
     public const string CanCheckProductTest = "CanCheckProductTest";
+    /// <summary>Allows printing a product's Analytical Test Request form (QAD/SOP/046/F02-04).</summary>
+    public const string CanPrintProductAnalyticalTestRequest = "CanPrintProductAnalyticalTestRequest";
     public const string CanVerifyProduct = "CanVerifyProduct";
     public const string CanViewRawMaterialStps = "CanViewRawMaterialStps";
     public const string CanCreateRawMaterialStp = "CanCreateRawMaterialStp";
@@ -2380,6 +2384,11 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanAdjustPackagingMaterialIssueQuantity
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
             PermissionKeys.CanSwapPackagingMaterialRequisitions
         );
         addPermission(
@@ -2786,6 +2795,11 @@ public static class PermissionUtils
             PermissionModules.QualityControl,
             PermissionSubmodules.AnalyticalTestRequestProducts,
             PermissionKeys.CanCheckProductTest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanPrintProductAnalyticalTestRequest
         );
         addPermission(
             PermissionModules.QualityControl,
