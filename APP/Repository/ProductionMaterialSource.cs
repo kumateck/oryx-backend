@@ -98,7 +98,10 @@ internal static class ProductionMaterialSources
             packages = ProductPackagingSelection.ForStyle(packages, packingStyleId);
             definitions.AddRange(packages.Select(item => new SourceLine(item.MaterialId, null, item.BaseQuantity,
                 item.PrescribedQuantity, item.Loose, item.UnitCapacity, item.DirectLinkMaterialId,
-                false, item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList())));
+                false, item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList(),
+                // A packaging substitute replaces the main pack one for one (another bottle or label for the same line), so it
+                // takes the line's own quantity in its own stock unit. Null when there are none, so other lines hash as before.
+                PackagingSubstitutes(item))));
             source = Json(new { PackingStyleId = packingStyleId, Items = packages.Select(item => new { item.Id, item.UpdatedAt, item.ProductPackingId,
                 item.PackingExcessMargin, item.MaterialThickness, item.OtherStandards }).ToList(), Definitions = definitions });
         }
@@ -191,6 +194,13 @@ internal static class ProductionMaterialSources
         BaseQuantity = option.BaseQuantity, PrescribedQuantity = option.PrescribedQuantity, BaseUnitId = option.BaseUnitId,
         BaseUnit = option.BaseUnit, DensityGramsPerMilliliter = option.DensityGramsPerMilliliter
     };
+
+    private static List<SubstituteLine> PackagingSubstitutes(DOMAIN.Entities.Products.ProductPackage package)
+    {
+        var lines = package.Substitutes.Where(sub => sub.DeletedAt == null).OrderBy(sub => sub.SubstituteMaterialId)
+            .Select(sub => new SubstituteLine(sub.SubstituteMaterialId, null, package.BaseQuantity, package.PrescribedQuantity)).ToList();
+        return lines.Count == 0 ? null : lines;
+    }
 
     /// <summary>Substitutes saved with their own quantity; null when none has one, so older definitions hash as before.</summary>
     private static List<SubstituteLine> SubstituteQuantities(IEnumerable<DOMAIN.Entities.BillOfMaterials.BillOfMaterialItemSubstitute> substitutes)
