@@ -732,6 +732,46 @@ public sealed class QuestionFormulaRepairTests
     }
 
     [Fact]
+    public async Task A_recalculated_repair_result_becomes_final_with_the_submission_that_uses_it()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        var answer = new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field, Value = "{\"a\":\"9\",\"b\":\"3\"}" };
+        f.Db.FormResponses.Add(answer);
+        await f.Db.SaveChangesAsync();
+        const string approved = "{\"type\":0,\"expression\":\":a/:b\"}";
+        await f.Approve(approved, compiled: "{\"variables\":[{\"key\":\"a\"},{\"key\":\"b\"}],\"results\":[{\"key\":\"sample1\",\"expression\":\":a/:b\"}]}");
+        var preview = await f.Service.Preview(f.Question, new(approved, false, [new(f.Atr, f.Field)]));
+        Assert.True((await f.Service.Apply(f.Question, new(new(approved, false, [new(f.Atr, f.Field)]), preview.Value.PreviewToken, Guid.NewGuid(), "Apply the approved revision."))).IsSuccess);
+        answer.Value = "{\"a\":\"2\",\"b\":\"4\"}";
+        await f.Db.SaveChangesAsync();
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
+        Assert.True((await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash)).IsSuccess);
+
+        async Task<FormResponseDto> Read()
+        {
+            var dto = new FormResponseDto { Id = answer.Id, FormField = new FormFieldDto { Question = new QuestionDto() } };
+            await LegacyFormulaConfigurationReader.Attach(f.Db, [await f.Db.FormResponses.AsNoTracking().SingleAsync(a => a.Id == answer.Id)], [dto]);
+            return dto;
+        }
+
+        var draft = await Read();
+        Assert.True(draft.FormulaRepairEvaluated);
+        Assert.False(draft.FormulaResultFinalized);
+
+        var response = await f.Db.Responses.SingleAsync(r => r.Id == f.Response);
+        await LegacyFormulaConfigurationReader.Finalize(f.Db, response, f.Actor.UserId!.Value);
+        await f.Db.SaveChangesAsync();
+        // Finalizing again (a retried submission) records nothing new.
+        await LegacyFormulaConfigurationReader.Finalize(f.Db, response, f.Actor.UserId!.Value);
+        await f.Db.SaveChangesAsync();
+
+        Assert.True((await Read()).FormulaResultFinalized);
+        var record = Assert.Single(f.Db.LegacyFormulaRepairFinalizations);
+        Assert.Equal(f.Response, record.ResponseId);
+        Assert.Equal((await f.Db.LegacyFormulaRepairEvaluations.SingleAsync()).Id, record.EvaluationId);
+    }
+
+    [Fact]
     public async Task Recalculation_uses_the_saved_readings_and_names_only_inputs_that_have_no_value()
     {
         await using var f = new Fixture(); await f.Seed();

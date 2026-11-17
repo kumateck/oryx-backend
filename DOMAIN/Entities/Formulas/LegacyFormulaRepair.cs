@@ -40,3 +40,13 @@ public sealed class LegacyFormulaRepairEvaluation
     public string EngineBuildHash { get; set; } = "";
     public DateTime EvaluatedAt { get; set; }
 }
+
+/// <summary>A repaired result made final by the worksheet submission that used it. Append-only, like the evaluation.</summary>
+public sealed class LegacyFormulaRepairFinalization
+{
+    public Guid Id { get; set; }
+    public Guid EvaluationId { get; set; }
+    public Guid ResponseId { get; set; }
+    public Guid ActorId { get; set; }
+    public DateTime FinalizedAt { get; set; }
+}
