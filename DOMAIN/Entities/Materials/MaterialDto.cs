@@ -8,6 +8,7 @@ namespace DOMAIN.Entities.Materials;
 
 public class MaterialDto
 {
+    public decimal? DensityGramsPerMilliliter { get; set; }
     public Guid Id { get; set; }
     public string Code { get; set; }
     public string Pharmacopoeia { get; set; }

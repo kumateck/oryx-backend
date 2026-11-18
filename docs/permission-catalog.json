@@ -1528,6 +1528,20 @@
   {
     "module": "Warehouse",
     "submodule": "Approved Materials",
+    "key": "CanRepairUnstartRawMaterialReservations",
+    "name": "Can Repair Unstart Raw Material Reservations",
+    "description": "Allows the user to  repair unstart raw material reservations."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
+    "key": "CanRepairUnstartPackagingMaterialReservations",
+    "name": "Can Repair Unstart Packaging Material Reservations",
+    "description": "Allows the user to  repair unstart packaging material reservations."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
     "key": "CanViewApprovedPackagingMaterials",
     "name": "Can View Approved Packaging Materials",
     "description": "Allows the user to  view approved packaging materials."
@@ -1594,6 +1608,20 @@
     "key": "CanLinkPackagingMaterials",
     "name": "Can Link Packaging Materials",
     "description": "Allows the user to  link packaging materials."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanEditRawMaterialDensity",
+    "name": "Can Edit Raw Material Density",
+    "description": "Allows the user to  edit raw material density."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanEditPackagingMaterialDensity",
+    "name": "Can Edit Packaging Material Density",
+    "description": "Allows the user to  edit packaging material density."
   },
   {
     "module": "Warehouse",
@@ -2385,6 +2413,48 @@
     "key": "CanDeleteAnalyticalTestRequest",
     "name": "Can Delete Analytical Test Request",
     "description": "Allows the user to  delete analytical test request."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanReturnProductTestForCorrection",
+    "name": "Can Return Product Test For Correction",
+    "description": "Allows the user to  return product test for correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanViewProductTestCorrectionHistory",
+    "name": "Can View Product Test Correction History",
+    "description": "Allows the user to  view product test correction history."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanReturnRawMaterialTestForCorrection",
+    "name": "Can Return Raw Material Test For Correction",
+    "description": "Allows the user to  return raw material test for correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanViewRawMaterialTestCorrectionHistory",
+    "name": "Can View Raw Material Test Correction History",
+    "description": "Allows the user to  view raw material test correction history."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanReturnPackagingMaterialTestForCorrection",
+    "name": "Can Return Packaging Material Test For Correction",
+    "description": "Allows the user to  return packaging material test for correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanViewPackagingMaterialTestCorrectionHistory",
+    "name": "Can View Packaging Material Test Correction History",
+    "description": "Allows the user to  view packaging material test correction history."
   },
   {
     "module": "Quality Control",

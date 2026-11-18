@@ -3561,6 +3561,46 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("TemplateRepairAssignments", (string)null);
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TestCorrectionReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrectionResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PreviousState")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("ReturnedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReturnedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceResponseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrectionResponseId")
+                        .IsUnique();
+
+                    b.HasIndex("ReturnedById");
+
+                    b.HasIndex("SourceResponseId")
+                        .IsUnique();
+
+                    b.ToTable("TestCorrectionReturns", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.FormFieldFormulaConfiguration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10951,6 +10991,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("DensityGramsPerMilliliter")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -11375,6 +11418,15 @@ namespace INFRASTRUCTURE.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("DensityGramsPerMilliliter")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("DestinationQuantity")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid?>("DestinationUoMId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("DestinationWarehouseId")
                         .HasColumnType("uuid");
 
@@ -11387,13 +11439,24 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
+                    b.Property<DateTime?>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReceivedById")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("SourceWarehouseId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal?>("TransferQuantity")
+                        .HasColumnType("numeric");
 
                     b.Property<Guid?>("UoMId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DestinationUoMId");
 
                     b.HasIndex("DestinationWarehouseId");
 
@@ -11430,6 +11493,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("DensityGramsPerMilliliter")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
@@ -11477,7 +11543,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("MaterialCategoryId");
 
-                    b.ToTable("Materials");
+                    b.ToTable("Materials", t =>
+                        {
+                            t.HasCheckConstraint("CK_Material_Density", "\"DensityGramsPerMilliliter\" IS NULL OR \"DensityGramsPerMilliliter\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialCategory", b =>
@@ -11524,6 +11593,36 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.ToTable("MaterialCategories");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialDensityMeasurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Density")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("PreviousDensity")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("MaterialId");
+
+                    b.ToTable("MaterialDensityMeasurements");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialDepartment", b =>
@@ -17798,6 +17897,49 @@ namespace INFRASTRUCTURE.Migrations
                         .IsUnique();
 
                     b.ToTable("ReservationRepairs");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.UnstartReservationRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PreviewToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ReservationIdsJson")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("MaterialId");
+
+                    b.ToTable("UnstartReservationRepairs");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.ProductsSampling.ProductSampling", b =>
@@ -29693,6 +29835,27 @@ namespace INFRASTRUCTURE.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TestCorrectionReturn", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReturnedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("SourceResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.FormFieldFormulaConfiguration", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -33801,6 +33964,10 @@ namespace INFRASTRUCTURE.Migrations
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.HoldingMaterialTransferBatch", b =>
                 {
+                    b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "DestinationUoM")
+                        .WithMany()
+                        .HasForeignKey("DestinationUoMId");
+
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "DestinationWarehouse")
                         .WithMany()
                         .HasForeignKey("DestinationWarehouseId")
@@ -33828,6 +33995,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Base.UnitOfMeasure", "UoM")
                         .WithMany()
                         .HasForeignKey("UoMId");
+
+                    b.Navigation("DestinationUoM");
 
                     b.Navigation("DestinationWarehouse");
 
@@ -33886,6 +34055,21 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialDensityMeasurement", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Materials.MaterialDepartment", b =>
@@ -37530,6 +37714,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Materials.StockMigrations.StockMigration", null)
                         .WithMany()
                         .HasForeignKey("MigrationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Products.Production.UnstartReservationRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Departments.Department", null)
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -87,7 +87,7 @@ internal static class ProductionMaterialRepairPlanning
         var lines = Lines(before, source.Requirements, active, allocation, blockers);
         if (lines.Any(item => item.Shortage > 0)) blockers.Add("There is not enough unreserved, usable stock. No changes can be applied until all shortages are covered.");
         var desired = allocation.Allocations.OrderBy(item => item.BatchId).ThenBy(item => item.ShelfId).ToList();
-        var existing = active.Select(item => new ProductionMaterialAllocation(item.MaterialBatchId, item.WarehouseLocationShelfId.GetValueOrDefault(), item.UoMId, item.Quantity))
+        var existing = active.Select(item => new ProductionMaterialAllocation(item.MaterialBatchId, item.WarehouseLocationShelfId.GetValueOrDefault(), item.UoMId, item.Quantity, item.DensityGramsPerMilliliter))
             .OrderBy(item => item.BatchId).ThenBy(item => item.ShelfId).ToList();
         var documentsMatch = requisition is null || Matches(requisition, source.Requirements);
         if (!documentsMatch && !await context.ApprovalStages.AnyAsync(stage => stage.Required
@@ -132,7 +132,7 @@ internal static class ProductionMaterialRepairPlanning
         return reservations.GroupBy(item => item.MaterialBatch.MaterialId).OrderBy(group => group.Key).Select(group =>
         {
             var first = group.First();
-            var quantities = group.Select(item => UomConverter.Convert(item.Quantity, item.UoM?.Symbol, first.UoM?.Symbol)).ToList();
+            var quantities = group.Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, first.UoM?.Symbol, item.DensityGramsPerMilliliter)).ToList();
             if (quantities.Any(value => !value.HasValue)) blockers.Add("The existing reservation units cannot be reconciled.");
             return new ProductionMaterialRequirement { MaterialId = group.Key, Name = first.MaterialBatch.Material.Name,
                 UnitId = first.UoMId, Unit = first.UoM?.Symbol ?? "", Quantity = quantities.Sum(value => value.GetValueOrDefault()) };
@@ -146,9 +146,9 @@ internal static class ProductionMaterialRepairPlanning
         {
             var old = before.FirstOrDefault(item => item.MaterialId == id);
             var current = after.FirstOrDefault(item => item.MaterialId == id) ?? old;
-            var oldQuantity = old is null ? 0 : UomConverter.Convert(old.Quantity, old.Unit, current.Unit);
+            var oldQuantity = old is null ? 0 : MaterialDensity.Convert(old.Quantity, old.Unit, current.Unit, old.DensityGramsPerMilliliter);
             var quantities = reservations.Where(item => item.MaterialBatch.MaterialId == id)
-                .Select(item => UomConverter.Convert(item.Quantity, item.UoM?.Symbol, current.Unit)).ToList();
+                .Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, current.Unit, item.DensityGramsPerMilliliter)).ToList();
             if (oldQuantity is null || quantities.Any(value => !value.HasValue)) blockers.Add($"{current.Name}: the before/after units cannot be reconciled.");
             var quantity = after.FirstOrDefault(item => item.MaterialId == id)?.Quantity ?? 0;
             var shortage = allocation.Shortages.GetValueOrDefault(id);

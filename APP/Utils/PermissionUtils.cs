@@ -616,6 +616,10 @@ public static class PermissionKeys
     public const string CanAssignRawMaterialsStockToShelves = "CanAssignRawMaterialsStockToShelves";
     public const string CanAssignPackagingMaterialsStockToShelves =
         "CanAssignPackagingMaterialsStockToShelves";
+    /// <summary>Release unused raw material reservations retained after a recorded production Unstart.</summary>
+    public const string CanRepairUnstartRawMaterialReservations = "CanRepairUnstartRawMaterialReservations";
+    /// <summary>Release unused packaging reservations retained after a recorded production Unstart.</summary>
+    public const string CanRepairUnstartPackagingMaterialReservations = "CanRepairUnstartPackagingMaterialReservations";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
     public const string CanViewApprovedPackagingMaterials = "CanViewApprovedPackagingMaterials";
     public const string CanViewLinkedRawMaterials = "CanViewLinkedRawMaterials";
@@ -624,6 +628,10 @@ public static class PermissionKeys
     public const string CanViewLinkedPackagingMaterials = "CanViewLinkedPackagingMaterials";
     public const string CanUnlinkPackagingMaterials = "CanUnlinkPackagingMaterials";
     public const string CanViewUnlinkedRawMaterials = "CanViewUnlinkedRawMaterials";
+    /// <summary>Sets the shared verified density of a raw material.</summary>
+    public const string CanEditRawMaterialDensity = "CanEditRawMaterialDensity";
+    /// <summary>Sets the shared verified density of a packaging material.</summary>
+    public const string CanEditPackagingMaterialDensity = "CanEditPackagingMaterialDensity";
     public const string CanLinkRawMaterials = "CanLinkRawMaterials";
     public const string CanViewUnlinkedPackagingMaterials = "CanViewUnlinkedPackagingMaterials";
     public const string CanLinkPackagingMaterials = "CanLinkPackagingMaterials";
@@ -747,6 +755,18 @@ public static class PermissionKeys
         "CanViewProductAnalyticalTestRequestsForAnalysing";
     public const string CanAcknowledgeSampleTaken = "CanAcknowledgeSampleTaken";
     public const string CanAssignProductTest = "CanAssignProductTest";
+    /// <summary>Return a submitted Product test correction record before COA generation.</summary>
+    public const string CanReturnProductTestForCorrection = "CanReturnProductTestForCorrection";
+    /// <summary>Read the Product test correction record before COA generation.</summary>
+    public const string CanViewProductTestCorrectionHistory = "CanViewProductTestCorrectionHistory";
+    /// <summary>Return a submitted RawMaterial test correction record before COA generation.</summary>
+    public const string CanReturnRawMaterialTestForCorrection = "CanReturnRawMaterialTestForCorrection";
+    /// <summary>Read the RawMaterial test correction record before COA generation.</summary>
+    public const string CanViewRawMaterialTestCorrectionHistory = "CanViewRawMaterialTestCorrectionHistory";
+    /// <summary>Return a submitted PackagingMaterial test correction record before COA generation.</summary>
+    public const string CanReturnPackagingMaterialTestForCorrection = "CanReturnPackagingMaterialTestForCorrection";
+    /// <summary>Read the PackagingMaterial test correction record before COA generation.</summary>
+    public const string CanViewPackagingMaterialTestCorrectionHistory = "CanViewPackagingMaterialTestCorrectionHistory";
     public const string CanReassignProductTest = "CanReassignProductTest";
     public const string CanStartProductTest = "CanStartProductTest";
     public const string CanCheckProductTest = "CanCheckProductTest";
@@ -2258,6 +2278,8 @@ public static class PermissionUtils
             PermissionSubmodules.ApprovedMaterials,
             PermissionKeys.CanViewApprovedRawMaterials
         );
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartRawMaterialReservations);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartPackagingMaterialReservations);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.ApprovedMaterials,
@@ -2308,6 +2330,8 @@ public static class PermissionUtils
             PermissionSubmodules.UnlinkedMaterials,
             PermissionKeys.CanLinkPackagingMaterials
         );
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditRawMaterialDensity);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditPackagingMaterialDensity);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.Materials,
@@ -2810,6 +2834,12 @@ public static class PermissionUtils
             PermissionSubmodules.AnalyticalTestRequestProducts,
             PermissionKeys.CanDeleteAnalyticalTestRequest
         );
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanReturnProductTestForCorrection);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanViewProductTestCorrectionHistory);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanReturnRawMaterialTestForCorrection);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanViewRawMaterialTestCorrectionHistory);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanReturnPackagingMaterialTestForCorrection);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanViewPackagingMaterialTestCorrectionHistory);
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.AnalyticalTestRequestProducts,

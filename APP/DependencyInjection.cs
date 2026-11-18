@@ -106,6 +106,7 @@ public static class DependencyInjection
         services.AddScoped<APP.Services.Production.StockRequisitionMaterialChoiceService>();
         services.AddScoped<APP.Services.Production.ProductionUnstartService>();
         services.AddScoped<APP.Services.Production.UnstartLeftoverRepairService>();
+        services.AddScoped<APP.Services.Production.UnstartReservationRepairService>();
         services.AddScoped<APP.Services.Production.ReservationRepairService>();
         services.AddScoped<APP.Services.Materials.MaterialPurchaseUnitsReader>();
         services.AddScoped<IRequisitionRepository, RequisitionRepository>();
@@ -119,6 +120,7 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
+        services.AddScoped<APP.Services.Forms.TestCorrectionService>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IDesignationRepository, DesignationRepository>();
         services.AddScoped<ILeaveEntitlementRepository, LeaveEntitlementRepository>();

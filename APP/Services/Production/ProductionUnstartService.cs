@@ -77,7 +77,8 @@ public sealed partial class ProductionUnstartService(ApplicationDbContext db, IC
             foreach (var step in plan.Steps) { step.DeletedAt = now; step.LastDeletedById = identity.UserId; }
             foreach (var record in plan.Bmrs) { record.DeletedAt = now; record.LastDeletedById = identity.UserId; }
             foreach (var record in plan.Bprs) { record.DeletedAt = now; record.LastDeletedById = identity.UserId; }
-            foreach (var reservation in plan.Reservations) { reservation.DeletedAt = now; reservation.ReleasedAt = now; reservation.LastDeletedById = identity.UserId; reservation.ProductionUnstartRepairId = request.RequestId; }
+            foreach (var reservation in plan.Reservations)
+                UnstartReservationRelease.Release(reservation, request.RequestId, identity.UserId!.Value, now);
             foreach (var configuration in plan.Configurations) { configuration.DeletedAt = now; configuration.LastDeletedById = identity.UserId; }
             foreach (var requisition in plan.Requisitions)
             {

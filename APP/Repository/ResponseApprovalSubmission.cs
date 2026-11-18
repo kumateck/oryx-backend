@@ -17,6 +17,9 @@ internal static class ResponseApprovalSubmission
         if (response is null)
             return Error.NotFound("Response.NotFound", "Response not found.");
 
+        var correction = await APP.Services.Forms.TestCorrectionGuard.CanGenerate(context, response);
+        if (correction.IsFailure) return correction;
+
         var configurations = await context.Approvals.AsNoTracking()
             .Include(item => item.ApprovalStages)
             .Where(item => item.ItemType == nameof(Response)).Take(2).ToListAsync();

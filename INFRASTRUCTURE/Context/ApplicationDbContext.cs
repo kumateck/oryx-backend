@@ -1012,9 +1012,12 @@ public partial class ApplicationDbContext(
         FormulaChangeGuard.Validate(ChangeTracker);
         ValidateFormulaRepairHistory();
         ValidateTemplateRepairHistory();
+        ValidateTestCorrectionHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
+        ValidateUnstartReservationRepairAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
         SaveEntity();
@@ -1028,9 +1031,12 @@ public partial class ApplicationDbContext(
         FormulaChangeGuard.Validate(ChangeTracker);
         ValidateFormulaRepairHistory();
         ValidateTemplateRepairHistory();
+        ValidateTestCorrectionHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
+        ValidateUnstartReservationRepairAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
         SaveEntity();
@@ -1128,6 +1134,19 @@ public partial class ApplicationDbContext(
                 case EntityState.Added:
                     entity.CreatedAt = DateTime.UtcNow;
                     entity.CreatedById = currentUserService.UserId;
+                    if (entity is DOMAIN.Entities.Forms.Response correction)
+                    {
+                        var returned = TestCorrectionReturns.Local.SingleOrDefault(h => h.CorrectionResponseId == correction.Id);
+                        var original = returned == null ? null : Responses.Local.SingleOrDefault(a => a.Id == returned.SourceResponseId);
+                        if (original != null) correction.CreatedById = original.CreatedById;
+                    }
+                    if (entity is DOMAIN.Entities.Forms.FormResponse copied)
+                    {
+                        var returned = TestCorrectionReturns.Local.SingleOrDefault(h => h.CorrectionResponseId == copied.ResponseId);
+                        var original = returned == null ? null : FormResponses.Local.Where(a =>
+                            a.ResponseId == returned.SourceResponseId && a.FormFieldId == copied.FormFieldId).OrderByDescending(a => a.CreatedAt).FirstOrDefault();
+                        if (original != null) { copied.CreatedById = original.CreatedById; copied.CreatedAt = original.CreatedAt; }
+                    }
                     break;
 
                 case EntityState.Modified:
@@ -1174,7 +1193,9 @@ public partial class ApplicationDbContext(
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureProductionUnstart(modelBuilder);
+        ConfigureMaterialDensity(modelBuilder);
         ConfigureUnstartLeftovers(modelBuilder);
+        ConfigureUnstartReservationRepair(modelBuilder);
         ConfigureReservationRepair(modelBuilder);
         modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
@@ -1522,7 +1543,7 @@ public partial class ApplicationDbContext(
         modelBuilder
             .Entity<MaterialBatchReservedQuantity>()
             .HasQueryFilter(entity =>
-                !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue
+                !entity.DeletedAt.HasValue && entity.ReleasedAt == null && !entity.MaterialBatch.DeletedAt.HasValue
             );
         // modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
         // modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);

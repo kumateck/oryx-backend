@@ -19,6 +19,8 @@ public sealed class FormulaSubmissionService(
         var response = await context.Responses.AsNoTracking()
             .SingleOrDefaultAsync(item => item.Id == responseId, cancellationToken);
         if (response is null) return FormulaResponseRuntimeErrors.NotFound;
+        if (await APP.Services.Forms.TestCorrectionGuard.IsReturned(context, responseId))
+            return FormulaResponseRuntimeErrors.Unauthorized;
         if (!response.FormRevisionId.HasValue)
         {
             if (await FormRevisionSelection.RequiresApprovedRevisionAsync(context, response.FormId, cancellationToken))
