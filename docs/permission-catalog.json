@@ -1779,6 +1779,13 @@
   },
   {
     "module": "Warehouse",
+    "submodule": "Upcoming Batch Issues",
+    "key": "CanViewUpcomingBatchIssues",
+    "name": "Can View Upcoming Batch Issues",
+    "description": "Allows the user to  view upcoming batch issues."
+  },
+  {
+    "module": "Warehouse",
     "submodule": "Expired Materials",
     "key": "CanViewExpiryAcrossDepartments",
     "name": "Can View Expiry Across Departments",

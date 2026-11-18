@@ -652,6 +652,7 @@ public static class PermissionKeys
     public const string CanViewExpiredMaterials = "CanViewExpiredMaterials";
     public const string CanViewAboutToExpireMaterials = "CanViewAboutToExpireMaterials";
     public const string CanViewExpiryAcrossDepartments = "CanViewExpiryAcrossDepartments";
+    public const string CanViewUpcomingBatchIssues = "CanViewUpcomingBatchIssues";
     public const string CanViewRawMaterialLocationChartList = "CanViewRawMaterialLocationChartList";
     public const string CanReassignRawMaterialStock = "CanReassignRawMaterialStock";
     public const string CanViewRawMaterialLocationList = "CanViewRawMaterialLocationList";
@@ -2426,6 +2427,11 @@ public static class PermissionUtils
             PermissionModules.Warehouse,
             PermissionSubmodules.ExpiredMaterials,
             PermissionKeys.CanViewAboutToExpireMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            "Upcoming Batch Issues",
+            PermissionKeys.CanViewUpcomingBatchIssues
         );
         addPermission(
             PermissionModules.Warehouse,
