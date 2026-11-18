@@ -203,6 +203,24 @@ public class ProductPackagingReadTests
         await Verify(8, 999);
     }
 
+    [Fact]
+    public async Task Packaging_substitute_uses_its_own_quantity_in_production_requirements()
+    {
+        await using var fixture = await Fixture.Create();
+        var main = fixture.Active[0]; var alternate = fixture.Active[1];
+        fixture.Context.ProductPackageSubstitutes.Add(new ProductPackageSubstitute { Id = Guid.NewGuid(), ProductPackageId = main.Id,
+            SubstituteMaterialId = alternate.MaterialId, PrescribedQuantity = 42.125m });
+        // A substitute cannot simultaneously be an independent requirement on this batch.
+        alternate.DeletedAt = DateTime.UtcNow;
+        await fixture.Context.SaveChangesAsync();
+        var loaded = await ProductionMaterialSources.Load(fixture.Context, fixture.BatchId, MaterialKind.Package,
+            preferred: new Dictionary<Guid, Guid> { [main.MaterialId] = alternate.MaterialId });
+        Assert.True(loaded.IsSuccess, loaded.Error?.Description);
+        var requirement = Assert.Single(loaded.Value.Requirements, row => row.SourceMaterialId == main.MaterialId);
+        Assert.Equal(alternate.MaterialId, requirement.MaterialId);
+        Assert.Equal(42.125m, requirement.PrescribedQuantity);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         internal ApplicationDbContext Context { get; }
@@ -249,6 +267,15 @@ public class ProductPackagingReadTests
             }
             var department = new Department { Id = fixture.DepartmentId, Name = "Production", Type = DepartmentType.Production };
             var actor = new User { Id = fixture.ActorId, UserName = "packaging-reader", DepartmentId = department.Id };
+            var role = Guid.NewGuid();
+            db.Roles.Add(new DOMAIN.Entities.Roles.Role { Id = role, Name = "Packaging author" });
+            db.UserRoles.Add(new Microsoft.AspNetCore.Identity.IdentityUserRole<Guid> { UserId = actor.Id, RoleId = role });
+            var claimId = 80000;
+            foreach (var key in new[] { APP.Utils.PermissionKeys.CanAddProductionProductPackingMaterials, APP.Utils.PermissionKeys.CanEditProductionProductPackingMaterials, APP.Utils.PermissionKeys.CanDeleteProductionProductPackingMaterials })
+            {
+                db.RoleClaims.Add(new Microsoft.AspNetCore.Identity.IdentityRoleClaim<Guid> { Id = ++claimId, RoleId = role, ClaimType = APP.Utils.AppConstants.Permission, ClaimValue = key });
+                db.PermissionTypes.Add(new DOMAIN.Entities.Permissions.PermissionType { Id = Guid.NewGuid(), RoleClaimId = claimId, Key = key, Type = "Action" });
+            }
             db.AddRange(department, actor, new UnitOfMeasure { Id = fixture.UnitId, Name = "Piece", Symbol = "piece" });
             db.Warehouses.AddRange(new Warehouse { Id = fixture.StorageId, Name = "Packaging", DepartmentId = department.Id, Type = WarehouseType.PackagedStorage },
                 new Warehouse { Id = fixture.FloorId, Name = "Production", DepartmentId = department.Id, Type = WarehouseType.Production });

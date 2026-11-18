@@ -29,6 +29,8 @@ public class AnalyticalTestRequestDto : BaseDto
     public UserDto SampledBy { get; set; }
     public UserDto ReleasedBy { get; set; }
     public DateTime? SampledAt { get; set; }
+    public DateTime? TestedAt { get; set; }
+    public UserDto TestedBy { get; set; }
     public UserDto AcknowledgedBy { get; set; }
     public DateTime? AcknowledgedAt { get; set; }
     public DateTime? AssignedAt { get; set; }

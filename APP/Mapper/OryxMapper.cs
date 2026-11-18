@@ -298,12 +298,9 @@ public class OryxMapper : Profile
             .AfterMap(
                 (src, dest) =>
                 {
-                    dest.Substitutes = src
-                        .SubstituteMaterialIds.Select(id => new ProductPackageSubstitute
-                        {
-                            SubstituteMaterialId = id,
-                        })
-                        .ToList();
+                    dest.Substitutes = src.Substitutes is { Count: > 0 }
+                        ? src.Substitutes.Select(item => new ProductPackageSubstitute { SubstituteMaterialId = item.MaterialId, PrescribedQuantity = item.PrescribedQuantity }).ToList()
+                        : (src.SubstituteMaterialIds ?? []).Select(id => new ProductPackageSubstitute { SubstituteMaterialId = id }).ToList();
                 }
             );
         CreateMap<ProductPackage, ProductPackageDto>();

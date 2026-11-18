@@ -257,6 +257,7 @@ public static class DependencyInjection
         services.AddScoped<IFormulaMigrationApplyService, FormulaMigrationApplyService>();
         services.AddScoped<IFormulaDefinitionService, FormulaDefinitionService>();
         services.AddScoped<QuestionFormulaRepairService>();
+        services.AddScoped<APP.Services.Forms.TemplateRepairService>();
         services.AddScoped<IFormulaResponseRuntimeService, FormulaResponseRuntimeService>();
         services.AddScoped<IFormulaSubmissionService, FormulaSubmissionService>();
         services.AddScoped<IFormRevisionService, FormRevisionService>();
