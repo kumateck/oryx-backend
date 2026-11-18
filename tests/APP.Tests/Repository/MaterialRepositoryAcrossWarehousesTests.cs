@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using APP.Mapper;
 using APP.Repository;
 using AutoMapper;
@@ -20,6 +21,11 @@ file class FakeCurrentUserService : ICurrentUserService
 
 public class MaterialRepositoryAcrossWarehousesTests
 {
+    // Shelf and lot share one unit, as stock is recorded today (see StoreStock).
+    private static UnitOfMeasure Kg(ApplicationDbContext context) =>
+        context.UnitOfMeasures.Local.FirstOrDefault(u => u.Symbol == "kg")
+        ?? context.UnitOfMeasures.Add(new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Kilogram", Symbol = "kg" }).Entity;
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -80,6 +86,8 @@ public class MaterialRepositoryAcrossWarehousesTests
             MaterialId = materialId,
             BatchNumber = $"B-{Guid.NewGuid()}",
             DateReceived = DateTime.UtcNow,
+            UoMId = Kg(context).Id,
+            Status = BatchStatus.Available,
             ExpiryDate = DateTime.UtcNow.AddDays(-10),
         };
         var usableBatch = new MaterialBatch
@@ -88,6 +96,8 @@ public class MaterialRepositoryAcrossWarehousesTests
             MaterialId = materialId,
             BatchNumber = $"B-{Guid.NewGuid()}",
             DateReceived = DateTime.UtcNow,
+            UoMId = Kg(context).Id,
+            Status = BatchStatus.Available,
             ExpiryDate = DateTime.UtcNow.AddDays(30),
         };
         context.MaterialBatches.Add(expiredBatch);
@@ -99,6 +109,7 @@ public class MaterialRepositoryAcrossWarehousesTests
                 Id = Guid.NewGuid(),
                 WarehouseLocationShelfId = shelf.Id,
                 MaterialBatchId = expiredBatch.Id,
+                UoMId = Kg(context).Id,
                 Quantity = 200m,
             }
         );
@@ -108,6 +119,7 @@ public class MaterialRepositoryAcrossWarehousesTests
                 Id = Guid.NewGuid(),
                 WarehouseLocationShelfId = shelf.Id,
                 MaterialBatchId = usableBatch.Id,
+                UoMId = Kg(context).Id,
                 Quantity = 300m,
             }
         );

@@ -171,8 +171,15 @@ public class WarehouseLocationShelfDto
 public class WarehouseStockDto
 {
     public WarehouseDto Warehouse { get; set; }
+    /// <summary>Everything on the warehouse's shelves, in its department's unit.</summary>
     public decimal StockQuantity { get; set; }
     public decimal ExpiredQuantity { get; set; }
+    /// <summary>In-date stock not released for use.</summary>
+    public decimal? UnavailableQuantity { get; set; }
+    /// <summary>Usable stock held for batches whose stock has not been issued yet.</summary>
+    public decimal? ReservedQuantity { get; set; }
+    /// <summary>Usable stock not held: what can be issued or reserved now.</summary>
+    public decimal? FreeQuantity { get; set; }
 }
 
 public class WareHouseLocationDto

@@ -4,6 +4,9 @@
 --
 -- One row per unreleased hold, with the lot's current shelf balance and whether the
 -- batch it is held for has already been issued its stock or was cancelled.
+-- Every stock screen counts a hold as reserved only while it is live: not released,
+-- its batch not cancelled, and its stock not yet issued (stock_issued_to_batch = false).
+-- A live hold larger than its shelf counts only up to what the shelf holds.
 
 SELECT
     m."Code"                                         AS material,
@@ -18,7 +21,8 @@ SELECT
     EXISTS (SELECT 1 FROM "RequisitionItems" ri JOIN "Requisitions" r ON r."Id" = ri."RequisitionId"
              JOIN "StockRequisitionIssues" i ON i."RequisitionId" = r."Id"
             WHERE r."ProductionScheduleProductId" = h."ProductionScheduleProductId"
-              AND ri."MaterialId" = m."Id")          AS stock_issued_to_batch
+              AND ri."MaterialId" = m."Id")          AS stock_issued_to_batch,
+    h."WarehouseLocationShelfId" IS NULL             AS no_shelf_recorded
 FROM "MaterialBatchReservedQuantities" h
 JOIN "MaterialBatches" lot ON lot."Id" = h."MaterialBatchId"
 JOIN "Materials" m         ON m."Id" = lot."MaterialId"

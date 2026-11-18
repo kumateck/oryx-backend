@@ -588,17 +588,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
         var materialIds = paginatedResult.Data.Select(m => m.Id).ToList();
 
-        var stocks = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .AsSplitQuery()
-            .Where(s =>
-                materialIds.Contains(s.MaterialBatch.MaterialId)
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouse.Id
-            )
-            .GroupBy(s => s.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, Total = g.Sum(s => s.Quantity) })
-            .ToDictionaryAsync(x => x.MaterialId, x => x.Total);
+        var stock = await StoreStock.MeasureInStore(context, warehouse.Id, materialIds);
 
         var uoms = await context
             .MaterialDepartments.IgnoreQueryFilters()
@@ -609,18 +599,12 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             )
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
-        var activeWarehouseReservations = StoreReservations.HeldIn(context, warehouse)
-            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId));
-        var reservedQuantities = await ReservationTotals.ByMaterialAsync(activeWarehouseReservations, context.Database.IsNpgsql());
-
         var materialDetails = paginatedResult
             .Data.Select(m => new MaterialDetailsDto
             {
                 Material = mapper.Map<MaterialDto>(m),
                 UnitOfMeasure = uoms.GetValueOrDefault(m.Id),
-                TotalAvailableQuantity = stocks.GetValueOrDefault(m.Id, 0),
-                ReservedQuantity = reservedQuantities.GetValueOrDefault(m.Id, 0),
-            })
+            }.WithStock(stock.GetValueOrDefault(m.Id, StoreStockLevel.None)))
             .ToList();
 
         return Result.Success(
@@ -685,36 +669,18 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
         var materialDetails = new List<MaterialDetailsDto>();
 
+        var ids = paginatedResult.Data.Select(m => m.Id).ToList();
+        var stock = await StoreStock.MeasureInStore(context, warehouse.Id, ids);
+        var units = await context.MaterialDepartments.IgnoreQueryFilters().AsNoTracking().Include(md => md.UoM)
+            .Where(md => md.DepartmentId == departmentId && ids.Contains(md.MaterialId) && md.DeletedAt == null)
+            .ToListAsync();
         foreach (var m in paginatedResult.Data)
         {
-            var totalAvailableQuantity = await GetMassMaterialStockInWarehouse(m.Id, warehouse.Id);
-            if (totalAvailableQuantity.IsFailure)
-                return totalAvailableQuantity.Errors;
-
-            var unitOfMeasureDto = await context
-                .MaterialDepartments.Where(md => md.DepartmentId == departmentId)
-                .Select(md => mapper.Map<UnitOfMeasureDto>(md.UoM))
-                .FirstOrDefaultAsync();
-
-            if (unitOfMeasureDto == null)
-                return Error.NotFound(
-                    "MaterialDepartment.NotFound",
-                    "Unit of measure not found for this department."
-                );
-
-            var warehouseReservations = StoreReservations.HeldIn(context, warehouse)
-                .Where(r => r.MaterialBatch.MaterialId == m.Id);
-            var reservedQuantity = await ReservationTotals.SumAsync(warehouseReservations, context.Database.IsNpgsql());
-
-            materialDetails.Add(
-                new MaterialDetailsDto
-                {
-                    Material = m,
-                    UnitOfMeasure = unitOfMeasureDto,
-                    TotalAvailableQuantity = totalAvailableQuantity.Value,
-                    ReservedQuantity = reservedQuantity,
-                }
-            );
+            materialDetails.Add(new MaterialDetailsDto
+            {
+                Material = m,
+                UnitOfMeasure = mapper.Map<UnitOfMeasureDto>(units.FirstOrDefault(md => md.MaterialId == m.Id)?.UoM),
+            }.WithStock(stock.GetValueOrDefault(m.Id, StoreStockLevel.None)));
         }
 
         var result = new Paginateable<IEnumerable<MaterialDetailsDto>>
@@ -783,9 +749,9 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 g.Key.Code,
                 g.Key.Kind,
                 g.Key.MaterialCategoryId,
-                TotalAvailableQuantity = g.Sum(x => x.Quantity),
             })
             .ToListAsync();
+        var stores = await query.Select(s => s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId).Distinct().ToListAsync();
 
         if (raw.Count == 0)
             return Result.Success(new List<MaterialDetailsDto>());
@@ -798,16 +764,11 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .Where(md => md.DepartmentId == departmentId && materialIds.Contains(md.MaterialId))
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
-        var reservedQuery = context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
-            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId) && r.DeletedAt == null);
-
-        if (departmentId.HasValue)
-        {
-            reservedQuery = reservedQuery.Where(r => r.Warehouse.DepartmentId == departmentId);
-        }
-
-        var reservedQuantities = await ReservationTotals.ByMaterialAsync(reservedQuery, context.Database.IsNpgsql());
+        // Each store measured by the store-stock rule in its department's unit, then added up.
+        var stock = new Dictionary<Guid, StoreStockLevel>();
+        foreach (var store in stores)
+            foreach (var (id, level) in await StoreStock.MeasureInStore(context, store, materialIds))
+                stock[id] = stock.GetValueOrDefault(id, StoreStockLevel.None).Plus(level);
 
         var result = raw.Select(r => new MaterialDetailsDto
             {
@@ -822,9 +783,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                         : null,
                 },
                 UnitOfMeasure = uoms.GetValueOrDefault(r.Id),
-                TotalAvailableQuantity = r.TotalAvailableQuantity,
-                ReservedQuantity = reservedQuantities.GetValueOrDefault(r.Id, 0),
-            })
+            }.WithStock(stock.GetValueOrDefault(r.Id, StoreStockLevel.None)))
             .ToList();
 
         return result;
@@ -1094,11 +1053,14 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             return MaterialErrors.NotFound(materialId);
         }
 
-        var totalStock = await context
-            .MaterialBatches.Where(b =>
-                b.MaterialId == materialId && b.Status == BatchStatus.Available
-            )
-            .SumAsync(b => b.TotalQuantity - b.ConsumedQuantity);
+        // Usable shelf stock in every store by the store-stock rule, in the lots' own unit.
+        var stores = await context.Warehouses.IgnoreQueryFilters().Where(w => w.DeletedAt == null
+            && (w.Type == WarehouseType.RawMaterialStorage || w.Type == WarehouseType.PackagedStorage)).Select(w => w.Id).ToListAsync();
+        var density = await MaterialDensity.Load(context, materialId);
+        decimal totalStock = 0;
+        foreach (var store in stores)
+            totalStock += (await StoreStock.Measure(context, store, new Dictionary<Guid, (string?, decimal?)> { [materialId] = (null, density) }))
+                .GetValueOrDefault(materialId, StoreStockLevel.None).Usable;
 
         return totalStock;
     }
@@ -1711,7 +1673,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
         foreach (var warehouse in warehouses)
         {
-            var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouse.Id);
+            // Free shelf stock by the store-stock rule (usable, not held for a batch).
+            var stockResult = await GetUsableShelfMaterialStockInWarehouse(materialId, warehouse.Id);
             if (stockResult.IsSuccess && stockResult.Value > 0)
             {
                 stockByWarehouse.Add(
@@ -1798,7 +1761,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
             foreach (var warehouseId in warehouseIds)
             {
-                var stockResult = await GetMassMaterialStockInWarehouse(materialId, warehouseId);
+                var stockResult = await GetUsableShelfMaterialStockInWarehouse(materialId, warehouseId);
                 if (stockResult.IsSuccess)
                 {
                     totalStock += stockResult.Value;
@@ -2725,40 +2688,21 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             );
             if (!stockResult.IsSuccess)
                 continue;
-            var grossStock = stockResult.Value.WarehouseStock;
-            var expiredQuantity = stockResult.Value.ExpiredQuantity;
-
-            // 2️⃣ Add reserved if this is a production warehouse
-            var reservedQty = await context
-                .MaterialBatchReservedQuantities.Where(r =>
-                    r.WarehouseId == warehouse.Id
-                    && r.MaterialBatch.MaterialId == materialId
-                    && r.DeletedAt == null
-                )
-                .SumAsync(r => r.Quantity);
-
-            var finalStock = grossStock;
-
-            if (warehouse.Type == WarehouseType.Production)
-            {
-                // Production stock = gross stock + reserved (because reservations are physically there)
-                finalStock += reservedQty;
-            }
-            else
-            {
-                // Other warehouses = gross stock - reserved (because those materials left the shelf)
-                finalStock -= reservedQty;
-            }
-
-            if (finalStock <= 0)
+            // Shelf stock by the store-stock rule. A hold stays in the store until it is issued, so it is never
+            // added to a production warehouse.
+            var stock = stockResult.Value;
+            if (stock.OnHandQuantity <= 0)
                 continue;
 
             warehouseStockList.Add(
                 new WarehouseStockDto
                 {
                     Warehouse = mapper.Map<WarehouseDto>(warehouse),
-                    StockQuantity = finalStock,
-                    ExpiredQuantity = expiredQuantity,
+                    StockQuantity = stock.OnHandQuantity,
+                    ExpiredQuantity = stock.ExpiredQuantity,
+                    UnavailableQuantity = stock.UnavailableQuantity,
+                    ReservedQuantity = stock.ReservedQuantity,
+                    FreeQuantity = stock.FreeQuantity,
                 }
             );
         }
@@ -3555,13 +3499,16 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         Guid? departmentId
     )
     {
-        var reservedMaterialQuery = context
-            .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
+        // Live holds only: a hold whose stock went back to the shelf (released) or out to the production floor
+        // (issued) is no longer reserved. The same holds every stock screen subtracts: see StoreStock.
+        var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
+        var shelves = context.ShelfMaterialBatches.IgnoreQueryFilters().Where(shelf => shelf.DeletedAt == null);
+        var reservedMaterialQuery = ProductionMaterialAllocator.UnissuedReservations(context).AsSplitQuery()
             .Where(r =>
                 r.MaterialBatch.MaterialId == materialId
-                && r.DeletedAt == null
-                && (!departmentId.HasValue || r.Warehouse.DepartmentId == departmentId.Value)
+                && (!departmentId.HasValue || (r.WarehouseLocationShelfId.HasValue
+                    ? r.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId.Value
+                    : r.Warehouse.DepartmentId == departmentId.Value))
             )
             .AsNoTracking();
 
@@ -3594,11 +3541,10 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 ManufacturingDate = r.MaterialBatch.ManufacturingDate,
                 ExpiryDate = r.MaterialBatch.ExpiryDate,
                 EffectiveExpiryDate = date,
+                // What is left of the lot on the shelves once its live holds are taken out.
                 BalanceQuantity =
-                    r.MaterialBatch.TotalQuantity
-                    - r.MaterialBatch.ConsumedQuantity
-                    - r.MaterialBatch.ReservedQuantities.Where(rq => rq.DeletedAt == null)
-                        .Sum(rq => rq.Quantity),
+                    shelves.Where(shelf => shelf.MaterialBatchId == r.MaterialBatchId).Sum(shelf => shelf.Quantity)
+                    - unissued.Where(hold => hold.MaterialBatchId == r.MaterialBatchId).Sum(hold => hold.Quantity),
                 MaterialBatchNumber = r.MaterialBatch.BatchNumber,
             })
             .ToListAsync();

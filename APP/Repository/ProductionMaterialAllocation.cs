@@ -14,7 +14,11 @@ internal sealed record ProductionMaterialAllocationPlan(List<ProductionMaterialA
 internal static class ProductionMaterialAllocator
 {
     internal static IQueryable<MaterialBatchReservedQuantity> UnissuedReservations(ApplicationDbContext context) =>
+        // A live hold: not deleted, not released back to the shelf, not held for a cancelled batch, and not yet issued
+        // to the production floor. Every stock screen and the allocator use this one definition (see StoreStock).
         context.MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(item => item.DeletedAt == null && item.ReleasedAt == null
+            && !context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Any(batch => batch.Id == item.ProductionScheduleProductId && batch.Cancelled)
             && (!context.RequisitionItems.IgnoreQueryFilters().Any(line => line.Requisition.ProductionScheduleProductId == item.ProductionScheduleProductId
                 && line.Requisition.RequisitionType == DOMAIN.Entities.Requisitions.RequisitionType.Stock
                 && line.MaterialId == item.MaterialBatch.MaterialId && (line.Status == DOMAIN.Entities.Requisitions.RequestStatus.Completed

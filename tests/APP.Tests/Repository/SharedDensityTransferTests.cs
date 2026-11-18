@@ -192,4 +192,38 @@ public sealed class SharedDensityTransferTests
         var row = Assert.Single(result.Value.Data);
         Assert.Equal(100, row.TotalAvailableQuantity); Assert.Equal(30, row.ReservedQuantity);
     }
+
+    [Fact]
+    public async Task Store_stock_counts_live_holds_only_and_never_more_than_the_shelf()
+    {
+        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
+        f.Lot.UoM.Symbol = "kg"; f.Lot.ExpiryDate = DateTime.UtcNow.AddYears(1); f.Shelf.Quantity = 100; f.Shelf.UoMId = f.Lot.UoMId;
+        MaterialBatchReservedQuantity Hold(decimal quantity, Guid batch, bool shelf = true, DateTime? released = null) => new()
+        {
+            Id = Guid.NewGuid(), MaterialBatchId = f.Lot.Id, WarehouseId = f.Production.Id, UoMId = f.Lot.UoMId, Quantity = quantity,
+            ProductionScheduleProductId = batch, ReleasedAt = released, WarehouseLocationShelfId = shelf ? f.Shelf.WarehouseLocationShelfId : null,
+        };
+        var cancelled = new DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct { Id = Guid.NewGuid(), Cancelled = true, ProductId = f.Batch.ProductId, ProductionScheduleId = f.Batch.ProductionScheduleId };
+        db.Add(cancelled);
+        db.MaterialBatchReservedQuantities.AddRange(
+            Hold(30, f.Batch.Id),                                 // live, on the shelf
+            Hold(50, f.Batch.Id, released: DateTime.UtcNow),      // released by Unstart: not reserved
+            Hold(40, cancelled.Id),                               // cancelled batch: not reserved
+            Hold(20, f.Batch.Id, shelf: false));                  // older hold with no shelf: still on the lot
+        await db.SaveChangesAsync();
+        var units = new Dictionary<Guid, (string?, decimal?)> { [f.Lot.MaterialId] = ("kg", null) };
+
+        var level = (await StoreStock.Measure(db, f.Storage.Id, units))[f.Lot.MaterialId];
+        Assert.Equal(new StoreStockLevel(100, 0, 0, 100, 50, 50), level);
+
+        // Holds larger than the shelf (stock already left it) never push free stock below zero.
+        db.MaterialBatchReservedQuantities.Add(Hold(500, f.Batch.Id)); await db.SaveChangesAsync();
+        Assert.Equal(new StoreStockLevel(100, 0, 0, 100, 100, 0), (await StoreStock.Measure(db, f.Storage.Id, units))[f.Lot.MaterialId]);
+
+        // Expired and unreleased lots are on hand but never usable or free.
+        f.Lot.ExpiryDate = DateTime.UtcNow.AddDays(-1); f.Lot.RetestDate = null; await db.SaveChangesAsync();
+        Assert.Equal(new StoreStockLevel(100, 100, 0, 0, 0, 0), (await StoreStock.Measure(db, f.Storage.Id, units))[f.Lot.MaterialId]);
+        f.Lot.ExpiryDate = DateTime.UtcNow.AddYears(1); f.Lot.Status = BatchStatus.Quarantine; await db.SaveChangesAsync();
+        Assert.Equal(new StoreStockLevel(100, 0, 100, 0, 0, 0), (await StoreStock.Measure(db, f.Storage.Id, units))[f.Lot.MaterialId]);
+    }
 }

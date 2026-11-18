@@ -1290,17 +1290,9 @@ public partial class ProductionScheduleRepository(
         );
         materialIds = materialIds.Distinct().ToList();
 
-        var stockLevels = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .Where(s =>
-                materialIds.Contains(s.MaterialBatch.MaterialId)
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouse.Id
-                && !s.DeletedAt.HasValue && s.MaterialBatch.DeletedAt == null
-                && s.MaterialBatch.Status == BatchStatus.Available
-            )
-            .WhereMaterialDate(s => s.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
-            .ToTotalsByAsync(s => s.MaterialBatch.MaterialId, s => s.Quantity, context.Database.IsNpgsql());
+        // Usable stock and live holds by the store-stock rule, in the department's unit (see StoreStock).
+        var storeStock = await StoreStock.MeasureInStore(context, warehouse.Id, materialIds);
+        var stockLevels = storeStock.ToDictionary(entry => entry.Key, entry => entry.Value.Usable);
 
         var materialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -1324,13 +1316,7 @@ public partial class ProductionScheduleRepository(
             )
             .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
-        var totalReservedQuantities = await context
-            .MaterialBatchReservedQuantities.Where(r =>
-                materialIds.Contains(r.MaterialBatch.MaterialId)
-                && r.WarehouseId == productionWarehouse.Id
-                && r.DeletedAt == null
-            )
-            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
+        var totalReservedQuantities = storeStock.ToDictionary(entry => entry.Key, entry => entry.Value.Held);
 
         var consumedQuantities = await context
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null).Where(r =>
@@ -1660,15 +1646,9 @@ public partial class ProductionScheduleRepository(
         );
         materialIds = materialIds.Distinct().ToList();
 
-        var stockLevels = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .Where(s =>
-                materialIds.Contains(s.MaterialBatch.MaterialId)
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouse.Id
-                && !s.DeletedAt.HasValue
-            )
-            .ToTotalsByAsync(s => s.MaterialBatch.MaterialId, s => s.Quantity, context.Database.IsNpgsql());
+        // Usable stock and live holds by the store-stock rule, in the department's unit (see StoreStock).
+        var storeStock = await StoreStock.MeasureInStore(context, warehouse.Id, materialIds);
+        var stockLevels = storeStock.ToDictionary(entry => entry.Key, entry => entry.Value.Usable);
 
         var materialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
@@ -1691,13 +1671,7 @@ public partial class ProductionScheduleRepository(
             )
             .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
 
-        var totalReservedQuantities = await context
-            .MaterialBatchReservedQuantities.Where(r =>
-                materialIds.Contains(r.MaterialBatch.MaterialId)
-                && r.WarehouseId == productionWarehouse.Id
-                && r.DeletedAt == null
-            )
-            .ToTotalsByAsync(r => r.MaterialBatch.MaterialId, r => r.Quantity, context.Database.IsNpgsql());
+        var totalReservedQuantities = storeStock.ToDictionary(entry => entry.Key, entry => entry.Value.Held);
 
         var consumedQuantities = await context
             .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null).Where(r =>
@@ -4930,35 +4904,6 @@ public partial class ProductionScheduleRepository(
             .Concat(product.Packages.Select(p => p.MaterialId))
             .ToList();
 
-        var rawStockRows = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .Where(s =>
-                materialIds.Contains(s.MaterialBatch.MaterialId)
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == rawWarehouse.Id
-                && !s.DeletedAt.HasValue
-            )
-            .SelectMaterialDate(s => s.MaterialBatch, (s, date) => new
-            {
-                s.MaterialBatch.MaterialId,
-                s.Quantity,
-                ExpiryDate = date,
-            })
-            .ToListAsync();
-
-        var rawStockLevels = rawStockRows
-            .GroupBy(r => r.MaterialId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
-
-        var rawExpiredStockLevels = rawStockRows
-            .Where(r =>
-                r.ExpiryDate.HasValue
-                && r.ExpiryDate.Value != DateTime.MinValue
-                && r.ExpiryDate.Value <= DateTime.UtcNow
-            )
-            .GroupBy(r => r.MaterialId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
-
         var rawMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
@@ -4975,16 +4920,9 @@ public partial class ProductionScheduleRepository(
             )
             .ToDictionaryAsync(k => k.MaterialId, v => v);
 
-        var rawTotalReservedQuantities = context
-            .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
-            .Where(r =>
-                rawMaterialDepartments.Keys.Contains(r.MaterialBatch.MaterialId)
-                && r.WarehouseId == productionWarehouse.Id
-                && r.DeletedAt == null
-            )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+        // Free stock by the allocator's rule, in the department's unit: see StoreStock.
+        var rawStock = await StoreStock.Measure(context, rawWarehouse.Id, rawMaterialDepartments.ToDictionary(
+            entry => entry.Key, entry => ((string?)entry.Value.UoM?.Symbol, MaterialDensity.Verified(entry.Value))));
 
         var forecastQuantityByMaterial = new Dictionary<Guid, decimal>();
         foreach (var item in activeBoM.BillOfMaterial.Items.Where(item => rawMaterialDepartments.ContainsKey(item.MaterialId)))
@@ -5003,7 +4941,7 @@ public partial class ProductionScheduleRepository(
             .BillOfMaterial.Items.Where(i => rawMaterialDepartments.ContainsKey(i.MaterialId))
             .Select(item =>
             {
-                var quantityOnHand = rawStockLevels.GetValueOrDefault(item.MaterialId, 0);
+                var stock = rawStock.GetValueOrDefault(item.MaterialId, StoreStockLevel.None);
 
                 var quantityNeeded = forecastQuantityByMaterial.GetValueOrDefault(item.MaterialId);
 
@@ -5011,11 +4949,12 @@ public partial class ProductionScheduleRepository(
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
-                    QuantityOnHand = quantityOnHand,
-                    ExpiredQuantity = rawExpiredStockLevels.GetValueOrDefault(item.MaterialId, 0),
-                    ReservedQuantity = rawTotalReservedQuantities.GetValueOrDefault(
-                        item.MaterialId
-                    ),
+                    QuantityOnHand = stock.OnHand,
+                    ExpiredQuantity = stock.Expired,
+                    UnavailableQuantity = stock.Unavailable,
+                    UsableQuantity = stock.Usable,
+                    ReservedQuantity = stock.Held,
+                    FreeQuantity = stock.Free,
                     UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[item.MaterialId].UoM),
                 };
             })
@@ -5030,35 +4969,6 @@ public partial class ProductionScheduleRepository(
                 "No packing material warehouse is associated with current user"
             );
 
-        var packingStockRows = await context
-            .ShelfMaterialBatches.IgnoreQueryFilters()
-            .Where(s =>
-                materialIds.Contains(s.MaterialBatch.MaterialId)
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == packingWarehouse.Id
-                && !s.DeletedAt.HasValue
-            )
-            .SelectMaterialDate(s => s.MaterialBatch, (s, date) => new
-            {
-                s.MaterialBatch.MaterialId,
-                s.Quantity,
-                ExpiryDate = date,
-            })
-            .ToListAsync();
-
-        var packingStockLevels = packingStockRows
-            .GroupBy(r => r.MaterialId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
-
-        var packingExpiredStockLevels = packingStockRows
-            .Where(r =>
-                r.ExpiryDate.HasValue
-                && r.ExpiryDate.Value != DateTime.MinValue
-                && r.ExpiryDate.Value <= DateTime.UtcNow
-            )
-            .GroupBy(r => r.MaterialId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
-
         var packageMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
@@ -5070,16 +4980,8 @@ public partial class ProductionScheduleRepository(
             )
             .ToDictionaryAsync(k => k.MaterialId, v => v);
 
-        var packingTotalReservedQuantities = context
-            .MaterialBatchReservedQuantities.AsSplitQuery()
-            .IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
-            .Where(r =>
-                packageMaterialDepartments.Keys.Contains(r.MaterialBatch.MaterialId)
-                && r.WarehouseId == productionWarehouse.Id
-                && r.DeletedAt == null
-            )
-            .GroupBy(r => r.MaterialBatch.MaterialId)
-            .ToDictionary(g => g.Key, g => g.Sum(r => r.Quantity));
+        var packingStock = await StoreStock.Measure(context, packingWarehouse.Id, packageMaterialDepartments.ToDictionary(
+            entry => entry.Key, entry => ((string?)entry.Value.UoM?.Symbol, (decimal?)null)));
 
         var packageMaterialDetails = ProductPackagingSelection.ForStyle(product.Packages, productPackingId)
             .Where(p =>
@@ -5089,7 +4991,7 @@ public partial class ProductionScheduleRepository(
             )
             .Select(item =>
             {
-                var quantityOnHand = packingStockLevels.GetValueOrDefault(item.MaterialId, 0);
+                var stock = packingStock.GetValueOrDefault(item.MaterialId, StoreStockLevel.None);
                 var quantityNeeded =
                     batchSize == BatchSize.Full
                         ? item.PrescribedQuantity + item.Loose
@@ -5099,15 +5001,12 @@ public partial class ProductionScheduleRepository(
                 {
                     Material = mapper.Map<MaterialDto>(item.Material),
                     QuantityNeeded = quantityNeeded * numberOfBatches,
-                    QuantityOnHand = quantityOnHand,
-                    ExpiredQuantity = packingExpiredStockLevels.GetValueOrDefault(
-                        item.MaterialId,
-                        0
-                    ),
-                    ReservedQuantity = packingTotalReservedQuantities.GetValueOrDefault(
-                        item.MaterialId,
-                        0
-                    ),
+                    QuantityOnHand = stock.OnHand,
+                    ExpiredQuantity = stock.Expired,
+                    UnavailableQuantity = stock.Unavailable,
+                    UsableQuantity = stock.Usable,
+                    ReservedQuantity = stock.Held,
+                    FreeQuantity = stock.Free,
                     UoM = mapper.Map<UnitOfMeasureDto>(
                         packageMaterialDepartments[item.MaterialId].UoM
                     ),
