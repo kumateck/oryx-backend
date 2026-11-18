@@ -7,6 +7,7 @@ using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Permissions;
+using DOMAIN.Entities.Products.Production;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Warehouses;
@@ -172,12 +173,12 @@ public class BomSubstituteChoiceTests
         var substitute = await AddSubstitute(fixture, 500_000, 200_000);
         Assert.True((await ProductionMaterialRepairs.Initialize(fixture.Harness.Db, fixture.Batch.Id)).IsSuccess);
         var requisition = await Requisition(fixture);
-        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute);
+        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute, PermissionKeys.CanViewRawMaterialRequisitions);
         await fixture.Harness.Db.SaveChangesAsync();
         fixture.Harness.Db.ChangeTracker.Clear();
         var service = new StockRequisitionMaterialChoiceService(fixture.Harness.Db, fixture.Mapper);
 
-        var line = Assert.Single((await service.Options(requisition.Id)).Value);
+        var line = Assert.Single((await service.Options(requisition.Id, fixture.Actor.Id)).Value);
         Assert.Equal(fixture.Lot.MaterialId, line.CurrentMaterialId);
         Assert.True(line.CanChange);
         var dry = Assert.Single(line.Options, option => !option.IsMain);
@@ -232,13 +233,13 @@ public class BomSubstituteChoiceTests
         var substitute = await AddSubstitute(fixture, 500_000, 200_000);
         Assert.True((await ProductionMaterialRepairs.Initialize(fixture.Harness.Db, fixture.Batch.Id)).IsSuccess);
         var requisition = await Requisition(fixture);
-        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute);
+        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute, PermissionKeys.CanViewRawMaterialRequisitions);
         fixture.Harness.Db.StockRequisitionIssues.Add(new() { Id = Guid.NewGuid(), RequisitionId = requisition.Id, IssuedById = fixture.Actor.Id, IssuedAt = DateTime.UtcNow });
         await fixture.Harness.Db.SaveChangesAsync();
         fixture.Harness.Db.ChangeTracker.Clear();
         var service = new StockRequisitionMaterialChoiceService(fixture.Harness.Db, fixture.Mapper);
 
-        Assert.False(Assert.Single((await service.Options(requisition.Id)).Value).CanChange);
+        Assert.False(Assert.Single((await service.Options(requisition.Id, fixture.Actor.Id)).Value).CanChange);
         var refused = await service.Choose(requisition.Id,
             new() { SourceMaterialId = fixture.Lot.MaterialId, MaterialId = substitute.MaterialId, Revision = 1, Reason = "Late" }, fixture.Actor.Id);
 
@@ -254,7 +255,7 @@ public class BomSubstituteChoiceTests
         var substitute = await AddSubstitute(fixture, 150_000, 200_000);
         Assert.True((await ProductionMaterialRepairs.Initialize(fixture.Harness.Db, fixture.Batch.Id)).IsSuccess);
         var requisition = await Requisition(fixture);
-        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute);
+        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute, PermissionKeys.CanViewRawMaterialRequisitions);
         await fixture.Harness.Db.SaveChangesAsync();
         fixture.Harness.Db.ChangeTracker.Clear();
 
@@ -268,14 +269,84 @@ public class BomSubstituteChoiceTests
     [Fact]
     public void Material_option_endpoints_name_their_permission()
     {
-        static string Policy(string action)
+        static string[] Keys(string action)
         {
             var method = typeof(RequisitionController).GetMethod(action)!;
             Assert.Empty(method.GetCustomAttributes<AllowAnonymousAttribute>());
-            return Assert.Single(method.GetCustomAttributes<AuthorizeAttribute>()).Policy!;
+            return Assert.Single(method.GetCustomAttributes<API.Authorization.AnyPermissionAttribute>()).Keys.Order().ToArray();
         }
-        Assert.Equal(PermissionKeys.CanViewRawMaterialRequisitions, Policy(nameof(RequisitionController.GetMaterialOptions)));
-        Assert.Equal(PermissionKeys.CanChooseRawMaterialRequisitionSubstitute, Policy(nameof(RequisitionController.ChooseMaterialOption)));
+        // Raw and packaging each keep their own key; the service checks the one for the requisition's kind.
+        Assert.Equal([PermissionKeys.CanViewPackagingMaterialRequisitions, PermissionKeys.CanViewRawMaterialRequisitions], Keys(nameof(RequisitionController.GetMaterialOptions)));
+        Assert.Equal([PermissionKeys.CanChoosePackagingMaterialRequisitionSubstitute, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute], Keys(nameof(RequisitionController.ChooseMaterialOption)));
         Assert.Single(PermissionUtils.GeneratePermissions().Where(item => item.Key == PermissionKeys.CanChooseRawMaterialRequisitionSubstitute));
+        Assert.Single(PermissionUtils.GeneratePermissions().Where(item => item.Key == PermissionKeys.CanChoosePackagingMaterialRequisitionSubstitute));
+    }
+
+    /// <summary>A packing line (main bottle) with one substitute bottle, both on a shelf of the department's packing store.</summary>
+    private static async Task<(MaterialBatch Main, MaterialBatch Substitute, Warehouse Store)> Packaging(ScheduleStockFixture fixture)
+    {
+        var db = fixture.Harness.Db;
+        var store = await db.Warehouses.IgnoreQueryFilters().SingleAsync(item => item.Type == WarehouseType.PackagedStorage);
+        var shelf = new WarehouseLocationShelf { Id = Guid.NewGuid(), Name = "P1", WarehouseLocationRack = new()
+            { Id = Guid.NewGuid(), Name = "Rack P", WarehouseLocation = new() { Id = Guid.NewGuid(), Name = "Packing room", WarehouseId = store.Id } } };
+        db.WarehouseLocationShelves.Add(shelf);
+        async Task<MaterialBatch> Bottle(string number, string name)
+        {
+            var lot = await fixture.Harness.SeedMaterialBatch(number, BatchStatus.Available);
+            lot.Material.Name = name; lot.Material.Kind = MaterialKind.Package; lot.UoM.Symbol = "pcs"; lot.ExpiryDate = DateTime.UtcNow.AddYears(2);
+            db.MaterialDepartments.Add(new() { Id = Guid.NewGuid(), MaterialId = lot.MaterialId, DepartmentId = fixture.Department.Id, UoMId = lot.UoMId });
+            db.ShelfMaterialBatches.Add(new ShelfMaterialBatch { Id = Guid.NewGuid(), MaterialBatchId = lot.Id, Quantity = 5_000, UoMId = lot.UoMId, WarehouseLocationShelfId = shelf.Id });
+            return lot;
+        }
+        var main = await Bottle("PM-MAIN", "Amber bottle 100 ml");
+        var substitute = await Bottle("PM-ALT", "Clear bottle 100 ml");
+        var style = new DOMAIN.Entities.Products.ProductPacking { Id = Guid.NewGuid(), ProductId = fixture.Batch.ProductId, Name = "Bottle pack" };
+        db.ProductPackings.Add(style);
+        db.ProductPackages.Add(new DOMAIN.Entities.Products.ProductPackage { Id = Guid.NewGuid(), ProductId = fixture.Batch.ProductId, ProductPackingId = style.Id,
+            MaterialId = main.MaterialId, BaseQuantity = 1, PrescribedQuantity = 1_000,
+            Substitutes = [new() { Id = Guid.NewGuid(), SubstituteMaterialId = substitute.MaterialId }] });
+        (await db.ProductionScheduleProducts.IgnoreQueryFilters().SingleAsync(item => item.Id == fixture.Batch.Id)).ProductPackingId = style.Id;
+        await db.SaveChangesAsync();
+        return (main, substitute, store);
+    }
+
+    [Fact]
+    public async Task A_packaging_substitute_is_offered_one_for_one_and_issued_only_with_the_packaging_key()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var (main, substitute, store) = await Packaging(fixture);
+        var db = fixture.Harness.Db;
+        var source = await ProductionMaterialSources.Load(db, fixture.Batch.Id, MaterialKind.Package);
+        Assert.True(source.IsSuccess, source.IsFailure ? source.Error.Description : null);
+        var requirement = Assert.Single(source.Value.Requirements);
+        Assert.Equal(main.MaterialId, requirement.MaterialId);
+        // The substitute bottle replaces the main one pack for pack.
+        Assert.Equal([(main.MaterialId, 1_000m), (substitute.MaterialId, 1_000m)], requirement.Options!.Select(option => (option.MaterialId, option.Quantity)).ToList());
+        db.ProductionMaterialConfigurations.Add(new ProductionMaterialConfiguration { Id = Guid.NewGuid(), ProductionScheduleProductId = fixture.Batch.Id,
+            Kind = MaterialKind.Package, DepartmentId = fixture.Department.Id, StorageWarehouseId = store.Id, ProductionWarehouseId = fixture.Production.Id,
+            RequirementsJson = ProductionMaterialSources.Json(source.Value.Requirements), SourceHash = source.Value.SourceHash, Revision = 1 });
+        var requisition = new Requisition { Id = Guid.NewGuid(), Code = "PM-1", RequisitionType = RequisitionType.Stock, DepartmentId = fixture.Department.Id,
+            RequestedById = fixture.Creator.Id, ProductionScheduleProductId = fixture.Batch.Id, Approved = true,
+            Items = [new() { Id = Guid.NewGuid(), MaterialId = main.MaterialId, UoMId = main.UoMId, Quantity = 1_000 }] };
+        db.Requisitions.Add(requisition);
+        // The raw-material key does not cover packaging.
+        Grant(fixture, PermissionKeys.CanChooseRawMaterialRequisitionSubstitute, PermissionKeys.CanViewPackagingMaterialRequisitions);
+        await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+        var service = new StockRequisitionMaterialChoiceService(db, fixture.Mapper);
+        var line = Assert.Single((await service.Options(requisition.Id, fixture.Actor.Id)).Value);
+        Assert.Equal((5_000m, true), (Assert.Single(line.Options, option => !option.IsMain).Available, Assert.Single(line.Options, option => !option.IsMain).Covers));
+        ChooseStockRequisitionMaterialRequest Request() => new() { SourceMaterialId = main.MaterialId, MaterialId = substitute.MaterialId,
+            Revision = line.Revision, Reason = "Amber bottles are short; clear bottles approved for this market." };
+        Assert.Equal(ErrorType.Forbidden, (await service.Choose(requisition.Id, Request(), fixture.Actor.Id)).Error.Type);
+
+        Grant(fixture, PermissionKeys.CanChoosePackagingMaterialRequisitionSubstitute);
+        await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+        var chosen = await service.Choose(requisition.Id, Request(), fixture.Actor.Id);
+        Assert.True(chosen.IsSuccess, chosen.IsFailure ? chosen.Error.Description : null);
+        var item = await db.RequisitionItems.AsNoTracking().SingleAsync(row => row.RequisitionId == requisition.Id);
+        Assert.Equal((substitute.MaterialId, 1_000m), (item.MaterialId, item.Quantity));
+        var hold = Assert.Single(await Holds(fixture), row => row.MaterialBatch.MaterialId == substitute.MaterialId || row.MaterialBatch.MaterialId == main.MaterialId);
+        Assert.Equal((substitute.MaterialId, 1_000m), (hold.MaterialBatch.MaterialId, hold.Quantity));
     }
 }

@@ -1,3 +1,4 @@
+using APP.Utils;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
 using SHARED;
@@ -8,46 +9,66 @@ namespace APP.Repository;
 
 public partial class MaterialRepository
 {
-    private async Task<Result<Guid?>> ExpiryDepartment(Guid userId)
+    /// <summary>Whose stock an expiry report covers: one department's warehouses, or every department's when the account may see them all.</summary>
+    private readonly record struct ExpiryScope(Guid? DepartmentId, bool AllDepartments)
+    {
+        public bool CurrentStock => DepartmentId.HasValue || AllDepartments;
+        public bool Covers(Warehouse warehouse) => AllDepartments || warehouse.DepartmentId == DepartmentId;
+    }
+
+    private async Task<Result<ExpiryScope>> ExpiryDepartment(Guid userId)
     {
         // Read the current account, not a client filter or a potentially stale token's department.
         var account = await context.Users.IgnoreQueryFilters().AsNoTracking()
             .Where(user => user.Id == userId && user.DeletedAt == null && !user.IsDisabled)
             .Select(user => new { user.DepartmentId }).SingleOrDefaultAsync();
-        return account == null ? Error.Forbidden("Expiry.AccountUnavailable", "An active account is required to read expiry records.")
-            : Result.Success<Guid?>(account.DepartmentId);
+        if (account == null) return Error.Forbidden("Expiry.AccountUnavailable", "An active account is required to read expiry records.");
+        // Quality control follows expiring stock wherever it sits, so this key widens the report to every department's warehouses.
+        var all = await UserHasPermission(userId, PermissionKeys.CanViewExpiryAcrossDepartments);
+        return new ExpiryScope(all ? null : account.DepartmentId, all);
     }
 
-    private IQueryable<MaterialBatch> ScopeExpiryRecords(IQueryable<MaterialBatch> query, Guid? departmentId, MaterialFilter filter)
+    private async Task<bool> UserHasPermission(Guid userId, string key)
     {
-        if (!departmentId.HasValue) return query;
+        var roles = context.UserRoles.IgnoreQueryFilters().Where(role => role.UserId == userId).Select(role => role.RoleId);
+        var claims = context.RoleClaims.IgnoreQueryFilters()
+            .Where(claim => roles.Contains(claim.RoleId) && claim.ClaimType == AppConstants.Permission && claim.ClaimValue == key)
+            .Select(claim => claim.Id);
+        return await context.PermissionTypes.AnyAsync(permission => claims.Contains(permission.RoleClaimId) && permission.Key == key);
+    }
+
+    private IQueryable<MaterialBatch> ScopeExpiryRecords(IQueryable<MaterialBatch> query, ExpiryScope scope, MaterialFilter filter)
+    {
+        if (!scope.CurrentStock) return query;
+        var departmentId = scope.DepartmentId;
+        var all = scope.AllDepartments;
         var warehouseIds = filter.WarehouseIds ?? [];
         var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
         return query.Where(batch => batch.ShelfMaterialBatches.Any(item => item.DeletedAt == null && item.Quantity > 0
                 && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DeletedAt == null
-                && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId
+                && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId != null && (all || item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId)
                 && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Department != null
                 && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Department.DeletedAt == null
                 && (warehouseIds.Count == 0 || warehouseIds.Contains(item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId)))
             || batch.ReservedQuantities.Any(item => !unissued.Any(hold => hold.Id == item.Id) && item.DeletedAt == null && item.ReleasedAt == null && item.Quantity > 0
-                && item.Warehouse.DeletedAt == null && item.Warehouse.DepartmentId == departmentId
+                && item.Warehouse.DeletedAt == null && item.Warehouse.DepartmentId != null && (all || item.Warehouse.DepartmentId == departmentId)
                 && item.Warehouse.Department != null && item.Warehouse.Department.DeletedAt == null
                 && (warehouseIds.Count == 0 || warehouseIds.Contains(item.WarehouseId))));
     }
 
-    private MaterialBatchDto ExpiryReportRow(MaterialBatch batch, Guid? departmentId)
+    private MaterialBatchDto ExpiryReportRow(MaterialBatch batch, ExpiryScope scope)
     {
         var dto = mapper.Map<MaterialBatchDto>(batch);
-        if (departmentId.HasValue)
+        if (scope.CurrentStock)
         {
             var shelves = batch.ShelfMaterialBatches.Where(item => item.DeletedAt == null && item.Quantity > 0
                 && item.WarehouseLocationShelf?.WarehouseLocationRack?.WarehouseLocation?.Warehouse is { DeletedAt: null } warehouse
-                && warehouse.DepartmentId == departmentId).Select(item => item.Id).ToHashSet();
+                && warehouse.DepartmentId != null && scope.Covers(warehouse)).Select(item => item.Id).ToHashSet();
             var reserved = batch.ReservedQuantities.Where(item => item.DeletedAt == null && item.ReleasedAt == null && item.Quantity > 0
-                && item.Warehouse is { DeletedAt: null } warehouse && warehouse.DepartmentId == departmentId).Select(item => item.Id).ToHashSet();
+                && item.Warehouse is { DeletedAt: null } warehouse && warehouse.DepartmentId != null && scope.Covers(warehouse)).Select(item => item.Id).ToHashSet();
             dto.Shelves = dto.Shelves.Where(item => shelves.Contains(item.Id)).ToList();
             dto.ReservedQuantities = dto.ReservedQuantities.Where(item => reserved.Contains(item.Id)).ToList();
-            // In a department report these are current stock positions, not the original global receipt.
+            // In a department (or all-departments) report these are current stock positions, not the original global receipt.
             dto.RemainingQuantity = dto.Shelves.Sum(item => item.Quantity);
             dto.ReservedQuantity = dto.ReservedQuantities.Sum(item => item.Quantity);
             dto.TotalQuantity = dto.RemainingQuantity + dto.ReservedQuantity;
@@ -58,7 +79,7 @@ public partial class MaterialRepository
             dto.SampledQuantity = 0;
         }
         dto.Locations = GetCurrentLocations(dto);
-        dto.StockDepartments = ExpiryStockDepartments(batch, departmentId);
+        dto.StockDepartments = ExpiryStockDepartments(batch, scope.DepartmentId);
         return dto;
     }
 

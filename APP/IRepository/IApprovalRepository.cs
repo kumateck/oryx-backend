@@ -61,5 +61,6 @@ public interface IApprovalRepository
     );
     Task CreateInitialApprovalsAsync(string modelType, Guid modelId, Guid? triggeringActorId = null);
     Task ProcessApprovalEscalations(Guid userId, Guid roleId);
-    Task<Result> TransferApprovalRights(TransferApprovalRequest request);
+    Task<Result> TransferApprovalRights(TransferApprovalRequest request, Guid actor);
+    Task<List<UserDto>> GetUsersOnApprovalRecord();
 }

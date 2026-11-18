@@ -1703,6 +1703,13 @@
   {
     "module": "Warehouse",
     "submodule": "Issue Stock Requisitions",
+    "key": "CanChoosePackagingMaterialRequisitionSubstitute",
+    "name": "Can Choose Packaging Material Requisition Substitute",
+    "description": "Allows the user to  choose packaging material requisition substitute."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
     "key": "CanViewPackagingMaterialRequisitions",
     "name": "Can View Packaging Material Requisitions",
     "description": "Allows the user to  view packaging material requisitions."
@@ -1776,6 +1783,20 @@
     "key": "CanViewAboutToExpireMaterials",
     "name": "Can View About To Expire Materials",
     "description": "Allows the user to  view about to expire materials."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Upcoming Batch Issues",
+    "key": "CanViewUpcomingBatchIssues",
+    "name": "Can View Upcoming Batch Issues",
+    "description": "Allows the user to  view upcoming batch issues."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Expired Materials",
+    "key": "CanViewExpiryAcrossDepartments",
+    "name": "Can View Expiry Across Departments",
+    "description": "Allows the user to  view expiry across departments."
   },
   {
     "module": "Warehouse",
@@ -2903,6 +2924,13 @@
     "key": "CanTransferApprovalRights",
     "name": "Can Transfer Approval Rights",
     "description": "Allows the user to  transfer approval rights."
+  },
+  {
+    "module": "IT Support",
+    "submodule": "Approval Rights Transfer",
+    "key": "CanTransferAnyApprovalRights",
+    "name": "Can Transfer Any Approval Rights",
+    "description": "Allows the user to  transfer any approval rights."
   },
   {
     "module": "Quality Assurance",

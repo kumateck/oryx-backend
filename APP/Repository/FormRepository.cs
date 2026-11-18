@@ -607,9 +607,8 @@ public class FormRepository(
                 return FormulaResponseRuntimeErrors.ConfigurationUnavailable;
         }
 
-        var staleFormula = await LegacyFormulaConfigurationReader.ValidateWrite(
-            context, response, formField, request.FormulaConfigurationHash);
-        if (staleFormula is not null) return staleFormula;
+        // Saving never refuses readings of a repaired formula: the field behaves as new, and the server calculates it with
+        // the repaired definition after the save. A missing or mismatched reading only leaves the result uncalculated.
 
         var formFieldRevisionId = await FormRevisionSelection.FieldIdAsync(context, revisionId, formField.Id);
         if (revisionId.HasValue && !formFieldRevisionId.HasValue)
@@ -653,7 +652,7 @@ public class FormRepository(
             // Write to the newest answer for the field: recalculation, submission and the worksheet all read that one.
             // Older duplicates (there is no unique index) must not swallow the readings.
             var existingFormResponse = response.FormResponses
-                .Where(fr => fr.FormFieldId == formField.Id)
+                .Where(fr => fr.FormFieldId == formField.Id && !fr.DeletedAt.HasValue)
                 .OrderByDescending(fr => fr.CreatedAt)
                 .FirstOrDefault();
             if (existingFormResponse != null)
@@ -1855,7 +1854,7 @@ public class FormRepository(
             .Include(r => r.FormField)
                 .ThenInclude(f => f.FormSection)
             .Include(f => f.CreatedBy)
-            .Where(fr => fr.Response.MaterialBatchId == materialBatchId)
+            .Where(fr => fr.Response.MaterialBatchId == materialBatchId && !fr.DeletedAt.HasValue)
             .ToListAsync();
 
         var result = mapper.Map<List<FormResponseDto>>(
@@ -1882,7 +1881,7 @@ public class FormRepository(
                     .ThenInclude(r => r.Options)
             .Include(r => r.FormField)
                 .ThenInclude(f => f.FormSection)
-            .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId);
+            .Where(fr => fr.Response.BatchManufacturingRecordId == batchManufacturingRecordId && !fr.DeletedAt.HasValue);
 
         if (productionActivityStepId.HasValue)
             query = query.Where(fr =>
@@ -1921,7 +1920,7 @@ public class FormRepository(
             .Include(r => r.FormField)
                 .ThenInclude(f => f.FormSection)
             .Include(f => f.CreatedBy)
-            .Where(fr => fr.ResponseId == materialSpec.ResponseId)
+            .Where(fr => fr.ResponseId == materialSpec.ResponseId && !fr.DeletedAt.HasValue)
             .ToListAsync();
 
         var result = mapper.Map<List<FormResponseDto>>(
@@ -1953,7 +1952,7 @@ public class FormRepository(
             .Include(r => r.FormField)
                 .ThenInclude(f => f.FormSection)
             .Include(f => f.CreatedBy)
-            .Where(fr => fr.ResponseId == productSpec.ResponseId)
+            .Where(fr => fr.ResponseId == productSpec.ResponseId && !fr.DeletedAt.HasValue)
             .ToListAsync();
 
         var result = mapper.Map<List<FormResponseDto>>(

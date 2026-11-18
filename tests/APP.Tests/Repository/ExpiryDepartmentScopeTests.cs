@@ -4,7 +4,12 @@ using AutoMapper;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
+using APP.Utils;
+using DOMAIN.Entities.Permissions;
+using DOMAIN.Entities.Roles;
 using DOMAIN.Entities.Users;
+using Microsoft.AspNetCore.Identity;
+using SHARED;
 using DOMAIN.Entities.Warehouses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,5 +95,45 @@ public class ExpiryDepartmentScopeTests
         stored.IsDisabled = true; await harness.Db.SaveChangesAsync();
         Assert.True((await Read(filter, actor.Id)).IsFailure);
         Assert.True((await Read(filter, Guid.NewGuid())).IsFailure);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Cross_department_key_shows_every_department_stock_but_never_empty_batches(bool soon)
+    {
+        using var harness = new QcWorksheetTestContext();
+        var qc = new Department { Id = Guid.NewGuid(), Name = "Quality control" };
+        var tablets = new Department { Id = Guid.NewGuid(), Name = "Tablet raw" };
+        var liquids = new Department { Id = Guid.NewGuid(), Name = "Liquids" };
+        var tabletStore = new Warehouse { Id = Guid.NewGuid(), Name = "Tablet store", Department = tablets };
+        var liquidStore = new Warehouse { Id = Guid.NewGuid(), Name = "Liquid store", Department = liquids };
+        var analyst = new User { Id = Guid.NewGuid(), UserName = "qc-analyst", Department = qc };
+        harness.Db.Users.Add(analyst);
+        var batch = await harness.SeedMaterialBatch("SPREAD", BatchStatus.Available);
+        batch.Material.Code = "xd-spread"; batch.ExpiryDate = DateTime.UtcNow.AddDays(soon ? 30 : -30); batch.TotalQuantity = 1000;
+        Shelf(harness, batch, tabletStore, 5); Shelf(harness, batch, liquidStore, 17);
+        var empty = await harness.SeedMaterialBatch("EMPTY", BatchStatus.Available);
+        empty.Material.Code = "xd-empty"; empty.ExpiryDate = batch.ExpiryDate; Shelf(harness, empty, tabletStore, 0);
+        StockReportTestPositions.MarkIssued(harness);
+        await harness.Db.SaveChangesAsync(); harness.Db.ChangeTracker.Clear();
+        using var mapping = MaterialValidityTests.Mapping(harness);
+        var repository = new MaterialRepository(harness.Db, mapping.GetRequiredService<IMapper>());
+        async Task<List<MaterialBatchDto>> Read() => (soon
+            ? await repository.GetAboutToExpireMaterialBatches(new MaterialFilter { SearchQuery = "xd" }, analyst.Id)
+            : await repository.GetExpiredMaterialBatches(new MaterialFilter { SearchQuery = "xd" }, analyst.Id)).Value.Data.ToList();
+        // Without the key, quality control's own department holds none of it, so nothing is listed.
+        Assert.Empty(await Read());
+        var role = new Role { Id = Guid.NewGuid(), Name = "QC analyst" }; harness.Db.Roles.Add(role);
+        harness.Db.UserRoles.Add(new IdentityUserRole<Guid> { RoleId = role.Id, UserId = analyst.Id });
+        var claim = new IdentityRoleClaim<Guid> { RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanViewExpiryAcrossDepartments };
+        harness.Db.RoleClaims.Add(claim); await harness.Db.SaveChangesAsync();
+        harness.Db.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim.Id, Key = claim.ClaimValue, Type = "View" });
+        await harness.Db.SaveChangesAsync(); harness.Db.ChangeTracker.Clear();
+        var row = Assert.Single(await Read());
+        Assert.Equal(batch.Id, row.Id);
+        Assert.Equal([liquids.Id, tablets.Id], row.StockDepartments.Select(item => item.Id));
+        Assert.Equal(22, row.RemainingQuantity);
+        Assert.Equal(2, row.Shelves.Count);
     }
 }
