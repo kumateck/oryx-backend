@@ -11,3 +11,5 @@ Permissions: new `CanEditRawMaterialDensity` / `CanEditPackagingMaterialDensity`
 Companion desktop branch: `codex/material-density-transfers`. Optional read fields expose shared density, physical source quantity and saved receiving quantities. The frontend must use the receiving quantity/unit for shelving and retain the existing request unit for issuing a transfer. Missing verified density refuses a cross-dimension transfer; quantities are never treated as interchangeable 1:1.
 
 Validation includes raw/packaging density deny/allow, L↔kg transfer/receipt totals and duplicate receipt, production reservation/issue snapshots, legacy density preservation, existing BOM conversion and real PostgreSQL migration/grant/audit and transfer concurrency checks. No pending EF model changes.
+
+This PR includes the extra-material availability fix from companion PR #1893 until that commit reaches the target branch. Extra-material issue uses requested units for validation, then deducts and audits the converted physical quantity in the lot unit. Integration regressions cover both raw and packaging extra-material issues after L/kg conversion.
