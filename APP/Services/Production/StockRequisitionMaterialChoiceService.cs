@@ -15,20 +15,31 @@ using SHARED;
 namespace APP.Services.Production;
 
 /// <summary>
-/// The store issuing a raw-material stock requisition decides which option of a BOM line (the main material or a
+/// The store issuing a raw or packaging stock requisition decides which option of a BOM line (the main material or a
 /// substitute, each with its own quantity) leaves the store. Only one option is ever issued for a line. Changing it moves
 /// the batch's reservation to the chosen material and rewrites the requisition line, before anything is issued.
 /// </summary>
 public sealed class StockRequisitionMaterialChoiceService(ApplicationDbContext db, IMapper mapper)
 {
     private sealed record Context(Requisition Requisition, ProductionMaterialConfiguration Configuration,
-        List<ProductionMaterialRequirement> Requirements, ProductionMaterialSource Source);
+        List<ProductionMaterialRequirement> Requirements, ProductionMaterialSource Source)
+    {
+        public MaterialKind Kind => Configuration.Kind;
+    }
 
-    public async Task<Result<List<StockRequisitionMaterialOptionsDto>>> Options(Guid requisitionId)
+    private static string ViewKey(MaterialKind kind) => kind == MaterialKind.Raw
+        ? PermissionKeys.CanViewRawMaterialRequisitions : PermissionKeys.CanViewPackagingMaterialRequisitions;
+    private static string ChooseKey(MaterialKind kind) => kind == MaterialKind.Raw
+        ? PermissionKeys.CanChooseRawMaterialRequisitionSubstitute : PermissionKeys.CanChoosePackagingMaterialRequisitionSubstitute;
+    private static WarehouseType Store(MaterialKind kind) => kind == MaterialKind.Raw ? WarehouseType.RawMaterialStorage : WarehouseType.PackagedStorage;
+
+    public async Task<Result<List<StockRequisitionMaterialOptionsDto>>> Options(Guid requisitionId, Guid actorId)
     {
         var loaded = await Load(requisitionId, tracked: false);
         if (loaded.IsFailure) return loaded.Error;
         if (loaded.Value is null) return new List<StockRequisitionMaterialOptionsDto>();
+        if (!(await CurrentPermissionSet.Load(db, actorId)).Contains(ViewKey(loaded.Value.Kind)))
+            return Error.Forbidden("Substitute.Permission", "You do not have permission to view this requisition's materials.");
         var (requisition, configuration, requirements, source) = loaded.Value;
         var locked = await LockReason(requisition);
         var ids = requirements.SelectMany(item => item.Options ?? []).Select(item => item.MaterialId)
@@ -77,19 +88,20 @@ public sealed class StockRequisitionMaterialChoiceService(ApplicationDbContext d
         if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Trim().Length > 500)
             return Error.Validation("Substitute.Reason", "Give the reason for issuing this material (up to 500 characters).");
         await using var transaction = await ProductionMaterialTransaction.Begin(db);
-        if (!(await CurrentPermissionSet.Load(db, actorId)).Contains(PermissionKeys.CanChooseRawMaterialRequisitionSubstitute))
-            return Error.Forbidden("Substitute.Permission", "You do not have permission to choose the material issued for a requisition.");
         var loaded = await Load(requisitionId, tracked: true);
         if (loaded.IsFailure) return loaded.Error;
-        if (loaded.Value is null) return Error.Validation("Substitute.NotConfigured", "This requisition's batch has no applied raw-material configuration.");
+        if (loaded.Value is null) return Error.Validation("Substitute.NotConfigured", "This requisition's batch has no applied material configuration.");
         var (requisition, configuration, requirements, source) = loaded.Value;
+        var kind = loaded.Value.Kind;
+        if (!(await CurrentPermissionSet.Load(db, actorId)).Contains(ChooseKey(kind)))
+            return Error.Forbidden("Substitute.Permission", "You do not have permission to choose the material issued for a requisition.");
 
         var store = await db.Users.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(user => user.Id == actorId && user.DeletedAt == null && !user.IsDisabled)
-            .SelectMany(user => user.Department.Warehouses.Where(warehouse => warehouse.Type == WarehouseType.RawMaterialStorage && warehouse.DeletedAt == null))
+            .SelectMany(user => user.Department.Warehouses.Where(warehouse => warehouse.Type == Store(kind) && warehouse.DeletedAt == null))
             .Select(warehouse => warehouse.Id).ToListAsync();
         if (!store.Contains(configuration.StorageWarehouseId))
-            return Error.Forbidden("Substitute.Store", "This requisition is issued from another store's raw-material warehouse.");
+            return Error.Forbidden("Substitute.Store", "This requisition is issued from another store's warehouse.");
         var locked = await LockReason(requisition);
         if (locked is not null) return Error.Conflict("Substitute.Locked", locked);
         if (configuration.Revision != request.Revision)
@@ -107,7 +119,7 @@ public sealed class StockRequisitionMaterialChoiceService(ApplicationDbContext d
             return Error.Conflict("Substitute.Requisition", "The requisition line no longer matches the batch's requirement. Reconcile the batch first.");
         var line = lines[0];
 
-        var before = await ProductionMaterialSources.Load(db, source.Batch.Id, MaterialKind.Raw);
+        var before = await ProductionMaterialSources.Load(db, source.Batch.Id, kind);
         var inSync = before.IsSuccess && before.Value.SourceHash == configuration.SourceHash;
         var own = await OwnReservations(requisition, tracked: true);
         var previous = own.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId).ToList();
@@ -145,7 +157,7 @@ public sealed class StockRequisitionMaterialChoiceService(ApplicationDbContext d
         // Keep the configuration current with the BOM when it was current before: the BOM read now selects the chosen option.
         if (inSync)
         {
-            var after = await ProductionMaterialSources.Load(db, source.Batch.Id, MaterialKind.Raw);
+            var after = await ProductionMaterialSources.Load(db, source.Batch.Id, kind);
             if (after.IsSuccess && ProductionMaterialSources.Json(after.Value.Requirements) == configuration.RequirementsJson)
             {
                 configuration.SourceHash = after.Value.SourceHash;
@@ -163,16 +175,20 @@ public sealed class StockRequisitionMaterialChoiceService(ApplicationDbContext d
         if (requisition is null) return RequisitionErrors.NotFound(requisitionId);
         if (requisition.RequisitionType != RequisitionType.Stock || requisition.ProductionScheduleProductId is null)
             return Error.Validation("Substitute.Requisition", "Only a production batch's stock requisition can change the material it issues.");
-        var configurations = db.ProductionMaterialConfigurations.Where(item => item.ProductionScheduleProductId == requisition.ProductionScheduleProductId
-            && item.Kind == MaterialKind.Raw);
-        var configuration = await (tracked ? configurations : configurations.AsNoTracking()).SingleOrDefaultAsync();
+        // The batch has a raw and a packaging configuration; the requisition's own lines say which one it issues.
+        var configurations = db.ProductionMaterialConfigurations.Where(item => item.ProductionScheduleProductId == requisition.ProductionScheduleProductId);
+        var requested = requisition.Items.Select(item => item.MaterialId).ToHashSet();
+        ProductionMaterialConfiguration configuration = null;
+        List<ProductionMaterialRequirement> requirements = null;
+        foreach (var candidate in await (tracked ? configurations : configurations.AsNoTracking()).OrderBy(item => item.Kind).ToListAsync())
+        {
+            var lines = ProductionMaterialSources.Requirements(candidate.RequirementsJson);
+            if (!lines.Any(item => requested.Contains(item.MaterialId))) continue;
+            configuration = candidate; requirements = lines; break;
+        }
         if (configuration is null) return Result.Success<Context>(null);
         var batch = await db.ProductionScheduleProducts.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .SingleAsync(item => item.Id == requisition.ProductionScheduleProductId);
-        var requirements = ProductionMaterialSources.Requirements(configuration.RequirementsJson);
-        // Only the requisition's own raw lines can be changed here.
-        var requested = requisition.Items.Select(item => item.MaterialId).ToHashSet();
-        if (!requirements.Any(item => requested.Contains(item.MaterialId))) return Result.Success<Context>(null);
         var source = new ProductionMaterialSource(batch, configuration.DepartmentId, configuration.StorageWarehouseId,
             configuration.ProductionWarehouseId, requirements, configuration.SourceHash, string.Empty, []);
         return new Context(requisition, configuration, requirements, source);

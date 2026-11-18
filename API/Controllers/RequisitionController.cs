@@ -161,12 +161,15 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// substitute with its own quantity), with each option's usable stock, earliest expiry and the batches it would use.
     /// </summary>
     [HttpGet("{requisitionId:guid}/material-options")]
-    [Authorize(PermissionKeys.CanViewRawMaterialRequisitions)]
+    // Raw and packaging requisitions each keep their own view key; the service checks the one for the requisition's kind.
+    [AnyPermission("CanViewPackagingMaterialRequisitions", "CanViewRawMaterialRequisitions")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<StockRequisitionMaterialOptionsDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMaterialOptions(Guid requisitionId, [FromServices] APP.Services.Production.StockRequisitionMaterialChoiceService service)
     {
-        var result = await service.Options(requisitionId);
+        var userId = (string)HttpContext.Items["Sub"];
+        if (userId == null) return TypedResults.Unauthorized();
+        var result = await service.Options(requisitionId, Guid.Parse(userId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
@@ -175,7 +178,8 @@ public class RequisitionController(IRequisitionRepository repository) : Controll
     /// material at its own quantity and the requisition line changes with it. The reason is recorded.
     /// </summary>
     [HttpPost("{requisitionId:guid}/material-options")]
-    [Authorize(PermissionKeys.CanChooseRawMaterialRequisitionSubstitute)]
+    // Raw and packaging substitutes each have their own key; the service checks the one for the requisition's kind.
+    [AnyPermission("CanChoosePackagingMaterialRequisitionSubstitute", "CanChooseRawMaterialRequisitionSubstitute")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
