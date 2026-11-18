@@ -12,25 +12,50 @@ internal static class ProductionMaterialSwapRules
 {
     internal static async Task<Result> Validate(ApplicationDbContext context, CreateSwapRequest request)
     {
-        if (!request.StockRequisitionId.HasValue) return Result.Success();
+        if (!request.StockRequisitionId.HasValue && !request.ProductionScheduleProductId.HasValue) return Result.Success();
+        if (request.StockRequisitionId.HasValue && request.ProductionScheduleProductId.HasValue)
+            return Error.Validation("Swap.Source", "Swap either a requisition's or a started batch's reserved stock, not both.");
         if (request.FirstWarehouseId == request.SecondWarehouseId)
             return Error.Validation("Swap.Warehouses", "Choose two different warehouses.");
-        var requisition = await context.Requisitions.IgnoreAutoIncludes().AsNoTracking().Include(item => item.Items)
-            .SingleOrDefaultAsync(item => item.Id == request.StockRequisitionId);
-        if (requisition?.RequisitionType != RequisitionType.Stock)
-            return Error.Validation("Swap.Requisition", "The stock requisition was not found.");
-        if (requisition.Status == RequestStatus.Completed || requisition.Items.Any(item => item.Status == RequestStatus.Completed || item.QuantityReceived > 0)
-            || await context.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(item => item.RequisitionId == requisition.Id)
-            || await context.BinCardInformation.IgnoreQueryFilters().AnyAsync(item => item.RequisitionId == requisition.Id && item.QuantityIssued > 0)
-            || await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == requisition.ProductionScheduleProductId
-                && item.DeletedAt != null && item.ReleasedAt == null && requisition.Items.Select(line => line.MaterialId).Contains(item.MaterialBatch.MaterialId)))
-            return Error.Conflict("Swap.Issued", "Issued or consumed material cannot be retargeted by a stock swap.");
+        Guid batchId;
+        // The materials and units the swap may retarget: the requisition's lines, or what is reserved for the batch.
+        List<(Guid MaterialId, Guid? UoMId)> lines;
+        if (request.StockRequisitionId.HasValue)
+        {
+            var requisition = await context.Requisitions.IgnoreAutoIncludes().AsNoTracking().Include(item => item.Items)
+                .SingleOrDefaultAsync(item => item.Id == request.StockRequisitionId);
+            if (requisition?.RequisitionType != RequisitionType.Stock)
+                return Error.Validation("Swap.Requisition", "The stock requisition was not found.");
+            if (requisition.Status == RequestStatus.Completed || requisition.Items.Any(item => item.Status == RequestStatus.Completed || item.QuantityReceived > 0)
+                || await context.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(item => item.RequisitionId == requisition.Id)
+                || await context.BinCardInformation.IgnoreQueryFilters().AnyAsync(item => item.RequisitionId == requisition.Id && item.QuantityIssued > 0)
+                || await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == requisition.ProductionScheduleProductId
+                    && item.DeletedAt != null && item.ReleasedAt == null && requisition.Items.Select(line => line.MaterialId).Contains(item.MaterialBatch.MaterialId)))
+                return Error.Conflict("Swap.Issued", "Issued or consumed material cannot be retargeted by a stock swap.");
+            if (!requisition.ProductionScheduleProductId.HasValue) return Result.Success();
+            batchId = requisition.ProductionScheduleProductId.Value;
+            lines = requisition.Items.Select(line => (line.MaterialId, line.UoMId)).ToList();
+        }
+        else
+        {
+            batchId = request.ProductionScheduleProductId!.Value;
+            var stock = context.Requisitions.IgnoreQueryFilters().Where(item => item.ProductionScheduleProductId == batchId && item.RequisitionType == RequisitionType.Stock);
+            if (!await context.ProductionScheduleProducts.IgnoreQueryFilters().AnyAsync(item => item.Id == batchId && !item.Cancelled))
+                return Error.Validation("Swap.Batch", "The production batch was not found.");
+            if (await stock.AnyAsync(item => item.Status == RequestStatus.Completed || item.Items.Any(line => line.Status == RequestStatus.Completed || line.QuantityReceived > 0))
+                || await context.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(issue => stock.Any(item => item.Id == issue.RequisitionId))
+                || await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == batchId && item.DeletedAt != null && item.ReleasedAt == null))
+                return Error.Conflict("Swap.Issued", "Issued or consumed material cannot be retargeted by a stock swap.");
+            lines = (await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AsNoTracking()
+                .Where(item => item.ProductionScheduleProductId == batchId && item.DeletedAt == null && item.ReleasedAt == null && item.Quantity > 0)
+                .Select(item => new { item.MaterialBatch.MaterialId, item.UoMId }).Distinct().ToListAsync())
+                .Select(item => (item.MaterialId, (Guid?)item.UoMId)).ToList();
+        }
         // Only a material kind with an applied configuration has allocations to protect (packaging may be configured later).
-        var requisitionMaterials = requisition.Items.Select(line => line.MaterialId).ToList();
-        if (!requisition.ProductionScheduleProductId.HasValue || !await context.ProductionMaterialConfigurations.AnyAsync(item =>
-                item.ProductionScheduleProductId == requisition.ProductionScheduleProductId
-                && context.Materials.Any(material => requisitionMaterials.Contains(material.Id) && material.Kind == item.Kind))) return Result.Success();
-        var batchId = requisition.ProductionScheduleProductId.Value;
+        var lineMaterials = lines.Select(line => line.MaterialId).ToList();
+        if (!await context.ProductionMaterialConfigurations.AnyAsync(item =>
+                item.ProductionScheduleProductId == batchId
+                && context.Materials.Any(material => lineMaterials.Contains(material.Id) && material.Kind == item.Kind))) return Result.Success();
         var first = request.FirstSwapShelfMaterialBatches;
         var second = request.SecondSwapShelfMaterialBatches;
         if (first.Count == 0 || second.Count == 0 || first.GroupBy(item => item.ShelfMaterialBatchId).Any(group => group.Count() != 1)
@@ -49,7 +74,7 @@ internal static class ProductionMaterialSwapRules
             if (!shelves.TryGetValue(item.ShelfMaterialBatchId, out var shelf)
                 || shelf.MaterialBatchId != item.MaterialBatchId || shelf.UoMId != item.UoMId || item.Quantity <= 0 || shelf.Quantity < item.Quantity
                 || shelf.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId != request.FirstWarehouseId
-                || !requisition.Items.Any(line => line.MaterialId == shelf.MaterialBatch.MaterialId && line.UoMId == item.UoMId)
+                || !lines.Any(line => line.MaterialId == shelf.MaterialBatch.MaterialId && line.UoMId == item.UoMId)
                 || reservations.Count(row => row.MaterialBatchId == item.MaterialBatchId && row.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId
                     && row.UoMId == item.UoMId && row.Quantity == item.Quantity) != 1)
                 return Error.Conflict("Swap.StaleAllocation", "The allocation changed. Reload and select a complete current allocation before swapping.");

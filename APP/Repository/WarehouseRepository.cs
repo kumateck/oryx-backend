@@ -2078,6 +2078,7 @@ public class WarehouseRepository(
             FirstWarehouseId = request.FirstWarehouseId,
             SecondWarehouseId = request.SecondWarehouseId,
             StockRequisitionId = request.StockRequisitionId,
+            ProductionScheduleProductId = request.ProductionScheduleProductId,
             FirstSwapShelfMaterialBatches = request
                 .FirstSwapShelfMaterialBatches.Select(m => new SwapShelfMaterialBatch
                 {
@@ -2243,7 +2244,8 @@ public class WarehouseRepository(
             return Error.Conflict("Swap.Final", "This swap has already been decided and cannot be approved.");
         var allocation = await ProductionMaterialSwapRules.Validate(context, new CreateSwapRequest
         {
-            StockRequisitionId = swapRequest.StockRequisitionId, FirstWarehouseId = swapRequest.FirstWarehouseId,
+            StockRequisitionId = swapRequest.StockRequisitionId, ProductionScheduleProductId = swapRequest.ProductionScheduleProductId,
+            FirstWarehouseId = swapRequest.FirstWarehouseId,
             SecondWarehouseId = swapRequest.SecondWarehouseId,
             FirstSwapShelfMaterialBatches = swapRequest.FirstSwapShelfMaterialBatches.Select(item => new CreateSwapShelfMaterialBatch
             { ShelfMaterialBatchId = item.ShelfMaterialBatchId, MaterialBatchId = item.MaterialBatchId, UoMId = item.UoMId, Quantity = item.Quantity }).ToList(),
@@ -2420,11 +2422,11 @@ public class WarehouseRepository(
                 }
             }
 
-            if (swapRequest.StockRequisitionId.HasValue && swapRequest.StockRequisition != null)
+            // The batch whose reservation moves: the requisition's, or the started batch the swap was raised for.
+            var swappedBatchId = swapRequest.StockRequisition?.ProductionScheduleProductId ?? swapRequest.ProductionScheduleProductId;
+            if (swappedBatchId.HasValue)
             {
-                var productionScheduleProductId = swapRequest
-                    .StockRequisition
-                    .ProductionScheduleProductId;
+                var productionScheduleProductId = swappedBatchId;
 
                 if (productionScheduleProductId.HasValue)
                 {

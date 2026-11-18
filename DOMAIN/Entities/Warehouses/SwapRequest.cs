@@ -17,6 +17,11 @@ public class CreateSwapRequest
         FirstSwapShelfMaterialBatches.Sum(m => m.Quantity)
         == SecondSwapShelfMaterialBatches.Sum(m => m.Quantity);
     public Guid? StockRequisitionId { get; set; }
+    /// <summary>
+    /// The started production batch whose reserved lots are swapped before its stock is requested (Upcoming batch
+    /// issues). With a requisition the batch is the requisition's; give one or the other.
+    /// </summary>
+    public Guid? ProductionScheduleProductId { get; set; }
 }
 
 public class CreateSwapShelfMaterialBatch
@@ -44,6 +49,9 @@ public class SwapRequest : BaseEntity
     public string ActionNote { get; set; }
     public Guid? StockRequisitionId { get; set; }
     public Requisition StockRequisition { get; set; }
+    /// <summary>The production batch whose reservation the swap retargets when no requisition exists yet.</summary>
+    public Guid? ProductionScheduleProductId { get; set; }
+    public DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct ProductionScheduleProduct { get; set; }
 }
 
 public enum SwapRequestStatus

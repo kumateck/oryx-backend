@@ -627,6 +627,44 @@ public class ProductionMaterialRepairPostgresTests
     }
 
     [MaterialRepairFact]
+    public async Task A_started_batch_can_swap_its_reserved_lots_before_its_stock_is_requested()
+    {
+        await Seed();
+        await using (var apply = Context())
+        {
+            var result = await ProductionMaterialRepairs.Apply(apply, Approvals(apply), ActivityId, Actor, MaterialKind.Raw, Request(await Preview(apply)));
+            Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        }
+        await using var db = Context();
+        var first = await db.ShelfMaterialBatches.IgnoreQueryFilters().Include(item => item.WarehouseLocationShelf)
+            .ThenInclude(item => item.WarehouseLocationRack).ThenInclude(item => item.WarehouseLocation)
+            .SingleAsync(item => item.MaterialBatchId == RawBatch);
+        var otherDepartment = new Department { Id = Guid.NewGuid(), Name = "Other production", Type = DepartmentType.Production };
+        var warehouse = new Warehouse { Id = Guid.NewGuid(), DepartmentId = otherDepartment.Id, Type = WarehouseType.RawMaterialStorage, Name = "Replacement" };
+        var location = new WarehouseLocation { Id = Guid.NewGuid(), WarehouseId = warehouse.Id, Name = "Location" };
+        var rack = new WarehouseLocationRack { Id = Guid.NewGuid(), WarehouseLocationId = location.Id, Name = "Rack" };
+        var shelf = new WarehouseLocationShelf { Id = Guid.NewGuid(), WarehouseLocationRackId = rack.Id, Name = "Shelf" };
+        var physical = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = MaterialId, UoMId = UnitId, BatchNumber = "EARLIER",
+            Status = BatchStatus.Available, TotalQuantity = 100, ExpiryDate = DateTime.UtcNow.AddMonths(3) };
+        var second = new ShelfMaterialBatch { Id = Guid.NewGuid(), MaterialBatchId = physical.Id, UoMId = UnitId, WarehouseLocationShelfId = shelf.Id, Quantity = 100 };
+        db.Departments.Add(otherDepartment); db.Warehouses.Add(warehouse); db.WarehouseLocations.Add(location);
+        db.WarehouseLocationRacks.Add(rack); db.WarehouseLocationShelves.Add(shelf); db.MaterialBatches.Add(physical); db.ShelfMaterialBatches.Add(second);
+        // Nothing requested yet: the batch has only started and reserved its lots.
+        db.Requisitions.RemoveRange(await db.Requisitions.IgnoreQueryFilters().Where(item => item.Id == RequisitionId).ToListAsync());
+        await db.SaveChangesAsync();
+        var swap = new CreateSwapRequest { ProductionScheduleProductId = BatchId,
+            FirstWarehouseId = first.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId, SecondWarehouseId = warehouse.Id,
+            FirstSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = first.Id, MaterialBatchId = RawBatch, UoMId = UnitId, Quantity = 10 }],
+            SecondSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = second.Id, MaterialBatchId = physical.Id, UoMId = UnitId, Quantity = 10 }] };
+        // Only a complete current allocation, and from one source only.
+        Assert.Equal("Swap.StaleAllocation", (await ProductionMaterialSwapRules.Validate(db, swap)).Error.Code);
+        swap.FirstSwapShelfMaterialBatches[0].Quantity = 20; swap.SecondSwapShelfMaterialBatches[0].Quantity = 20;
+        var current = await ProductionMaterialSwapRules.Validate(db, swap); Assert.True(current.IsSuccess, current.IsFailure ? current.Error.Description : null);
+        Assert.Equal("Swap.Source", (await ProductionMaterialSwapRules.Validate(db, new CreateSwapRequest { ProductionScheduleProductId = BatchId, StockRequisitionId = RequisitionId,
+            FirstWarehouseId = swap.FirstWarehouseId, SecondWarehouseId = swap.SecondWarehouseId })).Error.Code);
+    }
+
+    [MaterialRepairFact]
     public async Task An_issue_committed_while_repair_waits_invalidates_the_preview()
     {
         await Seed(); ProductionMaterialRepairPreview preview;

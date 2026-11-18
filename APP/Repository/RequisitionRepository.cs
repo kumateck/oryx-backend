@@ -535,6 +535,28 @@ public class RequisitionRepository(
                 "Only stock requisitions support alternative batch lookup."
             );
 
+        return await AlternativeBatches(requisition.Items.Select(item => (item.Material, item.Quantity)).ToList(),
+            requisition.ProductionScheduleProductId, userId);
+    }
+
+    /// <summary>
+    /// Earlier-expiring batches in other stores for a started batch whose stock is not requested yet (Upcoming batch
+    /// issues): the same comparison as for a requisition, over the lots reserved for the batch.
+    /// </summary>
+    public async Task<Result<List<MaterialAlternativeBatchesDto>>> GetAlternativeBatchesForProductionBatch(Guid productionScheduleProductId, Guid userId)
+    {
+        var reserved = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AsNoTracking()
+            .Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
+            .Where(item => item.ProductionScheduleProductId == productionScheduleProductId && item.DeletedAt == null && item.ReleasedAt == null && item.Quantity > 0)
+            .ToListAsync();
+        var lines = reserved.GroupBy(item => item.MaterialBatch.MaterialId)
+            .Select(group => (group.First().MaterialBatch.Material, group.Sum(item => item.Quantity))).ToList();
+        return await AlternativeBatches(lines, productionScheduleProductId, userId);
+    }
+
+    private async Task<Result<List<MaterialAlternativeBatchesDto>>> AlternativeBatches(
+        List<(DOMAIN.Entities.Materials.Material Material, decimal Quantity)> lines, Guid? productionScheduleProductId, Guid userId)
+    {
         var user = await context
             .Users.AsSplitQuery()
             .Include(u => u.Department)
@@ -559,7 +581,7 @@ public class RequisitionRepository(
         // deep (shelf -> rack -> location -> warehouse) and was the dominant cost
         // of this endpoint. minExpiryDate varies per item, so it's applied in-memory
         // below rather than in this shared query.
-        var requestedMaterialIds = requisition.Items.Select(i => i.MaterialId).Distinct().ToList();
+        var requestedMaterialIds = lines.Select(i => i.Material.Id).Distinct().ToList();
 
         // A shelf batch already committed to a pending swap shouldn't be offered
         // again as an alternative for another swap - it's not actually free until
@@ -605,7 +627,7 @@ public class RequisitionRepository(
             .GroupBy(smb => smb.MaterialBatch.MaterialId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        foreach (var item in requisition.Items)
+        foreach (var item in lines)
         {
             var materialAlternative = new MaterialAlternativeBatchesDto
             {
@@ -614,13 +636,13 @@ public class RequisitionRepository(
             };
 
             // 1. Get current reserved batches (if any)
-            if (requisition.ProductionScheduleProductId.HasValue && productionWarehouse != null)
+            if (productionScheduleProductId.HasValue && productionWarehouse != null)
             {
                 var reservedBatches =
                     await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
-                        item.MaterialId,
+                        item.Material.Id,
                         productionWarehouse.Id,
-                        requisition.ProductionScheduleProductId.Value
+                        productionScheduleProductId.Value
                     );
 
                 if (reservedBatches.Count != 0)
@@ -661,7 +683,7 @@ public class RequisitionRepository(
             // consumed before they're wasted, not batches that already can't
             // be used.
             var candidateShelfBatches = candidateShelfBatchesByMaterial.GetValueOrDefault(
-                item.MaterialId,
+                item.Material.Id,
                 []
             );
 

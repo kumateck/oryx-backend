@@ -26774,6 +26774,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ProductionScheduleProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("SecondWarehouseId")
                         .HasColumnType("uuid");
 
@@ -26797,6 +26800,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("SecondWarehouseId");
 
@@ -42700,6 +42705,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
+                        .WithMany()
+                        .HasForeignKey("ProductionScheduleProductId");
+
                     b.HasOne("DOMAIN.Entities.Warehouses.Warehouse", "SecondWarehouse")
                         .WithMany()
                         .HasForeignKey("SecondWarehouseId")
@@ -42843,6 +42852,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("SecondSwapShelfMaterialBatches");
 
