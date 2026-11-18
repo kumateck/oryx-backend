@@ -3484,6 +3484,83 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ResponseReworkTasks");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("FormId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PreviewToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("FormId");
+
+                    b.ToTable("TemplateRepairs", (string)null);
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepairAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssigneeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FormAssigneeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FormFieldAssigneeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RepairId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssigneeId");
+
+                    b.HasIndex("FormFieldId");
+
+                    b.HasIndex("RepairId");
+
+                    b.HasIndex("FormAssigneeId", "FormFieldId");
+
+                    b.ToTable("TemplateRepairAssignments", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.FormFieldFormulaConfiguration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -16648,6 +16725,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("PrescribedQuantity")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("ProductPackageId")
                         .HasColumnType("uuid");
 
@@ -29523,6 +29603,48 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RootResponse");
 
                     b.Navigation("SourceResponse");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Form", null)
+                        .WithMany()
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepairAssignment", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormAssignee", null)
+                        .WithMany()
+                        .HasForeignKey("FormAssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormField", null)
+                        .WithMany()
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.TemplateRepair", null)
+                        .WithMany()
+                        .HasForeignKey("RepairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Formulas.FormFieldFormulaConfiguration", b =>

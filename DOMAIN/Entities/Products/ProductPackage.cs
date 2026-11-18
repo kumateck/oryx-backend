@@ -26,6 +26,8 @@ public class ProductPackage : BaseEntity
 
 public class ProductPackageSubstitute : BaseEntity
 {
+    /// <summary>Own full-batch quantity in this substitute material's department stock unit; null keeps legacy one-for-one behavior.</summary>
+    public decimal? PrescribedQuantity { get; set; }
     public Guid ProductPackageId { get; set; }
     public ProductPackage ProductPackage { get; set; }
     public Guid SubstituteMaterialId { get; set; }

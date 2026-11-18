@@ -21,6 +21,7 @@ public class ProductPackageDto
 
 public class ProductPackageSubstituteDto
 {
+    public decimal? PrescribedQuantity { get; set; }
     public Guid Id { get; set; }
     public MaterialDto SubstituteMaterial { get; set; }
 }

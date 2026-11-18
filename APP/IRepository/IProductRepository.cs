@@ -32,7 +32,7 @@ public interface IProductRepository
     Task<Result<Guid>> CreateProductPackage(
         List<CreateProductPackageRequest> request,
         Guid productId,
-        Guid userId
+        Guid userId, string permissionContext = null
     );
     Task<Result<ProductPackageDto>> GetProductPackage(Guid productPackageId);
     Task<Result<IEnumerable<ProductPackageDto>>> GetProductPackages(Guid productId);

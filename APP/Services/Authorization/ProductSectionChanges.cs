@@ -16,8 +16,12 @@ namespace APP.Services.Authorization;
 /// </summary>
 public static class ProductSectionChanges
 {
-    private static string Number(decimal value) => value.ToString("0.############", CultureInfo.InvariantCulture);
+    private static string Number(decimal value) => value.ToString("G29", CultureInfo.InvariantCulture);
     private static string Ids(IEnumerable<Guid> ids) => string.Join(",", ids.Order());
+
+    // A substitute's own quantity is part of the line: changing it is an edit.
+    private static string Substitutes(IEnumerable<(Guid Id, decimal? Quantity)> rows) =>
+        string.Join(",", rows.OrderBy(row => row.Id).Select(row => $"{row.Id}={(row.Quantity.HasValue ? Number(row.Quantity.Value) : "")}"));
 
     public static HashSet<ProductVerb> Compare(IEnumerable<(string Key, string Fingerprint)> stored, IEnumerable<(string Key, string Fingerprint)> submitted)
     {
@@ -42,9 +46,6 @@ public static class ProductSectionChanges
                 Substitutes = item.Substitutes.Where(substitute => substitute.DeletedAt == null)
                     .Select(substitute => new { substitute.SubstituteMaterialId, substitute.BaseQuantity }).ToList() })
             .ToListAsync();
-        // A substitute's own quantity is part of the line: changing it is an edit.
-        static string Substitutes(IEnumerable<(Guid Id, decimal? Quantity)> rows) =>
-            string.Join(",", rows.OrderBy(row => row.Id).Select(row => $"{row.Id}={(row.Quantity.HasValue ? Number(row.Quantity.Value) : "")}"));
         return Compare(
             stored.Select(item => (item.MaterialId.ToString(), $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};"
                 + Substitutes(item.Substitutes.Select(substitute => (substitute.SubstituteMaterialId, substitute.BaseQuantity))))),
@@ -59,14 +60,14 @@ public static class ProductSectionChanges
     {
         var stored = await db.ProductPackages.IgnoreQueryFilters().AsNoTracking().Where(package => package.ProductId == productId && package.DeletedAt == null)
             .Select(package => new { package.MaterialId, package.ProductPackingId, package.BaseQuantity, package.UnitCapacity, package.DirectLinkMaterialId,
-                package.PackingExcessMargin, package.Loose, package.MaterialThickness, package.OtherStandards,
-                Substitutes = package.Substitutes.Select(substitute => substitute.SubstituteMaterialId).ToList() })
+                package.PackingExcessMargin, package.PrescribedQuantity, package.Loose, package.MaterialThickness, package.OtherStandards,
+                Substitutes = package.Substitutes.Select(substitute => new { substitute.SubstituteMaterialId, substitute.PrescribedQuantity }).ToList() })
             .ToListAsync();
         return Compare(
             stored.Select(row => ($"{row.MaterialId}:{row.ProductPackingId}",
-                $"{Number(row.BaseQuantity)};{Number(row.UnitCapacity)};{row.DirectLinkMaterialId};{Number(row.PackingExcessMargin)};{Number(row.Loose)};{row.MaterialThickness};{row.OtherStandards};{Ids(row.Substitutes)}")),
+                $"{Number(row.BaseQuantity)};{Number(row.UnitCapacity)};{row.DirectLinkMaterialId};{Number(row.PackingExcessMargin)};{Number(row.PrescribedQuantity)};{Number(row.Loose)};{row.MaterialThickness};{row.OtherStandards};{Substitutes(row.Substitutes.Select(s => (s.SubstituteMaterialId, s.PrescribedQuantity)))}")),
             (rows ?? []).Select(row => ($"{row.MaterialId}:{row.ProductPackingId}",
-                $"{Number(row.BaseQuantity)};{Number(row.UnitCapacity)};{row.DirectLinkMaterialId};{Number(row.PackingExcessMargin)};{Number(row.Loose)};{row.MaterialThickness};{row.OtherStandards};{Ids(row.SubstituteMaterialIds ?? [])}")));
+                $"{Number(row.BaseQuantity)};{Number(row.UnitCapacity)};{row.DirectLinkMaterialId};{Number(row.PackingExcessMargin)};{Number(row.PrescribedQuantity)};{Number(row.Loose)};{row.MaterialThickness};{row.OtherStandards};{Substitutes(row.Substitutes is { Count: > 0 } ? row.Substitutes.Select(s => (s.MaterialId, (decimal?)s.PrescribedQuantity)) : (row.SubstituteMaterialIds ?? []).Select(id => (id, (decimal?)null)))}")));
     }
 
     public static async Task<HashSet<ProductVerb>> Procedure(ApplicationDbContext db, Guid productId, IReadOnlyCollection<CreateRouteRequest> rows)
