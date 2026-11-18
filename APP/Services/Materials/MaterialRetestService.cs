@@ -42,6 +42,14 @@ public sealed class MaterialRetestDetailDto
     public Guid? TestRequestId { get; set; }
     public Guid? CoaId { get; set; }
     public DateTime? CompletedAt { get; set; }
+    /// <summary>The analytical report number QA gave the retest sample.</summary>
+    public string ArNumber { get; set; }
+    /// <summary>The sample record created when QC acknowledges; the material test runs against it.</summary>
+    public Guid? MaterialSamplingId { get; set; }
+    /// <summary>The batch's current status, which drives the test steps (sampled, assigned, testing, results taken, checked).</summary>
+    public BatchStatus BatchStatus { get; set; }
+    public string MaterialName { get; set; }
+    public string MaterialCode { get; set; }
     public List<MaterialRetestEventDto> Events { get; set; } = [];
 }
 
@@ -109,9 +117,8 @@ public sealed class MaterialRetestService(
             .Include(request => request.MaterialBatch).ThenInclude(batch => batch.Material)
             .Include(request => request.Events)
             .SingleOrDefaultAsync(request => request.Id == id);
-        return item is null
-            ? Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.")
-            : ToDto(item);
+        if (item is null) return Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.");
+        return ToDto(item, await Samplings([item.Id]));
     }
 
     public async Task<Result<List<MaterialRetestDetailDto>>> ListAsync(Guid? batchId)
@@ -121,7 +128,8 @@ public sealed class MaterialRetestService(
             .Include(item => item.Events).AsQueryable();
         if (batchId.HasValue) query = query.Where(item => item.MaterialBatchId == batchId.Value);
         var rows = await query.OrderByDescending(item => item.CreatedAt).ToListAsync();
-        return rows.Select(ToDto).ToList();
+        var samplings = await Samplings(rows.Select(item => item.Id).ToList());
+        return rows.Select(item => ToDto(item, samplings)).ToList();
     }
 
     public async Task<Result> DecideAsync(Guid id, Guid actorId, List<Guid> roleIds, MaterialRetestDecision decision, bool approve)
@@ -149,33 +157,60 @@ public sealed class MaterialRetestService(
         if (request is null) return Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.");
         if (request.Status != MaterialRetestStatus.Authorized || !request.Approved)
             return Error.Conflict("MaterialRetest.NotAuthorized", "Approval is required before sampling.");
-        if (sample is null || sample.SampleQuantity <= 0 || sample.SampledContainers <= 0
+        if (string.IsNullOrWhiteSpace(sample?.ArNumber) || sample.ArNumber.Trim().Length > 200)
+            return Error.Validation("MaterialRetest.ArNumber", "Give the sample's analytical report (AR) number.");
+        if (sample.SampleQuantity <= 0 || sample.SampledContainers <= 0
             || sample.SampleQuantity > request.MaterialBatch.RemainingQuantity)
             return Error.Validation("MaterialRetest.Sample", "Sample quantity and container count must be positive and within remaining stock.");
         if (sample.ProposedExpiryDate.Date <= DateTime.UtcNow.Date
             || (request.OriginalExpiryDate.HasValue && sample.ProposedExpiryDate.Date <= request.OriginalExpiryDate.Value.Date))
             return Error.Validation("MaterialRetest.ProposedExpiry", "Proposed expiry must be later than today and the original expiry.");
+        request.ArNumber = sample.ArNumber.Trim();
         request.SampleQuantity = sample.SampleQuantity;
         request.SampledContainers = sample.SampledContainers;
         request.ProposedExpiryDate = sample.ProposedExpiryDate.Date;
         request.SampleTakenAt = DateTime.UtcNow;
         request.SampleTakenById = actorId;
         request.Status = MaterialRetestStatus.SampleTaken;
-        AddEvent(id, "SampleTaken", $"Quantity {sample.SampleQuantity}; containers {sample.SampledContainers}; proposed expiry {sample.ProposedExpiryDate:yyyy-MM-dd}", actorId);
+        AddEvent(id, "SampleTaken", $"AR {request.ArNumber}; quantity {sample.SampleQuantity}; containers {sample.SampledContainers}; proposed expiry {sample.ProposedExpiryDate:yyyy-MM-dd}", actorId);
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
+    /// <summary>
+    /// QC acknowledges the sample QA picked. Like an analytical test request, QC then assigns analysts, tests, checks and
+    /// sends the result for approval. A sample record is created for this retest: the material test binds every answer to
+    /// the newest sample, so the batch's receipt test is never reused. The batch stays held until the retest is released.
+    /// </summary>
     public async Task<Result> AcknowledgeAsync(Guid id, Guid actorId)
     {
-        var request = await context.MaterialRetestRequests.SingleOrDefaultAsync(item => item.Id == id);
+        var request = await context.MaterialRetestRequests.Include(item => item.MaterialBatch)
+            .SingleOrDefaultAsync(item => item.Id == id);
         if (request is null) return Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.");
         if (request.Status != MaterialRetestStatus.SampleTaken)
             return Error.Conflict("MaterialRetest.SampleRequired", "The sample must be recorded before acknowledgement.");
+        var batch = request.MaterialBatch;
+        if (batch.Status != BatchStatus.Frozen)
+            return Error.Conflict("MaterialRetest.BatchStatus", "The batch is no longer held for this retest. Reload and review it.");
+        var analysis = await APP.Repository.QualityAnalysisSnapshot.ForMaterialAsync(context, batch.MaterialId);
+        if (analysis.IsFailure) return analysis.Errors;
+        var now = DateTime.UtcNow;
+        var sampling = new DOMAIN.Entities.MaterialSampling.MaterialSampling
+        {
+            // The retest's own sample, not a goods receipt sample: no note, and the batch stays held until release.
+            Id = Guid.NewGuid(), GrnId = null, MaterialBatchId = batch.Id, MaterialRetestRequestId = request.Id,
+            ArNumber = request.ArNumber, SampleQuantity = request.SampleQuantity ?? 0, SampleDate = request.SampleTakenAt ?? now,
+            ChemicalArdId = analysis.Value.ChemicalArdId, MicrobialArdId = analysis.Value.MicrobialArdId,
+            MicrobialRequired = analysis.Value.MicrobialRequired, CreatedAt = now, CreatedById = actorId,
+        };
+        context.MaterialSamplings.Add(sampling);
+        batch.SampledQuantity += request.SampleQuantity ?? 0;
+        batch.UpdatedAt = now;
+        batch.LastUpdatedById = actorId;
         request.Status = MaterialRetestStatus.Acknowledged;
-        request.AcknowledgedAt = DateTime.UtcNow;
+        request.AcknowledgedAt = now;
         request.AcknowledgedById = actorId;
-        AddEvent(id, "Acknowledged", "QC acknowledged the retest sample.", actorId);
+        AddEvent(id, "Acknowledged", "QC acknowledged the retest sample; analysts can now be assigned.", actorId);
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -185,8 +220,8 @@ public sealed class MaterialRetestService(
         var request = await context.MaterialRetestRequests.Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
             .SingleOrDefaultAsync(item => item.Id == id);
         if (request is null) return Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.");
-        if (request.Status != MaterialRetestStatus.Acknowledged)
-            return Error.Conflict("MaterialRetest.NotAcknowledged", "The sample must be acknowledged before testing is linked.");
+        if (request.Status != MaterialRetestStatus.Acknowledged || await context.MaterialSamplings.AnyAsync(item => item.MaterialRetestRequestId == id))
+            return Error.Conflict("MaterialRetest.MaterialTest", "This retest is tested on the material test, like an analytical test request.");
         var test = await context.QcTestRequests.Include(item => item.Subjects)
             .SingleOrDefaultAsync(item => item.Id == testRequestId);
         var expectedType = request.MaterialBatch.Material.Kind == DOMAIN.Entities.Materials.MaterialKind.Raw
@@ -211,7 +246,8 @@ public sealed class MaterialRetestService(
         var retest = await context.MaterialRetestRequests.Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
             .SingleOrDefaultAsync(item => item.Id == id);
         if (retest is null) return Error.NotFound("MaterialRetest.NotFound", "Retest request was not found.");
-        if (retest.Status != MaterialRetestStatus.Acknowledged || retest.TestRequestId.HasValue)
+        if (retest.Status != MaterialRetestStatus.Acknowledged || retest.TestRequestId.HasValue
+            || await context.MaterialSamplings.AnyAsync(item => item.MaterialRetestRequestId == id))
             return Error.Conflict("MaterialRetest.NotAcknowledged", "Only an acknowledged, unlinked retest can create testing.");
         var kind = retest.MaterialBatch.Material.Kind == DOMAIN.Entities.Materials.MaterialKind.Raw
             ? TestRequestType.RawMaterial : TestRequestType.PackagingMaterial;
@@ -252,8 +288,16 @@ public sealed class MaterialRetestService(
             Action = action, Detail = detail, ActorId = actorId, OccurredAt = DateTime.UtcNow
         });
 
-    private static MaterialRetestDetailDto ToDto(MaterialRetestRequest item) => new()
+    private async Task<Dictionary<Guid, Guid>> Samplings(List<Guid> retestIds) =>
+        (await context.MaterialSamplings.IgnoreQueryFilters().AsNoTracking()
+            .Where(item => item.MaterialRetestRequestId.HasValue && retestIds.Contains(item.MaterialRetestRequestId.Value) && item.DeletedAt == null)
+            .Select(item => new { Retest = item.MaterialRetestRequestId.Value, item.Id, item.CreatedAt }).ToListAsync())
+        .GroupBy(item => item.Retest).ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CreatedAt).First().Id);
+
+    private static MaterialRetestDetailDto ToDto(MaterialRetestRequest item, IReadOnlyDictionary<Guid, Guid> samplings) => new()
     {
+        ArNumber = item.ArNumber, MaterialSamplingId = samplings.TryGetValue(item.Id, out var sampling) ? sampling : null,
+        BatchStatus = item.MaterialBatch.Status, MaterialName = item.MaterialBatch.Material?.Name, MaterialCode = item.MaterialBatch.Material?.Code,
         Id = item.Id, MaterialBatchId = item.MaterialBatchId, BatchNumber = item.MaterialBatch?.BatchNumber,
         MaterialKind = item.MaterialBatch.Material.Kind,
         Origin = item.Origin, Status = item.Status, Approved = item.Approved,

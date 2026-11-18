@@ -8,51 +8,65 @@ namespace APP.Tests.QcWorksheets;
 
 public class MaterialRetestAcceptanceTests
 {
+    /// <summary>The verified chemical analysis method (ARD) a material needs before its sample can be tested.</summary>
+    internal static async Task SeedArd(QcWorksheetTestContext harness, MaterialBatch batch)
+    {
+        var stp = new DOMAIN.Entities.MaterialStandardTestProcedures.MaterialStandardTestProcedure { Id = Guid.NewGuid(), MaterialId = batch.MaterialId, StpNumber = "STP-RT" };
+        var form = new DOMAIN.Entities.Forms.Form { Id = Guid.NewGuid(), Name = "Retest worksheet" };
+        harness.Db.AddRange(stp, form, new DOMAIN.Entities.MaterialARD.MaterialAnalyticalRawData { Id = Guid.NewGuid(), StpId = stp.Id,
+            FormId = form.Id, SpecNumber = "SPEC-RT", AnalysisType = DOMAIN.Entities.QualityRoutines.AnalysisType.Chemical, IsVerified = true });
+        await harness.Db.SaveChangesAsync();
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Issued_coa_applies_expiry_only_when_compliant(bool complies)
+    public async Task Acknowledged_retest_runs_on_the_material_test_and_its_outcome_extends_expiry_only_when_compliant(bool complies)
     {
         using var harness = new QcWorksheetTestContext();
         var service = new MaterialRetestService(harness.Db, harness.ApprovalRepository, harness.SignatureService);
-        var batch = await harness.SeedMaterialBatch($"RETEST-COA-{complies}", BatchStatus.Available);
+        var batch = await harness.SeedMaterialBatch($"RETEST-{complies}", BatchStatus.Available);
         batch.TotalQuantity = 10;
         batch.ExpiryDate = DateTime.UtcNow.Date.AddDays(-1);
         await harness.Db.SaveChangesAsync();
+        await SeedArd(harness, batch);
         var originalExpiry = batch.ExpiryDate;
         var proposedExpiry = DateTime.UtcNow.Date.AddDays(90);
         var requested = await service.RequestAsync(batch.Id, "Expiry review", Guid.NewGuid(), false);
         Assert.True(requested.IsSuccess, requested.Error?.Description);
-        Assert.True((await service.RecordSampleAsync(requested.Value, new RecordMaterialRetestSample
-        {
-            SampleQuantity = 1, SampledContainers = 1, ProposedExpiryDate = proposedExpiry
-        }, Guid.NewGuid())).IsSuccess);
-        Assert.True((await service.AcknowledgeAsync(requested.Value, Guid.NewGuid())).IsSuccess);
+        var sample = new RecordMaterialRetestSample { SampleQuantity = 1, SampledContainers = 1, ProposedExpiryDate = proposedExpiry };
+        // QA gives the sample its AR number, as on a goods receipt sample.
+        Assert.Equal("MaterialRetest.ArNumber", (await service.RecordSampleAsync(requested.Value, sample, Guid.NewGuid())).Error.Code);
+        sample.ArNumber = "QCD/RM/26/900";
+        Assert.True((await service.RecordSampleAsync(requested.Value, sample, Guid.NewGuid())).IsSuccess);
+        var qc = Guid.NewGuid();
+        Assert.True((await service.AcknowledgeAsync(requested.Value, qc)).IsSuccess);
 
-        var testRequest = new TestRequest
+        // Like an analytical test request: the retest records the test's progress, the batch stays held, and the answers
+        // bind to a sample taken for this retest (no goods receipt note).
+        var sampling = await harness.Db.MaterialSamplings.SingleAsync(item => item.MaterialBatchId == batch.Id);
+        var retest = await harness.Db.MaterialRetestRequests.SingleAsync();
+        Assert.Equal((retest.Id, "QCD/RM/26/900", 1m, (Guid?)null), (sampling.MaterialRetestRequestId!.Value, sampling.ArNumber, sampling.SampleQuantity, sampling.GrnId));
+        Assert.Equal(BatchStatus.Frozen, batch.Status);
+        Assert.Equal(MaterialRetestStatus.Acknowledged, retest.Status);
+        var read = (await service.GetAsync(retest.Id)).Value;
+        Assert.Equal((sampling.Id, "QCD/RM/26/900", BatchStatus.Frozen), (read.MaterialSamplingId!.Value, read.ArNumber, read.BatchStatus));
+        foreach (var step in new[] { MaterialRetestStatus.Assigned, MaterialRetestStatus.Testing, MaterialRetestStatus.TestTaken, MaterialRetestStatus.Checked })
         {
-            Id = Guid.NewGuid(), Type = TestRequestType.RawMaterial, ArNumber = $"ATR-{Guid.NewGuid():N}",
-            Subjects = [new TestRequestSubject { Id = Guid.NewGuid(), MaterialBatchId = batch.Id, SubjectRef = batch.BatchNumber }]
-        };
-        harness.Db.QcTestRequests.Add(testRequest);
-        await harness.Db.SaveChangesAsync();
-        Assert.True((await service.LinkTestRequestAsync(requested.Value, testRequest.Id, Guid.NewGuid())).IsSuccess);
-        var coa = new Coa
-        {
-            Id = Guid.NewGuid(), TestRequestId = testRequest.Id,
-            CertificateCode = $"COA-RETEST-{complies}", OverallComplies = complies
-        };
-        harness.Db.Coas.Add(coa);
-        await harness.Db.SaveChangesAsync();
+            Assert.True(await MaterialRetestTesting.AdvanceAsync(harness.Db, batch.Id, step, qc, step.ToString()));
+            await harness.Db.SaveChangesAsync();
+            Assert.Equal((step, BatchStatus.Frozen), (retest.Status, batch.Status));
+        }
 
-        var issued = await harness.Coas.Issue(coa.Id, Guid.NewGuid());
-        Assert.True(issued.IsSuccess, issued.Error?.Description);
-        Assert.Equal(CoaStatus.Issued, coa.Status);
+        // The material test's outcome closes the retest.
+        if (!complies) batch.Status = BatchStatus.Rejected;
+        Assert.True(await MaterialRetestCompletion.ApplyAsync(harness.Db, batch, complies, qc));
+        await harness.Db.SaveChangesAsync();
         Assert.Equal(complies ? proposedExpiry : originalExpiry, batch.ExpiryDate);
-        Assert.Equal(complies ? proposedExpiry : null, coa.ExpiryDate);
-        Assert.Equal(complies ? BatchStatus.Available : BatchStatus.Frozen, batch.Status);
-        Assert.Equal(complies ? MaterialRetestStatus.Completed : MaterialRetestStatus.Rejected,
-            (await harness.Db.MaterialRetestRequests.SingleAsync()).Status);
+        Assert.Equal(complies ? BatchStatus.Available : BatchStatus.Rejected, batch.Status);
+        Assert.Equal(complies ? MaterialRetestStatus.Completed : MaterialRetestStatus.Rejected, retest.Status);
+        // Nothing closes twice.
+        Assert.False(await MaterialRetestCompletion.ApplyAsync(harness.Db, batch, complies, qc));
     }
 
     [Fact]
@@ -103,11 +117,12 @@ public class MaterialRetestAcceptanceTests
         batch.ExpiryDate = DateTime.UtcNow.Date.AddDays(-1);
         await harness.Db.SaveChangesAsync();
 
+        await SeedArd(harness, batch);
         var created = await service.RequestAsync(batch.Id, "Expiry investigation", harness.Approver.Id, false);
         Assert.True(created.IsSuccess, created.Error?.Description);
         var sample = new RecordMaterialRetestSample
         {
-            SampleQuantity = 1, SampledContainers = 1,
+            ArNumber = "QCD/RM/26/901", SampleQuantity = 1, SampledContainers = 1,
             ProposedExpiryDate = DateTime.UtcNow.Date.AddDays(90)
         };
         Assert.False((await service.RecordSampleAsync(created.Value, sample, harness.Approver.Id)).IsSuccess);
