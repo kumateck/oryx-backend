@@ -14,7 +14,7 @@ public sealed partial class ProductionUnstartService
 {
     private sealed record Plan(ProductionActivity Activity, ProductionSchedule Schedule, List<ProductionActivityStep> Steps,
         List<BatchManufacturingRecord> Bmrs, List<BatchPackagingRecord> Bprs, List<MaterialBatchReservedQuantity> Reservations,
-        ProductionUnstartPreviewDto Preview, List<ProductionMaterialConfiguration> Configurations);
+        ProductionUnstartPreviewDto Preview, List<ProductionMaterialConfiguration> Configurations, List<Requisition> Requisitions);
 
     private async Task<Result<Plan>> Build(Guid activityId)
     {
@@ -54,14 +54,15 @@ public sealed partial class ProductionUnstartService
         if (await db.BatchManufacturingRecords.AnyAsync(item => item.ProductionScheduleProductId == batch.Id && !bmrIds.Contains(item.Id))
             || await db.BatchPackagingRecords.AnyAsync(item => item.ProductionScheduleProductId == batch.Id && !bprIds.Contains(item.Id)))
             blockers.Add("Other active BMR or BPR documents exist for this batch and must be reconciled first.");
-        if (bmrs.Any(item => item.IssuedDate.HasValue || item.IssuedById.HasValue || item.DeletedAt.HasValue
-            || item.Status != BatchManufacturingStatus.New || item.SampledQuantity != 0)
-            || bprs.Any(item => item.IssuedDate.HasValue || item.IssuedById.HasValue || item.DeletedAt.HasValue))
-            blockers.Add("The BMR and BPR must both be unissued, unsampled draft records.");
-        if (steps.Any(step => step.DeletedAt.HasValue || step.CompletedAt.HasValue
-            || (step.Id == first?.Id ? step.Status is not (ProductionStatus.New or ProductionStatus.InProgress)
-                : step.StartedAt.HasValue || step.Status != ProductionStatus.New)))
-            blockers.Add("Only the initial BMR preparation step may have started. Later or completed steps prevent unstarting.");
+        // An issued BMR or BPR may be unstarted while no stock has been issued for the batch: unstarting retires both, so the
+        // batch behaves as if nothing was done. Sampling or a later quality status is real evidence and still prevents it.
+        if (bmrs.Any(item => item.DeletedAt.HasValue || item.Status != BatchManufacturingStatus.New || item.SampledQuantity != 0)
+            || bprs.Any(item => item.DeletedAt.HasValue))
+            blockers.Add("The BMR and BPR must both be active and unsampled.");
+        // Steps may have started or completed (issuing the BMR completes the first one and opens the requisition step):
+        // what makes a run irreversible is issued stock or recorded evidence, both checked below.
+        if (steps.Any(step => step.DeletedAt.HasValue))
+            blockers.Add("The production run's steps have been changed. Reload and review a fresh preview.");
         var reservations = await db.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes()
             .Include(item => item.MaterialBatch).ThenInclude(item => item.Material).Include(item => item.UoM)
             .Where(item => item.ProductionScheduleProductId == batch.Id && item.ProductionUnstartRepairId == null && item.ReleasedAt == null).OrderBy(item => item.Id).ToListAsync();
@@ -79,18 +80,21 @@ public sealed partial class ProductionUnstartService
         }
         var requisitions = db.Requisitions.IgnoreQueryFilters().Where(item => item.ProductionScheduleProductId == batch.Id
             && item.RequisitionType == RequisitionType.Stock);
+        // Stock requested for the batch but not issued is cancelled with the run.
+        var requested = await requisitions.Where(item => item.DeletedAt == null).Include(item => item.Items).OrderBy(item => item.Id).ToListAsync();
         if (await requisitions.AnyAsync(item => item.Status == RequestStatus.Completed
                 || item.Items.Any(line => line.Status == RequestStatus.Completed || line.QuantityReceived > 0))
             || await db.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(issue => requisitions.Any(item => item.Id == issue.RequisitionId))
             || await db.BinCardInformation.IgnoreQueryFilters().AnyAsync(card => card.QuantityIssued > 0
                 && requisitions.Any(item => item.Id == card.RequisitionId)))
             blockers.Add("Stock has been issued for this batch. Releasing reservations cannot undo an issue.");
-        blockers.AddRange(await Dependencies(run, steps, bmrs, bprs));
+        blockers.AddRange(await Dependencies(run, steps, bmrs, bprs, requested.Select(item => item.Id).ToArray()));
         var otherStarted = await db.ProductionActivities.IgnoreAutoIncludes().AnyAsync(item => item.Id != run.Id
             && item.ProductionScheduleProduct.ProductionScheduleId == schedule.Id);
         preview.ScheduleStatusAfter = (int)(otherStarted ? ProductionStatus.InProgress : ProductionStatus.New);
         preview.StepsToArchive = steps.Count;
         preview.DraftDocumentsToArchive = bmrs.Count + bprs.Count;
+        preview.RequisitionsToCancel = requested.Select(item => item.Code ?? item.Id.ToString()).ToList();
         preview.Reservations = reservations.Select(item => new ProductionUnstartReservationDto { Id = item.Id,
             MaterialCode = item.MaterialBatch.Material.Code, MaterialName = item.MaterialBatch.Material.Name,
             LotNumber = item.MaterialBatch.BatchNumber, Unit = item.UoM.Symbol, Quantity = item.Quantity }).ToList();
@@ -98,7 +102,7 @@ public sealed partial class ProductionUnstartService
         preview.CanApply = preview.Blockers.Count == 0;
         var configurations = await db.ProductionMaterialConfigurations.IgnoreAutoIncludes()
             .Where(item => item.ProductionScheduleProductId == batch.Id).OrderBy(item => item.Id).ToListAsync();
-        var plan = new Plan(run, schedule, steps, bmrs, bprs, reservations, preview, configurations);
+        var plan = new Plan(run, schedule, steps, bmrs, bprs, reservations, preview, configurations, requested);
         preview.PreviewToken = Hash(Snapshot(plan));
         return plan;
     }
@@ -111,6 +115,8 @@ public sealed partial class ProductionUnstartService
         Bmrs = plan.Bmrs.Select(item => new { item.Id, item.BatchNumber, item.BatchQuantity, item.ManufacturingDate, item.ExpiryDate, item.Status, item.SampledQuantity, item.IssuedDate, item.IssuedById, item.DeletedAt, item.UpdatedAt }),
         Bprs = plan.Bprs.Select(item => new { item.Id, item.BatchNumber, item.BatchQuantity, item.ManufacturingDate, item.ExpiryDate, item.ProductPackingId, item.IssuedDate, item.IssuedById, item.DeletedAt, item.UpdatedAt }),
         Reservations = plan.Reservations.Select(item => new { item.Id, item.MaterialBatchId, item.WarehouseId, item.WarehouseLocationShelfId, item.Quantity, item.UoMId, item.DeletedAt, item.ReleasedAt, item.ProductionUnstartRepairId }),
+        Requisitions = plan.Requisitions.Select(item => new { item.Id, item.Status, item.Approved, item.DeletedAt, item.UpdatedAt,
+            Items = item.Items.OrderBy(line => line.Id).Select(line => new { line.Id, line.Status, line.QuantityReceived, line.DeletedAt }) }),
         Configurations = plan.Configurations.Select(item => new { item.Id, item.Kind, item.Revision, item.SourceHash, item.RequirementsJson, item.DepartmentId, item.StorageWarehouseId, item.ProductionWarehouseId, item.DeletedAt }),
         plan.Preview.Blockers });
 }

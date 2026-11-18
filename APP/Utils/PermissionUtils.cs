@@ -640,6 +640,7 @@ public static class PermissionKeys
     public const string CanSwapRawMaterialRequisitions = "CanSwapRawMaterialRequisitions";
     /// <summary>Choose which BOM option (main material or a substitute) a raw-material stock requisition line is issued as, before issue.</summary>
     public const string CanChooseRawMaterialRequisitionSubstitute = "CanChooseRawMaterialRequisitionSubstitute";
+    public const string CanChoosePackagingMaterialRequisitionSubstitute = "CanChoosePackagingMaterialRequisitionSubstitute";
     public const string CanViewPackagingMaterialRequisitions =
         "CanViewPackagingMaterialRequisitions";
     public const string CanIssuePackagingMaterialRequisitions =
@@ -652,6 +653,7 @@ public static class PermissionKeys
     public const string CanViewExpiredMaterials = "CanViewExpiredMaterials";
     public const string CanViewAboutToExpireMaterials = "CanViewAboutToExpireMaterials";
     public const string CanViewExpiryAcrossDepartments = "CanViewExpiryAcrossDepartments";
+    public const string CanViewUpcomingBatchIssues = "CanViewUpcomingBatchIssues";
     public const string CanViewRawMaterialLocationChartList = "CanViewRawMaterialLocationChartList";
     public const string CanReassignRawMaterialStock = "CanReassignRawMaterialStock";
     public const string CanViewRawMaterialLocationList = "CanViewRawMaterialLocationList";
@@ -849,6 +851,7 @@ public static class PermissionKeys
     public const string CanApproveResponse = "CanApproveResponse";
     public const string CanRejectResponse = "CanRejectResponse";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
+    public const string CanTransferAnyApprovalRights = "CanTransferAnyApprovalRights";
     public const string CanInitiateOosInvestigation = "CanInitiateOosInvestigation";
     public const string CanViewOosInvestigations = "CanViewOosInvestigations";
     public const string CanSubmitOosInvestigation = "CanSubmitOosInvestigation";
@@ -2375,6 +2378,11 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.IssueStockRequisitions,
+            PermissionKeys.CanChoosePackagingMaterialRequisitionSubstitute
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            PermissionSubmodules.IssueStockRequisitions,
             PermissionKeys.CanViewPackagingMaterialRequisitions
         );
         addPermission(
@@ -2426,6 +2434,11 @@ public static class PermissionUtils
             PermissionModules.Warehouse,
             PermissionSubmodules.ExpiredMaterials,
             PermissionKeys.CanViewAboutToExpireMaterials
+        );
+        addPermission(
+            PermissionModules.Warehouse,
+            "Upcoming Batch Issues",
+            PermissionKeys.CanViewUpcomingBatchIssues
         );
         addPermission(
             PermissionModules.Warehouse,
@@ -3100,6 +3113,7 @@ public static class PermissionUtils
             PermissionSubmodules.TransferApprovalRights,
             PermissionKeys.CanTransferApprovalRights
         );
+        addPermission(PermissionModules.ItSupport, "Approval Rights Transfer", PermissionKeys.CanTransferAnyApprovalRights);
 
         foreach (var key in new[] { PermissionKeys.CanInitiateOosInvestigation, PermissionKeys.CanViewOosInvestigations,
                      PermissionKeys.CanSubmitOosInvestigation, PermissionKeys.CanReviewOosInvestigation })

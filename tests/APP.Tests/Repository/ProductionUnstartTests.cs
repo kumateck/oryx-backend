@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Requisitions;
 using APP.Mapper;
 using APP.Repository;
 using APP.Services.Production;
@@ -251,19 +252,69 @@ public sealed class ProductionUnstartTests
     }
 
     [RepairPostgresFact]
-    public async Task Issued_or_progressed_documents_and_downstream_records_block_unstart()
+    public async Task Sampled_documents_and_issued_stock_still_block_unstart()
     {
         await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture); var request = await Request(fixture, run);
         await using (var db = fixture.Open())
         {
-            var bmr = await db.BatchManufacturingRecords.SingleAsync(); bmr.IssuedDate = DateTime.UtcNow; await db.SaveChangesAsync();
+            var bmr = await db.BatchManufacturingRecords.SingleAsync(); bmr.SampledQuantity = 1; await db.SaveChangesAsync();
         }
         await using (var db = fixture.Open())
         {
             var preview = await Service(db, fixture).Preview(run); Assert.False(preview.Value.CanApply);
-            Assert.Contains(preview.Value.Blockers, text => text.Contains("unissued"));
+            Assert.Contains(preview.Value.Blockers, text => text.Contains("unsampled"));
             Assert.True((await Service(db, fixture).Apply(run, request)).IsFailure);
             Assert.Single(await db.ProductionActivities.ToListAsync()); Assert.Equal(2, await db.MaterialBatchReservedQuantities.CountAsync());
+            var bmr = await db.BatchManufacturingRecords.SingleAsync(); bmr.SampledQuantity = 0;
+            // A requisition whose stock was issued (completed) can never be undone by releasing reservations.
+            var material = await db.MaterialBatchReservedQuantities.Select(item => item.MaterialBatch.MaterialId).FirstAsync();
+            db.Requisitions.Add(new() { ProductionScheduleProductId = fixture.BatchId, DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(),
+                RequestedById = fixture.Actor.UserId.GetValueOrDefault(), Code = "ISSUED/STOCK", RequisitionType = RequisitionType.Stock, Status = RequestStatus.Completed,
+                Items = [new() { MaterialId = material, Quantity = 1, Status = RequestStatus.Completed }] });
+            await db.SaveChangesAsync();
+        }
+        await using (var db = fixture.Open())
+        {
+            var preview = await Service(db, fixture).Preview(run); Assert.False(preview.Value.CanApply);
+            Assert.Contains(preview.Value.Blockers, text => text.Contains("Stock has been issued"));
+        }
+    }
+
+    [RepairPostgresFact]
+    public async Task An_issued_BMR_with_requested_but_unissued_stock_is_unstarted_and_its_requisition_cancelled()
+    {
+        await using var fixture = new IssuedMaterialRepairFixture(); var run = await Setup(fixture);
+        Guid requisitionId;
+        await using (var db = fixture.Open())
+        {
+            // Issuing the BMR completes the first step and opens the next, where stock is requested.
+            var bmr = await db.BatchManufacturingRecords.SingleAsync(); bmr.IssuedDate = DateTime.UtcNow; bmr.IssuedById = fixture.Actor.UserId;
+            var bpr = await db.BatchPackagingRecords.SingleAsync(); bpr.IssuedDate = DateTime.UtcNow; bpr.IssuedById = fixture.Actor.UserId;
+            var steps = await db.ProductionActivitySteps.OrderBy(item => item.Order).ToListAsync();
+            steps[0].Status = ProductionStatus.Completed; steps[0].StartedAt = steps[0].CompletedAt = DateTime.UtcNow;
+            if (steps.Count > 1) { steps[1].Status = ProductionStatus.InProgress; steps[1].StartedAt = DateTime.UtcNow; }
+            var material = await db.MaterialBatchReservedQuantities.Select(item => item.MaterialBatch.MaterialId).FirstAsync();
+            var requisition = new Requisition { ProductionScheduleProductId = fixture.BatchId, ProductionActivityStepId = steps[^1].Id,
+                DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(), RequestedById = fixture.Actor.UserId.GetValueOrDefault(), Code = "REQUESTED/STOCK",
+                RequisitionType = RequisitionType.Stock, Status = RequestStatus.Pending, Items = [new() { MaterialId = material, Quantity = 5 }] };
+            db.Requisitions.Add(requisition); await db.SaveChangesAsync(); requisitionId = requisition.Id;
+        }
+        var request = await Request(fixture, run);
+        await using (var db = fixture.Open())
+        {
+            var preview = await Service(db, fixture).Preview(run);
+            Assert.True(preview.Value.CanApply, string.Join(" | ", preview.Value.Blockers));
+            Assert.Equal(["REQUESTED/STOCK"], preview.Value.RequisitionsToCancel);
+            Assert.True((await Service(db, fixture).Apply(run, request)).IsSuccess);
+        }
+        await using (var db = fixture.Open())
+        {
+            Assert.Empty(await db.ProductionActivities.ToListAsync());
+            Assert.All(await db.BatchManufacturingRecords.IgnoreQueryFilters().ToListAsync(), item => Assert.NotNull(item.DeletedAt));
+            var cancelled = await db.Requisitions.IgnoreQueryFilters().Include(item => item.Items).SingleAsync(item => item.Id == requisitionId);
+            Assert.NotNull(cancelled.DeletedAt); Assert.All(cancelled.Items, line => Assert.NotNull(line.DeletedAt));
+            Assert.Equal(0, await db.MaterialBatchReservedQuantities.CountAsync());
+            Assert.Equal(400_000_000, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
         }
     }
 
@@ -285,7 +336,7 @@ public sealed class ProductionUnstartTests
         await using (var db = fixture.Open())
         {
             var stale = await Service(db, fixture).Apply(run, request); Assert.True(stale.IsFailure); Assert.Equal("Unstart.StalePreview", stale.Error.Code);
-            db.Requisitions.Add(new() { ProductionScheduleProductId = fixture.BatchId, DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(), RequestedById = fixture.Actor.UserId.GetValueOrDefault(), Code = "SYNTHETIC/DOWNSTREAM", Items = [] });
+            db.Requisitions.Add(new() { ProductionScheduleProductId = fixture.BatchId, DepartmentId = fixture.Actor.DepartmentId.GetValueOrDefault(), RequestedById = fixture.Actor.UserId.GetValueOrDefault(), Code = "SYNTHETIC/DOWNSTREAM", RequisitionType = RequisitionType.Purchase, Items = [] });
             await db.SaveChangesAsync();
             Assert.Contains((await Service(db, fixture).Preview(run)).Value.Blockers, text => text.Contains("Requisitions"));
             Assert.Empty(await db.ProductionUnstartRepairs.ToListAsync()); Assert.Equal(400_000_000, await db.ShelfMaterialBatches.SumAsync(item => item.Quantity));
