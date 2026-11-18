@@ -791,7 +791,8 @@ public class FormRepository(
                 var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
                     b.Id == response.MaterialBatchId
                 );
-                if (batch != null && reworkTask is null)
+                if (batch != null && reworkTask is null
+                    && !await APP.Services.Materials.MaterialRetestTesting.AdvanceAsync(context, batch.Id, MaterialRetestStatus.TestTaken, userId, "Results submitted."))
                 {
                     batch.Status = BatchStatus.TestTaken;
                     context.MaterialBatches.Update(batch);
@@ -1041,7 +1042,8 @@ public class FormRepository(
                 var batch = await context.MaterialBatches.FirstOrDefaultAsync(b =>
                     b.Id == request.MaterialBatchId
                 );
-                batch.Status = BatchStatus.TestTaken;
+                if (!await APP.Services.Materials.MaterialRetestTesting.AdvanceAsync(context, batch.Id, MaterialRetestStatus.TestTaken, userId, "Results submitted."))
+                    batch.Status = BatchStatus.TestTaken;
                 context.MaterialBatches.Update(batch);
             }
             else if (request.BatchManufacturingRecordId.HasValue)
@@ -1307,7 +1309,8 @@ public class FormRepository(
             if (materialBatch == null)
                 return MaterialErrors.NotFound(formAssignee.MaterialBatchId.Value);
 
-            materialBatch.Status = BatchStatus.TestAssigned;
+            if (!await APP.Services.Materials.MaterialRetestTesting.AdvanceAsync(context, materialBatch.Id, MaterialRetestStatus.Assigned, null, "Analysts assigned."))
+                materialBatch.Status = BatchStatus.TestAssigned;
         }
 
         if (formAssignee.BatchManufacturingRecordId.HasValue)
@@ -1401,7 +1404,8 @@ public class FormRepository(
             if (materialBatch == null)
                 return MaterialErrors.NotFound(request.MaterialBatchId.Value);
 
-            materialBatch.Status = BatchStatus.TestAssigned;
+            if (!await APP.Services.Materials.MaterialRetestTesting.AdvanceAsync(context, materialBatch.Id, MaterialRetestStatus.Assigned, userId, "Analysts assigned."))
+                materialBatch.Status = BatchStatus.TestAssigned;
             materialBatch.IssueNumber = request.IssueNumber;
             materialBatch.IssuedById = userId;
             materialBatch.IssuedAt = DateTime.UtcNow;
@@ -1475,7 +1479,8 @@ public class FormRepository(
         response.LastUpdatedById = userId;
         context.Responses.Update(response);
 
-        if (!await context.ResponseReworkTasks.AnyAsync(item => item.NewResponseId == response.Id))
+        if (!await context.ResponseReworkTasks.AnyAsync(item => item.NewResponseId == response.Id)
+            && !await APP.Services.Materials.MaterialRetestTesting.AdvanceAsync(context, batch.Id, MaterialRetestStatus.Checked, userId, "Results checked; certificate sent for approval."))
             batch.Status = BatchStatus.Checked;
         context.MaterialBatches.Update(batch);
 

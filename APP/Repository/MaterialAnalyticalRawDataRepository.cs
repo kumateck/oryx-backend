@@ -332,7 +332,9 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         if (materialBatch is null)
             return Error.NotFound("MaterialBatch.NotFound", "MaterialBatch not found");
 
-        materialBatch.Status = BatchStatus.Testing;
+        // A retest batch stays held; the retest records that testing started.
+        if (!await APP.Services.Materials.MaterialRetestTesting.AdvanceAsync(context, materialBatch.Id, DOMAIN.Entities.Materials.Batch.MaterialRetestStatus.Testing, null, "Testing started."))
+            materialBatch.Status = BatchStatus.Testing;
         context.MaterialBatches.Update(materialBatch);
         await context.SaveChangesAsync();
         return Result.Success();

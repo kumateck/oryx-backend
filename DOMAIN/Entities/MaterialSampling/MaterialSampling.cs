@@ -13,8 +13,12 @@ public class MaterialSampling : BaseEntity
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
     public DateTime? IssuedAt { get; set; }
-    public Guid GrnId { get; set; }
+    /// <summary>The goods receipt note the batch arrived on; null for a retest of a batch without one (migrated stock).</summary>
+    public Guid? GrnId { get; set; }
     public Grn Grn { get; set; }
+    /// <summary>The material retest this sample was taken for; null for the sample taken on receipt.</summary>
+    public Guid? MaterialRetestRequestId { get; set; }
+    public DOMAIN.Entities.Materials.Batch.MaterialRetestRequest MaterialRetestRequest { get; set; }
     public Guid? ChemicalArdId { get; set; }
     public Guid? MicrobialArdId { get; set; }
     public bool MicrobialRequired { get; set; }
