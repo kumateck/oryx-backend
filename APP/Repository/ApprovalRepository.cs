@@ -179,7 +179,7 @@ public class ApprovalRepository(
         if (modelType == "StockRequisition")
         {
             var revision = await context.Requisitions.Where(item => item.Id == modelId).Select(item => item.ContentRevision).SingleOrDefaultAsync();
-            if (revision > 0 && contentRevision != revision)
+            if ((revision > 0 || contentRevision.HasValue) && contentRevision != revision)
                 return Error.Conflict("Approval.StaleRevision", "This stock requisition was repaired. Reload and review its current quantities before deciding.");
         }
 
@@ -256,6 +256,8 @@ public class ApprovalRepository(
                 );
             }
 
+            if (requisition.RequisitionType == RequisitionType.Stock && requisition.Status == RequestStatus.Rejected)
+                return Error.Conflict("StockRequisition.Rejected", "This request was rejected. Raise and approve a new stock requisition.");
             var approvalStages = requisition
                 .Approvals.Select(item => new ResponsibleApprovalStage
                 {
@@ -2191,7 +2193,7 @@ public class ApprovalRepository(
         if (modelType == "StockRequisition")
         {
             var revision = await context.Requisitions.Where(item => item.Id == modelId).Select(item => item.ContentRevision).SingleOrDefaultAsync();
-            if (revision > 0 && contentRevision != revision)
+            if ((revision > 0 || contentRevision.HasValue) && contentRevision != revision)
                 return Error.Conflict("Approval.StaleRevision", "This stock requisition was repaired. Reload and review its current quantities before deciding.");
         }
 
@@ -2242,7 +2244,7 @@ public class ApprovalRepository(
         if (modelType is "PurchaseRequisition" or "StockRequisition" or "TrialRequisition")
         {
             var requisition = await context
-                .Requisitions.Include(r => r.Approvals)
+                .Requisitions.Include(r => r.Approvals).Include(r => r.Items).ThenInclude(i => i.Material)
                 .FirstOrDefaultAsync(r => r.Id == modelId);
 
             if (requisition is null)
@@ -2264,6 +2266,12 @@ public class ApprovalRepository(
                 );
             }
 
+            if (requisition.RequisitionType == RequisitionType.Stock)
+            {
+                var valid = await StockRequisitionRejection.Validate(context, requisition, userId, comments);
+                if (valid.IsFailure) return valid;
+                roleIds = await context.UserRoles.Where(role => role.UserId == userId).Select(role => role.RoleId).ToListAsync();
+            }
             var approvalStages = requisition
                 .Approvals.Select(item => new ResponsibleApprovalStage
                 {
@@ -2291,20 +2299,31 @@ public class ApprovalRepository(
             }
 
             // Reject the stage in the actual tracked list (not the mapped one)
-            var stageToApprove = requisition.Approvals.First(stage =>
+            var stageToApprove = requisition.Approvals.First(stage => stage.Order == approvableStage.Order
+                && stage.Status == ApprovalStatus.Pending && stage.ActivatedAt.HasValue && (
                 (stage.UserId == approvableStage.UserId && stage.UserId == userId)
                 || (
                     stage.RoleId == approvableStage.RoleId
                     && approvableStage.RoleId.HasValue
                     && roleIds.Contains(approvableStage.RoleId.Value)
-                )
+                ))
             );
 
+            if (requisition.RequisitionType == RequisitionType.Stock)
+            {
+                var valid = await StockRequisitionRejection.Validate(context, requisition, userId, comments);
+                if (valid.IsFailure) return valid;
+                StockRequisitionRejection.Apply(requisition);
+            }
             stageToApprove.Status = ApprovalStatus.Rejected;
+            stageToApprove.ApprovalTime = DateTime.UtcNow;
             stageToApprove.Comments = comments;
             stageToApprove.ApprovedById = userId;
             context.RequisitionApprovals.Update(stageToApprove);
             await context.SaveChangesAsync();
+            if (requisition.RequisitionType == RequisitionType.Stock
+                && !(await APP.Services.Authorization.CurrentPermissionSet.Load(context, userId)).Contains(StockRequisitionRejection.Key(requisition.Items[0].Material.Kind)))
+                return Error.Forbidden("StockRequisition.Permission", "Your current permissions changed before recording the rejection.");
             await AddApprovalLogs(
                 new CreateApprovalLog
                 {
@@ -2314,6 +2333,7 @@ public class ApprovalRepository(
                     ModelId = requisition.Id,
                 }
             );
+            return Result.Success();
         }
 
         // Handle other models

@@ -957,12 +957,23 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .ThenBy(m => m.Id)
             .AsQueryable();
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<ShelfMaterialBatchDto>
-        );
+        var result = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ShelfMaterialBatchDto>);
+        result.Data = result.Data.ToList();
+        var link = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().Include(item => item.UoM).Include(item => item.DensityUoM).Include(item => item.Material)
+            .Where(item => item.MaterialId == materialId && item.DepartmentId == warehouse.DepartmentId && item.DeletedAt == null)
+            .ToListAsync();
+        if (link.Count > 1) return Error.Conflict("Stock.Unit", "Reconcile duplicate department material units first.");
+        var target = link.SingleOrDefault();
+        if (target?.UoM is { DeletedAt: null } unit)
+        {
+            foreach (var row in result.Data)
+            {
+                row.WarehouseQuantity = MaterialDensity.Convert(row.Quantity, row.MaterialBatch?.UoM?.Symbol ?? row.UoM?.Symbol, unit.Symbol, MaterialDensity.Verified(target));
+                if (!row.WarehouseQuantity.HasValue) return Error.Conflict("Stock.Density", "Record the material's verified density before converting existing stock between mass and volume.");
+                row.WarehouseUoM = mapper.Map<UnitOfMeasureDto>(unit);
+            }
+        }
+        return result;
     }
 
     public async Task<Result<decimal>> GetMaterialsInTransit(Guid materialId)

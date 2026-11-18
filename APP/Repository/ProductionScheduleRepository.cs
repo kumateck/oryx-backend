@@ -1256,12 +1256,12 @@ public partial class ProductionScheduleRepository(
             .StockTransfers.Where(s => s.ProductionScheduleProductId == productionScheduleProductId)
             .ToListAsync();
 
-        var stockRequisition = await context
-            .Requisitions.AsSplitQuery()
+        var stockRequisition = await APP.Services.Production.StockRequisitionState.Active(context)
+            .AsSplitQuery()
             .Include(requisition => requisition.Items)
             .FirstOrDefaultAsync(r =>
                 r.ProductionScheduleProductId == productionScheduleProductId
-                && r.RequisitionType == RequisitionType.Stock
+                && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected && r.Code.StartsWith("RM")
             );
 
         var purchaseRequisition = await context
@@ -1553,6 +1553,17 @@ public partial class ProductionScheduleRepository(
             item.ProductionScheduleProductId == productionScheduleProductId && item.Kind == MaterialKind.Package);
         if (applied is not null) return await ProductionMaterialQueries.Packaging(context, mapper, applied, status);
 
+        // An unadopted BMR reflects late master additions. This is a read projection; adoption/reservation occurs only on the authorized stock request.
+        var currentPackaging = await ProductionMaterialSources.Load(context, productionScheduleProductId, MaterialKind.Package);
+        if (currentPackaging.IsSuccess && currentPackaging.Value.Blockers.Count == 0)
+        {
+            var source = currentPackaging.Value;
+            return await ProductionMaterialQueries.Packaging(context, mapper, new ProductionMaterialConfiguration {
+                ProductionScheduleProductId = productionScheduleProductId, Kind = MaterialKind.Package,
+                DepartmentId = source.DepartmentId, StorageWarehouseId = source.StorageId, ProductionWarehouseId = source.ProductionId,
+                RequirementsJson = ProductionMaterialSources.Json(source.Requirements) }, status);
+        }
+
         var productionScheduleProduct = await context
             .ProductionScheduleProducts.IgnoreQueryFilters()
             .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
@@ -1628,12 +1639,12 @@ public partial class ProductionScheduleRepository(
             .StockTransfers.Where(s => s.ProductionScheduleProductId == productionScheduleProductId)
             .ToListAsync();
 
-        var stockRequisition = await context
-            .Requisitions.AsSplitQuery()
+        var stockRequisition = await APP.Services.Production.StockRequisitionState.Active(context)
+            .AsSplitQuery()
             .Include(requisition => requisition.Items)
             .FirstOrDefaultAsync(r =>
                 r.ProductionScheduleProductId == productionScheduleProductId
-                && r.RequisitionType == RequisitionType.Stock
+                && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected && r.Code.StartsWith("PM")
             );
 
         var purchaseRequisition = await context
@@ -3841,8 +3852,8 @@ public partial class ProductionScheduleRepository(
         Guid productionScheduleProductId
     )
     {
-        var requisition = await context
-            .Requisitions.AsSplitQuery()
+        var requisition = await APP.Services.Production.StockRequisitionState.Active(context)
+            .AsSplitQuery()
             .Include(r => r.Items)
                 .ThenInclude(i => i.Material)
             .Include(r => r.RequestedBy)
@@ -3853,7 +3864,7 @@ public partial class ProductionScheduleRepository(
             .Where(r =>
                 r.ProductionScheduleProductId == productionScheduleProductId
                 && r.Code.StartsWith("RM") // Ensure the code starts with "RM"
-                && r.RequisitionType == RequisitionType.Stock
+                && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected
             ) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 
@@ -3877,8 +3888,8 @@ public partial class ProductionScheduleRepository(
         Guid productionScheduleProductId
     )
     {
-        var requisition = await context
-            .Requisitions.AsSplitQuery()
+        var requisition = await APP.Services.Production.StockRequisitionState.Active(context)
+            .AsSplitQuery()
             .Include(r => r.Items)
                 .ThenInclude(i => i.Material)
             .Include(r => r.RequestedBy)
@@ -3889,7 +3900,7 @@ public partial class ProductionScheduleRepository(
             .Where(r =>
                 r.ProductionScheduleProductId == productionScheduleProductId
                 && r.Code.StartsWith("PM") // Ensure the code starts with "package"
-                && r.RequisitionType == RequisitionType.Stock
+                && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected
             ) // Ensure it's a stock requisition
             .FirstOrDefaultAsync();
 

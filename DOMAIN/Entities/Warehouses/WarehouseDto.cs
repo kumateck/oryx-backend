@@ -194,6 +194,9 @@ public class WareHouseLocationRackDto
 
 public class ShelfMaterialBatchDto
 {
+    /// <summary>The shelf quantity expressed in this warehouse department's current stock unit; physical lot evidence remains unchanged.</summary>
+    public decimal? WarehouseQuantity { get; set; }
+    public UnitOfMeasureDto WarehouseUoM { get; set; }
     public Guid Id { get; set; }
     public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public MaterialBatchReducedDto MaterialBatch { get; set; }
