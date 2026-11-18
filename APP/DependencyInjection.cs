@@ -105,6 +105,7 @@ public static class DependencyInjection
         services.AddScoped<APP.Services.Production.IssuedMaterialRepairService>();
         services.AddScoped<APP.Services.Production.StockRequisitionMaterialChoiceService>();
         services.AddScoped<APP.Services.Production.ProductionUnstartService>();
+        services.AddScoped<APP.Services.Production.UnstartLeftoverRepairService>();
         services.AddScoped<APP.Services.Production.ReservationRepairService>();
         services.AddScoped<APP.Services.Materials.MaterialPurchaseUnitsReader>();
         services.AddScoped<IRequisitionRepository, RequisitionRepository>();

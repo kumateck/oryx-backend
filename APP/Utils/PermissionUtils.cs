@@ -636,6 +636,10 @@ public static class PermissionKeys
     public const string CanViewRejectedRawMaterials = "CanViewRejectedRawMaterials";
     public const string CanViewRejectedPackagingMaterials = "CanViewRejectedPackagingMaterials";
     public const string CanViewRawMaterialRequisitions = "CanViewRawMaterialRequisitions";
+    /// <summary>Cancel unissued raw material requests left behind by a recorded production unstart.</summary>
+    public const string CanRepairUnstartRawMaterialRequisitions = "CanRepairUnstartRawMaterialRequisitions";
+    /// <summary>Cancel unissued packaging requests left behind by a recorded production unstart.</summary>
+    public const string CanRepairUnstartPackagingMaterialRequisitions = "CanRepairUnstartPackagingMaterialRequisitions";
     public const string CanIssueRawMaterialRequisitions = "CanIssueRawMaterialRequisitions";
     public const string CanSwapRawMaterialRequisitions = "CanSwapRawMaterialRequisitions";
     /// <summary>Choose which BOM option (main material or a substitute) a raw-material stock requisition line is issued as, before issue.</summary>
@@ -2364,6 +2368,8 @@ public static class PermissionUtils
             PermissionSubmodules.IssueStockRequisitions,
             PermissionKeys.CanViewRawMaterialRequisitions
         );
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanRepairUnstartRawMaterialRequisitions);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.IssueStockRequisitions, PermissionKeys.CanRepairUnstartPackagingMaterialRequisitions);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.IssueStockRequisitions,

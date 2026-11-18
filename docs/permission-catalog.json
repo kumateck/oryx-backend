@@ -1682,6 +1682,20 @@
   {
     "module": "Warehouse",
     "submodule": "Issue Stock Requisitions",
+    "key": "CanRepairUnstartRawMaterialRequisitions",
+    "name": "Can Repair Unstart Raw Material Requisitions",
+    "description": "Allows the user to  repair unstart raw material requisitions."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
+    "key": "CanRepairUnstartPackagingMaterialRequisitions",
+    "name": "Can Repair Unstart Packaging Material Requisitions",
+    "description": "Allows the user to  repair unstart packaging material requisitions."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Issue Stock Requisitions",
     "key": "CanIssueRawMaterialRequisitions",
     "name": "Can Issue Raw Material Requisitions",
     "description": "Allows the user to  issue raw material requisitions."

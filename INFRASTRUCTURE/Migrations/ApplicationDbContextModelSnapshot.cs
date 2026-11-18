@@ -22775,6 +22775,47 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("SupplierQuotationItems");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Requisitions.UnstartLeftoverRepair", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PreviewToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RequisitionIdsJson")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.ToTable("UnstartLeftoverRepairs");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReview", b =>
                 {
                     b.Property<Guid>("Id")
@@ -40371,6 +40412,21 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("SupplierQuotation");
 
                     b.Navigation("UoM");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Requisitions.UnstartLeftoverRepair", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Departments.Department", null)
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Reviews.DocumentReview", b =>
