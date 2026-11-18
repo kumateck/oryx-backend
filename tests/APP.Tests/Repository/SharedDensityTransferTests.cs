@@ -142,4 +142,54 @@ public sealed class SharedDensityTransferTests
         Assert.True((await repository.MoveMaterialBatchToWarehouseFromHolding(request, actor.Id)).IsFailure);
         Assert.Equal(physical, placed.Quantity);
     }
+
+    [Fact]
+    public async Task Supplying_store_reads_the_transfer_and_its_shortfall_in_its_own_unit()
+    {
+        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
+        f.Lot.UoM.Symbol = "kg"; f.Lot.Material.DensityGramsPerMilliliter = 1.036m;
+        f.Shelf.Quantity = 100; f.Lot.TotalQuantity = 100; f.Lot.QuantityAssigned = 100;
+        var millilitre = new UnitOfMeasure { Symbol = "mL", Name = "Millilitre" };
+        var transfer = new StockTransferSource { Id = Guid.NewGuid(), StockTransfer = new() { MaterialId = f.Lot.MaterialId, UoM = millilitre },
+            FromDepartmentId = f.Department.Id, ToDepartmentId = f.OtherDepartment.Id, Quantity = 200_000, Status = StockTransferStatus.Approved };
+        db.Add(transfer); await db.SaveChangesAsync();
+
+        var read = await f.Repository.GetStockTransferSource(transfer.Id);
+        Assert.True(read.IsSuccess); Assert.Equal(207.2m, read.Value.SupplierQuantity); Assert.Equal("kg", read.Value.SupplierUoM.Symbol);
+        Assert.Equal(200_000, read.Value.Quantity); Assert.Equal("mL", read.Value.UoM.Symbol);
+        var list = await f.Repository.GetIncomingStockTransferRequestForUserDepartment(f.Actor.Id, 1, 10, status: StockTransferStatus.Approved);
+        Assert.True(list.IsSuccess); Assert.Equal(207.2m, Assert.Single(list.Value.Data).SupplierQuantity);
+
+        var preview = await f.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
+        Assert.Equal("StockTransfer.InsufficientStock", preview.Error.Code);
+        Assert.Equal("The supplying store has 100 kg free of the 207.2 kg needed for 200 L. It is short by 107.2 kg.", preview.Error.Description);
+    }
+
+    [Theory]
+    [InlineData(20_000_000, "mL", "20,000 L")]
+    [InlineData(999, "mL", "999 mL")]
+    [InlineData(2_500_000, "mg", "2.5 kg")]
+    [InlineData(2_500, "mg", "2.5 g")]
+    [InlineData(1_234.5678, "kg", "1,234.568 kg")]
+    public void Quantities_read_in_the_largest_whole_unit(decimal quantity, string unit, string expected) =>
+        Assert.Equal(expected, StockTransferSupplyUnits.Readable(quantity, unit));
+
+    [Fact]
+    public async Task Approved_materials_count_production_holds_taken_from_the_store()
+    {
+        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
+        f.Shelf.Quantity = 100;
+        // The allocator records the production warehouse the stock goes to and the store shelf it is taken from.
+        db.MaterialBatchReservedQuantities.Add(new() { Id = Guid.NewGuid(), MaterialBatchId = f.Lot.Id, WarehouseId = f.Production.Id,
+            WarehouseLocationShelfId = f.Shelf.WarehouseLocationShelfId, ProductionScheduleProductId = f.Batch.Id, UoMId = f.Lot.UoMId, Quantity = 30 });
+        // A released hold no longer counts.
+        db.MaterialBatchReservedQuantities.Add(new() { Id = Guid.NewGuid(), MaterialBatchId = f.Lot.Id, WarehouseId = f.Production.Id, ReleasedAt = DateTime.UtcNow,
+            WarehouseLocationShelfId = f.Shelf.WarehouseLocationShelfId, ProductionScheduleProductId = f.Batch.Id, UoMId = f.Lot.UoMId, Quantity = 50 });
+        await db.SaveChangesAsync();
+
+        var result = await new MaterialRepository(db, f.Mapper).GetApprovedMaterials(1, 10, null, DOMAIN.Entities.Materials.MaterialKind.Raw, f.Actor.Id);
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        var row = Assert.Single(result.Value.Data);
+        Assert.Equal(100, row.TotalAvailableQuantity); Assert.Equal(30, row.ReservedQuantity);
+    }
 }

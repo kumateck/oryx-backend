@@ -609,14 +609,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             )
             .ToDictionaryAsync(md => md.MaterialId, md => mapper.Map<UnitOfMeasureDto>(md.UoM));
 
-        var activeWarehouseReservations = context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
-            .AsSplitQuery()
-            .Where(r =>
-                materialIds.Contains(r.MaterialBatch.MaterialId)
-                && r.WarehouseId == warehouse.Id
-                && r.DeletedAt == null
-            );
+        var activeWarehouseReservations = StoreReservations.HeldIn(context, warehouse)
+            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId));
         var reservedQuantities = await ReservationTotals.ByMaterialAsync(activeWarehouseReservations, context.Database.IsNpgsql());
 
         var materialDetails = paginatedResult
@@ -708,13 +702,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     "Unit of measure not found for this department."
                 );
 
-            var warehouseReservations = context
-                .MaterialBatchReservedQuantities.AsSplitQuery()
-                .Where(r =>
-                    r.MaterialBatch.MaterialId == m.Id
-                    && r.WarehouseId == warehouse.Id
-                    && r.DeletedAt == null
-                );
+            var warehouseReservations = StoreReservations.HeldIn(context, warehouse)
+                .Where(r => r.MaterialBatch.MaterialId == m.Id);
             var reservedQuantity = await ReservationTotals.SumAsync(warehouseReservations, context.Database.IsNpgsql());
 
             materialDetails.Add(

@@ -13,3 +13,11 @@ Companion desktop branch: `codex/material-density-transfers`. Optional read fiel
 Validation includes raw/packaging density deny/allow, L↔kg transfer/receipt totals and duplicate receipt, production reservation/issue snapshots, legacy density preservation, existing BOM conversion and real PostgreSQL migration/grant/audit and transfer concurrency checks. No pending EF model changes.
 
 This PR includes the extra-material availability fix from companion PR #1893 until that commit reaches the target branch. Extra-material issue uses requested units for validation, then deducts and audits the converted physical quantity in the lot unit. Integration regressions cover both raw and packaging extra-material issues after L/kg conversion.
+
+## Supplying store's unit (2026-11-18)
+
+A transfer is requested in the receiving department's unit and stored unchanged. The in-bound list and `GET stock-transfer/{id}` add optional `supplierQuantity` / `supplierUoM`: the same quantity in the supplying department's linked stock unit, converted with the shared density (20,000 L reads 20,720 kg at 1.036 g/mL). They are null when the supplier has no single link or the units cannot be converted. A shortfall is reported in the supplier's unit, with the requested figure in its largest whole unit ("The supplying store has 3,743.3 kg free of the 20,720 kg needed for 20,000 L. It is short by 16,976.7 kg."); before this it printed the raw request-unit difference without a unit (for example 16386776.06… for an mL request).
+
+Approved materials count a store's production holds by the store shelf they are taken from (`StoreReservations.HeldIn`), and leave out holds that were already issued, the same as the allocator and the forecast do. Holds record the production warehouse in `WarehouseId`, so the earlier filter on `WarehouseId == store` showed 0 reserved while the forecast showed the holds. `deploy/repairs/diagnose-material-holds.sql` lists one material's live holds against its shelf balance.
+
+Stock requisitions in `approval/my-pending` carry `batchNumber` and `productName` of their production batch.

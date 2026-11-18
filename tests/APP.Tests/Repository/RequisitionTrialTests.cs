@@ -415,4 +415,33 @@ public class RequisitionTrialTests
         Assert.Equal(requisition.Id, entity.Id);
         Assert.Equal(requisition.Code, entity.Code);
     }
+
+    [Fact]
+    public async Task ApprovalRepository_GetEntitiesRequiringApproval_ShowsTheStockRequisitionsProductionBatch()
+    {
+        await using var context = CreateContext();
+        var approverId = Guid.NewGuid();
+        var department = new Department { Id = Guid.NewGuid(), Name = "Oral Solid-Tablet" };
+        var batch = new DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct
+        {
+            Id = Guid.NewGuid(), BatchNumber = "AZC-26-007",
+            Product = new DOMAIN.Entities.Products.Product { Id = Guid.NewGuid(), Name = "Azirocin Capsules", Code = "AZC" },
+        };
+        var requisition = new Requisition
+        {
+            Id = Guid.NewGuid(), Code = "PM/N/26/007", RequisitionType = RequisitionType.Stock, RequestedById = Guid.NewGuid(),
+            DepartmentId = department.Id, Status = RequestStatus.New, Items = [], ProductionScheduleProduct = batch,
+        };
+        context.Departments.Add(department);
+        var approval = new Approval { Id = Guid.NewGuid(), ItemType = "StockRequisition", ApprovalStages = [] };
+        approval.ApprovalStages.Add(new ApprovalStage { Id = Guid.NewGuid(), ApprovalId = approval.Id, Approval = approval, Order = 1, Required = true, UserId = approverId });
+        context.AddRange(requisition, approval);
+        await context.SaveChangesAsync();
+        var approvalRepository = CreateApprovalRepository(context);
+        await approvalRepository.CreateInitialApprovalsAsync("PackageStockRequisition", requisition.Id);
+
+        var entity = Assert.Single(await approvalRepository.GetEntitiesRequiringApproval(approverId, [Guid.NewGuid()], "StockRequisition"));
+        Assert.Equal("AZC-26-007", entity.BatchNumber);
+        Assert.Equal("Azirocin Capsules", entity.ProductName);
+    }
 }

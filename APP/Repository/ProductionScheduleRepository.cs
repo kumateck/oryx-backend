@@ -3248,7 +3248,7 @@ public partial class ProductionScheduleRepository(
         Guid stockTransferId
     )
     {
-        return mapper.Map<DepartmentStockTransferDto>(
+        var transfer = mapper.Map<DepartmentStockTransferDto>(
             await context
                 .StockTransferSources.Include(s => s.FromDepartment)
                 .Include(s => s.ToDepartment)
@@ -3258,6 +3258,8 @@ public partial class ProductionScheduleRepository(
                     .ThenInclude(st => st.UoM)
                 .FirstOrDefaultAsync(s => s.Id == stockTransferId)
         );
+        await StockTransferSupplyUnits.Apply(context, [transfer]);
+        return transfer;
     }
 
     public async Task<
@@ -3302,12 +3304,15 @@ public partial class ProductionScheduleRepository(
             query = query.WhereSearch(searchQuery, q => q.StockTransfer.Code);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var result = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
             mapper.Map<DepartmentStockTransferDto>
         );
+        result.Data = (result.Data ?? []).ToList();
+        await StockTransferSupplyUnits.Apply(context, result.Data);
+        return result;
     }
 
     public async Task<
@@ -3352,12 +3357,15 @@ public partial class ProductionScheduleRepository(
             query = query.WhereSearch(searchQuery, q => q.StockTransfer.Code);
         }
 
-        return await PaginationHelper.GetPaginatedResultAsync(
+        var result = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,
             pageSize,
             mapper.Map<DepartmentStockTransferDto>
         );
+        result.Data = (result.Data ?? []).ToList();
+        await StockTransferSupplyUnits.Apply(context, result.Data);
+        return result;
     }
 
     public Task<Result> ApproveStockTransfer(Guid id, Guid userId) =>
@@ -3416,10 +3424,13 @@ public partial class ProductionScheduleRepository(
 
         var available = await StockTransferPicking.Load(context, transfer.MaterialId, warehouse.Id, unitId);
         var picks = StockTransferPicking.Pick(available, source.Quantity);
-        var shortfall = source.Quantity - picks.Sum(pick => pick.Quantity);
-        if (shortfall > 0)
-            return Error.Failure("StockTransfer.InsufficientStock",
-                $"The supplying warehouse is short by {shortfall} in available stock for this transfer.");
+        if (source.Quantity - picks.Sum(pick => pick.Quantity) > 0)
+        {
+            var requestUnit = await context.UnitOfMeasures.AsNoTracking().Where(unit => unit.Id == unitId).Select(unit => unit.Symbol).SingleOrDefaultAsync();
+            var supplierUnit = await StockTransferSupplyUnits.SupplierUnit(context, transfer.MaterialId, source.FromDepartmentId);
+            return Error.Failure("StockTransfer.InsufficientStock", StockTransferSupplyUnits.Shortfall(source.Quantity, requestUnit,
+                available.Sum(entry => entry.Quantity), supplierUnit, await MaterialDensity.Load(context, transfer.MaterialId)));
+        }
 
         return picks.Select(pick => new BatchToSupply
         {

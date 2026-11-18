@@ -3389,6 +3389,8 @@ public class ApprovalRepository(
                     .ThenInclude(responsibleApprovalStage => responsibleApprovalStage.ApprovedBy)
                 .Include(po => po.CreatedBy)
                     .ThenInclude(po => po.Department)
+                .Include(r => r.ProductionScheduleProduct)
+                    .ThenInclude(batch => batch.Product)
                 .ToListAsync();
 
             foreach (var r in requisitions)
@@ -3404,6 +3406,8 @@ public class ApprovalRepository(
                             CreatedAt = r.CreatedAt,
                             Department = mapper.Map<DepartmentDto>(r.CreatedBy?.Department),
                             Code = r.Code,
+                            BatchNumber = r.ProductionScheduleProduct?.BatchNumber,
+                            ProductName = r.ProductionScheduleProduct?.Product?.Name,
                             RequestedBy = mapper.Map<UserDto>(r.CreatedBy),
                             ApprovalLogs = GetApprovalLogs(r.Id),
                         }
