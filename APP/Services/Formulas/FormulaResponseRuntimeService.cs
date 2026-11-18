@@ -22,6 +22,8 @@ public sealed partial class FormulaResponseRuntimeService(
                     .ThenInclude(item => item.FormulaRevision)
             .SingleOrDefaultAsync(item => item.Id == responseId, cancellationToken);
         if (response is null) return FormulaResponseRuntimeErrors.NotFound;
+        if (await APP.Services.Forms.TestCorrectionGuard.IsReturned(context, responseId))
+            return FormulaResponseRuntimeErrors.Unauthorized;
         if (response.CreatedById != actorId)
             return FormulaResponseRuntimeErrors.Unauthorized;
         // Retirement prevents new use; it does not revoke a response's pinned revision.
@@ -131,6 +133,7 @@ public sealed partial class FormulaResponseRuntimeService(
         ResponseFormulaSnapshot snapshot, Guid actorId, FormulaExecutionTrigger trigger,
         CancellationToken cancellationToken)
     {
+        if (await APP.Services.Forms.TestCorrectionGuard.IsReturned(context, snapshot.ResponseId)) return false;
         if (trigger == FormulaExecutionTrigger.FinalSubmission)
             return snapshot.Response.CreatedById == actorId;
         var fieldId = await context.FormFieldRevisions.AsNoTracking()

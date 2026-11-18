@@ -2417,6 +2417,48 @@
   {
     "module": "Quality Control",
     "submodule": "Analytical Test Request (Products)",
+    "key": "CanReturnProductTestForCorrection",
+    "name": "Can Return Product Test For Correction",
+    "description": "Allows the user to  return product test for correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanViewProductTestCorrectionHistory",
+    "name": "Can View Product Test Correction History",
+    "description": "Allows the user to  view product test correction history."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanReturnRawMaterialTestForCorrection",
+    "name": "Can Return Raw Material Test For Correction",
+    "description": "Allows the user to  return raw material test for correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanViewRawMaterialTestCorrectionHistory",
+    "name": "Can View Raw Material Test Correction History",
+    "description": "Allows the user to  view raw material test correction history."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanReturnPackagingMaterialTestForCorrection",
+    "name": "Can Return Packaging Material Test For Correction",
+    "description": "Allows the user to  return packaging material test for correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanViewPackagingMaterialTestCorrectionHistory",
+    "name": "Can View Packaging Material Test Correction History",
+    "description": "Allows the user to  view packaging material test correction history."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
     "key": "CanReassignProductTest",
     "name": "Can Reassign Product Test",
     "description": "Allows the user to  reassign product test."

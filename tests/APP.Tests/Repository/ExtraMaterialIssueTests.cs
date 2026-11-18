@@ -112,6 +112,26 @@ public sealed class ExtraMaterialIssueTests
         Assert.Single(await check.MassMaterialBatchMovements.ToListAsync());
     }
 
+    [Theory]
+    [InlineData(MaterialKind.Raw)]
+    [InlineData(MaterialKind.Package)]
+    public async Task Density_issue_deducts_physical_stock_and_records_movement_in_the_lot_unit(MaterialKind kind)
+    {
+        using var f = new ScheduleStockFixture(); var extra = await Seed(f, kind: kind); var db = f.Harness.Db;
+        f.Lot.UoM.Symbol = "l"; f.Lot.Material.DensityGramsPerMilliliter = 0.8m;
+        var kilogram = new DOMAIN.Entities.Base.UnitOfMeasure { Name = "Kilogram", Symbol = "kg" };
+        db.UnitOfMeasures.Add(kilogram); extra.UoM = kilogram; await db.SaveChangesAsync();
+        var preview = await f.Repository.BatchesToSupplyForExtraPackingMaterial(extra.Id);
+        Assert.True(preview.IsSuccess, preview.Error.Description);
+        Assert.Equal(20, Assert.Single(preview.Value).QuantityToTake);
+        Assert.Equal(25, Assert.Single(preview.Value).SourceQuantityToTake);
+        var result = await f.Repository.ApproveProductionExtraPacking(extra.Id, [new() { BatchId = f.Lot.Id, Quantity = 20 }], f.Actor.Id);
+        Assert.True(result.IsSuccess, result.Error.Description);
+        Assert.Equal(75, f.Shelf.Quantity); Assert.Equal(75, f.Lot.QuantityAssigned);
+        Assert.Equal(25, Assert.Single(await db.MassMaterialBatchMovements.ToListAsync()).Quantity);
+        Assert.All(await db.BinCardInformation.ToListAsync(), card => { Assert.Equal(f.Lot.UoMId, card.UoMId); Assert.Equal(25, card.QuantityReceived + card.QuantityIssued); });
+    }
+
     [Fact]
     public void Controller_retains_specific_request_and_variant_issue_permissions()
     {
