@@ -488,6 +488,12 @@ public class FormRepository(
             .Responses.Include(r => r.FormResponses)
             .FirstOrDefaultAsync(r => r.Id == request.ResponseId);
 
+        if (response is not null)
+        {
+            var correctionWriter = await APP.Services.Forms.TestCorrectionGuard.Writer(context, response, userId);
+            if (correctionWriter.IsFailure) return correctionWriter.Errors;
+        }
+
         if (response is null && request.ResponseId.HasValue)
             return Error.Validation("Response", $"ResponseId {request.ResponseId} is invalid");
 
@@ -509,6 +515,7 @@ public class FormRepository(
             return Error.Conflict("Response.RoutineFinalized", "Finalized routine worksheet is immutable.");
         if (response is not null &&
             (response.CheckedAt.HasValue || response.Approved || response.Rejected ||
+             await APP.Services.Forms.TestCorrectionGuard.IsReturned(context, response.Id) ||
              response.FormRevisionId.HasValue &&
              await context.ResponseFormulaSubmissionSets.AnyAsync(item =>
                  item.ResponseId == response.Id)))
@@ -746,8 +753,11 @@ public class FormRepository(
 
         if (response == null)
             return Error.NotFound("Response.NotFound", "Response not found");
-        if (response.CheckedAt.HasValue || response.Approved || response.Rejected)
+        if (response.CheckedAt.HasValue || response.Approved || response.Rejected || await APP.Services.Forms.TestCorrectionGuard.IsReturned(context, response.Id))
             return Error.Conflict("Response.Finalized", "Previous test records cannot be resubmitted for rework.");
+        var correctionWriter = await APP.Services.Forms.TestCorrectionGuard.Writer(context, response, userId);
+        if (correctionWriter.IsFailure) return correctionWriter;
+        await APP.Services.Forms.TestCorrectionGuard.Lock(context, response.MaterialBatchId, response.BatchManufacturingRecordId, response.ProductionActivityStepId);
         var reworkTask = await context.ResponseReworkTasks
             .SingleOrDefaultAsync(item => item.NewResponseId == response.Id);
 
@@ -777,6 +787,8 @@ public class FormRepository(
             );
         }
 
+        correctionWriter = await APP.Services.Forms.TestCorrectionGuard.Writer(context, response, userId);
+        if (correctionWriter.IsFailure) return correctionWriter;
         var formulaSubmission = await formulaSubmissionService.FinalizeAsync(
             response.Id, userId);
         if (formulaSubmission.IsFailure)
@@ -831,6 +843,11 @@ public class FormRepository(
                 return Error.NotFound("ATR", $"ATR not found {response.ProductionActivityStepId}");
 
             atr.Status = AnalyticalTestStatus.TestTaken;
+            if (await context.TestCorrectionReturns.AnyAsync(h => h.CorrectionResponseId == response.Id))
+            {
+                atr.TestedAt = DateTime.UtcNow;
+                atr.TestedById = userId;
+            }
             context.AnalyticalTestRequests.Update(atr);
         }
 
@@ -863,10 +880,14 @@ public class FormRepository(
             track.WorksheetFinalizedAt = DateTime.UtcNow;
             track.WorksheetFinalizedById = userId;
         }
+        correctionWriter = await APP.Services.Forms.TestCorrectionGuard.Writer(context, response, userId);
+        if (correctionWriter.IsFailure) return correctionWriter;
         await context.SaveChangesAsync();
         if (reworkTask is not null)
         {
             reworkTask.Status = ResponseReworkStatus.AwaitingQa;
+            correctionWriter = await APP.Services.Forms.TestCorrectionGuard.Writer(context, response, userId);
+            if (correctionWriter.IsFailure) return correctionWriter;
             await context.SaveChangesAsync();
         }
         if (transaction is not null) await transaction.CommitAsync();
@@ -1455,6 +1476,7 @@ public class FormRepository(
     {
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
+        await APP.Services.Forms.TestCorrectionGuard.Lock(context, materialBatchId, null, null);
         var response = await context.Responses
             .Where(r => r.MaterialBatchId == materialBatchId)
             .OrderByDescending(r => r.ReworkSequence).ThenByDescending(r => r.CreatedAt)
@@ -1469,6 +1491,12 @@ public class FormRepository(
         );
         if (batch == null)
             return MaterialErrors.NotFound(materialBatchId);
+
+        var materialKind = await context.MaterialBatches.Where(b => b.Id == materialBatchId).Select(b => b.Material.Kind).SingleAsync();
+        var checkKey = materialKind == DOMAIN.Entities.Materials.MaterialKind.Raw
+            ? PermissionKeys.CanCheckRawMaterialTestResult : PermissionKeys.CanCheckPackagingMaterialTestResult;
+        async Task<bool> CanCheck() => (await APP.Services.Authorization.CurrentPermissionSet.Load(context, userId)).Contains(checkKey);
+        if (!await CanCheck()) return Error.Forbidden("MaterialCertificate.Permission", "You cannot generate this material certificate.");
 
         if (await LegacyFormulaConfigurationReader.Pending(context, response))
             return Error.Conflict("FormulaRepair.RecalculationRequired", "Recalculate repaired formula fields before generating the certificate.");
@@ -1514,7 +1542,9 @@ public class FormRepository(
             }
         }
 
+        if (!await CanCheck()) return Error.Forbidden("MaterialCertificate.Permission", "Your current permissions do not allow this certificate.");
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        if (!await CanCheck()) return Error.Forbidden("MaterialCertificate.Permission", "Your current permissions do not allow this certificate.");
         await context.SaveChangesAsync();
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
@@ -1530,6 +1560,7 @@ public class FormRepository(
     {
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
+        await APP.Services.Forms.TestCorrectionGuard.Lock(context, null, batchManufacturingRecordId, productionActivityStepId);
         var dateValidation = await ProductCertificateGuard.Validate(context, batchManufacturingRecordId, productionActivityStepId, userId);
         if (dateValidation.IsFailure) return dateValidation.Errors;
         var response = await context.Responses

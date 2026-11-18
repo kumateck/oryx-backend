@@ -1012,6 +1012,7 @@ public partial class ApplicationDbContext(
         FormulaChangeGuard.Validate(ChangeTracker);
         ValidateFormulaRepairHistory();
         ValidateTemplateRepairHistory();
+        ValidateTestCorrectionHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
         ValidateMaterialDensityMeasurements();
@@ -1030,6 +1031,7 @@ public partial class ApplicationDbContext(
         FormulaChangeGuard.Validate(ChangeTracker);
         ValidateFormulaRepairHistory();
         ValidateTemplateRepairHistory();
+        ValidateTestCorrectionHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
         ValidateMaterialDensityMeasurements();
@@ -1132,6 +1134,19 @@ public partial class ApplicationDbContext(
                 case EntityState.Added:
                     entity.CreatedAt = DateTime.UtcNow;
                     entity.CreatedById = currentUserService.UserId;
+                    if (entity is DOMAIN.Entities.Forms.Response correction)
+                    {
+                        var returned = TestCorrectionReturns.Local.SingleOrDefault(h => h.CorrectionResponseId == correction.Id);
+                        var original = returned == null ? null : Responses.Local.SingleOrDefault(a => a.Id == returned.SourceResponseId);
+                        if (original != null) correction.CreatedById = original.CreatedById;
+                    }
+                    if (entity is DOMAIN.Entities.Forms.FormResponse copied)
+                    {
+                        var returned = TestCorrectionReturns.Local.SingleOrDefault(h => h.CorrectionResponseId == copied.ResponseId);
+                        var original = returned == null ? null : FormResponses.Local.Where(a =>
+                            a.ResponseId == returned.SourceResponseId && a.FormFieldId == copied.FormFieldId).OrderByDescending(a => a.CreatedAt).FirstOrDefault();
+                        if (original != null) { copied.CreatedById = original.CreatedById; copied.CreatedAt = original.CreatedAt; }
+                    }
                     break;
 
                 case EntityState.Modified:
