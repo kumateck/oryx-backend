@@ -4221,11 +4221,11 @@ public partial class ProductionScheduleRepository(
 
     public async Task<Result> CreateExtraPacking(
         Guid productionScheduleProductId,
-        List<CreateProductionExtraPacking> extraPackings
+        List<CreateProductionExtraPacking> extraPackings, Guid userId
     )
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
-            return await ProductionMaterialTransaction.Run(context, () => CreateExtraPacking(productionScheduleProductId, extraPackings));
+            return await ProductionMaterialTransaction.Run(context, () => CreateExtraPacking(productionScheduleProductId, extraPackings, userId));
 
         if (extraPackings.Count == 0)
             return Error.Validation("Extra.Packing", "Empty list in extra packings");
@@ -4235,13 +4235,33 @@ public partial class ProductionScheduleRepository(
         var allowed = await StockRequisitionRules.CanRequestExtra(context, productionScheduleProductId, kinds);
         if (allowed.IsFailure) return allowed;
 
+        var actorDepartment = await context.Users.Where(user => user.Id == userId && !user.IsDisabled).Select(user => user.DepartmentId).SingleOrDefaultAsync();
+        var batchDepartment = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+            .Where(batch => batch.Id == productionScheduleProductId && batch.ProductionSchedule.DeletedAt == null && !batch.Cancelled && batch.Product.DeletedAt == null)
+            .Select(batch => batch.Product.DepartmentId).SingleOrDefaultAsync();
+        if (!actorDepartment.HasValue || actorDepartment != batchDepartment)
+            return Error.Forbidden("ExtraMaterial.Department", "Request extra material only for your department's production batches.");
+        if (extraPackings.Any(row => row.Quantity <= 0) || materialIds.Count != extraPackings.Count)
+            return Error.Validation("ExtraMaterial.Quantity", "Choose each material once and enter a quantity greater than zero.");
+        var materials = await context.Materials.Where(material => materialIds.Contains(material.Id)).ToDictionaryAsync(material => material.Id);
+        if (materials.Count != materialIds.Count) return Error.Validation("ExtraMaterial.Material", "A material no longer exists.");
+        foreach (var request in extraPackings)
+        {
+            var warehouse = await FindTransferWarehouse(batchDepartment.Value, materials[request.MaterialId].Kind);
+            if (warehouse is null) return UserErrors.WarehouseNotFound(materials[request.MaterialId].Kind);
+            var available = await StockTransferPicking.Load(context, request.MaterialId, warehouse.Id, request.UoMId);
+            if (available.Sum(row => row.Quantity) < request.Quantity)
+                return Error.Conflict("ExtraMaterial.InsufficientStock", $"{materials[request.MaterialId].Name}: not enough unreserved, approved stock within its expiry/retest validity in this department's store.");
+        }
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanRequestExtraPacking))
+            return Error.Forbidden("ExtraMaterial.Permission", "You do not have permission to request extra material.");
         var extras = extraPackings
             .Select(p => new ProductionExtraPacking
             {
                 ProductionScheduleProductId = productionScheduleProductId,
                 MaterialId = p.MaterialId,
                 Quantity = p.Quantity,
-                UoMId = p.UoMId,
+                UoMId = p.UoMId, CreatedById = userId,
             })
             .ToList();
 
@@ -4250,6 +4270,8 @@ public partial class ProductionScheduleRepository(
 
         foreach (var extra in extras)
         {
+            if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanRequestExtraPacking))
+                return Error.Forbidden("ExtraMaterial.Permission", "Your permission to request extra material was removed.");
             await approvalRepository.CreateInitialApprovalsAsync(
                 nameof(ProductionExtraPacking),
                 extra.Id
@@ -4359,48 +4381,30 @@ public partial class ProductionScheduleRepository(
     )
     {
         var extraPacking = await context
-            .ProductionExtraPackings.AsSplitQuery()
+            .ProductionExtraPackings.IgnoreQueryFilters().AsSplitQuery()
             .Include(s => s.Material)
             .Include(productionExtraPacking => productionExtraPacking.ProductionScheduleProduct)
                 .ThenInclude(p => p.Product)
-            .FirstOrDefaultAsync(st => st.Id == extraPackingMaterialId);
+            .FirstOrDefaultAsync(st => st.Id == extraPackingMaterialId && st.DeletedAt == null && st.Material.DeletedAt == null);
 
         if (extraPacking == null)
         {
             return Error.NotFound("ExtraPacking.NotFound", "Extra packing not found");
         }
 
-        var department = extraPacking.ProductionScheduleProduct.Product.Department;
-
-        Warehouse fromWarehouse;
-
-        if (extraPacking.Material.Kind == MaterialKind.Raw)
-        {
-            fromWarehouse = department.Warehouses.FirstOrDefault(q =>
-                q.Type == WarehouseType.RawMaterialStorage
-            );
-        }
-        else
-        {
-            fromWarehouse = department.Warehouses.FirstOrDefault(q =>
-                q.Type == WarehouseType.PackagedStorage
-            );
-        }
-
-        if (fromWarehouse is null)
-            return UserErrors.WarehouseNotFound(MaterialKind.Package);
-
-        var toWarehouse = department.Warehouses.FirstOrDefault(w =>
-            w.Type == WarehouseType.Production
-        );
-        if (toWarehouse is null)
-            return Error.NotFound("Production.Warehouse", "Production.Warehouse not found");
-
-        return await materialRepository.BatchesToSupplyForGivenQuantity(
-            extraPacking.MaterialId,
-            fromWarehouse.Id,
-            extraPacking.Quantity
-        );
+        if (extraPacking.Status == ProductionExtraPackingStatus.Approved || extraPacking.IssuedAt.HasValue)
+            return new List<BatchToSupply>();
+        var warehouse = await FindTransferWarehouse(extraPacking.ProductionScheduleProduct.Product.DepartmentId.GetValueOrDefault(), extraPacking.Material.Kind);
+        if (warehouse is null) return UserErrors.WarehouseNotFound(extraPacking.Material.Kind);
+        var available = await StockTransferPicking.Load(context, extraPacking.MaterialId, warehouse.Id, extraPacking.UoMId);
+        var picks = StockTransferPicking.Pick(available, extraPacking.Quantity);
+        if (picks.Sum(pick => pick.Quantity) != extraPacking.Quantity)
+            return Error.Conflict("ExtraMaterial.InsufficientStock", "There is not enough unreserved, approved stock in this department's store. Review reservations and reload the request.");
+        return picks.Select(pick => new BatchToSupply {
+            Batch = mapper.Map<MaterialBatchListDto>(pick.Shelf.MaterialBatch), QuantityToTake = pick.Quantity,
+            WarehouseLocationShelfId = pick.Shelf.WarehouseLocationShelfId,
+            WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(pick.Shelf.WarehouseLocationShelf)
+        }).ToList();
     }
 
     public async Task<Result> ApproveProductionExtraPacking(
@@ -4413,14 +4417,14 @@ public partial class ProductionScheduleRepository(
             return await ProductionMaterialTransaction.Run(context, () => ApproveProductionExtraPacking(productionExtraPackingId, batches, userId));
 
         var productionExtraPacking = await context
-            .ProductionExtraPackings.AsSplitQuery()
+            .ProductionExtraPackings.IgnoreQueryFilters().AsSplitQuery()
             .Include(p => p.ProductionScheduleProduct)
                 .ThenInclude(p => p.Product)
                     .ThenInclude(pp => pp.Department)
                         .ThenInclude(p => p.Warehouses)
                             .ThenInclude(warehouse => warehouse.ArrivalLocation)
             .Include(productionExtraPacking => productionExtraPacking.Material)
-            .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId);
+            .FirstOrDefaultAsync(p => p.Id == productionExtraPackingId && p.DeletedAt == null && p.Material.DeletedAt == null);
 
         if (productionExtraPacking is null)
             return Error.NotFound("ProductionExtraPacking", "ProductionExtraPacking not found");
@@ -4431,7 +4435,15 @@ public partial class ProductionScheduleRepository(
         if (approvalGate.IsFailure)
             return approvalGate;
 
+        if (productionExtraPacking.IssuedAt.HasValue || productionExtraPacking.Status == ProductionExtraPackingStatus.Approved)
+            return Error.Conflict("ExtraMaterial.AlreadyIssued", "This extra-material request has already been issued.");
         var department = productionExtraPacking.ProductionScheduleProduct.Product.Department;
+        if (!await context.Users.AnyAsync(user => user.Id == userId && !user.IsDisabled && user.DepartmentId == department.Id))
+            return Error.Forbidden("ExtraMaterial.Department", "Only this production department's store can issue the request.");
+        var permission = productionExtraPacking.Material.Kind == MaterialKind.Raw
+            ? PermissionKeys.CanIssueRawMaterialRequisitions : PermissionKeys.CanIssuePackagingMaterialRequisitions;
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(permission))
+            return Error.Forbidden("ExtraMaterial.Permission", "You do not have permission to issue this material kind.");
 
         Warehouse fromWarehouse;
 
@@ -4456,56 +4468,36 @@ public partial class ProductionScheduleRepository(
         if (toWarehouse is null)
             return Error.NotFound("Production.Warehouse", "Production.Warehouse not found");
 
-        var remainingQuantity = productionExtraPacking.Quantity;
-        var distributedBatches = new List<MaterialBatch>();
-
-        foreach (var batchRequest in batches)
+        if (batches is null || batches.Count == 0 || productionExtraPacking.Quantity <= 0
+            || batches.Any(row => row.BatchId == Guid.Empty || row.Quantity <= 0)
+            || batches.Sum(row => row.Quantity) != productionExtraPacking.Quantity)
+            return Error.Validation("ExtraMaterial.Quantity", "Select batches covering exactly the approved extra-material quantity.");
+        var available = await StockTransferPicking.Load(context, productionExtraPacking.MaterialId, fromWarehouse.Id, productionExtraPacking.UoMId);
+        var picks = new List<StockTransferPicking.AvailableShelf>();
+        foreach (var selection in batches.GroupBy(row => row.BatchId))
         {
-            var batch = await context
-                .MaterialBatches.AsSplitQuery()
-                .Include(m => m.Checklist)
-                    .ThenInclude(c => c.Supplier)
-                .Include(m => m.Checklist)
-                    .ThenInclude(c => c.Manufacturer)
-                .FirstOrDefaultAsync(b => b.Id == batchRequest.BatchId);
-            if (batch == null || batch.RemainingQuantity < batchRequest.Quantity)
-                return Error.Failure(
-                    "Batch.InsufficientStock",
-                    $"Not enough stock in batch {batchRequest.BatchId}"
-                );
-
-            batch.QuantityAssigned = 0;
-            context.MaterialBatches.Update(batch);
-
-            // ✅ New logic replacing direct delete
-            var shelfMaterialBatches = await context
-                .ShelfMaterialBatches.IgnoreQueryFilters()
-                .OrderBy(s => s.Quantity)
-                .Where(sb =>
-                    sb.MaterialBatchId == batch.Id
-                    && sb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                        == fromWarehouse.Id
-                    && !sb.DeletedAt.HasValue
-                )
-                .ToListAsync();
-
-            var quantityToDeduct = batchRequest.Quantity;
-
-            foreach (var shelfMaterialBatch in shelfMaterialBatches)
+            var selected = StockTransferPicking.Pick(available.Where(row => row.Shelf.MaterialBatchId == selection.Key), selection.Sum(row => row.Quantity));
+            if (selected.Sum(row => row.Quantity) != selection.Sum(row => row.Quantity))
+                return Error.Conflict("ExtraMaterial.StockChanged", $"Batch {selection.Key} no longer has enough unreserved, approved stock in this store. Reload the request.");
+            picks.AddRange(selected);
+        }
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(permission))
+            return Error.Forbidden("ExtraMaterial.Permission", "Your permission to issue this material was removed.");
+        var distributedBatches = new List<MaterialBatch>();
+        foreach (var selection in batches.GroupBy(row => row.BatchId))
+        {
+            var batchRequest = new BatchTransferRequest { BatchId = selection.Key, Quantity = selection.Sum(row => row.Quantity) };
+            var batch = await context.MaterialBatches.Include(row => row.Checklist).ThenInclude(row => row.Supplier)
+                .Include(row => row.Checklist).ThenInclude(row => row.Manufacturer).SingleAsync(row => row.Id == selection.Key);
+            var assignedBefore = await context.ShelfMaterialBatches.IgnoreQueryFilters()
+                .Where(row => row.MaterialBatchId == batch.Id && row.DeletedAt == null).SumAsync(row => row.Quantity);
+            foreach (var pick in picks.Where(row => row.Shelf.MaterialBatchId == selection.Key))
             {
-                if (quantityToDeduct <= 0)
-                    break;
-
-                var deductAmount = Math.Min(shelfMaterialBatch.Quantity, quantityToDeduct);
-                shelfMaterialBatch.Quantity -= deductAmount;
-                quantityToDeduct -= deductAmount;
-
-                if (shelfMaterialBatch.Quantity <= 0)
-                {
-                    context.ShelfMaterialBatches.Remove(shelfMaterialBatch);
-                }
+                pick.Shelf.Quantity -= pick.Quantity;
+                if (pick.Shelf.Quantity == 0) context.ShelfMaterialBatches.Remove(pick.Shelf);
             }
-
+            // Transfer to production arrival is not consumption. Preserve quantities assigned elsewhere.
+            batch.QuantityAssigned = assignedBefore - batchRequest.Quantity;
             var movement = new MassMaterialBatchMovement
             {
                 BatchId = batch.Id,
@@ -4601,12 +4593,8 @@ public partial class ProductionScheduleRepository(
             await context.BinCardInformation.AddAsync(fromBinCardEvent);
 
             distributedBatches.Add(batch);
-            remainingQuantity -= batchRequest.Quantity;
-            if (remainingQuantity <= 0)
-                break;
-        }
-        await context.SaveChangesAsync();
 
+        }
         if (toWarehouse.ArrivalLocation == null)
         {
             toWarehouse.ArrivalLocation = new WarehouseArrivalLocation
@@ -4621,16 +4609,12 @@ public partial class ProductionScheduleRepository(
 
         toWarehouse.ArrivalLocation.DistributedStockTransferBatches.AddRange(distributedBatches);
 
-        if (remainingQuantity > 0)
-            return Error.Failure(
-                "StockTransfer.InsufficientStock",
-                "Not enough batches to fulfill the transfer"
-            );
-
         productionExtraPacking.IssuedAt = DateTime.UtcNow;
         productionExtraPacking.IssuedById = userId;
         productionExtraPacking.Status = ProductionExtraPackingStatus.Approved;
         context.ProductionExtraPackings.Update(productionExtraPacking);
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(permission))
+            return Error.Forbidden("ExtraMaterial.Permission", "Your permission to issue this material was removed.");
         await context.SaveChangesAsync();
 
         return Result.Success();

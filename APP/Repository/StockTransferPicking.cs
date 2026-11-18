@@ -20,6 +20,7 @@ internal static class StockTransferPicking
             .Where(row => row.DeletedAt == null && row.Quantity > 0
                 && row.MaterialBatch.MaterialId == materialId && row.MaterialBatch.DeletedAt == null
                 && row.MaterialBatch.Status == BatchStatus.Available
+                && (row.MaterialBatch.RetestDate == null || row.MaterialBatch.RetestDate == DateTime.MinValue || row.MaterialBatch.RetestDate > now)
                 && (row.UoMId == null || row.UoMId == row.MaterialBatch.UoMId)
                 && row.MaterialBatch.UoM.DeletedAt == null
                 && row.MaterialBatch.UoMId == unitId

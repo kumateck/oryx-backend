@@ -1248,7 +1248,8 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateExtraPacking(Guid productionScheduleProductId, [FromBody] List<CreateProductionExtraPacking> extraPackings)
     {
-        var result = await repository.CreateExtraPacking(productionScheduleProductId, extraPackings);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actorId)) return TypedResults.Unauthorized();
+        var result = await repository.CreateExtraPacking(productionScheduleProductId, extraPackings, actorId);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
