@@ -3561,6 +3561,46 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("TemplateRepairAssignments", (string)null);
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TestCorrectionReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrectionResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PreviousState")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("ReturnedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReturnedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SourceResponseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrectionResponseId")
+                        .IsUnique();
+
+                    b.HasIndex("ReturnedById");
+
+                    b.HasIndex("SourceResponseId")
+                        .IsUnique();
+
+                    b.ToTable("TestCorrectionReturns", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Formulas.FormFieldFormulaConfiguration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -29791,6 +29831,27 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Forms.TemplateRepair", null)
                         .WithMany()
                         .HasForeignKey("RepairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.TestCorrectionReturn", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReturnedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("SourceResponseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
