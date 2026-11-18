@@ -37,6 +37,12 @@ public class MaterialDetailsDto
     public UnitOfMeasureDto UnitOfMeasure { get; set; }
     public decimal TotalAvailableQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
+    /// <summary>Lots past expiry or retest, in the department's unit. Set by screens that use the store-stock rule.</summary>
+    public decimal? ExpiredQuantity { get; set; }
+    /// <summary>In-date lots not released for use, or whose unit cannot be read.</summary>
+    public decimal? UnavailableQuantity { get; set; }
+    /// <summary>Approved, in-date stock not held for a batch: what can be issued or reserved now.</summary>
+    public decimal? FreeQuantity { get; set; }
 }
 
 public class BatchQuantityDto
@@ -49,6 +55,10 @@ public class MaterialWarehouseStockBreakdown
 {
     public decimal WarehouseStock { get; set; }
     public decimal ExpiredQuantity { get; set; }
+    public decimal OnHandQuantity { get; set; }
+    public decimal UnavailableQuantity { get; set; }
+    public decimal ReservedQuantity { get; set; }
+    public decimal FreeQuantity { get; set; }
 }
 
 public class MaterialCategoryDto : BaseDto

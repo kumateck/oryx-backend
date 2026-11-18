@@ -9,7 +9,15 @@ public class MaterialsStockSummaryDto
     public string ProductionDepartment { get; set; }
     public string WarehouseType { get; set; }
     public int NoOfBatches { get; set; }
+    /// <summary>Everything on the store's shelves.</summary>
     public decimal TotalQuantity { get; set; }
+    public decimal? ExpiredQuantity { get; set; }
+    /// <summary>In-date lots not released for use, or whose unit cannot be read.</summary>
+    public decimal? UnavailableQuantity { get; set; }
+    /// <summary>Usable stock held for batches whose stock has not been issued yet.</summary>
+    public decimal? ReservedQuantity { get; set; }
+    /// <summary>Usable stock not held: what can be issued or reserved now.</summary>
+    public decimal? FreeQuantity { get; set; }
     public string UOM { get; set; }
 }
 
@@ -22,7 +30,12 @@ public class MaterialsStockBatchDetailDto
     public string BatchNo { get; set; }
     public DateTime? ManufacturingDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
+    /// <summary>The quantity on this shelf.</summary>
     public decimal QuantityAvailable { get; set; }
+    /// <summary>Of that, held for batches whose stock has not been issued yet.</summary>
+    public decimal? ReservedQuantity { get; set; }
+    /// <summary>"Usable", "Expired" or "Not released", by the store-stock rule.</summary>
+    public string StockState { get; set; }
     public string UOM { get; set; }
     public string ProductionDepartment { get; set; }
     public string WarehouseType { get; set; }

@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using APP.Repository;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
@@ -17,6 +18,11 @@ file class FakeCurrentUserService : ICurrentUserService
 
 public class MaterialRepositoryStockTests
 {
+    // Shelf and lot share one unit, as stock is recorded today (see StoreStock).
+    private static UnitOfMeasure Kg(ApplicationDbContext context) =>
+        context.UnitOfMeasures.Local.FirstOrDefault(u => u.Symbol == "kg")
+        ?? context.UnitOfMeasures.Add(new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Kilogram", Symbol = "kg" }).Entity;
+
     private static ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -76,6 +82,8 @@ public class MaterialRepositoryStockTests
             MaterialId = materialId,
             BatchNumber = $"B-{Guid.NewGuid()}",
             DateReceived = DateTime.UtcNow,
+            UoMId = Kg(context).Id,
+            Status = BatchStatus.Available,
             ExpiryDate = expiryDate,
         };
         var shelfBatch = new ShelfMaterialBatch
@@ -83,6 +91,7 @@ public class MaterialRepositoryStockTests
             Id = Guid.NewGuid(),
             WarehouseLocationShelfId = shelfId,
             MaterialBatchId = batch.Id,
+                UoMId = Kg(context).Id,
             Quantity = quantity,
             DeletedAt = deletedAt,
         };

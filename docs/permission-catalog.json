@@ -5266,6 +5266,20 @@
   {
     "module": "Settings",
     "submodule": "Procedures",
+    "key": "CanLinkOperationDepartment",
+    "name": "Can Link Operation Department",
+    "description": "Allows the user to  link operation department."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Procedures",
+    "key": "CanUnlinkOperationDepartment",
+    "name": "Can Unlink Operation Department",
+    "description": "Allows the user to  unlink operation department."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Procedures",
     "key": "CanViewWorkCenters",
     "name": "Can View Work Centers",
     "description": "Allows the user to  view work centers."
