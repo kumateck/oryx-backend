@@ -4423,6 +4423,7 @@ public partial class ProductionScheduleRepository(
             return Error.Conflict("ExtraMaterial.InsufficientStock", "There is not enough unreserved, approved stock in this department's store. Review reservations and reload the request.");
         return picks.Select(pick => new BatchToSupply {
             Batch = mapper.Map<MaterialBatchListDto>(pick.Shelf.MaterialBatch), QuantityToTake = pick.Quantity,
+            SourceQuantityToTake = pick.PhysicalQuantity,
             WarehouseLocationShelfId = pick.Shelf.WarehouseLocationShelfId,
             WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(pick.Shelf.WarehouseLocationShelf)
         }).ToList();
@@ -4507,14 +4508,14 @@ public partial class ProductionScheduleRepository(
         var distributedBatches = new List<MaterialBatch>();
         foreach (var selection in batches.GroupBy(row => row.BatchId))
         {
-            var batchRequest = new BatchTransferRequest { BatchId = selection.Key, Quantity = selection.Sum(row => row.Quantity) };
+            var batchRequest = new BatchTransferRequest { BatchId = selection.Key, Quantity = picks.Where(row => row.Shelf.MaterialBatchId == selection.Key).Sum(row => row.PhysicalQuantity) };
             var batch = await context.MaterialBatches.Include(row => row.Checklist).ThenInclude(row => row.Supplier)
                 .Include(row => row.Checklist).ThenInclude(row => row.Manufacturer).SingleAsync(row => row.Id == selection.Key);
             var assignedBefore = await context.ShelfMaterialBatches.IgnoreQueryFilters()
                 .Where(row => row.MaterialBatchId == batch.Id && row.DeletedAt == null).SumAsync(row => row.Quantity);
             foreach (var pick in picks.Where(row => row.Shelf.MaterialBatchId == selection.Key))
             {
-                pick.Shelf.Quantity -= pick.Quantity;
+                pick.Shelf.Quantity -= pick.PhysicalQuantity;
                 if (pick.Shelf.Quantity == 0) context.ShelfMaterialBatches.Remove(pick.Shelf);
             }
             // Transfer to production arrival is not consumption. Preserve quantities assigned elsewhere.
