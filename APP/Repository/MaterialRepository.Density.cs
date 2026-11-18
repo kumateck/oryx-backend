@@ -43,6 +43,32 @@ public partial class MaterialRepository
                 && !grants.Contains(material.Kind == MaterialKind.Raw ? PermissionKeys.CanEditRawMaterialDensity : PermissionKeys.CanEditPackagingMaterialDensity))
                 return Error.Forbidden("MaterialDepartment.DensityPermission", "You do not have permission to change this material's shared density.");
         }
+        // A stock-unit edit changes its representation, never the lot's historical unit or ledger bytes.
+        // Validate every physical lot in this department before accepting the new stock unit.
+        foreach (var dto in materialDepartments)
+        {
+            var existing = links.SingleOrDefault(link => link.MaterialId == dto.MaterialId);
+            if (existing?.UoMId == dto.UoMId) continue;
+            var lotUnits = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes()
+                .Where(row => row.DeletedAt == null && row.Quantity != 0 && row.MaterialBatch.DeletedAt == null
+                    && row.MaterialBatch.MaterialId == dto.MaterialId
+                    && row.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == user.DepartmentId)
+                .Select(row => row.MaterialBatch.UoM.Symbol).Distinct().ToListAsync();
+            var density = dto.DensityUoMId.HasValue ? dto.Density : materials[dto.MaterialId].DensityGramsPerMilliliter
+                ?? (existing == null ? null : MaterialDensity.Verified(existing));
+            if (lotUnits.Any(unit => !MaterialDensity.Convert(1, unit, units[dto.UoMId].Symbol, density).HasValue))
+                return Error.Conflict("MaterialDepartment.StockUnit", "Existing stock cannot be converted to that unit. For mass and volume, record a positive measured density in g/mL first.");
+        }
+        grants = await CurrentPermissionSet.Load(context, userId);
+        foreach (var dto in materialDepartments)
+        {
+            var material = materials[dto.MaterialId];
+            if (!grants.Contains(MaterialPermissions.Key(MaterialTask.Link, material.Kind)))
+                return Error.Forbidden("MaterialDepartment.Permission", "You do not have permission to link this material kind.");
+            if (dto.DensityUoMId.HasValue && dto.Density != material.DensityGramsPerMilliliter
+                && !grants.Contains(material.Kind == MaterialKind.Raw ? PermissionKeys.CanEditRawMaterialDensity : PermissionKeys.CanEditPackagingMaterialDensity))
+                return Error.Forbidden("MaterialDepartment.DensityPermission", "You do not have permission to change this material's shared density.");
+        }
         foreach (var dto in materialDepartments)
         {
             var material = materials[dto.MaterialId];

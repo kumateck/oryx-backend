@@ -18,9 +18,9 @@ public static class StockRequisitionRules
     public const string PackagingPrefix = "PM";
 
     private static Task<bool> Raised(ApplicationDbContext context, Guid batchId, string prefix) =>
-        context.Requisitions.AnyAsync(r =>
+        StockRequisitionState.Active(context).AnyAsync(r =>
             r.ProductionScheduleProductId == batchId
-            && r.RequisitionType == RequisitionType.Stock
+            && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected
             && r.Code.StartsWith(prefix));
 
     public static async Task<Result> CanRaise(ApplicationDbContext context, Guid batchId, bool raw, bool packaging)
@@ -58,9 +58,9 @@ public static class StockRequisitionRules
 
     /// <summary>The batch's packaging requisition has been raised and every item of it issued.</summary>
     public static Task<bool> PackagingIssued(ApplicationDbContext context, Guid batchId) =>
-        context.Requisitions.AnyAsync(r =>
+        StockRequisitionState.Active(context).AnyAsync(r =>
             r.ProductionScheduleProductId == batchId
-            && r.RequisitionType == RequisitionType.Stock
+            && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected
             && r.Code.StartsWith(PackagingPrefix)
             && r.Status == RequestStatus.Completed);
 
@@ -70,9 +70,9 @@ public static class StockRequisitionRules
     /// </summary>
     public static async Task<Result> CanCompleteStep(ApplicationDbContext context, Guid stepId, Guid activityId, int order, Guid batchId)
     {
-        var requestedHere = await context.Requisitions.AnyAsync(r =>
+        var requestedHere = await StockRequisitionState.Active(context).AnyAsync(r =>
             r.ProductionActivityStepId == stepId
-            && r.RequisitionType == RequisitionType.Stock
+            && r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected
             && r.Code.StartsWith(PackagingPrefix)
             && r.Status != RequestStatus.Completed);
         if (requestedHere)
@@ -106,7 +106,7 @@ public static class StockRequisitionRules
     /// issued before it finishes, as before. Packaging requested later from any other step never moves that step.
     /// </summary>
     public static async Task<bool> DrivesStep(ApplicationDbContext context, Guid stepId) =>
-        await context.Requisitions.AnyAsync(r =>
+        await StockRequisitionState.Active(context).AnyAsync(r =>
             r.ProductionActivityStepId == stepId && r.RequisitionType == RequisitionType.Stock && r.Code.StartsWith(RawPrefix))
         || await context.ProductionActivitySteps.Where(s => s.Id == stepId)
             .AnyAsync(s => s.ResponsibleUsers.Any(u => u.Action == OperationAction.StockRequisitionOrIssue));

@@ -905,13 +905,27 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             .ThenBy(m => m.Id)
             .AsQueryable();
 
+        var result = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ShelfMaterialBatchDto>);
+        result.Data = result.Data.ToList();
+        var link = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().Include(item => item.UoM).Include(item => item.DensityUoM).Include(item => item.Material)
+            .Where(item => item.MaterialId == materialId && item.DepartmentId == warehouse.DepartmentId && item.DeletedAt == null)
+            .ToListAsync();
+        if (link.Count > 1) return Error.Conflict("Stock.Unit", "Reconcile duplicate department material units first.");
+        var target = link.SingleOrDefault();
+        if (target?.UoM is { DeletedAt: null } unit)
+        {
+            foreach (var row in result.Data)
+            {
+                row.WarehouseQuantity = MaterialDensity.Convert(row.Quantity, row.MaterialBatch?.UoM?.Symbol ?? row.UoM?.Symbol, unit.Symbol, MaterialDensity.Verified(target));
+                if (!row.WarehouseQuantity.HasValue) return Error.Conflict("Stock.Density", "Record the material's verified density before converting existing stock between mass and volume.");
+                row.WarehouseUoM = mapper.Map<UnitOfMeasureDto>(unit);
+            }
+        }
         // Every lot on the store's shelves, each with its share of the material's totals by the store-stock rule,
         // so the rows add up to on hand, reserved, expired and free on the approved materials list.
-        var result = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ShelfMaterialBatchDto>);
-        var rows = (result.Data ?? []).ToList();
         var measured = (await StoreStock.MeasureShelves(context, warehouse.Id, await StoreStock.UnitsInStore(context, warehouse.Id, [materialId])))
             .ToDictionary(row => row.ShelfBatchId);
-        foreach (var row in rows)
+        foreach (var row in result.Data)
         {
             if (!measured.TryGetValue(row.Id, out var stock)) continue;
             row.StockState = stock.State.ToString();
@@ -919,7 +933,6 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             row.FreeQuantity = stock.Level.Free;
             row.StockUnit = stock.Unit;
         }
-        result.Data = rows;
         return result;
     }
 

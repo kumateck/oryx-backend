@@ -2984,6 +2984,20 @@
   {
     "module": "Quality Assurance",
     "submodule": "Pending Approvals",
+    "key": "CanRejectRawMaterialStockRequisition",
+    "name": "Can Reject Raw Material Stock Requisition",
+    "description": "Allows the user to  reject raw material stock requisition."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRejectPackagingMaterialStockRequisition",
+    "name": "Can Reject Packaging Material Stock Requisition",
+    "description": "Allows the user to  reject packaging material stock requisition."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
     "key": "CanRejectPendingApproval",
     "name": "Can Reject Pending Approval",
     "description": "Allows the user to  reject pending approval."
