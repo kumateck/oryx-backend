@@ -10107,7 +10107,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("GrnId")
+                    b.Property<Guid?>("GrnId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("IssueNumber")
@@ -10127,6 +10127,9 @@ namespace INFRASTRUCTURE.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("MaterialBatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialRetestRequestId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("MicrobialArdId")
@@ -10157,6 +10160,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MaterialBatchId");
+
+                    b.HasIndex("MaterialRetestRequestId");
 
                     b.ToTable("MaterialSamplings");
                 });
@@ -11016,6 +11021,10 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<bool>("Approved")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("ArNumber")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<Guid?>("CoaId")
                         .HasColumnType("uuid");
@@ -32892,9 +32901,7 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasOne("DOMAIN.Entities.Grns.Grn", "Grn")
                         .WithMany()
-                        .HasForeignKey("GrnId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("GrnId");
 
                     b.HasOne("DOMAIN.Entities.Users.User", "IssuedBy")
                         .WithMany()
@@ -32914,6 +32921,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialRetestRequest", "MaterialRetestRequest")
+                        .WithMany()
+                        .HasForeignKey("MaterialRetestRequestId");
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("Grn");
@@ -32925,6 +32936,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("MaterialBatch");
+
+                    b.Navigation("MaterialRetestRequest");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", b =>

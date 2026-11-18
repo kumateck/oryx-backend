@@ -133,6 +133,7 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
                 if (batch != null)
                 {
                     batch.Status = BatchStatus.Available;
+                    await APP.Services.Materials.MaterialRetestCompletion.ApplyAsync(context, batch, true, null);
                     context.MaterialBatches.Update(batch);
                 }
             }
@@ -158,6 +159,7 @@ public class OosInvestigationRepository(ApplicationDbContext context, IMapper ma
                 {
                     batch.Status = BatchStatus.Rejected;
                     batch.DateRejected = DateTime.UtcNow;
+                    await APP.Services.Materials.MaterialRetestCompletion.ApplyAsync(context, batch, false, null);
                     context.MaterialBatches.Update(batch);
                 }
             }

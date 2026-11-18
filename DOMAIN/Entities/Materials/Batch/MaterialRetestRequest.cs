@@ -12,8 +12,13 @@ public enum MaterialRetestStatus
     SampleTaken = 2,
     Acknowledged = 3,
     Testing = 4,
+    /// <summary>Released: the test was approved, the expiry extended and the batch returned to stock.</summary>
     Completed = 5,
-    Rejected = 6
+    Rejected = 6,
+    /// <summary>QC assigned the analysts. Like an analytical test request, the retest carries its own test progress.</summary>
+    Assigned = 7,
+    TestTaken = 8,
+    Checked = 9
 }
 
 public enum MaterialRetestOrigin
@@ -38,6 +43,7 @@ public class MaterialRetestRequest : BaseEntity, IRequireApproval
     public DateTime? SampleTakenAt { get; set; }
     public Guid? SampleTakenById { get; set; }
     public decimal? SampleQuantity { get; set; }
+    [StringLength(200)] public string ArNumber { get; set; }
     public int? SampledContainers { get; set; }
     public DateTime? ProposedExpiryDate { get; set; }
     public DateTime? AcknowledgedAt { get; set; }
@@ -70,6 +76,8 @@ public class CreateMaterialRetestRequest
 
 public class RecordMaterialRetestSample
 {
+    /// <summary>The analytical report number QA gives the sample, as on a goods receipt sample.</summary>
+    [Required, MinLength(1), MaxLength(200)] public string ArNumber { get; set; }
     [Range(0.000001, double.MaxValue)] public decimal SampleQuantity { get; set; }
     [Range(1, int.MaxValue)] public int SampledContainers { get; set; }
     [Required] public DateTime ProposedExpiryDate { get; set; }

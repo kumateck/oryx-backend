@@ -67,6 +67,19 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
         return Result.Success();
     }
 
+    /// <summary>The batch's newest sample, with or without a goods receipt note (a retest of migrated stock has none).</summary>
+    public async Task<Result<MaterialSamplingDto>> GetLatestMaterialSampling(Guid batchId)
+    {
+        var sampling = await context.MaterialSamplings.AsSplitQuery().IgnoreQueryFilters()
+            .Include(m => m.IssuedBy).Include(m => m.Grn).Include(m => m.MaterialBatch)
+            .Where(m => m.MaterialBatchId == batchId && m.DeletedAt == null)
+            .OrderByDescending(m => m.SampleDate).ThenByDescending(m => m.CreatedAt)
+            .FirstOrDefaultAsync();
+        return sampling == null
+            ? Error.Validation("MaterialSampling.NotFound", "Material Sampling not found")
+            : Result.Success(mapper.Map<MaterialSamplingDto>(sampling));
+    }
+
     public async Task<Result<MaterialSamplingDto>> GetMaterialSamplingByGrnAndBatch(
         Guid grnId,
         Guid batchId
@@ -78,7 +91,10 @@ public class MaterialSamplingRepository(ApplicationDbContext context, IMapper ma
             .Include(m => m.IssuedBy)
             .Include(m => m.Grn)
             .Include(m => m.MaterialBatch)
-            .FirstOrDefaultAsync(ps => ps.GrnId == grnId && ps.MaterialBatchId == batchId);
+            .Where(ps => ps.GrnId == grnId && ps.MaterialBatchId == batchId && ps.DeletedAt == null)
+            // A batch retested after receipt has a newer sample; its test is the one now running.
+            .OrderByDescending(ps => ps.SampleDate).ThenByDescending(ps => ps.CreatedAt)
+            .FirstOrDefaultAsync();
 
         return materialSampling == null
             ? Error.Validation("MaterialSampling.NotFound", "Material Sampling not found")
