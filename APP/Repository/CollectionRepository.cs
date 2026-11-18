@@ -28,7 +28,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class CollectionRepository(ApplicationDbContext context, IMapper mapper)
+public partial class CollectionRepository(ApplicationDbContext context, IMapper mapper)
     : ICollectionRepository
 {
     public async Task<Result<IEnumerable<CollectionItemDto>>> GetItemCollection(
