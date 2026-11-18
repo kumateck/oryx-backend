@@ -1014,6 +1014,7 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
         ValidateUnstartReservationRepairAudit();
         ValidateReservationRepairAudit();
@@ -1031,6 +1032,7 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
         ValidateUnstartReservationRepairAudit();
         ValidateReservationRepairAudit();
@@ -1176,6 +1178,7 @@ public partial class ApplicationDbContext(
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureProductionUnstart(modelBuilder);
+        ConfigureMaterialDensity(modelBuilder);
         ConfigureUnstartLeftovers(modelBuilder);
         ConfigureUnstartReservationRepair(modelBuilder);
         ConfigureReservationRepair(modelBuilder);

@@ -1430,7 +1430,7 @@ public partial class ProductionScheduleRepository(
                                 materialDepartment?.Department
                             ),
                             UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
-                            Density = materialDepartment?.Density ?? 0,
+                            Density = materialDepartment is null ? 0 : MaterialDensity.Verified(materialDepartment) ?? materialDepartment.Density,
                             ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
                             MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                             MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
@@ -1786,7 +1786,7 @@ public partial class ProductionScheduleRepository(
                                 materialDepartment?.Department
                             ),
                             UoM = mapper.Map<UnitOfMeasureDto>(materialDepartment?.UoM),
-                            Density = materialDepartment?.Density ?? 0,
+                            Density = materialDepartment is null ? 0 : MaterialDensity.Verified(materialDepartment) ?? materialDepartment.Density,
                             ReOrderLevel = materialDepartment?.ReOrderLevel ?? 0,
                             MaximumStockLevel = materialDepartment?.MaximumStockLevel ?? 0,
                             MinimumStockLevel = materialDepartment?.MinimumStockLevel ?? 0,
@@ -3425,6 +3425,7 @@ public partial class ProductionScheduleRepository(
         {
             Batch = mapper.Map<MaterialBatchListDto>(pick.Shelf.MaterialBatch),
             QuantityToTake = pick.Quantity,
+            SourceQuantityToTake = pick.PhysicalQuantity,
             WarehouseLocationShelfId = pick.Shelf.WarehouseLocationShelfId,
             WarehouseLocationShelf = mapper.Map<MaterialWarehouseLocationShelfDto>(pick.Shelf.WarehouseLocationShelf)
         }).ToList();
@@ -3456,7 +3457,8 @@ public partial class ProductionScheduleRepository(
         return batches.Select(row => new BatchToSupply
         {
             Batch = mapper.Map<MaterialBatchListDto>(row.MaterialBatch),
-            QuantityToTake = row.Quantity
+            QuantityToTake = row.TransferQuantity ?? row.Quantity,
+            SourceQuantityToTake = row.Quantity
         }).ToList();
     }
 
@@ -3508,9 +3510,25 @@ public partial class ProductionScheduleRepository(
             picks.AddRange(selected);
         }
 
+        var destinationLink = await context.MaterialDepartments.IgnoreQueryFilters().Include(link => link.UoM)
+            .Where(link => link.MaterialId == transfer.MaterialId && link.DepartmentId == source.ToDepartmentId && link.DeletedAt == null)
+            .ToListAsync();
+        var destinationUnit = destinationLink.Count == 1 ? destinationLink[0].UoM : null;
+        var requestUnit = await context.UnitOfMeasures.SingleOrDefaultAsync(unit => unit.Id == unitId && unit.DeletedAt == null);
+        // Older same-unit transfers may predate a department link. Cross-unit receipts require one.
+        destinationUnit ??= requestUnit;
+        if (destinationUnit is null || destinationUnit.DeletedAt.HasValue || requestUnit is null || destinationLink.Count > 1)
+            return Error.Validation("StockTransfer.DestinationUnit", "Choose one active receiving unit on the material's department link.");
+        if (picks.GroupBy(pick => pick.Shelf.MaterialBatch).Any(group => group.Key.QuantityAssigned < group.Sum(pick => pick.PhysicalQuantity)))
+            return Error.Conflict("StockTransfer.Balance", "The recorded batch balance does not cover this issue. Reconcile stock first.");
+        var density = await MaterialDensity.Load(context, transfer.MaterialId);
+        if (MaterialDensity.Convert(1, requestUnit.Symbol, destinationUnit.Symbol, density) is null)
+            return Error.Validation("StockTransfer.Density", "Set a verified material density before transferring between mass and volume units.");
+        grants = await CurrentPermissionSet.Load(context, userId);
+        if (!grants.Contains(issueKey)) return Error.Forbidden("StockTransfer.Permission", "Your permission to issue this transfer was removed.");
         foreach (var pick in picks)
         {
-            pick.Shelf.Quantity -= pick.Quantity;
+            pick.Shelf.Quantity -= pick.PhysicalQuantity;
             if (pick.Shelf.Quantity == 0) context.ShelfMaterialBatches.Remove(pick.Shelf);
         }
 
@@ -3522,11 +3540,14 @@ public partial class ProductionScheduleRepository(
         };
         foreach (var group in picks.GroupBy(pick => pick.Shelf.MaterialBatch))
         {
-            var quantity = group.Sum(pick => pick.Quantity);
-            group.Key.QuantityAssigned = Math.Max(0, group.Key.QuantityAssigned - quantity);
+            var quantity = group.Sum(pick => pick.PhysicalQuantity);
+            group.Key.QuantityAssigned -= quantity;
             holding.Batches.Add(new HoldingMaterialTransferBatch
             {
                 MaterialBatchId = group.Key.Id, UoMId = group.Key.UoMId, Quantity = quantity,
+                TransferQuantity = group.Sum(pick => pick.Quantity), DestinationUoMId = destinationUnit.Id,
+                DestinationQuantity = MaterialDensity.Convert(group.Sum(pick => pick.Quantity), requestUnit.Symbol, destinationUnit.Symbol, density),
+                DensityGramsPerMilliliter = density,
                 SourceWarehouseId = fromWarehouse.Id, DestinationWarehouseId = toWarehouse.Id
             });
         }
@@ -4931,6 +4952,7 @@ public partial class ProductionScheduleRepository(
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
             .Include(m => m.DensityUoM)
+            .Include(m => m.Material)
             .Where(m =>
                 activeBoM
                     .BillOfMaterial.Items.Select(i => i.MaterialId)

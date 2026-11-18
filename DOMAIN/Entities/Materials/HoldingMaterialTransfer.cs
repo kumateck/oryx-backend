@@ -31,6 +31,15 @@ public class HoldingMaterialTransferBatch
     public Guid? UoMId { get; set; }
     public UnitOfMeasure UoM { get; set; }
     public decimal Quantity { get; set; }
+    /// <summary>Quantities and density adopted at issue; never recomputed from a later material edit.</summary>
+    public decimal? TransferQuantity { get; set; }
+    public decimal? DestinationQuantity { get; set; }
+    public Guid? DestinationUoMId { get; set; }
+    public UnitOfMeasure DestinationUoM { get; set; }
+    public decimal? DensityGramsPerMilliliter { get; set; }
+    public DateTime? ReceivedAt { get; set; }
+    public Guid? ReceivedById { get; set; }
+
     public Guid SourceWarehouseId { get; set; }
     public Warehouse SourceWarehouse { get; set; }
     public Guid DestinationWarehouseId { get; set; }
@@ -55,6 +64,9 @@ public class HoldingMaterialTransferBatchDto
     public MaterialBatchListDto MaterialBatch { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public decimal Quantity { get; set; }
+    public decimal? DestinationQuantity { get; set; }
+    public UnitOfMeasureDto DestinationUoM { get; set; }
+    public DateTime? ReceivedAt { get; set; }
     public CollectionItemDto SourceWarehouse { get; set; }
     public CollectionItemDto DestinationWarehouse { get; set; }
 }

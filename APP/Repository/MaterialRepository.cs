@@ -2008,100 +2008,19 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return Math.Max(totalQuantityInLocation, 0);
     }
 
-    public async Task<Result<decimal>> GetShelfMaterialStockInWarehouse(
-        Guid materialId,
-        Guid warehouseId
-    )
+    public async Task<Result<decimal>> GetShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
-        // Sum of all quantities for shelves in the given warehouse for the given material
-        var totalQuantity = await context
-            .ShelfMaterialBatches.AsSplitQuery()
-            .IgnoreQueryFilters()
-            .Include(s => s.MaterialBatch)
-            .Include(s => s.WarehouseLocationShelf)
-                .ThenInclude(wls => wls.WarehouseLocationRack)
-                    .ThenInclude(w => w.WarehouseLocation)
-                        .ThenInclude(wl => wl.Warehouse)
-            .Where(s =>
-                s.MaterialBatch.MaterialId == materialId
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouseId
-                && !s.DeletedAt.HasValue
-            )
-            .SumAsync(s => s.Quantity);
-
-        return Math.Max(totalQuantity, 0);
+        var result = await WarehouseShelfTotals(materialId, warehouseId, false);
+        return result.IsSuccess ? result.Value.WarehouseStock : result.Error;
     }
 
-    public async Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(
-        Guid materialId,
-        Guid warehouseId
-    )
+    public Task<Result<MaterialWarehouseStockBreakdown>> GetShelfMaterialStockAndExpiredQuantityInWarehouse(Guid materialId, Guid warehouseId) =>
+        WarehouseShelfTotals(materialId, warehouseId, false);
+
+    public async Task<Result<decimal>> GetUsableShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId)
     {
-        var rows = await context
-            .ShelfMaterialBatches.AsSplitQuery()
-            .IgnoreQueryFilters()
-            .Include(s => s.MaterialBatch)
-            .Include(s => s.WarehouseLocationShelf)
-                .ThenInclude(wls => wls.WarehouseLocationRack)
-                    .ThenInclude(w => w.WarehouseLocation)
-                        .ThenInclude(wl => wl.Warehouse)
-            .Where(s =>
-                s.MaterialBatch.MaterialId == materialId
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouseId
-                && !s.DeletedAt.HasValue
-            )
-            .SelectMaterialDate(s => s.MaterialBatch, (s, date) => new { s.Quantity, ExpiryDate = date })
-            .ToListAsync();
-
-        var totalQuantity = rows.Sum(r => r.Quantity);
-        var expiredQuantity = rows
-            .Where(r =>
-                r.ExpiryDate.HasValue
-                && r.ExpiryDate.Value != DateTime.MinValue
-                && r.ExpiryDate.Value <= DateTime.UtcNow
-            )
-            .Sum(r => r.Quantity);
-
-        return new MaterialWarehouseStockBreakdown
-        {
-            WarehouseStock = Math.Max(totalQuantity, 0),
-            ExpiredQuantity = Math.Max(expiredQuantity, 0),
-        };
-    }
-
-    public async Task<Result<decimal>> GetUsableShelfMaterialStockInWarehouse(
-        Guid materialId,
-        Guid warehouseId
-    )
-    {
-        var totalQuantity = await context
-            .ShelfMaterialBatches.AsSplitQuery()
-            .IgnoreQueryFilters()
-            .Include(s => s.MaterialBatch)
-            .Include(s => s.WarehouseLocationShelf)
-                .ThenInclude(wls => wls.WarehouseLocationRack)
-                    .ThenInclude(w => w.WarehouseLocation)
-                        .ThenInclude(wl => wl.Warehouse)
-            .Where(s =>
-                s.MaterialBatch.MaterialId == materialId
-                && s.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId
-                    == warehouseId
-                && !s.DeletedAt.HasValue
-                && s.MaterialBatch.Status == BatchStatus.Available
-            )
-            .WhereMaterialDate(s => s.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
-            .SumAsync(s => s.Quantity);
-
-        var reservedQuantity = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters().Where(reservation => reservation.ReleasedAt == null)
-            .Where(r => r.MaterialBatch.MaterialId == materialId && r.WarehouseId == warehouseId && r.DeletedAt == null)
-            .Where(r => r.MaterialBatch.Status == BatchStatus.Available)
-            .WhereMaterialDate(r => r.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow)
-            .SumAsync(r => r.Quantity);
-
-        return Math.Max(totalQuantity - reservedQuantity, 0);
+        var result = await WarehouseShelfTotals(materialId, warehouseId, true);
+        return result.IsSuccess ? result.Value.WarehouseStock : result.Error;
     }
 
     public async Task<Result<IEnumerable<ShelfMaterialBatchDto>>> GetShelfMaterialsAcrossWarehouses(
@@ -3053,99 +2972,6 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return Task.FromResult<Result>(Error.Conflict("MaterialRetest.UseWorkflow", "Expiry extension is completed by issuance of a compliant linked COA."));
     }
 
-    public async Task<Result> CreateMaterialDepartment(
-        List<CreateMaterialDepartment> materialDepartments,
-        Guid userId
-    )
-    {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-            return UserErrors.NotFound(userId);
-
-        if (!user.DepartmentId.HasValue)
-            return UserErrors.DepartmentNotFound;
-
-        // prevent duplicates in request
-        if (
-            materialDepartments.Select(m => m.MaterialId).Distinct().Count()
-            != materialDepartments.Count
-        )
-            return Error.Validation(
-                "MaterialDepartment.Validation",
-                "Cant have more than one of the same material Id in the list"
-            );
-
-        var departmentId = user.DepartmentId.Value;
-        var materialIds = materialDepartments.Select(m => m.MaterialId).ToList();
-
-        // fetch existing once
-        var existingMaterialDepartments = await context
-            .MaterialDepartments.Where(m =>
-                m.DepartmentId == departmentId && materialIds.Contains(m.MaterialId)
-            )
-            .ToDictionaryAsync(m => m.MaterialId, m => m);
-
-        var densityUnitIds = materialDepartments.Where(item => item.DensityUoMId.HasValue)
-            .Select(item => item.DensityUoMId.GetValueOrDefault()).Distinct().ToList();
-        if (densityUnitIds.Count > 0)
-        {
-            var activeDensityUnits = await context.UnitOfMeasures
-                .CountAsync(unit => densityUnitIds.Contains(unit.Id) && unit.DeletedAt == null);
-            if (activeDensityUnits != densityUnitIds.Count ||
-                materialDepartments.Any(item => item.DensityUoMId.HasValue && item.Density <= 0))
-                return Error.Validation("MaterialDepartment.Density", "A measured density must be positive and use an active unit.");
-        }
-
-        var newEntities = new List<MaterialDepartment>();
-
-        foreach (var dto in materialDepartments)
-        {
-            if (existingMaterialDepartments.TryGetValue(dto.MaterialId, out var existing))
-            {
-                // update existing
-                existing.ReOrderLevel = dto.ReOrderLevel;
-                existing.MinimumStockLevel = dto.MinimumStockLevel;
-                existing.MaximumStockLevel = dto.MaximumStockLevel;
-                existing.UoMId = dto.UoMId;
-                // Stock-only edits omit the density pair. Older clients may still send a
-                // unitless measurement, which must never overwrite an explicitly tagged one.
-                if (dto.DensityUoMId.HasValue)
-                {
-                    existing.Density = dto.Density;
-                    existing.DensityUoMId = dto.DensityUoMId;
-                }
-                else if (!existing.DensityUoMId.HasValue && dto.Density != 0)
-                {
-                    existing.Density = dto.Density;
-                }
-            }
-            else
-            {
-                // create new
-                newEntities.Add(
-                    new MaterialDepartment
-                    {
-                        MaterialId = dto.MaterialId,
-                        DepartmentId = departmentId,
-                        ReOrderLevel = dto.ReOrderLevel,
-                        MaximumStockLevel = dto.MaximumStockLevel,
-                        MinimumStockLevel = dto.MinimumStockLevel,
-                        Density = dto.Density,
-                        DensityUoMId = dto.DensityUoMId,
-                        UoMId = dto.UoMId,
-                    }
-                );
-            }
-        }
-
-        if (newEntities.Count > 0)
-            await context.MaterialDepartments.AddRangeAsync(newEntities);
-
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
     public async Task<Result> RemoveMaterialDepartment(Guid userId, Guid materialId)
     {
         var user = await context
@@ -3340,8 +3166,15 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         );
 
         results.Data = results.Data.ToList();
+        var densityUnit = await context.UnitOfMeasures.AsNoTracking()
+            .FirstOrDefaultAsync(unit => unit.DeletedAt == null && unit.Symbol.ToLower() == "g/ml");
         foreach (var result in results.Data)
         {
+            if (result.Material.DensityGramsPerMilliliter is > 0 && densityUnit is not null)
+            {
+                result.Density = result.Material.DensityGramsPerMilliliter.Value;
+                result.DensityUoM = mapper.Map<UnitOfMeasureDto>(densityUnit);
+            }
             var warehouseType =
                 result.Material.Kind == MaterialKind.Raw
                     ? WarehouseType.RawMaterialStorage
@@ -3366,27 +3199,24 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             if (warehouseStockResult.IsFailure)
                 continue;
 
-            result.WarehouseStock = warehouseStockResult.Value.WarehouseStock;
-            result.ExpiredQuantity = warehouseStockResult.Value.ExpiredQuantity;
-
-            result.PendingStockTransferQuantity = await context
-                .StockTransferSources.AsSplitQuery()
-                .Include(s => s.StockTransfer)
-                .Where(s =>
-                    s.StockTransfer.MaterialId == result.Material.Id
-                    && s.FromDepartmentId == departmentId
-                    && s.Status == StockTransferStatus.InProgress
-                )
-                .SumAsync(s => s.Quantity);
-
-            result.ReservedQuantity = await context
-                .MaterialBatchReservedQuantities.AsSplitQuery()
-                .Include(m => m.MaterialBatch)
-                .Where(m =>
-                    m.MaterialBatch.MaterialId == result.Material.Id
-                    && m.WarehouseId == warehouse.Id
-                )
-                .SumAsync(e => e.Quantity);
+            // The linked-material list contract stores quantities in the smallest unit of its family.
+            var symbol = result.UoM?.Symbol;
+            var baseSymbol = symbol?.Trim().ToLowerInvariant() switch { "mg" or "g" or "kg" => "mg", "ml" or "l" => "ml", _ => symbol };
+            var factor = UomConverter.Convert(1, symbol, baseSymbol);
+            if (!factor.HasValue) return Error.Conflict("Stock.Unit", "The linked stock unit cannot be read safely.");
+            result.WarehouseStock = warehouseStockResult.Value.WarehouseStock * factor.Value;
+            result.ExpiredQuantity = warehouseStockResult.Value.ExpiredQuantity * factor.Value;
+            var pending = await context.StockTransferSources.Include(row => row.StockTransfer).ThenInclude(row => row.UoM)
+                .Where(row => row.StockTransfer.MaterialId == result.Material.Id && row.FromDepartmentId == departmentId
+                    && row.Status == StockTransferStatus.InProgress).ToListAsync();
+            var holds = await context.MaterialBatchReservedQuantities.Include(row => row.UoM)
+                .Where(row => row.MaterialBatch.MaterialId == result.Material.Id && row.WarehouseId == warehouse.Id).ToListAsync();
+            var convertedPending = pending.Select(row => MaterialDensity.Convert(row.Quantity, row.StockTransfer.UoM?.Symbol, baseSymbol, result.Material.DensityGramsPerMilliliter)).ToList();
+            var convertedHolds = holds.Select(row => MaterialDensity.Convert(row.Quantity, row.UoM?.Symbol, baseSymbol, result.Material.DensityGramsPerMilliliter)).ToList();
+            if (convertedPending.Concat(convertedHolds).Any(value => !value.HasValue))
+                return Error.Conflict("Stock.Density", "Stock transfers or reservations cannot be expressed in the department's unit. Verify the material density.");
+            result.PendingStockTransferQuantity = convertedPending.Sum(value => value.GetValueOrDefault());
+            result.ReservedQuantity = convertedHolds.Sum(value => value.GetValueOrDefault());
         }
 
         return results;
@@ -3459,6 +3289,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 .ThenInclude(b => b.MaterialBatch)
                     .ThenInclude(b => b.UoM)
             .Include(m => m.Batches)
+                .ThenInclude(b => b.DestinationUoM)
+            .Include(m => m.Batches)
                 .ThenInclude(b => b.UoM)
             .Include(m => m.Batches)
                 .ThenInclude(b => b.SourceWarehouse)
@@ -3482,184 +3314,12 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             query,
             page,
             pageSize,
-            mapper.Map<HoldingMaterialTransferDto>
+            row => {
+                var dto = mapper.Map<HoldingMaterialTransferDto>(row);
+                if (!withProcessed) dto.Batches = dto.Batches.Where(batch => !batch.ReceivedAt.HasValue).ToList();
+                return dto;
+            }
         );
-    }
-
-    public async Task<Result> MoveMaterialBatchToWarehouseFromHolding(
-        SupplyMaterialBatchFromHoldingRequest request,
-        Guid userId
-    )
-    {
-        var materialBatch = await context
-            .MaterialBatches.AsSplitQuery()
-            .Include(materialBatch => materialBatch.Material)
-            .FirstOrDefaultAsync(mb => mb.Id == request.MaterialBatchId);
-
-        if (materialBatch == null)
-        {
-            return Error.NotFound("MaterialBatch.NotFound", "Material batch not found");
-        }
-
-        var totalQuantityToAssign = request.ShelfMaterialBatches.Sum(s => s.Quantity);
-
-        if (totalQuantityToAssign > materialBatch.QuantityUnassigned)
-        {
-            return MaterialErrors.InsufficientStock; // Not enough stock in source shelf to move
-        }
-
-        var holdingMaterial = await context
-            .HoldingMaterialTransfers.AsSplitQuery()
-            .IgnoreQueryFilters()
-            .Include(holdingMaterialTransfer => holdingMaterialTransfer.Batches)
-                .ThenInclude(holdingMaterialTransferBatch =>
-                    holdingMaterialTransferBatch.SourceWarehouse
-                )
-            .Include(holdingMaterialTransfer => holdingMaterialTransfer.Batches)
-                .ThenInclude(holdingMaterialTransferBatch =>
-                    holdingMaterialTransferBatch.DestinationWarehouse
-                )
-                    .ThenInclude(warehouse => warehouse.ArrivalLocation)
-            .Include(holdingMaterialTransfer => holdingMaterialTransfer.Batches)
-                .ThenInclude(holdingMaterialTransferBatch =>
-                    holdingMaterialTransferBatch.MaterialBatch
-                )
-            .FirstOrDefaultAsync(m => m.Id == request.HoldingMaterialId);
-
-        if (holdingMaterial is null)
-            return Error.NotFound("HoldingMaterial.NotFound", "HoldingMaterial not found");
-
-        foreach (var movedBatch in request.ShelfMaterialBatches)
-        {
-            var fromWarehouse = holdingMaterial
-                .Batches.FirstOrDefault(b => b.MaterialBatchId == materialBatch.Id)
-                ?.SourceWarehouse;
-
-            if (fromWarehouse is null)
-                return Error.Validation(
-                    "HoldingMaterial.FromWarehouse",
-                    "No source warehouse associated with holding material"
-                );
-
-            var toWarehouse = holdingMaterial
-                .Batches.FirstOrDefault(b => b.MaterialBatchId == materialBatch.Id)
-                ?.DestinationWarehouse;
-
-            if (toWarehouse is null)
-                return Error.Validation(
-                    "HoldingMaterial.ToWarehouse",
-                    "No destination warehouse associated with holding material"
-                );
-
-            var movement = new MassMaterialBatchMovement
-            {
-                BatchId = materialBatch.Id,
-                FromWarehouseId = fromWarehouse.Id,
-                ToWarehouseId = toWarehouse.Id,
-                Quantity = movedBatch.Quantity,
-                MovedAt = DateTime.UtcNow,
-                MovedById = userId,
-            };
-
-            await context.MassMaterialBatchMovements.AddAsync(movement);
-
-            var materialBatchEvent = new MaterialBatchEvent
-            {
-                BatchId = materialBatch.Id,
-                Quantity = movedBatch.Quantity,
-                Type = EventType.Moved,
-                UserId = userId,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
-
-            materialBatch.StockTransferId = holdingMaterial.StockTransferId;
-
-            context.MaterialBatches.Update(materialBatch);
-
-            var targetShelf = await context
-                .WarehouseLocationShelves.AsSplitQuery()
-                .IgnoreQueryFilters()
-                .Include(w => w.WarehouseLocationRack)
-                    .ThenInclude(w => w.WarehouseLocation)
-                        .ThenInclude(w => w.Warehouse)
-                .FirstOrDefaultAsync(w => w.Id == movedBatch.WarehouseLocationShelfId);
-
-            if (targetShelf == null)
-                return Error.NotFound(
-                    "Warehouse.Shelf",
-                    "No matching shelf found in first warehouse for material batch"
-                );
-
-            var warehouseType = targetShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type;
-
-            var materialKind = materialBatch.Material.Kind;
-
-            switch (warehouseType)
-            {
-                case WarehouseType.RawMaterialStorage when materialKind != MaterialKind.Raw:
-                    return Error.Validation(
-                        "Warehouse.Shelf.Material.Kind",
-                        "Warehouse and material do not belong together. Warehouse is raw whiles material is packaging"
-                    );
-                case WarehouseType.PackagedStorage when materialKind != MaterialKind.Package:
-                    return Error.Validation(
-                        "Warehouse.Shelf.Material.Kind",
-                        "Warehouse and material do not belong together. Warehouse is packaging whiles material is raw"
-                    );
-                case WarehouseType.FinishedGoodsStorage or WarehouseType.Production:
-                    return Error.Validation(
-                        "Warehouse.Shelf.Material.Kind",
-                        "Warehouse type does not allow shelf to be assigned"
-                    );
-                default:
-                    var existingTarget =
-                        await context.ShelfMaterialBatches.FirstOrDefaultAsync(x =>
-                            x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                            && x.MaterialBatchId == materialBatch.Id
-                        )
-                        ?? context.ShelfMaterialBatches.Local.FirstOrDefault(x =>
-                            x.WarehouseLocationShelfId == movedBatch.WarehouseLocationShelfId
-                            && x.MaterialBatchId == materialBatch.Id
-                        );
-
-                    if (existingTarget != null)
-                    {
-                        existingTarget.Quantity += movedBatch.Quantity;
-                        existingTarget.Note = $"{movedBatch.Note}. {existingTarget.Note}";
-                        context.ShelfMaterialBatches.Update(existingTarget);
-                    }
-                    else
-                    {
-                        await context.ShelfMaterialBatches.AddAsync(
-                            new ShelfMaterialBatch
-                            {
-                                WarehouseLocationShelfId = movedBatch.WarehouseLocationShelfId,
-                                MaterialBatchId = materialBatch.Id,
-                                Quantity = movedBatch.Quantity,
-                                UoMId = movedBatch.UomId,
-                                Note = movedBatch.Note,
-                                CreatedAt = DateTime.UtcNow,
-                            }
-                        );
-                    }
-                    break;
-            }
-
-            materialBatch.QuantityAssigned += movedBatch.Quantity;
-
-            if (materialBatch.QuantityAssigned >= totalQuantityToAssign)
-            {
-                materialBatch.Status = BatchStatus.Available;
-            }
-        }
-
-        holdingMaterial.Status = HoldingMaterialTransferStatus.Transferred;
-        context.HoldingMaterialTransfers.Update(holdingMaterial);
-        context.MaterialBatches.Update(materialBatch);
-        await context.SaveChangesAsync();
-        return Result.Success();
     }
 
     public async Task<Result> MoveMaterialBatchToWarehouseFromDistribute(

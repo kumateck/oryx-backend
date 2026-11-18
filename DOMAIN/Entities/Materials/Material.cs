@@ -24,6 +24,8 @@ public class Material : BaseEntity
     public string Alphabet { get; set; }
     public Guid? MaterialCategoryId { get; set; }
     public MaterialCategory MaterialCategory { get; set; }
+    /// <summary>Verified material-wide density in g/mL; department stock units remain independent.</summary>
+    public decimal? DensityGramsPerMilliliter { get; set; }
     public List<MaterialBatch> Batches { get; set; } = [];
     public MaterialKind Kind { get; set; }
     public BatchKind Status { get; set; }

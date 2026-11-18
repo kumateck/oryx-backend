@@ -27,7 +27,7 @@ internal static class ProductionMaterialUnitRules
         var reserved = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(row => row.ProductionScheduleProductId == batchId && ids.Contains(row.MaterialBatch.MaterialId)
                 && row.DeletedAt == null && row.ReleasedAt == null)
-            .Select(row => new { row.MaterialBatch.MaterialId, row.UoMId, row.Quantity }).ToListAsync();
+            .Select(row => new { row.MaterialBatch.MaterialId, row.UoMId, row.Quantity, Unit = row.UoM.Symbol, row.DensityGramsPerMilliliter }).ToListAsync();
         var bom = await context.ProductBillOfMaterials.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(bom => bom.ProductId == batch.ProductId && bom.IsActive && bom.DeletedAt == null)
             .OrderByDescending(bom => bom.EffectiveDate).Select(bom => bom.BillOfMaterialId).FirstOrDefaultAsync();
@@ -42,7 +42,7 @@ internal static class ProductionMaterialUnitRules
             var unitId = matches[0].UoMId;
             if (items.Any(item => item.MaterialId == materialId && item.UomId != unitId)
                 || requirements.Any(item => item.MaterialId == materialId && item.UnitId != unitId)
-                || reserved.Any(item => item.MaterialId == materialId && item.UoMId != unitId)
+                || reserved.Any(item => item.MaterialId == materialId && MaterialDensity.Convert(item.Quantity, item.Unit, matches[0].UoM.Symbol, item.DensityGramsPerMilliliter) is null)
                 || snapshot is null && definitions.Any(item => item.MaterialId == materialId
                     && UomConverter.Convert(1, item.Unit, matches[0].UoM.Symbol) is null)
                 || snapshot is null && reserved.Any(row => row.MaterialId == materialId)

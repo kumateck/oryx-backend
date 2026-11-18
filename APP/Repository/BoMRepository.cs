@@ -39,7 +39,7 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         }
         var materialIds = request.Items.SelectMany(item => item.SubstituteMaterialIds.Append(item.MaterialId)).Distinct().ToList();
         var links = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
-            .Include(link => link.UoM).Include(link => link.DensityUoM).Where(link => materialIds.Contains(link.MaterialId)
+            .Include(link => link.Material).Include(link => link.UoM).Include(link => link.DensityUoM).Where(link => materialIds.Contains(link.MaterialId)
                 && link.DepartmentId == product.DepartmentId && link.DeletedAt == null).ToListAsync();
         if (product.DepartmentId is null)
             return Error.Conflict("Bom.MaterialUnit", "The product must belong to a department with linked material units.");
