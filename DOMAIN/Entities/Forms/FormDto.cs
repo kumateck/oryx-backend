@@ -48,6 +48,8 @@ public class ResponseDto : BaseDto
 
 public class ResponseDetailDto : ResponseDto
 {
+    public UserDto ApprovedBy { get; set; }
+    public DateTime? ApprovedAt { get; set; }
     public FormDto EffectiveForm { get; set; }
     public Guid? MaterialSamplingId { get; set; }
     public CollectionItemDto BatchManufacturingRecord { get; set; }

@@ -16,5 +16,12 @@ public class CreateProductPackageRequest
     public decimal PrescribedQuantity { get; set; }
     public decimal Loose { get; set; }
     public Guid? ProductPackingId { get; set; }
+    public List<CreateProductPackageSubstituteRequest> Substitutes { get; set; } = [];
     public List<Guid> SubstituteMaterialIds { get; set; } = [];
+}
+public sealed class CreateProductPackageSubstituteRequest
+{
+    public Guid MaterialId { get; set; }
+    [Range(typeof(decimal), "0.0000000000000000000000000001", "79228162514264337593543950335")]
+    public decimal PrescribedQuantity { get; set; }
 }

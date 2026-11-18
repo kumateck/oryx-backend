@@ -99,8 +99,8 @@ internal static class ProductionMaterialSources
             definitions.AddRange(packages.Select(item => new SourceLine(item.MaterialId, null, item.BaseQuantity,
                 item.PrescribedQuantity, item.Loose, item.UnitCapacity, item.DirectLinkMaterialId,
                 false, item.Substitutes.Where(sub => sub.DeletedAt == null).Select(sub => sub.SubstituteMaterialId).Order().ToList(),
-                // A packaging substitute replaces the main pack one for one (another bottle or label for the same line), so it
-                // takes the line's own quantity in its own stock unit. Null when there are none, so other lines hash as before.
+                // Packaging substitutes can have their own full-batch quantity in their own stock unit.
+                // Older id-only substitutes keep the main line's quantity until explicitly edited.
                 PackagingSubstitutes(item))));
             source = Json(new { PackingStyleId = packingStyleId, Items = packages.Select(item => new { item.Id, item.UpdatedAt, item.ProductPackingId,
                 item.PackingExcessMargin, item.MaterialThickness, item.OtherStandards }).ToList(), Definitions = definitions });
@@ -198,7 +198,7 @@ internal static class ProductionMaterialSources
     private static List<SubstituteLine> PackagingSubstitutes(DOMAIN.Entities.Products.ProductPackage package)
     {
         var lines = package.Substitutes.Where(sub => sub.DeletedAt == null).OrderBy(sub => sub.SubstituteMaterialId)
-            .Select(sub => new SubstituteLine(sub.SubstituteMaterialId, null, package.BaseQuantity, package.PrescribedQuantity)).ToList();
+            .Select(sub => new SubstituteLine(sub.SubstituteMaterialId, null, package.BaseQuantity, sub.PrescribedQuantity ?? package.PrescribedQuantity)).ToList();
         return lines.Count == 0 ? null : lines;
     }
 
