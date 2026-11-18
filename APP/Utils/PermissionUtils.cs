@@ -616,6 +616,10 @@ public static class PermissionKeys
     public const string CanAssignRawMaterialsStockToShelves = "CanAssignRawMaterialsStockToShelves";
     public const string CanAssignPackagingMaterialsStockToShelves =
         "CanAssignPackagingMaterialsStockToShelves";
+    /// <summary>Release unused raw material reservations retained after a recorded production Unstart.</summary>
+    public const string CanRepairUnstartRawMaterialReservations = "CanRepairUnstartRawMaterialReservations";
+    /// <summary>Release unused packaging reservations retained after a recorded production Unstart.</summary>
+    public const string CanRepairUnstartPackagingMaterialReservations = "CanRepairUnstartPackagingMaterialReservations";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
     public const string CanViewApprovedPackagingMaterials = "CanViewApprovedPackagingMaterials";
     public const string CanViewLinkedRawMaterials = "CanViewLinkedRawMaterials";
@@ -2258,6 +2262,8 @@ public static class PermissionUtils
             PermissionSubmodules.ApprovedMaterials,
             PermissionKeys.CanViewApprovedRawMaterials
         );
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartRawMaterialReservations);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartPackagingMaterialReservations);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.ApprovedMaterials,
