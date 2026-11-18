@@ -226,4 +226,22 @@ public sealed class SharedDensityTransferTests
         f.Lot.ExpiryDate = DateTime.UtcNow.AddYears(1); f.Lot.Status = BatchStatus.Quarantine; await db.SaveChangesAsync();
         Assert.Equal(new StoreStockLevel(100, 0, 100, 0, 0, 0), (await StoreStock.Measure(db, f.Storage.Id, units))[f.Lot.MaterialId]);
     }
+
+    [Fact]
+    public async Task Batch_rows_add_up_to_the_approved_materials_totals()
+    {
+        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
+        f.Lot.ExpiryDate = DateTime.UtcNow.AddYears(1); f.Shelf.Quantity = 100; f.Shelf.UoMId = f.Lot.UoMId;
+        db.MaterialBatchReservedQuantities.Add(new() { Id = Guid.NewGuid(), MaterialBatchId = f.Lot.Id, WarehouseId = f.Production.Id,
+            WarehouseLocationShelfId = f.Shelf.WarehouseLocationShelfId, ProductionScheduleProductId = f.Batch.Id, UoMId = f.Lot.UoMId, Quantity = 30 });
+        await db.SaveChangesAsync();
+        var repository = new MaterialRepository(db, f.Mapper);
+
+        var list = Assert.Single((await repository.GetApprovedMaterials(1, 10, null, DOMAIN.Entities.Materials.MaterialKind.Raw, f.Actor.Id)).Value.Data);
+        var batches = (await repository.GetMaterialBatchesByMaterialIdV2(1, 10, f.Lot.MaterialId, f.Department.Id, f.Actor.Id)).Value.Data.ToList();
+        Assert.Equal(list.TotalAvailableQuantity, batches.Sum(row => row.Quantity));
+        Assert.Equal(list.ReservedQuantity, batches.Sum(row => row.ReservedQuantity));
+        Assert.Equal(list.FreeQuantity, batches.Sum(row => row.FreeQuantity));
+        Assert.Equal((30m, 70m, "Usable"), (Assert.Single(batches).ReservedQuantity!.Value, batches[0].FreeQuantity!.Value, batches[0].StockState));
+    }
 }

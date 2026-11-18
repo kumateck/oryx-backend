@@ -207,6 +207,14 @@ public class ShelfMaterialBatchDto
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public string Note { get; set; }
+    /// <summary>"Usable", "Expired" or "NotReleased" by the store-stock rule. Set by the material's stock-by-batch read.</summary>
+    public string StockState { get; set; }
+    /// <summary>Of this shelf's stock, held for batches whose stock has not been issued yet, in <see cref="StockUnit"/>.</summary>
+    public decimal? ReservedQuantity { get; set; }
+    /// <summary>Of this shelf's stock, free to issue, in <see cref="StockUnit"/>.</summary>
+    public decimal? FreeQuantity { get; set; }
+    /// <summary>The unit the reserved and free quantities are in: the department's stock unit.</summary>
+    public string StockUnit { get; set; }
 }
 
 public class MaterialWarehouseLocationShelfDto

@@ -899,18 +899,28 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                 && m.MaterialBatch.Material.Departments.Any(d => d.DepartmentId == departmentId)
                 && m.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Id
                     == warehouse.Id
-                && m.MaterialBatch.Status == BatchStatus.Available
+                && m.WarehouseLocationShelf.DeletedAt == null
             )
             .OrderBy(MaterialValidity.DateFor<ShelfMaterialBatch>(m => m.MaterialBatch))
             .ThenBy(m => m.Id)
             .AsQueryable();
 
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<ShelfMaterialBatchDto>
-        );
+        // Every lot on the store's shelves, each with its share of the material's totals by the store-stock rule,
+        // so the rows add up to on hand, reserved, expired and free on the approved materials list.
+        var result = await PaginationHelper.GetPaginatedResultAsync(query, page, pageSize, mapper.Map<ShelfMaterialBatchDto>);
+        var rows = (result.Data ?? []).ToList();
+        var measured = (await StoreStock.MeasureShelves(context, warehouse.Id, await StoreStock.UnitsInStore(context, warehouse.Id, [materialId])))
+            .ToDictionary(row => row.ShelfBatchId);
+        foreach (var row in rows)
+        {
+            if (!measured.TryGetValue(row.Id, out var stock)) continue;
+            row.StockState = stock.State.ToString();
+            row.ReservedQuantity = stock.Level.Held;
+            row.FreeQuantity = stock.Level.Free;
+            row.StockUnit = stock.Unit;
+        }
+        result.Data = rows;
+        return result;
     }
 
     public async Task<Result<decimal>> GetMaterialsInTransit(Guid materialId)

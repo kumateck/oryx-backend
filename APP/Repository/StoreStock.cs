@@ -27,6 +27,11 @@ internal static class StoreStock
 {
     /// <summary>Measures the materials in a store, each in the store department's stock unit for it.</summary>
     internal static async Task<Dictionary<Guid, StoreStockLevel>> MeasureInStore(ApplicationDbContext context, Guid storeId,
+        IReadOnlyCollection<Guid> materialIds, CancellationToken cancellationToken = default) =>
+        await Measure(context, storeId, await UnitsInStore(context, storeId, materialIds, cancellationToken), cancellationToken);
+
+    /// <summary>Each material's stock unit and density in the store's department.</summary>
+    internal static async Task<Dictionary<Guid, (string? Unit, decimal? Density)>> UnitsInStore(ApplicationDbContext context, Guid storeId,
         IReadOnlyCollection<Guid> materialIds, CancellationToken cancellationToken = default)
     {
         var departmentId = await context.Warehouses.IgnoreQueryFilters().Where(w => w.Id == storeId)
@@ -42,11 +47,23 @@ internal static class StoreStock
             var link = matching.Count == 1 && matching[0].UoM is { DeletedAt: null } ? matching[0] : null;
             return (link?.UoM?.Symbol, link is null ? (decimal?)null : MaterialDensity.Verified(link));
         });
-        return await Measure(context, storeId, units, cancellationToken);
+        return units;
     }
 
     /// <param name="units">Each material's display unit and density. A material without one is measured in its lots' own unit.</param>
     internal static async Task<Dictionary<Guid, StoreStockLevel>> Measure(ApplicationDbContext context, Guid storeId,
+        IReadOnlyDictionary<Guid, (string? Unit, decimal? Density)> units, CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<Guid, StoreStockLevel>();
+        foreach (var shelf in await MeasureShelves(context, storeId, units, cancellationToken))
+            result[shelf.MaterialId] = result.GetValueOrDefault(shelf.MaterialId, StoreStockLevel.None).Plus(shelf.Level);
+        return result;
+    }
+
+    /// <summary>
+    /// The same measurement one shelf row at a time, so a material's batch rows add up exactly to its totals.
+    /// </summary>
+    internal static async Task<List<ShelfStock>> MeasureShelves(ApplicationDbContext context, Guid storeId,
         IReadOnlyDictionary<Guid, (string? Unit, decimal? Density)> units, CancellationToken cancellationToken = default)
     {
         var ids = units.Keys.ToList();
@@ -57,65 +74,63 @@ internal static class StoreStock
                 && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == storeId
                 && item.WarehouseLocationShelf.DeletedAt == null && item.WarehouseLocationShelf.WarehouseLocationRack.DeletedAt == null
                 && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.DeletedAt == null)
+            .OrderBy(item => item.MaterialBatchId).ThenBy(item => item.Id)
             .ToListAsync(cancellationToken);
         var shelfIds = shelves.Select(item => item.WarehouseLocationShelfId).Distinct().ToList();
         var holds = (await ProductionMaterialAllocator.UnissuedReservations(context).IgnoreAutoIncludes().AsNoTracking()
             .Where(item => item.WarehouseLocationShelfId.HasValue && shelfIds.Contains(item.WarehouseLocationShelfId.Value))
             .Select(item => new { item.MaterialBatchId, ShelfId = item.WarehouseLocationShelfId!.Value, item.Quantity, Unit = item.UoM.Symbol })
             .ToListAsync(cancellationToken)).ToLookup(item => (item.MaterialBatchId, item.ShelfId));
-        // Older holds recorded no shelf. They still sit on their lot: take them from the lot's free stock in this store,
-        // as a stock transfer does, so that stock is never counted free twice.
+        // Older holds recorded no shelf. They still sit on their lot: take them from the lot's free shelves in this store,
+        // in order, as a stock transfer does, so that stock is never counted free twice.
         var lotIds = shelves.Select(item => item.MaterialBatchId).Distinct().ToList();
         var unlocated = (await ProductionMaterialAllocator.UnissuedReservations(context).IgnoreAutoIncludes().AsNoTracking()
             .Where(item => !item.WarehouseLocationShelfId.HasValue && lotIds.Contains(item.MaterialBatchId))
             .Select(item => new { item.MaterialBatchId, item.Quantity, Unit = item.UoM.Symbol })
             .ToListAsync(cancellationToken)).ToLookup(item => item.MaterialBatchId);
-        var lotFree = new Dictionary<Guid, (Guid MaterialId, decimal Free, string? Unit, decimal? Density)>();
+        var unlocatedLeft = new Dictionary<Guid, decimal?>();
 
         var now = DateTime.UtcNow;
-        var result = new Dictionary<Guid, StoreStockLevel>();
+        var result = new List<ShelfStock>();
         foreach (var shelf in shelves)
         {
             var materialId = shelf.MaterialBatch.MaterialId;
             var (unit, density) = units[materialId];
             var lotUnit = shelf.MaterialBatch.UoM?.Symbol;
             var target = unit ?? lotUnit;
-            var level = result.GetValueOrDefault(materialId, StoreStockLevel.None);
             var quantity = MaterialDensity.Convert(shelf.Quantity, lotUnit, target, density);
+            ShelfStock Row(StoreStockState state, StoreStockLevel level) => new(shelf.Id, shelf.MaterialBatchId, materialId, target, state, level);
             // Stock whose unit cannot be read, or whose shelf and lot units disagree, cannot be issued (the allocator refuses it).
             if (quantity is null || shelf.UoMId != shelf.MaterialBatch.UoMId)
-            {
-                result[materialId] = level with { OnHand = level.OnHand + (quantity ?? 0), Unavailable = level.Unavailable + (quantity ?? 0) };
-                continue;
-            }
-            level = level with { OnHand = level.OnHand + quantity.Value };
+            { result.Add(Row(StoreStockState.NotReleased, StoreStockLevel.None with { OnHand = quantity ?? 0, Unavailable = quantity ?? 0 })); continue; }
             if (MaterialValidity.IsExpired(shelf.MaterialBatch, now))
-                level = level with { Expired = level.Expired + quantity.Value };
-            else if (shelf.MaterialBatch.Status != BatchStatus.Available)
-                level = level with { Unavailable = level.Unavailable + quantity.Value };
-            else
+            { result.Add(Row(StoreStockState.Expired, StoreStockLevel.None with { OnHand = quantity.Value, Expired = quantity.Value })); continue; }
+            if (shelf.MaterialBatch.Status != BatchStatus.Available)
+            { result.Add(Row(StoreStockState.NotReleased, StoreStockLevel.None with { OnHand = quantity.Value, Unavailable = quantity.Value })); continue; }
+
+            var located = holds[(shelf.MaterialBatchId, shelf.WarehouseLocationShelfId)]
+                .Select(item => MaterialDensity.Convert(item.Quantity, item.Unit, target, density)).ToList();
+            // A hold in a unit that cannot be converted keeps the whole shelf, as the allocator refuses to take from it.
+            var held = located.Any(value => value is null) ? quantity.Value : Math.Min(quantity.Value, located.Sum(value => value.GetValueOrDefault()));
+            if (!unlocatedLeft.ContainsKey(shelf.MaterialBatchId))
             {
-                var held = holds[(shelf.MaterialBatchId, shelf.WarehouseLocationShelfId)]
-                    .Select(item => MaterialDensity.Convert(item.Quantity, item.Unit, target, density)).ToList();
-                // A hold in a unit that cannot be converted keeps the whole shelf, as the allocator refuses to take from it.
-                var heldHere = held.Any(value => value is null) ? quantity.Value : Math.Min(quantity.Value, held.Sum(value => value.GetValueOrDefault()));
-                level = level with { Usable = level.Usable + quantity.Value, Held = level.Held + heldHere, Free = level.Free + quantity.Value - heldHere };
-                var lot = lotFree.TryGetValue(shelf.MaterialBatchId, out var seen) ? seen : (MaterialId: materialId, Free: 0m, Unit: target, Density: density);
-                lotFree[shelf.MaterialBatchId] = lot with { Free = lot.Free + quantity.Value - heldHere };
+                var lotHolds = unlocated[shelf.MaterialBatchId].Select(item => MaterialDensity.Convert(item.Quantity, item.Unit, target, density)).ToList();
+                unlocatedLeft[shelf.MaterialBatchId] = lotHolds.Any(value => value is null) ? null : lotHolds.Sum(value => value.GetValueOrDefault());
             }
-            result[materialId] = level;
-        }
-        foreach (var (lotId, lot) in lotFree)
-        {
-            var held = unlocated[lotId].Select(item => MaterialDensity.Convert(item.Quantity, item.Unit, lot.Unit, lot.Density)).ToList();
-            if (held.Count == 0) continue;
-            var take = held.Any(value => value is null) ? lot.Free : Math.Min(lot.Free, held.Sum(value => value.GetValueOrDefault()));
-            var level = result[lot.MaterialId];
-            result[lot.MaterialId] = level with { Held = level.Held + take, Free = level.Free - take };
+            var left = unlocatedLeft[shelf.MaterialBatchId];
+            var fromLot = left is null ? quantity.Value - held : Math.Min(quantity.Value - held, left.Value);
+            if (left is not null) unlocatedLeft[shelf.MaterialBatchId] = left.Value - fromLot;
+            held += fromLot;
+            result.Add(Row(StoreStockState.Usable, new StoreStockLevel(quantity.Value, 0, 0, quantity.Value, held, quantity.Value - held)));
         }
         return result;
     }
 }
+
+internal enum StoreStockState { Usable, Expired, NotReleased }
+
+/// <summary>One shelf row of one lot, measured in <see cref="Unit"/>.</summary>
+internal sealed record ShelfStock(Guid ShelfBatchId, Guid LotId, Guid MaterialId, string? Unit, StoreStockState State, StoreStockLevel Level);
 
 internal static class StoreStockDtos
 {
