@@ -3,6 +3,7 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Services.Authorization;
 using APP.Services.Formulas;
+using APP.Services.Forms;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
@@ -1529,6 +1530,8 @@ public class FormRepository(
     {
         await using var transaction = context.Database.IsRelational()
             ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
+        var dateValidation = await ProductCertificateGuard.Validate(context, batchManufacturingRecordId, productionActivityStepId, userId);
+        if (dateValidation.IsFailure) return dateValidation.Errors;
         var response = await context.Responses
             .Where(r => r.BatchManufacturingRecordId == batchManufacturingRecordId
                 && r.ProductionActivityStepId == productionActivityStepId)
@@ -1607,7 +1610,11 @@ public class FormRepository(
             }
         }
 
+        dateValidation = await ProductCertificateGuard.Validate(context, batchManufacturingRecordId, productionActivityStepId, userId);
+        if (dateValidation.IsFailure) return dateValidation.Errors;
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
+        dateValidation = await ProductCertificateGuard.Validate(context, batchManufacturingRecordId, productionActivityStepId, userId);
+        if (dateValidation.IsFailure) return dateValidation.Errors;
         await context.SaveChangesAsync();
         if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
@@ -1623,6 +1630,7 @@ public class FormRepository(
             .Include(fr => fr.Form)
             .Include(fr => fr.CreatedBy)
             .Include(fr => fr.Approvals)
+            .Include(fr => fr.FormResponses).ThenInclude(r => r.CreatedBy)
             .Include(fr => fr.FormResponses)
                 .ThenInclude(r => r.FormField)
                     .ThenInclude(r => r.Question)
@@ -1633,6 +1641,18 @@ public class FormRepository(
             return FormErrors.NotFound(formResponseId);
 
         var detail = mapper.Map<ResponseDetailDto>(formResponse);
+        if (formResponse.Approved)
+        {
+            var final = ResponseApprovalRoundManager.Current(formResponse.Approvals)
+                .Where(a => a.Required && a.Status == ApprovalStatus.Approved)
+                .OrderByDescending(a => a.Order).ThenByDescending(a => a.ApprovalTime).FirstOrDefault();
+            if (final?.ApprovedById is { } approvedById)
+            {
+                var approver = await context.Users.IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(u => u.Id == approvedById);
+                detail.ApprovedBy = mapper.Map<UserDto>(approver);
+                detail.ApprovedAt = final.ApprovalTime;
+            }
+        }
         var effective = await GetForm(formResponse.FormId);
         if (effective.IsFailure) return effective.Errors;
         detail.EffectiveForm = effective.Value;

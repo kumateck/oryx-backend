@@ -502,9 +502,29 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result<Guid>> CreateProductPackage(
         List<CreateProductPackageRequest> request,
         Guid productId,
-        Guid userId
+        Guid userId, string permissionContext = null
     )
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => CreateProductPackage(request, productId, userId, permissionContext));
+        var changes = await APP.Services.Authorization.ProductSectionChanges.PackingMaterials(context, productId, request);
+        async Task<bool> CanWrite()
+        {
+            var grants = await APP.Services.Authorization.CurrentPermissionSet.Load(context, userId);
+            return changes.All(verb => grants.Contains(APP.Services.Authorization.ProductPermissions.Key(
+                APP.Services.Authorization.ProductPermissions.Parse(permissionContext), APP.Services.Authorization.ProductSection.PackingMaterials, verb)));
+        }
+        if (!await CanWrite()) return Error.Forbidden("Product.Package.Permission", "Your current permissions do not allow these packing-material changes.");
+        foreach (var line in request)
+        {
+            line.Substitutes ??= [];
+            line.SubstituteMaterialIds ??= [];
+            if (line.Substitutes.Count > 0) line.SubstituteMaterialIds = line.Substitutes.Select(substitute => substitute.MaterialId).ToList();
+            if (line.SubstituteMaterialIds.Contains(line.MaterialId) || line.SubstituteMaterialIds.Distinct().Count() != line.SubstituteMaterialIds.Count)
+                return Error.Validation("Product.Package.Substitute", "Choose each substitute once, and never the line's own material.");
+            if (line.Substitutes.Any(substitute => substitute.MaterialId == Guid.Empty || substitute.PrescribedQuantity <= 0))
+                return Error.Validation("Product.Package.SubstituteQuantity", "Each substitute needs a quantity greater than zero.");
+        }
         var product = await context
             .Products.AsSplitQuery()
             .Include(p => p.Packages)
@@ -515,6 +535,16 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             return ProductErrors.NotFound(productId);
         }
 
+        var quantified = request.SelectMany(line => line.Substitutes).Select(s => s.MaterialId).Distinct().ToList();
+        if (quantified.Count > 0)
+        {
+            var links = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+                .Where(link => quantified.Contains(link.MaterialId) && link.DepartmentId == product.DepartmentId && link.DeletedAt == null
+                    && link.Material.DeletedAt == null && link.Material.Kind == DOMAIN.Entities.Materials.MaterialKind.Package
+                    && link.UoM != null && link.UoM.DeletedAt == null).Select(link => link.MaterialId).ToListAsync();
+            if (quantified.Any(id => links.Count(candidate => candidate == id) != 1))
+                return Error.Conflict("Product.Package.SubstituteUnit", "Each substitute needs one active packaging-material stock unit in the product's department.");
+        }
         // The request replaces the list: compare incoming pairs, not the rows being replaced.
         if (request.GroupBy(package => (package.MaterialId, package.ProductPackingId)).Any(group => group.Count() > 1))
             return Error.Validation("Product.Package.Duplicate", "This material is already listed for this packing style.");
@@ -543,6 +573,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         // Remove old packages if they exist
         if (product.Packages.Count != 0)
         {
+            if (!await CanWrite()) return Error.Forbidden("Product.Package.Permission", "Your permissions changed before saving.");
             await context.ProductPackages.Where(x => x.ProductId == productId).ExecuteDeleteAsync();
         }
 
@@ -553,6 +584,7 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             product.Packages.Add(newPackage);
         }
 
+        if (!await CanWrite()) return Error.Forbidden("Product.Package.Permission", "Your permissions changed before saving.");
         await context.SaveChangesAsync();
         return product.Id;
     }

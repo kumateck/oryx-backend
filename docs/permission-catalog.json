@@ -5425,6 +5425,20 @@
     "description": "Allows the user to  repair test formula."
   },
   {
+    "module": "Quality Control",
+    "submodule": "Testing",
+    "key": "CanViewTemplateRepair",
+    "name": "Can View Template Repair",
+    "description": "Allows the user to  view template repair."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Testing",
+    "key": "CanApplyTemplateRepair",
+    "name": "Can Apply Template Repair",
+    "description": "Allows the user to  apply template repair."
+  },
+  {
     "module": "Settings",
     "submodule": "Workflow Builder",
     "key": "CanDeleteQuestions",

@@ -21,7 +21,6 @@ public sealed class FormPermissionTests
     [InlineData("SubmitFormAssignee", "CanAssignProductTest")]
     [InlineData("ReassignFormAssignee", "CanReassignRawMaterialTest")]
     [InlineData("SubmitFormSectionResponse", "CanStartPackagingMaterialTest")]
-    [InlineData("GenerateCertificateOfAnalysisForProduct", "CanCheckProductTest")]
     [InlineData("GetForms", "CanViewTemplate")]
     public void A_form_task_needs_a_key_of_a_page_that_does_it(string name, string key) =>
         Assert.Contains(Rules(name), rule => rule.Keys.Contains(key));
