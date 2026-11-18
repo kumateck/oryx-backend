@@ -8,6 +8,10 @@ public class CollectionItemDto
     public string Description { get; set; }
     public string Symbol { get; set; }
     public string Uom { get; set; }
+    /// <summary>Operations only: the production department the operation is linked to.</summary>
+    public Guid? LinkedDepartmentId { get; set; }
+    /// <summary>Operations only: the linked production department's name.</summary>
+    public string LinkedDepartmentName { get; set; }
 
     public override bool Equals(object obj)
     {
