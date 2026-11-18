@@ -49,13 +49,20 @@ public class ForecastMaterialDto
     public decimal QuantityNeeded { get; set; }
     public decimal QuantityOnHand { get; set; }
     public decimal ExpiredQuantity { get; set; }
+    /// <summary>Usable stock held for other batches whose stock has not been issued yet.</summary>
     public decimal ReservedQuantity { get; set; }
+    /// <summary>In-date stock that is not released for use (quarantined, frozen, rejected) or whose unit cannot be read.</summary>
+    public decimal? UnavailableQuantity { get; set; }
+    /// <summary>Approved, in-date stock: on hand less expired and unavailable.</summary>
+    public decimal? UsableQuantity { get; set; }
+    /// <summary>Usable stock not held for other batches: what a new batch could reserve.</summary>
+    public decimal? FreeQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     /// <summary>
     /// Whether the free stock (usable, not reserved for other batches) covers what is needed: the same rule production
     /// applies when a batch starts. Stock reserved for other batches is theirs, so a forecast never counts it as available.
     /// </summary>
-    public bool IsAvailable => Math.Max(QuantityOnHand - ExpiredQuantity - ReservedQuantity, 0) >= QuantityNeeded;
+    public bool IsAvailable => (FreeQuantity ?? Math.Max(QuantityOnHand - ExpiredQuantity - ReservedQuantity, 0)) >= QuantityNeeded;
 }
 
 public class ProductionScheduleProcurementPackageDto

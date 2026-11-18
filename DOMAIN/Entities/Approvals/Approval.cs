@@ -64,6 +64,10 @@ public class ApprovalEntity
     public Guid? MaterialBatchId { get; set; }
     public Guid? BatchManufacturingRecordId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
+    /// <summary>The production batch a stock requisition was raised for, so approvers see it in the queue.</summary>
+    public string BatchNumber { get; set; }
+    /// <summary>The product of that production batch.</summary>
+    public string ProductName { get; set; }
     public UserDto RequestedBy { get; set; }
     /// <summary>Set when the caller sees this only because its approver delegated to them: whose approval it is.</summary>
     public CollectionItemDto OnBehalfOf { get; set; }

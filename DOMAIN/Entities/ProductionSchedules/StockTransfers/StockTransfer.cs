@@ -104,6 +104,10 @@ public class DepartmentStockTransferDto : BaseDto
     public DepartmentDto FromDepartment { get; set; }
     public DepartmentDto ToDepartment { get; set; }
     public decimal Quantity { get; set; }
+    /// <summary>The quantity in the supplying department's own stock unit, converted with the material's density when needed.</summary>
+    public decimal? SupplierQuantity { get; set; }
+    /// <summary>The supplying department's stock unit for this material. Null when the request unit cannot be converted to it.</summary>
+    public UnitOfMeasureDto SupplierUoM { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime? IssuedAt { get; set; }
     public string Reason { get; set; }

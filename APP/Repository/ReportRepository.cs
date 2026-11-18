@@ -173,7 +173,8 @@ public partial class ReportRepository(
             var warehouseId =
                 material.Kind == MaterialKind.Raw ? rawWarehouse.Id : packageWarehouse.Id;
 
-            var stockResult = await materialRepository.GetMassMaterialStockInWarehouse(
+            // Free stock by the store-stock rule: usable and not held for a batch.
+            var stockResult = await materialRepository.GetUsableShelfMaterialStockInWarehouse(
                 material.Id,
                 warehouseId
             );
@@ -1414,8 +1415,8 @@ public partial class ReportRepository(
         if (department is null)
             return Error.NotFound("Department", "Department not found.");
 
-        var materialBatchReserved = context
-            .MaterialBatchReservedQuantities.AsSplitQuery()
+        // Live holds only (not released to the shelf, not issued to the floor): see StoreStock.
+        var materialBatchReserved = ProductionMaterialAllocator.UnissuedReservations(context).AsSplitQuery()
             .Include(m => m.MaterialBatch)
                 .ThenInclude(b => b.Material)
             .Include(m => m.Warehouse)
@@ -3587,12 +3588,14 @@ public partial class ReportRepository(
         Guid? materialId = null
     )
     {
-        var reservedMaterialQuery = context
-            .MaterialBatchReservedQuantities.AsSplitQuery()
-            
+        // Live holds only (not released back to the shelf, not issued to the production floor): see StoreStock.
+        var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
+        var shelves = context.ShelfMaterialBatches.IgnoreQueryFilters().Where(shelf => shelf.DeletedAt == null);
+        var reservedMaterialQuery = ProductionMaterialAllocator.UnissuedReservations(context).AsSplitQuery()
             .Where(r =>
-                r.DeletedAt == null
-                && (!departmentId.HasValue || r.Warehouse.DepartmentId == departmentId.Value)
+                (!departmentId.HasValue || (r.WarehouseLocationShelfId.HasValue
+                    ? r.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId.Value
+                    : r.Warehouse.DepartmentId == departmentId.Value))
                 && (!materialId.HasValue || r.MaterialBatch.MaterialId == materialId.Value)
             )
             .AsNoTracking();
@@ -3619,10 +3622,8 @@ public partial class ReportRepository(
                 ManufacturingDate = r.MaterialBatch.ManufacturingDate,
                 ExpiryDate = r.MaterialBatch.ExpiryDate,
                 BalanceQuantity =
-                    r.MaterialBatch.TotalQuantity
-                    - r.MaterialBatch.ConsumedQuantity
-                    - r.MaterialBatch.ReservedQuantities.Where(rq => rq.DeletedAt == null)
-                        .Sum(rq => rq.Quantity),
+                    shelves.Where(shelf => shelf.MaterialBatchId == r.MaterialBatchId).Sum(shelf => shelf.Quantity)
+                    - unissued.Where(hold => hold.MaterialBatchId == r.MaterialBatchId).Sum(hold => hold.Quantity),
                 MaterialBatchNumber = r.MaterialBatch.BatchNumber,
             })
             .ToListAsync();
@@ -4998,15 +4999,14 @@ public partial class ReportRepository(
     public async Task<Result<List<MaterialsStockSummaryDto>>> GetMaterialsStockSummary(
         Guid? departmentId = null, MaterialKind? materialKind = null, Guid? materialId = null)
     {
+        // One row per material per store, measured by the store-stock rule in the store department's unit.
         var query = context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
             .Where(smb => !smb.DeletedAt.HasValue && smb.Quantity > 0
                 && !smb.MaterialBatch.DeletedAt.HasValue
                 && !smb.MaterialBatch.Material.DeletedAt.HasValue);
 
         if (departmentId.HasValue)
-            query = query.Where(smb =>
-                smb.MaterialBatch.Material.Departments.Any(md =>
-                    md.DepartmentId == departmentId.Value && !md.DeletedAt.HasValue));
+            query = query.Where(smb => smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId.Value);
 
         if (materialKind.HasValue)
             query = query.Where(smb => smb.MaterialBatch.Material.Kind == materialKind.Value);
@@ -5021,42 +5021,50 @@ public partial class ReportRepository(
                 smb.MaterialBatch.Material.Code,
                 smb.MaterialBatch.Material.Kind,
                 smb.MaterialBatch.MaterialId,
-                smb.MaterialBatch.Id,
-                smb.Quantity,
-                DepartmentName = smb.MaterialBatch.Material.Departments
-                    .Where(md => !md.DeletedAt.HasValue)
-                    .Select(md => md.Department.Name)
-                    .FirstOrDefault(),
-                WarehouseType = smb.WarehouseLocationShelf
-                    .WarehouseLocationRack.WarehouseLocation.Warehouse.Type,
-                UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol,
+                BatchId = smb.MaterialBatch.Id,
+                WarehouseId = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId,
+                DepartmentId = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId,
+                DepartmentName = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Department.Name,
+                WarehouseType = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Type,
+                LotUnit = smb.MaterialBatch.UoM.Symbol,
             })
             .ToListAsync();
 
+        var departmentIds = rawData.Select(x => x.DepartmentId).Distinct().ToList();
+        var materialIds = rawData.Select(x => x.MaterialId).Distinct().ToList();
+        var units = await context.MaterialDepartments.IgnoreQueryFilters().AsNoTracking()
+            .Where(md => md.DeletedAt == null && departmentIds.Contains(md.DepartmentId) && materialIds.Contains(md.MaterialId))
+            .Select(md => new { md.MaterialId, md.DepartmentId, md.UoM.Symbol }).ToListAsync();
+        var levels = new Dictionary<Guid, Dictionary<Guid, StoreStockLevel>>();
+        foreach (var store in rawData.Select(x => x.WarehouseId).Distinct())
+            levels[store] = await StoreStock.MeasureInStore(context, store,
+                rawData.Where(x => x.WarehouseId == store).Select(x => x.MaterialId).Distinct().ToList());
+
         var grouped = rawData
-            .GroupBy(x => new
+            .GroupBy(x => new { x.Name, x.Code, x.Kind, x.MaterialId, x.WarehouseId, x.DepartmentId, x.DepartmentName, x.WarehouseType })
+            .Select(g =>
             {
-                x.Name,
-                x.Code,
-                x.Kind,
-                x.DepartmentName,
-                x.WarehouseType,
-                x.UomSymbol,
-            })
-            .Select(g => new MaterialsStockSummaryDto
-            {
-                MaterialName = g.Key.Name,
-                MaterialCode = g.Key.Code,
-                MaterialType = g.Key.Kind == MaterialKind.Raw ? "Raw" : "Packaging",
-                ProductionDepartment = g.Key.DepartmentName ?? "Unknown",
-                WarehouseType = g.Key.WarehouseType == WarehouseType.RawMaterialStorage
-                    ? "Raw Warehouse"
-                    : g.Key.WarehouseType == WarehouseType.PackagedStorage
-                        ? "Packaging Warehouse"
-                        : g.Key.WarehouseType.ToString(),
-                NoOfBatches = g.Select(x => x.Id).Distinct().Count(),
-                TotalQuantity = g.Sum(x => x.Quantity),
-                UOM = g.Key.UomSymbol,
+                var stock = levels[g.Key.WarehouseId].GetValueOrDefault(g.Key.MaterialId, StoreStockLevel.None);
+                var links = units.Where(u => u.MaterialId == g.Key.MaterialId && u.DepartmentId == g.Key.DepartmentId).ToList();
+                return new MaterialsStockSummaryDto
+                {
+                    MaterialName = g.Key.Name,
+                    MaterialCode = g.Key.Code,
+                    MaterialType = g.Key.Kind == MaterialKind.Raw ? "Raw" : "Packaging",
+                    ProductionDepartment = g.Key.DepartmentName ?? "Unknown",
+                    WarehouseType = g.Key.WarehouseType == WarehouseType.RawMaterialStorage
+                        ? "Raw Warehouse"
+                        : g.Key.WarehouseType == WarehouseType.PackagedStorage
+                            ? "Packaging Warehouse"
+                            : g.Key.WarehouseType.ToString(),
+                    NoOfBatches = g.Select(x => x.BatchId).Distinct().Count(),
+                    TotalQuantity = stock.OnHand,
+                    ExpiredQuantity = stock.Expired,
+                    UnavailableQuantity = stock.Unavailable,
+                    ReservedQuantity = stock.Held,
+                    FreeQuantity = stock.Free,
+                    UOM = links.Count == 1 ? links[0].Symbol : g.First().LotUnit,
+                };
             })
             .OrderBy(x => x.MaterialName)
             .ThenBy(x => x.ProductionDepartment)
@@ -5077,9 +5085,7 @@ public partial class ReportRepository(
                 && !smb.MaterialBatch.Material.DeletedAt.HasValue);
 
         if (departmentId.HasValue)
-            query = query.Where(smb =>
-                smb.MaterialBatch.Material.Departments.Any(md =>
-                    md.DepartmentId == departmentId.Value && !md.DeletedAt.HasValue));
+            query = query.Where(smb => smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId.Value);
 
         if (materialId.HasValue)
             query = query.Where(stock => stock.MaterialBatch.MaterialId == materialId.Value);
@@ -5106,10 +5112,12 @@ public partial class ReportRepository(
                 smb.MaterialBatch.ManufacturingDate,
                 smb.MaterialBatch.ExpiryDate,
                 smb.Quantity,
-                DepartmentName = smb.MaterialBatch.Material.Departments
-                    .Where(md => !md.DeletedAt.HasValue)
-                    .Select(md => md.Department.Name)
-                    .FirstOrDefault(),
+                smb.MaterialBatchId,
+                smb.WarehouseLocationShelfId,
+                smb.MaterialBatch.Status,
+                smb.MaterialBatch.RetestDate,
+                ShelfUnitMatches = smb.UoMId == smb.MaterialBatch.UoMId,
+                DepartmentName = smb.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.Department.Name,
                 WarehouseType = smb.WarehouseLocationShelf
                     .WarehouseLocationRack.WarehouseLocation.Warehouse.Type,
                 UomSymbol = smb.UoM != null ? smb.UoM.Symbol : smb.MaterialBatch.UoM.Symbol,
@@ -5121,6 +5129,17 @@ public partial class ReportRepository(
                     + smb.WarehouseLocationShelf.Name,
             })
             .ToListAsync();
+
+        // Live holds on each lot and shelf (same rule as StoreStock), capped at what the shelf holds.
+        var lotIds = rawData.Select(x => x.MaterialBatchId).Distinct().ToList();
+        var holds = (await ProductionMaterialAllocator.UnissuedReservations(context).AsNoTracking()
+            .Where(r => lotIds.Contains(r.MaterialBatchId) && r.WarehouseLocationShelfId.HasValue && r.UoMId == r.MaterialBatch.UoMId)
+            .Select(r => new { r.MaterialBatchId, Shelf = r.WarehouseLocationShelfId!.Value, r.Quantity }).ToListAsync())
+            .ToLookup(r => (r.MaterialBatchId, r.Shelf), r => r.Quantity);
+        var now = DateTime.UtcNow;
+        string State(DateTime? expiry, DateTime? retest, BatchStatus status, bool unitMatches) =>
+            MaterialValidity.IsExpired(new MaterialBatch { ExpiryDate = expiry, RetestDate = retest }, now) ? "Expired"
+                : status != BatchStatus.Available || !unitMatches ? "Not released" : "Usable";
 
         var result = rawData
             .OrderBy(x => x.Name)
@@ -5135,6 +5154,9 @@ public partial class ReportRepository(
                 ManufacturingDate = x.ManufacturingDate,
                 ExpiryDate = x.ExpiryDate,
                 QuantityAvailable = x.Quantity,
+                StockState = State(x.ExpiryDate, x.RetestDate, x.Status, x.ShelfUnitMatches),
+                ReservedQuantity = State(x.ExpiryDate, x.RetestDate, x.Status, x.ShelfUnitMatches) == "Usable"
+                    ? Math.Min(x.Quantity, holds[(x.MaterialBatchId, x.WarehouseLocationShelfId)].Sum()) : 0,
                 UOM = x.UomSymbol,
                 ProductionDepartment = x.DepartmentName ?? "Unknown",
                 WarehouseType = x.WarehouseType == WarehouseType.RawMaterialStorage
@@ -6336,6 +6358,7 @@ public partial class ReportRepository(
                 md.Material.Code,
                 md.Material.Kind,
                 UomSymbol = md.UoM.Symbol,
+                md.DepartmentId,
                 DepartmentName = md.Department.Name,
                 md.ReOrderLevel,
             })
@@ -6343,14 +6366,16 @@ public partial class ReportRepository(
 
         var materialIds = materialDepts.Select(m => m.MaterialId).Distinct().ToList();
 
-        var stockData = await context.ShelfMaterialBatches.IgnoreQueryFilters().AsNoTracking()
-            .Where(smb => materialIds.Contains(smb.MaterialBatch.MaterialId)
-                && !smb.DeletedAt.HasValue && smb.Quantity > 0)
-            .GroupBy(smb => smb.MaterialBatch.MaterialId)
-            .Select(g => new { MaterialId = g.Key, CurrentStock = g.Sum(smb => smb.Quantity) })
-            .ToListAsync();
-
-        var stockLookup = stockData.ToDictionary(x => x.MaterialId, x => x.CurrentStock);
+        // Free stock (usable, not held for a batch) in each department's own store, by the store-stock rule.
+        var departmentIdsInReport = await mdQuery.Select(md => md.DepartmentId).Distinct().ToListAsync();
+        var stores = await context.Warehouses.IgnoreQueryFilters().AsNoTracking()
+            .Where(w => w.DeletedAt == null && w.DepartmentId.HasValue && departmentIdsInReport.Contains(w.DepartmentId.Value)
+                && (w.Type == WarehouseType.RawMaterialStorage || w.Type == WarehouseType.PackagedStorage))
+            .Select(w => new { w.Id, DepartmentId = w.DepartmentId!.Value, w.Type }).ToListAsync();
+        var stockLookup = new Dictionary<(Guid Material, Guid Department), decimal>();
+        foreach (var store in stores)
+            foreach (var (id, level) in await StoreStock.MeasureInStore(context, store.Id, materialIds))
+                stockLookup[(id, store.DepartmentId)] = stockLookup.GetValueOrDefault((id, store.DepartmentId)) + level.Free;
 
         var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-12);
         var consumptionData = await context.BinCardInformation.IgnoreQueryFilters().AsNoTracking()
@@ -6365,11 +6390,12 @@ public partial class ReportRepository(
         var consumptionLookup = consumptionData.ToDictionary(x => x.MaterialId, x => x.TotalIssued / 12m);
 
         var result = materialDepts
-            .GroupBy(md => md.MaterialId)
+            // One row per material and department: each department's own store and reorder level.
+            .GroupBy(md => (md.MaterialId, md.DepartmentId))
             .SelectMany(g =>
             {
                 var currentStock = stockLookup.GetValueOrDefault(g.Key, 0m);
-                var avgMonthlyConsumption = consumptionLookup.GetValueOrDefault(g.Key, 0m);
+                var avgMonthlyConsumption = consumptionLookup.GetValueOrDefault(g.Key.MaterialId, 0m);
                 var first = g.First();
                 decimal monthsOfStock;
                 if (avgMonthlyConsumption > 0)
