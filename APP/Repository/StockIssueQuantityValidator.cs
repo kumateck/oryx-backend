@@ -22,7 +22,7 @@ internal static class StockIssueQuantityValidator
         {
             var line = requisition.Items.FirstOrDefault(item => item.MaterialId == group.Key);
             var values = group.Select(reservation => reservation.UoMId == line?.UoMId ? reservation.Quantity
-                : UomConverter.Convert(reservation.Quantity, reservation.UoM?.Symbol, line?.UoM?.Symbol)).ToList();
+                : MaterialDensity.Convert(reservation.Quantity, reservation.UoM?.Symbol, line?.UoM?.Symbol, reservation.DensityGramsPerMilliliter)).ToList();
             if (values.Any(value => !value.HasValue))
                 return Error.Validation("Stock.Units", "Reservation and requisition units cannot be reconciled.");
             quantitiesByMaterial[group.Key] = values.Sum(value => value.GetValueOrDefault());

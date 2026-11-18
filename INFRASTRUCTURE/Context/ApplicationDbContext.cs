@@ -1014,6 +1014,7 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
@@ -1030,6 +1031,7 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
@@ -1174,6 +1176,7 @@ public partial class ApplicationDbContext(
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureProductionUnstart(modelBuilder);
+        ConfigureMaterialDensity(modelBuilder);
         ConfigureUnstartLeftovers(modelBuilder);
         ConfigureReservationRepair(modelBuilder);
         modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);

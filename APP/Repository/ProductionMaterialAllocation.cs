@@ -6,7 +6,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-internal sealed record ProductionMaterialAllocation(Guid BatchId, Guid ShelfId, Guid UnitId, decimal Quantity);
+internal sealed record ProductionMaterialAllocation(Guid BatchId, Guid ShelfId, Guid UnitId, decimal Quantity, decimal? Density = null);
 /// <param name="ShortageDetails">One sentence per short material saying what was counted and why stock was not usable.</param>
 internal sealed record ProductionMaterialAllocationPlan(List<ProductionMaterialAllocation> Allocations,
     Dictionary<Guid, decimal> Shortages, string EvidenceHash, List<string> Blockers, List<string> ShortageDetails);
@@ -64,18 +64,18 @@ internal static class ProductionMaterialAllocator
             foreach (var shelf in candidates)
             {
                 if (remaining <= 0) break;
-                if (shelf.UoMId != shelf.MaterialBatch.UoMId || shelf.MaterialBatch.UoMId != requirement.UnitId)
+                if (shelf.UoMId != shelf.MaterialBatch.UoMId)
                 { blockers.Add($"{requirement.Name}: shelf, batch and department stock units must agree. Reconcile the stock units first."); continue; }
-                var available = UomConverter.Convert(shelf.Quantity, shelf.MaterialBatch.UoM?.Symbol, requirement.Unit);
+                var available = MaterialDensity.Convert(shelf.Quantity, shelf.MaterialBatch.UoM?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter);
                 var held = others.Where(item => item.MaterialBatchId == shelf.MaterialBatchId && item.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId)
-                    .Select(item => UomConverter.Convert(item.Quantity, item.UoM?.Symbol, requirement.Unit)).ToList();
+                    .Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter)).ToList();
                 if (!available.HasValue || held.Any(quantity => !quantity.HasValue))
                 { blockers.Add($"{requirement.Name}: existing stock/reservation units cannot be converted safely."); continue; }
                 var quantity = Math.Min(remaining, Math.Max(0, available.Value - held.Sum(value => value.GetValueOrDefault())));
                 if (quantity <= 0) continue;
-                var physical = UomConverter.Convert(quantity, requirement.Unit, shelf.MaterialBatch.UoM.Symbol);
+                var physical = MaterialDensity.Convert(quantity, requirement.Unit, shelf.MaterialBatch.UoM.Symbol, requirement.DensityGramsPerMilliliter);
                 if (!physical.HasValue) continue;
-                allocations.Add(new ProductionMaterialAllocation(shelf.MaterialBatchId, shelf.WarehouseLocationShelfId, shelf.MaterialBatch.UoMId, physical.Value));
+                allocations.Add(new ProductionMaterialAllocation(shelf.MaterialBatchId, shelf.WarehouseLocationShelfId, shelf.MaterialBatch.UoMId, physical.Value, requirement.DensityGramsPerMilliliter));
                 remaining -= quantity;
             }
             shortages[requirement.MaterialId] = remaining;
@@ -115,7 +115,7 @@ internal static class ProductionMaterialAllocator
         List<DOMAIN.Entities.Warehouses.ShelfMaterialBatch> shelves, List<MaterialBatchReservedQuantity> others, List<StockElsewhere> elsewhere)
     {
         decimal Sum(IEnumerable<DOMAIN.Entities.Warehouses.ShelfMaterialBatch> rows) => rows
-            .Select(item => UomConverter.Convert(item.Quantity, item.MaterialBatch.UoM?.Symbol, requirement.Unit) ?? 0).Sum();
+            .Select(item => MaterialDensity.Convert(item.Quantity, item.MaterialBatch.UoM?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter) ?? 0).Sum();
         var now = DateTime.UtcNow;
         var own = shelves.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId && item.Quantity > 0).ToList();
         var notApproved = own.Where(item => item.MaterialBatch.Status != BatchStatus.Available).ToList();
@@ -123,7 +123,7 @@ internal static class ProductionMaterialAllocator
         var usable = own.Except(notApproved).Except(notValid).ToList();
         var holds = others.Where(hold => usable.Any(shelf => shelf.MaterialBatchId == hold.MaterialBatchId
             && shelf.WarehouseLocationShelfId == hold.WarehouseLocationShelfId)).ToList();
-        var held = holds.Select(item => UomConverter.Convert(item.Quantity, item.UoM?.Symbol, requirement.Unit) ?? 0).Sum();
+        var held = holds.Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter) ?? 0).Sum();
         var holders = holds.Select(item => item.ProductionScheduleProduct?.BatchNumber).Where(number => !string.IsNullOrWhiteSpace(number))
             .Distinct().Order().Take(5).ToList();
         string Amount(decimal value) => $"{value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)} {requirement.Unit}";
@@ -136,7 +136,7 @@ internal static class ProductionMaterialAllocator
         if (notApproved.Count > 0) parts.Add($"{Amount(Sum(notApproved))} is not yet approved for use");
         if (own.Count == 0) parts.Add("no stock of this material is on the storage warehouse's shelves");
         var located = elsewhere.GroupBy(row => string.IsNullOrWhiteSpace(row.Warehouse) ? "an unnamed warehouse" : row.Warehouse)
-            .Select(group => (Warehouse: group.Key, Quantity: group.Sum(row => UomConverter.Convert(row.Quantity, row.Unit, requirement.Unit) ?? 0)))
+            .Select(group => (Warehouse: group.Key, Quantity: group.Sum(row => MaterialDensity.Convert(row.Quantity, row.Unit, requirement.Unit, requirement.DensityGramsPerMilliliter) ?? 0)))
             .Where(item => item.Quantity > 0).OrderByDescending(item => item.Quantity).Take(3).ToList();
         if (located.Count > 0)
             parts.Add("shelved elsewhere: " + string.Join(", ", located.Select(item => $"{Amount(item.Quantity)} in {item.Warehouse}"))
@@ -152,14 +152,14 @@ internal static class ProductionMaterialAllocator
         foreach (var row in existing)
         {
             var key = (row.MaterialBatchId, row.WarehouseLocationShelfId.GetValueOrDefault(), row.UoMId);
-            if (pending.Remove(key, out var target)) row.Quantity = target.Quantity;
+            if (pending.Remove(key, out var target)) { row.Quantity = target.Quantity; row.DensityGramsPerMilliliter = target.Density; }
             else row.ReleasedAt = DateTime.UtcNow;
         }
         foreach (var row in pending.Values)
             context.MaterialBatchReservedQuantities.Add(new MaterialBatchReservedQuantity
             {
                 ProductionScheduleProductId = source.Batch.Id, WarehouseId = source.ProductionId,
-                MaterialBatchId = row.BatchId, WarehouseLocationShelfId = row.ShelfId, UoMId = row.UnitId, Quantity = row.Quantity
+                MaterialBatchId = row.BatchId, WarehouseLocationShelfId = row.ShelfId, UoMId = row.UnitId, Quantity = row.Quantity, DensityGramsPerMilliliter = row.Density
             });
     }
 }

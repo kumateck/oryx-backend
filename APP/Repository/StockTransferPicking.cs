@@ -7,11 +7,18 @@ namespace APP.Repository;
 
 internal static class StockTransferPicking
 {
-    internal sealed record AvailableShelf(ShelfMaterialBatch Shelf, decimal Quantity);
+    internal sealed record AvailableShelf(ShelfMaterialBatch Shelf, decimal Quantity, decimal Factor = 1, decimal? Density = null, string? TargetUnit = null)
+    {
+        internal decimal PhysicalQuantity => TargetUnit is null ? Quantity : MaterialDensity.Convert(Quantity, TargetUnit, Shelf.MaterialBatch.UoM.Symbol, Density)
+            ?? throw new InvalidOperationException("The adopted transfer unit cannot be converted to its physical lot unit.");
+    }
 
     internal static async Task<List<AvailableShelf>> Load(
         ApplicationDbContext context, Guid materialId, Guid warehouseId, Guid unitId)
     {
+        var target = await context.UnitOfMeasures.AsNoTracking().SingleOrDefaultAsync(unit => unit.Id == unitId && unit.DeletedAt == null);
+        if (target is null) return [];
+        var density = await MaterialDensity.Load(context, materialId);
         var now = DateTime.UtcNow;
         var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes()
             .Include(row => row.MaterialBatch).ThenInclude(batch => batch.UoM)
@@ -22,7 +29,6 @@ internal static class StockTransferPicking
                 && row.MaterialBatch.Status == BatchStatus.Available
                 && (row.UoMId == null || row.UoMId == row.MaterialBatch.UoMId)
                 && row.MaterialBatch.UoM.DeletedAt == null
-                && row.MaterialBatch.UoMId == unitId
                 && row.WarehouseLocationShelf.DeletedAt == null
                 && row.WarehouseLocationShelf.WarehouseLocationRack.DeletedAt == null
                 && row.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.DeletedAt == null
@@ -43,6 +49,8 @@ internal static class StockTransferPicking
         var available = new List<AvailableShelf>();
         foreach (var batch in shelves.GroupBy(row => row.MaterialBatchId))
         {
+            var factor = MaterialDensity.Convert(1, batch.First().MaterialBatch.UoM.Symbol, target.Symbol, density);
+            if (factor is null or <= 0) continue;
             var reservations = holds[batch.Key];
             var stockUnitId = batch.First().MaterialBatch.UoMId;
             if (reservations.Any(row => row.UoMId != stockUnitId)) continue;
@@ -58,7 +66,7 @@ internal static class StockTransferPicking
                 var free = shelf.Quantity - held;
                 var retain = Math.Min(free, unlocated);
                 unlocated -= retain;
-                if (free > retain) available.Add(new AvailableShelf(shelf, free - retain));
+                if (free > retain) available.Add(new AvailableShelf(shelf, (free - retain) * factor.Value, factor.Value, density, target.Symbol));
             }
         }
         return available;

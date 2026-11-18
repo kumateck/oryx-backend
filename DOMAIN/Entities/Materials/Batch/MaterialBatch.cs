@@ -276,6 +276,8 @@ public class FinishedGoodsListTransferNoteDto
 
 public class MaterialBatchReservedQuantity : BaseEntity
 {
+    /// <summary>Density adopted when a physical stock hold was allocated across mass/volume units.</summary>
+    public decimal? DensityGramsPerMilliliter { get; set; }
     /// <summary>Released without issue/consumption by an immutable production unstart repair.</summary>
     public Guid? ProductionUnstartRepairId { get; set; }
     /// <summary>Unissued allocation released by repair; never counts as consumption.</summary>
