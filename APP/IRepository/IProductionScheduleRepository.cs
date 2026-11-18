@@ -131,7 +131,7 @@ public interface IProductionScheduleRepository
     Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId);
 
     Task<Result> CreateExtraPacking(Guid productionScheduleProductId,
-        List<CreateProductionExtraPacking> extraPackings);
+        List<CreateProductionExtraPacking> extraPackings, Guid userId);
     Task<Result<Paginateable<IEnumerable<ProductionExtraPackingWithBatchesDto>>>> GetProductionExtraPackings(int page,
          int pageSize, string searchQuery, MaterialKind? kind);
     Task<Result<ProductionExtraPackingWithBatchesDto>> GetProductionExtraPackingById(
