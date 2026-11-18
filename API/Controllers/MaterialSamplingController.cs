@@ -58,6 +58,18 @@ public class MaterialSamplingController(IMaterialSamplingRepository repository) 
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>The batch's newest sample: a retest's sample, or the receipt sample when it has never been retested.</summary>
+    [HttpGet("batch/{batchId:guid}/latest")]
+    // The receipt test pages and the material retest test pages read the same sample.
+    [AnyPermission("CanCheckPackagingMaterialTestResult", "CanCheckRawMaterialTestResult", "CanReassignPackagingMaterialTest", "CanReassignRawMaterialTest", "CanStartPackagingMaterialTest", "CanStartRawMaterialTest", "CanViewMaterialRetestDetail")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MaterialSamplingDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetLatestMaterialSampling([FromRoute] Guid batchId)
+    {
+        var result = await repository.GetLatestMaterialSampling(batchId);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>
     /// Creates a new pre-sample checklist.
     /// </summary>

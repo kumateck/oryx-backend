@@ -69,7 +69,9 @@ internal static class ResponseFinalApproval
             var readiness = await QualityAnalysisReadiness.MaterialAsync(
                 context, response.MaterialBatchId.Value);
             if (readiness.IsFailure) return readiness.Errors;
-            if (readiness.Value) batch.Status = BatchStatus.Approved;
+            // A retest's batch is already on its shelves: it returns to stock with the extended expiry instead of waiting to be shelved.
+            if (readiness.Value && !await APP.Services.Materials.MaterialRetestCompletion.ApplyAsync(context, batch, true, releasedById))
+                batch.Status = BatchStatus.Approved;
         }
 
         if (response.BatchManufacturingRecordId.HasValue)

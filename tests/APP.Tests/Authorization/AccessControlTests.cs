@@ -89,7 +89,10 @@ public sealed class AccessControlTests
         Assert.Equal(PermissionKeys.CanViewPermissions, Policy(typeof(PermissionController), nameof(PermissionController.GetPermissionsByRole)));
         Assert.Equal(PermissionKeys.CanCreateRole, Policy(typeof(RoleController), nameof(RoleController.CreateRole)));
         Assert.Equal(PermissionKeys.CanCreateNewApproval, Policy(typeof(ApprovalController), nameof(ApprovalController.CreateApproval)));
-        Assert.Equal(PermissionKeys.CanTransferApprovalRights, Policy(typeof(ApprovalController), nameof(ApprovalController.TransferApprovalRights)));
+        // One's own approvals (QA) or anyone's (IT): the repository checks which key applies.
+        Assert.Equal([PermissionKeys.CanTransferAnyApprovalRights, PermissionKeys.CanTransferApprovalRights],
+            Assert.Single(typeof(ApprovalController).GetMethod(nameof(ApprovalController.TransferApprovalRights))!
+                .GetCustomAttributes(typeof(API.Authorization.AnyPermissionAttribute), false).Cast<API.Authorization.AnyPermissionAttribute>()).Keys.Order().ToArray());
         Assert.Equal(PermissionKeys.CanDeleteApprovals, Policy(typeof(ApprovalController), nameof(ApprovalController.DeleteApproval)));
         Assert.Equal(PermissionKeys.CanApproveMaterialBatch, Policy(typeof(MaterialController), nameof(MaterialController.ApproveMaterialBatch)));
         Assert.Equal(PermissionKeys.CanRequestRetestProductTest, Policy(typeof(AnalyticalTestRequestController), nameof(AnalyticalTestRequestController.RequestRetest)));

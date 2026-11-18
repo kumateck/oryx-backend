@@ -9,13 +9,14 @@ namespace APP.Tests.QcWorksheets;
 public class MaterialRetestCreationTests
 {
     [Fact]
-    public async Task Creation_and_linking_pin_the_version_and_repeated_confirmation_creates_nothing()
+    public async Task A_retest_is_tested_on_the_material_test_never_on_a_qc_v2_round()
     {
         using var harness = new QcWorksheetTestContext();
         var service = new MaterialRetestService(harness.Db, harness.ApprovalRepository, harness.SignatureService, harness.TestRequests);
         var batch = await harness.SeedMaterialBatch("RETEST-CREATE", BatchStatus.Available);
         batch.TotalQuantity = 10;
         await harness.Db.SaveChangesAsync();
+        await MaterialRetestAcceptanceTests.SeedArd(harness, batch);
         var requested = await service.RequestAsync(batch.Id, "Expiry investigation", Guid.NewGuid(), false);
         Assert.True(requested.IsSuccess, requested.Error?.Description);
         var template = await harness.SeedEffectiveTemplate("RETEST-WS", WorksheetCategory.Chemical, "assay");
@@ -26,18 +27,11 @@ public class MaterialRetestCreationTests
         Assert.False((await service.CreateTestingAsync(requested.Value, body, Guid.NewGuid())).IsSuccess);
         Assert.Empty(await harness.Db.QcTestRequests.ToListAsync());
         Assert.True((await service.RecordSampleAsync(requested.Value, new RecordMaterialRetestSample
-            { SampleQuantity = 1, SampledContainers = 1, ProposedExpiryDate = DateTime.UtcNow.AddDays(90) }, Guid.NewGuid())).IsSuccess);
+            { ArNumber = "RETEST-AR-1", SampleQuantity = 1, SampledContainers = 1, ProposedExpiryDate = DateTime.UtcNow.AddDays(90) }, Guid.NewGuid())).IsSuccess);
         Assert.True((await service.AcknowledgeAsync(requested.Value, Guid.NewGuid())).IsSuccess);
-        var created = await service.CreateTestingAsync(requested.Value, body, Guid.NewGuid());
-        Assert.True(created.IsSuccess, created.Error?.Description);
-        var retest = await harness.Db.MaterialRetestRequests.SingleAsync();
-        var round = await harness.Db.QcTestRequests.SingleAsync();
-        Assert.Equal(round.Id, retest.TestRequestId);
-        Assert.Equal(MaterialRetestStatus.Testing, retest.Status);
-        Assert.Equal(spec.Id, round.SpecificationId);
-        Assert.Equal(template.Id, (await harness.Db.QcWorksheetInstances.SingleAsync()).WorksheetTemplateId);
+        // Acknowledging hands the batch to the material test, so no QC V2 test round can be created or linked.
         Assert.False((await service.CreateTestingAsync(requested.Value, body, Guid.NewGuid())).IsSuccess);
-        Assert.Single(await harness.Db.QcTestRequests.ToListAsync());
-        Assert.Single(await harness.Db.MaterialRetestEvents.Where(item => item.Action == "TestingLinked").ToListAsync());
+        Assert.Empty(await harness.Db.QcTestRequests.ToListAsync());
+        Assert.Equal(MaterialRetestStatus.Acknowledged, (await harness.Db.MaterialRetestRequests.SingleAsync()).Status);
     }
 }
