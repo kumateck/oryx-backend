@@ -1528,6 +1528,20 @@
   {
     "module": "Warehouse",
     "submodule": "Approved Materials",
+    "key": "CanRepairUnstartRawMaterialReservations",
+    "name": "Can Repair Unstart Raw Material Reservations",
+    "description": "Allows the user to  repair unstart raw material reservations."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
+    "key": "CanRepairUnstartPackagingMaterialReservations",
+    "name": "Can Repair Unstart Packaging Material Reservations",
+    "description": "Allows the user to  repair unstart packaging material reservations."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
     "key": "CanViewApprovedPackagingMaterials",
     "name": "Can View Approved Packaging Materials",
     "description": "Allows the user to  view approved packaging materials."
