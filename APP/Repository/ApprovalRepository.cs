@@ -5803,7 +5803,51 @@ public class ApprovalRepository(
         await context.SaveChangesAsync();
         return Result.Success();
     }*/
-    public async Task<Result> TransferApprovalRights(TransferApprovalRequest request)
+    /// <summary>
+    /// Everyone named on an approval document: a workflow stage, or a stage of any request in any state. IT hands over the
+    /// approvals of people who left, who usually have nothing waiting but still sit in workflows and history.
+    /// </summary>
+    public async Task<List<UserDto>> GetUsersOnApprovalRecord()
+    {
+        var ids = (await context.ApprovalStages.IgnoreQueryFilters().Where(stage => stage.UserId != null)
+            .Select(stage => stage.UserId.Value).Distinct().ToListAsync()).ToHashSet();
+        foreach (var table in StageTables())
+            ids.UnionWith(await table.Where(stage => stage.UserId != null).Select(stage => stage.UserId.Value).Distinct().ToListAsync());
+        return await context.Users.IgnoreQueryFilters().AsNoTracking()
+            .Where(user => ids.Contains(user.Id) && user.DeletedAt == null)
+            .OrderBy(user => user.FirstName).ThenBy(user => user.LastName)
+            .Select(user => new UserDto { Id = user.Id, FirstName = user.FirstName, LastName = user.LastName, Email = user.Email, IsDisabled = user.IsDisabled })
+            .ToListAsync();
+    }
+
+    private IEnumerable<IQueryable<ResponsibleApprovalStage>> StageTables() =>
+    [
+        context.RequisitionApprovals.IgnoreQueryFilters(), context.PurchaseOrderApprovals.IgnoreQueryFilters(), context.BillingSheetApprovals.IgnoreQueryFilters(),
+        context.ShipmentDocumentApprovals.IgnoreQueryFilters(), context.ShipmentDiscrepancyApprovals.IgnoreQueryFilters(), context.StockDiscrepancyApprovals.IgnoreQueryFilters(),
+        context.StaffRequisitionApprovals.IgnoreQueryFilters(), context.LeaveRequestApprovals.IgnoreQueryFilters(), context.OvertimeRequestApprovals.IgnoreQueryFilters(),
+        context.JobRequestApprovals.IgnoreQueryFilters(), context.StockAdjustmentApprovals.IgnoreQueryFilters(), context.ServiceMemoApprovals.IgnoreQueryFilters(),
+        context.ProformaInvoiceApprovals.IgnoreQueryFilters(), context.ProductionOrderApprovals.IgnoreQueryFilters(), context.CustomerQuotationApprovals.IgnoreQueryFilters(),
+        context.SupplierPricingAgreementApprovals.IgnoreQueryFilters(), context.AllocateProductionOrderApprovals.IgnoreQueryFilters(), context.RndProjectApprovals.IgnoreQueryFilters(),
+        context.RndFormulationApprovals.IgnoreQueryFilters(), context.RndTechnologyTransferApprovals.IgnoreQueryFilters(), context.FinishedGoodsTransferNoteApprovals.IgnoreQueryFilters(),
+        context.ProductionExtraPackingApprovals.IgnoreQueryFilters(), context.PaymentApprovals.IgnoreQueryFilters(), context.ResponseApprovals.IgnoreQueryFilters(),
+    ];
+
+    /// <summary>
+    /// Hands approvals over. With <c>CanTransferApprovalRights</c> a person hands over only their own approvals, to whoever takes
+    /// charge; with <c>CanTransferAnyApprovalRights</c> (IT) anyone's approvals can be handed over.
+    /// </summary>
+    public async Task<Result> TransferApprovalRights(TransferApprovalRequest request, Guid actor)
+    {
+        var grants = await APP.Services.Authorization.CurrentPermissionSet.Load(context, actor);
+        var allowed = request.FromUserId == actor
+            ? grants.Contains(PermissionKeys.CanTransferApprovalRights) || grants.Contains(PermissionKeys.CanTransferAnyApprovalRights)
+            : grants.Contains(PermissionKeys.CanTransferAnyApprovalRights);
+        if (!allowed)
+            return Error.Forbidden("ApprovalTransfer.OwnOnly", "You can hand over only your own approvals. IT hands over someone else's.");
+        return await TransferApprovalRights(request);
+    }
+
+    private async Task<Result> TransferApprovalRights(TransferApprovalRequest request)
     {
         if (request.FromUserId == request.ToUserId)
             return Error.Validation("ApprovalTransfer.Self", "Choose a different person to give the approvals to.");

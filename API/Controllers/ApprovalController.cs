@@ -30,6 +30,14 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     }
 
     /// <summary>
+    /// Everyone named on an approval document (workflow stages and request history), for IT to hand over their approvals.
+    /// </summary>
+    [HttpGet("users-on-record")]
+    [Authorize(PermissionKeys.CanTransferAnyApprovalRights)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UserDto>))]
+    public async Task<IResult> GetUsersOnApprovalRecord() => TypedResults.Ok(await repository.GetUsersOnApprovalRecord());
+
+    /// <summary>
     /// Creates a new approval.
     /// </summary>
     [HttpPost]
@@ -96,12 +104,14 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
     /// Transfers approval rights from one user to another.
     /// </summary>
     [HttpPost("transfer-rights")]
-    [Authorize(PermissionKeys.CanTransferApprovalRights)]
+    // Two tasks share this endpoint: handing over one's own approvals (QA) and anyone's (IT). The repository checks which applies.
+    [AnyPermission("CanTransferAnyApprovalRights", "CanTransferApprovalRights")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> TransferApprovalRights([FromBody] TransferApprovalRequest request)
     {
-        var result = await repository.TransferApprovalRights(request);
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var actor)) return TypedResults.Unauthorized();
+        var result = await repository.TransferApprovalRights(request, actor);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 
