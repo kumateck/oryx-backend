@@ -114,7 +114,7 @@ internal static class ProductionMaterialForecasts
         foreach (var line in lines)
         {
             var held = own.Where(item => item.BatchId == line.Batch.Id && item.MaterialId == line.Requirement.MaterialId)
-                .Select(item => UomConverter.Convert(item.Quantity, item.Unit, line.Requirement.Unit)).ToList();
+                .Select(item => MaterialDensity.Convert(item.Quantity, item.Unit, line.Requirement.Unit, line.Requirement.DensityGramsPerMilliliter)).ToList();
             if (held.Any(value => !value.HasValue))
                 batchWarnings[line.Batch.Id].Add($"{line.Requirement.Name}: reserved stock units cannot be converted to {line.Requirement.Unit}.");
             line.Reserved = Math.Min(line.Requirement.Quantity, held.Sum(value => value.GetValueOrDefault()));
@@ -247,14 +247,14 @@ internal static class ProductionMaterialForecasts
         foreach (var shelf in shelves)
         {
             var requirement = requirements[shelf.MaterialBatch.MaterialId];
-            if (shelf.UoMId != shelf.MaterialBatch.UoMId || shelf.MaterialBatch.UoMId != requirement.UnitId)
+            if (shelf.UoMId != shelf.MaterialBatch.UoMId)
             {
                 warnings.Add($"{requirement.Name}: shelf, batch and department stock units must agree; that stock is not counted.");
                 continue;
             }
-            var available = UomConverter.Convert(shelf.Quantity, shelf.MaterialBatch.UoM?.Symbol, requirement.Unit);
+            var available = MaterialDensity.Convert(shelf.Quantity, shelf.MaterialBatch.UoM?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter);
             var held = holds.Where(item => item.MaterialBatchId == shelf.MaterialBatchId && item.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId)
-                .Select(item => UomConverter.Convert(item.Quantity, item.Unit, requirement.Unit)).ToList();
+                .Select(item => MaterialDensity.Convert(item.Quantity, item.Unit, requirement.Unit, requirement.DensityGramsPerMilliliter)).ToList();
             if (!available.HasValue || held.Any(value => !value.HasValue))
             {
                 warnings.Add($"{requirement.Name}: stock or reservation units cannot be converted safely; that stock is not counted.");

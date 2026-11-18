@@ -1014,7 +1014,9 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
+        ValidateUnstartReservationRepairAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
         SaveEntity();
@@ -1030,7 +1032,9 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateMaterialDensityMeasurements();
         ValidateUnstartLeftoversAudit();
+        ValidateUnstartReservationRepairAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
         SaveEntity();
@@ -1174,7 +1178,9 @@ public partial class ApplicationDbContext(
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureProductionUnstart(modelBuilder);
+        ConfigureMaterialDensity(modelBuilder);
         ConfigureUnstartLeftovers(modelBuilder);
+        ConfigureUnstartReservationRepair(modelBuilder);
         ConfigureReservationRepair(modelBuilder);
         modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
@@ -1522,7 +1528,7 @@ public partial class ApplicationDbContext(
         modelBuilder
             .Entity<MaterialBatchReservedQuantity>()
             .HasQueryFilter(entity =>
-                !entity.DeletedAt.HasValue && !entity.MaterialBatch.DeletedAt.HasValue
+                !entity.DeletedAt.HasValue && entity.ReleasedAt == null && !entity.MaterialBatch.DeletedAt.HasValue
             );
         // modelBuilder.Entity<FinishedProductBatchMovement>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);
         // modelBuilder.Entity<FinishedProductBatchEvent>().HasQueryFilter(entity => !entity.Batch.DeletedAt.HasValue);

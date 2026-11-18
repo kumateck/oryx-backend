@@ -144,7 +144,7 @@ internal static class ProductionMaterialSources
             {
                 MaterialId = materialId, Name = link.Material.Name, UnitId = link.UoMId, Unit = link.UoM.Symbol, Quantity = converted.Value,
                 BaseQuantity = baseQuantity, BaseUnitId = sourceUnit.Id, BaseUnit = sourceUnit.Symbol, PrescribedQuantity = prescribed,
-                DensityGramsPerMilliliter = definition.UseDensityConversion ? link.Density : 0
+                DensityGramsPerMilliliter = MaterialDensity.Verified(link) ?? 0
             }, null);
         }
 

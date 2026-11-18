@@ -55,7 +55,7 @@ internal static class ProductionMaterialQueries
     private static MaterialDepartmentDetails Department(IMapper mapper, Row row) => new()
     {
         Department = mapper.Map<CollectionItemDto>(row.Department?.Department), UoM = mapper.Map<UnitOfMeasureDto>(row.Unit),
-        Density = row.Requirement.UseDensityConversion ? row.Requirement.DensityGramsPerMilliliter : row.Department?.Density ?? 0,
+        Density = row.Requirement.DensityGramsPerMilliliter > 0 ? row.Requirement.DensityGramsPerMilliliter : row.Material.DensityGramsPerMilliliter ?? row.Department?.Density ?? 0,
         ReOrderLevel = row.Department?.ReOrderLevel ?? 0,
         MinimumStockLevel = row.Department?.MinimumStockLevel ?? 0, MaximumStockLevel = row.Department?.MaximumStockLevel ?? 0
     };
@@ -93,7 +93,7 @@ internal static class ProductionMaterialQueries
                 return Error.Validation("Production.Units", "The applied stock unit's definition changed. Reconcile the units before continuing.");
             decimal? Sum(IEnumerable<(decimal Quantity, Guid Unit)> values)
             {
-                var converted = values.Select(value => UomConverter.Convert(value.Quantity, units.GetValueOrDefault(value.Unit)?.Symbol, requirement.Unit)).ToList();
+                var converted = values.Select(value => MaterialDensity.Convert(value.Quantity, units.GetValueOrDefault(value.Unit)?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter)).ToList();
                 return converted.Any(value => !value.HasValue) ? null : converted.Sum(value => value.GetValueOrDefault());
             }
             var matching = reservations.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId).ToList();

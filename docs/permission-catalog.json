@@ -1528,6 +1528,20 @@
   {
     "module": "Warehouse",
     "submodule": "Approved Materials",
+    "key": "CanRepairUnstartRawMaterialReservations",
+    "name": "Can Repair Unstart Raw Material Reservations",
+    "description": "Allows the user to  repair unstart raw material reservations."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
+    "key": "CanRepairUnstartPackagingMaterialReservations",
+    "name": "Can Repair Unstart Packaging Material Reservations",
+    "description": "Allows the user to  repair unstart packaging material reservations."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
     "key": "CanViewApprovedPackagingMaterials",
     "name": "Can View Approved Packaging Materials",
     "description": "Allows the user to  view approved packaging materials."
@@ -1594,6 +1608,20 @@
     "key": "CanLinkPackagingMaterials",
     "name": "Can Link Packaging Materials",
     "description": "Allows the user to  link packaging materials."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanEditRawMaterialDensity",
+    "name": "Can Edit Raw Material Density",
+    "description": "Allows the user to  edit raw material density."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanEditPackagingMaterialDensity",
+    "name": "Can Edit Packaging Material Density",
+    "description": "Allows the user to  edit packaging material density."
   },
   {
     "module": "Warehouse",

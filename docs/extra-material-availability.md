@@ -1,0 +1,9 @@
+# Extra-material request and issue availability
+
+Request submission, batch preview and issuance now use the same stock picker. It considers only the material in the production department's storage warehouse, approved batches, a valid effective expiry, a retest date that is not due, active shelves, consistent stock units, and physical shelf quantities less unissued reservations. Submission does not reserve stock: issue rechecks under the existing production stock transaction because another request may use stock in between.
+
+Issuance no longer substitutes the batch's global RemainingQuantity for local shelf availability or resets QuantityAssigned to zero. The request must select exactly its approved quantity. All selections are checked before mutation; stock movement, events, paired bin cards, arrival location and issued status save together. The assigned balance is reconciled from physical shelves after the transfer. Existing reservations and historical consumed quantities are retained. Repeated/concurrent issue attempts are refused after the first committed issue.
+
+Permissions remain CanRequestExtraPacking for request creation and CanIssueRawMaterialRequisitions / CanIssuePackagingMaterialRequisitions for the existing raw/packaging issue endpoint. No new permissions or grants. The repository reloads current grants before writes and enforces department ownership. No API payload changes or desktop changes are required. The existing stock-transfer picker also excludes lots with a due retest date.
+
+This fixes a code-path inconsistency that can produce Batch.InsufficientStock despite stock shown on shelves. It does not assert that any particular customer's lot is free: actual reservations, quality status, units and shelf balances must pass the server's checks. No live stock or request has been changed by this work.

@@ -225,7 +225,7 @@ public sealed class ProductionUnstartTests
             using var provider = Mapping(db);
             var result = await Repository(db, provider.GetRequiredService<IMapper>()).StartProductionActivity(fixture.BatchId, fixture.Actor.UserId.GetValueOrDefault());
             Assert.True(result.IsFailure);
-            Assert.Contains("All raw materials must have valid configuration", result.Error.Description);
+            Assert.Equal("Production.Start", result.Error.Code);
         }
         await using (var db = fixture.Open()) Assert.Empty(await db.ProductionActivities.ToListAsync());
     }

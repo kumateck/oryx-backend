@@ -244,6 +244,7 @@ public class MaterialStockByDepartmentDto
 
 public class BatchToSupply
 {
+    public decimal? SourceQuantityToTake { get; set; }
     public MaterialBatchListDto Batch { get; set; }
     public decimal QuantityToTake { get; set; }
     public Guid? WarehouseLocationShelfId { get; set; }

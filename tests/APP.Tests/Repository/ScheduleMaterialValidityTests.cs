@@ -196,6 +196,7 @@ public class ScheduleMaterialValidityTests
         link.DensityUoM = new UnitOfMeasure { Name = "Kilograms per cubic meter", Symbol = "kg/m³" };
         await db.SaveChangesAsync();
         var savedUnit = link.DensityUoMId;
+        await SharedDensityTransferTests.Grant(db, fixture.Actor.Id, APP.Utils.PermissionKeys.CanLinkRawMaterials);
         var repository = new MaterialRepository(db, fixture.Mapper);
         var result = await repository.CreateMaterialDepartment(
             [new() { MaterialId = link.MaterialId, UoMId = link.UoMId, Density = 1.47m, MaximumStockLevel = 700m }],
