@@ -1014,6 +1014,7 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateUnstartLeftoversAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
         SaveEntity();
@@ -1029,6 +1030,7 @@ public partial class ApplicationDbContext(
         ValidateTemplateRepairHistory();
         ValidateIssuedMaterialRepairAudit();
         ValidateProductionUnstartAudit();
+        ValidateUnstartLeftoversAudit();
         ValidateReservationRepairAudit();
         ValidateWhitePlaceboStock();
         SaveEntity();
@@ -1172,6 +1174,7 @@ public partial class ApplicationDbContext(
         ConfigureAutoIncludes(modelBuilder);
         ConfigureQueryFilters(modelBuilder);
         ConfigureProductionUnstart(modelBuilder);
+        ConfigureUnstartLeftovers(modelBuilder);
         ConfigureReservationRepair(modelBuilder);
         modelBuilder.Entity<ProductionActivity>().HasQueryFilter(item => item.DeletedAt == null);
         modelBuilder.Entity<ProductionActivityStep>().HasQueryFilter(item => item.DeletedAt == null && item.ProductionActivity.DeletedAt == null && item.Operation.DeletedAt == null);
