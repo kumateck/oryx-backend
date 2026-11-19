@@ -3248,9 +3248,12 @@ public partial class ProductionScheduleRepository(
         Guid stockTransferId
     )
     {
+        // Split, as the list reads are: both departments auto-include their warehouses, locations, racks and shelves,
+        // and the material its lots with their events and holds. Joined in one query those multiply into a result
+        // the client's database could not return before the command timed out (500 on opening a transfer).
         var transfer = mapper.Map<DepartmentStockTransferDto>(
             await context
-                .StockTransferSources.Include(s => s.FromDepartment)
+                .StockTransferSources.AsSplitQuery().Include(s => s.FromDepartment)
                 .Include(s => s.ToDepartment)
                 .Include(st => st.StockTransfer)
                     .ThenInclude(st => st.Material)

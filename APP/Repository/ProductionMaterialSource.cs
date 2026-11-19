@@ -28,6 +28,26 @@ internal static class ProductionMaterialSources
     internal static List<ProductionMaterialRequirement> Requirements(string json) =>
         JsonSerializer.Deserialize<List<ProductionMaterialRequirement>>(json) ?? [];
 
+    /// <summary>
+    /// An applied batch's requirements, each carrying a density. A batch applied before its material's density was
+    /// verified stored none, so stock or holds kept in the other dimension (mg for a material counted in ml) could
+    /// never be converted, and its material list failed. A density is a property of the material, not of the batch:
+    /// a missing one is taken from the material's verified density. Every reader of an applied batch uses this.
+    /// </summary>
+    internal static async Task<List<ProductionMaterialRequirement>> Requirements(ApplicationDbContext context, string json) =>
+        await WithDensities(context, Requirements(json));
+
+    internal static async Task<List<ProductionMaterialRequirement>> WithDensities(ApplicationDbContext context, List<ProductionMaterialRequirement> lines)
+    {
+        var missing = lines.Where(line => line.DensityGramsPerMilliliter <= 0).Select(line => line.MaterialId).Distinct().ToList();
+        if (missing.Count == 0) return lines;
+        var densities = await context.Materials.IgnoreQueryFilters().AsNoTracking()
+            .Where(material => missing.Contains(material.Id) && material.DensityGramsPerMilliliter > 0)
+            .ToDictionaryAsync(material => material.Id, material => material.DensityGramsPerMilliliter!.Value);
+        return lines.Select(line => line.DensityGramsPerMilliliter <= 0 && densities.TryGetValue(line.MaterialId, out var density)
+            ? line with { DensityGramsPerMilliliter = density } : line).ToList();
+    }
+
     internal static async Task<Result> Authorize(ApplicationDbContext context, Guid actorId, Guid batchId, MaterialKind kind)
     {
         if (!Enum.IsDefined(kind)) return Error.Validation("Repair.Kind", "Choose BOM or Packaging.");

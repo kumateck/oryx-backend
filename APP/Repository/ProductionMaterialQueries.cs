@@ -62,7 +62,7 @@ internal static class ProductionMaterialQueries
 
     private static async Task<Result<List<Row>>> Read(ApplicationDbContext context, ProductionMaterialConfiguration configuration)
     {
-        var requirements = ProductionMaterialSources.Requirements(configuration.RequirementsJson);
+        var requirements = await ProductionMaterialSources.Requirements(context, configuration.RequirementsJson);
         var ids = requirements.SelectMany(item => new[] { item.MaterialId, item.SourceMaterialId, item.DirectLinkMaterialId.GetValueOrDefault() }).Distinct().ToList();
         var materials = await context.Materials.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().AsSplitQuery().Include(item => item.MaterialCategory)
             .Include(item => item.Batches.Where(batch => batch.DeletedAt == null))
@@ -71,13 +71,15 @@ internal static class ProductionMaterialQueries
         var units = await context.UnitOfMeasures.IgnoreQueryFilters().AsNoTracking().ToDictionaryAsync(item => item.Id);
         var departments = await context.MaterialDepartments.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.Department)
             .Where(item => ids.Contains(item.MaterialId) && item.DepartmentId == configuration.DepartmentId && item.DeletedAt == null).ToListAsync();
-        var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.MaterialBatch)
-            .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.DeletedAt == null && item.MaterialBatch.DeletedAt == null
-                && item.MaterialBatch.Status == BatchStatus.Available
-                && item.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId == configuration.StorageWarehouseId)
-            .WhereMaterialDate(item => item.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow).ToListAsync();
+        // Free stock in the store follows the one stock rule (StoreStock), as the warehouse's approved-materials page does:
+        // usable, in-date lots less live holds (capped at their shelf). Issued holds and holds for cancelled batches
+        // do not count, and a lot whose unit cannot be converted is unavailable rather than failing the whole list.
+        var stockUnits = requirements.GroupBy(item => item.MaterialId).ToDictionary(group => group.Key, group =>
+            ((string?)group.First().Unit, group.First().DensityGramsPerMilliliter > 0 ? (decimal?)group.First().DensityGramsPerMilliliter : null));
+        var stock = await StoreStock.Measure(context, configuration.StorageWarehouseId, stockUnits);
         var reservations = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.MaterialBatch)
-            .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.WarehouseId == configuration.ProductionWarehouseId && item.ReleasedAt == null).ToListAsync();
+            .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.ProductionScheduleProductId == configuration.ProductionScheduleProductId
+                && item.WarehouseId == configuration.ProductionWarehouseId && item.ReleasedAt == null).ToListAsync();
         var activeRequestIds = APP.Services.Production.StockRequisitionState.Active(context).Select(r => r.Id);
         var items = await context.RequisitionItems.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.Requisition)
             .Where(item => item.Requisition.ProductionScheduleProductId == configuration.ProductionScheduleProductId
@@ -97,15 +99,23 @@ internal static class ProductionMaterialQueries
                 var converted = values.Select(value => MaterialDensity.Convert(value.Quantity, units.GetValueOrDefault(value.Unit)?.Symbol, requirement.Unit, requirement.DensityGramsPerMilliliter)).ToList();
                 return converted.Any(value => !value.HasValue) ? null : converted.Sum(value => value.GetValueOrDefault());
             }
-            var matching = reservations.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId).ToList();
-            var own = matching.Where(item => item.ProductionScheduleProductId == configuration.ProductionScheduleProductId).ToList();
-            var onHand = Sum(shelves.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId).Select(item => (item.Quantity, item.UoMId.GetValueOrDefault())));
+            var own = reservations.Where(item => item.MaterialBatch.MaterialId == requirement.MaterialId
+                && item.ProductionScheduleProductId == configuration.ProductionScheduleProductId).ToList();
+            var level = stock.GetValueOrDefault(requirement.MaterialId, StoreStockLevel.None);
+            // On hand is what can be issued (usable); held is every live hold on it, so on hand less held is the free stock.
+            decimal? onHand = level.Usable, all = level.Held;
             var reserved = Sum(own.Where(item => item.DeletedAt == null).Select(item => (item.Quantity, item.UoMId)));
-            var all = Sum(matching.Where(item => item.DeletedAt == null).Select(item => (item.Quantity, item.UoMId)));
             var consumed = Sum(own.Where(item => item.DeletedAt.HasValue).Select(item => (item.Quantity, item.UoMId)));
             var extra = Sum(extras.Where(item => item.MaterialId == requirement.MaterialId).Select(item => (item.Quantity, item.UoMId)));
-            if (onHand is null || reserved is null || all is null || consumed is null || extra is null)
-                return Error.Validation("Production.Units", "Material stock units no longer agree with the applied batch configuration.");
+            if (reserved is null || consumed is null || extra is null)
+            {
+                var stray = own.Select(item => item.UoMId).Concat(extras.Where(item => item.MaterialId == requirement.MaterialId).Select(item => item.UoMId))
+                    .Select(id => units.GetValueOrDefault(id)?.Symbol ?? "no unit").Distinct()
+                    .Where(symbol => MaterialDensity.Convert(1, symbol, requirement.Unit, requirement.DensityGramsPerMilliliter) is null);
+                return Error.Validation("Production.Units",
+                    $"{material.Code} {material.Name}: this batch's holds or extra requests are recorded in {string.Join(", ", stray)}, which cannot be converted to the batch's unit {requirement.Unit}"
+                    + (requirement.DensityGramsPerMilliliter > 0 ? "." : " without a verified density. Record the material's density, or reconcile this batch's configuration."));
+            }
             var requested = items.Where(item => item.MaterialId == requirement.MaterialId).ToList();
             var state = consumed > 0 ? MaterialRequisitionStatus.Supplied
                 : requested.Any(item => item.Status == RequestStatus.Completed || item.Requisition.Status == RequestStatus.Completed) ? MaterialRequisitionStatus.Issued

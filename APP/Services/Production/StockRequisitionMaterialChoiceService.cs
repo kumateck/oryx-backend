@@ -182,7 +182,7 @@ public sealed class StockRequisitionMaterialChoiceService(ApplicationDbContext d
         List<ProductionMaterialRequirement> requirements = null;
         foreach (var candidate in await (tracked ? configurations : configurations.AsNoTracking()).OrderBy(item => item.Kind).ToListAsync())
         {
-            var lines = ProductionMaterialSources.Requirements(candidate.RequirementsJson);
+            var lines = await ProductionMaterialSources.Requirements(db, candidate.RequirementsJson);
             if (!lines.Any(item => requested.Contains(item.MaterialId))) continue;
             configuration = candidate; requirements = lines; break;
         }
