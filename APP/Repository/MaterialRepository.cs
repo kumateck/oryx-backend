@@ -1713,11 +1713,36 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return stockByWarehouse;
     }
 
+    public async Task<Guid?> DepartmentUnitOfCaller(Guid materialId, Guid userId)
+    {
+        var departmentId = await context.Users.IgnoreQueryFilters().Where(u => u.Id == userId).Select(u => u.DepartmentId).SingleOrDefaultAsync();
+        if (!departmentId.HasValue) return null;
+        var units = await context.MaterialDepartments.IgnoreQueryFilters()
+            .Where(link => link.MaterialId == materialId && link.DepartmentId == departmentId && link.DeletedAt == null)
+            .Select(link => link.UoMId).Distinct().ToListAsync();
+        return units.Count == 1 ? units[0] : null;
+    }
+
     public async Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(
         Guid materialId,
-        decimal quantity
+        decimal quantity,
+        Guid? uomId = null
     )
     {
+        // A quantity in a named unit is compared with each department's free stock in that department's own unit,
+        // converted with the material's verified density: 20,000 L is never compared with milligrams as a bare number.
+        if (uomId.HasValue)
+        {
+            var kind = await context.Materials.IgnoreQueryFilters().Where(m => m.Id == materialId && m.DeletedAt == null)
+                .Select(m => (MaterialKind?)m.Kind).SingleOrDefaultAsync();
+            if (kind is null) return MaterialErrors.NotFound(materialId);
+            var holders = new List<DepartmentDto>();
+            foreach (var department in await context.Departments.ToListAsync())
+                if ((await StockTransferSupplyUnits.Covers(context, materialId, kind.Value, department.Id, quantity, uomId.Value)).IsSuccess)
+                    holders.Add(mapper.Map<DepartmentDto>(department));
+            return holders;
+        }
+
         var material = await context.Materials.FirstOrDefaultAsync(m => m.Id == materialId);
         if (material is null)
             return MaterialErrors.NotFound(materialId);

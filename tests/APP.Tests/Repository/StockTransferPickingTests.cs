@@ -173,7 +173,7 @@ public sealed class StockTransferPickingTests
         }
         available.RetestDate = DateTime.UtcNow.AddDays(-1);
         await db.SaveChangesAsync();
-        var wrongDepartment = await fixture.Repository.RejectStockTransfer(transfer.Id, otherActor.Id);
+        var wrongDepartment = await fixture.Repository.RejectStockTransfer(transfer.Id, otherActor.Id, "Not ours to supply");
         Assert.Equal("StockTransfer.Department", wrongDepartment.Error.Code);
         var separateRequest = new StockTransferSource
         {
@@ -182,8 +182,26 @@ public sealed class StockTransferPickingTests
         };
         db.StockTransferSources.Add(separateRequest);
         await db.SaveChangesAsync();
-        var rejected = await fixture.Repository.RejectStockTransfer(separateRequest.Id, fixture.Actor.Id);
+        var unexplained = await fixture.Repository.RejectStockTransfer(separateRequest.Id, fixture.Actor.Id, "  ");
+        Assert.Equal("StockTransfer.Reason", unexplained.Error.Code);
+        var rejected = await fixture.Repository.RejectStockTransfer(separateRequest.Id, fixture.Actor.Id, "Stock is committed to a running campaign");
         Assert.True(rejected.IsSuccess, rejected.Error.Description);
+        Assert.Equal(("Stock is committed to a running campaign", fixture.Actor.Id), (separateRequest.RejectionReason, separateRequest.RejectedById.GetValueOrDefault()));
+        Assert.NotNull(separateRequest.RejectedAt);
+        // An approved transfer the store cannot fill may still be refused, with its reason, before any stock is issued.
+        var approvedRequest = new StockTransferSource
+        {
+            StockTransfer = new StockTransfer { MaterialId = available.MaterialId, UoMId = available.UoMId },
+            FromDepartmentId = transfer.FromDepartmentId, ToDepartmentId = transfer.ToDepartmentId, Quantity = 1_000
+        };
+        db.StockTransferSources.Add(approvedRequest);
+        await db.SaveChangesAsync();
+        Assert.True((await fixture.Repository.ApproveStockTransfer(approvedRequest.Id, fixture.Actor.Id)).IsSuccess);
+        var refusedAfterApproval = await fixture.Repository.RejectStockTransfer(approvedRequest.Id, fixture.Actor.Id, "Short by 900 kg");
+        Assert.True(refusedAfterApproval.IsSuccess, refusedAfterApproval.Error.Description);
+        Assert.Equal((StockTransferStatus.Rejected, "Short by 900 kg"), (approvedRequest.Status, approvedRequest.RejectionReason));
+        var read = await fixture.Repository.GetStockTransferSource(approvedRequest.Id);
+        Assert.Equal("Short by 900 kg", read.Value.RejectionReason);
         var rejectedApproval = await fixture.Repository.ApproveStockTransfer(separateRequest.Id, fixture.Actor.Id);
         Assert.Equal("StockTransfer.Status", rejectedApproval.Error.Code);
         var approval = await fixture.Repository.ApproveStockTransfer(transfer.Id, fixture.Actor.Id);
@@ -222,7 +240,7 @@ public sealed class StockTransferPickingTests
         Assert.Equal(90, Assert.Single(holding.Batches).Quantity);
 
         var repeatApproval = await fixture.Repository.ApproveStockTransfer(transfer.Id, fixture.Actor.Id);
-        var lateRejection = await fixture.Repository.RejectStockTransfer(transfer.Id, fixture.Actor.Id);
+        var lateRejection = await fixture.Repository.RejectStockTransfer(transfer.Id, fixture.Actor.Id, "Too late");
         Assert.Equal("StockTransfer.Status", repeatApproval.Error.Code);
         Assert.Equal("StockTransfer.Status", lateRejection.Error.Code);
 

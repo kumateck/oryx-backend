@@ -465,14 +465,18 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// </summary>
     /// <param name="materialId"> The id of the material</param>
     /// <param name="quantity">The minimum quantity of the stock the department should have.</param>
+    /// <param name="uomId">The unit the quantity is in; defaults to the caller's department unit for the material. Each department's free stock is converted to it with the material's verified density.</param>
     /// <returns></returns>
     [HttpGet("{materialId}/department-stock/{quantity}")]
     [AnyPermission("CanViewPackageMaterialRequisitionsForCreation", "CanViewRawMaterialRequisitionsForCreation")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<DepartmentDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity)
+    public async Task<IResult> GetDepartmentsWithEnoughStock(Guid materialId, decimal quantity, [FromQuery] Guid? uomId = null)
     {
-        var result = await repository.GetDepartmentsWithEnoughStock(materialId, quantity);
+        // Without a unit the quantity is in the caller's department unit for the material, as the request form sends it.
+        if (!uomId.HasValue && Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId))
+            uomId = await repository.DepartmentUnitOfCaller(materialId, userId);
+        var result = await repository.GetDepartmentsWithEnoughStock(materialId, quantity, uomId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
