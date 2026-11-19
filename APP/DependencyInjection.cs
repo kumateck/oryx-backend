@@ -102,6 +102,7 @@ public static class DependencyInjection
         services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
         services.AddScoped<IMaterialRepository, MaterialRepository>();
         services.AddScoped<APP.Services.Materials.WhitePlaceboService>();
+        services.AddScoped<APP.Services.ApprovedVendorLists.ApprovedVendorListService>();
         services.AddScoped<APP.Services.Production.IssuedMaterialRepairService>();
         services.AddScoped<APP.Services.Production.StockRequisitionMaterialChoiceService>();
         services.AddScoped<APP.Services.Production.ProductionUnstartService>();

@@ -1,3 +1,4 @@
+using APP.Services.ApprovedVendorLists;
 using APP.Services.Documents;
 using APP.Extensions;
 using APP.IRepository;
@@ -402,6 +403,11 @@ public class ProcurementRepository(
         Guid userId
     )
     {
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            request.Items.Select(item => (item.MaterialId, request.SupplierId)), DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors.Errors.First();
+
         foreach (var item in request.Items)
         {
             var refusal = await PriceUoMRefusal(item.MaterialId, item.UomId, item.PriceUoM);
@@ -602,6 +608,13 @@ public class ProcurementRepository(
             existingOrder.RevisedPurchaseOrders.Count != 0
                 ? existingOrder.RevisedPurchaseOrders.Max(r => r.RevisionNumber) + 1
                 : 1;
+
+        // A material added by a revision must be on the approved vendor list for the order's supplier.
+        var addedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            revisions.Where(revision => revision.Type == RevisedPurchaseOrderType.AddItem && revision.MaterialId.HasValue)
+                .Select(revision => (revision.MaterialId!.Value, existingOrder.SupplierId)), DateTime.UtcNow.Date);
+        if (addedVendors.IsFailure)
+            return addedVendors;
 
         // A line added or changed by a revision must still be costable: its price unit has to be
         // given (or kept from the line) and convert to the line's unit. Checked for every revision
@@ -1115,6 +1128,10 @@ public class ProcurementRepository(
         Guid userId
     )
     {
+        var approvedVendors = await ApprovedVendorRules.CheckOrderManufacturers(context, request.PurchaseOrderId,
+            request.BatchItems.Select(item => item.ManufacturerId), DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors.Errors.First();
         var invoice = mapper.Map<PurchaseOrderInvoice>(request);
         invoice.CreatedById = userId;
         var terms = await context.PurchaseOrders
@@ -1202,6 +1219,11 @@ public class ProcurementRepository(
         {
             return Error.NotFound("PurchaseOrderInvoice.NotFound", "Invoice not found");
         }
+
+        var approvedVendors = await ApprovedVendorRules.CheckOrderManufacturers(context, request.PurchaseOrderId,
+            request.BatchItems.Select(item => item.ManufacturerId), DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
 
         mapper.Map(request, existingInvoice);
         existingInvoice.LastUpdatedById = userId;
@@ -2325,6 +2347,11 @@ public class ProcurementRepository(
         if (await context.ShipmentDiscrepancies.AnyAsync(item =>
             item.ShipmentDocument.ShipmentInvoiceId == shipmentInvoiceId))
             return Error.Validation("Invoice.Discrepancy", "An invoice with reported discrepancies is immutable.");
+
+        var approvedVendors = await ApprovedVendorRules.CheckShipmentManufacturers(context,
+            request.Items.Select(item => (item.MaterialId, item.ManufacturerId, item.PurchaseOrderId)), DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
 
         mapper.Map(request, existingShipmentInvoice);
         existingShipmentInvoice.LastUpdatedById = userId;
