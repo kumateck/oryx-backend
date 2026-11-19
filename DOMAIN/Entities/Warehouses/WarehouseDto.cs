@@ -171,7 +171,7 @@ public class WarehouseLocationShelfDto
 public class WarehouseStockDto
 {
     public WarehouseDto Warehouse { get; set; }
-    /// <summary>Everything on the warehouse's shelves, in its department's unit.</summary>
+    /// <summary>Everything on the warehouse's shelves, in <see cref="UoM"/>.</summary>
     public decimal StockQuantity { get; set; }
     public decimal ExpiredQuantity { get; set; }
     /// <summary>In-date stock not released for use.</summary>
@@ -180,6 +180,11 @@ public class WarehouseStockDto
     public decimal? ReservedQuantity { get; set; }
     /// <summary>Usable stock not held: what can be issued or reserved now.</summary>
     public decimal? FreeQuantity { get; set; }
+    /// <summary>
+    /// The unit every quantity on this row is in. Every row of one answer shares it (the requested unit, converted with
+    /// the material's verified density), except a row that could not be converted, which stays in its store's own unit.
+    /// </summary>
+    public UnitOfMeasureDto UoM { get; set; }
 }
 
 public class WareHouseLocationDto

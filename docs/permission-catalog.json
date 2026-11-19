@@ -2486,6 +2486,13 @@
   },
   {
     "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanPrintProductCertificateOfAnalysis",
+    "name": "Can Print Product Certificate Of Analysis",
+    "description": "Allows the user to  print product certificate of analysis."
+  },
+  {
+    "module": "Quality Control",
     "submodule": "Material STP",
     "key": "CanViewRawMaterialStps",
     "name": "Can View Raw Material Stps",
