@@ -1,3 +1,4 @@
+using DOMAIN.Entities.Base;
 using APP.Repository;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.Warehouses;
@@ -70,10 +71,14 @@ public class MaterialRepositoryUsableShelfStockTests
         BatchStatus status = BatchStatus.Available
     )
     {
+        // Shelf and lot share one unit, as stock is recorded today (see StoreStock).
+        var unit = context.UnitOfMeasures.Local.FirstOrDefault(u => u.Symbol == "kg")
+            ?? context.UnitOfMeasures.Add(new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Kilogram", Symbol = "kg" }).Entity;
         var batch = new MaterialBatch
         {
             Id = Guid.NewGuid(),
             MaterialId = materialId,
+            UoMId = unit.Id,
             BatchNumber = $"B-{Guid.NewGuid()}",
             DateReceived = DateTime.UtcNow,
             ExpiryDate = expiryDate,
@@ -84,6 +89,7 @@ public class MaterialRepositoryUsableShelfStockTests
             Id = Guid.NewGuid(),
             WarehouseLocationShelfId = shelfId,
             MaterialBatchId = batch.Id,
+            UoMId = unit.Id,
             Quantity = quantity,
         };
 
@@ -184,7 +190,7 @@ public class MaterialRepositoryUsableShelfStockTests
                 MaterialBatchId = batchId,
                 WarehouseId = warehouseId,
                 ProductionScheduleProductId = Guid.NewGuid(),
-                UoMId = Guid.NewGuid(),
+                UoMId = context.UnitOfMeasures.Local.Single(u => u.Symbol == "kg").Id,
                 Quantity = 400m,
             }
         );

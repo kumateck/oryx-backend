@@ -159,8 +159,14 @@ public class RequisitionRepository(
                 request.ProductionScheduleProductId.Value, rawItems.Count > 0, packageItems.Count > 0);
             if (allowed.IsFailure) return allowed;
 
+            var packagingReady = await ProductionPackagingFirstRequest.Prepare(context, request.ProductionScheduleProductId.Value,
+                request.ProductionActivityStepId.Value, userId, packageItems);
+            if (packagingReady.IsFailure) return packagingReady;
+
             // Create Raw Material Requisition
-            var rawStockRequisitionId = await CreateStockRequisition("RM", rawItems);
+            var rawCreated = await CreateStockRequisition("RM", rawItems);
+            if (rawCreated.IsFailure) return rawCreated.Errors;
+            var rawStockRequisitionId = rawCreated.Value;
             if (rawStockRequisitionId.HasValue)
             {
                 await approvalRepository.CreateInitialApprovalsAsync(
@@ -170,7 +176,9 @@ public class RequisitionRepository(
             }
 
             // Create Package Material Requisition
-            var packageStockRequisitionId = await CreateStockRequisition("PM", packageItems);
+            var packageCreated = await CreateStockRequisition("PM", packageItems);
+            if (packageCreated.IsFailure) return packageCreated.Errors;
+            var packageStockRequisitionId = packageCreated.Value;
             if (packageStockRequisitionId.HasValue)
             {
                 await approvalRepository.CreateInitialApprovalsAsync(
@@ -179,13 +187,13 @@ public class RequisitionRepository(
                 );
             }
 
-            async Task<Guid?> CreateStockRequisition(
+            async Task<Result<Guid?>> CreateStockRequisition(
                 string prefix,
                 List<CreateRequisitionItemRequest> items
             )
             {
                 if (items == null || items.Count == 0)
-                    return null;
+                    return Result.Success<Guid?>(null);
 
                 // Use a transaction to prevent two users from generating the same number simultaneously
                 await using var transaction = await ProductionMaterialTransaction.Begin(context);
@@ -222,6 +230,8 @@ public class RequisitionRepository(
                     requisition.DepartmentId = department.Id;
                     requisition.Items = mapper.Map<List<RequisitionItem>>(items);
 
+                    if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanUpdateProductionStep))
+                        return Error.Forbidden("StockRequisition.Permission", "Your current permissions do not allow this stock request.");
                     await context.Requisitions.AddAsync(requisition);
                     await context.SaveChangesAsync();
 
@@ -415,6 +425,13 @@ public class RequisitionRepository(
         }
 
         var result = mapper.Map<RequisitionDto>(requisition);
+        if (requisition.RequisitionType == RequisitionType.Stock
+            && await context.RequisitionApprovals.IgnoreQueryFilters().AnyAsync(a => a.RequisitionId == requisition.Id && a.ContentRevision == requisition.ContentRevision && a.Status == DOMAIN.Entities.Approvals.ApprovalStatus.Rejected)
+            && !await APP.Services.Production.StockRequisitionState.Active(context).IgnoreQueryFilters().AnyAsync(r => r.Id == requisition.Id))
+        {
+            result.Status = RequestStatus.Rejected; result.Approved = false;
+            foreach (var line in result.Items) line.Status = RequestStatus.Rejected;
+        }
         await APP.Services.Production.IssuedMaterialRepairRead.Apply(context, result);
         await APP.Services.Production.StockRequisitionMaterialChoiceRead.Apply(context, result);
         if (preparation != null)
@@ -436,7 +453,7 @@ public class RequisitionRepository(
                 .ThenInclude(u => u.Warehouses)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
-        if (user?.Department is null)
+        if (user is null || requisition.RequisitionType != RequisitionType.Stock && user.Department is null)
         {
             return Error.Validation(
                 "User.Department",
@@ -444,8 +461,11 @@ public class RequisitionRepository(
             );
         }
 
+        // Approvers review the requesting production department's stock, even when their own department has no store.
+        var stockDepartment = requisition.RequisitionType == RequisitionType.Stock ? requisition.DepartmentId : user.DepartmentId.Value;
+        var warehouses = await context.Warehouses.Where(w => w.DepartmentId == stockDepartment).ToListAsync();
         // Find user's raw material & packing warehouses
-        var rawWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var rawWarehouse = warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.RawMaterialStorage
         );
         if (rawWarehouse is null)
@@ -454,7 +474,7 @@ public class RequisitionRepository(
                 "No raw material warehouse is associated with current user"
             );
 
-        var packingWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var packingWarehouse = warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.PackagedStorage
         );
         if (packingWarehouse is null)
@@ -463,7 +483,7 @@ public class RequisitionRepository(
                 "No packing material warehouse is associated with current user"
             );
 
-        var productionWarehouse = user.Department.Warehouses.FirstOrDefault(i =>
+        var productionWarehouse = warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.Production
         );
 

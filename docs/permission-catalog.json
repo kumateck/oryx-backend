@@ -2984,6 +2984,20 @@
   {
     "module": "Quality Assurance",
     "submodule": "Pending Approvals",
+    "key": "CanRejectRawMaterialStockRequisition",
+    "name": "Can Reject Raw Material Stock Requisition",
+    "description": "Allows the user to  reject raw material stock requisition."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRejectPackagingMaterialStockRequisition",
+    "name": "Can Reject Packaging Material Stock Requisition",
+    "description": "Allows the user to  reject packaging material stock requisition."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
     "key": "CanRejectPendingApproval",
     "name": "Can Reject Pending Approval",
     "description": "Allows the user to  reject pending approval."
@@ -5248,6 +5262,20 @@
     "key": "CanDeleteOperation",
     "name": "Can Delete Operation",
     "description": "Allows the user to  delete operation."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Procedures",
+    "key": "CanLinkOperationDepartment",
+    "name": "Can Link Operation Department",
+    "description": "Allows the user to  link operation department."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Procedures",
+    "key": "CanUnlinkOperationDepartment",
+    "name": "Can Unlink Operation Department",
+    "description": "Allows the user to  unlink operation department."
   },
   {
     "module": "Settings",

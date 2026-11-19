@@ -181,6 +181,35 @@ public class CollectionController(ICollectionRepository repository) : Controller
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// Links an operation to the production department that uses it. An operation already linked elsewhere must be
+    /// unlinked first.
+    /// </summary>
+    [HttpPut("operations/{operationId:guid}/department/{departmentId:guid}")]
+    [Authorize(PermissionKeys.CanLinkOperationDepartment)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> LinkOperationDepartment(Guid operationId, Guid departmentId)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.LinkOperationDepartment(operationId, departmentId, userId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>Unlinks an operation from its production department.</summary>
+    [HttpDelete("operations/{operationId:guid}/department")]
+    [Authorize(PermissionKeys.CanUnlinkOperationDepartment)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UnlinkOperationDepartment(Guid operationId)
+    {
+        if (!Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId)) return TypedResults.Unauthorized();
+        var result = await repository.UnlinkOperationDepartment(operationId, userId);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
 
     /// <summary>
     /// Retrieves a unit of measure by its id

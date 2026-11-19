@@ -78,9 +78,10 @@ internal static class ProductionMaterialQueries
             .WhereMaterialDate(item => item.MaterialBatch, date => date == null || date == DateTime.MinValue || date > DateTime.UtcNow).ToListAsync();
         var reservations = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.MaterialBatch)
             .Where(item => ids.Contains(item.MaterialBatch.MaterialId) && item.WarehouseId == configuration.ProductionWarehouseId && item.ReleasedAt == null).ToListAsync();
+        var activeRequestIds = APP.Services.Production.StockRequisitionState.Active(context).Select(r => r.Id);
         var items = await context.RequisitionItems.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().Include(item => item.Requisition)
             .Where(item => item.Requisition.ProductionScheduleProductId == configuration.ProductionScheduleProductId
-                && item.Requisition.RequisitionType == RequisitionType.Stock && item.DeletedAt == null && item.Requisition.DeletedAt == null).ToListAsync();
+                && activeRequestIds.Contains(item.RequisitionId) && item.Requisition.RequisitionType == RequisitionType.Stock && item.Requisition.Status != RequestStatus.Rejected && item.DeletedAt == null && item.Requisition.DeletedAt == null).ToListAsync();
         var extras = await context.ProductionExtraPackings.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(item => item.ProductionScheduleProductId == configuration.ProductionScheduleProductId && item.DeletedAt == null
                 && item.Status == ProductionExtraPackingStatus.Approved).ToListAsync();

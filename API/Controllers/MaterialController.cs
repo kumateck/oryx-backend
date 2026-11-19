@@ -399,7 +399,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetWarehouseStock(Guid materialId, Guid warehouseId)
     {
-        var result = await repository.GetMassMaterialStockInWarehouse(materialId, warehouseId);
+        // Free shelf stock by the store-stock rule, the same figure every stock screen shows.
+        var result = await repository.GetUsableShelfMaterialStockInWarehouse(materialId, warehouseId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

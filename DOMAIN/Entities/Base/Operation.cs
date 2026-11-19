@@ -17,4 +17,6 @@ public class OperationDto : BaseDto
     public string Name { get; set; }
     public string Description { get; set; }
     public int Order { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public string DepartmentName { get; set; }
 }
