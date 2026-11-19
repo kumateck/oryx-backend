@@ -85,7 +85,7 @@ internal static class ProductionMaterialForecasts
                 var label = kind == MaterialKind.Raw ? "Raw materials" : "Packaging";
                 var applied = configurations.FirstOrDefault(item => item.ProductionScheduleProductId == batch.Id && item.Kind == kind);
                 List<ProductionMaterialRequirement> requirements;
-                if (applied is not null) requirements = ProductionMaterialSources.Requirements(applied.RequirementsJson);
+                if (applied is not null) requirements = await ProductionMaterialSources.Requirements(context, applied.RequirementsJson);
                 else
                 {
                     var loaded = await ProductionMaterialSources.Load(context, batch.Id, kind);

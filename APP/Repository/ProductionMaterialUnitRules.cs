@@ -23,7 +23,7 @@ internal static class ProductionMaterialUnitRules
                 && link.DeletedAt == null).ToListAsync();
         var snapshot = await context.ProductionMaterialConfigurations.AsNoTracking()
             .SingleOrDefaultAsync(configuration => configuration.ProductionScheduleProductId == batchId && configuration.Kind == MaterialKind.Raw);
-        var requirements = snapshot is null ? [] : ProductionMaterialSources.Requirements(snapshot.RequirementsJson);
+        var requirements = snapshot is null ? [] : await ProductionMaterialSources.Requirements(context, snapshot.RequirementsJson);
         var reserved = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(row => row.ProductionScheduleProductId == batchId && ids.Contains(row.MaterialBatch.MaterialId)
                 && row.DeletedAt == null && row.ReleasedAt == null)
