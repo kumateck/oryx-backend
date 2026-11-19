@@ -3144,6 +3144,21 @@ public partial class ProductionScheduleRepository(
             source.ToDepartmentId = user.DepartmentId.Value;
         }
 
+        // Each supplier must hold the quantity in its own unit: the request is converted with the material's
+        // verified density and checked against the supplier's free stock, the same stock an issue will pick.
+        var kind = await context.Materials.IgnoreQueryFilters().Where(m => m.Id == request.MaterialId && m.DeletedAt == null)
+            .Select(m => (MaterialKind?)m.Kind).SingleOrDefaultAsync();
+        if (kind is null) return Error.Validation("StockTransfer.Material", "The material was not found.");
+        foreach (var source in stockTransfer.Sources)
+        {
+            if (source.FromDepartmentId == user.DepartmentId.Value)
+                return Error.Validation("StockTransfer.Supplier", "A department cannot ask its own store for a transfer.");
+            if (source.Quantity <= 0)
+                return Error.Validation("StockTransfer.Quantity", "Each supplying department needs a quantity above zero.");
+            var covered = await StockTransferSupplyUnits.Covers(context, request.MaterialId, kind.Value, source.FromDepartmentId, source.Quantity, unitId);
+            if (covered.IsFailure) return covered.Error;
+        }
+
         await context.StockTransfers.AddAsync(stockTransfer);
         await context.SaveChangesAsync();
         return Result.Success(stockTransfer.Id);
@@ -3241,6 +3256,7 @@ public partial class ProductionScheduleRepository(
                     .ThenInclude(st => st.Material)
                 .Include(st => st.StockTransfer)
                     .ThenInclude(st => st.UoM)
+                .Include(st => st.RejectedBy)
                 .FirstOrDefaultAsync(s => s.Id == stockTransferId)
         );
         await StockTransferSupplyUnits.Apply(context, [transfer]);
@@ -3271,6 +3287,7 @@ public partial class ProductionScheduleRepository(
                 .ThenInclude(st => st.Material)
             .Include(st => st.StockTransfer)
                 .ThenInclude(st => st.UoM)
+            .Include(st => st.RejectedBy)
             .Where(st => st.FromDepartmentId == user.DepartmentId)
             .AsQueryable();
 
@@ -3324,6 +3341,7 @@ public partial class ProductionScheduleRepository(
                 .ThenInclude(st => st.Material)
             .Include(st => st.StockTransfer)
                 .ThenInclude(st => st.UoM)
+            .Include(st => st.RejectedBy)
             .Where(st => st.ToDepartmentId == user.DepartmentId)
             .AsQueryable();
 
@@ -3356,20 +3374,26 @@ public partial class ProductionScheduleRepository(
     public Task<Result> ApproveStockTransfer(Guid id, Guid userId) =>
         DecideStockTransfer(id, userId, StockTransferStatus.Approved);
 
-    public Task<Result> RejectStockTransfer(Guid id, Guid userId) =>
-        DecideStockTransfer(id, userId, StockTransferStatus.Rejected);
+    public Task<Result> RejectStockTransfer(Guid id, Guid userId, string reason) =>
+        DecideStockTransfer(id, userId, StockTransferStatus.Rejected, reason);
 
-    private async Task<Result> DecideStockTransfer(Guid id, Guid userId, StockTransferStatus decision)
+    private async Task<Result> DecideStockTransfer(Guid id, Guid userId, StockTransferStatus decision, string reason = null)
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
-            return await ProductionMaterialTransaction.Run(context, () => DecideStockTransfer(id, userId, decision));
+            return await ProductionMaterialTransaction.Run(context, () => DecideStockTransfer(id, userId, decision, reason));
 
+        var rejecting = decision == StockTransferStatus.Rejected;
+        reason = reason?.Trim();
+        if (rejecting && (string.IsNullOrEmpty(reason) || reason.Length > 1000))
+            return Error.Validation("StockTransfer.Reason", "Say why the transfer cannot be supplied (1–1000 characters).");
         var source = await context.StockTransferSources.FirstOrDefaultAsync(row => row.Id == id);
         if (source is null) return Error.NotFound("StockTransfer.NotFound", "Stock transfer not found");
         if (!await IsStockTransferSupplier(source, userId))
             return Error.Forbidden("StockTransfer.Department", "Only the supplying department can decide this transfer.");
-        if (source.Status != StockTransferStatus.InProgress || source.IssuedAt.HasValue)
-            return Error.Conflict("StockTransfer.Status", "This transfer is no longer awaiting a decision.");
+        // The supplying store may still refuse an approved transfer it cannot fill, up to the moment stock is issued.
+        var open = source.Status == StockTransferStatus.InProgress || rejecting && source.Status == StockTransferStatus.Approved;
+        if (!open || source.IssuedAt.HasValue)
+            return Error.Conflict("StockTransfer.Status", rejecting ? "This transfer has already been issued or decided." : "This transfer is no longer awaiting a decision.");
 
         var key = decision == StockTransferStatus.Approved
             ? PermissionKeys.CanApproveIncomingStockTransferRequest : PermissionKeys.CanRejectIncomingStockTransferRequest;
@@ -3383,6 +3407,12 @@ public partial class ProductionScheduleRepository(
         {
             source.ApprovedAt = DateTime.UtcNow;
             source.ApprovedById = userId;
+        }
+        if (rejecting)
+        {
+            source.RejectionReason = reason;
+            source.RejectedAt = DateTime.UtcNow;
+            source.RejectedById = userId;
         }
         source.Status = decision;
         await context.SaveChangesAsync();

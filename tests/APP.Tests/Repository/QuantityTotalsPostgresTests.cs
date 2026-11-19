@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using APP.Utils;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
@@ -60,5 +61,59 @@ public sealed class QuantityTotalsPostgresTests
         Assert.Equal(Expected, (await reservations.ToTotalsByAsync(row => row.MaterialBatch.MaterialId, row => row.Quantity, true))[MaterialId]);
         Assert.Equal(Expected, (await extras.ToTotalsByAsync(row => row.MaterialId, row => row.Quantity, true))[MaterialId]);
         Assert.Empty(await shelves.Where(row => row.Quantity < 0).ToTotalsByAsync(row => row.MaterialBatch.MaterialId, row => row.Quantity, true));
+    }
+}
+
+public sealed class LiveHoldTotalsPostgresTests
+{
+    // GET production-schedule/stock-transfer/{id} 500'd after live holds became UnissuedReservations: the reserved-stock
+    // resolver summed them through ReservationTotals' Postgres text aggregate.
+    [RepairPostgresFact]
+    public async Task Reserved_stock_of_live_holds_sums_on_postgres()
+    {
+        await using var f = new IssuedMaterialRepairFixture();
+        await f.Seed(DOMAIN.Entities.Products.Production.IssuedMaterialRepairKind.Bom, issueStock: false);
+        await using var db = f.Open();
+        var materialId = await db.MaterialDepartments.Select(link => link.MaterialId).FirstAsync();
+        var live = APP.Repository.ProductionMaterialAllocator.UnissuedReservations(db).Where(row => row.MaterialBatch.MaterialId == materialId);
+        var total = ReservationTotals.Sum(live, true);
+        Assert.True(total >= 0);
+        Assert.True(await ReservationTotals.SumAsync(live, true) >= 0);
+    }
+}
+
+public sealed class StockTransferReadPostgresTests
+{
+    [RepairPostgresFact]
+    public async Task Transfer_detail_and_batches_read_on_postgres_for_a_litre_request_from_a_milligram_store()
+    {
+        await using var f = new IssuedMaterialRepairFixture();
+        await f.Seed(DOMAIN.Entities.Products.Production.IssuedMaterialRepairKind.Bom, issueStock: false);
+        await using var db = f.Open();
+        var link = await db.MaterialDepartments.FirstAsync();
+        var material = await db.Materials.FirstAsync(m => m.Id == link.MaterialId);
+        material.DensityGramsPerMilliliter = 1.036m;
+        var litre = new DOMAIN.Entities.Base.UnitOfMeasure { Id = Guid.NewGuid(), Name = "Litre", Symbol = "L" };
+        var receiver = new DOMAIN.Entities.Departments.Department { Id = Guid.NewGuid(), Name = "Syrup", Type = SHARED.DepartmentType.Production };
+        var transfer = new DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransferSource { Id = Guid.NewGuid(),
+            StockTransfer = new() { Id = Guid.NewGuid(), Code = "ST-PG", MaterialId = material.Id, UoM = litre, RequiredQuantity = 20_000 },
+            FromDepartmentId = f.Actor.DepartmentId!.Value, ToDepartment = receiver, Quantity = 20_000,
+            Status = DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransferStatus.Approved };
+        db.AddRange(litre, transfer); await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ApplicationDbContext>(db);
+        services.AddSingleton<Microsoft.AspNetCore.Http.IHttpContextAccessor, APP.Tests.QcWorksheets.NullHttpContextAccessor>();
+        services.AddAutoMapper(cfg => { }, typeof(APP.Mapper.OryxMapper));
+        await using var provider = services.BuildServiceProvider();
+        var mapper = provider.GetRequiredService<AutoMapper.IMapper>();
+        var repository = new APP.Repository.ProductionScheduleRepository(db, mapper, null!, new APP.Repository.MaterialRepository(db, mapper), null!, null!,
+            new NoOpProductionActivityStepEventPublisher());
+
+        var read = await repository.GetStockTransferSource(transfer.Id);
+        Assert.True(read.IsSuccess, read.IsFailure ? read.Error.Description : null);
+        Assert.Equal("mg", read.Value.SupplierUoM.Symbol);
+        var batches = await repository.BatchesToSupplyForStockTransfer(transfer.Id);
+        Assert.True(batches.IsSuccess || batches.Error.Code == "StockTransfer.InsufficientStock", batches.IsFailure ? batches.Error.Description : null);
     }
 }

@@ -162,7 +162,9 @@ public sealed class SharedDensityTransferTests
 
         var preview = await f.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
         Assert.Equal("StockTransfer.InsufficientStock", preview.Error.Code);
-        Assert.Equal("The supplying store has 100 kg free of the 207.2 kg needed for 200 L. It is short by 107.2 kg.", preview.Error.Description);
+        Assert.Equal("The supplying store has 100 kg free of the 207.2 kg needed for 200 L. It is short by 107.2 kg. "
+            + "200 L is 207.2 kg at the material's verified density of 1.036 g/mL. "
+            + "Free stock is approved, in-date stock on the store's shelves that is not reserved for a production batch.", preview.Error.Description);
     }
 
     [Theory]
@@ -243,5 +245,50 @@ public sealed class SharedDensityTransferTests
         Assert.Equal(list.ReservedQuantity, batches.Sum(row => row.ReservedQuantity));
         Assert.Equal(list.FreeQuantity, batches.Sum(row => row.FreeQuantity));
         Assert.Equal((30m, 70m, "Usable"), (Assert.Single(batches).ReservedQuantity!.Value, batches[0].FreeQuantity!.Value, batches[0].StockState));
+    }
+
+    [Fact]
+    public async Task Transfer_asked_in_litres_of_a_milligram_store_reads_and_reports_in_the_largest_unit()
+    {
+        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
+        f.Lot.UoM.Symbol = "mg"; f.Lot.Material.DensityGramsPerMilliliter = 1.036m; f.Lot.ExpiryDate = DateTime.UtcNow.AddYears(1);
+        f.Shelf.Quantity = 3_743_300_000; f.Shelf.UoMId = f.Lot.UoMId; f.Lot.TotalQuantity = f.Shelf.Quantity; f.Lot.QuantityAssigned = f.Shelf.Quantity;
+        var litre = new UnitOfMeasure { Symbol = "L", Name = "Litre" };
+        var transfer = new StockTransferSource { Id = Guid.NewGuid(), StockTransfer = new() { MaterialId = f.Lot.MaterialId, UoM = litre },
+            FromDepartmentId = f.Department.Id, ToDepartmentId = f.OtherDepartment.Id, Quantity = 20_000, Status = StockTransferStatus.Approved };
+        db.Add(transfer); await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+
+        var read = await f.Repository.GetStockTransferSource(transfer.Id);
+        Assert.True(read.IsSuccess, read.IsFailure ? read.Error.Description : null);
+        Assert.Equal(20_720_000_000m, read.Value.SupplierQuantity); Assert.Equal("mg", read.Value.SupplierUoM.Symbol);
+
+        var preview = await f.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
+        Assert.StartsWith("The supplying store has 3,743.3 kg free of the 20,720 kg needed for 20,000 L. It is short by 16,976.7 kg. "
+            + "20,000 L is 20,720 kg at the material's verified density of 1.036 g/mL.", preview.Error.Description);
+
+        // Asking for it again is refused when it is raised, in the supplier's unit, and the department list leaves it out.
+        var requester = new User { Id = Guid.NewGuid(), UserName = "syrup-requester", DepartmentId = f.OtherDepartment.Id };
+        db.Users.Add(requester); await db.SaveChangesAsync();
+        var create = await f.Repository.CreateStockTransfer(new DOMAIN.Entities.ProductionSchedules.StockTransfers.Request.CreateStockTransferRequest
+        {
+            Code = "ST-2", MaterialId = f.Lot.MaterialId, UoMId = litre.Id, RequiredQuantity = 20_000,
+            Sources = [new() { FromDepartmentId = f.Department.Id, Quantity = 20_000 }],
+        }, requester.Id);
+        Assert.Equal("StockTransfer.InsufficientStock", create.Error.Code);
+        Assert.StartsWith("The supplying store has 3,743.3 kg free of the 20,720 kg needed for 20,000 L.", create.Error.Description);
+        var materials = new MaterialRepository(db, f.Mapper);
+        // The request form sends the quantity in the requester's own unit; without a unit the server assumes that one.
+        db.MaterialDepartments.Add(new() { MaterialId = f.Lot.MaterialId, DepartmentId = f.OtherDepartment.Id, UoMId = litre.Id });
+        await db.SaveChangesAsync();
+        Assert.Equal(litre.Id, await materials.DepartmentUnitOfCaller(f.Lot.MaterialId, requester.Id));
+        Assert.DoesNotContain((await materials.GetDepartmentsWithEnoughStock(f.Lot.MaterialId, 20_000, litre.Id)).Value, d => d.Id == f.Department.Id);
+        Assert.Contains((await materials.GetDepartmentsWithEnoughStock(f.Lot.MaterialId, 3_000, litre.Id)).Value, d => d.Id == f.Department.Id);
+
+        var allowed = await f.Repository.CreateStockTransfer(new DOMAIN.Entities.ProductionSchedules.StockTransfers.Request.CreateStockTransferRequest
+        {
+            Code = "ST-3", MaterialId = f.Lot.MaterialId, UoMId = litre.Id, RequiredQuantity = 3_000,
+            Sources = [new() { FromDepartmentId = f.Department.Id, Quantity = 3_000 }],
+        }, requester.Id);
+        Assert.True(allowed.IsSuccess, allowed.IsFailure ? allowed.Error.Description : null);
     }
 }

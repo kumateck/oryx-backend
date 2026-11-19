@@ -62,8 +62,9 @@ public interface IMaterialRepository
     );
     Task<Result<List<DepartmentDto>>> GetDepartmentsWithEnoughStock(
         Guid materialId,
-        decimal quantity
-    );
+        decimal quantity, Guid? uomId = null);
+    /// <summary>The caller's department stock unit for a material, when it has exactly one.</summary>
+    Task<Guid?> DepartmentUnitOfCaller(Guid materialId, Guid userId);
     Task<Result<decimal>> GetMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetUsableMassMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
     Task<Result<decimal>> GetUsableShelfMaterialStockInWarehouse(Guid materialId, Guid warehouseId);
