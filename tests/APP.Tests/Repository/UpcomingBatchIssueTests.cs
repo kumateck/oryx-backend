@@ -85,4 +85,30 @@ public class UpcomingBatchIssueTests
         Assert.Empty((await repository.List(keeper.Id, 1, 20, "no such product")).Value.Data);
         Assert.Single((await repository.List(keeper.Id, 1, 20, "ps-11")).Value.Data);
     }
+
+    [Fact]
+    public async Task Earlier_batches_to_swap_load_for_a_started_batch()
+    {
+        // Production error 2026-11-19: MaterialBatch.ReservedQuantities is auto-included, so a no-tracking read of a batch's
+        // reservations that includes their lot loops back to the reservations and EF refuses the query (500).
+        using var harness = new QcWorksheetTestContext();
+        var tablets = new Department { Id = Guid.NewGuid(), Name = "Tablets" };
+        var own = NewStore(harness, tablets, "Tablet raw store");
+        own.Warehouse.Type = WarehouseType.RawMaterialStorage;
+        var keeper = new User { Id = Guid.NewGuid(), UserName = "storekeeper", Department = tablets };
+        harness.Db.Users.Add(keeper);
+        var product = new Product { Id = Guid.NewGuid(), Code = "PDT-9", Name = "Paracetamol 500mg", BaseUoM = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Tablet", Symbol = "tabs" } };
+        var schedule = new ProductionSchedule { Id = Guid.NewGuid(), Code = "PS-11" };
+        harness.Db.ProductionSchedules.Add(schedule);
+        var started = await Started(harness, schedule, product, own, "LOT-A", 3);
+        await harness.Db.SaveChangesAsync(); harness.Db.ChangeTracker.Clear();
+        using var mapping = MaterialValidityTests.Mapping(harness);
+        var repository = new RequisitionRepository(harness.Db, Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<AutoMapper.IMapper>(mapping),
+            null!, null!, null!, null!, null!, null!, null!, new NoOpProductionActivityStepEventPublisher());
+
+        var result = await repository.GetAlternativeBatchesForProductionBatch(started.ProductionScheduleProductId, keeper.Id);
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        Assert.Equal(3m, Assert.Single(result.Value).RequestedQuantity);
+    }
 }

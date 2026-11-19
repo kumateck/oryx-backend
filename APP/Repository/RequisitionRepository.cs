@@ -565,7 +565,8 @@ public class RequisitionRepository(
     /// </summary>
     public async Task<Result<List<MaterialAlternativeBatchesDto>>> GetAlternativeBatchesForProductionBatch(Guid productionScheduleProductId, Guid userId)
     {
-        var reserved = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AsNoTracking()
+        // MaterialBatch auto-includes its ReservedQuantities, which loops back here; a no-tracking read refuses that cycle.
+        var reserved = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(item => item.MaterialBatch).ThenInclude(item => item.Material)
             .Where(item => item.ProductionScheduleProductId == productionScheduleProductId && item.DeletedAt == null && item.ReleasedAt == null && item.Quantity > 0)
             .ToListAsync();
