@@ -151,6 +151,77 @@ public class BomSubstituteChoiceTests
     }
 
     [Fact]
+    public async Task Production_can_choose_the_substitute_at_start_even_while_the_main_is_in_stock()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var substitute = await AddSubstitute(fixture, 500_000, 200_000);
+        fixture.Harness.Db.ChangeTracker.Clear();
+
+        var started = await ProductionMaterialRepairs.Initialize(fixture.Harness.Db, fixture.Batch.Id,
+            new Dictionary<Guid, Guid> { [fixture.Lot.MaterialId] = substitute.MaterialId });
+
+        Assert.True(started.IsSuccess, started.IsFailure ? started.Error.Description : null);
+        // The chosen substitute is what is reserved, requested and issued.
+        var hold = Assert.Single(await Holds(fixture));
+        Assert.Equal((substitute.MaterialId, 200_000m), (hold.MaterialBatch.MaterialId, hold.Quantity));
+        var configuration = await fixture.Harness.Db.ProductionMaterialConfigurations.SingleAsync();
+        Assert.Equal(substitute.MaterialId, Assert.Single(ProductionMaterialSources.Requirements(configuration.RequirementsJson)).MaterialId);
+    }
+
+    [Fact]
+    public async Task A_chosen_main_material_that_is_short_is_reported_not_swapped_for_the_substitute()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        await AddSubstitute(fixture, 500_000, 200_000);
+        await EmptyMainShelf(fixture);
+        fixture.Harness.Db.ChangeTracker.Clear();
+
+        var started = await ProductionMaterialRepairs.Initialize(fixture.Harness.Db, fixture.Batch.Id,
+            new Dictionary<Guid, Guid> { [fixture.Lot.MaterialId] = fixture.Lot.MaterialId });
+
+        Assert.Equal("Production.Materials", started.Error.Code);
+        Assert.Empty(await Holds(fixture));
+    }
+
+    [Fact]
+    public async Task A_choice_that_is_not_a_substitute_on_the_line_is_refused()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        await AddSubstitute(fixture, 500_000, 200_000);
+        fixture.Harness.Db.ChangeTracker.Clear();
+
+        var started = await ProductionMaterialRepairs.Initialize(fixture.Harness.Db, fixture.Batch.Id,
+            new Dictionary<Guid, Guid> { [fixture.Lot.MaterialId] = Guid.NewGuid() });
+
+        Assert.Equal("Production.Substitute", started.Error.Code);
+        Assert.Empty(await Holds(fixture));
+    }
+
+    [Fact]
+    public async Task The_forecast_lists_each_substitute_right_below_its_main_material_with_its_own_need_and_stock()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var substitute = await AddSubstitute(fixture, 500_000, 200_000);
+        await using var signedIn = fixture.Harness.OpenAs(new ProductionUser(fixture.Department.Id));
+        var repository = new ProductionScheduleRepository(signedIn, fixture.Mapper, fixture.Harness.UserManager, null!, null!, fixture.Harness.ApprovalRepository,
+            new NoOpProductionActivityStepEventPublisher());
+
+        var forecast = await repository.ForecastProductionScheduleProduct(fixture.Batch.ProductId, 1, Guid.Empty,
+            DOMAIN.Entities.ProductionSchedules.BatchSize.Full, fixture.Actor.Id);
+
+        Assert.True(forecast.IsSuccess, forecast.IsFailure ? forecast.Error.Description : null);
+        Assert.Equal(2, forecast.Value.Count);
+        var (main, sub) = (forecast.Value[0], forecast.Value[1]);
+        Assert.Equal((fixture.Lot.MaterialId, false), (main.Material.Id, main.IsSubstitute));
+        Assert.Equal((substitute.MaterialId, true, fixture.Lot.MaterialId), (sub.Material.Id, sub.IsSubstitute, sub.SubstituteFor.Id));
+        Assert.Equal((200_000m, 500_000m), (sub.QuantityNeeded, sub.FreeQuantity.GetValueOrDefault()));
+    }
+
+    [Fact]
     public async Task A_substitute_without_its_own_quantity_is_never_used_at_start()
     {
         using var fixture = new ScheduleStockFixture();
@@ -348,5 +419,12 @@ public class BomSubstituteChoiceTests
         Assert.Equal((substitute.MaterialId, 1_000m), (item.MaterialId, item.Quantity));
         var hold = Assert.Single(await Holds(fixture), row => row.MaterialBatch.MaterialId == substitute.MaterialId || row.MaterialBatch.MaterialId == main.MaterialId);
         Assert.Equal((substitute.MaterialId, 1_000m), (hold.MaterialBatch.MaterialId, hold.Quantity));
+    }
+
+    private sealed class ProductionUser(Guid department) : SHARED.Services.Identity.ICurrentUserService
+    {
+        public Guid? UserId => null;
+        public Guid? DepartmentId => department;
+        public string DepartmentType => "Production";
     }
 }

@@ -306,12 +306,17 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize(PermissionKeys.CanStartProduction)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> StartProductionActivity([FromRoute] Guid productionScheduleProductId)
+    public async Task<IResult> StartProductionActivity([FromRoute] Guid productionScheduleProductId,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] StartProductionRequest request = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.StartProductionActivity(productionScheduleProductId, Guid.Parse(userId));
+        var choices = request?.MaterialChoices ?? [];
+        if (choices.GroupBy(choice => choice.MaterialId).Any(group => group.Count() > 1))
+            return SHARED.Result.Failure(SHARED.Error.Validation("Production.Substitute", "Choose one material per BOM line.")).ToProblemDetails();
+        var result = await repository.StartProductionActivity(productionScheduleProductId, Guid.Parse(userId),
+            choices.ToDictionary(choice => choice.MaterialId, choice => choice.UseMaterialId));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

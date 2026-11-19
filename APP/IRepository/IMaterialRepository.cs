@@ -100,7 +100,7 @@ public interface IMaterialRepository
         decimal quantity,
         Guid userId
     );
-    Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId);
+    Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId, Guid? uomId = null);
     Task<Result<List<MaterialPipelineStockDto>>> GetMaterialPipelineStock(Guid materialId);
     Task<Result> ImportMaterialsFromExcel(IFormFile file, MaterialKind kind);
     Result<List<BatchLocation>> BatchesNeededToBeConsumed(
