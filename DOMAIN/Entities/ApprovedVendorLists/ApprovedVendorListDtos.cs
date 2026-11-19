@@ -152,3 +152,19 @@ public class ApprovedVendorMappedSupplierDto
     public Guid SupplierId { get; set; }
     public string SupplierName { get; set; }
 }
+
+/** What the list's lines can name: raw materials, manufacturers and suppliers. */
+public class ApprovedVendorOptionsDto
+{
+    public List<ApprovedVendorOptionDto> Materials { get; set; } = [];
+    public List<ApprovedVendorOptionDto> Manufacturers { get; set; } = [];
+    public List<ApprovedVendorOptionDto> Suppliers { get; set; } = [];
+}
+
+public class ApprovedVendorOptionDto
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; }
+    public string Name { get; set; }
+    public string Address { get; set; }
+}

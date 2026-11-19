@@ -123,6 +123,7 @@ public class ApprovedVendorListTests
         Assert.Equal(PermissionKeys.CanViewApprovedVendorList, Policy(nameof(ApprovedVendorListController.GetApprovedVendorLists)));
         Assert.Equal(PermissionKeys.CanViewApprovedVendorList, Policy(nameof(ApprovedVendorListController.GetApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanViewApprovedVendorList, Policy(nameof(ApprovedVendorListController.GetApprovedVendorMappings)));
+        Assert.Equal(PermissionKeys.CanViewApprovedVendorList, Policy(nameof(ApprovedVendorListController.GetApprovedVendorOptions)));
         Assert.Equal(PermissionKeys.CanPrintApprovedVendorList, Policy(nameof(ApprovedVendorListController.GetApprovedVendorListPrint)));
         Assert.Equal(PermissionKeys.CanViewApprovedVendorEligibility, Policy(nameof(ApprovedVendorListController.GetApprovedVendorEligibility)));
         Assert.Equal(PermissionKeys.CanCreateApprovedVendorList, Policy(nameof(ApprovedVendorListController.CreateApprovedVendorList)));
@@ -260,6 +261,9 @@ public class ApprovedVendorListTests
         Assert.Equal(f.Manufacturer, mapping.ManufacturerId);
         Assert.Equal(25m, mapping.QuantityPerPack);
         Assert.Equal(f.Supplier, Assert.Single(mapping.Suppliers).SupplierId);
+        var options = await Lists().Options();
+        Assert.Equal(2, options.Materials.Count);
+        Assert.Equal(2, options.Suppliers.Count);
     }
 
     [Fact]

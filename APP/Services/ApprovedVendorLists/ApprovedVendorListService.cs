@@ -115,6 +115,17 @@ public sealed partial class ApprovedVendorListService(ApplicationDbContext conte
         return result.OrderBy(item => item.ManufacturerName).ToList();
     }
 
+    /// <summary>Raw materials, manufacturers and suppliers a line can name.</summary>
+    public async Task<ApprovedVendorOptionsDto> Options() => new()
+    {
+        Materials = await context.Materials.AsNoTracking().Where(item => item.Kind == MaterialKind.Raw).OrderBy(item => item.Name)
+            .Select(item => new ApprovedVendorOptionDto { Id = item.Id, Code = item.Code, Name = item.Name }).ToListAsync(),
+        Manufacturers = await context.Manufacturers.AsNoTracking().OrderBy(item => item.Name)
+            .Select(item => new ApprovedVendorOptionDto { Id = item.Id, Name = item.Name, Address = item.Address }).ToListAsync(),
+        Suppliers = await context.Suppliers.AsNoTracking().OrderBy(item => item.Name)
+            .Select(item => new ApprovedVendorOptionDto { Id = item.Id, Name = item.Name, Address = item.Address }).ToListAsync(),
+    };
+
     public Task<List<ApprovedVendorEligibilityDto>> Eligibility(ApprovedVendorEligibilityRequest request) =>
         ApprovedVendorRules.Eligibility(context, request?.MaterialIds ?? [], DateTime.UtcNow.Date);
 

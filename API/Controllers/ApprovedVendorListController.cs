@@ -46,6 +46,12 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Raw materials, manufacturers and suppliers a line can name.</summary>
+    [HttpGet("options")]
+    [Authorize(PermissionKeys.CanViewApprovedVendorList)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovedVendorOptionsDto))]
+    public async Task<IResult> GetApprovedVendorOptions() => TypedResults.Ok(await lists.Options());
+
     /// <summary>The manufacturers and suppliers already mapped to a raw material, to choose from on a line.</summary>
     [HttpGet("mappings/{materialId:guid}")]
     [Authorize(PermissionKeys.CanViewApprovedVendorList)]
