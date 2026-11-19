@@ -27,7 +27,7 @@ internal static class ProductionMaterialRequisitionRules
             if (material is null) return Error.Validation("Procurement.Material", "A requested material no longer exists.");
             var configuration = configurations.SingleOrDefault(configuration => configuration.Kind == material?.Kind);
             if (configuration is null) continue;
-            var requirement = ProductionMaterialSources.Requirements(configuration.RequirementsJson).SingleOrDefault(line => line.MaterialId == item.MaterialId);
+            var requirement = (await ProductionMaterialSources.Requirements(context, configuration.RequirementsJson)).SingleOrDefault(line => line.MaterialId == item.MaterialId);
             var approvedExtras = extras.Where(extra => extra.MaterialId == item.MaterialId).ToList();
             var unitId = requirement?.UnitId ?? approvedExtras.FirstOrDefault()?.UoMId;
             var symbol = unitId.HasValue ? units.GetValueOrDefault(unitId.Value)?.Symbol : null;
@@ -55,7 +55,7 @@ internal static class ProductionMaterialRequisitionRules
             var configuration = await context.ProductionMaterialConfigurations.AsNoTracking()
                 .SingleOrDefaultAsync(item => item.ProductionScheduleProductId == batchId && item.Kind == kind);
             if (configuration is null) continue;
-            var requirements = ProductionMaterialSources.Requirements(configuration.RequirementsJson);
+            var requirements = await ProductionMaterialSources.Requirements(context, configuration.RequirementsJson);
             var selected = items.Where(item => materials.Any(material => material.Id == item.MaterialId && material.Kind == kind)).ToList();
             var stale = Error.Conflict("Requisition.StaleConfiguration", "The batch requirements changed. Reload the batch before requesting stock.");
             if (selected.Count != requirements.Count) return stale;

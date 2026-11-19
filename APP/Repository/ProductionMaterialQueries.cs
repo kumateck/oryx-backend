@@ -62,7 +62,7 @@ internal static class ProductionMaterialQueries
 
     private static async Task<Result<List<Row>>> Read(ApplicationDbContext context, ProductionMaterialConfiguration configuration)
     {
-        var requirements = ProductionMaterialSources.Requirements(configuration.RequirementsJson);
+        var requirements = await ProductionMaterialSources.Requirements(context, configuration.RequirementsJson);
         var ids = requirements.SelectMany(item => new[] { item.MaterialId, item.SourceMaterialId, item.DirectLinkMaterialId.GetValueOrDefault() }).Distinct().ToList();
         var materials = await context.Materials.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking().AsSplitQuery().Include(item => item.MaterialCategory)
             .Include(item => item.Batches.Where(batch => batch.DeletedAt == null))

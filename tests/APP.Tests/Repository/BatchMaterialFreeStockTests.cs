@@ -1,3 +1,4 @@
+using APP.Repository;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Materials.Batch;
 using DOMAIN.Entities.ProductionSchedules;
@@ -71,5 +72,33 @@ public class BatchMaterialFreeStockTests
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
         // The unreadable hold keeps its whole shelf, as the allocator would refuse to take from it.
         Assert.Equal(Assert.Single(result.Value).QuantityOnHand, Assert.Single(result.Value).TotalFrozenQuantity);
+    }
+
+    [Fact]
+    public async Task A_batch_applied_before_its_materials_density_was_verified_uses_the_verified_density()
+    {
+        // L045K004: Propylene Glycol counted in ml with no stored density; the store's lot and other batches' holds are in mg.
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var db = fixture.Harness.Db;
+        var millilitre = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Millilitre", Symbol = "ml" };
+        db.UnitOfMeasures.Add(millilitre);
+        fixture.Lot.Material.DensityGramsPerMilliliter = 1.036m;
+        var configuration = fixture.Configuration();
+        configuration.RequirementsJson = ProductionMaterialSources.Json(new[] { fixture.Requirement() with
+            { Unit = "ml", UnitId = millilitre.Id, BaseUnit = "ml", BaseUnitId = millilitre.Id, Quantity = 100, DensityGramsPerMilliliter = 0 } });
+        db.ProductionMaterialConfigurations.Add(configuration);
+        var other = OtherBatch(fixture, cancelled: false);
+        db.ProductionScheduleProducts.Add(other);
+        db.MaterialBatchReservedQuantities.Add(Hold(fixture, other, 518_000)); // 518,000 mg = 500 ml at 1.036 g/ml
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var result = await fixture.Repository.CheckMaterialStockLevelsForProductionSchedule(fixture.Batch.Id, null);
+
+        Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        var row = Assert.Single(result.Value);
+        Assert.Equal(1_000m / 1.036m, row.QuantityOnHand, 3); // 1,000,000 mg (1,000 g) on the shelf = 965.25 ml
+        Assert.Equal(500, row.TotalFrozenQuantity, 3);
     }
 }
