@@ -41,6 +41,11 @@ public class ProductionScheduleProcurementDto
     public decimal ExtraQuantity { get; set; }
     public bool IsSubstitute { get; set; }
     public MaterialDto ParentMaterial { get; set; }
+    /// <summary>
+    /// Why this substitute cannot be chosen for the batch (no quantity of its own on the BOM, or not linked to the
+    /// department). Null when it can be chosen. Every substitute on the BOM is listed, so production sees it either way.
+    /// </summary>
+    public string SubstituteUnavailableReason { get; set; }
 }
 
 public class ForecastMaterialDto
@@ -64,6 +69,8 @@ public class ForecastMaterialDto
     /// </summary>
     public bool IsSubstitute { get; set; }
     public MaterialDto SubstituteFor { get; set; }
+    /// <summary>Why this substitute cannot be used (no quantity of its own on the BOM); null when it can.</summary>
+    public string SubstituteUnavailableReason { get; set; }
     /// <summary>
     /// Whether the free stock (usable, not reserved for other batches) covers what is needed: the same rule production
     /// applies when a batch starts. Stock reserved for other batches is theirs, so a forecast never counts it as available.
@@ -91,6 +98,11 @@ public class ProductionScheduleProcurementPackageDto
     public decimal ExtraQuantity { get; set; }
     public bool IsSubstitute { get; set; }
     public MaterialDto ParentMaterial { get; set; }
+    /// <summary>
+    /// Why this substitute cannot be chosen for the batch (no quantity of its own on the BOM, or not linked to the
+    /// department). Null when it can be chosen. Every substitute on the BOM is listed, so production sees it either way.
+    /// </summary>
+    public string SubstituteUnavailableReason { get; set; }
 }
 
 public class MaterialDepartmentDetails
