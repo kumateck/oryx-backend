@@ -30,6 +30,8 @@ public class RndProjectRepository(
     {
         if (productId.HasValue && !await context.Products.AnyAsync(p => p.Id == productId.Value))
             return Error.NotFound("RndProject.ProductNotFound", "Product not found.");
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
 
         if (qtppFormId.HasValue && !await context.Forms.AnyAsync(f => f.Id == qtppFormId.Value))
             return Error.NotFound("RndProject.FormNotFound", "QTPP form not found.");

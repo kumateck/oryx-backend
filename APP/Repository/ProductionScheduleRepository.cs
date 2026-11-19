@@ -240,6 +240,8 @@ public partial class ProductionScheduleRepository(
     private async Task<Result> ValidatePackingStyles(IEnumerable<CreateProductionScheduleProduct> products)
     {
         var requestedProducts = products.ToList();
+        var deleted = await DeletedProductGuard.Refuse(context, requestedProducts.Select(item => item.ProductId));
+        if (deleted is not null) return deleted;
         if (requestedProducts.Any(item => !item.ProductPackingId.HasValue))
             return Error.Validation("ProductionSchedule.PackingStyle", "Choose an active packing style for every scheduled product.");
         var selections = requestedProducts
@@ -283,9 +285,26 @@ public partial class ProductionScheduleRepository(
             );
         }
 
-        await context
-            .ProductionScheduleProducts.Where(p => p.Id == productionScheduleProductId)
-            .ExecuteDeleteAsync();
+        // Removing a batch deletes its row. Anything recorded against it would either block that (requisitions,
+        // configurations, repairs) or be deleted with it (holds, BMR/BPR, test requests, an unstarted run), so a
+        // batch is removed only while nothing at all refers to it, deleted records included.
+        var attached = await ProductionScheduleProductAttachments.Find(context, productionScheduleProductId);
+        if (attached.Count > 0)
+            return Error.Conflict("ProductionScheduleProduct.InUse",
+                $"This batch cannot be removed from the schedule: it already has {string.Join(", ", attached)}. Those records stay with the batch.");
+
+        try
+        {
+            await context
+                .ProductionScheduleProducts.Where(p => p.Id == productionScheduleProductId)
+                .ExecuteDeleteAsync();
+        }
+        catch (Exception exception) when (exception is DbUpdateException or Npgsql.PostgresException { SqlState: "23503" or "23001" })
+        {
+            // Something was recorded against the batch after the check above.
+            return Error.Conflict("ProductionScheduleProduct.InUse",
+                "This batch cannot be removed from the schedule: records were just added to it. Reload the schedule.");
+        }
 
         return Result.Success();
     }
@@ -334,6 +353,13 @@ public partial class ProductionScheduleRepository(
                     "A production activity already exists for this product and schedule"
                 );
             }
+
+            // A batch scheduled before its product was deleted is not started; work already under way may finish.
+            // Read through the filters, which hide such batches, so the refusal says why.
+            var batchProductId = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Where(p => p.Id == productionScheduleProductId).Select(p => (Guid?)p.ProductId).FirstOrDefaultAsync();
+            var deletedProduct = await DeletedProductGuard.Refuse(context, batchProductId);
+            if (deletedProduct is not null) return deletedProduct;
 
             var productionScheduleProduct = await context
                 .ProductionScheduleProducts.AsSplitQuery()
@@ -5109,4 +5135,34 @@ public partial class ProductionScheduleRepository(
 internal sealed class ProductionStartRefused(Error error) : InvalidOperationException(error.Description)
 {
     public Error Error { get; } = error;
+}
+
+/// <summary>What is recorded against a scheduled batch, by kind, counting deleted records too (they still hold the row).</summary>
+internal static class ProductionScheduleProductAttachments
+{
+    internal static async Task<List<string>> Find(ApplicationDbContext context, Guid batchId)
+    {
+        var found = new List<string>();
+        async Task Check<T>(string label, System.Linq.Expressions.Expression<Func<T, bool>> refersToBatch) where T : class
+        {
+            if (await context.Set<T>().IgnoreQueryFilters().AsNoTracking().AnyAsync(refersToBatch)) found.Add(label);
+        }
+        await Check<ProductionActivity>("a production run (started earlier)", item => item.ProductionScheduleProductId == batchId);
+        await Check<DOMAIN.Entities.Requisitions.Requisition>("requisitions", item => item.ProductionScheduleProductId == batchId);
+        await Check<MaterialBatchReservedQuantity>("reserved stock", item => item.ProductionScheduleProductId == batchId);
+        await Check<ProductionMaterialConfiguration>("an applied material configuration", item => item.ProductionScheduleProductId == batchId);
+        await Check<DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransfer>("stock transfers", item => item.ProductionScheduleProductId == batchId);
+        await Check<SwapRequest>("swap requests", item => item.ProductionScheduleProductId == batchId);
+        await Check<BatchManufacturingRecord>("a batch manufacturing record", item => item.ProductionScheduleProductId == batchId);
+        await Check<BatchPackagingRecord>("a batch packaging record", item => item.ProductionScheduleProductId == batchId);
+        await Check<DOMAIN.Entities.AnalyticalTestRequests.AnalyticalTestRequest>("analytical test requests", item => item.ProductionScheduleProductId == batchId);
+        await Check<ProductionExtraPacking>("extra packing requests", item => item.ProductionScheduleProductId == batchId);
+        await Check<FinalPacking>("final packing", item => item.ProductionScheduleProductId == batchId);
+        await Check<MaterialReturnNote>("material return notes", item => item.ProductionScheduleProductId == batchId);
+        await Check<ProductionMaterialRepair>("material repairs", item => item.ProductionScheduleProductId == batchId);
+        await Check<IssuedMaterialRepair>("issued material repairs", item => item.ProductionScheduleProductId == batchId);
+        await Check<ProductionUnstartRepair>("an unstart repair", item => item.BatchId == batchId);
+        await Check<ReservationRepair>("a reservation repair", item => item.BatchId == batchId);
+        return found;
+    }
 }

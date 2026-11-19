@@ -24,6 +24,9 @@ public partial class CustomerRepository
         if (await context.ProductionOrders.AnyAsync(item => item.SourceCustomerQuotationId == quotationId))
             return Error.Conflict("CustomerQuotation.Converted", "Quotation already has a production order.");
 
+        var deletedProduct = await DeletedProductGuard.Refuse(context, quotation.Items.Select(item => item.ProductId));
+        if (deletedProduct is not null) return deletedProduct;
+
         var order = new ProductionOrder
         {
             CustomerId = quotation.CustomerId, Code = $"PO-{quotation.Code}",

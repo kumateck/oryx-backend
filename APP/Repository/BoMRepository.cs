@@ -25,6 +25,9 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
         if (product is null) return ProductErrors.NotFound(request.ProductId);
 
+        var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
+
         foreach (var item in request.Items)
         {
             item.Substitutes ??= [];
@@ -170,6 +173,9 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         {
             return BillOfMaterialErrors.NotFound(billOfMaterialId);
         }
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, existingBillOfMaterial.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
 
         // Remove old items if they exist
         context.BillOfMaterialItems.RemoveRange(existingBillOfMaterial.Items);

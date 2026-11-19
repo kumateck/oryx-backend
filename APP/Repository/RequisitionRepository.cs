@@ -1,3 +1,4 @@
+using APP.Services.ApprovedVendorLists;
 using Microsoft.Extensions.Logging;
 using APP.Services.Documents;
 using APP.Services.Production;
@@ -74,6 +75,12 @@ public class RequisitionRepository(
             return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if (request.RequisitionType == RequisitionType.Purchase && request.ProductionScheduleProductId.HasValue)
         {
+            // Nothing is bought for a batch of a deleted product; it can no longer be started.
+            var batchProductId = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Where(item => item.Id == request.ProductionScheduleProductId.Value)
+                .Select(item => (Guid?)item.ProductId).FirstOrDefaultAsync();
+            var deletedProduct = await DeletedProductGuard.Refuse(context, batchProductId);
+            if (deletedProduct is not null) return deletedProduct;
             var consistent = await ProductionMaterialRequisitionRules.ValidateProcurement(context, request.ProductionScheduleProductId.Value, request.Items);
             if (consistent.IsFailure) return consistent;
         }
@@ -1792,6 +1799,12 @@ public class RequisitionRepository(
         if (approvalGate.IsFailure)
             return approvalGate;
 
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            request.Items.SelectMany(item => item.Suppliers.Select(supplier => (item.MaterialId, supplier.SupplierId))),
+            DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
+
         var supplierGroupedItems = request
             .Items.SelectMany(item => item.Suppliers.Select(supplier => new { item, supplier }))
             .GroupBy(x => x.supplier.SupplierId);
@@ -1960,6 +1973,14 @@ public class RequisitionRepository(
         {
             return RequisitionErrors.NotFound(sourceRequisitionId);
         }
+
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            request.Items.SelectMany(item => item.Suppliers.Select(supplier => supplier.SupplierId)
+                    .Append(existingSourceRequisition.SupplierId).Distinct()
+                    .Select(supplierId => (item.MaterialId, supplierId))),
+            DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
 
         mapper.Map(request, existingSourceRequisition);
         context.SourceRequisitions.Update(existingSourceRequisition);
@@ -2310,6 +2331,13 @@ public class RequisitionRepository(
         Guid userId
     )
     {
+        // Checked for every quotation first, so a refused supplier creates no purchase order at all.
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            processQuotations.SelectMany(quotation => quotation.Items.Select(item => (item.MaterialId, quotation.SupplierId))),
+            DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
+
         foreach (var quotation in processQuotations)
         {
             var sourceRequisition = await context

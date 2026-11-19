@@ -21,6 +21,9 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         if (request.ProductIds == null || request.ProductIds.Count == 0)
             return Error.Validation("Invalid.Products", "At least one product is required.");
 
+        var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductIds);
+        if (deletedProduct is not null) return deletedProduct;
+
         var products = await context
             .Products.Where(p => request.ProductIds.Contains(p.Id))
             .ToListAsync();
@@ -355,6 +358,8 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         // Handle additions
         if (request.ProductIdsToAdd is { Count: > 0 })
         {
+            var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductIdsToAdd);
+            if (deletedProduct is not null) return deletedProduct;
             var productsToAdd = await context
                 .Products.Where(p => request.ProductIdsToAdd.Contains(p.Id))
                 .ToListAsync();

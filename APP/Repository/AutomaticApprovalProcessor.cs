@@ -172,6 +172,15 @@ internal static class AutomaticApprovalProcessor
                     throw new InvalidOperationException(activation.Errors.First().Description);
                 break;
 
+            case ApprovedVendorListApprovalHandler.ModelType:
+                var vendorList = await context.ApprovedVendorLists
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(vendorList, modelType, modelId);
+                var listActivation = await ApprovedVendorListApprovalHandler.ActivateAsync(context, vendorList, null);
+                if (!listActivation.IsSuccess)
+                    throw new InvalidOperationException(listActivation.Errors.First().Description);
+                break;
+
             case nameof(RndProject):
                 var rndProject = await context.RndProjects
                     .SingleOrDefaultAsync(item => item.Id == modelId);

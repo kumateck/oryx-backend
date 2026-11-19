@@ -48,6 +48,11 @@ public sealed class SupplierQuotationPriceRecorder(ApplicationDbContext context,
 
         if (responseLookup.Keys.Any(id => supplierQuotation.Items.All(item => item.Id != id)))
             return Error.Validation("Supplier.Quotation.Item", "One of the supplied lines does not belong to this quotation.");
+        // A supplier not on the current approved vendor list for a material cannot be priced for it.
+        var approvedVendors = await APP.Services.ApprovedVendorLists.ApprovedVendorRules.CheckSuppliers(context,
+            supplierQuotation.Items.Where(item => responseLookup.ContainsKey(item.Id))
+                .Select(item => (item.MaterialId, supplierQuotation.SupplierId)), DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure) return approvedVendors;
         foreach (var group in supplierQuotation.Items.Where(item => responseLookup.ContainsKey(item.Id)).GroupBy(item => item.MaterialId))
             if (group.Select(item => PurchaseUnitSymbols.Normalize(responseLookup[item.Id].PriceUoM)).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
                 return Error.Validation("Supplier.Quotation.Unit", "Choose one price-unit symbol per material in the quotation.");

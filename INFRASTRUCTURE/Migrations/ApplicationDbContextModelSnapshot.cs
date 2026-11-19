@@ -507,6 +507,201 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ApprovalStages");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnnexureNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PreviousRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SupersededAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("SupersedesRevision")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("PreviousRevisionId");
+
+                    b.HasIndex("Status")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ApprovedVendorLists_OpenStatus")
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"Status\" IN (0, 1)");
+
+                    b.ToTable("ApprovedVendorLists");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApprovedVendorListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("ApprovedVendorListId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ApprovedVendorListApprovals");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ApprovalDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovedVendorListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ManufacturerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("QuantityPerPack")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ValidityDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ManufacturerId");
+
+                    b.HasIndex("MaterialId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("ApprovedVendorListId", "MaterialId", "ManufacturerId", "SupplierId")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("ApprovedVendorListLines");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Attachments.Attachment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -27967,6 +28162,125 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList", "PreviousRevision")
+                        .WithMany()
+                        .HasForeignKey("PreviousRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("PreviousRevision");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListApproval", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList", "ApprovedVendorList")
+                        .WithMany("Approvals")
+                        .HasForeignKey("ApprovedVendorListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("ApprovedVendorList");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListLine", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList", "ApprovedVendorList")
+                        .WithMany("Lines")
+                        .HasForeignKey("ApprovedVendorListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", "Manufacturer")
+                        .WithMany()
+                        .HasForeignKey("ManufacturerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedVendorList");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("Manufacturer");
+
+                    b.Navigation("Material");
+
+                    b.Navigation("Supplier");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Attachments.Attachment", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -43613,6 +43927,13 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.Approvals.Approval", b =>
                 {
                     b.Navigation("ApprovalStages");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList", b =>
+                {
+                    b.Navigation("Approvals");
+
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.BillOfMaterials.BillOfMaterial", b =>

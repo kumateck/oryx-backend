@@ -29,6 +29,11 @@ public static class ShipmentInvoiceCreation
             return Error.Validation("Code", "Shipment Invoice code already exists.");
         }
 
+        var approvedVendors = await APP.Services.ApprovedVendorLists.ApprovedVendorRules.CheckShipmentManufacturers(context,
+            request.Items.Select(item => (item.MaterialId, item.ManufacturerId, item.PurchaseOrderId)), DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors.Errors.First();
+
         var orderIds = request.Items.Select(i => i.PurchaseOrderId).Distinct().ToList();
         var orders = await context.PurchaseOrders.AsSplitQuery()
             .Include(p => p.Items)

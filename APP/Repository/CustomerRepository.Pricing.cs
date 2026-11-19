@@ -72,6 +72,9 @@ public partial class CustomerRepository
         if (request.AgreedPrice <= 0) return Error.Validation("CustomerPricing.Price", "Agreed price must be positive.");
         if (request.EffectiveTo < request.EffectiveFrom)
             return Error.Validation("CustomerPricing.Dates", "Effective-to cannot precede effective-from.");
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
         if (!await context.Products.IgnoreQueryFilters().AnyAsync(item =>
                 item.Id == request.ProductId && !item.DeletedAt.HasValue))
             return Error.NotFound("Product.NotFound", "Product not found.");
