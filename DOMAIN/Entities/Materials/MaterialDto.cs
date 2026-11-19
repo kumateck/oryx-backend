@@ -59,6 +59,8 @@ public class MaterialWarehouseStockBreakdown
     public decimal UnavailableQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
     public decimal FreeQuantity { get; set; }
+    /// <summary>The unit the quantities above are in: the store department's stock unit for the material.</summary>
+    public string Unit { get; set; }
 }
 
 public class MaterialCategoryDto : BaseDto

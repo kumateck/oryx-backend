@@ -34,7 +34,7 @@ public interface IProductionScheduleRepository
     Task<Result<List<ProductionScheduleProcurementDto>>> GetProductionScheduleDetail(
         Guid scheduleId, Guid userId);
 
-    Task<Result<Guid>> StartProductionActivity(Guid productionScheduleProductId, Guid userId);
+    Task<Result<Guid>> StartProductionActivity(Guid productionScheduleProductId, Guid userId, IReadOnlyDictionary<Guid, Guid> materialChoices = null);
     Task<Result<ProductionProcedureRepairResult>> RepairProductionProcedure(Guid productionActivityId, Guid userId);
     Task<Result<ProductionMaterialRepairPreview>> PreviewMaterialRepair(Guid activityId, Guid actorId, MaterialKind kind);
     Task<Result<ProductionMaterialRepairResult>> ApplyMaterialRepair(Guid activityId, Guid actorId, MaterialKind kind, ApplyProductionMaterialRepair request);

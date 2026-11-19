@@ -91,11 +91,17 @@ internal sealed class QcWorksheetTestContext : IDisposable
     internal User Approver { get; private set; }
     internal Role ApproverRole { get; private set; }
 
+    private readonly string databaseName = Guid.NewGuid().ToString();
+
+    /// <summary>The same in-memory database seen by a signed-in user, for reads that apply the department query filters.</summary>
+    internal ApplicationDbContext OpenAs(ICurrentUserService user) =>
+        new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(databaseName).Options, user);
+
     internal QcWorksheetTestContext()
     {
         Db = new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName)
                 .Options,
             new NoCurrentUser());
 

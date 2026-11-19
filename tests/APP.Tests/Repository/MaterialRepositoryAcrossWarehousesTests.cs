@@ -134,4 +134,47 @@ public class MaterialRepositoryAcrossWarehousesTests
         Assert.Equal(500m, entry.StockQuantity);
         Assert.Equal(200m, entry.ExpiredQuantity);
     }
+
+    /// <summary>Ethanol 96% (0.81 g/mL): Syrup counts it in ml, Ointment in mg. Reported as Syrup's 38,700 L reading 38.7 kg.</summary>
+    [Fact]
+    public async Task Every_store_is_shown_in_the_requested_unit_with_the_materials_density()
+    {
+        await using var context = CreateContext();
+        var mapper = CreateMapper();
+        var material = new DOMAIN.Entities.Materials.Material { Id = Guid.NewGuid(), Code = "RME005", Name = "Ethanol 96%", DensityGramsPerMilliliter = 0.81m };
+        var ml = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Millilitre", Symbol = "ml" };
+        var mg = new UnitOfMeasure { Id = Guid.NewGuid(), Name = "Milligram", Symbol = "mg" };
+        context.AddRange(material, ml, mg);
+        WarehouseStockDto Row(List<WarehouseStockDto> rows, Guid id) => Assert.Single(rows, row => row.Warehouse.Id == id);
+        Guid Store(string name, UnitOfMeasure unit, decimal quantity)
+        {
+            var department = new DOMAIN.Entities.Departments.Department { Id = Guid.NewGuid(), Name = name };
+            var warehouse = new Warehouse { Id = Guid.NewGuid(), Name = name + " Raw Warehouse", Type = WarehouseType.RawMaterialStorage, DepartmentId = department.Id };
+            var shelf = new WarehouseLocationShelf { Id = Guid.NewGuid(), Code = "S1", Name = "Shelf", WarehouseLocationRack = new WarehouseLocationRack
+                { Id = Guid.NewGuid(), Name = "Rack", WarehouseLocation = new WarehouseLocation { Id = Guid.NewGuid(), Name = "Room", WarehouseId = warehouse.Id } } };
+            var lot = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = material.Id, BatchNumber = name + "/LOT", UoMId = unit.Id, Status = BatchStatus.Available, ExpiryDate = DateTime.UtcNow.AddYears(1) };
+            context.AddRange(department, warehouse, shelf, lot);
+            context.MaterialDepartments.Add(new DOMAIN.Entities.Materials.MaterialDepartment { Id = Guid.NewGuid(), MaterialId = material.Id, DepartmentId = department.Id, UoMId = unit.Id });
+            context.ShelfMaterialBatches.Add(new ShelfMaterialBatch { Id = Guid.NewGuid(), WarehouseLocationShelfId = shelf.Id, MaterialBatchId = lot.Id, UoMId = unit.Id, Quantity = quantity });
+            return warehouse.Id;
+        }
+        var syrup = Store("Syrup", ml, 38_700_000m);   // 38,700 L
+        var ointment = Store("Ointment", mg, 471_700_000m); // 471.7 kg
+        await context.SaveChangesAsync();
+        var repository = new MaterialRepository(context, mapper);
+
+        var inMilligrams = (await repository.GetMaterialStockAcrossWarehouses(material.Id, mg.Id)).Value;
+        Assert.Equal(38_700_000m * 0.81m * 1_000m, Row(inMilligrams, syrup).StockQuantity); // 31,347 kg, not 38.7 kg
+        Assert.Equal(471_700_000m, Row(inMilligrams, ointment).FreeQuantity);
+        Assert.All(inMilligrams, row => Assert.Equal("mg", row.UoM.Symbol));
+
+        var inMillilitres = (await repository.GetMaterialStockAcrossWarehouses(material.Id, ml.Id)).Value;
+        Assert.Equal(38_700_000m, Row(inMillilitres, syrup).FreeQuantity);
+        Assert.Equal("ml", Row(inMillilitres, ointment).UoM.Symbol);
+
+        // Without a requested unit each store keeps, and names, its own unit.
+        var own = (await repository.GetMaterialStockAcrossWarehouses(material.Id)).Value;
+        Assert.Equal(("ml", 38_700_000m), (Row(own, syrup).UoM.Symbol, Row(own, syrup).StockQuantity));
+        Assert.Equal("mg", Row(own, ointment).UoM.Symbol);
+    }
 }

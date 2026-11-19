@@ -2719,21 +2719,22 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return Result.Success();
     }
 
-    public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(
-        Guid materialId
-    )
+    /// <summary>
+    /// Each store's stock of a material by the store-stock rule. Every store counts a material in its own department's
+    /// unit (Syrup in ml, Ointment in mg), so each row is converted into <paramref name="uomId"/> with the material's
+    /// verified density and names its unit. Without that, 38,700 L in Syrup read as 38.7 kg to an mg department.
+    /// </summary>
+    public async Task<Result<List<WarehouseStockDto>>> GetMaterialStockAcrossWarehouses(Guid materialId, Guid? uomId = null)
     {
         var warehouses = await context.Warehouses.IgnoreQueryFilters().ToListAsync();
-
+        var units = await context.UnitOfMeasures.IgnoreQueryFilters().AsNoTracking().ToListAsync();
+        var target = uomId.HasValue ? units.FirstOrDefault(unit => unit.Id == uomId.Value) : null;
+        var density = await MaterialDensity.Load(context, materialId);
         var warehouseStockList = new List<WarehouseStockDto>();
 
         foreach (var warehouse in warehouses)
         {
-            // 1️⃣ Get raw stock in warehouse
-            var stockResult = await GetShelfMaterialStockAndExpiredQuantityInWarehouse(
-                materialId,
-                warehouse.Id
-            );
+            var stockResult = await GetShelfMaterialStockAndExpiredQuantityInWarehouse(materialId, warehouse.Id);
             if (!stockResult.IsSuccess)
                 continue;
             // Shelf stock by the store-stock rule. A hold stays in the store until it is issued, so it is never
@@ -2741,16 +2742,23 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             var stock = stockResult.Value;
             if (stock.OnHandQuantity <= 0)
                 continue;
+            var own = units.FirstOrDefault(unit => string.Equals(unit.Symbol, stock.Unit, StringComparison.OrdinalIgnoreCase));
+            decimal? In(decimal value) => target is null ? value : MaterialDensity.Convert(value, stock.Unit, target.Symbol, density);
+            var converted = new[] { stock.OnHandQuantity, stock.ExpiredQuantity, stock.UnavailableQuantity, stock.ReservedQuantity, stock.FreeQuantity }.Select(In).ToList();
+            // A row that cannot be converted keeps its own unit, and says so, rather than being shown in the wrong one.
+            var ok = converted.All(value => value.HasValue);
+            decimal Pick(int index, decimal original) => ok ? converted[index].GetValueOrDefault() : original;
 
             warehouseStockList.Add(
                 new WarehouseStockDto
                 {
                     Warehouse = mapper.Map<WarehouseDto>(warehouse),
-                    StockQuantity = stock.OnHandQuantity,
-                    ExpiredQuantity = stock.ExpiredQuantity,
-                    UnavailableQuantity = stock.UnavailableQuantity,
-                    ReservedQuantity = stock.ReservedQuantity,
-                    FreeQuantity = stock.FreeQuantity,
+                    StockQuantity = Pick(0, stock.OnHandQuantity),
+                    ExpiredQuantity = Pick(1, stock.ExpiredQuantity),
+                    UnavailableQuantity = Pick(2, stock.UnavailableQuantity),
+                    ReservedQuantity = Pick(3, stock.ReservedQuantity),
+                    FreeQuantity = Pick(4, stock.FreeQuantity),
+                    UoM = mapper.Map<UnitOfMeasureDto>(ok && target is not null ? target : own),
                 }
             );
         }

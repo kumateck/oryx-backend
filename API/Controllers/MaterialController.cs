@@ -440,9 +440,12 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [AnyPermission("CanAddProductsToProductSchedule", "CanCreateProductSchedule", "CanEditProductSchedule", "CanIssueBmr", "CanRemoveProductsFromProductSchedule", "CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewIssuedBmrBprs", "CanViewPackageMaterialRequisitionsForCreation", "CanViewPackagingMaterials", "CanViewPackingMaterialStock", "CanViewPlannedProducts", "CanViewProductSchedules", "CanViewRawMaterialRequisitionsForCreation", "CanViewRawMaterialStock", "CanViewRawMaterials")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<WarehouseStockDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMaterialStockAcrossWarehouses(Guid materialId)
+    public async Task<IResult> GetMaterialStockAcrossWarehouses(Guid materialId, [FromQuery] Guid? uomId = null)
     {
-        var result = await repository.GetMaterialStockAcrossWarehouses(materialId);
+        // Without a unit, every store is shown in the caller's department unit for the material.
+        if (!uomId.HasValue && Guid.TryParse(HttpContext.Items["Sub"] as string, out var userId))
+            uomId = await repository.DepartmentUnitOfCaller(materialId, userId);
+        var result = await repository.GetMaterialStockAcrossWarehouses(materialId, uomId);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

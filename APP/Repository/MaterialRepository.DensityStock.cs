@@ -33,6 +33,6 @@ public partial class MaterialRepository
         var total = usable ? level.Free : level.OnHand;
         var expired = level.Expired;
         return new MaterialWarehouseStockBreakdown { WarehouseStock = Math.Max(0, total), ExpiredQuantity = Math.Max(0, expired),
-            OnHandQuantity = level.OnHand, UnavailableQuantity = level.Unavailable, ReservedQuantity = level.Held, FreeQuantity = level.Free };
+            OnHandQuantity = level.OnHand, UnavailableQuantity = level.Unavailable, ReservedQuantity = level.Held, FreeQuantity = level.Free, Unit = unit.Symbol };
     }
 }

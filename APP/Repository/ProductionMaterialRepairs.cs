@@ -159,8 +159,14 @@ internal static class ProductionMaterialRepairs
     /// packaging shortage does not block the start: packaging is reserved now only when all of it is
     /// available, otherwise it is left for the later packaging requisition.
     /// </summary>
-    internal static async Task<Result> Initialize(ApplicationDbContext context, Guid batchId)
+    /// <param name="chosen">
+    /// The material production chose for a BOM or packaging line that has substitutes, keyed by the line's main material.
+    /// The chosen one is reserved, requested and issued; it must be in stock. Lines without a choice start on the main
+    /// material, or on the first substitute fully in stock when the main is short.
+    /// </param>
+    internal static async Task<Result> Initialize(ApplicationDbContext context, Guid batchId, IReadOnlyDictionary<Guid, Guid> chosen = null)
     {
+        chosen ??= new Dictionary<Guid, Guid>();
         foreach (var kind in new[] { MaterialKind.Raw, MaterialKind.Package })
         {
             var required = kind == MaterialKind.Raw;
@@ -172,13 +178,21 @@ internal static class ProductionMaterialRepairs
                 if (!required) continue;
                 return Error.Conflict("Production.Configuration", "This batch already has an applied configuration.");
             }
-            var loaded = await ProductionMaterialSources.Load(context, batchId, kind);
+            var loaded = await ProductionMaterialSources.Load(context, batchId, kind, preferred: chosen);
             if (loaded.IsFailure)
             {
                 if (!required) continue;
                 return loaded.Error;
             }
             var source = loaded.Value;
+            // A choice must name one of the line's own options; one for another kind's line belongs to the other pass.
+            foreach (var (main, wanted) in chosen)
+            {
+                var line = source.Requirements.FirstOrDefault(item => item.SourceMaterialId == main);
+                if (line is null) continue;
+                if (line.MaterialId != wanted)
+                    return Error.Validation("Production.Substitute", $"{line.Name}: the chosen material is not a substitute on this line of the BOM. Reload the batch and choose again.");
+            }
             if (await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == batchId
                 && item.MaterialBatch.Material.Kind == kind && item.ReleasedAt == null))
             {
@@ -188,9 +202,12 @@ internal static class ProductionMaterialRepairs
             var allocation = await ProductionMaterialAllocator.Plan(context, source, []);
             // A BOM line short of its main material starts on the first substitute (its own quantity) that is fully in stock.
             // The store issuing the requisition can still change the choice before issue.
-            var fallback = await ProductionMaterialChoices.FirstCoveredOptions(context, source, allocation);
+            // A line production chose keeps its choice: a shortage on it is reported, not silently swapped.
+            var fallback = (await ProductionMaterialChoices.FirstCoveredOptions(context, source, allocation))
+                .Where(pair => !chosen.ContainsKey(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value);
             if (fallback.Count != 0)
             {
+                foreach (var pair in chosen) fallback[pair.Key] = pair.Value;
                 var reloaded = await ProductionMaterialSources.Load(context, batchId, kind, preferred: fallback);
                 if (reloaded.IsSuccess)
                 {
