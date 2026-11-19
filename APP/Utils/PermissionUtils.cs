@@ -436,6 +436,26 @@ public static class PermissionKeys
     public const string CanViewProductionProductArds = "CanViewProductionProductArds";
     /// <summary>Print a product.</summary>
     public const string CanPrintProductionProduct = "CanPrintProductionProduct";
+    /// <summary>View the approved vendor (manufacturer) list and its revisions.</summary>
+    public const string CanViewApprovedVendorList = "CanViewApprovedVendorList";
+    /// <summary>Prepare the first approved vendor list.</summary>
+    public const string CanCreateApprovedVendorList = "CanCreateApprovedVendorList";
+    /// <summary>Correct an approved vendor list while it is in review, and send a returned one back for review.</summary>
+    public const string CanEditApprovedVendorList = "CanEditApprovedVendorList";
+    /// <summary>Prepare a new revision of the current approved vendor list.</summary>
+    public const string CanReviseApprovedVendorList = "CanReviseApprovedVendorList";
+    /// <summary>Check an approved vendor list: confirm its review, which sends it for approval.</summary>
+    public const string CanReviewApprovedVendorList = "CanReviewApprovedVendorList";
+    /// <summary>Return an approved vendor list in review to its preparer for correction.</summary>
+    public const string CanReturnApprovedVendorList = "CanReturnApprovedVendorList";
+    /// <summary>Approve an approved vendor list at the caller's approval stage.</summary>
+    public const string CanApproveApprovedVendorList = "CanApproveApprovedVendorList";
+    /// <summary>Reject an approved vendor list at the caller's approval stage.</summary>
+    public const string CanRejectApprovedVendorList = "CanRejectApprovedVendorList";
+    /// <summary>Print an approved vendor list.</summary>
+    public const string CanPrintApprovedVendorList = "CanPrintApprovedVendorList";
+    /// <summary>See which suppliers and manufacturers the current approved vendor list allows for materials, on procurement screens.</summary>
+    public const string CanViewApprovedVendorEligibility = "CanViewApprovedVendorEligibility";
     /// <summary>View the QA product list.</summary>
     public const string CanViewQaProducts = "CanViewQaProducts";
     /// <summary>View a product's general information in QA.</summary>
@@ -1713,6 +1733,16 @@ public static class PermissionUtils
         addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductStps);
         addPermission(PermissionModules.Production, "Products", PermissionKeys.CanViewProductionProductArds);
         addPermission(PermissionModules.Production, "Products", PermissionKeys.CanPrintProductionProduct);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanViewApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanCreateApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanEditApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReviseApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReviewApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReturnApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanApproveApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanRejectApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanPrintApprovedVendorList);
+        addPermission(PermissionModules.Procurement, "Approved Vendor List", PermissionKeys.CanViewApprovedVendorEligibility);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProducts);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductInfo);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanEditQaProductInfo);

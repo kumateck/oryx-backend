@@ -491,6 +491,76 @@
   },
   {
     "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanViewApprovedVendorList",
+    "name": "Can View Approved Vendor List",
+    "description": "Allows the user to  view approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanCreateApprovedVendorList",
+    "name": "Can Create Approved Vendor List",
+    "description": "Allows the user to  create approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanEditApprovedVendorList",
+    "name": "Can Edit Approved Vendor List",
+    "description": "Allows the user to  edit approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanReviseApprovedVendorList",
+    "name": "Can Revise Approved Vendor List",
+    "description": "Allows the user to  revise approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanReviewApprovedVendorList",
+    "name": "Can Review Approved Vendor List",
+    "description": "Allows the user to  review approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanReturnApprovedVendorList",
+    "name": "Can Return Approved Vendor List",
+    "description": "Allows the user to  return approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanApproveApprovedVendorList",
+    "name": "Can Approve Approved Vendor List",
+    "description": "Allows the user to  approve approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanRejectApprovedVendorList",
+    "name": "Can Reject Approved Vendor List",
+    "description": "Allows the user to  reject approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanPrintApprovedVendorList",
+    "name": "Can Print Approved Vendor List",
+    "description": "Allows the user to  print approved vendor list."
+  },
+  {
+    "module": "Procurement",
+    "submodule": "Approved Vendor List",
+    "key": "CanViewApprovedVendorEligibility",
+    "name": "Can View Approved Vendor Eligibility",
+    "description": "Allows the user to  view approved vendor eligibility."
+  },
+  {
+    "module": "Quality Assurance",
     "submodule": "Products",
     "key": "CanViewQaProducts",
     "name": "Can View Qa Products",
