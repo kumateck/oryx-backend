@@ -84,7 +84,7 @@ internal static class ProductionMaterialRepairPlanning
             blockers.Add("Return, final packing or finished-goods transfer history prevents this repair.");
         var allocation = await ProductionMaterialAllocator.Plan(context, source, active);
         blockers.AddRange(allocation.Blockers);
-        var before = snapshot is null ? LegacyBaseline(requisition, active, blockers) : ProductionMaterialSources.Requirements(snapshot.RequirementsJson);
+        var before = snapshot is null ? LegacyBaseline(requisition, active, blockers) : await ProductionMaterialSources.Requirements(context, snapshot.RequirementsJson);
         var lines = Lines(before, source.Requirements, active, allocation, blockers);
         if (lines.Any(item => item.Shortage > 0)) blockers.Add("There is not enough unreserved, usable stock. No changes can be applied until all shortages are covered.");
         var desired = allocation.Allocations.OrderBy(item => item.BatchId).ThenBy(item => item.ShelfId).ToList();
