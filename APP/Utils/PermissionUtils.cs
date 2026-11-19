@@ -772,6 +772,8 @@ public static class PermissionKeys
     public const string CanCheckProductTest = "CanCheckProductTest";
     /// <summary>Allows printing a product's Analytical Test Request form (QAD/SOP/046/F02-04).</summary>
     public const string CanPrintProductAnalyticalTestRequest = "CanPrintProductAnalyticalTestRequest";
+    /// <summary>Allows printing a product batch's generated certificate of analysis.</summary>
+    public const string CanPrintProductCertificateOfAnalysis = "CanPrintProductCertificateOfAnalysis";
     public const string CanVerifyProduct = "CanVerifyProduct";
     public const string CanViewRawMaterialStps = "CanViewRawMaterialStps";
     public const string CanCreateRawMaterialStp = "CanCreateRawMaterialStp";
@@ -2867,6 +2869,11 @@ public static class PermissionUtils
             PermissionModules.QualityControl,
             PermissionSubmodules.AnalyticalTestRequestProducts,
             PermissionKeys.CanPrintProductAnalyticalTestRequest
+        );
+        addPermission(
+            PermissionModules.QualityControl,
+            PermissionSubmodules.AnalyticalTestRequestProducts,
+            PermissionKeys.CanPrintProductCertificateOfAnalysis
         );
         addPermission(
             PermissionModules.QualityControl,

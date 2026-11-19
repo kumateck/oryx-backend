@@ -312,7 +312,8 @@ public partial class ProductionScheduleRepository(
 
     public async Task<Result<Guid>> StartProductionActivity(
         Guid productionScheduleProductId,
-        Guid userId
+        Guid userId,
+        IReadOnlyDictionary<Guid, Guid> materialChoices = null
     )
     {
         ProductionMaterialTransaction? transaction = null;
@@ -416,7 +417,7 @@ public partial class ProductionScheduleRepository(
             await context.ProductionActivities.AddAsync(activity);
             await context.SaveChangesAsync();
 
-            await FreezeMaterialInProduction(productionScheduleProduct.Id);
+            await FreezeMaterialInProduction(productionScheduleProduct.Id, materialChoices);
 
             await CreateBatchManufacturingRecord(
                 new CreateBatchManufacturingRecord
@@ -466,6 +467,22 @@ public partial class ProductionScheduleRepository(
             await transaction.CommitAsync();
 
             return activity.Id;
+        }
+        catch (ProductionStartRefused refused)
+        {
+            // A business refusal (a chosen material short, a choice that is not on the BOM): nothing started, and the
+            // reason goes back to the user rather than a generic failure.
+            if (transaction is not null)
+            {
+                try { await transaction.RollbackAsync(); }
+                catch (Exception rollbackError)
+                {
+                    logger?.LogError(rollbackError, "Failed to roll back production start for batch {ProductionScheduleProductId}; trace {TraceId}",
+                        productionScheduleProductId, traceId);
+                }
+            }
+            context.ChangeTracker.Clear();
+            return refused.Error;
         }
         catch (Exception e)
         {
@@ -3075,11 +3092,11 @@ public partial class ProductionScheduleRepository(
         return Result.Success();
     }
 
-    public async Task FreezeMaterialInProduction(Guid productionScheduleProductId)
+    public async Task FreezeMaterialInProduction(Guid productionScheduleProductId, IReadOnlyDictionary<Guid, Guid> materialChoices = null)
     {
         await using var transaction = await ProductionMaterialTransaction.Begin(context);
-        var initialized = await ProductionMaterialRepairs.Initialize(context, productionScheduleProductId);
-        if (initialized.IsFailure) throw new InvalidOperationException(initialized.Error.Description);
+        var initialized = await ProductionMaterialRepairs.Initialize(context, productionScheduleProductId, materialChoices);
+        if (initialized.IsFailure) throw new ProductionStartRefused(initialized.Error);
         await transaction.CommitAsync();
     }
 
@@ -4885,10 +4902,23 @@ public partial class ProductionScheduleRepository(
                 .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
                     .ThenInclude(billOfMaterial => billOfMaterial.Items)
                         .ThenInclude(billOfMaterialItem => billOfMaterialItem.BaseUoM)
+            .Include(product => product.BillOfMaterials)
+                .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
+                    .ThenInclude(billOfMaterial => billOfMaterial.Items)
+                        .ThenInclude(billOfMaterialItem => billOfMaterialItem.Substitutes.Where(sub => sub.DeletedAt == null))
+                            .ThenInclude(sub => sub.SubstituteMaterial)
+            .Include(product => product.BillOfMaterials)
+                .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
+                    .ThenInclude(billOfMaterial => billOfMaterial.Items)
+                        .ThenInclude(billOfMaterialItem => billOfMaterialItem.Substitutes.Where(sub => sub.DeletedAt == null))
+                            .ThenInclude(sub => sub.BaseUoM)
             .Include(product => product.Packages)
                 .ThenInclude(productPackage => productPackage.Material)
             .Include(product => product.Packages)
                 .ThenInclude(productPackage => productPackage.DirectLinkMaterial)
+            .Include(product => product.Packages)
+                .ThenInclude(productPackage => productPackage.Substitutes.Where(sub => sub.DeletedAt == null))
+                    .ThenInclude(sub => sub.SubstituteMaterial)
             .FirstOrDefaultAsync(p => p.Id == productId);
 
         if (product is null)
@@ -4948,20 +4978,16 @@ public partial class ProductionScheduleRepository(
             .Concat(product.Packages.Select(p => p.MaterialId))
             .ToList();
 
+        // Each BOM line's main material and its substitutes, which production may choose when the batch starts.
+        var rawIds = activeBoM.BillOfMaterial.Items.SelectMany(item => item.Substitutes.Where(sub => sub.DeletedAt == null)
+            .Select(sub => sub.SubstituteMaterialId).Prepend(item.MaterialId)).Distinct().ToList();
         var rawMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
             .Include(m => m.DensityUoM)
             .Include(m => m.Material)
-            .Where(m =>
-                activeBoM
-                    .BillOfMaterial.Items.Select(i => i.MaterialId)
-                    .Distinct()
-                    .Contains(m.MaterialId)
-                && m.DepartmentId == department.Id
-                && !m.DeletedAt.HasValue
-            )
+            .Where(m => rawIds.Contains(m.MaterialId) && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
 
         // Free stock by the allocator's rule, in the department's unit: see StoreStock.
@@ -4981,28 +5007,43 @@ public partial class ProductionScheduleRepository(
             forecastQuantityByMaterial[item.MaterialId] = quantity ?? sourceQuantity;
         }
 
-        var materialDetails = activeBoM
-            .BillOfMaterial.Items.Where(i => rawMaterialDepartments.ContainsKey(i.MaterialId))
-            .Select(item =>
+        ForecastMaterialDto RawRow(DOMAIN.Entities.Materials.Material material, decimal quantityNeeded, DOMAIN.Entities.Materials.Material mainOf = null)
+        {
+            var stock = rawStock.GetValueOrDefault(material.Id, StoreStockLevel.None);
+            return new ForecastMaterialDto
             {
-                var stock = rawStock.GetValueOrDefault(item.MaterialId, StoreStockLevel.None);
+                Material = mapper.Map<MaterialDto>(material),
+                QuantityNeeded = quantityNeeded * numberOfBatches,
+                QuantityOnHand = stock.OnHand,
+                ExpiredQuantity = stock.Expired,
+                UnavailableQuantity = stock.Unavailable,
+                UsableQuantity = stock.Usable,
+                ReservedQuantity = stock.Held,
+                FreeQuantity = stock.Free,
+                UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[material.Id].UoM),
+                IsSubstitute = mainOf is not null,
+                SubstituteFor = mainOf is null ? null : mapper.Map<MaterialDto>(mainOf),
+            };
+        }
 
-                var quantityNeeded = forecastQuantityByMaterial.GetValueOrDefault(item.MaterialId);
-
-                return new ForecastMaterialDto
+        var materialDetails = new List<ForecastMaterialDto>();
+        foreach (var item in activeBoM.BillOfMaterial.Items.Where(i => rawMaterialDepartments.ContainsKey(i.MaterialId)))
+        {
+            materialDetails.Add(RawRow(item.Material, forecastQuantityByMaterial.GetValueOrDefault(item.MaterialId)));
+            // A substitute uses its own BOM quantity when it has one (it may differ in strength), else the main line's.
+            foreach (var sub in item.Substitutes.Where(sub => sub.DeletedAt == null && rawMaterialDepartments.ContainsKey(sub.SubstituteMaterialId)))
+            {
+                var link = rawMaterialDepartments[sub.SubstituteMaterialId];
+                decimal? need = forecastQuantityByMaterial.GetValueOrDefault(item.MaterialId);
+                if (sub.PrescribedQuantity is > 0)
                 {
-                    Material = mapper.Map<MaterialDto>(item.Material),
-                    QuantityNeeded = quantityNeeded * numberOfBatches,
-                    QuantityOnHand = stock.OnHand,
-                    ExpiredQuantity = stock.Expired,
-                    UnavailableQuantity = stock.Unavailable,
-                    UsableQuantity = stock.Usable,
-                    ReservedQuantity = stock.Held,
-                    FreeQuantity = stock.Free,
-                    UoM = mapper.Map<UnitOfMeasureDto>(rawMaterialDepartments[item.MaterialId].UoM),
-                };
-            })
-            .ToList();
+                    var own = batchSize == BatchSize.Full ? sub.PrescribedQuantity.Value : sub.PrescribedQuantity.Value / 2;
+                    need = item.UseDensityConversion ? MaterialDensity.ConvertBomMass(own, (sub.BaseUoM ?? item.BaseUoM)?.Symbol, link) : own;
+                }
+                if (need is null or <= 0) continue;
+                materialDetails.Add(RawRow(sub.SubstituteMaterial ?? link.Material, need.Value, item.Material));
+            }
+        }
 
         var packingWarehouse = department.Warehouses.FirstOrDefault(i =>
             i.Type == WarehouseType.PackagedStorage
@@ -5013,15 +5054,14 @@ public partial class ProductionScheduleRepository(
                 "No packing material warehouse is associated with current user"
             );
 
+        var packageIds = product.Packages.SelectMany(package => package.Substitutes.Where(sub => sub.DeletedAt == null)
+            .Select(sub => sub.SubstituteMaterialId).Prepend(package.MaterialId)).Distinct().ToList();
         var packageMaterialDepartments = await context
             .MaterialDepartments.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(m => m.UoM)
-            .Where(m =>
-                product.Packages.Select(i => i.MaterialId).Distinct().Contains(m.MaterialId)
-                && m.DepartmentId == department.Id
-                && !m.DeletedAt.HasValue
-            )
+            .Include(m => m.Material)
+            .Where(m => packageIds.Contains(m.MaterialId) && m.DepartmentId == department.Id && !m.DeletedAt.HasValue)
             .ToDictionaryAsync(k => k.MaterialId, v => v);
 
         var packingStock = await StoreStock.Measure(context, packingWarehouse.Id, packageMaterialDepartments.ToDictionary(
@@ -5033,31 +5073,40 @@ public partial class ProductionScheduleRepository(
                 || !p.ProductPackingId.HasValue
                     && packageMaterialDepartments.ContainsKey(p.MaterialId)
             )
-            .Select(item =>
+            .SelectMany(item =>
             {
-                var stock = packingStock.GetValueOrDefault(item.MaterialId, StoreStockLevel.None);
-                var quantityNeeded =
-                    batchSize == BatchSize.Full
-                        ? item.PrescribedQuantity + item.Loose
-                        : item.PrescribedQuantity / 2 + item.Loose;
-
-                return new ForecastMaterialDto
+                ForecastMaterialDto Row(DOMAIN.Entities.Materials.Material material, decimal prescribed, DOMAIN.Entities.Materials.Material mainOf = null)
                 {
-                    Material = mapper.Map<MaterialDto>(item.Material),
-                    QuantityNeeded = quantityNeeded * numberOfBatches,
-                    QuantityOnHand = stock.OnHand,
-                    ExpiredQuantity = stock.Expired,
-                    UnavailableQuantity = stock.Unavailable,
-                    UsableQuantity = stock.Usable,
-                    ReservedQuantity = stock.Held,
-                    FreeQuantity = stock.Free,
-                    UoM = mapper.Map<UnitOfMeasureDto>(
-                        packageMaterialDepartments[item.MaterialId].UoM
-                    ),
-                };
+                    var stock = packingStock.GetValueOrDefault(material.Id, StoreStockLevel.None);
+                    var quantityNeeded = batchSize == BatchSize.Full ? prescribed + item.Loose : prescribed / 2 + item.Loose;
+                    return new ForecastMaterialDto
+                    {
+                        Material = mapper.Map<MaterialDto>(material),
+                        QuantityNeeded = quantityNeeded * numberOfBatches,
+                        QuantityOnHand = stock.OnHand,
+                        ExpiredQuantity = stock.Expired,
+                        UnavailableQuantity = stock.Unavailable,
+                        UsableQuantity = stock.Usable,
+                        ReservedQuantity = stock.Held,
+                        FreeQuantity = stock.Free,
+                        UoM = mapper.Map<UnitOfMeasureDto>(packageMaterialDepartments[material.Id].UoM),
+                        IsSubstitute = mainOf is not null,
+                        SubstituteFor = mainOf is null ? null : mapper.Map<MaterialDto>(mainOf),
+                    };
+                }
+                // The main packaging material, then each substitute right below it.
+                return item.Substitutes.Where(sub => sub.DeletedAt == null && packageMaterialDepartments.ContainsKey(sub.SubstituteMaterialId))
+                    .Select(sub => Row(sub.SubstituteMaterial ?? packageMaterialDepartments[sub.SubstituteMaterialId].Material, sub.PrescribedQuantity ?? item.PrescribedQuantity, item.Material))
+                    .Prepend(Row(item.Material, item.PrescribedQuantity));
             })
             .ToList();
 
         return materialDetails.Concat(packageMaterialDetails).ToList();
     }
+}
+
+/// <summary>Raised inside the production start when the materials cannot be reserved as asked; carries the reason.</summary>
+internal sealed class ProductionStartRefused(Error error) : InvalidOperationException(error.Description)
+{
+    public Error Error { get; } = error;
 }

@@ -59,6 +59,12 @@ public class ForecastMaterialDto
     public decimal? FreeQuantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     /// <summary>
+    /// A substitute that may be used in place of <see cref="SubstituteFor"/>, listed right after that main material with
+    /// its own quantity and stock. Production chooses main or substitute when it starts the batch.
+    /// </summary>
+    public bool IsSubstitute { get; set; }
+    public MaterialDto SubstituteFor { get; set; }
+    /// <summary>
     /// Whether the free stock (usable, not reserved for other batches) covers what is needed: the same rule production
     /// applies when a batch starts. Stock reserved for other batches is theirs, so a forecast never counts it as available.
     /// </summary>
