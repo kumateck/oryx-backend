@@ -48,7 +48,11 @@ public class StockTransferSource : BaseEntity
     public Guid? IssuedById { get; set; }
     public User IssuedBy { get; set; }
     public DateTime? IssuedAt { get; set; }
-
+    /// <summary>Why the supplying store refused the transfer.</summary>
+    [StringLength(1000)] public string RejectionReason { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public Guid? RejectedById { get; set; }
+    public User RejectedBy { get; set; }
 }
 
 public class StockTransferDto : BaseDto
@@ -111,4 +115,8 @@ public class DepartmentStockTransferDto : BaseDto
     public DateTime? ApprovedAt { get; set; }
     public DateTime? IssuedAt { get; set; }
     public string Reason { get; set; }
+    /// <summary>Why the supplying store refused the transfer, when it did.</summary>
+    public string RejectionReason { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public CollectionItemDto RejectedBy { get; set; }
 }
