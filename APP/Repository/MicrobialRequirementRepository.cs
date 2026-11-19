@@ -33,6 +33,8 @@ public class MicrobialRequirementRepository(ApplicationDbContext context)
             if (!await context.Products.AnyAsync(item => item.Id == request.ProductId))
                 return Error.NotFound("MicrobialRequirement.Product",
                     "Product was not found.");
+            var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductId);
+            if (deletedProduct is not null) return deletedProduct;
         }
         if (await context.MicrobialRequirements.AnyAsync(item =>
             !item.IsVerified && item.Subject == request.Subject &&

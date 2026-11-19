@@ -240,6 +240,8 @@ public partial class ProductionScheduleRepository(
     private async Task<Result> ValidatePackingStyles(IEnumerable<CreateProductionScheduleProduct> products)
     {
         var requestedProducts = products.ToList();
+        var deleted = await DeletedProductGuard.Refuse(context, requestedProducts.Select(item => item.ProductId));
+        if (deleted is not null) return deleted;
         if (requestedProducts.Any(item => !item.ProductPackingId.HasValue))
             return Error.Validation("ProductionSchedule.PackingStyle", "Choose an active packing style for every scheduled product.");
         var selections = requestedProducts
@@ -334,6 +336,13 @@ public partial class ProductionScheduleRepository(
                     "A production activity already exists for this product and schedule"
                 );
             }
+
+            // A batch scheduled before its product was deleted is not started; work already under way may finish.
+            // Read through the filters, which hide such batches, so the refusal says why.
+            var batchProductId = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Where(p => p.Id == productionScheduleProductId).Select(p => (Guid?)p.ProductId).FirstOrDefaultAsync();
+            var deletedProduct = await DeletedProductGuard.Refuse(context, batchProductId);
+            if (deletedProduct is not null) return deletedProduct;
 
             var productionScheduleProduct = await context
                 .ProductionScheduleProducts.AsSplitQuery()

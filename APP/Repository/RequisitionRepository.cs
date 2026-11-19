@@ -74,6 +74,12 @@ public class RequisitionRepository(
             return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if (request.RequisitionType == RequisitionType.Purchase && request.ProductionScheduleProductId.HasValue)
         {
+            // Nothing is bought for a batch of a deleted product; it can no longer be started.
+            var batchProductId = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Where(item => item.Id == request.ProductionScheduleProductId.Value)
+                .Select(item => (Guid?)item.ProductId).FirstOrDefaultAsync();
+            var deletedProduct = await DeletedProductGuard.Refuse(context, batchProductId);
+            if (deletedProduct is not null) return deletedProduct;
             var consistent = await ProductionMaterialRequisitionRules.ValidateProcurement(context, request.ProductionScheduleProductId.Value, request.Items);
             if (consistent.IsFailure) return consistent;
         }

@@ -25,6 +25,9 @@ public partial class CustomerRepository
 
         var productIds = request.Items.Select(item => item.ProductId).Distinct().ToList();
         var productPackingIds = request.Items.Select(item => item.ProductPackingId).Distinct().ToList();
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productIds);
+        if (deletedProduct is not null) return deletedProduct;
         var products = await context.Products.IgnoreQueryFilters()
             .Where(item => productIds.Contains(item.Id) && !item.DeletedAt.HasValue)
             .ToDictionaryAsync(item => item.Id);
@@ -73,6 +76,9 @@ public partial class CustomerRepository
     {
         var customer = await context.Customers.AsNoTracking().FirstOrDefaultAsync(item => item.Id == customerId);
         if (customer is null) return Error.NotFound("Customer.NotFound", "Customer not found.");
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         var product = await context.Products.IgnoreQueryFilters()
             .FirstOrDefaultAsync(item => item.Id == productId && !item.DeletedAt.HasValue);
         if (product is null) return Error.NotFound("Product.NotFound", "Product not found.");

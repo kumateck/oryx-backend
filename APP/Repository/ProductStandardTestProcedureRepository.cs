@@ -22,6 +22,9 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         if (request.ProductIds == null || request.ProductIds.Count == 0)
             return Error.Validation("Invalid.Products", "At least one product is required.");
 
+        var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductIds);
+        if (deletedProduct is not null) return deletedProduct;
+
         var products = await context
             .Products.Where(m => request.ProductIds.Contains(m.Id))
             .ToListAsync();
@@ -71,7 +74,9 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         var query = context
             .ProductStandardTestProcedures.AsQueryable()
             .IgnoreQueryFilters()
-            .Where(stp => !stp.DeletedAt.HasValue)
+            // This list is also the STP picker for new ARDs, so STPs of deleted products are left out;
+            // each one stays readable by id.
+            .Where(stp => !stp.DeletedAt.HasValue && stp.Product.DeletedAt == null)
             .Include(stp => stp.Product)
             .OrderBy(stp => stp.StpNumber)
             .AsSplitQuery();
@@ -184,7 +189,8 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
     {
         var query = context
             .Products.AsSplitQuery()
-            .Where(p =>
+            // A picker for new work: deleted products never appear, whatever the caller's department.
+            .Where(p => p.DeletedAt == null &&
                 !context.ProductStandardTestProcedures.Any(s =>
                     s.ProductId == p.Id && !s.DeletedAt.HasValue
                 )
@@ -287,6 +293,8 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         // Handle additions
         if (request.ProductIdsToAdd is { Count: > 0 })
         {
+            var deletedProduct = await DeletedProductGuard.Refuse(context, request.ProductIdsToAdd);
+            if (deletedProduct is not null) return deletedProduct;
             var productsToAdd = await context
                 .Products.Where(p => request.ProductIdsToAdd.Contains(p.Id))
                 .ToListAsync();
@@ -322,7 +330,8 @@ public class ProductStandardTestProcedureRepository(ApplicationDbContext context
         var query = context
             .ProductStandardTestProcedures.AsSplitQuery()
             .Include(stp => stp.Product)
-            .Where(stp => !context.ProductAnalyticalRawData.Any(ard =>
+            // A picker for a new ARD: an STP of a deleted product is never offered.
+            .Where(stp => stp.Product.DeletedAt == null && !context.ProductAnalyticalRawData.Any(ard =>
                 ard.ProductStandardTestProcedure.ProductId == stp.ProductId
                 && ard.Stage == stage
                 && ard.AnalysisType == analysisType
