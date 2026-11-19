@@ -219,6 +219,56 @@ public class BomSubstituteChoiceTests
         Assert.Equal((fixture.Lot.MaterialId, false), (main.Material.Id, main.IsSubstitute));
         Assert.Equal((substitute.MaterialId, true, fixture.Lot.MaterialId), (sub.Material.Id, sub.IsSubstitute, sub.SubstituteFor.Id));
         Assert.Equal((200_000m, 500_000m), (sub.QuantityNeeded, sub.FreeQuantity.GetValueOrDefault()));
+        Assert.Null(sub.SubstituteUnavailableReason);
+    }
+
+    [Fact]
+    public async Task The_forecast_never_borrows_the_main_quantity_for_a_substitute_without_its_own()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        await AddSubstitute(fixture, 500_000, prescribed: null);
+        await using var signedIn = fixture.Harness.OpenAs(new ProductionUser(fixture.Department.Id));
+        var repository = new ProductionScheduleRepository(signedIn, fixture.Mapper, fixture.Harness.UserManager, null!, null!, fixture.Harness.ApprovalRepository,
+            new NoOpProductionActivityStepEventPublisher());
+
+        var forecast = await repository.ForecastProductionScheduleProduct(fixture.Batch.ProductId, 1, Guid.Empty,
+            DOMAIN.Entities.ProductionSchedules.BatchSize.Full, fixture.Actor.Id);
+
+        var sub = Assert.Single(forecast.Value, row => row.IsSubstitute);
+        Assert.Equal(0, sub.QuantityNeeded);
+        Assert.Contains("No quantity of its own", sub.SubstituteUnavailableReason);
+    }
+
+    [Fact]
+    public async Task The_batch_lists_every_substitute_under_its_main_saying_why_one_cannot_be_used()
+    {
+        // X'zole NL006: Citric Acid Monohydrate is a substitute with no quantity of its own, so the batch page dropped it.
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var unquantified = await AddSubstitute(fixture, 500_000, prescribed: null);
+        fixture.Harness.Db.ChangeTracker.Clear();
+
+        var rows = (await fixture.Repository.CheckMaterialStockLevelsForProductionSchedule(fixture.Batch.Id, null)).Value;
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal((fixture.Lot.MaterialId, false, (string)null), (rows[0].Material.Id, rows[0].IsSubstitute, rows[0].SubstituteUnavailableReason));
+        Assert.Equal((unquantified.MaterialId, true, fixture.Lot.MaterialId), (rows[1].Material.Id, rows[1].IsSubstitute, rows[1].ParentMaterial.Id));
+        Assert.Contains("No quantity of its own", rows[1].SubstituteUnavailableReason);
+    }
+
+    [Fact]
+    public async Task A_substitute_short_of_stock_is_still_listed_so_production_sees_it()
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var substitute = await AddSubstitute(fixture, 1, 200_000);
+        fixture.Harness.Db.ChangeTracker.Clear();
+
+        var rows = (await fixture.Repository.CheckMaterialStockLevelsForProductionSchedule(fixture.Batch.Id, null)).Value;
+
+        var row = Assert.Single(rows, item => item.IsSubstitute);
+        Assert.Equal((substitute.MaterialId, 200_000m, (string)null), (row.Material.Id, row.QuantityNeeded, row.SubstituteUnavailableReason));
     }
 
     [Fact]
