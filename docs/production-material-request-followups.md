@@ -1,0 +1,13 @@
+# Production material requests
+
+An assigned approver can reject an unissued main stock request with a reason. The raw and packaging operations use `CanRejectRawMaterialStockRequisition` and `CanRejectPackagingMaterialStockRequisition`, registered under Quality Assurance / Pending Approvals. The data-only `GrantProductionStockRequisitionRejection` migration copies both claims and matching access types from roles holding `CanRejectPendingApproval`; it is repeat-safe and grants other roles nothing. Desktop uses the same stored-kind permissions. The generic approval repository also enforces these keys, current assignment and content revision.
+
+Rejection closes the request and pending stages, records the decision, and makes that material kind available to request again. Production-start reservations remain held for the running batch, as before the request. Unstart separately releases those holds. Completed, received or physically issued requests cannot be rejected into an unrequested state; dependent extra-material requests must first be reconciled. Legacy rejection stages with an unchanged header are treated as withdrawn without rewriting history, unless issuance evidence requires the request to remain active.
+
+Stock approval reads the production department's warehouses even when the approver belongs to QA. Its existing response includes the production batch and reserved material lots.
+
+Changing a department's linked stock unit validates conversion of every physical shelf balance. Cross-family conversions require verified density in g/mL. Stock-by-batch adds optional `warehouseQuantity` and `warehouseUoM`; original physical quantity/unit fields and historical ledger values stay unchanged. At 1.26 g/mL, 100 L displays as 126 kg. This does not rewrite legacy movement-report aggregates or adopted production snapshots.
+
+For a started batch without an adopted packaging snapshot, valid current product packaging appears in the BMR packaging requirements read. Reading creates no reservations. Its first authorized stock request validates department, active step, quantities and free stock, then atomically adopts the configuration and reserves stock with the request. Existing adopted packaging stays pinned; later edits use the existing controlled production material repair workflow.
+
+Verification covers raw/packaging denial and allowance, complete rejection and re-request, issue protection, legacy rejection handling, late packaging adoption and pinned requirements, conversion, endpoint policies, permission catalog and repeat-safe migration SQL against PostgreSQL. Warehouse notification rules and tablet procedure variants await client clarification.

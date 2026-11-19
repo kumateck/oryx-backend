@@ -592,9 +592,9 @@ public class WarehouseRepository(
             .GroupBy(s => s.MaterialId)
             .ToDictionaryAsync(g => g.Key, g => g.First());
 
-        var reservedQuantitiesByMaterialId = await context
-            .MaterialBatchReservedQuantities.IgnoreQueryFilters()
-            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId) && !r.DeletedAt.HasValue)
+        // Live holds only, as every stock screen counts them (see StoreStock).
+        var reservedQuantitiesByMaterialId = await ProductionMaterialAllocator.UnissuedReservations(context)
+            .Where(r => materialIds.Contains(r.MaterialBatch.MaterialId))
             .GroupBy(r => r.MaterialBatch.MaterialId)
             .Select(g => new { MaterialId = g.Key, Total = g.Sum(r => r.Quantity) })
             .ToDictionaryAsync(x => x.MaterialId, x => x.Total);

@@ -152,7 +152,9 @@ public class OryxMapper : Profile
         CreateMap<ProductCategory, CollectionItemDto>();
         CreateMap<UnitOfMeasure, CollectionItemDto>();
         CreateMap<Product, CollectionItemDto>();
-        CreateMap<Operation, CollectionItemDto>();
+        CreateMap<Operation, CollectionItemDto>()
+            .ForMember(dest => dest.LinkedDepartmentId, opt => opt.MapFrom(src => src.DepartmentId))
+            .ForMember(dest => dest.LinkedDepartmentName, opt => opt.MapFrom(src => src.Department.Name));
         CreateMap<WorkCenter, CollectionItemDto>();
         CreateMap<Resource, CollectionItemDto>();
         CreateMap<RouteResource, CollectionItemDto>()

@@ -18,6 +18,8 @@ public interface ICollectionRepository
     Task<Result> CreateUoM(CreateUnitOfMeasure request);
     Task<Result<UnitOfMeasureDto>> GetUoM(Guid uomId);
     Task<Result<IEnumerable<OperationDto>>> GetOperations(Guid? departmentId);
+    Task<Result> LinkOperationDepartment(Guid operationId, Guid departmentId, Guid userId);
+    Task<Result> UnlinkOperationDepartment(Guid operationId, Guid userId);
     Task<Result> UpdateUoM(CreateUnitOfMeasure request, Guid id);
     Task<Result> DeleteUoM(Guid uomId);
     Task<Result<Paginateable<IEnumerable<UnitOfMeasureDto>>>> GetUoM(FilterUnitOfMeasure filter);

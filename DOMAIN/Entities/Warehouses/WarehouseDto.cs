@@ -171,8 +171,15 @@ public class WarehouseLocationShelfDto
 public class WarehouseStockDto
 {
     public WarehouseDto Warehouse { get; set; }
+    /// <summary>Everything on the warehouse's shelves, in its department's unit.</summary>
     public decimal StockQuantity { get; set; }
     public decimal ExpiredQuantity { get; set; }
+    /// <summary>In-date stock not released for use.</summary>
+    public decimal? UnavailableQuantity { get; set; }
+    /// <summary>Usable stock held for batches whose stock has not been issued yet.</summary>
+    public decimal? ReservedQuantity { get; set; }
+    /// <summary>Usable stock not held: what can be issued or reserved now.</summary>
+    public decimal? FreeQuantity { get; set; }
 }
 
 public class WareHouseLocationDto
@@ -194,12 +201,23 @@ public class WareHouseLocationRackDto
 
 public class ShelfMaterialBatchDto
 {
+    /// <summary>The shelf quantity expressed in this warehouse department's current stock unit; physical lot evidence remains unchanged.</summary>
+    public decimal? WarehouseQuantity { get; set; }
+    public UnitOfMeasureDto WarehouseUoM { get; set; }
     public Guid Id { get; set; }
     public MaterialWarehouseLocationShelfDto WarehouseLocationShelf { get; set; }
     public MaterialBatchReducedDto MaterialBatch { get; set; }
     public decimal Quantity { get; set; }
     public UnitOfMeasureDto UoM { get; set; }
     public string Note { get; set; }
+    /// <summary>"Usable", "Expired" or "NotReleased" by the store-stock rule. Set by the material's stock-by-batch read.</summary>
+    public string StockState { get; set; }
+    /// <summary>Of this shelf's stock, held for batches whose stock has not been issued yet, in <see cref="StockUnit"/>.</summary>
+    public decimal? ReservedQuantity { get; set; }
+    /// <summary>Of this shelf's stock, free to issue, in <see cref="StockUnit"/>.</summary>
+    public decimal? FreeQuantity { get; set; }
+    /// <summary>The unit the reserved and free quantities are in: the department's stock unit.</summary>
+    public string StockUnit { get; set; }
 }
 
 public class MaterialWarehouseLocationShelfDto

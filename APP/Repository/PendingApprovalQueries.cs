@@ -69,6 +69,7 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
         x => x.Approvals, x => x.CreatedBy.Department);
 
     internal IQueryable<Requisition> Requisitions => departmentScope.Apply(context.Requisitions
+        .Where(r => r.RequisitionType != RequisitionType.Stock || APP.Services.Production.StockRequisitionState.Active(context).Any(active => active.Id == r.Id))
         .Where(po =>
             po.Approvals.Any(a =>
                 (a.UserId == userId || (a.RoleId.HasValue && roleIds.Contains(a.RoleId.Value)))

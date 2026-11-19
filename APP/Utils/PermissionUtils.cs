@@ -871,6 +871,10 @@ public static class PermissionKeys
     public const string CanTakeSamples = "CanTakeSamples";
     public const string CanViewPendingApprovals = "CanViewPendingApprovals";
     public const string CanApprovePendingApproval = "CanApprovePendingApproval";
+    /// <summary>Reject an unissued raw material stock requisition and allow production to request it again.</summary>
+    public const string CanRejectRawMaterialStockRequisition = "CanRejectRawMaterialStockRequisition";
+    /// <summary>Reject an unissued packaging stock requisition and allow production to request it again.</summary>
+    public const string CanRejectPackagingMaterialStockRequisition = "CanRejectPackagingMaterialStockRequisition";
     public const string CanRejectPendingApproval = "CanRejectPendingApproval";
     public const string CanApproveResponse = "CanApproveResponse";
     public const string CanRejectResponse = "CanRejectResponse";
@@ -1304,6 +1308,10 @@ public static class PermissionKeys
     public const string CanCreateOperation = "CanCreateOperation";
     public const string CanEditOperation = "CanEditOperation";
     public const string CanDeleteOperation = "CanDeleteOperation";
+    /// <summary>Link an operation to the production department that uses it.</summary>
+    public const string CanLinkOperationDepartment = "CanLinkOperationDepartment";
+    /// <summary>Unlink an operation from its production department.</summary>
+    public const string CanUnlinkOperationDepartment = "CanUnlinkOperationDepartment";
     public const string CanViewWorkCenters = "CanViewWorkCenters";
     public const string CanCreateWorkCenter = "CanCreateWorkCenter";
     public const string CanEditWorkCenter = "CanEditWorkCenter";
@@ -3139,6 +3147,8 @@ public static class PermissionUtils
             PermissionSubmodules.PendingApprovals,
             PermissionKeys.CanApprovePendingApproval
         );
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectRawMaterialStockRequisition);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectPackagingMaterialStockRequisition);
         addPermission(
             PermissionModules.QualityAssurance,
             PermissionSubmodules.PendingApprovals,
@@ -4728,6 +4738,16 @@ public static class PermissionUtils
             PermissionModules.Settings,
             PermissionSubmodules.Procedures,
             PermissionKeys.CanDeleteOperation
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanLinkOperationDepartment
+        );
+        addPermission(
+            PermissionModules.Settings,
+            PermissionSubmodules.Procedures,
+            PermissionKeys.CanUnlinkOperationDepartment
         );
         addPermission(
             PermissionModules.Settings,

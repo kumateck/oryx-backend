@@ -20,8 +20,9 @@ public class ReservedMaterialStockResolver(ApplicationDbContext dbContext) :
             return reservedByMaterialId.GetValueOrDefault(source.Id, 0);
         }
 
-        var reservations = dbContext.MaterialBatchReservedQuantities.IgnoreQueryFilters()
-            .Where(m => m.MaterialBatch.MaterialId == source.Id && !m.DeletedAt.HasValue && m.ReleasedAt == null);
+        // Live holds only (not released to the shelf, not issued to the floor): the rule every stock screen uses.
+        var reservations = APP.Repository.ProductionMaterialAllocator.UnissuedReservations(dbContext)
+            .Where(m => m.MaterialBatch.MaterialId == source.Id);
         return ReservationTotals.Sum(reservations, dbContext.Database.IsNpgsql());
     }
 }

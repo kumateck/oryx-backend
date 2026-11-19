@@ -283,6 +283,12 @@ public class ProductionMaterialRepairPostgresTests
             var row = await seed.MaterialBatchReservedQuantities.SingleAsync(item => item.MaterialBatchId == RawBatch);
             await seed.Database.OpenConnectionAsync(); await seed.Database.ExecuteSqlRawAsync("SET session_replication_role = replica");
             var otherBatch = Guid.NewGuid();
+            var currentBatch = await seed.ProductionScheduleProducts.IgnoreAutoIncludes().SingleAsync(batch => batch.Id == BatchId);
+            // The allocator includes the holder's batch to identify the reservation. Seed real ownership,
+            // rather than an orphan FK hidden by that required navigation's inner join.
+            seed.ProductionScheduleProducts.Add(new ProductionScheduleProduct { Id = otherBatch, ProductId = currentBatch.ProductId,
+                ProductionScheduleId = currentBatch.ProductionScheduleId, ProductPackingId = currentBatch.ProductPackingId,
+                BatchNumber = "OTHER-RESERVED", BatchSize = BatchSize.Full, Quantity = 100 });
             seed.MaterialBatchReservedQuantities.Add(new MaterialBatchReservedQuantity { MaterialBatchId = RawBatch, ProductionScheduleProductId = otherBatch,
                 WarehouseId = row.WarehouseId, WarehouseLocationShelfId = row.WarehouseLocationShelfId, UoMId = UnitId, Quantity = 90 });
             // Receiving a purchase requisition is not a warehouse issue of this batch's hold.

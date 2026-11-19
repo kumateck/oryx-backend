@@ -22,31 +22,17 @@ public partial class MaterialRepository
         unit ??= rows.Select(row => row.MaterialBatch.UoM).DistinctBy(u => u.Id).Count() == 1 ? rows[0].MaterialBatch.UoM : null;
         if (rows.Count == 0) return new MaterialWarehouseStockBreakdown();
         if (unit is null || unit.DeletedAt.HasValue) return Error.Conflict("Stock.Unit", "Choose an active stock unit on the material's department link.");
-        var density = await MaterialDensity.Load(context, materialId);
-        decimal total = 0, expired = 0;
-        foreach (var row in rows)
-        {
-            if (row.UoMId.HasValue && row.UoMId != row.MaterialBatch.UoMId)
-                return Error.Conflict("Stock.Unit", "Reconcile inconsistent shelf and lot units first.");
-            var value = MaterialDensity.Convert(row.Quantity, row.MaterialBatch.UoM.Symbol, unit.Symbol, density);
-            if (!value.HasValue) return Error.Conflict("Stock.Density", "Set a verified material density before combining mass and volume stock.");
-            var invalid = MaterialValidity.IsExpired(row.MaterialBatch, DateTime.UtcNow)
-                || MaterialValidity.IsExpiredDate(row.MaterialBatch.RetestDate, DateTime.UtcNow);
-            if (!usable || !invalid && row.MaterialBatch.Status == BatchStatus.Available) total += value.Value;
-            if (invalid) expired += value.Value;
-        }
-        if (usable)
-        {
-            var ids = rows.Select(row => row.MaterialBatchId).ToList();
-            var held = await ProductionMaterialAllocator.UnissuedReservations(context).Include(r => r.UoM)
-                .Where(r => ids.Contains(r.MaterialBatchId)).ToListAsync();
-            foreach (var reservation in held)
-            {
-                var quantity = MaterialDensity.Convert(reservation.Quantity, reservation.UoM.Symbol, unit.Symbol, density);
-                if (!quantity.HasValue) return Error.Conflict("Stock.Density", "Reservation units cannot be converted to this warehouse's unit.");
-                total -= quantity.Value;
-            }
-        }
-        return new MaterialWarehouseStockBreakdown { WarehouseStock = Math.Max(0, total), ExpiredQuantity = Math.Max(0, expired) };
+        if (rows.Any(row => row.UoMId.HasValue && row.UoMId != row.MaterialBatch.UoMId))
+            return Error.Conflict("Stock.Unit", "Reconcile inconsistent shelf and lot units first.");
+        var density = links.Count == 1 ? MaterialDensity.Verified(links[0]) ?? await MaterialDensity.Load(context, materialId) : await MaterialDensity.Load(context, materialId);
+        if (rows.Any(row => MaterialDensity.Convert(row.Quantity, row.MaterialBatch.UoM.Symbol, unit.Symbol, density) is null))
+            return Error.Conflict("Stock.Density", "Set a verified material density before combining mass and volume stock.");
+        // One rule for every screen: see StoreStock.
+        var level = (await StoreStock.Measure(context, warehouseId, new Dictionary<Guid, (string?, decimal?)> { [materialId] = (unit.Symbol, density) }))
+            .GetValueOrDefault(materialId, StoreStockLevel.None);
+        var total = usable ? level.Free : level.OnHand;
+        var expired = level.Expired;
+        return new MaterialWarehouseStockBreakdown { WarehouseStock = Math.Max(0, total), ExpiredQuantity = Math.Max(0, expired),
+            OnHandQuantity = level.OnHand, UnavailableQuantity = level.Unavailable, ReservedQuantity = level.Held, FreeQuantity = level.Free };
     }
 }
