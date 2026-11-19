@@ -1008,6 +1008,13 @@ public class RequisitionRepository(
             .Where(m => allBatchIds.Contains(m.Id))
             .AsSplitQuery()
             .ToDictionaryAsync(m => m.Id);
+        // A lot's assigned quantity is what lies on its shelves, in every store. Issuing takes only what is issued;
+        // the rest of the lot stays assigned (it used to be set to 0, which then refused that lot's next transfer).
+        var shelfTotalsBefore = await context.ShelfMaterialBatches.IgnoreQueryFilters()
+            .Where(row => allBatchIds.Contains(row.MaterialBatchId) && row.DeletedAt == null)
+            .GroupBy(row => row.MaterialBatchId).Select(group => new { group.Key, Total = group.Sum(row => row.Quantity) })
+            .ToDictionaryAsync(row => row.Key, row => row.Total);
+        var deductedByBatch = new Dictionary<Guid, decimal>();
 
         var shelfMaterialBatches = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
@@ -1158,8 +1165,6 @@ public class RequisitionRepository(
                     )
                         continue;
 
-                    materialBatch.QuantityAssigned = 0;
-
                     if (shelfBatchesByBatchId.TryGetValue(batch.MaterialBatchId, out var shelfList))
                     {
                         var quantityToDeduct = batch.Quantity;
@@ -1182,6 +1187,7 @@ public class RequisitionRepository(
                             );
                             shelfMaterialBatch.Quantity -= deductAmount;
                             quantityToDeduct -= deductAmount;
+                            deductedByBatch[batch.MaterialBatchId] = deductedByBatch.GetValueOrDefault(batch.MaterialBatchId) + deductAmount;
 
                             if (shelfMaterialBatch.Quantity <= 0)
                             {
@@ -1331,6 +1337,10 @@ public class RequisitionRepository(
                     }
                 }
             }
+
+            foreach (var (batchId, deducted) in deductedByBatch)
+                if (materialBatchesMap.TryGetValue(batchId, out var issuedLot))
+                    issuedLot.QuantityAssigned = Math.Max(0, shelfTotalsBefore.GetValueOrDefault(batchId) - deducted);
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
