@@ -974,12 +974,12 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     [Authorize(PermissionKeys.CanRejectIncomingStockTransferRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> RejectStockTransfer(Guid stockTransferId)
+    public async Task<IResult> RejectStockTransfer(Guid stockTransferId, [FromBody] RejectStockTransferRequest request)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.RejectStockTransfer(stockTransferId, Guid.Parse(userId));
+        var result = await repository.RejectStockTransfer(stockTransferId, Guid.Parse(userId), request?.Reason);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

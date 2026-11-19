@@ -16155,6 +16155,16 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RejectedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -16180,6 +16190,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("RejectedById");
 
                     b.HasIndex("StockTransferId");
 
@@ -36735,6 +36747,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Users.User", "RejectedBy")
+                        .WithMany()
+                        .HasForeignKey("RejectedById");
+
                     b.HasOne("DOMAIN.Entities.ProductionSchedules.StockTransfers.StockTransfer", "StockTransfer")
                         .WithMany("Sources")
                         .HasForeignKey("StockTransferId")
@@ -36758,6 +36774,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("RejectedBy");
 
                     b.Navigation("StockTransfer");
 

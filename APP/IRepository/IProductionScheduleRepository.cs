@@ -86,7 +86,7 @@ public interface IProductionScheduleRepository
         StockTransferStatus? status = null, Guid? fromDepartmentId = null);
     Task<Result<DepartmentStockTransferDto>> GetStockTransferSource(Guid stockTransferId);
     Task<Result> ApproveStockTransfer(Guid id, Guid userId);
-    Task<Result> RejectStockTransfer(Guid id, Guid userId);
+    Task<Result> RejectStockTransfer(Guid id, Guid userId, string reason);
 
     Task<Result<List<BatchToSupply>>> BatchesToSupplyForStockTransfer(Guid stockTransferId);
     Task<Result> IssueStockTransfer(Guid id, List<BatchTransferRequest> batches, Guid userId);
