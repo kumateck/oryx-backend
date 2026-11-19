@@ -56,6 +56,9 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         var productId = await context.ProductStandardTestProcedures
             .Where(item => item.Id == request.StpId).Select(item => item.ProductId)
             .SingleAsync();
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         if (await context.ProductAnalyticalRawData.AnyAsync(item =>
             item.ProductStandardTestProcedure.ProductId == productId &&
             item.Stage == request.Stage && item.AnalysisType == request.AnalysisType))
@@ -276,6 +279,11 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
         if (request.AnalysisType != analyticalRawData.AnalysisType)
             return Error.Conflict("ProductArd.AnalysisType",
                 "An existing ARD cannot change analysis type; create a governed revision.");
+        var ardProductIds = await context.ProductStandardTestProcedures.IgnoreQueryFilters()
+            .Where(item => item.Id == analyticalRawData.StpId || item.Id == request.StpId)
+            .Select(item => item.ProductId).ToListAsync();
+        var deletedProduct = await DeletedProductGuard.Refuse(context, ardProductIds);
+        if (deletedProduct is not null) return deletedProduct;
         mapper.Map(request, analyticalRawData);
 
         context.ProductAnalyticalRawData.Update(analyticalRawData);

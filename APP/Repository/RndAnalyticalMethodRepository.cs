@@ -45,6 +45,8 @@ public class RndAnalyticalMethodRepository(ApplicationDbContext context, IMapper
 
         if (productId.HasValue && !await context.Products.AnyAsync(p => p.Id == productId.Value))
             return Error.NotFound("RndAnalyticalMethod.ProductNotFound", "Product not found.");
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
 
         if (
             validationProtocolFormId.HasValue
@@ -171,6 +173,8 @@ public class RndAnalyticalMethodRepository(ApplicationDbContext context, IMapper
             return Error.Validation("RndAnalyticalMethod.NotValidated", "Only a validated method can be transferred.");
         if (method.ValidatedById == userId)
             return Error.Validation("RndAnalyticalMethod.SeparationOfDuties", "The validator cannot transfer the same method.");
+        var deletedProduct = await DeletedProductGuard.Refuse(context, method.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
 
         var stpNumber = request.StpNumber?.Trim();
         if (string.IsNullOrWhiteSpace(stpNumber))

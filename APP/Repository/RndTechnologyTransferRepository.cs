@@ -124,6 +124,8 @@ public class RndTechnologyTransferRepository(
                 "RndTechnologyTransfer.ProductRequired",
                 "The R&D project must be linked to a Product before promoting to production."
             );
+        var deletedProduct = await DeletedProductGuard.Refuse(context, transfer.RndProject.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
 
         var formulation = await context
             .RndFormulations.AsSplitQuery()
