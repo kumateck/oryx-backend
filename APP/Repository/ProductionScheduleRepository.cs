@@ -1476,50 +1476,37 @@ public partial class ProductionScheduleRepository(
                 }
 
                 var mainProcurement = CreateProcurementDto(item.MaterialId, item.Material, false);
+                // Every substitute on the BOM is listed under its main material so production can choose it at the
+                // start; one that cannot be used says why instead of being left out.
                 var substitutes = item
-                    .Substitutes.Where(s => s.DeletedAt == null && s.PrescribedQuantity.HasValue && materialDepartments.ContainsKey(s.SubstituteMaterialId))
+                    .Substitutes.Where(s => s.DeletedAt == null)
                     .Select(s =>
-                        CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true)
-                    )
+                    {
+                        var row = CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true);
+                        row.SubstituteUnavailableReason = !materialDepartments.ContainsKey(s.SubstituteMaterialId)
+                            ? "Not linked to this department. Link it in Linked Materials to use it."
+                            : !s.PrescribedQuantity.HasValue ? "No quantity of its own on the product BOM. Set it on the BOM to use it." : null;
+                        if (row.SubstituteUnavailableReason is not null) row.QuantityNeeded = 0;
+                        return row;
+                    })
                     .ToList();
 
+                // Once a material of the line has been requested, transferred or issued, the line shows what is in hand.
+                // Merely being in stock ("In house") is not that: the line still offers every substitute.
+                static bool Requested(MaterialRequisitionStatus status) => status is not (MaterialRequisitionStatus.None or MaterialRequisitionStatus.InHouse);
                 var issuedMaterials = new List<ProductionScheduleProcurementDto>();
-                if (mainProcurement.Status != MaterialRequisitionStatus.None)
+                if (Requested(mainProcurement.Status))
                     issuedMaterials.Add(mainProcurement);
-                issuedMaterials.AddRange(
-                    substitutes.Where(s => s.Status != MaterialRequisitionStatus.None)
-                );
+                issuedMaterials.AddRange(substitutes.Where(s => Requested(s.Status)));
 
                 if (issuedMaterials.Count != 0)
                 {
                     return issuedMaterials;
                 }
 
-                bool mainAvailable =
-                    mainProcurement.QuantityOnHand >= quantityNeeded
-                    || mainProcurement.FrozenQuantity == quantityNeeded;
-                var availableSubstitutes = substitutes
-                    .Where(s =>
-                        s.QuantityOnHand >= s.QuantityNeeded || s.FrozenQuantity == s.QuantityNeeded
-                    )
-                    .ToList();
-
-                var itemResults = new List<ProductionScheduleProcurementDto>();
-                if (mainAvailable)
-                {
-                    itemResults.Add(mainProcurement);
-                    itemResults.AddRange(availableSubstitutes);
-                }
-                else if (availableSubstitutes.Any())
-                {
-                    itemResults.AddRange(availableSubstitutes);
-                }
-                else
-                {
-                    itemResults.Add(mainProcurement);
-                }
-
-                return itemResults;
+                // Main first, then each substitute, whether or not it is in stock: the main is used unless production
+                // chooses a substitute when it starts the batch.
+                return new List<ProductionScheduleProcurementDto> { mainProcurement }.Concat(substitutes).ToList();
             })
             .ToList();
 
@@ -1832,49 +1819,34 @@ public partial class ProductionScheduleRepository(
 
                 var mainProcurement = CreateProcurementDto(item.MaterialId, item.Material, false);
                 var substitutes = item
-                    .Substitutes.Where(s => materialDepartments.ContainsKey(s.SubstituteMaterialId))
+                    .Substitutes.Where(s => s.DeletedAt == null)
                     .Select(s =>
-                        CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true)
-                    )
+                    {
+                        var row = CreateProcurementDto(s.SubstituteMaterialId, s.SubstituteMaterial, true);
+                        if (!materialDepartments.ContainsKey(s.SubstituteMaterialId))
+                        {
+                            row.SubstituteUnavailableReason = "Not linked to this department. Link it in Linked Materials to use it.";
+                            row.QuantityNeeded = 0;
+                        }
+                        return row;
+                    })
                     .ToList();
 
+                // Once a material of the line has been requested, transferred or issued, the line shows what is in hand.
+                // Merely being in stock ("In house") is not that: the line still offers every substitute.
+                static bool Requested(MaterialRequisitionStatus status) => status is not (MaterialRequisitionStatus.None or MaterialRequisitionStatus.InHouse);
                 var issuedMaterials = new List<ProductionScheduleProcurementPackageDto>();
-                if (mainProcurement.Status != MaterialRequisitionStatus.None)
+                if (Requested(mainProcurement.Status))
                     issuedMaterials.Add(mainProcurement);
-                issuedMaterials.AddRange(
-                    substitutes.Where(s => s.Status != MaterialRequisitionStatus.None)
-                );
+                issuedMaterials.AddRange(substitutes.Where(s => Requested(s.Status)));
 
                 if (issuedMaterials.Count != 0)
                 {
                     return issuedMaterials;
                 }
 
-                bool mainAvailable =
-                    mainProcurement.QuantityOnHand >= quantityNeeded
-                    || mainProcurement.FrozenQuantity == quantityNeeded;
-                var availableSubstitutes = substitutes
-                    .Where(s =>
-                        s.QuantityOnHand >= quantityNeeded || s.FrozenQuantity == quantityNeeded
-                    )
-                    .ToList();
-
-                var itemResults = new List<ProductionScheduleProcurementPackageDto>();
-                if (mainAvailable)
-                {
-                    itemResults.Add(mainProcurement);
-                    itemResults.AddRange(availableSubstitutes);
-                }
-                else if (availableSubstitutes.Count != 0)
-                {
-                    itemResults.AddRange(availableSubstitutes);
-                }
-                else
-                {
-                    itemResults.Add(mainProcurement);
-                }
-
-                return itemResults;
+                // Main first, then each substitute, whether or not it is in stock (see the raw material list).
+                return new List<ProductionScheduleProcurementPackageDto> { mainProcurement }.Concat(substitutes).ToList();
             })
             .ToList();
 
@@ -5060,12 +5032,17 @@ public partial class ProductionScheduleRepository(
             foreach (var sub in item.Substitutes.Where(sub => sub.DeletedAt == null && rawMaterialDepartments.ContainsKey(sub.SubstituteMaterialId)))
             {
                 var link = rawMaterialDepartments[sub.SubstituteMaterialId];
-                decimal? need = forecastQuantityByMaterial.GetValueOrDefault(item.MaterialId);
-                if (sub.PrescribedQuantity is > 0)
+                // A substitute without a quantity of its own cannot be used: it may differ in strength or water content,
+                // so the main line's quantity is never borrowed. It is still listed, with the reason.
+                if (sub.PrescribedQuantity is not > 0)
                 {
-                    var own = batchSize == BatchSize.Full ? sub.PrescribedQuantity.Value : sub.PrescribedQuantity.Value / 2;
-                    need = item.UseDensityConversion ? MaterialDensity.ConvertBomMass(own, (sub.BaseUoM ?? item.BaseUoM)?.Symbol, link) : own;
+                    var unusable = RawRow(sub.SubstituteMaterial ?? link.Material, 0, item.Material);
+                    unusable.SubstituteUnavailableReason = "No quantity of its own on the product BOM. Set it on the BOM to use it.";
+                    materialDetails.Add(unusable);
+                    continue;
                 }
+                var own = batchSize == BatchSize.Full ? sub.PrescribedQuantity.Value : sub.PrescribedQuantity.Value / 2;
+                var need = item.UseDensityConversion ? MaterialDensity.ConvertBomMass(own, (sub.BaseUoM ?? item.BaseUoM)?.Symbol, link) : own;
                 if (need is null or <= 0) continue;
                 materialDetails.Add(RawRow(sub.SubstituteMaterial ?? link.Material, need.Value, item.Material));
             }
