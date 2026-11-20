@@ -225,7 +225,8 @@ public sealed class ProductionUnstartTests
             using var provider = Mapping(db);
             var result = await Repository(db, provider.GetRequiredService<IMapper>()).StartProductionActivity(fixture.BatchId, fixture.Actor.UserId.GetValueOrDefault());
             Assert.True(result.IsFailure);
-            Assert.Equal("Production.Start", result.Error.Code);
+            // The shortage is returned with its reason, not as a generic start failure.
+            Assert.Equal("Production.Materials", result.Error.Code);
         }
         await using (var db = fixture.Open()) Assert.Empty(await db.ProductionActivities.ToListAsync());
     }
@@ -397,7 +398,9 @@ public sealed class ProductionUnstartTests
             var result = await Repository(db, mapping.GetRequiredService<IMapper>()).IssueBatchManufacturingRecord(document.Id, fixture.Actor.UserId.GetValueOrDefault());
             Assert.True(result.IsFailure);
             Assert.Null((await db.BatchManufacturingRecords.IgnoreQueryFilters().SingleAsync()).IssuedDate);
-            Assert.Equal("PRESERVE-DRAFT-NUMBER", (await db.ProductionScheduleProducts.SingleAsync()).BatchNumber);
+            // Unstarting releases the batch number: the batch no longer carries it, and the archived draft keeps it as history.
+            Assert.Null((await db.ProductionScheduleProducts.SingleAsync()).BatchNumber);
+            Assert.Equal("PRESERVE-DRAFT-NUMBER", (await db.BatchManufacturingRecords.IgnoreQueryFilters().SingleAsync()).BatchNumber);
         }
     }
 
