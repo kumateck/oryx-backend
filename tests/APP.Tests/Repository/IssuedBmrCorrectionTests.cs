@@ -73,6 +73,43 @@ public class IssuedBmrCorrectionTests
     }
 
     [Fact]
+    public async Task The_register_filters_by_department_product_and_issue_date_and_counts_batches_by_product()
+    {
+        await using var f = await Fixture.Create();
+        // A second department with one product issued twice, on two days.
+        var syrup = new Department { Name = "Syrup", Type = DepartmentType.Production };
+        var product = new Product { Name = "Tobcee Forte Syrup", Code = "NL-045", Department = syrup };
+        foreach (var (number, day) in new[] { ("L045K003", 10), ("L045K004", 12) })
+        {
+            var batch = new ProductionScheduleProduct { Product = product, BatchNumber = number, ProductionSchedule = new() { Code = "PS012", Department = syrup } };
+            var step = new ProductionActivityStep { Operation = new Operation { Name = "BMR" }, ProductionActivity = new() { ProductionScheduleProduct = batch } };
+            f.Db.Add(new BatchManufacturingRecord { BatchNumber = number, IssuedDate = new DateTime(2026, 11, day, 9, 30, 0, DateTimeKind.Utc),
+                ProductionActivityStep = step, ProductionScheduleProduct = batch, Status = BatchManufacturingStatus.Approved });
+        }
+        await f.Db.SaveChangesAsync();
+
+        var all = (await f.Repo.Register(f.Actor, null, new())).Value;
+        Assert.Equal(3, all.Total);
+        Assert.Equal([1, 2], all.ByProduct.Select(item => item.Batches).Order());
+
+        var syrupOnly = (await f.Repo.Register(f.Actor, null, new(syrup.Id))).Value;
+        Assert.Equal(["L045K004", "L045K003"], syrupOnly.Rows.Select(row => row.BatchNumber));
+        var tobcee = Assert.Single(syrupOnly.ByProduct);
+        Assert.Equal(("NL-045", 2, 0), (tobcee.ProductCode, tobcee.Batches, tobcee.Retired));
+        Assert.Equal(new DateTime(2026, 11, 10, 9, 30, 0, DateTimeKind.Utc), tobcee.FirstIssuedAt);
+
+        // Issue dates are whole days: the 12th includes the batch issued at 09:30 that day.
+        var onTwelfth = (await f.Repo.Register(f.Actor, null, new(IssuedFrom: new(2026, 11, 12), IssuedTo: new(2026, 11, 12)))).Value;
+        Assert.Equal("L045K004", Assert.Single(onTwelfth.Rows).BatchNumber);
+        var listed = (await f.Repo.List(f.Actor, 1, 50, null, new(syrup.Id, product.Id, new(2026, 11, 1), new(2026, 11, 30)))).Value;
+        Assert.Equal(2, listed.TotalRecordCount);
+
+        Assert.Equal("IssuedBmr.Dates", (await f.Repo.Register(f.Actor, null, new(IssuedFrom: new(2026, 11, 12), IssuedTo: new(2026, 11, 10)))).Error.Code);
+        // Viewing the records does not grant printing them.
+        Assert.Equal("IssuedBmr.Permission", (await f.Repo.Register(f.Viewer, null, new())).Error.Code);
+    }
+
+    [Fact]
     public async Task Typo_correction_updates_linked_live_records_and_audit_without_changing_issued_certificates_or_status()
     {
         await using var f = await Fixture.Create();
@@ -231,7 +268,7 @@ public class IssuedBmrCorrectionTests
                 f.Db.Users.Add(new() { Id = user, UserName = user.ToString(), FirstName = "QA", LastName = "Operator", Department = department });
                 f.Db.UserRoles.Add(new() { UserId = user, RoleId = role.Id });
                 foreach (var permission in new[] { PermissionKeys.CanViewIssuedBmrRecords, PermissionKeys.CanCorrectIssuedBmrBatchNumber,
-                             PermissionKeys.CanRequestIssuedBmrRevision, PermissionKeys.CanApproveIssuedBmrRevision }.Where(permission => user != f.Viewer || permission == PermissionKeys.CanViewIssuedBmrRecords))
+                             PermissionKeys.CanRequestIssuedBmrRevision, PermissionKeys.CanApproveIssuedBmrRevision, PermissionKeys.CanPrintIssuedBmrRecords }.Where(permission => user != f.Viewer || permission == PermissionKeys.CanViewIssuedBmrRecords))
                 {
                     var claim = new IdentityRoleClaim<Guid> { Id = f.Db.RoleClaims.Local.Count + 1, RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = permission };
                     f.Db.RoleClaims.Add(claim); f.Db.PermissionTypes.Add(new() { Key = permission, RoleClaimId = claim.Id, Type = "assigned" });

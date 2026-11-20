@@ -15,10 +15,26 @@ public class IssuedBmrController(IssuedBmrRepository repository) : ControllerBas
 
     [HttpGet(Name = "ListIssuedBmrRecords")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrPage))]
-    public async Task<IResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string searchQuery = null)
+    public async Task<IResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] string searchQuery = null,
+        [FromQuery] Guid? departmentId = null, [FromQuery] Guid? productId = null, [FromQuery] DateTime? issuedFrom = null, [FromQuery] DateTime? issuedTo = null)
     {
         if (Actor() is not { } actor) return TypedResults.Unauthorized();
-        var result = await repository.List(actor, page, pageSize, searchQuery);
+        var result = await repository.List(actor, page, pageSize, searchQuery, new(departmentId, productId, issuedFrom, issuedTo));
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
+    /// <summary>
+    /// Every issued BMR/BPR matching the filters (department, product, issue dates; at most 5,000 rows) with totals by product,
+    /// for the printed issued register and the issued-by-product report.
+    /// </summary>
+    [HttpGet("register", Name = "GetIssuedBmrRegister")]
+    [Authorize(PermissionKeys.CanPrintIssuedBmrRecords)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IssuedBmrRegister))]
+    public async Task<IResult> Register([FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null, [FromQuery] Guid? productId = null,
+        [FromQuery] DateTime? issuedFrom = null, [FromQuery] DateTime? issuedTo = null)
+    {
+        if (Actor() is not { } actor) return TypedResults.Unauthorized();
+        var result = await repository.Register(actor, searchQuery, new(departmentId, productId, issuedFrom, issuedTo));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

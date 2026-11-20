@@ -2450,7 +2450,20 @@ public class WarehouseRepository(
                                     == firstBatch.MaterialBatch.MaterialId
                                 );
 
-                            if (matchingSecondBatch != null)
+                            if (matchingSecondBatch != null && reservation.Quantity > firstBatch.Quantity)
+                            {
+                                // A partial swap: the hold keeps the rest on its own lot, and the swapped quantity is held
+                                // on the replacement lot, on the same shelf and for the same production batch.
+                                reservation.Quantity -= firstBatch.Quantity;
+                                context.MaterialBatchReservedQuantities.Add(new MaterialBatchReservedQuantity
+                                {
+                                    MaterialBatchId = matchingSecondBatch.MaterialBatchId, Quantity = firstBatch.Quantity, UoMId = reservation.UoMId,
+                                    WarehouseId = reservation.WarehouseId, WarehouseLocationShelfId = reservation.WarehouseLocationShelfId,
+                                    ProductionScheduleProductId = reservation.ProductionScheduleProductId,
+                                    DensityGramsPerMilliliter = reservation.DensityGramsPerMilliliter
+                                });
+                            }
+                            else if (matchingSecondBatch != null)
                             {
                                 reservation.MaterialBatchId = matchingSecondBatch.MaterialBatchId;
                                 context.MaterialBatchReservedQuantities.Update(reservation);
