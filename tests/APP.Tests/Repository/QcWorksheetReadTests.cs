@@ -45,7 +45,7 @@ public sealed class QcWorksheetReadTests
         {
             Id = Guid.NewGuid(), Status = AnalyticalTestStatus.Testing, Stage = TestStage.Bulk,
             ProductionScheduleProduct = scheduleProduct, BatchManufacturingRecord = batch, ProductionActivityStep = step,
-            Assignees = [new() { User = previous }]
+            Assignees = [new() { User = previous }], SampledBy = other, SampledAt = DateTime.UtcNow.AddHours(-3)
         };
         var assignment = new FormAssignee
         {
@@ -77,6 +77,8 @@ public sealed class QcWorksheetReadTests
         var details = await repository.GetAnalyticalTestRequest(atr.Id);
 
         Assert.Equal(replacement.Id, Assert.Single(Assert.Single(queue.Value.Data).Assignees).Id);
+        // The queue shows who took the sample, and when.
+        Assert.Equal(other.Id, Assert.Single(queue.Value.Data).SampledBy?.Id);
         Assert.Equal(replacement.Id, Assert.Single(details.Value.Assignees).Id);
         Assert.Equal(AnalyticalTestStatus.Testing, details.Value.Status);
     }
@@ -185,7 +187,7 @@ public sealed class QcWorksheetReadTests
         new QcReader());
 
     private static ServiceProvider MapperServices(ApplicationDbContext db) => new ServiceCollection()
-        .AddSingleton(db).AddLogging().AddAutoMapper(configure => { }, typeof(OryxMapper)).BuildServiceProvider();
+        .AddSingleton(db).AddLogging().AddHttpContextAccessor().AddAutoMapper(configure => { }, typeof(OryxMapper)).BuildServiceProvider();
 
     private sealed class QcReader : ICurrentUserService
     {

@@ -2955,6 +2955,13 @@
   },
   {
     "module": "Quality Assurance",
+    "submodule": "Issued BMR Records",
+    "key": "CanPrintIssuedBmrRecords",
+    "name": "Can Print Issued Bmr Records",
+    "description": "Allows the user to  print issued bmr records."
+  },
+  {
+    "module": "Quality Assurance",
     "submodule": "Issue BMR",
     "key": "CanViewIssuedBmrBprs",
     "name": "Can View Issued Bmr Bprs",

@@ -71,6 +71,12 @@ public class AnalyticalTestRequestRepository(
                 .ThenInclude(a => a.User)
             .Include(s => s.CreatedBy)
             .Include(s => s.IssuedBy)
+            // The list shows who requested, sampled, received, tested and released each request, with the time.
+            .Include(s => s.SampledBy)
+            .Include(s => s.AcknowledgedBy)
+            .Include(s => s.TestedBy)
+            .Include(s => s.ReleasedBy)
+            .AsSplitQuery()
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchQuery))

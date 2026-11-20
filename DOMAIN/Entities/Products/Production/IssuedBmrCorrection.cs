@@ -66,6 +66,32 @@ public class IssuedBmrRow
     public int PendingRevisions { get; set; }
 }
 
+/// <summary>Issued BMR and BPR records for a department, product and issue-date range, for printing.</summary>
+public class IssuedBmrRegister
+{
+    /// <summary>Every matching issued record, newest first, up to <see cref="Limit"/>.</summary>
+    public List<IssuedBmrRow> Rows { get; set; } = [];
+    /// <summary>The same records counted by product: how many batches were issued and when.</summary>
+    public List<IssuedBmrProductTotal> ByProduct { get; set; } = [];
+    public int Total { get; set; }
+    /// <summary>True when more records matched than are returned; narrow the filters to print them all.</summary>
+    public bool Truncated { get; set; }
+    public const int Limit = 5000;
+}
+
+public class IssuedBmrProductTotal
+{
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; }
+    public string ProductCode { get; set; }
+    public string DepartmentName { get; set; }
+    public int Batches { get; set; }
+    /// <summary>Of those batches, how many were later retired (unstarted, returned or archived).</summary>
+    public int Retired { get; set; }
+    public DateTime FirstIssuedAt { get; set; }
+    public DateTime LastIssuedAt { get; set; }
+}
+
 public class IssuedBmrExpected
 {
     [Required] public string ExpectedBatchNumber { get; set; }
