@@ -27,7 +27,7 @@ internal static class BmrBatchNumberRules
         var normalized = number.ToUpperInvariant();
         var duplicates = await context.BatchManufacturingRecords.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(record => record.Id != currentId && record.BatchNumber != null && record.BatchNumber.Trim().ToUpper() == normalized)
-            .Select(record => new { record.ProductionScheduleProductId, record.DeletedAt,
+            .Select(record => new { record.Id, record.ProductionScheduleProductId, record.DeletedAt,
                 Cancelled = record.ProductionScheduleProduct.Cancelled }).ToListAsync();
         foreach (var record in duplicates)
         {
@@ -39,8 +39,13 @@ internal static class BmrBatchNumberRules
                         && note.DeletedAt == null && note.BatchNumber != null && note.BatchNumber.Trim().ToUpper() == normalized
                         && note.FullReturns.Any(line => line.DeletedAt == null)
                         && !note.PartialReturns.Any(line => line.DeletedAt == null));
-            if (!returned)
-                return Error.Conflict("Bmr.DuplicateBatchNumber", $"Batch number '{number}' already exists. Use a different number. It can only be reused after the previous production's full return has been activated.");
+            // Unstarting a batch retires its BMR (deleted at the moment the unstart repair was applied) and releases the
+            // batch number: any batch may issue it again. Ordinary deletion still does not release a number.
+            var unstarted = !returned && record.DeletedAt.HasValue
+                && await context.ProductionUnstartRepairs.AsNoTracking()
+                    .AnyAsync(repair => repair.BatchId == record.ProductionScheduleProductId && repair.AppliedAt == record.DeletedAt.Value);
+            if (!returned && !unstarted)
+                return Error.Conflict("Bmr.DuplicateBatchNumber", $"Batch number '{number}' already exists. Use a different number. It can only be reused after the previous production is unstarted or its full return has been activated.");
         }
         return Result.Success();
     }

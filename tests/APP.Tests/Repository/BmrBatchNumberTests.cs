@@ -59,6 +59,36 @@ public class BmrBatchNumberTests
     }
 
     [Fact]
+    public async Task Unstarting_a_batch_releases_its_number_to_any_batch()
+    {
+        // NL006 L006K005: issued at half size, then unstarted; the retired BMR kept the number from being issued again.
+        await using var db = Context();
+        var old = await Existing(db, "L006K005");
+        var unstartedAt = DateTime.UtcNow;
+        old.DeletedAt = unstartedAt;
+        db.ProductionUnstartRepairs.Add(new ProductionUnstartRepair { Id = Guid.NewGuid(), BatchId = old.ProductionScheduleProductId, ActivityId = Guid.NewGuid(),
+            ActorId = Guid.NewGuid(), AppliedAt = unstartedAt, Reason = "Started at the wrong size" });
+        await db.SaveChangesAsync();
+
+        Assert.True((await BmrBatchNumberRules.Validate(db, " l006k005 ")).IsSuccess);
+        // Once issued again, the number is taken.
+        await Existing(db, "L006K005");
+        Assert.Equal("Bmr.DuplicateBatchNumber", (await BmrBatchNumberRules.Validate(db, "L006K005")).Error.Code);
+    }
+
+    [Fact]
+    public async Task A_deleted_record_is_not_released_by_an_unstart_at_another_time()
+    {
+        await using var db = Context();
+        var old = await Existing(db, "BATCH-1");
+        old.DeletedAt = DateTime.UtcNow;
+        db.ProductionUnstartRepairs.Add(new ProductionUnstartRepair { Id = Guid.NewGuid(), BatchId = old.ProductionScheduleProductId, ActivityId = Guid.NewGuid(),
+            ActorId = Guid.NewGuid(), AppliedAt = DateTime.UtcNow.AddDays(-3), Reason = "Earlier unstart" });
+        await db.SaveChangesAsync();
+        Assert.Equal("Bmr.DuplicateBatchNumber", (await BmrBatchNumberRules.Validate(db, "BATCH-1")).Error.Code);
+    }
+
+    [Fact]
     public async Task Activated_full_return_releases_only_the_retired_records_number_and_preserves_history()
     {
         await using var db = Context();

@@ -70,8 +70,9 @@ public sealed partial class ProductionUnstartService(ApplicationDbContext db, IC
             if (access.IsFailure) return access.Error;
             var before = Snapshot(plan);
             var now = DateTime.UtcNow;
-            if (string.IsNullOrWhiteSpace(plan.Activity.ProductionScheduleProduct.BatchNumber) && !string.IsNullOrWhiteSpace(plan.Preview.BatchNumber))
-                plan.Activity.ProductionScheduleProduct.BatchNumber = plan.Preview.BatchNumber;
+            // Unstarting releases the batch number: the batch is issued again later, under this number or another, and
+            // any batch may use it. The repair's before-snapshot keeps the number that was released.
+            plan.Activity.ProductionScheduleProduct.BatchNumber = null;
             plan.Activity.DeletedAt = now;
             plan.Activity.LastDeletedById = identity.UserId;
             foreach (var step in plan.Steps) { step.DeletedAt = now; step.LastDeletedById = identity.UserId; }
