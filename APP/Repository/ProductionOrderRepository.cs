@@ -53,6 +53,9 @@ public class ProductionOrderRepository(
     private async Task<Result> ResolveProductPrices(Guid customerId, List<ProductionOrderProducts> products)
     {
         var productIds = products.Select(item => item.ProductId).Distinct().ToList();
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productIds);
+        if (deletedProduct is not null) return deletedProduct;
         var prices = await context.Products.IgnoreQueryFilters()
             .Where(item => productIds.Contains(item.Id))
             .ToDictionaryAsync(item => item.Id);

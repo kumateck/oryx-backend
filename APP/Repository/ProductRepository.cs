@@ -169,6 +169,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         if (existingProduct is null)
         {
@@ -211,6 +213,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         var existingProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         if (existingProduct is null)
         {
@@ -273,6 +277,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid productId
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         var bom = mapper.Map<ProductBillOfMaterial>(request);
 
         await context.ProductBillOfMaterials.AddAsync(bom);
@@ -293,6 +299,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         {
             return Error.NotFound("ProductBoM.NotFound", "Could not find bom for this product");
         }
+
+        var deletedProduct = await DeletedProductGuard.Refuse(context, existingBom.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
 
         mapper.Map(request, existingBom);
 
@@ -371,6 +380,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         var validation = ValidateAutomatedStepsHaveNoMainAction(request);
         if (validation.IsFailure)
             return validation;
@@ -471,6 +482,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         if (route == null)
             return Error.NotFound("Route.NotFound", $"Route with ID {routeId} not found.");
 
+        var deletedProduct = await DeletedProductGuard.Refuse(context, route.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
+
         await context.RouteResources.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
         await context.RouteResponsibleRoles.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
         await context.RouteResponsibleUsers.Where(x => x.RouteId == routeId).ExecuteDeleteAsync();
@@ -505,6 +519,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId, string permissionContext = null
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
             return await ProductionMaterialTransaction.Run(context, () => CreateProductPackage(request, productId, userId, permissionContext));
         var changes = await APP.Services.Authorization.ProductSectionChanges.PackingMaterials(context, productId, request);
@@ -680,6 +696,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 $"Product package with ID {productPackageId} not found."
             );
 
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productPackage.ProductId);
+        if (deletedProduct is not null) return deletedProduct;
+
         if (await context.ProductPackages.AnyAsync(package => package.ProductId == productPackage.ProductId
             && package.Id != productPackageId && package.MaterialId == request.MaterialId
             && package.ProductPackingId == request.ProductPackingId))
@@ -751,6 +770,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         // Packs per shipper must match the unit breakdown at some level, or tablets and bottles cannot be counted as packs.
         foreach (var incoming in request)
         {
@@ -866,6 +887,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         Guid userId
     )
     {
+        var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
+        if (deletedProduct is not null) return deletedProduct;
         var product = await context
             .Products.AsSplitQuery()
             .Include(product => product.FinishedProducts)
@@ -1198,7 +1221,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 .Products.AsNoTracking()
                 .IgnoreAutoIncludes()
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.Code == productCode);
+                // A deleted product is skipped like an unknown code: an import never adds to it.
+                .FirstOrDefaultAsync(p => p.Code == productCode && p.DeletedAt == null);
             if (product == null)
                 continue;
 
@@ -1322,7 +1346,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
 
             var product = await context
                 .Products.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.Code == productCode);
+                // A deleted product is skipped like an unknown code: an import never adds to it.
+                .FirstOrDefaultAsync(p => p.Code == productCode && p.DeletedAt == null);
             if (product == null)
                 continue;
 
@@ -1435,9 +1460,9 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
             .ProductPackings.IgnoreQueryFilters()
             .AsSplitQuery()
             .Include(p => p.Product)
-            .Where(pp =>
+            .Where(pp => pp.Product.DeletedAt == null && (
                 excelPackingStyles.Contains(pp.Name) || excelProductCodes.Contains(pp.Product.Code)
-            )
+            ))
             .ToListAsync();
 
         // Create a composite lookup: "ProductCode|PackingName"
@@ -1458,7 +1483,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
                 .ThenInclude(r => r.WorkCenters)
             .Include(p => p.Routes)
                 .ThenInclude(r => r.ResponsibleUsers)
-            .Where(p => excelProductCodes.Contains(p.Code))
+            // Opening stock is never imported against a deleted product.
+            .Where(p => p.DeletedAt == null && excelProductCodes.Contains(p.Code))
             .ToListAsync();
 
         var productLookup = products

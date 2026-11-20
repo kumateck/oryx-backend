@@ -49,6 +49,8 @@ public static class ReviewDocumentTypes
     public const string FormulaRevision = "FormulaRevision";
     /// <summary>A packing list: the approval engine calls it an allocation of a production order.</summary>
     public const string PackingList = "AllocateProductionOrder";
+    /// <summary>QA's approved vendor (manufacturer) list: always checked before it is approved.</summary>
+    public const string ApprovedVendorList = "ApprovedVendorList";
 
     /// <summary>Types with no kind of their own: one key per task, the same for every record.</summary>
     private sealed record SimpleType(string View, string Confirm, string Return, string Edit);
@@ -60,6 +62,7 @@ public static class ReviewDocumentTypes
         [LeaveRequest] = new(PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest),
         [JobRequest] = new(PermissionKeys.CanViewJobRequests, PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReturnJobRequest, PermissionKeys.CanEditJobRequest),
         [PackingList] = new(PermissionKeys.CanViewPackingList, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReturnPackingList, PermissionKeys.CanGeneratePackingList),
+        [ApprovedVendorList] = new(PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanReviewApprovedVendorList, PermissionKeys.CanReturnApprovedVendorList, PermissionKeys.CanEditApprovedVendorList),
     };
 
     public static readonly IReadOnlyList<ReviewDocumentTypeDto> All =
@@ -78,6 +81,8 @@ public static class ReviewDocumentTypes
         // Formula revisions have always been reviewed before approval; their review is this one.
         new(FormulaRevision, "QC formula revision", AlwaysReviewed: true),
         new(PackingList, "Packing list", AlwaysReviewed: false),
+        // The paper list has always been signed Prepared, Checked and Approved by QA.
+        new(ApprovedVendorList, "Approved vendor list", AlwaysReviewed: true),
     ];
 
     public static bool IsConfigurable(string itemType) => All.Any(type => type.ItemType == itemType);
@@ -195,7 +200,7 @@ public static class ReviewDocumentTypes
                 if (!Simple.TryGetValue(modelType, out var keys)) return null;
                 var record = await SimpleRecordAsync(context, modelType, id, cancellationToken);
                 return record is null ? null : new ReviewTarget(modelType, modelType, id, record.Value.Code, record.Value.PreparedById,
-                    [keys.View], [keys.Confirm], [keys.Return], [keys.Edit], AlwaysReviewed: false);
+                    [keys.View], [keys.Confirm], [keys.Return], [keys.Edit], AlwaysReviewed: AlwaysReviewedType(modelType));
         }
     }
 
@@ -240,6 +245,12 @@ public static class ReviewDocumentTypes
                 var row = await context.AllocateProductionOrders.AsNoTracking().Where(item => item.Id == id)
                     .Select(item => new { item.ProductionOrder.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
                 return row is null ? null : ($"Packing list · {row.Code}", row.CreatedById);
+            }
+            case ApprovedVendorList:
+            {
+                var row = await context.ApprovedVendorLists.AsNoTracking().Where(item => item.Id == id)
+                    .Select(item => new { item.RevisionNumber, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : ($"Approved vendor list · revision {row.RevisionNumber}", row.CreatedById);
             }
             default:
                 return null;
@@ -289,6 +300,10 @@ public static class ReviewDocumentTypes
                 context.JobRequestApprovals.Where(item => item.JobRequestId == id),
             PackingList when await context.AllocateProductionOrders.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
                 context.AllocateProductionOrderApprovals.Where(item => item.AllocateProductionOrderId == id),
+            ApprovedVendorList when await context.ApprovedVendorLists.AnyAsync(item => item.Id == id
+                    && (item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Approved
+                        || item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Superseded), cancellationToken) =>
+                context.ApprovedVendorListApprovals.Where(item => item.ApprovedVendorListId == id),
             _ => null,
         };
         if (stages is null) return (null, null);

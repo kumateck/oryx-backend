@@ -210,6 +210,10 @@ public class ApprovalRepository(
             return await SupplierPricingAgreementApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == ApprovedVendorListApprovalHandler.ModelType)
+            return await ApprovedVendorListApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
@@ -2224,6 +2228,10 @@ public class ApprovalRepository(
             return await SupplierPricingAgreementApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == ApprovedVendorListApprovalHandler.ModelType)
+            return await ApprovedVendorListApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
+
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
@@ -3846,6 +3854,22 @@ public class ApprovalRepository(
                 });
         }
 
+        if (modelType is null or ApprovedVendorListApprovalHandler.ModelType)
+        {
+            var vendorLists = await pending.ApprovedVendorLists.AsSplitQuery()
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .ToListAsync();
+            foreach (var list in vendorLists)
+                entitiesRequiringApproval.Add(new ApprovalEntity {
+                    ModelType = ApprovedVendorListApprovalHandler.ModelType, Id = list.Id,
+                    Code = $"Approved vendor list · revision {list.RevisionNumber}",
+                    Department = mapper.Map<DepartmentDto>(list.CreatedBy?.Department),
+                    CreatedAt = list.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(list.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(list.Id),
+                });
+        }
+
         if (modelType is null or "Payment")
         {
             var payments = await PaymentApprovalQueue.Include(pending.Payments).ToListAsync();
@@ -4004,6 +4028,7 @@ public class ApprovalRepository(
         await Collect(context.ProductionOrderApprovals);
         await Collect(context.CustomerQuotationApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.SupplierPricingAgreementApprovals.Where(stage => stage.ActivatedAt.HasValue));
+        await Collect(context.ApprovedVendorListApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.RndProjectApprovals);
         await Collect(context.RndFormulationApprovals.Where(stage => stage.ActivatedAt.HasValue));
@@ -4539,6 +4564,21 @@ public class ApprovalRepository(
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
+            case ApprovedVendorListApprovalHandler.ModelType:
+                var vendorList = await context.ApprovedVendorLists
+                    .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (vendorList is null)
+                    return Error.NotFound("ApprovedVendorList.NotFound", "Approved vendor list not found.");
+                return new ApprovalEntity {
+                    ModelType = modelType, Id = modelId,
+                    Code = $"Approved vendor list · revision {vendorList.RevisionNumber}",
+                    CreatedAt = vendorList.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(vendorList.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(vendorList.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
+
             default:
                 throw new NotImplementedException(
                     $"Approval handling not implemented for model type: {modelType}"
@@ -4761,6 +4801,9 @@ public class ApprovalRepository(
             case nameof(SupplierPricingAgreement):
                 await SupplierPricingAgreementApprovalHandler.CreateAsync(
                     context, modelId, stages, approval);
+                break;
+            case ApprovedVendorListApprovalHandler.ModelType:
+                await ApprovedVendorListApprovalHandler.CreateAsync(context, modelId, stages, approval);
                 break;
             case nameof(RndProject):
                 await RndProjectApprovalHandler.CreateAsync(context, modelId, stages, approval);
@@ -5854,6 +5897,7 @@ public class ApprovalRepository(
         context.SupplierPricingAgreementApprovals.IgnoreQueryFilters(), context.AllocateProductionOrderApprovals.IgnoreQueryFilters(), context.RndProjectApprovals.IgnoreQueryFilters(),
         context.RndFormulationApprovals.IgnoreQueryFilters(), context.RndTechnologyTransferApprovals.IgnoreQueryFilters(), context.FinishedGoodsTransferNoteApprovals.IgnoreQueryFilters(),
         context.ProductionExtraPackingApprovals.IgnoreQueryFilters(), context.PaymentApprovals.IgnoreQueryFilters(), context.ResponseApprovals.IgnoreQueryFilters(),
+        context.ApprovedVendorListApprovals,
     ];
 
     /// <summary>
@@ -5986,6 +6030,15 @@ public class ApprovalRepository(
                 )
                 .ToListAsync();
             foreach (var a in saApprovals)
+                a.UserId = request.ToUserId;
+
+            // Approved vendor lists
+            var avlApprovals = await context
+                .ApprovedVendorListApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in avlApprovals)
                 a.UserId = request.ToUserId;
 
             // Service Memos

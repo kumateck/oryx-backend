@@ -21,6 +21,10 @@ public class VerificationRepository(ApplicationDbContext context) : IVerificatio
         var actor = await CurrentPermissionSet.Load(context, userId);
         if (AccessGuard.Missing(actor, required, "verify this document") is { } refused) return refused;
 
+        if (request.ModelType == VerifiableEntity.Product
+            && await DeletedProductGuard.Refuse(context, request.ModelId) is { } deletedProduct)
+            return deletedProduct;
+
         IVerifiable entity = request.ModelType switch
         {
             VerifiableEntity.Product => await context.Products.FirstOrDefaultAsync(x =>

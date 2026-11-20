@@ -1,3 +1,4 @@
+using APP.Services.ApprovedVendorLists;
 using Microsoft.Extensions.Logging;
 using APP.Services.Documents;
 using APP.Services.Production;
@@ -74,6 +75,12 @@ public class RequisitionRepository(
             return Error.Validation("WhitePlacebo.InternalOnly", "White Placebo is prepared internally and cannot be purchased. Request a preparation instead.");
         if (request.RequisitionType == RequisitionType.Purchase && request.ProductionScheduleProductId.HasValue)
         {
+            // Nothing is bought for a batch of a deleted product; it can no longer be started.
+            var batchProductId = await context.ProductionScheduleProducts.IgnoreQueryFilters()
+                .Where(item => item.Id == request.ProductionScheduleProductId.Value)
+                .Select(item => (Guid?)item.ProductId).FirstOrDefaultAsync();
+            var deletedProduct = await DeletedProductGuard.Refuse(context, batchProductId);
+            if (deletedProduct is not null) return deletedProduct;
             var consistent = await ProductionMaterialRequisitionRules.ValidateProcurement(context, request.ProductionScheduleProductId.Value, request.Items);
             if (consistent.IsFailure) return consistent;
         }
@@ -1001,6 +1008,13 @@ public class RequisitionRepository(
             .Where(m => allBatchIds.Contains(m.Id))
             .AsSplitQuery()
             .ToDictionaryAsync(m => m.Id);
+        // A lot's assigned quantity is what lies on its shelves, in every store. Issuing takes only what is issued;
+        // the rest of the lot stays assigned (it used to be set to 0, which then refused that lot's next transfer).
+        var shelfTotalsBefore = await context.ShelfMaterialBatches.IgnoreQueryFilters()
+            .Where(row => allBatchIds.Contains(row.MaterialBatchId) && row.DeletedAt == null)
+            .GroupBy(row => row.MaterialBatchId).Select(group => new { group.Key, Total = group.Sum(row => row.Quantity) })
+            .ToDictionaryAsync(row => row.Key, row => row.Total);
+        var deductedByBatch = new Dictionary<Guid, decimal>();
 
         var shelfMaterialBatches = await context
             .ShelfMaterialBatches.IgnoreQueryFilters()
@@ -1151,8 +1165,6 @@ public class RequisitionRepository(
                     )
                         continue;
 
-                    materialBatch.QuantityAssigned = 0;
-
                     if (shelfBatchesByBatchId.TryGetValue(batch.MaterialBatchId, out var shelfList))
                     {
                         var quantityToDeduct = batch.Quantity;
@@ -1175,6 +1187,7 @@ public class RequisitionRepository(
                             );
                             shelfMaterialBatch.Quantity -= deductAmount;
                             quantityToDeduct -= deductAmount;
+                            deductedByBatch[batch.MaterialBatchId] = deductedByBatch.GetValueOrDefault(batch.MaterialBatchId) + deductAmount;
 
                             if (shelfMaterialBatch.Quantity <= 0)
                             {
@@ -1324,6 +1337,10 @@ public class RequisitionRepository(
                     }
                 }
             }
+
+            foreach (var (batchId, deducted) in deductedByBatch)
+                if (materialBatchesMap.TryGetValue(batchId, out var issuedLot))
+                    issuedLot.QuantityAssigned = Math.Max(0, shelfTotalsBefore.GetValueOrDefault(batchId) - deducted);
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -1792,6 +1809,12 @@ public class RequisitionRepository(
         if (approvalGate.IsFailure)
             return approvalGate;
 
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            request.Items.SelectMany(item => item.Suppliers.Select(supplier => (item.MaterialId, supplier.SupplierId))),
+            DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
+
         var supplierGroupedItems = request
             .Items.SelectMany(item => item.Suppliers.Select(supplier => new { item, supplier }))
             .GroupBy(x => x.supplier.SupplierId);
@@ -1960,6 +1983,14 @@ public class RequisitionRepository(
         {
             return RequisitionErrors.NotFound(sourceRequisitionId);
         }
+
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            request.Items.SelectMany(item => item.Suppliers.Select(supplier => supplier.SupplierId)
+                    .Append(existingSourceRequisition.SupplierId).Distinct()
+                    .Select(supplierId => (item.MaterialId, supplierId))),
+            DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
 
         mapper.Map(request, existingSourceRequisition);
         context.SourceRequisitions.Update(existingSourceRequisition);
@@ -2310,6 +2341,13 @@ public class RequisitionRepository(
         Guid userId
     )
     {
+        // Checked for every quotation first, so a refused supplier creates no purchase order at all.
+        var approvedVendors = await ApprovedVendorRules.CheckSuppliers(context,
+            processQuotations.SelectMany(quotation => quotation.Items.Select(item => (item.MaterialId, quotation.SupplierId))),
+            DateTime.UtcNow.Date);
+        if (approvedVendors.IsFailure)
+            return approvedVendors;
+
         foreach (var quotation in processQuotations)
         {
             var sourceRequisition = await context

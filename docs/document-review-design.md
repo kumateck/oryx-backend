@@ -134,3 +134,4 @@ Confirm) is required as well as the key whenever the type is configured.
      the status trigger checks. Revisions waiting for review move from the approvals feed to Pending
      reviews. The migration names the workflow's review stage as reviewer and gives review-key roles
      the return key and Pending reviews.
+4. **Approved vendor list** (built 2026-11-19): always reviewed (`CanReviewApprovedVendorList` / `CanReturnApprovedVendorList`), corrected through its own edit endpoint. See [approved vendor list](approved-vendor-list.md).
