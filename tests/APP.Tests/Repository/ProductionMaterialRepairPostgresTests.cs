@@ -595,7 +595,7 @@ public class ProductionMaterialRepairPostgresTests
     }
 
     [MaterialRepairFact]
-    public async Task Stock_swaps_require_the_complete_current_allocation_and_cannot_retarget_issued_stock()
+    public async Task Stock_swaps_take_at_most_the_current_allocation_and_cannot_retarget_issued_stock()
     {
         await Seed();
         await using (var apply = Context())
@@ -622,6 +622,9 @@ public class ProductionMaterialRepairPostgresTests
             FirstWarehouseId = first.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId, SecondWarehouseId = warehouse.Id,
             FirstSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = first.Id, MaterialBatchId = RawBatch, UoMId = UnitId, Quantity = 10 }],
             SecondSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = second.Id, MaterialBatchId = physical.Id, UoMId = UnitId, Quantity = 10 }] };
+        // Part of the 20 held is allowed (approval splits the hold); more than is held is not.
+        Assert.True((await ProductionMaterialSwapRules.Validate(db, swap)).IsSuccess);
+        swap.FirstSwapShelfMaterialBatches[0].Quantity = 30; swap.SecondSwapShelfMaterialBatches[0].Quantity = 30;
         var stale = await ProductionMaterialSwapRules.Validate(db, swap);
         Assert.Equal("Swap.StaleAllocation", stale.Error.Code);
         swap.FirstSwapShelfMaterialBatches[0].Quantity = 20; swap.SecondSwapShelfMaterialBatches[0].Quantity = 20;
@@ -662,12 +665,73 @@ public class ProductionMaterialRepairPostgresTests
             FirstWarehouseId = first.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId, SecondWarehouseId = warehouse.Id,
             FirstSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = first.Id, MaterialBatchId = RawBatch, UoMId = UnitId, Quantity = 10 }],
             SecondSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = second.Id, MaterialBatchId = physical.Id, UoMId = UnitId, Quantity = 10 }] };
-        // Only a complete current allocation, and from one source only.
+        // Up to the current allocation, and from one source only.
+        Assert.True((await ProductionMaterialSwapRules.Validate(db, swap)).IsSuccess);
+        swap.FirstSwapShelfMaterialBatches[0].Quantity = 21; swap.SecondSwapShelfMaterialBatches[0].Quantity = 21;
         Assert.Equal("Swap.StaleAllocation", (await ProductionMaterialSwapRules.Validate(db, swap)).Error.Code);
         swap.FirstSwapShelfMaterialBatches[0].Quantity = 20; swap.SecondSwapShelfMaterialBatches[0].Quantity = 20;
         var current = await ProductionMaterialSwapRules.Validate(db, swap); Assert.True(current.IsSuccess, current.IsFailure ? current.Error.Description : null);
         Assert.Equal("Swap.Source", (await ProductionMaterialSwapRules.Validate(db, new CreateSwapRequest { ProductionScheduleProductId = BatchId, StockRequisitionId = RequisitionId,
             FirstWarehouseId = swap.FirstWarehouseId, SecondWarehouseId = swap.SecondWarehouseId })).Error.Code);
+    }
+
+    [MaterialRepairFact]
+    public async Task Approving_a_partial_swap_splits_the_hold_between_the_two_lots_on_the_same_shelf()
+    {
+        // Menthol Crystals: 800 g of an earlier batch elsewhere for part of a larger hold.
+        await Seed();
+        await using (var apply = Context())
+        {
+            var result = await ProductionMaterialRepairs.Apply(apply, Approvals(apply), ActivityId, Actor, MaterialKind.Raw, Request(await Preview(apply)));
+            Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
+        }
+        Guid firstShelf, secondShelf, earlier;
+        await using (var db = Context())
+        {
+            var first = await db.ShelfMaterialBatches.IgnoreQueryFilters().Include(item => item.WarehouseLocationShelf)
+                .ThenInclude(item => item.WarehouseLocationRack).ThenInclude(item => item.WarehouseLocation)
+                .SingleAsync(item => item.MaterialBatchId == RawBatch);
+            firstShelf = first.WarehouseLocationShelfId;
+            var otherDepartment = new Department { Id = Guid.NewGuid(), Name = "Other production", Type = DepartmentType.Production };
+            var warehouse = new Warehouse { Id = Guid.NewGuid(), DepartmentId = otherDepartment.Id, Type = WarehouseType.RawMaterialStorage, Name = "Replacement" };
+            var location = new WarehouseLocation { Id = Guid.NewGuid(), WarehouseId = warehouse.Id, Name = "Location" };
+            var rack = new WarehouseLocationRack { Id = Guid.NewGuid(), WarehouseLocationId = location.Id, Name = "Rack" };
+            var shelf = new WarehouseLocationShelf { Id = Guid.NewGuid(), WarehouseLocationRackId = rack.Id, Name = "Shelf" };
+            secondShelf = shelf.Id;
+            var physical = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = MaterialId, UoMId = UnitId, BatchNumber = "EARLIER",
+                Status = BatchStatus.Available, TotalQuantity = 8, QuantityAssigned = 8, ExpiryDate = DateTime.UtcNow.AddMonths(3) };
+            earlier = physical.Id;
+            db.Departments.Add(otherDepartment); db.Warehouses.Add(warehouse); db.WarehouseLocations.Add(location);
+            db.WarehouseLocationRacks.Add(rack); db.WarehouseLocationShelves.Add(shelf); db.MaterialBatches.Add(physical);
+            var second = new ShelfMaterialBatch { Id = Guid.NewGuid(), MaterialBatchId = physical.Id, UoMId = UnitId, WarehouseLocationShelfId = shelf.Id, Quantity = 8 };
+            db.ShelfMaterialBatches.Add(second);
+            db.Requisitions.RemoveRange(await db.Requisitions.IgnoreQueryFilters().Where(item => item.Id == RequisitionId).ToListAsync());
+            await db.SaveChangesAsync();
+            var repository = new WarehouseRepository(db, null!, null!, NullLogger<WarehouseRepository>.Instance);
+            var created = await repository.CreateSwapRequest(new CreateSwapRequest { ProductionScheduleProductId = BatchId,
+                FirstWarehouseId = first.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId, SecondWarehouseId = warehouse.Id,
+                FirstSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = first.Id, MaterialBatchId = RawBatch, UoMId = UnitId, Quantity = 8 }],
+                SecondSwapShelfMaterialBatches = [new CreateSwapShelfMaterialBatch { ShelfMaterialBatchId = second.Id, MaterialBatchId = physical.Id, UoMId = UnitId, Quantity = 8 }] }, Actor);
+            Assert.True(created.IsSuccess, created.IsFailure ? created.Error.Description : null);
+        }
+        await using (var db = Context())
+        {
+            var swapId = await db.SwapRequests.IgnoreQueryFilters().Select(item => item.Id).SingleAsync();
+            var approved = await new WarehouseRepository(db, null!, null!, NullLogger<WarehouseRepository>.Instance).ApproveSwapRequest(swapId, Actor);
+            Assert.True(approved.IsSuccess, approved.IsFailure ? approved.Error.Description : null);
+        }
+        await using (var db = Context())
+        {
+            var holds = await db.MaterialBatchReservedQuantities.IgnoreQueryFilters()
+                .Where(item => item.ProductionScheduleProductId == BatchId && item.DeletedAt == null && item.ReleasedAt == null).ToListAsync();
+            // The 20 held is now 12 on the original lot and 8 on the earlier lot, both on the batch's own shelf.
+            Assert.Equal(12, holds.Single(item => item.MaterialBatchId == RawBatch).Quantity);
+            var moved = holds.Single(item => item.MaterialBatchId == earlier);
+            Assert.Equal((8m, (Guid?)firstShelf, UnitId), (moved.Quantity, moved.WarehouseLocationShelfId, moved.UoMId));
+            var onFirstShelf = await db.ShelfMaterialBatches.IgnoreQueryFilters().Where(item => item.WarehouseLocationShelfId == firstShelf && item.DeletedAt == null).ToListAsync();
+            Assert.Equal(8, onFirstShelf.Single(item => item.MaterialBatchId == earlier).Quantity);
+            Assert.Equal(8, (await db.ShelfMaterialBatches.IgnoreQueryFilters().SingleAsync(item => item.WarehouseLocationShelfId == secondShelf && item.MaterialBatchId == RawBatch)).Quantity);
+        }
     }
 
     [MaterialRepairFact]

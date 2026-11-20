@@ -67,16 +67,20 @@ internal static class ProductionMaterialSwapRules
             .Include(item => item.WarehouseLocationShelf).ThenInclude(item => item.WarehouseLocationRack)
                 .ThenInclude(item => item.WarehouseLocation)
             .Where(item => ids.Contains(item.Id) && item.DeletedAt == null && item.MaterialBatch.DeletedAt == null).ToDictionaryAsync(item => item.Id);
-        var reservations = await context.MaterialBatchReservedQuantities.IgnoreAutoIncludes().AsNoTracking()
-            .Where(item => item.ProductionScheduleProductId == batchId).ToListAsync();
+        // Only live holds count: a released or issued hold is history and must not make a current one look ambiguous.
+        var reservations = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Where(item => item.ProductionScheduleProductId == batchId && item.DeletedAt == null && item.ReleasedAt == null).ToListAsync();
         foreach (var item in first)
         {
             if (!shelves.TryGetValue(item.ShelfMaterialBatchId, out var shelf)
                 || shelf.MaterialBatchId != item.MaterialBatchId || shelf.UoMId != item.UoMId || item.Quantity <= 0 || shelf.Quantity < item.Quantity
                 || shelf.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId != request.FirstWarehouseId
                 || !lines.Any(line => line.MaterialId == shelf.MaterialBatch.MaterialId && line.UoMId == item.UoMId)
-                || reservations.Count(row => row.MaterialBatchId == item.MaterialBatchId && row.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId
-                    && row.UoMId == item.UoMId && row.Quantity == item.Quantity) != 1)
+                // One live hold on that lot and shelf, in the same unit, covering at least the quantity swapped. A swap may
+                // take part of a hold (the earlier batch elsewhere may hold less); approval then splits the hold.
+                || reservations.Count(row => row.MaterialBatchId == item.MaterialBatchId && row.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId) != 1
+                || reservations.Single(row => row.MaterialBatchId == item.MaterialBatchId && row.WarehouseLocationShelfId == shelf.WarehouseLocationShelfId) is var hold
+                    && (hold.UoMId != item.UoMId || hold.Quantity < item.Quantity))
                 return Error.Conflict("Swap.StaleAllocation", "The allocation changed. Reload and select a complete current allocation before swapping.");
         }
         var totals = first.GroupBy(item => (shelves[item.ShelfMaterialBatchId].MaterialBatch.MaterialId, item.UoMId))

@@ -887,6 +887,8 @@ public static class PermissionKeys
     public const string CanCorrectIssuedBmrBatchNumber = "CanCorrectIssuedBmrBatchNumber";
     public const string CanRequestIssuedBmrRevision = "CanRequestIssuedBmrRevision";
     public const string CanApproveIssuedBmrRevision = "CanApproveIssuedBmrRevision";
+    /// <summary>Print the issued BMR/BPR register and the issued-by-product report.</summary>
+    public const string CanPrintIssuedBmrRecords = "CanPrintIssuedBmrRecords";
     public const string CanViewAnalyticalTestRequests = "CanViewAnalyticalTestRequests";
     public const string CanViewAnalyticalTestRequestsForSampling =
         "CanViewAnalyticalTestRequestsForSampling";
@@ -3107,7 +3109,7 @@ public static class PermissionUtils
 
         // Quality Assurance
         foreach (var key in new[] { PermissionKeys.CanViewIssuedBmrRecords, PermissionKeys.CanCorrectIssuedBmrBatchNumber,
-                     PermissionKeys.CanRequestIssuedBmrRevision, PermissionKeys.CanApproveIssuedBmrRevision })
+                     PermissionKeys.CanRequestIssuedBmrRevision, PermissionKeys.CanApproveIssuedBmrRevision, PermissionKeys.CanPrintIssuedBmrRecords })
             addPermission(PermissionModules.QualityAssurance, "Issued BMR Records", key);
         addPermission(
             PermissionModules.QualityAssurance,
