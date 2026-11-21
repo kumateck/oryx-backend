@@ -25,7 +25,7 @@ public interface IProductRepository
     Task<Result> UpdateProduct(UpdateProductRequest request, Guid productId, Guid userId);
     Task<Result> DeleteProduct(Guid productId, Guid userId);
     Task<Result<ProductBillOfMaterialDto>> GetBillOfMaterialByProductId(Guid productId);
-    Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId);
+    Task<Result> CreateRoute(List<CreateRouteRequest> request, Guid productId, Guid userId, string permissionContext = null);
     Task<Result<RouteDto>> GetRoute(Guid routeId);
     Task<Result<IEnumerable<RouteDto>>> GetRoutes(Guid productId);
     Task<Result> DeleteRoute(Guid routeId, Guid userId);

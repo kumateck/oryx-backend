@@ -1954,50 +1954,9 @@ public partial class ProductionScheduleRepository(
         return mapper.Map<BatchManufacturingRecordDto>(batchManufacturingRecord);
     }
 
-    public async Task<Result> CreateFinishedGoodsTransferNoteQuantity(
-        CreateFinishedGoodsTransferNoteQuantityRequest request,
-        Guid userId
-    )
-    {
-        if (
-            request.Quantity
-            > await GetRemainderOfFinishedGoodsQuantityFromBmr(request.BatchManufacturingRecordId)
-        )
-        {
-            return Error.Validation(
-                "Bmr.Quantity",
-                "Requested quantity is greater than remaining quantity in bmr"
-            );
-        }
-
-        var finishedGoodsTransferNote =
-            await context.FinishedGoodsTransferNotes.FirstOrDefaultAsync(f =>
-                f.BatchManufacturingRecordId == request.BatchManufacturingRecordId
-            );
-
-        if (finishedGoodsTransferNote is not null)
-        {
-            finishedGoodsTransferNote.Quantities.Add(
-                new FinishedGoodsTransferNoteQuantity
-                {
-                    Quantity = request.Quantity,
-                    MovedAt = DateTime.UtcNow,
-                    MovedById = userId,
-                }
-            );
-            await context.SaveChangesAsync();
-            return Result.Success();
-        }
-
-        await context.FinishedGoodsTransferNotes.AddAsync(
-            new FinishedGoodsTransferNote
-            {
-                BatchManufacturingRecordId = request.BatchManufacturingRecordId,
-            }
-        );
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task<Result> CreateFinishedGoodsTransferNoteQuantity(CreateFinishedGoodsTransferNoteQuantityRequest request, Guid userId) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanCreateFgtn, userId, () => Task.FromResult<Result>(
+            Error.Validation("TransferNote.CompleteDocument", "Generate a complete transfer note with its final packing, warehouses and batch. Legacy quantity-only transfers cannot change stock.")));
 
     public async Task<decimal> GetRemainderOfFinishedGoodsQuantityFromBmr(
         Guid batchManufacturingRecordId
@@ -2010,18 +1969,17 @@ public partial class ProductionScheduleRepository(
         if (bmr is null)
             throw new Exception("Bmr not found");
 
-        var finishedGoodsTransferNote = await context
-            .FinishedGoodsTransferNotes.AsSplitQuery()
-            .Include(f => f.Quantities)
-            .FirstOrDefaultAsync(f => f.BatchManufacturingRecordId == batchManufacturingRecordId);
-
-        if (finishedGoodsTransferNote is null)
-            return bmr.BatchQuantity;
-
-        return bmr.BatchQuantity - finishedGoodsTransferNote.Quantities.Sum(q => q.Quantity);
+        var packed = await context.FinalPackings.Where(p => p.ProductionScheduleProductId == bmr.ProductionScheduleProductId)
+            .Select(p => (decimal?)p.TotalQuantityPacked).FirstOrDefaultAsync();
+        if (!packed.HasValue) return 0;
+        var transferred = await context.FinishedGoodsTransferNotes.Where(n => n.BatchManufacturingRecordId == bmr.Id).SumAsync(n => n.TotalQuantity);
+        return Math.Max(0, packed.Value - transferred);
     }
 
-    public async Task<Result> CreateFinishedGoodsTransferNote(
+    public Task<Result> CreateFinishedGoodsTransferNote(CreateFinishedGoodsTransferNoteRequest request, Guid userId) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanCreateFgtn, userId, () => CreateFinishedGoodsTransferNoteCore(request, userId));
+
+    private async Task<Result> CreateFinishedGoodsTransferNoteCore(
         CreateFinishedGoodsTransferNoteRequest request,
         Guid userId
     )
@@ -2089,6 +2047,14 @@ public partial class ProductionScheduleRepository(
                 "No finished goods warehouses found in the system"
             );
 
+        if (product.DepartmentId != user.DepartmentId)
+            return Error.Forbidden("TransferNote.Department", "The batch must belong to your production department.");
+        if (await context.FinishedGoodsTransferNotes.AnyAsync(n => n.TransferNoteNumber == request.TransferNoteNumber))
+            return Error.Conflict("TransferNote.Number", "This transfer note number is already in use.");
+        if (string.IsNullOrWhiteSpace(request.TransferNoteNumber) || request.TransferNoteNumber.Length > 100)
+            return Error.Validation("TransferNote.Number", "Enter a transfer note number of at most 100 characters.");
+        if (await context.FinishedGoodsRecalls.AnyAsync(r => r.BatchManufacturingRecordId == bmr.Id && r.Closed))
+            return Error.Validation("TransferNote.Recalled", "This batch has a closed recall and cannot generate new transfers. QA must reopen the case to account for newly found goods.");
         var transferNotes = await context
             .FinishedGoodsTransferNotes.Where(f => f.BatchManufacturingRecordId == bmr.Id)
             .ToListAsync();
@@ -2105,7 +2071,7 @@ public partial class ProductionScheduleRepository(
             {
                 if (
                     transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity
-                    > bmr.BatchQuantity
+                    > finalPacking.TotalQuantityPacked
                 )
                     return Error.Validation(
                         "TransferNote.Partial",
@@ -2139,8 +2105,8 @@ public partial class ProductionScheduleRepository(
         var packing = await context.ProductPackings.AsSplitQuery()
             .Include(p => p.PackingLists).ThenInclude(l => l.Uom)
             .FirstOrDefaultAsync(p => p.Id == request.ProductPackingId);
-        if (packing is null)
-            return Error.Validation("TransferNote.Packing", "Choose the packing style the goods are packed in.");
+        if (packing is null || packing.ProductId != product.Id || finalPacking.ProductPackingId != packing.Id)
+            return Error.Validation("TransferNote.Packing", "Choose this product’s packing style recorded in final packing.");
         var unitsPerPack = PackConversion.UnitsPerPack(packing);
         if (unitsPerPack is null)
             return Error.Validation("TransferNote.Packing", PackConversion.CannotConvert(packing));
@@ -2151,87 +2117,21 @@ public partial class ProductionScheduleRepository(
         transferNote.FromWarehouseId = productionWarehouse.Id;
         context.FinishedGoodsTransferNotes.Add(transferNote);
 
-        var movement = new FinishedProductBatchMovement
+        if (await context.FinishedGoodsRecalls.AnyAsync(r => r.BatchManufacturingRecordId == bmr.Id)
+            || await context.FinishedGoodsTransferNotes.AnyAsync(n => n.BatchManufacturingRecordId == bmr.Id && n.IsOnHold))
         {
-            ProductId = bmr.ProductionScheduleProduct.ProductId,
-            FromWarehouseId = productionWarehouse.Id,
-            ToWarehouseId = finishedGoodsWarehouse.Id,
-            Quantity = transferNote.TotalQuantity,
-            MovedAt = DateTime.UtcNow,
-            MovedById = userId,
-        };
-
-        await context.FinishedProductBatchMovements.AddAsync(movement);
-
-        var batchEvent = new FinishedProductBatchEvent
-        {
-            ProductId = bmr.ProductionScheduleProduct.ProductId,
-            Type = EventType.Moved,
-            Quantity = request.TotalQuantity,
-            UserId = userId,
-        };
-        await context.FinishedProductBatchEvents.AddAsync(batchEvent);
-
-        var organization = await context.Organizations.FirstOrDefaultAsync();
-        var organizationName = organization?.Name ?? "N/A";
-
-        var binCardEvent = new ProductBinCardInformation
-        {
-            BatchId = bmr.Id,
-            Description = finishedGoodsWarehouse.Name,
-            WayBill = "N/A",
-            ArNumber = "N/A",
-            Supplier = "N/A",
-            Manufacturer = organizationName,
-            QuantityReceived = request.TotalQuantity,
-            QuantityIssued = 0,
-            BalanceQuantity =
-                (
-                    await materialRepository.GetProductStockInWarehouseByBatch(
-                        bmr.ProductionScheduleProduct.ProductId,
-                        finishedGoodsWarehouse.Id
-                    )
-                ).Value + request.TotalQuantity,
-            UoMId = bmr.ProductionScheduleProduct.Product.BaseUomId,
-            CreatedAt = DateTime.UtcNow,
-        };
-
-        await context.ProductBinCardInformation.AddAsync(binCardEvent);
-
-        if (finishedGoodsWarehouse.ArrivalLocation == null)
-        {
-            finishedGoodsWarehouse.ArrivalLocation = new WarehouseArrivalLocation
-            {
-                WarehouseId = finishedGoodsWarehouse.Id,
-                Name = "Default Arrival Location",
-                FloorName = "Ground Floor",
-                Description = "Automatically created arrival location",
-            };
-            await context.WarehouseArrivalLocations.AddAsync(
-                finishedGoodsWarehouse.ArrivalLocation
-            );
+            transferNote.IsOnHold = true;
+            transferNote.HoldReason = "This batch is under a finished goods quality hold or recall.";
         }
-
-        // Create distributed product record
-        var distributedFinishedProduct = new DistributedFinishedProduct
-        {
-            ProductId = bmr.ProductionScheduleProduct.ProductId,
-            TransferNoteId = transferNote.Id,
-            UomId = bmr.ProductionScheduleProduct.Product.BaseUomId,
-            Quantity = request.TotalQuantity,
-            BatchManufacturingRecordId = bmr.Id,
-            Status = DistributedFinishedProductStatus.Distributed,
-            DistributedAt = DateTime.UtcNow,
-            WarehouseArrivalLocationId = finishedGoodsWarehouse.ArrivalLocation.Id,
-        };
-
-        await context.DistributedFinishedProducts.AddAsync(distributedFinishedProduct);
+        transferNote.PacksPerShipperSnapshot = packing.PackPerShipper;
+        transferNote.PackingStyleSnapshot = packing.Name;
+        transferNote.UoMId = packing.BasePackingUomId;
 
         var productionActivityStep = await context.ProductionActivitySteps.FirstOrDefaultAsync(p =>
             p.Id == request.ProductionActivityStepId
         );
 
-        if (productionActivityStep is null)
+        if (productionActivityStep is null || !await context.ProductionActivities.AnyAsync(a => a.Id == productionActivityStep.ProductionActivityId && a.ProductionScheduleProductId == bmr.ProductionScheduleProductId))
             return Error.NotFound(
                 "ProductionActivityStep",
                 $"Production activity step" + $" {request.ProductionActivityStepId} not found"
@@ -2243,7 +2143,13 @@ public partial class ProductionScheduleRepository(
                 : productionActivityStep.StartedAt;
 
         bool isFulfilled =
-            transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity == bmr.BatchQuantity;
+            transferNotes.Sum(t => t.TotalQuantity) + request.TotalQuantity == finalPacking.TotalQuantityPacked;
+
+        if (isFulfilled)
+        {
+            foreach (var previous in transferNotes) previous.IsFulfilled = true;
+            transferNote.IsFulfilled = true;
+        }
 
         var stepJustCompleted = !request.IsPartial || isFulfilled;
         if (stepJustCompleted)
@@ -2253,6 +2159,8 @@ public partial class ProductionScheduleRepository(
             context.ProductionActivitySteps.Update(productionActivityStep);
         }
 
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanCreateFgtn, userId);
+        if (denied is not null) return denied;
         await context.SaveChangesAsync();
 
         if (stepJustCompleted)
@@ -2262,15 +2170,6 @@ public partial class ProductionScheduleRepository(
                 ProductionStatus.Completed,
                 userId
             );
-        }
-
-        if (isFulfilled)
-        {
-            var noteIds = transferNotes.Select(tn => tn.Id).ToList();
-
-            await context
-                .FinishedGoodsTransferNotes.Where(tn => noteIds.Contains(tn.Id))
-                .ExecuteUpdateAsync(setters => setters.SetProperty(tn => tn.IsFulfilled, true));
         }
 
         await approvalRepository.CreateInitialApprovalsAsync(
@@ -2486,8 +2385,13 @@ public partial class ProductionScheduleRepository(
         );
     }
 
-    public async Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request)
+    public Task<Result> ApproveTransferNote(Guid id, ApproveTransferNoteRequest request) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanApproveFgtn, null, () => ReceiveFinishedGoods(id, request));
+
+    private async Task<Result> ReceiveFinishedGoods(Guid id, ApproveTransferNoteRequest request)
     {
+        if (request.Notes?.Length > 500)
+            return Error.Validation("TransferNote.Notes", "Keep the receipt notes within 500 characters and cite any supporting discrepancy report.");
         var transferNote = await context.FinishedGoodsTransferNotes.AsSplitQuery()
             .Include(f => f.ProductPacking).ThenInclude(p => p.PackingLists).ThenInclude(l => l.Uom)
             .FirstOrDefaultAsync(f => f.Id == id);
@@ -2506,8 +2410,8 @@ public partial class ProductionScheduleRepository(
 
         // The store counts shippers and loose packs; what it received is stored as yield. It is either
         // everything that was sent (which may end in units short of a pack) or a whole number of packs.
-        if (request.QuantityReceived <= 0)
-            return Error.Validation("TransferNote.Received", "Enter what was received.");
+        if (request.QuantityReceived < 0)
+            return Error.Validation("TransferNote.Received", "The quantity received cannot be negative.");
         if (request.QuantityReceived > transferNote.TotalQuantity)
             return Error.Validation("TransferNote.Received",
                 $"More was entered as received ({request.QuantityReceived}) than was sent ({transferNote.TotalQuantity}).");
@@ -2519,6 +2423,11 @@ public partial class ProductionScheduleRepository(
             return Error.Validation("TransferNote.Received",
                 $"What was received must be whole packs of {unitsPerPack.Value} units, or everything that was sent.");
 
+        if (request.QuantityReceived < transferNote.TotalQuantity && string.IsNullOrWhiteSpace(request.Notes))
+            return Error.Validation("TransferNote.Discrepancy", "Explain the shortage or discrepancy before receiving this transfer.");
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanApproveFgtn);
+        if (denied is not null) return denied;
+        transferNote.AcceptedById = context.CurrentActorId;
         transferNote.IsApproved = true;
         transferNote.QuantityReceived = request.QuantityReceived;
         transferNote.Notes = request.Notes;
@@ -2526,6 +2435,10 @@ public partial class ProductionScheduleRepository(
         //transferNote.Loose = request.Loose;
 
         context.FinishedGoodsTransferNotes.Update(transferNote);
+        await FinishedGoodsStock.Post(context, transferNote, request.QuantityReceived, "FgReceipt", transferNote.Id.ToString(),
+            context.CurrentActorId.Value, $"FG receipt {transferNote.TransferNoteNumber}; sent {transferNote.TotalQuantity}; received {request.QuantityReceived}. {request.Notes}");
+        denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanApproveFgtn);
+        if (denied is not null) return denied;
         await context.SaveChangesAsync();
         return Result.Success();
     }
@@ -2541,17 +2454,7 @@ public partial class ProductionScheduleRepository(
         if (transferNote == null)
             return Error.NotFound("TransferNote.NotFound", "Transfer note not found");
 
-        if (!transferNote.IsApproved)
-            return Error.Validation(
-                "TransferNote.NotApproved",
-                "Cannot edit transfer note that is not approved"
-            );
-
-        var finishedGoodTransferNote = mapper.Map<FinishedGoodsTransferNote>(request);
-        context.FinishedGoodsTransferNotes.Update(finishedGoodTransferNote);
-        await context.SaveChangesAsync();
-
-        return Result.Success();
+        return Error.Validation("TransferNote.Immutable", "Transfer notes are immutable. Record discrepancies at receipt and use an approved stock adjustment after receipt.");
     }
 
     public async Task<Result<IEnumerable<ApprovedProductDto>>> GetApprovedProducts(
@@ -2568,7 +2471,7 @@ public partial class ProductionScheduleRepository(
             return Error.NotFound("Department.NotFound", "Department not found");
 
         var productsQuery = context
-            .FinishedGoodsTransferNotes.IgnoreQueryFilters()
+            .FinishedGoodsTransferNotes.IgnoreQueryFilters().IgnoreAutoIncludes()
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
                 .ThenInclude(b => b.ProductionScheduleProduct)
@@ -2578,7 +2481,7 @@ public partial class ProductionScheduleRepository(
                     .ThenInclude(l => l.Uom)
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
-            .Where(p => p.IsApproved)
+            .Where(p => p.IsApproved && p.DeletedAt == null && p.BatchManufacturingRecord.DeletedAt == null && p.BatchManufacturingRecord.ProductionScheduleProduct.Product.DeletedAt == null)
             .AsQueryable();
 
         if (role.Type == DepartmentType.Production)
@@ -2596,9 +2499,18 @@ public partial class ProductionScheduleRepository(
             .Select(item => new ApprovedProductDto
             {
                 Product = mapper.Map<ProductListDto>(item.Key),
+                Stocks = item.Select(n => new ApprovedProductStockDto {
+                    TransferNoteId = n.Id, ProductPackingId = n.ProductPackingId,
+                    PackingStyle = n.PackingStyleSnapshot ?? n.ProductPacking?.Name,
+                    BaseUnit = n.ProductPacking?.BasePackingUoM?.Name, QuantityPerPack = n.QuantityPerPack,
+                    PacksPerShipper = n.PacksPerShipperSnapshot ?? n.ProductPacking?.PackPerShipper,
+                    Sent = n.TotalQuantity, Received = n.QuantityReceived, Physical = n.PhysicalQuantity,
+                    Reserved = n.ReservedQuantity, Available = n.AvailableQuantity, Dispatched = n.DispatchedQuantity,
+                    QuarantinedReturns = n.QuarantinedReturnQuantity,
+                }).ToList(),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
-                TotalRemainingQuantity = item.Sum(p => p.RemainingQuantity),
-                QuantityPerPack = item.Select(p => p.QuantityPerPack).First(),
+                TotalRemainingQuantity = item.Sum(p => p.AvailableQuantity),
+                QuantityPerPack = item.Select(p => p.QuantityPerPack).Distinct().Count() == 1 ? item.First().QuantityPerPack : 0,
                 TotalLoose = item.Sum(p => p.Loose),
             })
             .ToList();
@@ -2621,7 +2533,7 @@ public partial class ProductionScheduleRepository(
             .Include(tn => tn.ProductPacking)
                 .ThenInclude(p => p.BasePackingUoM)
             .Where(p =>
-                p.IsApproved
+                p.IsApproved && p.DeletedAt == null && p.BatchManufacturingRecord.DeletedAt == null
                 && p.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId
             )
             .ToListAsync();
@@ -2637,16 +2549,14 @@ public partial class ProductionScheduleRepository(
         if (finishedGoodsTransferNoteResult.IsFailure)
             return finishedGoodsTransferNoteResult.Errors;
 
-        var grouped = products
-            .GroupBy(p => p.BatchManufacturingRecord.ProductionScheduleProduct)
-            .First();
+        var grouped = products;
 
         var dto = new ApprovedProductDetailDto
         {
-            Product = mapper.Map<ProductListDto>(grouped.Key.Product),
+            Product = mapper.Map<ProductListDto>(products[0].BatchManufacturingRecord.ProductionScheduleProduct.Product),
             TotalQuantity = grouped.Sum(p => p.QuantityReceived),
-            TotalRemainingQuantity = grouped.Sum(p => p.RemainingQuantity),
-            QuantityPerPack = grouped.Select(p => p.QuantityPerPack).First(),
+            TotalRemainingQuantity = grouped.Sum(p => p.AvailableQuantity),
+            QuantityPerPack = grouped.Select(p => p.QuantityPerPack).Distinct().Count() == 1 ? grouped[0].QuantityPerPack : 0,
             TotalLoose = grouped.Sum(p => p.Loose),
             FinishedGoodsTransferNotes = finishedGoodsTransferNoteResult.Value.ToList(),
         };
@@ -2659,7 +2569,7 @@ public partial class ProductionScheduleRepository(
     )
     {
         var finishedGoods = await context
-            .FinishedGoodsTransferNotes.IgnoreQueryFilters()
+            .FinishedGoodsTransferNotes.IgnoreQueryFilters().IgnoreAutoIncludes()
             .AsSplitQuery()
             .Include(tn => tn.BatchManufacturingRecord)
                 .ThenInclude(b => b.ProductionScheduleProduct)
@@ -2670,7 +2580,7 @@ public partial class ProductionScheduleRepository(
                 .ThenInclude(p => p.BasePackingUoM)
             .Where(p =>
                 p.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId
-                && p.IsApproved
+                && p.IsApproved && p.DeletedAt == null && p.BatchManufacturingRecord.DeletedAt == null
             )
             .ToListAsync();
 
@@ -4723,13 +4633,15 @@ public partial class ProductionScheduleRepository(
 
         var productionSchedules = await query.ToListAsync();
         var pricingAgreements = await LoadPricingAgreements(productionSchedules);
+        var packPrices = await APP.Services.Costing.EffectiveCostingPrice.Load(context, productionSchedules.Select(item => item.ProductId),
+            productionSchedules.Select(item => item.ProductionSchedule.ScheduledStartTime).DefaultIfEmpty(DateTime.UtcNow).Max());
         var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
         var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var groupedData = productionSchedules
             .Select(p =>
             {
-                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId);
+                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId, packPrices);
                 return new ProductionScheduleReportDto
             {
                 Product = mapper.Map<ProductListDto>(p.Product),
@@ -4790,13 +4702,15 @@ public partial class ProductionScheduleRepository(
 
         var productionSchedules = await query.ToListAsync();
         var pricingAgreements = await LoadPricingAgreements(productionSchedules);
+        var packPrices = await APP.Services.Costing.EffectiveCostingPrice.Load(context, productionSchedules.Select(item => item.ProductId),
+            productionSchedules.Select(item => item.ProductionSchedule.ScheduledStartTime).DefaultIfEmpty(DateTime.UtcNow).Max());
         var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
         var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var report = productionSchedules
             .Select(p =>
             {
-                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId);
+                var price = ResolveSchedulePrice(p, pricingAgreements, baseCurrencyId, packPrices);
                 var unitPrice = price.UnitPrice;
                 var expectedQty =
                     p.BatchSize == BatchSize.Full
@@ -4863,12 +4777,15 @@ public partial class ProductionScheduleRepository(
     private static CustomerPricingResolution ResolveSchedulePrice(
         ProductionScheduleProduct item,
         List<DOMAIN.Entities.Customers.CustomerPricingAgreement> pricingAgreements,
-        Guid? baseCurrencyId
+        Guid? baseCurrencyId,
+        Func<Guid, Guid?, DateTime, APP.Services.Costing.EffectiveCostingPrice.Selection> packPrices
     )
     {
-        var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(item.Product, baseCurrencyId);
+        var effective = packPrices(item.ProductId, item.ProductPackingId, item.ProductionSchedule.ScheduledStartTime);
+        var defaultPrice = effective.HasRevision ? effective.Price : item.Product.Price;
+        var listCurrencyId = effective.HasRevision ? effective.CurrencyId : CustomerPricingResolver.ListPriceCurrency(item.Product, baseCurrencyId);
         if (!item.MarketTypeId.HasValue || !item.ProductPackingId.HasValue)
-            return new CustomerPricingResolution(item.Product.Price, listCurrencyId, false, false);
+            return new CustomerPricingResolution(defaultPrice, listCurrencyId, false, false, effective.RevisionId);
 
         var matches = CustomerPricingResolver.ActiveMatches(
             pricingAgreements,
@@ -4877,7 +4794,7 @@ public partial class ProductionScheduleRepository(
             item.ProductPackingId.Value,
             item.ProductionSchedule.ScheduledStartTime
         );
-        return CustomerPricingResolver.Resolve(matches, item.Product.Price, listCurrencyId);
+        return CustomerPricingResolver.Resolve(matches, defaultPrice, listCurrencyId);
     }
 
     public async Task<Result<List<ForecastMaterialDto>>> ForecastProductionScheduleProduct(

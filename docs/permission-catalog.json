@@ -736,6 +736,160 @@
   },
   {
     "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanVerifyFinishedGoodsCustomerPo",
+    "name": "Can Verify Finished Goods Customer Po",
+    "description": "Allows the user to  verify finished goods customer po."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanClearFinishedGoodsDispatch",
+    "name": "Can Clear Finished Goods Dispatch",
+    "description": "Allows the user to  clear finished goods dispatch."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanDispatchFinishedGoods",
+    "name": "Can Dispatch Finished Goods",
+    "description": "Allows the user to  dispatch finished goods."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanHoldFinishedGoods",
+    "name": "Can Hold Finished Goods",
+    "description": "Allows the user to  hold finished goods."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanReleaseFinishedGoodsHold",
+    "name": "Can Release Finished Goods Hold",
+    "description": "Allows the user to  release finished goods hold."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanViewProductRecalls",
+    "name": "Can View Product Recalls",
+    "description": "Allows the user to  view product recalls."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanCreateProductRecall",
+    "name": "Can Create Product Recall",
+    "description": "Allows the user to  create product recall."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanNotifyProductRecall",
+    "name": "Can Notify Product Recall",
+    "description": "Allows the user to  notify product recall."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanRecordProductRecallRecovery",
+    "name": "Can Record Product Recall Recovery",
+    "description": "Allows the user to  record product recall recovery."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanDisposeProductRecallRecovery",
+    "name": "Can Dispose Product Recall Recovery",
+    "description": "Allows the user to  dispose product recall recovery."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanCloseProductRecall",
+    "name": "Can Close Product Recall",
+    "description": "Allows the user to  close product recall."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanPrintProductRecall",
+    "name": "Can Print Product Recall",
+    "description": "Allows the user to  print product recall."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanCancelFinishedGoodsAllocation",
+    "name": "Can Cancel Finished Goods Allocation",
+    "description": "Allows the user to  cancel finished goods allocation."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Allocations",
+    "key": "CanVoidFinishedGoodsInvoice",
+    "name": "Can Void Finished Goods Invoice",
+    "description": "Allows the user to  void finished goods invoice."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanDisposeRecalledFinishedGoodsStock",
+    "name": "Can Dispose Recalled Finished Goods Stock",
+    "description": "Allows the user to  dispose recalled finished goods stock."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Products",
+    "key": "CanReconcileFinishedGoodsStock",
+    "name": "Can Reconcile Finished Goods Stock",
+    "description": "Allows the user to  reconcile finished goods stock."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Products",
+    "key": "CanApplyFinishedGoodsStockAdjustment",
+    "name": "Can Apply Finished Goods Stock Adjustment",
+    "description": "Allows the user to  apply finished goods stock adjustment."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanConfirmFinishedGoodsCosting",
+    "name": "Can Confirm Finished Goods Costing",
+    "description": "Allows the user to  confirm finished goods costing."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Product Recall Settlements",
+    "key": "CanRecordProductRecallSettlement",
+    "name": "Can Record Product Recall Settlement",
+    "description": "Allows the user to  record product recall settlement."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Waybill",
+    "key": "CanPrintFinishedGoodsWaybill",
+    "name": "Can Print Finished Goods Waybill",
+    "description": "Allows the user to  print finished goods waybill."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanReopenProductRecall",
+    "name": "Can Reopen Product Recall",
+    "description": "Allows the user to  reopen product recall."
+  },
+  {
+    "module": "Finished Goods Warehouse",
+    "submodule": "Product Recalls",
+    "key": "CanUpdateProductRecallDecision",
+    "name": "Can Update Product Recall Decision",
+    "description": "Allows the user to  update product recall decision."
+  },
+  {
+    "module": "Finished Goods Warehouse",
     "submodule": "Products",
     "key": "CanViewFgProducts",
     "name": "Can View Fg Products",
@@ -1447,6 +1601,76 @@
     "key": "ManageCosting",
     "name": "Manage Costing",
     "description": "Allows the user to age costing."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanViewCostingPriceList",
+    "name": "Can View Costing Price List",
+    "description": "Allows the user to  view costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanCreateCostingPriceList",
+    "name": "Can Create Costing Price List",
+    "description": "Allows the user to  create costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanEditCostingPriceList",
+    "name": "Can Edit Costing Price List",
+    "description": "Allows the user to  edit costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanReviseCostingPriceList",
+    "name": "Can Revise Costing Price List",
+    "description": "Allows the user to  revise costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanSubmitCostingPriceList",
+    "name": "Can Submit Costing Price List",
+    "description": "Allows the user to  submit costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanReviewCostingPriceList",
+    "name": "Can Review Costing Price List",
+    "description": "Allows the user to  review costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanReturnCostingPriceList",
+    "name": "Can Return Costing Price List",
+    "description": "Allows the user to  return costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanApproveCostingPriceList",
+    "name": "Can Approve Costing Price List",
+    "description": "Allows the user to  approve costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanRejectCostingPriceList",
+    "name": "Can Reject Costing Price List",
+    "description": "Allows the user to  reject costing price list."
+  },
+  {
+    "module": "Finance",
+    "submodule": "Costing",
+    "key": "CanPrintCostingPriceList",
+    "name": "Can Print Costing Price List",
+    "description": "Allows the user to  print costing price list."
   },
   {
     "module": "Warehouse",

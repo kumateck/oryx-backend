@@ -64,14 +64,18 @@ public sealed partial class QuestionFormulaRepairService
             .Select(pair => LegacyFormulaRepairDefinition.InputLabel(pin.Definition, pair.Key)).Distinct().ToList();
         if (missing.Count > 0) return Conflict($"Enter and save these readings, then recalculate: {string.Join("; ", missing)}.");
         var placement = $"repair-{pin.Id:N}";
+        // The engine checks each source and target unit against the approved definition. Preserve that contract;
+        // older compiled repairs with no unit property retain their unitless (null) placement.
         var configuration = JsonSerializer.SerializeToElement(new
         {
             placementKey = placement, definitionHash = compiled.Hash, methodReference = "legacy-formula-repair",
             displayPolicy = new { policyVersion = "oryx-formula-display-v1", showResult = true, showUnit = true, showTrace = false },
             bindings = compiled.Definition.GetProperty("variables").EnumerateArray().Select(v => new
-            { variableKey = v.GetProperty("key").GetString(), source = new { sourceType = 0, reference = "local:" + v.GetProperty("key").GetString(), dataType = 0, valueShape = 0, scope = 0, unit = (string?)null } }).ToArray(),
+            { variableKey = v.GetProperty("key").GetString(), source = new { sourceType = 0, reference = "local:" + v.GetProperty("key").GetString(), dataType = 0, valueShape = 0, scope = 0,
+                unit = v.TryGetProperty("unit", out var unit) ? unit.GetString() : null } }).ToArray(),
             resultTargets = compiled.Definition.GetProperty("results").EnumerateArray().Select(r => new
-            { resultKey = r.GetProperty("key").GetString(), targetKey = placement + ":" + r.GetProperty("key").GetString(), dataType = 0, valueShape = 0, unit = (string?)null }).ToArray()
+            { resultKey = r.GetProperty("key").GetString(), targetKey = placement + ":" + r.GetProperty("key").GetString(), dataType = 0, valueShape = 0,
+                unit = r.TryGetProperty("unit", out var unit) ? unit.GetString() : null }).ToArray()
         });
         var projection = System.Text.Json.Nodes.JsonNode.Parse(configuration.GetRawText())!.AsObject();
         projection["configurationVersion"] = "oryx-formula-configuration-v1";

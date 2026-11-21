@@ -24,6 +24,7 @@ public class CreateCustomerQuotationItemRequest
 
 public class ResolvedQuotationPriceDto
 {
+    public Guid? PriceListRevisionId { get; set; }
     public decimal UnitPrice { get; set; }
     public bool FromAgreement { get; set; }
     /// <summary>The currency the price is in: the agreement's, or the list price's.</summary>
@@ -46,6 +47,7 @@ public class CustomerQuotationDto : BaseDto
 
 public class CustomerQuotationItemDto : BaseDto
 {
+    public Guid? PriceListRevisionId { get; set; }
     public Guid ProductId { get; set; }
     public string ProductName { get; set; }
     public int Quantity { get; set; }

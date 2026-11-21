@@ -889,7 +889,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         [FromQuery] Guid? materialCategoryId = null,
         [FromQuery] string sortLabel = "",
         [FromQuery] SortDirection? sortDirection = null,
-        [FromQuery] Guid? productId = null
+        [FromQuery] Guid? productId = null,
+        [FromQuery] string context = null
     )
     {
         var userId = (string)HttpContext.Items["Sub"];
@@ -905,7 +906,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
             sortLabel,
             sortDirection,
             Guid.Parse(userId),
-            productId
+            productId,
+            ProductPermissions.Parse(context)
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
@@ -919,7 +921,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     [AnyPermission("CanCreateProductionProduct", "CanViewProductionProductArds", "CanViewProductionProductBom", "CanViewProductionProductInfo", "CanViewProductionProductPackingMaterials", "CanViewProductionProductPackingOrder", "CanViewProductionProductPackingStyles", "CanViewProductionProductProcedure", "CanViewProductionProductSpecifications", "CanViewProductionProductStps", "CanViewProductionProducts", "CanViewQaProductArds", "CanViewQaProductBom", "CanViewQaProductInfo", "CanViewQaProductPackingMaterials", "CanViewQaProductPackingOrder", "CanViewQaProductPackingStyles", "CanViewQaProductProcedure", "CanViewQaProductSpecifications", "CanViewQaProductStps", "CanViewQaProducts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<UnitOfMeasureDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> GetUoMForMaterial(Guid materialId, [FromQuery] Guid? productId = null)
+    public async Task<IResult> GetUoMForMaterial(Guid materialId, [FromQuery] Guid? productId = null, [FromQuery] string context = null)
     {
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null)
@@ -928,7 +930,8 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
         var result = await repository.GetUnitOfMeasureForMaterialDepartment(
             materialId,
             Guid.Parse(userId),
-            productId
+            productId,
+            ProductPermissions.Parse(context)
         );
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }

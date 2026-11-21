@@ -9,6 +9,8 @@ namespace DOMAIN.Entities.Invoices;
 
 public class CreateInvoice
 {
+    public string Code { get; set; }
+
     public Guid ProformaInvoiceId { get; set; }
     public Guid CustomerId { get; set; }
     public Guid? TermsOfPaymentId { get; set; }
@@ -22,6 +24,13 @@ public class CreateInvoiceAmount
 }
 public class Invoice : BaseEntity
 {
+    public bool Voided { get; set; }
+    public string VoidReason { get; set; }
+    public DateTime? VoidedAt { get; set; }
+    public Guid? VoidedById { get; set; }
+
+    public string Code { get; set; }
+
     public Guid ProformaInvoiceId { get; set; }
     public ProformaInvoice ProformaInvoice { get; set; }
     public Guid CustomerId { get; set; }
@@ -50,6 +59,13 @@ public enum InvoiceStatus
 
 public class InvoiceDto : WithAttachment
 {
+    public bool Voided { get; set; }
+    public string VoidReason { get; set; }
+    public DateTime? VoidedAt { get; set; }
+    public Guid? VoidedById { get; set; }
+
+    public string Code { get; set; }
+
     public ProformaInvoiceDto ProformaInvoice { get; set; }
     public CustomerDto Customer { get; set; }
     public InvoiceStatus Status { get; set; }

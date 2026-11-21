@@ -2,7 +2,6 @@ using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Costing;
-using DOMAIN.Entities.Currencies;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Products;
 using INFRASTRUCTURE.Context;
@@ -19,20 +18,43 @@ namespace APP.Repository;
 public class CostingRepository(ApplicationDbContext context) : ICostingRepository
 {
     public async Task<Result<Paginateable<IEnumerable<ProductListPriceDto>>>> GetListPrices(
-        int page, int pageSize, string searchQuery, Guid? departmentId, Guid? currencyId)
+        int page, int pageSize, string searchQuery, Guid? departmentId, Guid? currencyId, Division? division = null)
     {
-        var query = context.Products.AsNoTracking().Where(product => !product.DeletedAt.HasValue);
+        var query = ListPriceQuery(context, searchQuery, departmentId, currencyId, division);
+
+        var labels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
+        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
+        return await PaginationHelper.GetPaginatedResultAsync(query.OrderBy(row => row.ProductName).ThenBy(row => row.ProductId), page, pageSize,
+            row => new ProductListPriceDto
+            {
+                ProductId = row.ProductId, ProductCode = row.ProductCode, ProductName = row.ProductName,
+                DepartmentId = row.DepartmentId, Price = row.Price ?? 0, PriceUoM = row.PriceUoM, PricedAt = row.PricedAt,
+                Currency = row.PricedAt.HasValue ? CustomerPricingResolver.Label(labels, row.CurrencyId ?? baseCurrencyId) : null,
+            });
+    }
+
+    // Project before pagination materializes rows: loading Product entities also auto-includes
+    // their department/equipment warehouse trees and the entire price-history collection.
+    internal static IQueryable<ListPriceRow> ListPriceQuery(ApplicationDbContext context,
+        string searchQuery, Guid? departmentId, Guid? currencyId, Division? division = null)
+    {
+        var query = context.Products.AsNoTracking().IgnoreAutoIncludes().Where(product => !product.DeletedAt.HasValue);
         if (!string.IsNullOrWhiteSpace(searchQuery))
             query = query.WhereSearch(searchQuery, product => product.Name, product => product.Code);
         if (departmentId.HasValue) query = query.Where(product => product.DepartmentId == departmentId);
+        if (division.HasValue) query = query.Where(product => product.Division == division);
         if (currencyId.HasValue)
             query = query.Where(product => product.Prices.OrderByDescending(price => price.Date)
                 .Select(price => price.CurrencyId).FirstOrDefault() == currencyId);
 
-        var labels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
-        var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
-        return await PaginationHelper.GetPaginatedResultAsync(query.OrderBy(product => product.Name), page, pageSize,
-            product => MapListPrice(product, labels, baseCurrencyId));
+        return query.Select(product => new ListPriceRow
+        {
+            ProductId = product.Id, ProductCode = product.Code, ProductName = product.Name, DepartmentId = product.DepartmentId,
+            Price = product.Prices.OrderByDescending(price => price.Date).Select(price => (decimal?)price.Price).FirstOrDefault(),
+            PriceUoM = product.Prices.OrderByDescending(price => price.Date).Select(price => price.PriceUoM).FirstOrDefault(),
+            PricedAt = product.Prices.OrderByDescending(price => price.Date).Select(price => (DateTime?)price.Date).FirstOrDefault(),
+            CurrencyId = product.Prices.OrderByDescending(price => price.Date).Select(price => price.CurrencyId).FirstOrDefault(),
+        });
     }
 
     public async Task<Result<List<ListPriceHistoryDto>>> GetListPriceHistory(Guid productId)
@@ -57,6 +79,9 @@ public class CostingRepository(ApplicationDbContext context) : ICostingRepositor
         if (product is null) return ProductErrors.NotFound(productId);
         if (!await context.Currencies.AnyAsync(currency => currency.Id == request.CurrencyId))
             return Error.NotFound("Currency.NotFound", "Currency not found.");
+
+        if (await context.CostingPriceLists.AnyAsync(list => list.Division == product.Division))
+            return Error.Conflict("ListPrice.Versioned", "Prices for this division are maintained through price-list revisions. Correct the draft or prepare a new revision.");
 
         var unit = string.IsNullOrWhiteSpace(request.PriceUoM) ? product.PriceUoM : request.PriceUoM.Trim();
         if (product.Prices.Count > 0 && product.Price == request.Price && product.PriceCurrencyId == request.CurrencyId
@@ -101,16 +126,15 @@ public class CostingRepository(ApplicationDbContext context) : ICostingRepositor
         => context.CustomerPricingAgreements.AsNoTracking().Include(item => item.Customer)
             .Include(item => item.Product).Include(item => item.ProductPacking).Include(item => item.Currency);
 
-    internal static ProductListPriceDto MapListPrice(
-        Product product, IReadOnlyDictionary<Guid, CurrencyDto> labels, Guid? baseCurrencyId)
+    internal sealed class ListPriceRow
     {
-        var current = product.Prices.OrderByDescending(price => price.Date).FirstOrDefault();
-        return new ProductListPriceDto
-        {
-            ProductId = product.Id, ProductCode = product.Code, ProductName = product.Name,
-            DepartmentId = product.DepartmentId, Price = current?.Price ?? 0, PriceUoM = current?.PriceUoM,
-            PricedAt = current?.Date,
-            Currency = current is null ? null : CustomerPricingResolver.Label(labels, current.CurrencyId ?? baseCurrencyId),
-        };
+        public Guid ProductId { get; set; }
+        public string ProductCode { get; set; }
+        public string ProductName { get; set; }
+        public Guid? DepartmentId { get; set; }
+        public decimal? Price { get; set; }
+        public string PriceUoM { get; set; }
+        public DateTime? PricedAt { get; set; }
+        public Guid? CurrencyId { get; set; }
     }
 }

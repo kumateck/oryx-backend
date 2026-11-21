@@ -74,21 +74,7 @@ public class FileRepository(
                     }
                     break;
 
-                case nameof(ProformaInvoice):
-                    var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item =>
-                        item.Id == modelId
-                    );
-                    if (proformaInvoice is not null)
-                    {
-                        proformaInvoice.Status = ProformaInvoiceStatus.Invoice;
-                        context.ProformaInvoices.Update(proformaInvoice);
-                        await context.SaveChangesAsync();
-                        await approvalRepository.CreateInitialApprovalsAsync(
-                            nameof(ProformaInvoice),
-                            proformaInvoice.Id
-                        );
-                    }
-                    break;
+
             }
         }
         catch (Exception) when (transaction is not null)
@@ -163,22 +149,6 @@ public class FileRepository(
                 }
             }
 
-            if (modelType == nameof(ProformaInvoice))
-            {
-                var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(item =>
-                    item.Id == modelId
-                );
-                if (proformaInvoice is not null)
-                {
-                    proformaInvoice.Status = ProformaInvoiceStatus.Invoice;
-                    context.ProformaInvoices.Update(proformaInvoice);
-                    await context.SaveChangesAsync();
-                    await approvalRepository.CreateInitialApprovalsAsync(
-                        nameof(ProformaInvoice),
-                        proformaInvoice.Id
-                    );
-                }
-            }
 
             await context.SaveChangesAsync();
             await transaction.CommitAsync();

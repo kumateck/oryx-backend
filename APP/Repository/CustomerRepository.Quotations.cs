@@ -51,18 +51,20 @@ public partial class CustomerRepository
             if (requestItem.Quantity <= 0 || requestItem.DiscountPercent is < 0 or > 100)
                 return Error.Validation("CustomerQuotation.Item", "Quantity and discount are outside allowed ranges.");
             var price = requestItem.UnitPrice;
+            Guid? priceListRevisionId = null;
             if (!price.HasValue)
             {
                 var resolved = await ResolveUnitPrice(
                     customer, products[requestItem.ProductId], requestItem.ProductPackingId, baseCurrencyId, priceDate);
                 if (resolved.IsFailure) return resolved.Error;
                 price = resolved.Value.UnitPrice;
+                priceListRevisionId = resolved.Value.PriceListRevisionId;
             }
             if (price < 0) return Error.Validation("CustomerQuotation.Price", "Unit price cannot be negative.");
             quotation.Items.Add(new CustomerQuotationItem
             {
                 ProductId = requestItem.ProductId, ProductPackingId = requestItem.ProductPackingId,
-                Quantity = requestItem.Quantity, UnitPrice = price.Value,
+                Quantity = requestItem.Quantity, UnitPrice = price.Value, PriceListRevisionId = priceListRevisionId,
                 DiscountPercent = requestItem.DiscountPercent, CreatedById = userId,
             });
         }
@@ -103,7 +105,7 @@ public partial class CustomerRepository
             product.Price, CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId), asOf);
         if (resolution.Ambiguous)
             return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
-        if (!resolution.FromAgreement && product.Prices.Count == 0)
+        if (!resolution.FromAgreement && resolution.UnitPrice <= 0)
             return Error.Validation(
                 "CustomerQuotation.PriceRequired",
                 $"{product.Name} has no list price. Set it in Finance > Costing, add a pricing agreement, or enter the unit price.");
@@ -118,6 +120,7 @@ public partial class CustomerRepository
         return new ResolvedQuotationPriceDto
         {
             UnitPrice = resolution.UnitPrice, FromAgreement = resolution.FromAgreement, CurrencyId = resolution.CurrencyId,
+            PriceListRevisionId = resolution.PriceListRevisionId,
         };
     }
 
@@ -178,7 +181,7 @@ public partial class CustomerRepository
             {
                 Id = line.Id, CreatedAt = line.CreatedAt, ProductId = line.ProductId,
                 ProductName = line.Product?.Name, Quantity = line.Quantity, ProductPackingId = line.ProductPackingId,
-                ProductPackingName = line.ProductPacking?.Name, UnitPrice = line.UnitPrice,
+                ProductPackingName = line.ProductPacking?.Name, UnitPrice = line.UnitPrice, PriceListRevisionId = line.PriceListRevisionId,
                 PackPerShipper = line.ProductPacking?.PackPerShipper ?? 0,
                 Shippers = line.ProductPacking != null && line.ProductPacking.PackPerShipper > 0
                     ? line.Quantity / line.ProductPacking.PackPerShipper : 0,
