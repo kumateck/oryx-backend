@@ -51,6 +51,7 @@ public static class ReviewDocumentTypes
     public const string PackingList = "AllocateProductionOrder";
     /// <summary>QA's approved vendor (manufacturer) list: always checked before it is approved.</summary>
     public const string ApprovedVendorList = "ApprovedVendorList";
+    public const string CostingPriceList = "CostingPriceList";
 
     /// <summary>Types with no kind of their own: one key per task, the same for every record.</summary>
     private sealed record SimpleType(string View, string Confirm, string Return, string Edit);
@@ -62,6 +63,7 @@ public static class ReviewDocumentTypes
         [LeaveRequest] = new(PermissionKeys.CanViewLeaveRequests, PermissionKeys.CanReviewLeaveRequest, PermissionKeys.CanReturnLeaveRequest, PermissionKeys.CanEditLeaveRequest),
         [JobRequest] = new(PermissionKeys.CanViewJobRequests, PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReturnJobRequest, PermissionKeys.CanEditJobRequest),
         [PackingList] = new(PermissionKeys.CanViewPackingList, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReturnPackingList, PermissionKeys.CanGeneratePackingList),
+        [CostingPriceList] = new(PermissionKeys.CanViewCostingPriceList, PermissionKeys.CanReviewCostingPriceList, PermissionKeys.CanReturnCostingPriceList, PermissionKeys.CanSubmitCostingPriceList),
         [ApprovedVendorList] = new(PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanReviewApprovedVendorList, PermissionKeys.CanReturnApprovedVendorList, PermissionKeys.CanEditApprovedVendorList),
     };
 
@@ -83,6 +85,7 @@ public static class ReviewDocumentTypes
         new(PackingList, "Packing list", AlwaysReviewed: false),
         // The paper list has always been signed Prepared, Checked and Approved by QA.
         new(ApprovedVendorList, "Approved vendor list", AlwaysReviewed: true),
+        new(CostingPriceList, "Costing price list", AlwaysReviewed: true),
     ];
 
     public static bool IsConfigurable(string itemType) => All.Any(type => type.ItemType == itemType);
@@ -246,6 +249,12 @@ public static class ReviewDocumentTypes
                     .Select(item => new { item.ProductionOrder.Code, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
                 return row is null ? null : ($"Packing list · {row.Code}", row.CreatedById);
             }
+            case CostingPriceList:
+            {
+                var row = await context.CostingPriceLists.AsNoTracking().Where(item => item.Id == id && item.Status != DOMAIN.Entities.Costing.CostingPriceListStatus.Draft)
+                    .Select(item => new { item.DocumentNumber, item.RevisionNumber, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                return row is null ? null : ($"Price list {row.DocumentNumber} · revision {row.RevisionNumber}", row.CreatedById);
+            }
             case ApprovedVendorList:
             {
                 var row = await context.ApprovedVendorLists.AsNoTracking().Where(item => item.Id == id)
@@ -300,6 +309,8 @@ public static class ReviewDocumentTypes
                 context.JobRequestApprovals.Where(item => item.JobRequestId == id),
             PackingList when await context.AllocateProductionOrders.AnyAsync(item => item.Id == id && item.Approved, cancellationToken) =>
                 context.AllocateProductionOrderApprovals.Where(item => item.AllocateProductionOrderId == id),
+            CostingPriceList when await context.CostingPriceLists.AnyAsync(item => item.Id == id && item.Status == DOMAIN.Entities.Costing.CostingPriceListStatus.Approved, cancellationToken) =>
+                context.CostingPriceListApprovals.Where(item => item.CostingPriceListId == id),
             ApprovedVendorList when await context.ApprovedVendorLists.AnyAsync(item => item.Id == id
                     && (item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Approved
                         || item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Superseded), cancellationToken) =>

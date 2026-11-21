@@ -195,16 +195,24 @@ public class FinishedGoodsTransferNote : BaseEntity, IRequireApproval
     public ProductionActivityStep ProductionActivityStep { get; set; }
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
-    /// <summary>
-    /// Yield still free in the store: what the store received (or, until it is received or where no
-    /// count was recorded, what was sent), less what packing lists have taken. All quantities on a
-    /// transfer note are yield, the base units produced; <see cref="QuantityPerPack"/> is the units in
-    /// one pack when the note was raised.
-    /// </summary>
-    public decimal RemainingQuantity => StockQuantity - AllocatedQuantity;
-
-    /// <summary>The yield the store holds from this transfer: what it received once received, else what was sent.</summary>
-    public decimal StockQuantity => IsApproved && QuantityReceived > 0 ? QuantityReceived : TotalQuantity;
+    /// <summary>Approved adjustments to received yield; never changes the sent count.</summary>
+    public decimal AdjustmentQuantity { get; set; }
+    public decimal DispatchedQuantity { get; set; }
+    public decimal ReleasedReturnQuantity { get; set; }
+    public decimal QuarantinedReturnQuantity { get; set; }
+    public Guid? AcceptedById { get; set; }
+    public decimal? PacksPerShipperSnapshot { get; set; }
+    public string PackingStyleSnapshot { get; set; }
+    public bool RequiresStockReconciliation { get; set; }
+    public bool IsOnHold { get; set; }
+    public string HoldReason { get; set; }
+    public decimal AvailableQuantity => !RequiresStockReconciliation && !IsOnHold && Approved && IsApproved
+        && BatchManufacturingRecord?.Status is (DOMAIN.Entities.Products.Production.BatchManufacturingStatus.Approved or DOMAIN.Entities.Products.Production.BatchManufacturingStatus.Available)
+        && BatchManufacturingRecord.ExpiryDate?.Date > DateTime.UtcNow.Date ? RemainingQuantity : 0;
+    public decimal RemainingQuantity => Math.Max(0, StockQuantity - AllocatedQuantity);
+    public decimal StockQuantity => IsApproved ? QuantityReceived + AdjustmentQuantity + ReleasedReturnQuantity : 0;
+    public decimal PhysicalQuantity => StockQuantity - DispatchedQuantity + QuarantinedReturnQuantity;
+    public decimal ReservedQuantity => Math.Max(0, AllocatedQuantity - DispatchedQuantity);
     public List<FinishedGoodsTransferNoteQuantity> Quantities { get; set; } = [];
     public bool Approved { get; set; }
     public List<FinishedGoodsTransferNoteApproval> Approvals { get; set; } = [];
@@ -248,6 +256,17 @@ public class FinishedGoodsTransferNoteDto : BaseDto
     public decimal Loose { get; set; }
     public decimal AllocatedQuantity { get; set; }
     public decimal RemainingQuantity { get; set; }
+    public decimal AvailableQuantity { get; set; }
+    public decimal AdjustmentQuantity { get; set; }
+    public decimal DispatchedQuantity { get; set; }
+    public decimal PhysicalQuantity { get; set; }
+    public decimal ReservedQuantity { get; set; }
+    public decimal? PacksPerShipperSnapshot { get; set; }
+    public string PackingStyleSnapshot { get; set; }
+    public bool RequiresStockReconciliation { get; set; }
+    public bool IsOnHold { get; set; }
+    public string HoldReason { get; set; }
+    public bool QualityReleased { get; set; }
     public decimal PendingAllocatedQuantity { get; set; }
     public bool Approved { get; set; }
     public bool IsPartial { get; set; }
@@ -304,6 +323,7 @@ public class MaterialReservedQuantity
 
 public class ApprovedProductDto
 {
+    public List<ApprovedProductStockDto> Stocks { get; set; } = [];
     public ProductListDto Product { get; set; }
     public decimal TotalQuantity { get; set; }
     public decimal TotalRemainingQuantity { get; set; }
@@ -344,4 +364,21 @@ public class MaterialRejectDto : BaseDto
     public MaterialBatchListDto MaterialBatch { get; set; }
     public ResponseDto Response { get; set; }
     public string Reason { get; set; }
+}
+
+public class ApprovedProductStockDto
+{
+    public Guid TransferNoteId { get; set; }
+    public Guid? ProductPackingId { get; set; }
+    public string PackingStyle { get; set; }
+    public string BaseUnit { get; set; }
+    public decimal QuantityPerPack { get; set; }
+    public decimal? PacksPerShipper { get; set; }
+    public decimal Sent { get; set; }
+    public decimal Received { get; set; }
+    public decimal Physical { get; set; }
+    public decimal Reserved { get; set; }
+    public decimal Available { get; set; }
+    public decimal Dispatched { get; set; }
+    public decimal QuarantinedReturns { get; set; }
 }

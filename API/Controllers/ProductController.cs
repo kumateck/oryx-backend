@@ -185,7 +185,7 @@ public class ProductController(IProductRepository repository) : ControllerBase
         if (userId == null)
             return TypedResults.Unauthorized();
 
-        var result = await repository.CreateRoute(request, productId, Guid.Parse(userId));
+        var result = await repository.CreateRoute(request, productId, Guid.Parse(userId), context);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

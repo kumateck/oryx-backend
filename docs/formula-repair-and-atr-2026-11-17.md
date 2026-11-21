@@ -43,3 +43,45 @@ It is applied before the item-status filter, which is unchanged.
 ## Proposed, not built
 
 `whole-container-issue.md`: issuing whole sealed containers and returning the leftover.
+
+## Approved formula repair units — 21 November 2026
+
+### Failure and correction
+
+Recalculating an ATR field repaired from an approved formula revision could fail with
+`INVALID_CONFIGURATION: Target unit does not match result unit`, leaving final submission
+blocked with `FormulaRepair.RecalculationRequired`. The repair evaluator sent `null` for
+every placement source and result target unit, even when the approved compiled definition
+declared weight inputs or a percentage result.
+
+`QuestionFormulaRepairService.Evaluation` now copies each variable's unit into its input
+binding and each result's unit into its result target. Missing and explicitly null units
+remain null for older repairs. The configuration hash and saved evaluation evidence are
+generated from this corrected configuration. Formula expressions, scaling, precision and
+saved analyst readings are unchanged.
+
+Existing server checks still require `CanExecuteFormulaResponse`, the analyst's field
+assignment and an open ATR/response. Grants, readings and repair state are checked again
+before saving an evaluation. Final submission still requires a successful authoritative
+recalculation; this fix does not bypass that guard.
+
+### Validation and deployment
+
+- Regression cases cover unitless definitions, `g` inputs with `%` results, and `mg`
+  inputs with `mg/mL` results. The unit-bearing cases reproduced the null-unit defect
+  before the implementation change.
+- The isolated real-engine regression uses saved readings of 2 g and 4 g with the
+  approved expression `:a/:b*100`. It verifies the authoritative `50.00` result with
+  unit `%`, preserved readings and a cleared pending-recalculation flag.
+- The existing formula repair suite covers denied access, assignment, stale state,
+  recalculation invalidation and finalization. Formula client and permission catalog
+  checks run alongside it.
+- Validation completed with 52 tests passing and two PostgreSQL-only tests skipped
+  because `ORYX_FORMULA_REPAIR_TEST_CONNECTION` was not configured. The test run
+  compiled the backend successfully and exercised the real formula engine on an
+  isolated loopback service using disposable test data.
+
+Deploy the updated backend through the normal pipeline. No schema migration or formula
+service release is needed for this change. On an affected open ATR, reload the test and
+save/recalculate its readings before submitting again. Do not repair the field again
+solely to clear this unit mismatch, because applying a repair clears its previous readings.

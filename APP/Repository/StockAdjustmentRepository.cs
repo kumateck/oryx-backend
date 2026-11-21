@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using APP.Services.Production;
 using AutoMapper;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
@@ -99,8 +100,8 @@ public class StockAdjustmentRepository(
                     );
 
                 adjustmentLine.FinishedGoodsTransferNoteId = transferNote.Id;
-                adjustmentLine.SystemQuantitySnapshot = transferNote.TotalQuantity;
-                adjustmentLine.Variance = lineRequest.PhysicalCount - transferNote.TotalQuantity;
+                adjustmentLine.SystemQuantitySnapshot = transferNote.PhysicalQuantity;
+                adjustmentLine.Variance = lineRequest.PhysicalCount - transferNote.PhysicalQuantity;
             }
 
             await context.StockAdjustmentLines.AddAsync(adjustmentLine);
@@ -330,6 +331,14 @@ public class StockAdjustmentRepository(
 
     public async Task<Result> ApplyStockAdjustment(Guid adjustmentId, Guid userId)
     {
+        var isProduct = await context.StockAdjustments.AnyAsync(a => a.Id == adjustmentId && a.TargetType == StockAdjustmentTarget.Product);
+        return isProduct
+            ? await FinishedGoodsStock.Write(context, PermissionKeys.CanApplyFinishedGoodsStockAdjustment, userId, () => ApplyStockAdjustmentCore(adjustmentId, userId))
+            : await ApplyStockAdjustmentCore(adjustmentId, userId);
+    }
+
+    private async Task<Result> ApplyStockAdjustmentCore(Guid adjustmentId, Guid userId)
+    {
         var adjustment = await context
             .StockAdjustments.Include(a => a.Lines)
             .FirstOrDefaultAsync(a => a.Id == adjustmentId);
@@ -341,7 +350,12 @@ public class StockAdjustmentRepository(
         if (approvalGate.IsFailure)
             return approvalGate;
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        if (await context.InventoryLedgers.AnyAsync(l => l.ReferenceId == adjustment.Id.ToString()
+            && l.TransactionType == "FgAdjustment"))
+            return Error.Conflict("StockAdjustment.Applied", "This finished-goods adjustment was already posted.");
+
+        await using var transaction = context.Database.IsRelational() && context.Database.CurrentTransaction is null
+            ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
 
         try
         {
@@ -420,24 +434,20 @@ public class StockAdjustmentRepository(
                     if (transferNote == null)
                         continue;
 
-                    transferNote.TotalQuantity += line.Variance;
-                    postBalance = transferNote.TotalQuantity;
-
-                    context.FinishedGoodsTransferNotes.Update(transferNote);
-
-                    // Log to ProductBinCardInformation
-                    var binCardEvent = new ProductBinCardInformation
-                    {
-                        BatchId = transferNote.BatchManufacturingRecordId,
-                        QuantityReceived = line.Variance > 0 ? line.Variance : 0,
-                        QuantityIssued = line.Variance < 0 ? Math.Abs(line.Variance) : 0,
-                        BalanceQuantity = postBalance,
-                        Description = $"Stock Adjustment: {adjustment.AdjustmentNumber}",
-                        CreatedAt = DateTime.UtcNow,
-                        UoMId = transferNote.UoMId,
-                        CreatedById = userId,
-                    };
-                    await context.ProductBinCardInformation.AddAsync(binCardEvent);
+                    if (await context.FinishedGoodsRecalls.AnyAsync(r => r.BatchManufacturingRecordId == transferNote.BatchManufacturingRecordId && r.Closed))
+                        return Error.Validation("StockAdjustment.RecallClosed", "QA must reopen the recall before newly found or discrepant recalled stock is counted.");
+                    if (transferNote.RequiresStockReconciliation || transferNote.QuarantinedReturnQuantity > 0)
+                        return Error.Validation("StockAdjustment.Reconciliation", "Reconcile historical stock first; quarantined returns require their own QA disposition.");
+                    if (!transferNote.IsApproved || transferNote.PhysicalQuantity != line.SystemQuantitySnapshot)
+                        return Error.Conflict("StockAdjustment.Stale", "Received stock changed after counting; recount and submit a new adjustment.");
+                    if (transferNote.StockQuantity + line.Variance < transferNote.AllocatedQuantity)
+                        return Error.Validation("StockAdjustment.Reserved", "This adjustment would consume reserved or dispatched stock. Resolve the allocation first.");
+                    transferNote.AdjustmentQuantity += line.Variance;
+                    postBalance = transferNote.PhysicalQuantity;
+                    await FinishedGoodsStock.Post(context, transferNote, line.Variance, "FgAdjustment", adjustment.Id.ToString(),
+                        userId, $"Stock adjustment {adjustment.AdjustmentNumber}: {line.Notes}");
+                    // FinishedGoodsStock also writes the audit ledger for this product line.
+                    continue;
                 }
 
                 // Immutable Audit Ledger
@@ -457,13 +467,17 @@ public class StockAdjustmentRepository(
                 await context.InventoryLedgers.AddAsync(ledgerEntry);
             }
 
+            if (adjustment.TargetType == StockAdjustmentTarget.Product) {
+                var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanApplyFinishedGoodsStockAdjustment, userId);
+                if (denied is not null) return denied;
+            }
             await context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            if (transaction is not null) await transaction.CommitAsync();
             return Result.Success();
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
+            if (transaction is not null) await transaction.RollbackAsync();
             return Error.Failure("StockAdjustment.ApplyFailed", ex.Message);
         }
     }

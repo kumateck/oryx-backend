@@ -959,6 +959,26 @@ public static class PermissionKeys
     public const string CanManageCustomerContracts = "ManageCustomerContracts";
     /// <summary>Finance costing: product list prices and customer pricing agreements.</summary>
     public const string CanManageCosting = "ManageCosting";
+    /// <summary>View price-list revisions and their prices.</summary>
+    public const string CanViewCostingPriceList = "CanViewCostingPriceList";
+    /// <summary>Prepare the first price-list revision for a division.</summary>
+    public const string CanCreateCostingPriceList = "CanCreateCostingPriceList";
+    /// <summary>Correct an editable price-list revision.</summary>
+    public const string CanEditCostingPriceList = "CanEditCostingPriceList";
+    /// <summary>Prepare a replacement price-list revision.</summary>
+    public const string CanReviseCostingPriceList = "CanReviseCostingPriceList";
+    /// <summary>Submit a price-list revision for review.</summary>
+    public const string CanSubmitCostingPriceList = "CanSubmitCostingPriceList";
+    /// <summary>Confirm the review of a price-list revision.</summary>
+    public const string CanReviewCostingPriceList = "CanReviewCostingPriceList";
+    /// <summary>Return a price-list revision for correction.</summary>
+    public const string CanReturnCostingPriceList = "CanReturnCostingPriceList";
+    /// <summary>Approve an assigned price-list revision.</summary>
+    public const string CanApproveCostingPriceList = "CanApproveCostingPriceList";
+    /// <summary>Reject an assigned price-list revision.</summary>
+    public const string CanRejectCostingPriceList = "CanRejectCostingPriceList";
+    /// <summary>Print a price-list revision and its signatories.</summary>
+    public const string CanPrintCostingPriceList = "CanPrintCostingPriceList";
     public const string CanViewCustomerQuotations = "ViewCustomerQuotations";
     public const string CanCreateCustomerQuotation = "CreateCustomerQuotation";
     public const string CanApproveCustomerQuotation = "ApproveCustomerQuotation";
@@ -975,6 +995,50 @@ public static class PermissionKeys
     public const string CanCreateInvoice = "CanCreateInvoice";
     /// <summary>Delete a customer invoice.</summary>
     public const string CanDeleteInvoice = "CanDeleteInvoice";
+    /// <summary>Cancel a packing list and release reserved stock after documented unloading.</summary>
+    public const string CanCancelFinishedGoodsAllocation = "CanCancelFinishedGoodsAllocation";
+    /// <summary>Void an unpaid, undeparted finished goods invoice with a recorded reason.</summary>
+    public const string CanVoidFinishedGoodsInvoice = "CanVoidFinishedGoodsInvoice";
+    /// <summary>Authorise destruction of recalled stock held on site.</summary>
+    public const string CanDisposeRecalledFinishedGoodsStock = "CanDisposeRecalledFinishedGoodsStock";
+    /// <summary>Reconcile historical finished goods counts, conversion and evidenced departures.</summary>
+    public const string CanReconcileFinishedGoodsStock = "CanReconcileFinishedGoodsStock";
+    /// <summary>Post an approved finished goods stock adjustment to the received-stock ledger.</summary>
+    public const string CanApplyFinishedGoodsStockAdjustment = "CanApplyFinishedGoodsStockAdjustment";
+    /// <summary>Confirm the approved manufacturing cost basis per finished product pack and currency.</summary>
+    public const string CanConfirmFinishedGoodsCosting = "CanConfirmFinishedGoodsCosting";
+    /// <summary>Record Finance's external credit, refund or replacement resolution for a product recall.</summary>
+    public const string CanRecordProductRecallSettlement = "CanRecordProductRecallSettlement";
+    /// <summary>Print a finished goods waybill and its verified shipment details.</summary>
+    public const string CanPrintFinishedGoodsWaybill = "CanPrintFinishedGoodsWaybill";
+    /// <summary>Record the authority classification and notification evidence for an open product recall.</summary>
+    public const string CanUpdateProductRecallDecision = "CanUpdateProductRecallDecision";
+    /// <summary>Reopen a closed product recall with QA evidence while retaining its closure history.</summary>
+    public const string CanReopenProductRecall = "CanReopenProductRecall";
+    /// <summary>Verify the customer PO against proforma pack quantities, prices and currency.</summary>
+    public const string CanVerifyFinishedGoodsCustomerPo = "CanVerifyFinishedGoodsCustomerPo";
+    /// <summary>Confirm invoice payment or credit clearance before finished goods leave.</summary>
+    public const string CanClearFinishedGoodsDispatch = "CanClearFinishedGoodsDispatch";
+    /// <summary>Authorise finished goods departure and post the warehouse issue.</summary>
+    public const string CanDispatchFinishedGoods = "CanDispatchFinishedGoods";
+    /// <summary>Place finished goods batches on a quality hold.</summary>
+    public const string CanHoldFinishedGoods = "CanHoldFinishedGoods";
+    /// <summary>Release a finished goods hold with QA evidence.</summary>
+    public const string CanReleaseFinishedGoodsHold = "CanReleaseFinishedGoodsHold";
+    /// <summary>View product recall records and batch distribution traceability.</summary>
+    public const string CanViewProductRecalls = "CanViewProductRecalls";
+    /// <summary>Initiate a product batch recall and block further distribution.</summary>
+    public const string CanCreateProductRecall = "CanCreateProductRecall";
+    /// <summary>Record recall notifications and recipient acknowledgement.</summary>
+    public const string CanNotifyProductRecall = "CanNotifyProductRecall";
+    /// <summary>Record recalled products recovered into quarantine.</summary>
+    public const string CanRecordProductRecallRecovery = "CanRecordProductRecallRecovery";
+    /// <summary>Approve documented destruction of recovered recalled products.</summary>
+    public const string CanDisposeProductRecallRecovery = "CanDisposeProductRecallRecovery";
+    /// <summary>Close a reconciled product recall with an effectiveness report.</summary>
+    public const string CanCloseProductRecall = "CanCloseProductRecall";
+    /// <summary>Print product recall and distribution reconciliation records.</summary>
+    public const string CanPrintProductRecall = "CanPrintProductRecall";
     /// <summary>Mark an allocation as loaded.</summary>
     public const string CanLoadFinishedGoods = "CanLoadFinishedGoods";
     /// <summary>Mark an allocation as delivered.</summary>
@@ -1770,6 +1834,28 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductSpecifications);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductArds);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductStps);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanVerifyFinishedGoodsCustomerPo);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanClearFinishedGoodsDispatch);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanDispatchFinishedGoods);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanHoldFinishedGoods);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanReleaseFinishedGoodsHold);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanViewProductRecalls);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanCreateProductRecall);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanNotifyProductRecall);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanRecordProductRecallRecovery);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanDisposeProductRecallRecovery);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanCloseProductRecall);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanPrintProductRecall);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanCancelFinishedGoodsAllocation);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Allocations", PermissionKeys.CanVoidFinishedGoodsInvoice);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanDisposeRecalledFinishedGoodsStock);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Products", PermissionKeys.CanReconcileFinishedGoodsStock);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Products", PermissionKeys.CanApplyFinishedGoodsStockAdjustment);
+        addPermission(PermissionModules.Finance, "Costing", PermissionKeys.CanConfirmFinishedGoodsCosting);
+        addPermission(PermissionModules.Finance, "Product Recall Settlements", PermissionKeys.CanRecordProductRecallSettlement);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, PermissionSubmodules.Waybill, PermissionKeys.CanPrintFinishedGoodsWaybill);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanReopenProductRecall);
+        addPermission(PermissionModules.FinishedGoodsWarehouse, "Product Recalls", PermissionKeys.CanUpdateProductRecallDecision);
         addPermission(PermissionModules.FinishedGoodsWarehouse, "Products", PermissionKeys.CanViewFgProducts);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanApproveMaterialBatch);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanRequestRetestProductTest);
@@ -2213,6 +2299,16 @@ public static class PermissionUtils
             PermissionSubmodules.Costing,
             PermissionKeys.CanManageCosting
         );
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanViewCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanCreateCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanEditCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanReviseCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanSubmitCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanReviewCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanReturnCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanApproveCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanRejectCostingPriceList);
+        addPermission(PermissionModules.Finance, PermissionSubmodules.Costing, PermissionKeys.CanPrintCostingPriceList);
 
         // Warehouse
         addPermission(

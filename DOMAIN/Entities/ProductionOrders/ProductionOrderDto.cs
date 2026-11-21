@@ -67,6 +67,8 @@ public class ProductionOrderProductQuantityDto
 
 public class AllocateProductionOrderRequest
 {
+    public string FefoExceptionReason { get; set; }
+
     public Guid ProductionOrderId { get; set; }
     public List<AllocateProductionOrderProductRequest> Products { get; set; } = [];
 }
@@ -88,6 +90,25 @@ public class AllocateProductQuantityRequest
 
 public class AllocateProductionOrderDto
 {
+    public string FefoExceptionReason { get; set; }
+
+    public DateTime? CostingConfirmedAt { get; set; }
+
+    public string LoadedVehicle { get; set; }
+    public string LoadedDriver { get; set; }
+    public string LoadedDriverPhone { get; set; }
+    public string LoadingLocation { get; set; }
+    public string LoadingInspectionReference { get; set; }
+
+    public DateTime? DispatchedAt { get; set; }
+    public string ExitReference { get; set; }
+    public DateTime? CommercialClearedAt { get; set; }
+    public string CommercialClearanceReason { get; set; }
+    public string DeliveryReceiver { get; set; }
+    public string DeliveryEvidence { get; set; }
+    public string DeliveryCondition { get; set; }
+    public List<FinishedGoodsDeliveryLine> DeliveryLines { get; set; } = [];
+
     public Guid Id { get; set; }
     public ProductionOrderListDto ProductionOrder { get; set; }
     public string InvoiceCode { get; set; }
@@ -103,6 +124,9 @@ public class AllocateProductionOrderDto
 
 public class AllocateProductionOrderProductDto
 {
+    public decimal? UnitPrice { get; set; }
+    public Guid? PriceCurrencyId { get; set; }
+    public Guid? PriceListRevisionId { get; set; }
     public ProductListDto Product { get; set; }
     public ProductPackingDto ProductPacking { get; set; }
     public List<AllocateProductQuantityDto> FulfilledQuantities { get; set; } = [];

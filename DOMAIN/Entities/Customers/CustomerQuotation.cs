@@ -30,6 +30,7 @@ public class CustomerQuotationItem : BaseEntity
     public Guid ProductPackingId { get; set; }
     public ProductPacking ProductPacking { get; set; }
     public decimal UnitPrice { get; set; }
+    public Guid? PriceListRevisionId { get; set; }
     public decimal DiscountPercent { get; set; }
     public decimal TotalValue => Quantity * UnitPrice * (1 - DiscountPercent / 100m);
 }

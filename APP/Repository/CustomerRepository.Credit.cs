@@ -20,7 +20,7 @@ public partial class CustomerRepository
             return Error.Validation("CustomerCredit.CurrencyRequired", "A preferred currency is required for credit control.");
 
         var invoiceAmounts = await context.InvoiceAmounts.AsNoTracking()
-            .Where(item => item.Invoice.CustomerId == customerId && item.Invoice.Status == InvoiceStatus.Approved)
+            .Where(item => item.Invoice.CustomerId == customerId && !item.Invoice.Voided && item.Invoice.Status == InvoiceStatus.Approved)
             .Select(item => new { item.InvoiceId, item.CurrencyId, item.Currency.Name, item.Currency.Symbol, item.Amount })
             .ToListAsync();
         var invoiceIds = invoiceAmounts.Select(item => item.InvoiceId).Distinct().ToList();

@@ -233,7 +233,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Gets a paginated list of invoices.
     /// </summary>
     [HttpGet("invoice")]
-    [AnyPermission("CanViewCashflowReports", "CanViewPayments")]
+    [Authorize(PermissionKeys.CanViewInvoice)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
         Type = typeof(Paginateable<IEnumerable<InvoiceDto>>)
@@ -252,7 +252,7 @@ public class ProductionOrderController(IProductionOrderRepository repository) : 
     /// Gets an invoice by ID.
     /// </summary>
     [HttpGet("invoice/{id:guid}")]
-    [AnyPermission("CanViewInvoice")]
+    [Authorize(PermissionKeys.CanViewInvoice)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(InvoiceDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetInvoice([FromRoute] Guid id)

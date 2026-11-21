@@ -1,5 +1,6 @@
 using System.Globalization;
 using APP.Extensions;
+using APP.Services.Authorization;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
@@ -35,6 +36,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         if (request.Price < 0)
             return Error.Validation("Product.Price", "Product price cannot be negative");
 
+        if (request.Price > 0 && await context.CostingPriceLists.AnyAsync(list => list.Division == request.Division))
+            return Error.Conflict("ListPrice.Versioned", "Prepare pack prices through a Finance costing revision.");
         var priceCurrency = await ListPriceCurrency(request.PriceCurrencyId, null);
         if (priceCurrency.Error is not null) return priceCurrency.Error;
 
@@ -187,6 +190,8 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
         if (request.Price > 0
             && (existingProduct.Price != request.Price || existingProduct.PriceCurrencyId != priceCurrency.CurrencyId))
         {
+            if (await context.CostingPriceLists.AnyAsync(list => list.Division == existingProduct.Division))
+                return Error.Conflict("ListPrice.Versioned", "Change pack prices through a Finance costing revision.");
             existingProduct.Prices.Add(
                 new ProductPrices
                 {
@@ -377,35 +382,40 @@ public class ProductRepository(ApplicationDbContext context, IMapper mapper) : I
     public async Task<Result> CreateRoute(
         List<CreateRouteRequest> request,
         Guid productId,
-        Guid userId
+        Guid userId,
+        string permissionContext = null
     )
     {
         var deletedProduct = await DeletedProductGuard.Refuse(context, productId);
         if (deletedProduct is not null) return deletedProduct;
         var validation = ValidateAutomatedStepsHaveNoMainAction(request);
-        if (validation.IsFailure)
-            return validation;
+        if (validation.IsFailure) return validation;
 
-        var product = await context
-            .Products.AsSplitQuery()
-            .Include(product => product.Routes)
-            .FirstOrDefaultAsync(p => p.Id == productId);
-        if (product is null)
-            return ProductErrors.NotFound(productId);
+        await using var transaction = context.Database.IsRelational()
+            ? await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+        var product = await context.Products.IgnoreAutoIncludes().Include(p => p.Routes).FirstOrDefaultAsync(p => p.Id == productId);
+        if (product is null) return ProductErrors.NotFound(productId);
 
-        if (product.Routes.Count != 0)
+        // Copy the action and its stage, then resolve the target's own ARD. Never save a
+        // different product's quality document or silently discard an ATR instruction.
+        var resolved = await ProductProcedureCopy.Resolve(context, productId, request);
+        if (resolved.IsFailure) return resolved.Error;
+        var changes = await ProductSectionChanges.Procedure(context, productId, resolved.Value);
+        var grants = await CurrentPermissionSet.Load(context, userId);
+        var denied = changes.Select(verb => ProductPermissions.Key(ProductPermissions.Parse(permissionContext), ProductSection.Procedure, verb))
+            .Where(key => key is null || !grants.Contains(key)).ToList();
+        if (denied.Count > 0) return Error.Forbidden("Product.Permission", "You need the current procedure permissions for every change on the target product.");
+
+        context.Routes.RemoveRange(product.Routes);
+        product.Routes.Clear();
+        foreach (var routeRequest in resolved.Value.DistinctBy(r => r.OperationId))
         {
-            await context.Routes.Where(x => x.ProductId == productId).ExecuteDeleteAsync();
+            var route = mapper.Map<Route>(routeRequest);
+            route.ProductId = productId; route.CreatedById = userId;
+            product.Routes.Add(route);
         }
-
-        var routes = new List<Route>();
-
-        foreach (var routeRequest in request.DistinctBy(r => r.OperationId).ToList())
-        {
-            routes.Add(mapper.Map<Route>(routeRequest));
-        }
-        product.Routes.AddRange(routes);
         await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
     }
 

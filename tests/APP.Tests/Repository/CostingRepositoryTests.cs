@@ -63,6 +63,63 @@ public class CostingRepositoryTests
     }
 
     [Fact]
+    public async Task GetListPrices_ReturnsOnlyTheLatestPrice_AndKeepsUnpricedProducts()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context);
+        var product = context.Products.Local.Single();
+        product.Prices.Add(new ProductPrices { Price = 12.5m, CurrencyId = ids.DollarId, PriceUoM = "bottle", Date = Now });
+        context.Products.AddRange(new Product { Id = Guid.NewGuid(), Name = "Unpriced" },
+            new Product { Id = Guid.NewGuid(), Name = "Deleted", DeletedAt = Now });
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var result = await new CostingRepository(context).GetListPrices(1, 30, "", null, null);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value.TotalRecordCount);
+        var rows = result.Value.Data.ToList();
+        var priced = Assert.Single(rows, row => row.ProductId == ids.ProductId);
+        Assert.Equal(12.5m, priced.Price);
+        Assert.Equal("bottle", priced.PriceUoM);
+        Assert.Equal(Now, priced.PricedAt);
+        Assert.Equal(ids.DollarId, priced.Currency.Id);
+        var unpriced = Assert.Single(rows, row => row.ProductName == "Unpriced");
+        Assert.Equal(0, unpriced.Price);
+        Assert.Null(unpriced.PricedAt);
+        Assert.Null(unpriced.Currency);
+        Assert.Empty(context.ChangeTracker.Entries());
+    }
+
+    [Fact]
+    public async Task GetListPrices_FiltersByLatestCurrency_AndPaginatesWithoutDuplicatingHistory()
+    {
+        await using var context = CreateContext();
+        var ids = Seed(context);
+        context.Products.Local.Single().Prices.Add(new ProductPrices { Price = 20m, CurrencyId = ids.DollarId, Date = Now });
+        for (var index = 0; index < 32; index++)
+            context.Products.Add(new Product { Id = Guid.NewGuid(), Name = $"Product {index:D2}", Prices = [
+                new ProductPrices { Price = 1m, CurrencyId = ids.DollarId, Date = Now.AddDays(-1) },
+                new ProductPrices { Price = 2m, CurrencyId = ids.CediId, Date = Now },
+            ] });
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+        var repository = new CostingRepository(context);
+
+        var dollars = await repository.GetListPrices(1, 30, "", null, ids.DollarId);
+        Assert.Equal(ids.ProductId, Assert.Single(dollars.Value.Data).ProductId);
+        var first = await repository.GetListPrices(1, 30, "", null, ids.CediId);
+        var second = await repository.GetListPrices(2, 30, "", null, ids.CediId);
+        Assert.Equal(32, first.Value.TotalRecordCount);
+        Assert.Equal(2, first.Value.PageCount);
+        Assert.Equal(30, first.Value.Data.Count());
+        Assert.Equal(2, second.Value.Data.Count());
+        Assert.Empty(first.Value.Data.Select(row => row.ProductId).Intersect(second.Value.Data.Select(row => row.ProductId)));
+        Assert.All(first.Value.Data.Concat(second.Value.Data), row => Assert.Equal(2m, row.Price));
+        Assert.Empty(context.ChangeTracker.Entries());
+    }
+
+    [Fact]
     public async Task GetPricingAgreements_ListsEveryCustomer_AndFiltersByCustomerAndDate()
     {
         await using var context = CreateContext();
