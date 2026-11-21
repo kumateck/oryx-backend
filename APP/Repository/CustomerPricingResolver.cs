@@ -26,8 +26,10 @@ internal static class CustomerPricingResolver
         DateTime asOf
     )
     {
+        var effective = await APP.Services.Costing.EffectiveCostingPrice.Resolve(context, productId, productPackingId, asOf);
+        if (effective.HasRevision) { defaultPrice = effective.Price; defaultCurrencyId = effective.CurrencyId; }
         if (!productPackingId.HasValue)
-            return Resolve([], defaultPrice, defaultCurrencyId);
+            return Resolve([], defaultPrice, defaultCurrencyId) with { PriceListRevisionId = effective.RevisionId };
 
         var matches = await context
             .CustomerPricingAgreements.AsNoTracking()
@@ -41,7 +43,8 @@ internal static class CustomerPricingResolver
             .Take(2)
             .ToListAsync();
 
-        return Resolve(matches, defaultPrice, defaultCurrencyId);
+        var resolved = Resolve(matches, defaultPrice, defaultCurrencyId);
+        return resolved with { PriceListRevisionId = resolved.FromAgreement ? null : effective.RevisionId };
     }
 
     /// <summary>
@@ -112,5 +115,6 @@ internal sealed record CustomerPricingResolution(
     decimal UnitPrice,
     Guid? CurrencyId,
     bool FromAgreement,
-    bool Ambiguous
+    bool Ambiguous,
+    Guid? PriceListRevisionId = null
 );

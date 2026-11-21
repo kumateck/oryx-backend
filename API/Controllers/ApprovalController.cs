@@ -414,6 +414,7 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
         "ShipmentDiscrepancy" or "StockDiscrepancy" or nameof(DOMAIN.Entities.Forms.Response) => null,
         _ when QcWorksheetModelTypes.IsQcWorksheetModelType(modelType) => null,
         "PayrollRun" => approve ? PermissionKeys.CanApprovePayrollRun : PermissionKeys.CanCancelPayrollRun,
+        "CostingPriceList" => approve ? PermissionKeys.CanApproveCostingPriceList : PermissionKeys.CanRejectCostingPriceList,
         "ApprovedVendorList" => approve ? PermissionKeys.CanApproveApprovedVendorList : PermissionKeys.CanRejectApprovedVendorList,
         _ => approve ? PermissionKeys.CanApprovePendingApproval : PermissionKeys.CanRejectPendingApproval,
     };

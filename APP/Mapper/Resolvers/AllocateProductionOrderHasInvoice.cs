@@ -14,7 +14,7 @@ public class AllocateProductionOrderHasInvoice(ApplicationDbContext dbContext)
         ResolutionContext context
     )
     {
-        return dbContext.ProformaInvoices.Any(i => i.AllocateProductionOrderId == source.Id);
+        return dbContext.ProformaInvoices.Any(i => i.AllocateProductionOrderId == source.Id && i.DeletedAt == null);
     }
 }
 
@@ -28,7 +28,7 @@ public class AllocateProductionOrderHasWayBill(ApplicationDbContext dbContext)
         ResolutionContext context
     )
     {
-        return dbContext.ProductionOrderWaybills.Any(i => i.AllocateProductionOrderId == source.Id);
+        return dbContext.ProductionOrderWaybills.Any(i => i.AllocateProductionOrderId == source.Id && !i.Voided);
     }
 }
 

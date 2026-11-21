@@ -324,7 +324,7 @@ public class FinishedGoodsYieldTests
         await using var context = CreateContext();
         var seed = await SeedAsync(context, orderedPacks: 1000, noteYield: 32_607m, received: false);
 
-        var result = await CreateSchedules(context).ApproveTransferNote(seed.NoteId, new ApproveTransferNoteRequest { QuantityReceived = 32_000m });
+        var result = await CreateSchedules(context).ApproveTransferNote(seed.NoteId, new ApproveTransferNoteRequest { QuantityReceived = 32_000m, Notes = "Three packs short" });
 
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
         context.ChangeTracker.Clear();
@@ -362,7 +362,7 @@ public class FinishedGoodsYieldTests
         style.Packing.ProductId = product.Id;
         var schedule = new ProductionSchedule { Id = Guid.NewGuid() };
         var scheduled = new ProductionScheduleProduct { Id = Guid.NewGuid(), ProductionScheduleId = schedule.Id, ProductId = product.Id };
-        var batch = new BatchManufacturingRecord { Id = Guid.NewGuid(), ProductionScheduleProductId = scheduled.Id, BatchNumber = "DC-1" };
+        var batch = new BatchManufacturingRecord { Id = Guid.NewGuid(), ProductionScheduleProductId = scheduled.Id, BatchNumber = "DC-1", Status = BatchManufacturingStatus.Approved, ExpiryDate = DateTime.UtcNow.AddYears(1) };
         var note = new FinishedGoodsTransferNote
         {
             Id = Guid.NewGuid(), TransferNoteNumber = "FGTN-1", BatchManufacturingRecordId = batch.Id, ProductPackingId = style.Packing.Id,
@@ -375,6 +375,16 @@ public class FinishedGoodsYieldTests
             Id = Guid.NewGuid(), Code = "PO-1", CustomerId = customer.Id, Approved = true,
             Products = [new ProductionOrderProducts { ProductId = product.Id, ProductPackingId = style.Packing.Id, TotalOrderQuantity = orderedPacks }],
         };
+        var actor = new DOMAIN.Entities.Users.User { Id = ActorId, UserName = "FG operator" };
+        var role = new DOMAIN.Entities.Roles.Role { Id = Guid.NewGuid(), Name = "FG role" };
+        context.AddRange(actor, role);
+        context.UserRoles.Add(new Microsoft.AspNetCore.Identity.IdentityUserRole<Guid> { UserId = ActorId, RoleId = role.Id });
+        var claimId = 0;
+        foreach (var key in new[] { PermissionKeys.CanGeneratePackingList, PermissionKeys.CanApproveFgtn }) {
+            var claim = new Microsoft.AspNetCore.Identity.IdentityRoleClaim<Guid> { Id = ++claimId, RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = key };
+            context.RoleClaims.Add(claim);
+            context.PermissionTypes.Add(new DOMAIN.Entities.Permissions.PermissionType { Id = Guid.NewGuid(), RoleClaimId = claim.Id, Key = key, Type = "Edit" });
+        }
         context.AddRange(style.Units);
         context.AddRange(product, style.Packing, schedule, scheduled, batch, note, customer, order);
         await context.SaveChangesAsync();
@@ -413,9 +423,10 @@ public class FinishedGoodsYieldTests
     private static ApplicationDbContext CreateContext() =>
         new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, new NoUser());
 
+    private static readonly Guid ActorId = Guid.Parse("00000000-0000-0000-0000-000000000456");
     private sealed class NoUser : ICurrentUserService
     {
-        public Guid? UserId => null;
+        public Guid? UserId => ActorId;
         public Guid? DepartmentId => null;
         public string DepartmentType => string.Empty;
     }

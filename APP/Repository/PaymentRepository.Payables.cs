@@ -79,7 +79,7 @@ public partial class PaymentRepository
     {
         var entity = await context.Invoices.AsNoTracking()
             .Include(item => item.Amounts).ThenInclude(item => item.Currency)
-            .FirstOrDefaultAsync(item => item.Id == id);
+            .FirstOrDefaultAsync(item => item.Id == id && !item.Voided);
         if (entity is null)
             return Error.NotFound("Invoice.NotFound", "Customer invoice not found.");
         if (entity.Amounts.Count == 0)

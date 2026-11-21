@@ -226,6 +226,10 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
                     || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value)))),
         x => x.Approvals, x => x.CreatedBy.Department);
 
+    internal IQueryable<DOMAIN.Entities.Costing.CostingPriceList> CostingPriceLists => context.CostingPriceLists.Where(list =>
+        list.Status == DOMAIN.Entities.Costing.CostingPriceListStatus.Pending && list.Approvals.Any(stage => stage.ActivatedAt.HasValue
+            && stage.Status == ApprovalStatus.Pending && (stage.UserId == userId || stage.RoleId.HasValue && roleIds.Contains(stage.RoleId.Value))));
+
     internal IQueryable<DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorList> ApprovedVendorLists => departmentScope.Apply(context.ApprovedVendorLists
         .Where(item => item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Pending
             && item.Approvals.Any(stage => stage.ActivatedAt.HasValue
@@ -292,6 +296,7 @@ internal sealed class PendingApprovalQueries(ApplicationDbContext context, Guid 
         yield return AllocateProductionOrders.Select(item => new PendingApprovalKey(nameof(AllocateProductionOrder), item.Id));
         yield return CustomerQuotations.Select(item => new PendingApprovalKey(nameof(CustomerQuotation), item.Id));
         yield return SupplierPricingAgreements.Select(item => new PendingApprovalKey(nameof(SupplierPricingAgreement), item.Id));
+        yield return CostingPriceLists.Select(item => new PendingApprovalKey(CostingPriceListApprovalHandler.ModelType, item.Id));
         yield return ApprovedVendorLists.Select(item => new PendingApprovalKey(ApprovedVendorListApprovalHandler.ModelType, item.Id));
         yield return RndProjects.Select(item => new PendingApprovalKey(nameof(RndProject), item.Id));
         yield return RndFormulations.Select(item => new PendingApprovalKey(nameof(RndFormulation), item.Id));

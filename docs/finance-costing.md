@@ -1,3 +1,5 @@
+> Versioned price lists now supersede the original direct list-price screen. See [versioned costing](versioned-costing.md) for effective dates, per-pack prices, currency, permissions and deployment. The original API below remains for compatibility until a division adopts revisions.
+
 # Finance costing: list prices and customer pricing agreements (2026-10-31)
 
 Costing answers one question: what a product is priced at for a customer, and in

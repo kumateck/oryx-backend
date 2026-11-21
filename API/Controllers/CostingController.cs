@@ -3,6 +3,7 @@ using APP.IRepository;
 using APP.Utils;
 using DOMAIN.Entities.Costing;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Products;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SHARED;
@@ -20,11 +21,13 @@ public class CostingController(ICostingRepository repository) : ControllerBase
 {
     /// <summary>Lists products with their current list price and its currency.</summary>
     [HttpGet("list-prices")]
+    [Authorize(PermissionKeys.CanManageCosting)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Paginateable<IEnumerable<ProductListPriceDto>>))]
     public async Task<IResult> GetListPrices([FromQuery] int page = 1, [FromQuery] int pageSize = 10,
-        [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null, [FromQuery] Guid? currencyId = null)
+        [FromQuery] string searchQuery = null, [FromQuery] Guid? departmentId = null, [FromQuery] Guid? currencyId = null,
+        [FromQuery] Division? division = null)
     {
-        var result = await repository.GetListPrices(page, pageSize, searchQuery, departmentId, currencyId);
+        var result = await repository.GetListPrices(page, pageSize, searchQuery, departmentId, currencyId, division);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

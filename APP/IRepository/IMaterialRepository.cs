@@ -1,4 +1,5 @@
 using APP.Utils;
+using APP.Services.Authorization;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
@@ -217,12 +218,14 @@ public interface IMaterialRepository
         string sortLabel,
         SortDirection? sortDirection,
         Guid userId,
-        Guid? productId = null
+        Guid? productId = null,
+        ProductContext productContext = ProductContext.Production
     );
     Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(
         Guid materialId,
         Guid userId,
-        Guid? productId = null
+        Guid? productId = null,
+        ProductContext productContext = ProductContext.Production
     );
     Task<Result<Paginateable<IEnumerable<HoldingMaterialTransferDto>>>> GetHoldingMaterialTransfers(
         int page,
