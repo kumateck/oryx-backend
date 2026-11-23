@@ -61,8 +61,14 @@ No migration or release has been applied to customer data by this implementation
 ## Data integrity rules
 
 Raw material stock units come from the product department's material linkage,
-including counted units such as `piece`. Saving a BOM rejects a stale or different
-unit before removing any existing formula. Stock requisition creation and issue
+including counted units such as `piece`. Each main material and substitute is
+validated against its own department link. BOM entry may use mg/g/kg for a mass
+link or mL/L for a volume link; saving converts both unit and full-batch amounts
+to mg or mL and stores that matching active unit ID. Counted units stay unchanged.
+Explicit density mode retains its measured-density checks and mg source.
+Incompatible families, missing or ambiguous smallest units, invalid quantities,
+and revoked authoring grants are refused before removing any existing formula.
+Stock requisition creation and issue
 also reject raw lines, applied units or live reservations that disagree with that
 linkage. For a legacy batch, incompatible BOM units or a mismatch between the
 requested quantity and its existing reservation require the operator to save the

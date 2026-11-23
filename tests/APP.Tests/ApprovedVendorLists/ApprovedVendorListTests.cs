@@ -35,7 +35,7 @@ internal sealed class AvlActor : ICurrentUserService
     public string DepartmentType => string.Empty;
 }
 
-public class ApprovedVendorListTests
+public partial class ApprovedVendorListTests
 {
     private readonly AvlActor actor = new();
     private readonly ApplicationDbContext db;
@@ -129,6 +129,7 @@ public class ApprovedVendorListTests
         Assert.Equal(PermissionKeys.CanCreateApprovedVendorList, Policy(nameof(ApprovedVendorListController.CreateApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanReviseApprovedVendorList, Policy(nameof(ApprovedVendorListController.ReviseApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanEditApprovedVendorList, Policy(nameof(ApprovedVendorListController.UpdateApprovedVendorList)));
+        Assert.Equal(PermissionKeys.CanDeleteApprovedVendorList, Policy(nameof(ApprovedVendorListController.DeleteApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanApproveApprovedVendorList, ApprovalController.DecisionKey(ReviewDocumentTypes.ApprovedVendorList, approve: true));
         Assert.Equal(PermissionKeys.CanRejectApprovedVendorList, ApprovalController.DecisionKey(ReviewDocumentTypes.ApprovedVendorList, approve: false));
     }
@@ -140,7 +141,7 @@ public class ApprovedVendorListTests
         foreach (var key in new[] { PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanEditApprovedVendorList,
                      PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanReviewApprovedVendorList, PermissionKeys.CanReturnApprovedVendorList,
                      PermissionKeys.CanApproveApprovedVendorList, PermissionKeys.CanRejectApprovedVendorList, PermissionKeys.CanPrintApprovedVendorList,
-                     PermissionKeys.CanViewApprovedVendorEligibility })
+                     PermissionKeys.CanViewApprovedVendorEligibility, PermissionKeys.CanDeleteApprovedVendorList })
             Assert.Single(keys, key);
     }
 
