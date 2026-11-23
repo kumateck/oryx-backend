@@ -191,6 +191,10 @@ public class ProductionMaterialRepairPostgresTests
         services.AddAutoMapper(configuration => { }, typeof(APP.Mapper.OryxMapper));
         var mapper = services.BuildServiceProvider().GetRequiredService<IMapper>();
         var productId = (await db.ProductionScheduleProducts.SingleAsync(batch => batch.Id == BatchId)).ProductId;
+        var roleId = await db.UserRoles.Where(link => link.UserId == Actor).Select(link => link.RoleId).SingleAsync();
+        db.RoleClaims.Add(new() { Id = 710, RoleId = roleId, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanEditProductionProductBom });
+        db.PermissionTypes.Add(new() { Id = Guid.NewGuid(), RoleClaimId = 710, Key = PermissionKeys.CanEditProductionProductBom, Type = "Access" });
+        await db.SaveChangesAsync();
         var saved = await new BoMRepository(db, mapper).CreateBillOfMaterial(new()
         { ProductId = productId, Items = [new() { MaterialId = MaterialId, BaseUoMId = pieceId, BaseQuantity = 1, PrescribedQuantity = 20, Order = 1 }] }, Actor);
         Assert.True(saved.IsSuccess, saved.IsFailure ? saved.Error.Description : null);

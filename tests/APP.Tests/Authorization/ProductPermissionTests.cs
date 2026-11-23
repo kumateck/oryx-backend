@@ -26,6 +26,19 @@ namespace APP.Tests.Authorization;
 /// <summary>Products: one key per task and section, per context, and bulk saves need a key for each kind of change.</summary>
 public sealed class ProductPermissionTests
 {
+    [Theory]
+    [InlineData(ProductContext.Production)]
+    [InlineData(ProductContext.Qa)]
+    public void Bom_authoring_keeps_its_task_policies_and_each_key_is_registered_once(ProductContext context)
+    {
+        var action = typeof(BillOfMaterialController).GetMethod(nameof(BillOfMaterialController.CreateBillOfMaterial))!;
+        Assert.Empty(action.GetCustomAttributes<Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute>());
+        var policy = Assert.Single(action.GetCustomAttributes<ProductPermissionAttribute>());
+        Assert.Equal((ProductSection.Bom, ProductVerb.Save), (policy.Section, policy.Verb));
+        foreach (var verb in new[] { ProductVerb.Add, ProductVerb.Edit, ProductVerb.Delete })
+            Assert.Single(PermissionUtils.GeneratePermissions(), permission => permission.Key == ProductPermissions.Key(context, ProductSection.Bom, verb));
+    }
+
     private sealed class Actor(Guid id) : ICurrentUserService
     {
         public Guid? UserId => id;
@@ -84,6 +97,46 @@ public sealed class ProductPermissionTests
     }
 
     private static CreateProductPackageRequest Row(Guid material, decimal quantity) => new() { MaterialId = material, BaseQuantity = quantity };
+
+    [Fact]
+    public async Task Adding_a_line_with_an_equivalent_unit_scale_keeps_the_existing_add_permission_working()
+    {
+        var (db, user) = Seed(PermissionKeys.CanAddProductionProductBom);
+        var product = Guid.NewGuid(); var main = Guid.NewGuid();
+        var mg = new DOMAIN.Entities.Base.UnitOfMeasure { Id = Guid.NewGuid(), Symbol = "mg" };
+        var gram = new DOMAIN.Entities.Base.UnitOfMeasure { Id = Guid.NewGuid(), Symbol = "g" };
+        db.UnitOfMeasures.AddRange(mg, gram);
+        db.ProductBillOfMaterials.Add(new() { ProductId = product, IsActive = true,
+            BillOfMaterial = new DOMAIN.Entities.BillOfMaterials.BillOfMaterial { Items = [new() { MaterialId = main,
+                BaseUoMId = mg.Id, BaseQuantity = 1000, PrescribedQuantity = 10000 }] } });
+        await db.SaveChangesAsync();
+        var request = new DOMAIN.Entities.BillOfMaterials.Request.CreateBillOfMaterialRequest { ProductId = product, Items = [
+            new() { MaterialId = main, BaseUoMId = gram.Id, BaseQuantity = 1, PrescribedQuantity = 10 },
+            new() { MaterialId = Guid.NewGuid(), BaseUoMId = mg.Id, BaseQuantity = 1, PrescribedQuantity = 10 }] };
+        Assert.True((await Run(db, user, new(ProductSection.Bom, ProductVerb.Save), new() { ["request"] = request })).Ran);
+        Assert.Equal([ProductVerb.Add], await ProductSectionChanges.Bom(db, request));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Adding_a_BOM_line_does_not_authorize_changing_an_existing_main_or_substitute_unit(bool substitute)
+    {
+        var (db, user) = Seed(PermissionKeys.CanAddProductionProductBom);
+        var product = Guid.NewGuid(); var main = Guid.NewGuid(); var alternate = Guid.NewGuid(); var unit = Guid.NewGuid();
+        db.ProductBillOfMaterials.Add(new() { ProductId = product, IsActive = true,
+            BillOfMaterial = new DOMAIN.Entities.BillOfMaterials.BillOfMaterial { Items = [new() { MaterialId = main,
+                BaseUoMId = unit, BaseQuantity = 1, PrescribedQuantity = 10, IsSubstitutable = true,
+                Substitutes = [new() { SubstituteMaterialId = alternate, BaseUoMId = unit, BaseQuantity = 2, PrescribedQuantity = 20 }] }] } });
+        await db.SaveChangesAsync();
+        var request = new DOMAIN.Entities.BillOfMaterials.Request.CreateBillOfMaterialRequest { ProductId = product, Items = [
+            new() { MaterialId = main, BaseUoMId = substitute ? unit : Guid.NewGuid(), BaseQuantity = 1, PrescribedQuantity = 10, IsSubstitutable = true,
+                Substitutes = [new() { MaterialId = alternate, BaseUoMId = substitute ? Guid.NewGuid() : unit, BaseQuantity = 2, PrescribedQuantity = 20 }] },
+            new() { MaterialId = Guid.NewGuid(), BaseQuantity = 3, PrescribedQuantity = 30, BaseUoMId = unit }] };
+        var result = await Run(db, user, new(ProductSection.Bom, ProductVerb.Save), new() { ["request"] = request });
+        Assert.False(result.Ran);
+        Assert.Contains(ProductVerb.Edit, await ProductSectionChanges.Bom(db, request));
+    }
 
     [Fact]
     public async Task A_packing_material_save_needs_the_key_for_each_kind_of_change_in_its_context()
