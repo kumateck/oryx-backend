@@ -83,7 +83,14 @@ Missing/incompatible unit evidence or ambiguous main/substitute allocations are
 refused. Existing valid substitute selections are preserved; new requirements
 use their primary material rather than silently allocating every substitute.
 A valid selection recorded only on the current requisition is preserved even if
-its reservation is missing. Conflicting selections are refused.
+its reservation is missing. Rejected stock requisitions, including legacy
+documents rejected through the current approval revision without a header status
+update, do not select a material. Selection uses the same active-requisition rules
+as repair planning; approved or issued evidence still remains active. Conflicting
+live selections are refused and the preview names the BOM material and competing
+materials. Reconcile the batch's live reservations and active stock requisition
+before refreshing the preview; repair never chooses between conflicting live
+allocations automatically.
 
 Quantities preserve the existing full/half rules: raw prescribed quantity is
 halved for a half batch; packaging halves the prescribed quantity and then adds
