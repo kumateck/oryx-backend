@@ -20,6 +20,19 @@ public sealed class ProductionSchedulePermissionTests
     private static IEnumerable<MethodInfo> Actions(string name) => typeof(ProductionScheduleController).GetMethods().Where(method => method.Name == name);
 
     [Theory]
+    [InlineData(nameof(ProductionScheduleController.PreviewBomRepair), PermissionKeys.CanRepairBom)]
+    [InlineData(nameof(ProductionScheduleController.ApplyBomRepair), PermissionKeys.CanRepairBom)]
+    [InlineData(nameof(ProductionScheduleController.PreviewPackagingRepair), PermissionKeys.CanRepairPackaging)]
+    [InlineData(nameof(ProductionScheduleController.ApplyPackagingRepair), PermissionKeys.CanRepairPackaging)]
+    public void Material_repairs_require_their_registered_task_key(string action, string key)
+    {
+        var method = Assert.Single(Actions(action));
+        Assert.Empty(method.GetCustomAttributes<AllowAnonymousAttribute>());
+        Assert.Equal(key, Assert.Single(method.GetCustomAttributes<AuthorizeAttribute>()).Policy);
+        Assert.Single(PermissionUtils.GeneratePermissions(), permission => permission.Key == key);
+    }
+
+    [Theory]
     [InlineData("CreateProductionSchedule", PermissionKeys.CanCreateProductSchedule)]
     [InlineData("DeleteProductionSchedule", PermissionKeys.CanDeleteProductSchedule)]
     [InlineData("StartProductionActivity", PermissionKeys.CanStartProduction)]
