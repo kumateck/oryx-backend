@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using APP.Services.Authorization;
+using APP.Services.Production;
 using APP.Utils;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Materials;
@@ -137,10 +138,19 @@ internal static class ProductionMaterialSources
             .Select(item => item.MaterialBatch.MaterialId).Distinct().ToListAsync();
         var requested = await context.RequisitionItems.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Where(item => item.Requisition.ProductionScheduleProductId == batchId && item.Requisition.RequisitionType == RequisitionType.Stock
-                && item.Requisition.DeletedAt == null && item.DeletedAt == null && item.Material.Kind == kind)
+                && item.Requisition.DeletedAt == null && item.DeletedAt == null && item.Material.Kind == kind
+                // Rejected documents are history, not a second material selection. Use the same
+                // operational state as repair planning, including legacy approval-only rejections.
+                && StockRequisitionState.Active(context).IgnoreQueryFilters().Any(request => request.Id == item.RequisitionId))
             .Select(item => item.MaterialId).Distinct().ToListAsync();
         current = current.Union(requested).ToList();
         var requirements = new List<ProductionMaterialRequirement>();
+        string MaterialLabel(Guid materialId)
+        {
+            var material = departments.FirstOrDefault(item => item.MaterialId == materialId)?.Material;
+            return material is null ? materialId.ToString() : string.IsNullOrWhiteSpace(material.Code)
+                ? material.Name : $"{material.Name} ({material.Code})";
+        }
         // One material option in its department stock unit, or the reason it cannot be used.
         (ProductionMaterialOption Option, string Blocker) Resolve(SourceLine definition, Guid materialId, Guid? baseUnitId, decimal baseQuantity, decimal prescribed)
         {
@@ -171,7 +181,11 @@ internal static class ProductionMaterialSources
         foreach (var definition in definitions)
         {
             var choices = current.Where(id => id == definition.MaterialId || definition.Substitutes.Contains(id)).ToList();
-            if (choices.Count > 1) { blockers.Add("More than one main/substitute allocation exists for a material. Reconcile it before repair."); continue; }
+            if (choices.Count > 1)
+            {
+                blockers.Add($"{MaterialLabel(definition.MaterialId)}: more than one main/substitute allocation exists ({string.Join(", ", choices.Order().Select(MaterialLabel))}). Reconcile this batch's reservations and active stock requisition before repair.");
+                continue;
+            }
             var selected = choices.Count == 1 ? choices[0]
                 : preferred is not null && preferred.TryGetValue(definition.MaterialId, out var wanted) && definition.Substitutes.Contains(wanted) ? wanted
                 : definition.MaterialId;
