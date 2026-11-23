@@ -461,6 +461,58 @@ public class ProductionMaterialRepairPostgresTests
     }
 
     [MaterialRepairFact]
+    public async Task Rejected_substitute_requisitions_do_not_block_repair_or_get_rewritten()
+    {
+        await Seed();
+        var substituteId = Guid.NewGuid();
+        var rejectedIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
+        await using (var edit = Context())
+        {
+            var line = await edit.BillOfMaterialItems.SingleAsync();
+            var approval = await edit.Approvals.SingleAsync();
+            edit.Materials.Add(new Material { Id = substituteId, Kind = MaterialKind.Raw, Name = "Rejected substitute", Code = "RM-OLD" });
+            edit.MaterialDepartments.Add(new MaterialDepartment { MaterialId = substituteId, DepartmentId = DepartmentId, UoMId = UnitId });
+            edit.BillOfMaterialItemSubstitutes.Add(new BillOfMaterialItemSubstitute { BillOfMaterialItemId = line.Id,
+                SubstituteMaterialId = substituteId, BaseUoMId = UnitId, BaseQuantity = 0.8m, PrescribedQuantity = 16 });
+            for (var index = 0; index < rejectedIds.Length; index++)
+                edit.Requisitions.Add(new Requisition { Id = rejectedIds[index], Code = $"RM-REJECTED-{index}",
+                    DepartmentId = DepartmentId, RequestedById = Actor, ProductionScheduleProductId = BatchId,
+                    RequisitionType = RequisitionType.Stock, Status = index == 0 ? RequestStatus.Rejected : RequestStatus.Pending,
+                    Items = [new RequisitionItem { MaterialId = substituteId, UoMId = UnitId, Quantity = 16 }],
+                    Approvals = [new RequisitionApproval { ApprovalId = approval.Id, UserId = Actor, Required = true,
+                        Order = 1, ContentRevision = 0, Status = ApprovalStatus.Rejected, ApprovedById = Actor }] });
+            await edit.SaveChangesAsync();
+        }
+        await using (var db = Context())
+        {
+            var preview = await Preview(db);
+            Assert.Empty(preview.Blockers);
+            Assert.Equal(MaterialId, Assert.Single(preview.Lines).MaterialId);
+            Assert.True(preview.ApprovalRequired);
+            var result = await ProductionMaterialRepairs.Apply(db, Approvals(db), ActivityId, Actor, MaterialKind.Raw, Request(preview));
+            Assert.True(result.IsSuccess, result.Error.Description);
+        }
+        await using var check = Context();
+        var current = await check.Requisitions.Include(item => item.Items).SingleAsync(item => item.Id == RequisitionId);
+        Assert.Equal(1, current.ContentRevision);
+        Assert.False(current.Approved);
+        Assert.Equal(20m, Assert.Single(current.Items).Quantity);
+        var rejected = await check.Requisitions.Include(item => item.Items).Include(item => item.Approvals)
+            .Where(item => rejectedIds.Contains(item.Id)).ToListAsync();
+        Assert.Equal(2, rejected.Count);
+        Assert.All(rejected, item =>
+        {
+            Assert.Equal(0, item.ContentRevision);
+            Assert.Equal(16m, Assert.Single(item.Items).Quantity);
+            Assert.Equal(ApprovalStatus.Rejected, Assert.Single(item.Approvals).Status);
+        });
+        Assert.Equal(RequestStatus.Rejected, rejected.Single(item => item.Id == rejectedIds[0]).Status);
+        Assert.Equal(RequestStatus.Pending, rejected.Single(item => item.Id == rejectedIds[1]).Status);
+        Assert.Equal(100m, await check.ShelfMaterialBatches.Where(item => item.MaterialBatchId == RawBatch).SumAsync(item => item.Quantity));
+        Assert.Empty(await check.StockRequisitionIssues.ToListAsync());
+    }
+
+    [MaterialRepairFact]
     public async Task The_store_moves_the_reservation_and_requisition_line_to_a_substitute_at_its_own_quantity()
     {
         await Seed();

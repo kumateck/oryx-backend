@@ -3,6 +3,7 @@ using API.Controllers;
 using APP.Repository;
 using APP.Services.Production;
 using APP.Utils;
+using DOMAIN.Entities.Approvals;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.Materials;
 using DOMAIN.Entities.Materials.Batch;
@@ -129,6 +130,79 @@ public class BomSubstituteChoiceTests
 
         Assert.Empty(source.Requirements);
         Assert.Contains(source.Blockers, blocker => blocker.Contains("no quantity of its own"));
+    }
+
+    [Theory]
+    [InlineData(MaterialKind.Raw, PermissionKeys.CanRepairBom, PermissionKeys.CanRepairPackaging)]
+    [InlineData(MaterialKind.Package, PermissionKeys.CanRepairPackaging, PermissionKeys.CanRepairBom)]
+    public async Task Repair_access_requires_the_current_permission_for_the_material_kind(MaterialKind kind, string required, string otherKind)
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var db = fixture.Harness.Db;
+        Assert.Equal("Repair.Permission", (await ProductionMaterialSources.Authorize(db, fixture.Actor.Id, fixture.Batch.Id, kind)).Error.Code);
+        Grant(fixture, otherKind);
+        await db.SaveChangesAsync();
+        Assert.Equal("Repair.Permission", (await ProductionMaterialSources.Authorize(db, fixture.Actor.Id, fixture.Batch.Id, kind)).Error.Code);
+        Grant(fixture, required);
+        await db.SaveChangesAsync();
+        Assert.True((await ProductionMaterialSources.Authorize(db, fixture.Actor.Id, fixture.Batch.Id, kind)).IsSuccess);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Rejected_requisitions_do_not_conflict_with_the_current_material_selection(bool legacyApprovalRejection)
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var substitute = await AddSubstitute(fixture, 500_000, 200_000);
+        var db = fixture.Harness.Db;
+        await Requisition(fixture);
+        db.MaterialBatchReservedQuantities.Add(new() { MaterialBatchId = fixture.Lot.Id,
+            WarehouseLocationShelfId = fixture.Shelf.WarehouseLocationShelfId, WarehouseId = fixture.Production.Id,
+            ProductionScheduleProductId = fixture.Batch.Id, UoMId = fixture.Lot.UoMId, Quantity = 300_000 });
+        db.Requisitions.Add(new() { Id = Guid.NewGuid(), Code = "RM-REJECTED", RequisitionType = RequisitionType.Stock,
+            ProductionScheduleProductId = fixture.Batch.Id, DepartmentId = fixture.Department.Id, RequestedById = fixture.Creator.Id,
+            Status = legacyApprovalRejection ? RequestStatus.Pending : RequestStatus.Rejected,
+            Items = [new() { MaterialId = substitute.MaterialId, UoMId = substitute.UoMId, Quantity = 200_000 }],
+            Approvals = legacyApprovalRejection ? [new() { Id = Guid.NewGuid(), Status = ApprovalStatus.Rejected, ContentRevision = 0 }] : [] });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var source = (await ProductionMaterialSources.Load(db, fixture.Batch.Id, MaterialKind.Raw)).Value;
+
+        Assert.Empty(source.Blockers);
+        Assert.Equal(fixture.Lot.MaterialId, Assert.Single(source.Requirements).MaterialId);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Active_conflicting_selections_remain_blocked_and_name_the_materials(bool oldRevisionRejection)
+    {
+        using var fixture = new ScheduleStockFixture();
+        await fixture.Seed();
+        var substitute = await AddSubstitute(fixture, 500_000, 200_000);
+        var db = fixture.Harness.Db;
+        db.MaterialBatchReservedQuantities.Add(new() { MaterialBatchId = fixture.Lot.Id,
+            WarehouseLocationShelfId = fixture.Shelf.WarehouseLocationShelfId, WarehouseId = fixture.Production.Id,
+            ProductionScheduleProductId = fixture.Batch.Id, UoMId = fixture.Lot.UoMId, Quantity = 300_000 });
+        db.Requisitions.Add(new() { Id = Guid.NewGuid(), Code = "RM-CURRENT", RequisitionType = RequisitionType.Stock,
+            ProductionScheduleProductId = fixture.Batch.Id, DepartmentId = fixture.Department.Id, RequestedById = fixture.Creator.Id,
+            Status = RequestStatus.Pending, ContentRevision = oldRevisionRejection ? 1 : 0,
+            Items = [new() { MaterialId = substitute.MaterialId, UoMId = substitute.UoMId, Quantity = 200_000 }],
+            Approvals = oldRevisionRejection ? [new() { Id = Guid.NewGuid(), Status = ApprovalStatus.Rejected, ContentRevision = 0 }] : [] });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var source = (await ProductionMaterialSources.Load(db, fixture.Batch.Id, MaterialKind.Raw)).Value;
+
+        Assert.Empty(source.Requirements);
+        var blocker = Assert.Single(source.Blockers);
+        Assert.Contains(fixture.Lot.Material.Name, blocker);
+        Assert.Contains(substitute.Material.Name, blocker);
+        Assert.Contains("reservations and active stock requisition", blocker);
     }
 
     [Fact]
