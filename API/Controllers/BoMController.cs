@@ -28,7 +28,7 @@ public class BillOfMaterialController(IBoMRepository repository) : ControllerBas
         var userId = (string)HttpContext.Items["Sub"];
         if (userId == null) return TypedResults.Unauthorized();
 
-        var result = await repository.CreateBillOfMaterial(request, Guid.Parse(userId));
+        var result = await repository.CreateBillOfMaterial(request, Guid.Parse(userId), ProductPermissions.Parse(context));
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 

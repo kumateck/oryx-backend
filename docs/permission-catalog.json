@@ -513,6 +513,13 @@
   {
     "module": "Quality Assurance",
     "submodule": "Approved Vendor List",
+    "key": "CanDeleteApprovedVendorList",
+    "name": "Can Delete Approved Vendor List",
+    "description": "Allows the user to  delete approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
     "key": "CanReviseApprovedVendorList",
     "name": "Can Revise Approved Vendor List",
     "description": "Allows the user to  revise approved vendor list."

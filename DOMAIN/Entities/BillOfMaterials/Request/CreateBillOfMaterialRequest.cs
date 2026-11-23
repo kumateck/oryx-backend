@@ -30,7 +30,7 @@ public class CreateBoMSubstituteRequest
     public Guid MaterialId { get; set; }
     /// <summary>Quantity per unit of product, in <see cref="BaseUoMId"/>.</summary>
     public decimal BaseQuantity { get; set; }
-    /// <summary>The substitute's department stock unit, or mg when the line uses density conversion.</summary>
+    /// <summary>A unit in the substitute's own department-link family. Saved as mg for mass or mL for volume; counted units stay unchanged.</summary>
     public Guid? BaseUoMId { get; set; }
     /// <summary>Quantity for a full batch, in <see cref="BaseUoMId"/>.</summary>
     public decimal PrescribedQuantity { get; set; }

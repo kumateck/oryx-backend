@@ -1,6 +1,7 @@
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
+using APP.Services.Authorization;
 using AutoMapper;
 using DOMAIN.Entities.BillOfMaterials;
 using DOMAIN.Entities.BillOfMaterials.Request;
@@ -13,10 +14,11 @@ namespace APP.Repository;
 
 public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMRepository
 {
-    public async Task<Result<Guid>> CreateBillOfMaterial(CreateBillOfMaterialRequest request, Guid userId)
+    public async Task<Result<Guid>> CreateBillOfMaterial(CreateBillOfMaterialRequest request, Guid userId, ProductContext productContext = ProductContext.Production,
+        Guid? technologyTransferId = null)
     {
         if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
-            return await ProductionMaterialTransaction.Run(context, () => CreateBillOfMaterial(request, userId));
+            return await ProductionMaterialTransaction.Run(context, () => CreateBillOfMaterial(request, userId, productContext, technologyTransferId));
 
         var product = await context.Products
             .AsSplitQuery()
@@ -47,55 +49,29 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
         if (product.DepartmentId is null)
             return Error.Conflict("Bom.MaterialUnit", "The product must belong to a department with linked material units.");
 
-        var densityItems = request.Items.Where(item => item.UseDensityConversion).ToList();
-        DOMAIN.Entities.Base.UnitOfMeasure? densitySourceUnit = null;
-        if (densityItems.Count != 0)
-        {
-            var candidates = await context.UnitOfMeasures.IgnoreQueryFilters().AsNoTracking()
-                .Where(unit => unit.DeletedAt == null && unit.Symbol.ToLower() == "mg").ToListAsync();
-            densitySourceUnit = candidates.Count == 1 ? candidates[0] : null;
-            if (densitySourceUnit is null)
-                return Error.Conflict("Bom.DensityUnit", "The canonical mg unit must exist exactly once before density conversion can be enabled.");
-        }
+        var normalized = await BomMaterialUnits.Normalize(context, request.Items, links);
+        if (normalized.IsFailure) return normalized.Error;
 
-        foreach (var item in request.Items)
+        var verbs = await ProductSectionChanges.Bom(context, request);
+        async Task<Result> AuthorizeWrite()
         {
-            var matching = links.Where(link => link.MaterialId == item.MaterialId && link.UoM != null && !link.UoM.DeletedAt.HasValue).ToList();
-            if (matching.Count != 1)
-                return Error.Conflict("Bom.MaterialUnit", "A BOM material needs exactly one active department stock-unit link.");
-            var link = matching[0];
-            if (item.UseDensityConversion)
+            var grants = await CurrentPermissionSet.Load(context, userId);
+            // Promotion is an existing separate task whose authorized side effect is creating the product BOM.
+            // Only its stored transfer may select that task; the HTTP BOM action never supplies a transfer ID.
+            if (technologyTransferId.HasValue)
             {
-                foreach (var candidateId in item.SubstituteMaterialIds.Append(item.MaterialId).Distinct())
-                {
-                    var candidateLinks = links.Where(candidate => candidate.MaterialId == candidateId
-                        && candidate.UoM != null && !candidate.UoM.DeletedAt.HasValue).ToList();
-                    if (candidateLinks.Count != 1)
-                        return Error.Conflict("Bom.MaterialUnit", "A BOM material and each substitute need exactly one active department stock-unit link.");
-                    var candidate = candidateLinks[0];
-                    if (MaterialDensity.ConvertBomMass(1m, "mg", candidate) is null)
-                        return Error.Conflict("Bom.Density", $"Configure a positive measured density with an active g/mL unit and a liquid stock unit for material {candidate.MaterialId} before enabling conversion.");
-                }
-                // The conversion mode has one defined source unit: BOM quantity is authored in mg.
-                item.BaseUoMId = densitySourceUnit.Id;
-                foreach (var substitute in item.Substitutes) substitute.BaseUoMId = densitySourceUnit.Id;
+                var validTransfer = await context.RndTechnologyTransfers.AnyAsync(transfer => transfer.Id == technologyTransferId
+                    && transfer.RndProject.ProductId == request.ProductId
+                    && transfer.Status == DOMAIN.Entities.RndTechnologyTransfers.RndTechnologyTransferStatus.ExecutionInProgress);
+                return validTransfer && grants.Contains(PermissionKeys.CanPromoteRndTechnologyTransfer) ? Result.Success()
+                    : Error.Forbidden("Bom.Permission", "Your current permissions or transfer state do not allow this BOM promotion.");
             }
-            else
-            {
-                if (link.UoMId != item.BaseUoMId)
-                    return Error.Conflict("Bom.MaterialUnit", "A BOM material unit no longer matches the department material linkage. Reload the linked units and review the quantities before saving.");
-                // A substitute's quantity is in its own department stock unit.
-                foreach (var substitute in item.Substitutes)
-                {
-                    var substituteLinks = links.Where(candidate => candidate.MaterialId == substitute.MaterialId
-                        && candidate.UoM != null && !candidate.UoM.DeletedAt.HasValue).ToList();
-                    if (substituteLinks.Count != 1)
-                        return Error.Conflict("Bom.MaterialUnit", "Each substitute needs exactly one active department stock-unit link.");
-                    if (substituteLinks[0].UoMId != substitute.BaseUoMId)
-                        return Error.Conflict("Bom.MaterialUnit", "A substitute's unit no longer matches its department material linkage. Reload the linked units and review the substitute quantities before saving.");
-                }
-            }
+            var required = verbs.Select(verb => ProductPermissions.Key(productContext, ProductSection.Bom, verb)).ToList();
+            return required.All(key => key is not null && grants.Contains(key)) ? Result.Success()
+                : Error.Forbidden("Bom.Permission", "Your current permissions do not allow these BOM changes.");
         }
+        var access = await AuthorizeWrite();
+        if (access.IsFailure) return access.Error;
 
         if (product.BillOfMaterials.Count != 0)
         {
@@ -106,6 +82,8 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
 
             if (bomIds.Count != 0)
             {
+                access = await AuthorizeWrite();
+                if (access.IsFailure) return access.Error;
                 await context.Database.ExecuteSqlRawAsync(
                     "DELETE FROM \"BillOfMaterials\" WHERE \"Id\" = ANY({0})", bomIds.ToArray());
             }
@@ -125,6 +103,8 @@ public class BoMRepository(ApplicationDbContext context, IMapper mapper) : IBoMR
             EffectiveDate = DateTime.UtcNow
         });
 
+        access = await AuthorizeWrite();
+        if (access.IsFailure) return access.Error;
         await context.SaveChangesAsync();
 
         return billOfMaterial.Id;
