@@ -107,6 +107,8 @@ public partial class ApplicationDbContext(
     ICurrentUserService currentUserService
 ) : IdentityDbContext<User, Role, Guid>(options), IDataProtectionKeyContext
 {
+    public Guid? CurrentActorId => currentUserService.UserId;
+
     // Build brief 11: persists the Data Protection key ring to the database (see
     // AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>() in Program.cs) rather
     // than the framework's default local-filesystem key ring, which would make a key encrypted
@@ -1177,6 +1179,8 @@ public partial class ApplicationDbContext(
         ConfigureInventoryConcurrency(modelBuilder);
         ConfigureWhitePlacebo(modelBuilder);
         ConfigureApprovedVendorLists(modelBuilder);
+        ConfigureCostingPriceLists(modelBuilder);
+        ConfigureFinishedGoodsControls(modelBuilder);
         ConfigureDocumentReviews(modelBuilder);
         ConfigureIssuedMaterialRepair(modelBuilder);
         modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()

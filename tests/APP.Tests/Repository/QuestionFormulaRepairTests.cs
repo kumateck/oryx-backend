@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using APP.Services.Formulas;
 using APP.Utils;
 using DOMAIN.Entities.AnalyticalTestRequests;
@@ -55,7 +56,8 @@ public sealed class QuestionFormulaRepairTests
         {
             Evaluated = request.Clone();
             var results = request.GetProperty("definition").GetProperty("results").EnumerateArray()
-                .Select(result => new { key = result.GetProperty("key").GetString(), roundedResult = "1.00", displayedResult = "1.00", unit = (string?)null }).ToArray();
+                .Select(result => new { key = result.GetProperty("key").GetString(), roundedResult = "1.00", displayedResult = "1.00",
+                    unit = result.TryGetProperty("unit", out var unit) ? unit.GetString() : null }).ToArray();
             var inputs = JsonSerializer.Deserialize<Dictionary<string, string?>>(request.GetProperty("resolvedInputs").GetRawText())!;
             return Task.FromResult(Result.Success(new FormulaServiceResponse("oryx-formula-service-response-v1", 1, "test", 5, "COMPLETED", "test", new string('a', 64),
                 request.GetProperty("definitionHash").GetString(), request.GetProperty("definitionHash").GetString(),
@@ -120,14 +122,14 @@ public sealed class QuestionFormulaRepairTests
             await Db.SaveChangesAsync();
         }
         /// <summary>Approves <paramref name="definition"/> as the question's effective formula revision.</summary>
-        public async Task Approve(string definition, int revision = 2, string? compiled = null)
+        public async Task Approve(string definition, int revision = 2, string? compiled = null, string? definitionHash = null)
         {
             var formula = Guid.NewGuid();
             Db.FormulaDefinitions.Add(new FormulaDefinition { Id = formula, Key = $"question-{Question:N}", Name = "Assay", PresentationPreset = "legacy" });
             Db.QuestionFormulaDefinitions.Add(new QuestionFormulaDefinition { Id = Guid.NewGuid(), QuestionId = Question, FormulaDefinitionId = formula });
             var row = new FormulaRevision { Id = Guid.NewGuid(), FormulaDefinitionId = formula, Revision = revision,
                 Status = FormulaRevisionStatus.Draft, AuthoringPayloadJson = definition,
-                DefinitionJson = compiled ?? "{\"variables\":[],\"results\":[]}", DefinitionHash = new string('d', 64) };
+                DefinitionJson = compiled ?? "{\"variables\":[],\"results\":[]}", DefinitionHash = definitionHash ?? new string('d', 64) };
             Db.FormulaRevisions.Add(row);
             await Db.SaveChangesAsync();
             // Revisions are created as drafts and move through review, each step with its audit row.
@@ -589,6 +591,49 @@ public sealed class QuestionFormulaRepairTests
     }
 
     [EngineFact]
+    public async Task Real_engine_recalculates_an_approved_repair_with_weight_inputs_and_a_percentage_result()
+    {
+        await using var f = new Fixture(); await f.Seed();
+        var url = new Uri(Environment.GetEnvironmentVariable("ORYX_FORMULA_REPAIR_SERVICE_URL")!);
+        using var http = new HttpClient { BaseAddress = url };
+        http.DefaultRequestHeaders.Authorization = new("Bearer", "test-only");
+        var client = new FormulaCalculationClient(http, new(true, url, "test-only", TimeSpan.FromSeconds(5)));
+        var validationRequest = JsonNode.Parse(LegacyFormulaRepairDefinition.ValidationRequest(After).GetRawText())!;
+        var definition = validationRequest["definition"]!;
+        foreach (var variable in definition["variables"]!.AsArray()) variable!["unit"] = "g";
+        foreach (var result in definition["results"]!.AsArray()) result!["unit"] = "%";
+        // Changing the definition's units changes its executable hash. Ask the independent engine for that hash,
+        // then validate the corrected request before recording it as an approved revision in this fixture.
+        var identified = await client.ValidateAsync(JsonSerializer.SerializeToElement(validationRequest));
+        Assert.True(identified.IsSuccess, identified.Error?.Description);
+        Assert.NotNull(identified.Value.ComputedDefinitionHash);
+        validationRequest["definitionHash"] = identified.Value.ComputedDefinitionHash;
+        var validated = await client.ValidateAsync(JsonSerializer.SerializeToElement(validationRequest));
+        Assert.True(validated.IsSuccess, validated.Error?.Description);
+        Assert.Equal(5, validated.Value.Status);
+        await f.Approve(After, compiled: definition.ToJsonString(), definitionHash: validated.Value.ComputedDefinitionHash);
+        var candidate = new FormulaRepairCandidate(After, false, [new(f.Atr, f.Field)]);
+        Assert.True((await f.Service.Apply(f.Question, await f.Request(candidate))).IsSuccess);
+        var answer = new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field,
+            Value = "{\"a\":\"2\",\"b\":\"4\"}" };
+        f.Db.FormResponses.Add(answer); await f.Db.SaveChangesAsync();
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
+        var service = new QuestionFormulaRepairService(f.Db, f.Actor, client);
+
+        var evaluated = await service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
+
+        Assert.True(evaluated.IsSuccess, evaluated.Error?.Description);
+        var execution = await f.Db.LegacyFormulaRepairEvaluations.SingleAsync();
+        Assert.Contains("50.00", execution.ResultsJson);
+        using var evidence = JsonDocument.Parse(execution.EvidenceJson);
+        var engineResult = Assert.Single(evidence.RootElement.GetProperty("evaluation").GetProperty("results").EnumerateArray());
+        Assert.Equal("%", engineResult.GetProperty("unit").GetString());
+        Assert.Equal("50.00", engineResult.GetProperty("displayedResult").GetString());
+        Assert.Equal("{\"a\":\"2\",\"b\":\"4\"}", answer.Value);
+        Assert.False(await LegacyFormulaConfigurationReader.Pending(f.Db, await f.Db.Responses.SingleAsync(r => r.Id == f.Response)));
+    }
+
+    [EngineFact]
     public async Task Universal_assay_matches_the_real_engine_for_each_samples_own_weight()
     {
         var raw = """
@@ -772,6 +817,38 @@ public sealed class QuestionFormulaRepairTests
         Assert.Equal(2, sent.GetProperty("definition").GetProperty("results").GetArrayLength());
         Assert.Equal("2", sent.GetProperty("resolvedInputs").GetProperty("a").GetString());
         Assert.Equal("4", sent.GetProperty("resolvedInputs").GetProperty("b").GetString());
+    }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("g", "%")]
+    [InlineData("mg", "mg/mL")]
+    public async Task Approved_repair_placement_preserves_input_and_result_units(string? inputUnit, string? resultUnit)
+    {
+        await using var f = new Fixture(); await f.Seed();
+        var definition = JsonNode.Parse(LegacyFormulaRepairDefinition.Compile(After).Definition.GetRawText())!;
+        foreach (var variable in definition["variables"]!.AsArray()) variable!["unit"] = inputUnit;
+        foreach (var result in definition["results"]!.AsArray()) result!["unit"] = resultUnit;
+        await f.Approve(After, compiled: definition.ToJsonString());
+        var candidate = new FormulaRepairCandidate(After, false, [new(f.Atr, f.Field)]);
+        Assert.True((await f.Service.Apply(f.Question, await f.Request(candidate))).IsSuccess);
+        f.Db.FormResponses.Add(new FormResponse { Id = Guid.NewGuid(), ResponseId = f.Response, FormFieldId = f.Field,
+            Value = "{\"a\":\"2\",\"b\":\"4\"}" });
+        await f.Db.SaveChangesAsync();
+        var pin = (await LegacyFormulaConfigurationReader.Latest(f.Db, [f.Response])).Single();
+
+        var evaluated = await f.Service.Evaluate(new(f.Atr, f.Field), pin.DefinitionHash);
+
+        Assert.True(evaluated.IsSuccess, evaluated.Error?.Description);
+        var sent = f.Calculation.Evaluated!.Value;
+        var configuration = sent.GetProperty("configuration");
+        Assert.All(configuration.GetProperty("bindings").EnumerateArray(), binding =>
+            Assert.Equal(inputUnit, binding.GetProperty("source").GetProperty("unit").GetString()));
+        Assert.All(configuration.GetProperty("resultTargets").EnumerateArray(), target =>
+            Assert.Equal(resultUnit, target.GetProperty("unit").GetString()));
+        Assert.Equal("2", sent.GetProperty("resolvedInputs").GetProperty("a").GetString());
+        Assert.Equal("4", sent.GetProperty("resolvedInputs").GetProperty("b").GetString());
+        Assert.False(await LegacyFormulaConfigurationReader.Pending(f.Db, await f.Db.Responses.SingleAsync(r => r.Id == f.Response)));
     }
 
     [Fact]

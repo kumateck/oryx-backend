@@ -72,7 +72,7 @@ public partial class PaymentRepository
         var lines = new List<RawLine>();
         var warnings = new List<string>();
         var paid = await LoadPaymentSums(PayableType.CustomerInvoice);
-        var invoices = await context.Invoices.AsNoTracking().Include(x => x.Customer)
+        var invoices = await context.Invoices.AsNoTracking().Where(x => !x.Voided).Include(x => x.Customer)
             .Include(x => x.ProformaInvoice).Include(x => x.Amounts).ThenInclude(x => x.Currency).ToListAsync();
         foreach (var invoice in invoices)
         {

@@ -967,6 +967,7 @@ public class OryxMapper : Profile
         CreateMap<CreateFinishedGoodsTransferNoteRequest, FinishedGoodsTransferNote>();
         CreateMap<PackageStyle, PackageStyleDto>();
         CreateMap<FinishedGoodsTransferNote, FinishedGoodsTransferNoteDto>()
+            .ForMember(dest => dest.QualityReleased, opt => opt.MapFrom(src => src.BatchManufacturingRecord.Status == BatchManufacturingStatus.Approved || src.BatchManufacturingRecord.Status == BatchManufacturingStatus.Available))
             .ForMember(
                 dest => dest.PendingAllocatedQuantity,
                 opt => opt.MapFrom<PendingAllocatedQuantityResolver>()
@@ -1477,6 +1478,17 @@ public class OryxMapper : Profile
         CreateMap<AllocateProductQuantityRequest, AllocateProductQuantity>();
 
         CreateMap<AllocateProductionOrder, AllocateProductionOrderDto>()
+            .AfterMap((source, destination) =>
+            {
+                foreach (var line in destination.Products)
+                {
+                    var saved = source.ProductionOrder?.Products.FirstOrDefault(item => item.ProductId == line.Product?.Id
+                        && item.ProductPackingId == line.ProductPacking?.Id);
+                    line.UnitPrice = saved?.UnitPrice * (1 - (saved?.DiscountPercent ?? 0) / 100m);
+                    line.PriceCurrencyId = saved?.PriceCurrencyId;
+                    line.PriceListRevisionId = saved?.PriceListRevisionId;
+                }
+            })
             .ForMember(
                 dest => dest.HasInvoice,
                 opt => opt.MapFrom<AllocateProductionOrderHasInvoice>()

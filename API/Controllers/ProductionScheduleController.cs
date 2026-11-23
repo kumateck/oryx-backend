@@ -1352,8 +1352,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a list of approved products
     /// </summary>
     [HttpGet("approved-products")]
-    [AnyPermission("CanViewApprovedProducts", "CanViewFgtn")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewApprovedProducts)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ApprovedProductDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProducts()
@@ -1371,8 +1370,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves a single approved product
     /// </summary>
     [HttpGet("approved-products/product/{productId}")]
-    [AnyPermission("CanViewOrder")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewOrder)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApprovedProductDetailDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProduct([FromRoute] Guid productId)
@@ -1386,8 +1384,7 @@ public class ProductionScheduleController(IProductionScheduleRepository reposito
     /// Retrieves details of an approved product
     /// </summary>
     [HttpGet("approved-products/{productId}")]
-    [AnyPermission("CanViewApprovedProducts", "CanViewFgtn")]
-    [Authorize]
+    [Authorize(PermissionKeys.CanViewApprovedProducts)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FinishedGoodsTransferNoteDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> GetApprovedProductDetails([FromRoute] Guid productId)

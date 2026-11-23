@@ -1,6 +1,7 @@
 using APP.Utils;
 using DOMAIN.Entities.Costing;
 using DOMAIN.Entities.Customers;
+using DOMAIN.Entities.Products;
 using SHARED;
 
 namespace APP.IRepository;
@@ -9,7 +10,7 @@ namespace APP.IRepository;
 public interface ICostingRepository
 {
     Task<Result<Paginateable<IEnumerable<ProductListPriceDto>>>> GetListPrices(
-        int page, int pageSize, string searchQuery, Guid? departmentId, Guid? currencyId);
+        int page, int pageSize, string searchQuery, Guid? departmentId, Guid? currencyId, Division? division = null);
     Task<Result<List<ListPriceHistoryDto>>> GetListPriceHistory(Guid productId);
     Task<Result> SetListPrice(Guid productId, SetListPriceRequest request, Guid userId);
     Task<Result<Paginateable<IEnumerable<CustomerPricingAgreementDto>>>> GetPricingAgreements(

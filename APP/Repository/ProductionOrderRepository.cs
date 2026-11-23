@@ -1,4 +1,5 @@
 using DOMAIN.Entities.Materials.Batch;
+using APP.Services.Production;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -14,7 +15,7 @@ using SHARED;
 
 namespace APP.Repository;
 
-public class ProductionOrderRepository(
+public partial class ProductionOrderRepository(
     ApplicationDbContext context,
     IMapper mapper,
     IApprovalRepository approvalRepository)
@@ -69,7 +70,11 @@ public class ProductionOrderRepository(
                 item.ProductPackingId, product.Price, CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId), DateTime.UtcNow);
             if (resolution.Ambiguous)
                 return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match.");
+            if (resolution.UnitPrice <= 0)
+                return Error.Validation("Product.Price", "Set a price for this product packing style before creating an order.");
             item.UnitPrice = resolution.UnitPrice;
+            item.PriceListRevisionId = resolution.PriceListRevisionId;
+            item.PriceCurrencyId = resolution.CurrencyId;
         }
         return Result.Success();
     }
@@ -143,7 +148,7 @@ public class ProductionOrderRepository(
                 .Include(p => p.ProformaInvoice)
                     .ThenInclude(p => p.AllocateProductionOrder)
                 .FirstOrDefaultAsync(p =>
-                    p.ProformaInvoice.AllocateProductionOrder.ProductionOrderId
+                    !p.Voided && p.ProformaInvoice.AllocateProductionOrder.ProductionOrderId
                     == productionOrderDto.Id
                 )
         );
@@ -186,8 +191,15 @@ public class ProductionOrderRepository(
     // CRUD for Proforma Invoices
     // -------------------------------
 
-    public async Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request)
+    public Task<Result<Guid>> CreateProformaInvoice(CreateProformaInvoice request) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanGenerateProformaInvoice, null, () => CreateProformaInvoiceCore(request));
+
+    private async Task<Result<Guid>> CreateProformaInvoiceCore(CreateProformaInvoice request)
     {
+        if (request.Products is null || request.Products.Count == 0 || string.IsNullOrWhiteSpace(request.Code) || request.Code.Length > 100)
+            return Error.Validation("ProformaInvoice.Document", "Enter a proforma number and every packed product line.");
+        if (await context.ProformaInvoices.AnyAsync(p => p.DeletedAt == null && (p.AllocateProductionOrderId == request.AllocateProductionOrderId || p.Code == request.Code.Trim())))
+            return Error.Conflict("ProformaInvoice.Exists", "A proforma already exists for this packing list or number. Correct an unsent document rather than duplicating it.");
         var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(po =>
             po.Id == request.AllocateProductionOrderId
         );
@@ -207,23 +219,72 @@ public class ProductionOrderRepository(
 
         var invoice = new ProformaInvoice
         {
-            Code = request.Code,
+            Code = request.Code.Trim(),
             AllocateProductionOrderId = request.AllocateProductionOrderId,
             Products = request
                 .Products.Select(p => new ProformaInvoiceProduct
                 {
                     ProductId = p.ProductId,
+                    ProductPackingId = p.ProductPackingId,
                     Quantity = p.Quantity,
                 })
                 .ToList(),
         };
+        var snapshot = await SnapshotProformaPrices(invoice);
+        if (snapshot.IsFailure) return snapshot.Error;
+        if (productionOrder.CancelledAt.HasValue) return Error.Validation("Invoice.Cancelled", "This packing list was cancelled.");
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanGenerateProformaInvoice);
+        if (denied is not null) return denied;
         await context.ProformaInvoices.AddAsync(invoice);
         await context.SaveChangesAsync();
 
         return invoice.Id;
     }
 
-    public async Task<Result> SendProformaInvoiceToCustomer(Guid proformaInvoiceId, Guid userId)
+    private async Task<Result> SnapshotProformaPrices(ProformaInvoice invoice)
+    {
+        var allocation = await context.AllocateProductionOrders.IgnoreAutoIncludes().AsNoTracking()
+            .Include(item => item.Products).ThenInclude(p => p.FulfilledQuantities).Include(item => item.ProductionOrder).ThenInclude(order => order.Products)
+            .FirstOrDefaultAsync(item => item.Id == invoice.AllocateProductionOrderId);
+        if (allocation?.CancelledAt.HasValue == true) return Error.Validation("Invoice.Cancelled", "This packing list is cancelled.");
+        if (allocation?.ProductionOrder is null) return Error.NotFound("Allocation.NotFound", "Production allocation not found.");
+        var gate = allocation.EnsureApprovedForProgression("Production allocation");
+        if (gate.IsFailure) return gate.Error;
+        if (invoice.Products.GroupBy(line => new { line.ProductId, line.ProductPackingId }).Any(group => group.Count() > 1))
+            return Error.Validation("Invoice.Packing", "Include each allocated product packing style once.");
+        foreach (var line in invoice.Products)
+        {
+            var styles = allocation.Products.Where(item => item.ProductId == line.ProductId
+                && (!line.ProductPackingId.HasValue || item.ProductPackingId == line.ProductPackingId)).ToList();
+            if (styles.Count != 1) return Error.Validation("Invoice.Packing", "Choose the allocated packing style for each invoiced product.");
+            line.ProductPackingId = styles[0].ProductPackingId;
+            var saved = allocation.ProductionOrder.Products.FirstOrDefault(item => item.ProductId == line.ProductId && item.ProductPackingId == line.ProductPackingId);
+            if (saved?.DiscountPercent is < 0 or > 100) return Error.Validation("Invoice.Discount", "Resolve the invalid order discount before invoicing.");
+            // Orders with recorded price and currency remain fixed through fulfilment. Older rows retain their legacy resolution.
+            if (saved?.UnitPrice is not null && saved.PriceCurrencyId.HasValue)
+            {
+                line.UnitPrice = saved.UnitPrice * (1 - saved.DiscountPercent / 100m); line.PriceCurrencyId = saved.PriceCurrencyId; line.PriceListRevisionId = saved.PriceListRevisionId;
+            }
+        }
+        foreach (var line in invoice.Products.Where(p => !p.UnitPrice.HasValue || !p.PriceCurrencyId.HasValue))
+        {
+            var legacy = new ProductionOrderProducts { ProductId = line.ProductId, ProductPackingId = line.ProductPackingId };
+            var priced = await ResolveProductPrices(allocation.ProductionOrder.CustomerId, [legacy]);
+            if (priced.IsFailure) return priced;
+            var discount = allocation.ProductionOrder.Products.FirstOrDefault(p => p.ProductId == line.ProductId && p.ProductPackingId == line.ProductPackingId)?.DiscountPercent ?? 0;
+            if (discount is < 0 or > 100) return Error.Validation("Invoice.Discount", "Resolve the invalid order discount before invoicing.");
+            line.UnitPrice = legacy.UnitPrice * (1 - discount / 100m); line.PriceCurrencyId = legacy.PriceCurrencyId; line.PriceListRevisionId = legacy.PriceListRevisionId;
+        }
+        if (invoice.Products.Count != allocation.Products.Count || invoice.Products.Any(line => line.Quantity <= 0
+            || line.Quantity != allocation.Products.Single(p => p.ProductId == line.ProductId && p.ProductPackingId == line.ProductPackingId).FulfilledQuantities.Sum(q => q.Quantity)))
+            return Error.Validation("Invoice.Quantity", "The proforma must match every product packing style and pack quantity on this packing list.");
+        return Result.Success();
+    }
+
+    public Task<Result> SendProformaInvoiceToCustomer(Guid proformaInvoiceId, Guid userId) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanSendProformaInvoice, userId, () => SendProformaInvoiceCore(proformaInvoiceId, userId));
+
+    private async Task<Result> SendProformaInvoiceCore(Guid proformaInvoiceId, Guid userId)
     {
         var proformaInvoice = await context.ProformaInvoices.FirstOrDefaultAsync(p =>
             p.Id == proformaInvoiceId
@@ -231,6 +292,10 @@ public class ProductionOrderRepository(
         if (proformaInvoice is null)
             return Error.NotFound("ProformaInvoice.notFound", "Proforma Invoice not found");
 
+        if (proformaInvoice.Status != ProformaInvoiceStatus.Pending)
+            return Error.Validation("Invoice.Sent", "This proforma has already been sent or invoiced.");
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanSendProformaInvoice, userId);
+        if (denied is not null) return denied;
         proformaInvoice.Status = ProformaInvoiceStatus.SentToCustomer;
         proformaInvoice.LastUpdatedById = userId;
         //context.ProformaInvoices.Update(proformaInvoice);
@@ -308,7 +373,10 @@ public class ProductionOrderRepository(
             : mapper.Map<ProformaInvoiceDto>(invoice);
     }
 
-    public async Task<Result> UpdateProformaInvoice(Guid id, CreateProformaInvoice request)
+    public Task<Result> UpdateProformaInvoice(Guid id, CreateProformaInvoice request) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanGenerateProformaInvoice, null, () => UpdateProformaInvoiceCore(id, request));
+
+    private async Task<Result> UpdateProformaInvoiceCore(Guid id, CreateProformaInvoice request)
     {
         var invoice = await context
             .ProformaInvoices.Include(p => p.Products)
@@ -316,41 +384,55 @@ public class ProductionOrderRepository(
 
         if (invoice is null)
             return Error.NotFound("ProformaInvoice.NotFound", "Proforma Invoice not found");
+        if (invoice.CustomerPoVerifiedAt.HasValue || invoice.Status != ProformaInvoiceStatus.Pending)
+            return Error.Validation("ProformaInvoice.Immutable", "A sent or PO-verified proforma cannot be rewritten or deleted. Resolve it with a documented amendment.");
 
+
+        if (request.Products is null || request.Products.Count == 0)
+            return Error.Validation("ProformaInvoice.Products", "Select the packing list products.");
+        var replacement = new ProformaInvoice { AllocateProductionOrderId = request.AllocateProductionOrderId,
+            Products = request.Products.Select(p => new ProformaInvoiceProduct { ProductId = p.ProductId,
+                ProductPackingId = p.ProductPackingId, Quantity = p.Quantity, ProformaInvoiceId = invoice.Id }).ToList() };
+        var snapshot = await SnapshotProformaPrices(replacement);
+        if (snapshot.IsFailure) return snapshot.Error;
         invoice.AllocateProductionOrderId = request.AllocateProductionOrderId;
-
         context.ProformaInvoiceProducts.RemoveRange(invoice.Products);
-
-        invoice.Products = request
-            .Products.Select(p => new ProformaInvoiceProduct
-            {
-                ProductId = p.ProductId,
-                Quantity = p.Quantity,
-                ProformaInvoiceId = invoice.Id,
-            })
-            .ToList();
+        invoice.Products = replacement.Products;
 
         context.ProformaInvoices.Update(invoice);
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanGenerateProformaInvoice);
+        if (denied is not null) return denied;
         await context.SaveChangesAsync();
 
         return Result.Success();
     }
 
-    public async Task<Result> DeleteProformaInvoice(Guid id, Guid userId)
+    public Task<Result> DeleteProformaInvoice(Guid id, Guid userId) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanDeleteProformaInvoice, userId, () => DeleteProformaInvoiceCore(id, userId));
+
+    private async Task<Result> DeleteProformaInvoiceCore(Guid id, Guid userId)
     {
         var invoice = await context.ProformaInvoices.FirstOrDefaultAsync(p => p.Id == id);
         if (invoice is null)
             return Error.NotFound("ProformaInvoice.NotFound", "Proforma Invoice not found");
+        if (invoice.CustomerPoVerifiedAt.HasValue || invoice.Status != ProformaInvoiceStatus.Pending)
+            return Error.Validation("ProformaInvoice.Immutable", "A sent or PO-verified proforma cannot be rewritten or deleted. Resolve it with a documented amendment.");
+
 
         invoice.DeletedAt = DateTime.UtcNow;
         invoice.LastDeletedById = userId;
         context.ProformaInvoices.Update(invoice);
 
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanDeleteProformaInvoice, userId);
+        if (denied is not null) return denied;
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result<Guid>> CreateInvoice(CreateInvoice request)
+    public Task<Result<Guid>> CreateInvoice(CreateInvoice request) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanCreateInvoice, null, () => CreateInvoiceCore(request));
+
+    private async Task<Result<Guid>> CreateInvoiceCore(CreateInvoice request)
     {
         var proforma = await context.ProformaInvoices
             .Include(p => p.Products)
@@ -363,27 +445,37 @@ public class ProductionOrderRepository(
         if (proformaApprovalGate.IsFailure)
             return proformaApprovalGate.Error;
 
-        if (request.Amounts.Any(amount => amount.Amount <= 0))
-            return Error.Validation("Invoice.Amount", "Invoice amounts must be greater than zero");
-        if (request.Amounts.Select(amount => amount.CurrencyId).Distinct().Count() != request.Amounts.Count)
-            return Error.Validation("Invoice.Currency", "Invoice currencies must be unique");
-        if (request.Amounts.Count > 0)
-        {
-            var currencyIds = request.Amounts.Select(amount => amount.CurrencyId).ToList();
-            if (await context.Currencies.CountAsync(currency => currencyIds.Contains(currency.Id)) != currencyIds.Count)
-                return Error.NotFound("Invoice.Currency", "One or more invoice currencies were not found");
-        }
+        if (proforma.Products.Count == 0 || proforma.Products.Any(p => !p.UnitPrice.HasValue || p.UnitPrice < 0 || p.Quantity <= 0 || !p.PriceCurrencyId.HasValue))
+            return Error.Validation("Invoice.Price", "Every proforma line needs its saved pack price and currency; resolve unpriced historical documents before issuing an invoice.");
+        var allocation = await context.AllocateProductionOrders.Include(a => a.ProductionOrder)
+            .SingleAsync(a => a.Id == proforma.AllocateProductionOrderId);
+        if (allocation.CancelledAt.HasValue) return Error.Validation("Invoice.Cancelled", "A cancelled packing list cannot be invoiced.");
+        if (allocation.ProductionOrder.CustomerId != request.CustomerId)
+            return Error.Validation("Invoice.Customer", "The invoice customer must match the order and customer PO.");
+        if (!proforma.CustomerPoVerifiedAt.HasValue || !proforma.CustomerPoAttachmentId.HasValue)
+            return Error.Validation("Invoice.CustomerPo", "Verify the customer's PO against this proforma before issuing its invoice.");
+        if (await context.Invoices.AnyAsync(i => i.ProformaInvoiceId == proforma.Id && !i.Voided))
+            return Error.Conflict("Invoice.Exists", "An invoice already exists for this proforma.");
+        if (string.IsNullOrWhiteSpace(request.Code) || request.Code.Length > 100)
+            return Error.Validation("Invoice.Code", "Enter the invoice number (at most 100 characters).");
+        if (await context.Invoices.AnyAsync(i => i.Code == request.Code.Trim()))
+            return Error.Conflict("Invoice.Code", "This invoice number is already in use.");
+        if (request.Amounts.Count != 0)
+            return Error.Validation("Invoice.Snapshot", "Invoice amounts are calculated from the verified PO and saved proforma pack prices.");
 
+        var selectedTermsId = request.TermsOfPaymentId ?? await context.Customers.Where(c => c.Id == request.CustomerId)
+            .Select(c => c.TermsOfPaymentId).SingleOrDefaultAsync();
         TermsOfPayment terms = null;
-        if (request.TermsOfPaymentId.HasValue)
+        if (selectedTermsId.HasValue)
         {
-            terms = await context.TermsOfPayments.FirstOrDefaultAsync(item => item.Id == request.TermsOfPaymentId);
-            if (terms is null)
-                return Error.NotFound("Invoice.TermsOfPayment", "Terms of payment not found");
+            terms = await context.TermsOfPayments.FirstOrDefaultAsync(item => item.Id == selectedTermsId);
+            if (terms is null) return Error.NotFound("Invoice.TermsOfPayment", "Terms of payment not found");
         }
 
         var invoice = mapper.Map<Invoice>(request);
-        invoice.Status = InvoiceStatus.Pending;
+        invoice.TermsOfPaymentId = selectedTermsId;
+        invoice.Code = request.Code.Trim();
+        invoice.Status = InvoiceStatus.Approved;
         invoice.DueDate = terms?.DueDays is { } dueDays
             ? DateTime.UtcNow.Date.AddDays(dueDays)
             : null;
@@ -395,9 +487,17 @@ public class ProductionOrderRepository(
         if (invoice.Amounts.Count == 0)
         {
             var amounts = await InvoiceAmountsAt(proforma, DateTime.UtcNow);
-            invoice.Amounts.AddRange(amounts);
+            if (amounts.IsFailure) return amounts.Error;
+            invoice.Amounts.AddRange(amounts.Value);
         }
 
+        invoice.Id = Guid.NewGuid();
+        proforma.IssuedInvoiceId = invoice.Id;
+        proforma.IssuedInvoiceCode = invoice.Code;
+        proforma.InvoiceIssuedAt = DateTime.UtcNow;
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanCreateInvoice);
+        if (denied is not null) return denied;
+        proforma.Status = ProformaInvoiceStatus.Invoice;
         await context.Invoices.AddAsync(invoice);
         await context.SaveChangesAsync();
         return invoice.Id;
@@ -409,7 +509,7 @@ public class ProductionOrderRepository(
     /// when one is in effect, else the product's list price in the list price's currency
     /// (the base currency for list prices saved before currencies were recorded).
     /// </summary>
-    private async Task<List<InvoiceAmount>> InvoiceAmountsAt(ProformaInvoice proforma, DateTime asOf)
+    private async Task<Result<List<InvoiceAmount>>> InvoiceAmountsAt(ProformaInvoice proforma, DateTime asOf)
     {
         var allocation = await context.AllocateProductionOrders.AsNoTracking()
             .Include(item => item.ProductionOrder)
@@ -420,18 +520,28 @@ public class ProductionOrderRepository(
         var totals = new Dictionary<Guid, decimal>();
         foreach (var line in proforma.Products)
         {
-            var packingId = allocation?.Products.FirstOrDefault(item => item.ProductId == line.ProductId)?.ProductPackingId;
+            if (line.UnitPrice.HasValue && line.PriceCurrencyId.HasValue)
+            {
+                totals[line.PriceCurrencyId.Value] = totals.GetValueOrDefault(line.PriceCurrencyId.Value) + line.Quantity * line.UnitPrice.Value;
+                continue;
+            }
+            var matches = allocation?.Products.Where(item => item.ProductId == line.ProductId
+                && (!line.ProductPackingId.HasValue || item.ProductPackingId == line.ProductPackingId)).ToList();
+            if (matches?.Count > 1) return Error.Validation("Invoice.Packing", "Choose the allocated packing style for each invoice product.");
+            var packingId = line.ProductPackingId ?? matches?.FirstOrDefault()?.ProductPackingId;
             var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(line.Product, baseCurrencyId);
             var resolution = allocation?.ProductionOrder is { } order
                 ? await CustomerPricingResolver.ResolveAsync(context, order.CustomerId, line.ProductId, packingId, line.Product.Price, listCurrencyId, asOf)
                 : new CustomerPricingResolution(line.Product.Price, listCurrencyId, false, false);
+            if (resolution.Ambiguous) return Error.Conflict("CustomerPricing.Ambiguous", "Multiple active pricing agreements match this invoice line.");
+            if (resolution.UnitPrice <= 0 || !resolution.CurrencyId.HasValue)
+                return Error.Validation("Invoice.Price", "Set a price and currency for this product packing style before invoicing.");
             var currencyId = resolution.CurrencyId;
             if (currencyId is null) continue;
             totals[currencyId.Value] = totals.GetValueOrDefault(currencyId.Value) + line.Quantity * resolution.UnitPrice;
         }
 
-        return totals.Where(item => item.Value > 0)
-            .Select(item => new InvoiceAmount { CurrencyId = item.Key, Amount = item.Value })
+        return totals.Select(item => new InvoiceAmount { CurrencyId = item.Key, Amount = item.Value })
             .ToList();
     }
 
@@ -457,6 +567,8 @@ public class ProductionOrderRepository(
         {
             query = query.WhereSearch(
                 searchQuery,
+                i => i.Code,
+                i => i.ProformaInvoice.CustomerPoNumber,
                 i => i.Customer.Name,
                 i => i.Customer.Address,
                 i => i.Customer.Email
@@ -489,7 +601,7 @@ public class ProductionOrderRepository(
             return Error.NotFound("Invoice.NotFound", "Invoice not found");
 
         var dto = mapper.Map<InvoiceDto>(invoice);
-        dto.Balances = await PaymentBalanceQuery.GetAsync(
+        dto.Balances = invoice.Voided ? [] : await PaymentBalanceQuery.GetAsync(
             context,
             PayableType.CustomerInvoice,
             invoice.Id,
@@ -503,97 +615,17 @@ public class ProductionOrderRepository(
         return dto;
     }
 
-    public async Task<Result> UpdateInvoice(Guid id, CreateInvoice request)
-    {
-        var invoice = await context.Invoices.FirstOrDefaultAsync(i => i.Id == id);
-        if (invoice is null)
-            return Error.NotFound("Invoice.NotFound", "Invoice not found");
+    public Task<Result> UpdateInvoice(Guid id, CreateInvoice request) => Task.FromResult<Result>(
+        Error.Validation("Invoice.Immutable", "Issued invoice snapshots are immutable. Use a documented void or financial adjustment."));
 
-        invoice.CustomerId = request.CustomerId;
-        invoice.ProformaInvoiceId = request.ProformaInvoiceId;
-        invoice.TermsOfPaymentId = request.TermsOfPaymentId;
-        if (request.TermsOfPaymentId.HasValue)
-        {
-            var terms = await context.TermsOfPayments.FirstOrDefaultAsync(item => item.Id == request.TermsOfPaymentId);
-            if (terms is null)
-                return Error.NotFound("Invoice.TermsOfPayment", "Terms of payment not found");
-            invoice.DueDate = terms.DueDays is { } dueDays
-                ? invoice.CreatedAt.Date.AddDays(dueDays)
-                : null;
-        }
+    public Task<Result> DeleteInvoice(Guid id, Guid userId) => Task.FromResult<Result>(
+        Error.Validation("Invoice.Immutable", "Invoice history cannot be deleted. Use the documented void or financial adjustment task."));
 
-        context.Invoices.Update(invoice);
-        await context.SaveChangesAsync();
+    public Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id) =>
+        Task.FromResult<Result>(Error.Validation("FinishedGoods.LoadEvidence", "Record the vehicle, loading location and inspection through the loading task."));
 
-        return Result.Success();
-    }
-
-    public async Task<Result> DeleteInvoice(Guid id, Guid userId)
-    {
-        var invoice = await context.Invoices.FirstOrDefaultAsync(i => i.Id == id);
-        if (invoice is null)
-            return Error.NotFound("Invoice.NotFound", "Invoice not found");
-
-        invoice.DeletedAt = DateTime.UtcNow;
-        invoice.LastDeletedById = userId;
-
-        context.Invoices.Update(invoice);
-        await context.SaveChangesAsync();
-
-        return Result.Success();
-    }
-    public async Task<Result> MarkAllocationProductionOrderAsLoaded(Guid id)
-    {
-        var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(p =>
-            p.Id == id
-        );
-        if (productionOrder == null)
-            return Error.NotFound("Product.Order", "Product order not found");
-
-        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
-        if (approvalGate.IsFailure)
-            return approvalGate;
-
-        productionOrder.LoadedAt = DateTime.UtcNow;
-        productionOrder.Status = AllocateProductionOrderStatus.Loaded;
-        context.AllocateProductionOrders.Update(productionOrder);
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
-
-    public async Task<Result> CreateWaybillFromProductionOrder(
-        CreateProductionOrderWaybill request,
-        Guid id
-    )
-    {
-        var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(p =>
-            p.Id == id
-        );
-        if (productionOrder == null)
-            return Error.NotFound("Product.Order", "Product order not found");
-
-        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
-        if (approvalGate.IsFailure)
-            return approvalGate;
-
-        if (await context.ProductionOrderWaybills.AnyAsync(p => p.AllocateProductionOrderId == id))
-            return Error.Validation(
-                "ProductionOrder.Waybill",
-                "ProductionOrder.Waybill already exists for this allocation"
-            );
-
-        await context.ProductionOrderWaybills.AddAsync(
-            new ProductionOrderWaybill
-            {
-                Code = request.Code,
-                AllocateProductionOrderId = id,
-                Comment = request.Comment,
-            }
-        );
-
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task<Result> CreateWaybillFromProductionOrder(CreateProductionOrderWaybill request, Guid id) =>
+        new APP.Services.FinishedGoods.FinishedGoodsWorkflow(context).Waybill(id, request);
 
     public async Task<
         Result<Paginateable<IEnumerable<ProductionOrderWaybillDto>>>
@@ -644,7 +676,10 @@ public class ProductionOrderRepository(
         );
     }
 
-    public async Task<Result> SendWaybillToCustomer(Guid id)
+    public Task<Result> SendWaybillToCustomer(Guid id) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanSendWaybillToCustomer, null, () => SendWaybillToCustomerCore(id));
+
+    private async Task<Result> SendWaybillToCustomerCore(Guid id)
     {
         var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(p =>
             p.Id == id
@@ -652,12 +687,14 @@ public class ProductionOrderRepository(
         if (productionOrder == null)
             return Error.NotFound("Product.Order", "Product order not found");
 
+        if (productionOrder.CancelledAt.HasValue || productionOrder.DispatchedAt.HasValue || productionOrder.DeliveredAt.HasValue || productionOrder.WaybillSentToCustomerAt.HasValue)
+            return Error.Validation("FinishedGoods.WaybillState", "A waybill can only be recorded as sent once, before departure, for an active packing list.");
         var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
         if (approvalGate.IsFailure)
             return approvalGate;
 
         var waybill = await context.ProductionOrderWaybills.FirstOrDefaultAsync(p =>
-            p.AllocateProductionOrderId == productionOrder.Id
+            p.AllocateProductionOrderId == productionOrder.Id && !p.Voided
         );
         if (waybill == null)
             return Error.NotFound(
@@ -667,27 +704,14 @@ public class ProductionOrderRepository(
 
         productionOrder.Status = AllocateProductionOrderStatus.WaybillSentToCustomer;
         productionOrder.WaybillSentToCustomerAt = DateTime.UtcNow;
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanSendWaybillToCustomer);
+        if (denied is not null) return denied;
         await context.SaveChangesAsync();
         return Result.Success();
     }
 
-    public async Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id)
-    {
-        var productionOrder = await context.AllocateProductionOrders.FirstOrDefaultAsync(p =>
-            p.Id == id
-        );
-        if (productionOrder == null)
-            return Error.NotFound("Product.Order", "Product order not found");
-
-        var approvalGate = productionOrder.EnsureApprovedForProgression("Production allocation");
-        if (approvalGate.IsFailure)
-            return approvalGate;
-
-        productionOrder.DeliveredAt = DateTime.UtcNow;
-        productionOrder.Status = AllocateProductionOrderStatus.Delivered;
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task<Result> MarkAllocationProductionOrderAsDelivered(Guid id) =>
+        Task.FromResult<Result>(Error.Validation("FinishedGoods.DeliveryEvidence", "Record delivery quantities, receiver and proof of delivery through the delivery task."));
 
     /// <summary>
     /// Creates a packing list: packs of each order line taken from approved transfer notes. Orders and
@@ -695,7 +719,10 @@ public class ProductionOrderRepository(
     /// note's units per pack, and both figures are saved. The order, the notes and the packing list are
     /// saved together, so a failure leaves nothing half done.
     /// </summary>
-    public async Task<Result<Guid>> CreateProductOrderAllocation(
+    public Task<Result<Guid>> CreateProductOrderAllocation(AllocateProductionOrderRequest request) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanGeneratePackingList, null, () => CreateProductOrderAllocationCore(request));
+
+    private async Task<Result<Guid>> CreateProductOrderAllocationCore(
         AllocateProductionOrderRequest request
     )
     {
@@ -708,6 +735,7 @@ public class ProductionOrderRepository(
         var allocationEntity = new AllocateProductionOrder
         {
             ProductionOrderId = productionOrder.Id,
+            FefoExceptionReason = request.FefoExceptionReason?.Trim(),
             Products = AllocationProducts(lines),
         };
         TakeStock(productionOrder, notes, lines);
@@ -717,6 +745,8 @@ public class ProductionOrderRepository(
         else if (productionOrder.Products.Any(p => p.Fulfilled))
             productionOrder.Status = ProductionOrderStatus.PartialPackingReady;
 
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanGeneratePackingList);
+        if (denied is not null) return denied;
         await context.AllocateProductionOrders.AddAsync(allocationEntity);
         await context.SaveChangesAsync();
 
@@ -734,7 +764,10 @@ public class ProductionOrderRepository(
     /// pass every check a new packing list passes and take theirs. Approval starts again, because what
     /// was being approved has changed. Everything is saved together, or nothing is.
     /// </summary>
-    public async Task<Result> UpdateProductOrderAllocation(Guid id, AllocateProductionOrderRequest request, Guid? actorId = null)
+    public Task<Result> UpdateProductOrderAllocation(Guid id, AllocateProductionOrderRequest request, Guid? actorId = null) =>
+        FinishedGoodsStock.Write(context, PermissionKeys.CanGeneratePackingList, actorId, () => UpdateProductOrderAllocationCore(id, request, actorId));
+
+    private async Task<Result> UpdateProductOrderAllocationCore(Guid id, AllocateProductionOrderRequest request, Guid? actorId)
     {
         var allocation = await context.AllocateProductionOrders
             .AsSplitQuery()
@@ -752,10 +785,6 @@ public class ProductionOrderRepository(
             return Error.Validation("AllocateProductionOrder.Invoiced", "This packing list already has a proforma invoice, so it cannot be changed.");
         if (await context.ProductionOrderWaybills.AnyAsync(w => w.AllocateProductionOrderId == id))
             return Error.Validation("AllocateProductionOrder.Waybill", "This packing list already has a waybill, so it cannot be changed.");
-
-        await using var transaction = context.Database.IsRelational()
-            ? await context.Database.BeginTransactionAsync()
-            : null;
 
         var productionOrder = await context.ProductionOrders
             .AsSplitQuery()
@@ -810,17 +839,19 @@ public class ProductionOrderRepository(
         else
             productionOrder.Status = ProductionOrderStatus.Pending;
 
+        allocation.FefoExceptionReason = request.FefoExceptionReason?.Trim();
         allocation.Products = AllocationProducts(lines);
         allocation.Approved = false;
         context.AllocateProductionOrderApprovals.RemoveRange(allocation.Approvals);
         allocation.Approvals = [];
+        var denied = await FinishedGoodsStock.Require(context, PermissionKeys.CanGeneratePackingList, actorId);
+        if (denied is not null) return denied;
         await context.SaveChangesAsync();
 
         // A correction made while the packing list is in review is recorded on its review; it then stays in review.
         await APP.Services.Reviews.DocumentReviewGate.NoteEditAsync(context, nameof(AllocateProductionOrder), allocation.Id, actorId);
         await approvalRepository.CreateInitialApprovalsAsync(nameof(AllocateProductionOrder), allocation.Id);
-        if (transaction is not null)
-            await transaction.CommitAsync();
+
         return Result.Success();
     }
 
@@ -1062,6 +1093,8 @@ public class ProductionOrderRepository(
                         "FinishedGoodsTransferNote.NotReceived",
                         $"Transfer note {note.TransferNoteNumber ?? note.Id.ToString()} has not been received into the store yet."
                     );
+                var eligibility = FinishedGoodsStock.Eligible(note);
+                if (eligibility is not null) return eligibility;
                 if (note.BatchManufacturingRecord?.ProductionScheduleProduct?.ProductId != requested.ProductId)
                     return Error.Validation(
                         "FinishedGoodsTransferNote.WrongProduct",
@@ -1087,6 +1120,25 @@ public class ProductionOrderRepository(
                     "ProductionOrder.ProductOverAllocate",
                     $"{packsForProduct} packs were put on the list, but the order needs only {orderProduct.RemainingQuantity} more."
                 );
+        }
+
+        if (string.IsNullOrWhiteSpace(request.FefoExceptionReason))
+        {
+            foreach (var chosen in lines.GroupBy(l => l.OrderProduct.ProductPackingId))
+            {
+                var productId = chosen.First().OrderProduct.ProductId;
+                var packingId = chosen.Key;
+                var latestChosenExpiry = chosen.Max(l => notes[l.NoteId].BatchManufacturingRecord.ExpiryDate);
+                var earlier = await context.FinishedGoodsTransferNotes.Include(n => n.BatchManufacturingRecord)
+                    .Where(n => n.IsApproved && n.Approved && !n.IsOnHold && !n.RequiresStockReconciliation && n.ProductPackingId == packingId
+                        && n.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId
+                        && (n.BatchManufacturingRecord.Status == DOMAIN.Entities.Products.Production.BatchManufacturingStatus.Approved
+                            || n.BatchManufacturingRecord.Status == DOMAIN.Entities.Products.Production.BatchManufacturingStatus.Available)
+                        && n.BatchManufacturingRecord.ExpiryDate > DateTime.UtcNow.Date
+                        && n.BatchManufacturingRecord.ExpiryDate < latestChosenExpiry).ToListAsync();
+                if (earlier.Any(n => n.RemainingQuantity - lines.Where(l => l.NoteId == n.Id).Sum(l => l.Yield) > 0))
+                    return Error.Validation("FinishedGoods.Fefo", "Use available earlier-expiring stock first, or record the authorised FEFO exception reason.");
+            }
         }
 
         // The same transfer note can feed several lines; its stock is checked once, for everything taken.

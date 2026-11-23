@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Authorization;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Base;
@@ -1858,38 +1859,11 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         Guid warehouseId
     )
     {
-        // Sum of quantities moved to this location (incoming batches)
-        var batchesInLocation = await context
-            .FinishedProductBatchMovements.Include(m => m.Product)
-            .Include(m => m.ToWarehouse)
-            .Where(m => m.ProductId == productId && m.ToWarehouseId == warehouseId)
-            .SumAsync(m => m.Quantity);
-
-        // Sum of quantities moved out of this location (outgoing batches)
-        var batchesMovedOut = await context
-            .FinishedProductBatchMovements.Include(m => m.Product)
-            .Include(m => m.FromWarehouse)
-            .Where(m =>
-                m.ProductId == productId
-                && m.FromWarehouse != null
-                && m.FromWarehouseId == warehouseId
-            )
-            .SumAsync(m => m.Quantity);
-
-        // Sum of the consumed quantities at this location for the given material
-        // var batchesConsumedAtLocation = await context.FinishedProductBatchEvents
-        //     .Include(m => m.Batch)
-        //     .Include(m => m.ConsumptionWarehouse)
-        //     .Where(e => e.BatchId == batchId
-        //                 && e.ConsumptionWarehouse != null
-        //                 && e.ConsumptionWarehouseId == warehouseId
-        //                 && e.Type == EventType.Consumed)
-        //     .SumAsync(e => e.Quantity);
-
-        // Calculate the total available quantity for the material in this location
-        var totalQuantityInLocation = batchesInLocation - batchesMovedOut; // - batchesConsumedAtLocation;
-
-        return totalQuantityInLocation;
+        var notes = await context.FinishedGoodsTransferNotes.IgnoreAutoIncludes().AsNoTracking()
+            .Where(n => n.ToWarehouseId == warehouseId && n.IsApproved
+                && n.BatchManufacturingRecord.ProductionScheduleProduct.ProductId == productId)
+            .Select(n => new { n.QuantityReceived, n.AdjustmentQuantity, n.DispatchedQuantity, n.ReleasedReturnQuantity, n.QuarantinedReturnQuantity }).ToListAsync();
+        return notes.Sum(n => n.QuantityReceived + n.AdjustmentQuantity + n.ReleasedReturnQuantity - n.DispatchedQuantity + n.QuarantinedReturnQuantity);
     }
 
     public async Task<Result<decimal>> GetMassMaterialStockInWarehouse(
@@ -3113,10 +3087,11 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         string sortLabel,
         SortDirection? sortDirection,
         Guid userId,
-        Guid? productId = null
+        Guid? productId = null,
+        ProductContext productContext = ProductContext.Production
     )
     {
-        var scope = await ProductMaterialDepartment(userId, productId);
+        var scope = await ProductMaterialDepartment(userId, productId, kind, productContext);
         if (scope.IsFailure) return scope.Error;
         var departmentId = scope.Value;
 
@@ -3133,7 +3108,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             query = query.WhereSearch(searchQuery, q => q.Material.Name, q => q.Material.Code);
         }
 
-        query = query.Where(m => m.DepartmentId == departmentId);
+        query = query.Where(m => m.DepartmentId == departmentId && m.DeletedAt == null
+            && m.Material.DeletedAt == null);
 
         if (kind.HasValue)
         {
@@ -3238,10 +3214,19 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
     public async Task<Result<UnitOfMeasureDto>> GetUnitOfMeasureForMaterialDepartment(
         Guid materialId,
         Guid userId,
-        Guid? productId = null
+        Guid? productId = null,
+        ProductContext productContext = ProductContext.Production
     )
     {
-        var scope = await ProductMaterialDepartment(userId, productId);
+        MaterialKind? kind = null;
+        if (productId.HasValue)
+        {
+            // Authorize the stored kind, never a kind supplied by the caller.
+            kind = await context.Materials.AsNoTracking().Where(material => material.Id == materialId && material.DeletedAt == null)
+                .Select(material => (MaterialKind?)material.Kind).SingleOrDefaultAsync();
+            if (!kind.HasValue) return Error.NotFound("Material", "Material not found.");
+        }
+        var scope = await ProductMaterialDepartment(userId, productId, kind, productContext);
         if (scope.IsFailure) return scope.Error;
         var departmentId = scope.Value;
 
@@ -3251,7 +3236,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     .MaterialDepartments.AsSplitQuery()
                     .Include(materialDepartment => materialDepartment.UoM)
                     .FirstOrDefaultAsync(m =>
-                        m.MaterialId == materialId && m.DepartmentId == departmentId
+                        m.MaterialId == materialId && m.DepartmentId == departmentId && m.DeletedAt == null
+                        && m.Material.DeletedAt == null && m.UoM.DeletedAt == null
                     )
             )?.UoM
         );

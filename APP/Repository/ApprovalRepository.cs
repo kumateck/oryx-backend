@@ -210,6 +210,9 @@ public class ApprovalRepository(
             return await SupplierPricingAgreementApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == CostingPriceListApprovalHandler.ModelType)
+            return await CostingPriceListApprovalHandler.Decide(context, modelId, userId, comments, true);
+
         if (modelType == ApprovedVendorListApprovalHandler.ModelType)
             return await ApprovedVendorListApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
@@ -2228,6 +2231,9 @@ public class ApprovalRepository(
             return await SupplierPricingAgreementApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == CostingPriceListApprovalHandler.ModelType)
+            return await CostingPriceListApprovalHandler.Decide(context, modelId, userId, comments, false);
+
         if (modelType == ApprovedVendorListApprovalHandler.ModelType)
             return await ApprovedVendorListApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
@@ -3854,6 +3860,17 @@ public class ApprovalRepository(
                 });
         }
 
+        if (modelType is null or CostingPriceListApprovalHandler.ModelType)
+        {
+            var priceLists = await pending.CostingPriceLists.AsNoTracking().Select(list => new ApprovalEntity {
+                ModelType = CostingPriceListApprovalHandler.ModelType, Id = list.Id,
+                Code = "Price list " + list.DocumentNumber + " · revision " + list.RevisionNumber,
+                CreatedAt = list.CreatedAt,
+                RequestedBy = list.CreatedBy == null ? null : new UserDto { Id = list.CreatedBy.Id, FirstName = list.CreatedBy.FirstName, LastName = list.CreatedBy.LastName },
+            }).ToListAsync();
+            entitiesRequiringApproval.AddRange(priceLists);
+        }
+
         if (modelType is null or ApprovedVendorListApprovalHandler.ModelType)
         {
             var vendorLists = await pending.ApprovedVendorLists.AsSplitQuery()
@@ -4029,6 +4046,7 @@ public class ApprovalRepository(
         await Collect(context.CustomerQuotationApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.SupplierPricingAgreementApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.ApprovedVendorListApprovals.Where(stage => stage.ActivatedAt.HasValue));
+        await Collect(context.CostingPriceListApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.RndProjectApprovals);
         await Collect(context.RndFormulationApprovals.Where(stage => stage.ActivatedAt.HasValue));
@@ -4564,6 +4582,14 @@ public class ApprovalRepository(
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
 
+            case CostingPriceListApprovalHandler.ModelType:
+                var priceList = await context.CostingPriceLists.AsNoTracking().Where(item => item.Id == modelId)
+                    .Select(item => new ApprovalEntity { ModelType = modelType, Id = item.Id,
+                        Code = "Price list " + item.DocumentNumber + " · revision " + item.RevisionNumber, CreatedAt = item.CreatedAt,
+                        RequestedBy = item.CreatedBy == null ? null : new UserDto { Id = item.CreatedBy.Id, FirstName = item.CreatedBy.FirstName, LastName = item.CreatedBy.LastName } }).FirstOrDefaultAsync();
+                if (priceList is null) return Error.NotFound("CostingPriceList.NotFound", "Price-list revision not found.");
+                priceList.ApprovalLogs = GetApprovalLogs(modelId);
+                return priceList;
             case ApprovedVendorListApprovalHandler.ModelType:
                 var vendorList = await context.ApprovedVendorLists
                     .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
@@ -4702,6 +4728,9 @@ public class ApprovalRepository(
             return;
         }
 
+        // A price-list signature requires a configured human approval; it is never automatic.
+        if (modelType == CostingPriceListApprovalHandler.ModelType && (approval is null || stages.Count == 0)) return;
+
         if (approval is null || stages.Count == 0)
         {
             var explanation = approval is null
@@ -4801,6 +4830,9 @@ public class ApprovalRepository(
             case nameof(SupplierPricingAgreement):
                 await SupplierPricingAgreementApprovalHandler.CreateAsync(
                     context, modelId, stages, approval);
+                break;
+            case CostingPriceListApprovalHandler.ModelType:
+                await CostingPriceListApprovalHandler.CreateAsync(context, modelId, stages, approval, triggeringActorId);
                 break;
             case ApprovedVendorListApprovalHandler.ModelType:
                 await ApprovedVendorListApprovalHandler.CreateAsync(context, modelId, stages, approval);
@@ -5897,7 +5929,7 @@ public class ApprovalRepository(
         context.SupplierPricingAgreementApprovals.IgnoreQueryFilters(), context.AllocateProductionOrderApprovals.IgnoreQueryFilters(), context.RndProjectApprovals.IgnoreQueryFilters(),
         context.RndFormulationApprovals.IgnoreQueryFilters(), context.RndTechnologyTransferApprovals.IgnoreQueryFilters(), context.FinishedGoodsTransferNoteApprovals.IgnoreQueryFilters(),
         context.ProductionExtraPackingApprovals.IgnoreQueryFilters(), context.PaymentApprovals.IgnoreQueryFilters(), context.ResponseApprovals.IgnoreQueryFilters(),
-        context.ApprovedVendorListApprovals,
+        context.ApprovedVendorListApprovals, context.CostingPriceListApprovals,
     ];
 
     /// <summary>

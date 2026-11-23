@@ -187,6 +187,7 @@ public static class MenuConfig
                 new(PermissionSubmodules.PackingList, [PermissionKeys.CanViewPackingList], route: "/finished-goods/packing-list", order: 3),
                 new(PermissionSubmodules.ProformaInvoice, [PermissionKeys.CanGenerateProformaInvoice, PermissionKeys.CanViewProformaInvoice], route: "/finished-goods/proforma-invoice", order: 4),
                 new(PermissionSubmodules.Invoice, [PermissionKeys.CanViewInvoice], route: "/finished-goods/invoice", order: 5),
+                new("Product Recalls", [PermissionKeys.CanViewProductRecalls], route: "/warehouse/product-recalls", order: 7),
                 new(PermissionSubmodules.Waybill, [PermissionKeys.CanViewWaybillForFgw, PermissionKeys.CanCreateWaybillForFgw, PermissionKeys.CanEditWaybillForFgw, PermissionKeys.CanDeleteWaybillForFgw], name: "Waybill", route: "/finished-goods/waybill", order: 6)
             ]
         ),

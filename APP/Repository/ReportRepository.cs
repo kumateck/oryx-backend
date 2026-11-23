@@ -3929,13 +3929,13 @@ public partial class ReportRepository(
             .ProformaInvoices.AsNoTracking()
             .AsSplitQuery()
             
-            .Where(p => !p.DeletedAt.HasValue);
+            .Where(p => !p.DeletedAt.HasValue && context.Invoices.Any(i => i.ProformaInvoiceId == p.Id && !i.Voided));
 
         if (filters.StartDate.HasValue)
-            invoicesQuery = invoicesQuery.Where(p => p.CreatedAt >= filters.StartDate.Value);
+            invoicesQuery = invoicesQuery.Where(p => context.Invoices.Any(i => i.ProformaInvoiceId == p.Id && !i.Voided && i.CreatedAt >= filters.StartDate.Value));
 
         if (filters.EndDate.HasValue)
-            invoicesQuery = invoicesQuery.Where(p => p.CreatedAt <= filters.EndDate.Value);
+            invoicesQuery = invoicesQuery.Where(p => context.Invoices.Any(i => i.ProformaInvoiceId == p.Id && !i.Voided && i.CreatedAt <= filters.EndDate.Value));
 
         if (filters.CustomerId.HasValue)
             invoicesQuery = invoicesQuery.Where(p =>
@@ -3966,6 +3966,9 @@ public partial class ReportRepository(
                         .ThenInclude(p => p.FinishedGoodsTransferNote)
                             .ThenInclude(p => p.BatchManufacturingRecord)
             .ToListAsync();
+        var proformaIds = invoices.Select(p => p.Id).ToList();
+        var issued = await context.Invoices.IgnoreAutoIncludes().AsNoTracking().Where(i => proformaIds.Contains(i.ProformaInvoiceId) && !i.Voided)
+            .Select(i => new { i.ProformaInvoiceId, i.Code, i.CreatedAt }).ToDictionaryAsync(i => i.ProformaInvoiceId);
         var priceOf = await InvoicePriceLookup(invoices);
         var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
@@ -3984,8 +3987,8 @@ public partial class ReportRepository(
         var data = query
             .Select(x => new InvoicedProductsSummaryReportDto
             {
-                InvoiceNo = x.Invoice.Code,
-                InvoiceDate = x.Invoice.CreatedAt,
+                InvoiceNo = issued[x.Invoice.Id].Code,
+                InvoiceDate = issued[x.Invoice.Id].CreatedAt,
 
                 CustomerName = x.Customer.Name,
 
@@ -3993,7 +3996,7 @@ public partial class ReportRepository(
                 OrderDate = x.ProductionOrder.CreatedAt,
 
                 NoOfBatches = x
-                    .Allocation.Products.Where(op => op.ProductId == x.Product.Id)
+                    .Allocation.Products.Where(op => op.ProductId == x.Product.Id && (!x.InvoiceProduct.ProductPackingId.HasValue || op.ProductPackingId == x.InvoiceProduct.ProductPackingId))
                     .SelectMany(op => op.FulfilledQuantities)
                     .Select(q => q.FinishedGoodsTransferNote.BatchManufacturingRecord.BatchNumber)
                     .Distinct()
@@ -4001,13 +4004,13 @@ public partial class ReportRepository(
 
                 OrderQuantity = x.InvoiceProduct.Quantity,
                 QuantityAllocated = x
-                    .Allocation.Products.Where(op => op.ProductId == x.Product.Id)
+                    .Allocation.Products.Where(op => op.ProductId == x.Product.Id && (!x.InvoiceProduct.ProductPackingId.HasValue || op.ProductPackingId == x.InvoiceProduct.ProductPackingId))
                     .SelectMany(op => op.FulfilledQuantities)
                     .Sum(q => q.Quantity),
 
                 Uom = x.Product.BaseUoM.Symbol,
-                UnitPrice = priceOf(x.Invoice, x.Product).UnitPrice,
-                Currency = CustomerPricingResolver.Label(currencyLabels, priceOf(x.Invoice, x.Product).CurrencyId),
+                UnitPrice = priceOf(x.Invoice, x.InvoiceProduct).UnitPrice,
+                Currency = CustomerPricingResolver.Label(currencyLabels, priceOf(x.Invoice, x.InvoiceProduct).CurrencyId),
 
                 ProductName = x.Product.Name,
                 ProductCode = x.Product.Code,
@@ -4024,7 +4027,7 @@ public partial class ReportRepository(
     /// Prices invoiced lines the way the invoice itself does: the customer's agreed price per pack
     /// for the product's packing style on the invoice date, else the product's list price.
     /// </summary>
-    private async Task<Func<DOMAIN.Entities.ProformaInvoices.ProformaInvoice, Product, CustomerPricingResolution>> InvoicePriceLookup(List<DOMAIN.Entities.ProformaInvoices.ProformaInvoice> invoices)
+    private async Task<Func<DOMAIN.Entities.ProformaInvoices.ProformaInvoice, DOMAIN.Entities.ProformaInvoices.ProformaInvoiceProduct, CustomerPricingResolution>> InvoicePriceLookup(List<DOMAIN.Entities.ProformaInvoices.ProformaInvoice> invoices)
     {
         var baseCurrencyId = await CustomerPricingResolver.BaseCurrencyIdAsync(context);
         var customerIds = invoices
@@ -4035,15 +4038,21 @@ public partial class ReportRepository(
         var agreements = await context.CustomerPricingAgreements.AsNoTracking()
             .Where(item => customerIds.Contains(item.CustomerId))
             .ToListAsync();
-        return (invoice, product) =>
+        var packPrices = await APP.Services.Costing.EffectiveCostingPrice.Load(context, invoices.SelectMany(invoice => invoice.Products).Select(line => line.ProductId),
+            invoices.Select(invoice => invoice.CreatedAt).DefaultIfEmpty(DateTime.UtcNow).Max());
+        return (invoice, line) =>
         {
+            var product = line.Product;
+            if (line.UnitPrice.HasValue) return new(line.UnitPrice.Value,line.PriceCurrencyId,false,false,line.PriceListRevisionId);
             var order = invoice.AllocateProductionOrder?.ProductionOrder;
-            var packingId = invoice.AllocateProductionOrder?.Products
+            var packingId = line.ProductPackingId ?? invoice.AllocateProductionOrder?.Products
                 .FirstOrDefault(item => item.ProductId == product.Id)?.ProductPackingId;
-            var listCurrencyId = CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId);
-            if (order is null || packingId is null) return new CustomerPricingResolution(product.Price, listCurrencyId, false, false);
+            var effective = packPrices(product.Id,packingId,invoice.CreatedAt);
+            var defaultPrice = effective.HasRevision ? effective.Price : product.Price;
+            var listCurrencyId = effective.HasRevision ? effective.CurrencyId : CustomerPricingResolver.ListPriceCurrency(product, baseCurrencyId);
+            if (order is null || packingId is null) return new CustomerPricingResolution(defaultPrice, listCurrencyId, false, false);
             var matches = CustomerPricingResolver.ActiveMatches(agreements, order.CustomerId, product.Id, packingId.Value, invoice.CreatedAt);
-            return CustomerPricingResolver.Resolve(matches, product.Price, listCurrencyId);
+            return CustomerPricingResolver.Resolve(matches, defaultPrice, listCurrencyId);
         };
     }
 
@@ -4055,13 +4064,13 @@ public partial class ReportRepository(
             .ProformaInvoices.AsNoTracking()
             .AsSplitQuery()
             
-            .Where(p => !p.DeletedAt.HasValue);
+            .Where(p => !p.DeletedAt.HasValue && context.Invoices.Any(i => i.ProformaInvoiceId == p.Id && !i.Voided));
 
         if (filters.StartDate.HasValue)
-            invoicesQuery = invoicesQuery.Where(p => p.CreatedAt >= filters.StartDate.Value);
+            invoicesQuery = invoicesQuery.Where(p => context.Invoices.Any(i => i.ProformaInvoiceId == p.Id && !i.Voided && i.CreatedAt >= filters.StartDate.Value));
 
         if (filters.EndDate.HasValue)
-            invoicesQuery = invoicesQuery.Where(p => p.CreatedAt <= filters.EndDate.Value);
+            invoicesQuery = invoicesQuery.Where(p => context.Invoices.Any(i => i.ProformaInvoiceId == p.Id && !i.Voided && i.CreatedAt <= filters.EndDate.Value));
 
         if (filters.CustomerId.HasValue)
             invoicesQuery = invoicesQuery.Where(p =>
@@ -4092,13 +4101,16 @@ public partial class ReportRepository(
                         .ThenInclude(p => p.FinishedGoodsTransferNote)
                             .ThenInclude(p => p.BatchManufacturingRecord)
             .ToListAsync();
+        var proformaIds = invoices.Select(p => p.Id).ToList();
+        var issued = await context.Invoices.IgnoreAutoIncludes().AsNoTracking().Where(i => proformaIds.Contains(i.ProformaInvoiceId) && !i.Voided)
+            .Select(i => new { i.ProformaInvoiceId, i.Code, i.CreatedAt }).ToDictionaryAsync(i => i.ProformaInvoiceId);
         var priceOf = await InvoicePriceLookup(invoices);
         var currencyLabels = await CustomerPricingResolver.CurrencyLabelsAsync(context);
 
         var query = invoices.SelectMany(invoice =>
             invoice.Products.SelectMany(p =>
                 invoice
-                    .AllocateProductionOrder.Products.Where(op => op.ProductId == p.ProductId)
+                    .AllocateProductionOrder.Products.Where(op => op.ProductId == p.ProductId && (!p.ProductPackingId.HasValue || op.ProductPackingId == p.ProductPackingId))
                     .SelectMany(pop =>
                         pop.FulfilledQuantities.Select(fq => new
                         {
@@ -4117,8 +4129,8 @@ public partial class ReportRepository(
         var data = query
             .Select(x => new InvoicedProductsDetailedReportDto
             {
-                InvoiceNo = x.Invoice.Code,
-                InvoiceDate = x.Invoice.CreatedAt,
+                InvoiceNo = issued[x.Invoice.Id].Code,
+                InvoiceDate = issued[x.Invoice.Id].CreatedAt,
 
                 CustomerName = x.ProductionOrder.Customer.Name,
 
@@ -4136,8 +4148,8 @@ public partial class ReportRepository(
 
                 Uom = x.Product.BaseUoM.Symbol,
 
-                UnitPrice = priceOf(x.Invoice, x.Product).UnitPrice,
-                Currency = CustomerPricingResolver.Label(currencyLabels, priceOf(x.Invoice, x.Product).CurrencyId),
+                UnitPrice = priceOf(x.Invoice, x.InvoiceProduct).UnitPrice,
+                Currency = CustomerPricingResolver.Label(currencyLabels, priceOf(x.Invoice, x.InvoiceProduct).CurrencyId),
 
                 AllocationStatus = x.Allocation.Status,
             })

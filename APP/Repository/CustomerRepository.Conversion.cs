@@ -41,7 +41,7 @@ public partial class CustomerRepository
                     {
                         ProductId = item.ProductId, TotalOrderQuantity = item.Quantity,
                         VolumePerPiece = item.Product.BaseQuantity > 0 ? item.Product.BaseQuantity : 1m,
-                        ProductPackingId = item.ProductPackingId, UnitPrice = item.UnitPrice,
+                        ProductPackingId = item.ProductPackingId, UnitPrice = item.UnitPrice, PriceListRevisionId = item.PriceListRevisionId, PriceCurrencyId = quotation.CurrencyId,
                         DiscountPercent = item.DiscountPercent,
                         Shippers = perShipper > 0 ? item.Quantity / perShipper : 0,
                         Loose = perShipper > 0 ? item.Quantity % perShipper : item.Quantity,
