@@ -442,7 +442,7 @@ public static class PermissionKeys
     public const string CanCreateApprovedVendorList = "CanCreateApprovedVendorList";
     /// <summary>Correct an approved vendor list while it is in review, and send a returned one back for review.</summary>
     public const string CanEditApprovedVendorList = "CanEditApprovedVendorList";
-    /// <summary>Delete a superseded approved vendor list while retaining its history.</summary>
+    /// <summary>Delete an approved vendor list revision in any status while retaining its history.</summary>
     public const string CanDeleteApprovedVendorList = "CanDeleteApprovedVendorList";
     /// <summary>Prepare a new revision of the current approved vendor list.</summary>
     public const string CanReviseApprovedVendorList = "CanReviseApprovedVendorList";

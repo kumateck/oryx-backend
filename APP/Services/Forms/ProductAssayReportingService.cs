@@ -5,6 +5,7 @@ using APP.Services.Formulas;
 using APP.Utils;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.ProductSpecifications;
+using DOMAIN.Entities.QualityRoutines;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -27,8 +28,16 @@ public sealed class ProductAssayReportingService(ApplicationDbContext db)
 
     private async Task<AssayReportingConfigurationDto> Describe(ProductSpecification specification)
     {
+        var number = specification.SpecificationNumber?.Trim();
+        List<Guid> worksheetForms = string.IsNullOrWhiteSpace(number) ? [] : await db.ProductAnalyticalRawData.AsNoTracking()
+            .Where(ard => ard.ProductStandardTestProcedure.ProductId == specification.ProductId
+                && ard.Stage == specification.TestStage && ard.AnalysisType == AnalysisType.Chemical && ard.IsVerified
+                && ard.SpecNumber != null && ard.SpecNumber.Trim() == number)
+            .Select(ard => ard.FormId).Distinct().ToListAsync();
+        if (worksheetForms.Count == 0) worksheetForms.Add(specification.FormId);
         var fields = await db.FormFields.AsNoTracking().Include(field => field.FormSection).Include(field => field.Question).ThenInclude(question => question.Options)
-            .Where(field => field.FormSection.FormId == specification.FormId && field.Question.Type == QuestionType.Formula).OrderBy(field => field.FormSection.Order).ThenBy(field => field.Rank).ThenBy(field => field.Id).ToListAsync();
+            .Where(field => worksheetForms.Contains(field.FormSection.FormId) && field.Question.Type == QuestionType.Formula)
+            .OrderBy(field => field.FormSection.Order).ThenBy(field => field.Rank).ThenBy(field => field.Id).ToListAsync();
         var result = new List<AssayReportingFieldDto>();
         foreach (var field in fields)
         {
@@ -42,7 +51,7 @@ public sealed class ProductAssayReportingService(ApplicationDbContext db)
         }
         var rules = Rules(specification.AssayReportingRulesJson);
         var token = LegacyFormulaRepairDefinition.Hash(JsonSerializer.Serialize(new { specification.Id, specification.ProductId, specification.FormId,
-            specification.RevisionNumber, specification.IsVerified, result, rules }));
+            specification.RevisionNumber, specification.IsVerified, WorksheetForms = worksheetForms.Order(), result, rules }));
         return new(specification.Id, specification.ProductId, specification.Product?.Name ?? "", (int)specification.TestStage,
             specification.SpecificationNumber, token, result, rules);
     }

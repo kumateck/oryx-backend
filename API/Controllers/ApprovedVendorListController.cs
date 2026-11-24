@@ -96,7 +96,7 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
         return result.IsSuccess ? TypedResults.Created($"/api/v1/approved-vendor-list/{result.Value}", result.Value) : result.ToProblemDetails();
     }
 
-    /// <summary>Deletes a superseded revision from normal views, retaining its document history.</summary>
+    /// <summary>Deletes a vendor-list revision from use, retaining its document history.</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(PermissionKeys.CanDeleteApprovedVendorList)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
