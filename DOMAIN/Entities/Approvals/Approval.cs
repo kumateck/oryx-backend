@@ -68,6 +68,10 @@ public class ApprovalEntity
     public string BatchNumber { get; set; }
     /// <summary>The product of that production batch.</summary>
     public string ProductName { get; set; }
+    public string ProductCode { get; set; }
+    public int? ProductStage { get; set; }
+    public string MaterialName { get; set; }
+    public string MaterialCode { get; set; }
     public UserDto RequestedBy { get; set; }
     /// <summary>Set when the caller sees this only because its approver delegated to them: whose approval it is.</summary>
     public CollectionItemDto OnBehalfOf { get; set; }

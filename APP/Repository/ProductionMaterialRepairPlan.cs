@@ -25,7 +25,7 @@ internal static class ProductionMaterialRepairPlanning
         var activity = await context.ProductionActivities.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .SingleOrDefaultAsync(item => item.Id == activityId);
         if (activity is null) return Error.NotFound("Repair.Activity", "The production run was not found.");
-        var loaded = await ProductionMaterialSources.Load(context, activity.ProductionScheduleProductId, kind, packingStyleOverride);
+        var loaded = await ProductionMaterialSources.Load(context, activity.ProductionScheduleProductId, kind, packingStyleOverride, repair: true);
         if (loaded.IsFailure) return loaded.Error;
         var source = loaded.Value;
         var blockers = source.Blockers.ToList();
@@ -82,10 +82,46 @@ internal static class ProductionMaterialRepairPlanning
             || await context.FinalPackings.IgnoreQueryFilters().AnyAsync(item => item.ProductionScheduleProductId == source.Batch.Id)
             || await context.FinishedGoodsTransferNotes.IgnoreQueryFilters().AnyAsync(item => item.BatchManufacturingRecord.ProductionScheduleProductId == source.Batch.Id))
             blockers.Add("Return, final packing or finished-goods transfer history prevents this repair.");
+        // The corrected product owns the new requirements. Old holds on both former BOM lines are released by Apply.
+        // A single existing substitute or an audited store choice remains intentional; an ambiguous legacy pair is not.
+        var explicitRows = await context.StockRequisitionMaterialChoices.AsNoTracking()
+            .Where(choice => choice.ProductionScheduleProductId == source.Batch.Id && reqIds.Contains(choice.RequisitionId))
+            .OrderByDescending(choice => choice.ChosenAt).ThenByDescending(choice => choice.Id).ToListAsync();
+        var pinned = explicitRows.GroupBy(choice => choice.SourceMaterialId).ToDictionary(group => group.Key, group => group.First().ToMaterialId);
+        foreach (var requirement in source.Requirements.Where(line => line.MaterialId != line.SourceMaterialId))
+            pinned.TryAdd(requirement.SourceMaterialId, requirement.MaterialId);
+        if (pinned.Count > 0)
+        {
+            var selected = await ProductionMaterialSources.Load(context, source.Batch.Id, kind, packingStyleOverride, pinned, repair: true);
+            if (selected.IsFailure) return selected.Error;
+            source = selected.Value;
+            blockers.AddRange(source.Blockers);
+            foreach (var (main, wanted) in pinned)
+                if (source.Requirements.FirstOrDefault(line => line.SourceMaterialId == main) is { } line && line.MaterialId != wanted)
+                    blockers.Add($"{line.Name}: the explicitly selected material is no longer allowed by the corrected BOM. Review the material choice first.");
+        }
         var allocation = await ProductionMaterialAllocator.Plan(context, source, active);
+        var selectionEvidence = new List<string> { allocation.EvidenceHash };
+        var fallback = (await ProductionMaterialChoices.FirstCoveredOptions(context, source, allocation, active))
+            .Where(pair => !pinned.ContainsKey(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value);
+        if (fallback.Count > 0)
+        {
+            foreach (var pair in pinned) fallback[pair.Key] = pair.Value;
+            var selected = await ProductionMaterialSources.Load(context, source.Batch.Id, kind, packingStyleOverride, fallback, repair: true);
+            if (selected.IsFailure) return selected.Error;
+            source = selected.Value;
+            blockers.AddRange(source.Blockers);
+            allocation = await ProductionMaterialAllocator.Plan(context, source, active);
+            selectionEvidence.Add(allocation.EvidenceHash);
+        }
         blockers.AddRange(allocation.Blockers);
         var before = snapshot is null ? LegacyBaseline(requisition, active, blockers) : await ProductionMaterialSources.Requirements(context, snapshot.RequirementsJson);
-        var lines = Lines(before, source.Requirements, active, allocation, blockers);
+        var materialCodes = await context.Materials.IgnoreQueryFilters().AsNoTracking()
+            .Where(material => before.Select(line => line.MaterialId).Contains(material.Id) || source.Requirements.Select(line => line.MaterialId).Contains(material.Id))
+            .ToDictionaryAsync(material => material.Id, material => material.Code);
+        var lines = Lines(before, source.Requirements, active, allocation, blockers)
+            .Select(line => string.IsNullOrWhiteSpace(materialCodes.GetValueOrDefault(line.MaterialId)) ? line
+                : line with { Name = $"{line.Name} ({materialCodes[line.MaterialId]})" }).ToList();
         if (lines.Any(item => item.Shortage > 0)) blockers.Add("There is not enough unreserved, usable stock. No changes can be applied until all shortages are covered.");
         var desired = allocation.Allocations.OrderBy(item => item.BatchId).ThenBy(item => item.ShelfId).ToList();
         var existing = active.Select(item => new ProductionMaterialAllocation(item.MaterialBatchId, item.WarehouseLocationShelfId.GetValueOrDefault(), item.UoMId, item.Quantity, item.DensityGramsPerMilliliter))
@@ -105,7 +141,7 @@ internal static class ProductionMaterialRepairPlanning
             Documents = requisitions.OrderBy(item => item.Id).Select(item => new { item.Id, item.Status, item.Approved, item.ContentRevision,
                 Items = item.Items.OrderBy(line => line.Id).Select(line => new { line.Id, line.MaterialId, line.UoMId, line.Quantity, line.QuantityReceived, line.Status, line.DeletedAt }),
                 Approvals = item.Approvals.OrderBy(stage => stage.Id).Select(stage => new { stage.Id, stage.Status, stage.ApprovedById, stage.ContentRevision }) }),
-            allocation.EvidenceHash, Lines = lines,
+            allocation.EvidenceHash, SelectionEvidence = selectionEvidence, ExplicitChoices = explicitRows.Select(choice => new { choice.Id, choice.SourceMaterialId, choice.ToMaterialId, choice.ChosenAt }), Lines = lines,
             Allocations = allocation.Allocations.OrderBy(item => item.BatchId).ThenBy(item => item.ShelfId).ThenBy(item => item.UnitId),
             Blockers = blockers.Order().ToList()
         });

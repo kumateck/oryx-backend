@@ -20,7 +20,7 @@ internal static class ProductionMaterialChoices
 
     /// <summary>For lines short of their current option: the first other option (BOM order) that is fully in stock.</summary>
     internal static async Task<Dictionary<Guid, Guid>> FirstCoveredOptions(ApplicationDbContext context, ProductionMaterialSource source,
-        ProductionMaterialAllocationPlan plan)
+        ProductionMaterialAllocationPlan plan, List<MaterialBatchReservedQuantity> own = null)
     {
         var chosen = new Dictionary<Guid, Guid>();
         foreach (var requirement in source.Requirements.Where(item => item.Options is { Count: > 1 }
@@ -29,7 +29,7 @@ internal static class ProductionMaterialChoices
             foreach (var option in requirement.Options.Where(item => item.MaterialId != requirement.MaterialId))
             {
                 if (source.Requirements.Any(other => other.MaterialId == option.MaterialId)) continue;
-                var stock = await Evaluate(context, source, requirement, option, []);
+                var stock = await Evaluate(context, source, requirement, option, own ?? []);
                 if (!stock.Covers) continue;
                 chosen[requirement.SourceMaterialId] = option.MaterialId;
                 break;

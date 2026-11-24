@@ -4019,6 +4019,7 @@ public class ApprovalRepository(
                 .ToList();
         }
 
+        await ResponseApprovalIdentity.Apply(context, entitiesRequiringApproval);
         return entitiesRequiringApproval.OrderByDescending(a => a.CreatedAt).ToList();
     }
 
@@ -4345,7 +4346,7 @@ public class ApprovalRepository(
                     .Include(l => l.Approvals)
                         .ThenInclude(a => a.ApprovedBy)
                     .FirstOrDefaultAsync(l => l.Id == modelId);
-                return new ApprovalEntity
+                var responseEntity = new ApprovalEntity
                 {
                     ModelType = modelType,
                     Id = modelId,
@@ -4358,6 +4359,8 @@ public class ApprovalRepository(
                     ProductionActivityStepId = response.ProductionActivityStepId,
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
+                await ResponseApprovalIdentity.Apply(context, [responseEntity]);
+                return responseEntity;
 
             case nameof(ProformaInvoice):
                 var proformaInvoice = await context
