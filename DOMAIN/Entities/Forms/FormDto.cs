@@ -64,6 +64,8 @@ public class ResponseDetailDto : ResponseDto
 
 public class FormResponseDto : WithAttachment
 {
+    public List<DOMAIN.Entities.ProductSpecifications.AssayReportedResultDto> CoaReportedResults { get; set; } = [];
+    public string CoaReportingError { get; set; }
     public Guid ResponseId { get; set; }
     public Guid? ProductionActivityStepId { get; set; }
     public FormFieldDto FormField { get; set; }

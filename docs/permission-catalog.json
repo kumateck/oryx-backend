@@ -513,6 +513,13 @@
   {
     "module": "Quality Assurance",
     "submodule": "Approved Vendor List",
+    "key": "CanDeleteApprovedVendorList",
+    "name": "Can Delete Approved Vendor List",
+    "description": "Allows the user to  delete approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
     "key": "CanReviseApprovedVendorList",
     "name": "Can Revise Approved Vendor List",
     "description": "Allows the user to  revise approved vendor list."
@@ -3008,6 +3015,20 @@
     "key": "CanExportProductSpecification",
     "name": "Can Export Product Specification",
     "description": "Allows the user to  export product specification."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanViewProductAssayReporting",
+    "name": "Can View Product Assay Reporting",
+    "description": "Allows the user to  view product assay reporting."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanEditProductAssayReporting",
+    "name": "Can Edit Product Assay Reporting",
+    "description": "Allows the user to  edit product assay reporting."
   },
   {
     "module": "Quality Control",

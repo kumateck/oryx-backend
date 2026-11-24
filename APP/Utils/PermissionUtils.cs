@@ -442,6 +442,8 @@ public static class PermissionKeys
     public const string CanCreateApprovedVendorList = "CanCreateApprovedVendorList";
     /// <summary>Correct an approved vendor list while it is in review, and send a returned one back for review.</summary>
     public const string CanEditApprovedVendorList = "CanEditApprovedVendorList";
+    /// <summary>Delete a superseded approved vendor list while retaining its history.</summary>
+    public const string CanDeleteApprovedVendorList = "CanDeleteApprovedVendorList";
     /// <summary>Prepare a new revision of the current approved vendor list.</summary>
     public const string CanReviseApprovedVendorList = "CanReviseApprovedVendorList";
     /// <summary>Check an approved vendor list: confirm its review, which sends it for approval.</summary>
@@ -837,6 +839,10 @@ public static class PermissionKeys
     public const string CanEditProductStp = "CanEditProductStp";
     public const string CanDeleteProductStp = "CanDeleteProductStp";
     public const string CanViewProductSpecifications = "CanViewProductSpecifications";
+    /// <summary>View the per-product assay outputs and their COA reporting configuration.</summary>
+    public const string CanViewProductAssayReporting = "CanViewProductAssayReporting";
+    /// <summary>Change per-product assay COA reporting rules with a recorded reason.</summary>
+    public const string CanEditProductAssayReporting = "CanEditProductAssayReporting";
     /// <summary>Print product specifications with their recorded revisions.</summary>
     public const string CanExportProductSpecification = "CanExportProductSpecification";
     public const string CanCreateProductSpecification = "CanCreateProductSpecification";
@@ -1802,6 +1808,7 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanViewApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanCreateApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanEditApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanDeleteApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReviseApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReviewApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReturnApprovedVendorList);
@@ -3154,6 +3161,8 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification,
             PermissionKeys.CanExportProductSpecification);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductAssayReporting);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductAssayReporting);
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.ProductSpecification,

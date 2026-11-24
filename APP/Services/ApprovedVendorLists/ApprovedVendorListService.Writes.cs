@@ -115,6 +115,26 @@ public sealed partial class ApprovedVendorListService
         return Result.Success();
     }
 
+    /// <summary>Removes a superseded revision from normal views while keeping its document and revision history.</summary>
+    public async Task<Result> Delete(Guid id, Guid actorId)
+    {
+        await using var transaction = await Begin();
+        var grants = await CurrentPermissionSet.Load(context, actorId);
+        if (!grants.Contains(PermissionKeys.CanDeleteApprovedVendorList)) return Refused(PermissionKeys.CanDeleteApprovedVendorList);
+        var list = await context.ApprovedVendorLists.SingleOrDefaultAsync(item => item.Id == id);
+        if (list is null) return NotFound;
+        if (list.Status != ApprovedVendorListStatus.Superseded)
+            return Error.Conflict("ApprovedVendorList.NotSuperseded", "Only a superseded approved vendor list can be deleted. Reload the list to check its current status.");
+
+        grants = await CurrentPermissionSet.Load(context, actorId);
+        if (!grants.Contains(PermissionKeys.CanDeleteApprovedVendorList)) return Refused(PermissionKeys.CanDeleteApprovedVendorList);
+        list.DeletedAt = DateTime.UtcNow;
+        list.LastDeletedById = actorId;
+        await context.SaveChangesAsync();
+        if (transaction is not null) await transaction.CommitAsync();
+        return Result.Success();
+    }
+
     private async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> Begin() =>
         context.Database.IsRelational() ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
 

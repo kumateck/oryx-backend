@@ -39,21 +39,35 @@ public static class ProductSectionChanges
 
     public static async Task<HashSet<ProductVerb>> Bom(ApplicationDbContext db, CreateBillOfMaterialRequest request)
     {
+        var units = await db.UnitOfMeasures.IgnoreQueryFilters().AsNoTracking().ToDictionaryAsync(unit => unit.Id);
+        // Equivalent display scales are the same recipe. A change of physical amount or dimension still needs Edit.
+        string Amount(decimal? quantity, Guid? unitId)
+        {
+            if (!quantity.HasValue) return "";
+            if (!unitId.HasValue || !units.TryGetValue(unitId.Value, out var unit)) return $"{unitId}:{Number(quantity.Value)}";
+            var symbol = unit.Symbol?.Trim().ToLowerInvariant();
+            var canonical = symbol is "mg" or "g" or "kg" ? "mg" : symbol is "ml" or "l" ? "ml" : null;
+            if (canonical is null) return $"{unitId}:{Number(quantity.Value)}";
+            try { return $"{unit.Type}:{canonical}:{Number(SHARED.UomConverter.Convert(quantity.Value, symbol, canonical)!.Value)}"; }
+            catch (OverflowException) { return $"{unitId}:{Number(quantity.Value)}"; }
+        }
+        string Options(IEnumerable<(Guid Id, decimal? Quantity, Guid? Unit, decimal? Full)> rows) =>
+            string.Join(",", rows.OrderBy(row => row.Id).Select(row => $"{row.Id}={Amount(row.Quantity, row.Unit)}:{Amount(row.Full, row.Unit)}"));
         var stored = await db.ProductBillOfMaterials.IgnoreQueryFilters().AsNoTracking()
             .Where(link => link.ProductId == request.ProductId && link.IsActive && link.DeletedAt == null)
             .SelectMany(link => link.BillOfMaterial.Items.Where(item => item.DeletedAt == null))
-            .Select(item => new { item.MaterialId, item.BaseQuantity, item.Grade, item.Order, item.IsSubstitutable,
+            .Select(item => new { item.MaterialId, item.BaseQuantity, item.BaseUoMId, item.PrescribedQuantity, item.UseDensityConversion, item.Grade, item.Order, item.IsSubstitutable,
                 Substitutes = item.Substitutes.Where(substitute => substitute.DeletedAt == null)
-                    .Select(substitute => new { substitute.SubstituteMaterialId, substitute.BaseQuantity }).ToList() })
+                    .Select(substitute => new { substitute.SubstituteMaterialId, substitute.BaseQuantity, substitute.BaseUoMId, substitute.PrescribedQuantity }).ToList() })
             .ToListAsync();
         return Compare(
-            stored.Select(item => (item.MaterialId.ToString(), $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};"
-                + Substitutes(item.Substitutes.Select(substitute => (substitute.SubstituteMaterialId, substitute.BaseQuantity))))),
+            stored.Select(item => (item.MaterialId.ToString(), $"{Amount(item.BaseQuantity, item.BaseUoMId)};{Amount(item.PrescribedQuantity, item.BaseUoMId)};{item.UseDensityConversion};{item.Grade};{item.Order};{item.IsSubstitutable};"
+                + Options(item.Substitutes.Select(substitute => (substitute.SubstituteMaterialId, substitute.BaseQuantity, substitute.BaseUoMId, substitute.PrescribedQuantity))))),
             (request.Items ?? []).Select(item => (item.MaterialId.ToString(),
-                $"{Number(item.BaseQuantity)};{item.Grade};{item.Order};{item.IsSubstitutable};"
-                + Substitutes(item.Substitutes is { Count: > 0 }
-                    ? item.Substitutes.Select(substitute => (substitute.MaterialId, (decimal?)substitute.BaseQuantity))
-                    : (item.SubstituteMaterialIds ?? []).Select(id => (id, (decimal?)null))))));
+                $"{Amount(item.BaseQuantity, item.BaseUoMId)};{Amount(item.PrescribedQuantity, item.BaseUoMId)};{item.UseDensityConversion};{item.Grade};{item.Order};{item.IsSubstitutable};"
+                + Options(item.Substitutes is { Count: > 0 }
+                    ? item.Substitutes.Select(substitute => (substitute.MaterialId, (decimal?)substitute.BaseQuantity, substitute.BaseUoMId, (decimal?)substitute.PrescribedQuantity))
+                    : (item.SubstituteMaterialIds ?? []).Select(id => (id, (decimal?)null, (Guid?)null, (decimal?)null))))));
     }
 
     public static async Task<HashSet<ProductVerb>> PackingMaterials(ApplicationDbContext db, Guid productId, IReadOnlyCollection<CreateProductPackageRequest> rows)

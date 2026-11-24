@@ -96,6 +96,20 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
         return result.IsSuccess ? TypedResults.Created($"/api/v1/approved-vendor-list/{result.Value}", result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Deletes a superseded revision from normal views, retaining its document history.</summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize(PermissionKeys.CanDeleteApprovedVendorList)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> DeleteApprovedVendorList(Guid id)
+    {
+        if (Actor is not { } actor) return TypedResults.Unauthorized();
+        var result = await lists.Delete(id, actor);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>Corrects a list while it is in review.</summary>
     [HttpPut("{id:guid}")]
     [Authorize(PermissionKeys.CanEditApprovedVendorList)]

@@ -156,7 +156,7 @@ public class RndTechnologyTransferRepository(
                 .ToList(),
         };
 
-        var bomResult = await boMRepository.CreateBillOfMaterial(bomRequest, userId);
+        var bomResult = await boMRepository.CreateBillOfMaterial(bomRequest, userId, technologyTransferId: transfer.Id);
         if (bomResult.IsFailure)
             return Result.Failure<Guid>(bomResult.Errors);
 

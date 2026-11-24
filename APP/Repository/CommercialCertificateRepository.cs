@@ -1,3 +1,9 @@
+using System.Data;
+using System.Globalization;
+using APP.Services.Authorization;
+using APP.Services.Forms;
+using APP.Utils;
+using DOMAIN.Entities.ProductSpecifications;
 using System.Text.Json;
 using APP.IRepository;
 using DOMAIN.Entities.Forms;
@@ -56,6 +62,15 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
 
     public async Task<Result<Guid>> GenerateForProduct(Guid atrId, Guid actorId)
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            var generated = await GenerateForProduct(atrId, actorId);
+            if (generated.IsSuccess) await transaction.CommitAsync();
+            return generated;
+        }
+        if (!(await CurrentPermissionSet.Load(context, actorId)).Contains(PermissionKeys.CanCheckProductTest))
+            return Error.Forbidden("COA.Permission", "You cannot generate a product certificate.");
         if (await context.CommercialCertificates.AnyAsync(item =>
             item.AnalyticalTestRequestId == atrId))
             return Error.Conflict("COA.Exists",
@@ -122,12 +137,16 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
         if (responses.Count != ards.Count)
             return Error.Conflict("COA.Responses",
                 "The certificate scope does not have one approved response per ARD.");
+        var fieldReferences = await context.FormFields.AsNoTracking().Where(field => formIds.Contains(field.FormSection.FormId))
+            .Select(field => new { field.Id, field.FormSectionId, QuestionReference = field.Question.Reference })
+            .ToDictionaryAsync(field => field.Id);
         var rows = new List<object>();
         foreach (var ard in ards.OrderBy(item => item.AnalysisType))
         {
             var response = responses.SingleOrDefault(item => item.FormId == ard.FormId);
             if (response is null)
                 return Error.Conflict("COA.Response", "An approved ARD response is missing.");
+            var sectionReferences = await SpecificationTestReferences.Values(context, response);
             foreach (var item in ard.Items.OrderBy(item => item.DisplayOrder))
             {
                 var result = response.FormResponses.SingleOrDefault(value =>
@@ -136,6 +155,18 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
                     result.Value.Trim() == "-" || result.Complies == false)
                     return Error.Conflict("COA.Result",
                         $"Reportable result is missing or noncompliant: {item.DisplayLabel}.");
+                var reported = response.AssayReportingSnapshotJson is null ? null
+                    : JsonSerializer.Deserialize<AssayReportingSnapshot>(response.AssayReportingSnapshotJson)?.Fields
+                        .SingleOrDefault(field => field.FormFieldId == item.FormFieldId);
+                if (reported is not null && (!string.IsNullOrWhiteSpace(reported.Error) || reported.Results.Any(value => value.Converted && value.Complies != true)))
+                    return Error.Conflict("COA.AssayReporting", "The captured assay reporting result is unresolved or noncompliant.");
+                var reportingLimits = reported?.Results.Where(value => value.Converted).Select(value =>
+                    $"{System.Net.WebUtility.HtmlEncode(value.Label)}: {value.Minimum.ToString(CultureInfo.InvariantCulture)}–{value.Maximum.ToString(CultureInfo.InvariantCulture)} {value.Unit}").ToList();
+                var specification = reportingLimits is { Count: > 0 }
+                    ? (reported.Results.Any(value => !value.Converted) ? item.SpecificationText + "<br/>" : "") + string.Join("<br/>", reportingLimits)
+                    : item.SpecificationText;
+                var fieldReference = fieldReferences.GetValueOrDefault(item.FormFieldId);
+                var reference = StoredReference(item.Reference) ?? StoredReference(fieldReference is null ? null : sectionReferences.GetValueOrDefault(fieldReference.FormSectionId)) ?? StoredReference(fieldReference?.QuestionReference);
                 rows.Add(new
                 {
                     ard.AnalysisType,
@@ -144,10 +175,10 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
                     item.FormFieldId,
                     item.DisplayLabel,
                     item.GroupName,
-                    item.SpecificationText,
-                    item.Unit,
-                    item.Reference,
-                    result = result.Value,
+                    SpecificationText = specification,
+                    Unit = reported is not null && reported.Results.All(value => value.Converted) ? "% w/v" : item.Unit,
+                    Reference = reference,
+                    result = reported is null ? result.Value : JsonSerializer.Serialize(new { originalResponse = result.Value, coaReportedResults = reported.Results }, new JsonSerializerOptions(JsonSerializerDefaults.Web)),
                     result.Complies
                 });
             }
@@ -169,8 +200,17 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
             IssuedById = actorId,
             CreatedById = actorId
         };
+        if (atrId.HasValue && !(await CurrentPermissionSet.Load(context, actorId)).Contains(PermissionKeys.CanCheckProductTest))
+            return Error.Forbidden("COA.Permission", "Your product certificate permission changed. Reload before generating it.");
         context.CommercialCertificates.Add(certificate);
         await context.SaveChangesAsync();
         return certificate.Id;
     }
+    private static string StoredReference(string value) => value?.Trim() switch
+    {
+        null or "" or "-" or "–" or "—" => null,
+        "0" => "BP", "1" => "USP", "2" => "Ph. Int.", "3" => "In-house",
+        var reference => reference
+    };
+
 }

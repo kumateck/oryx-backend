@@ -14,12 +14,18 @@ using Microsoft.Extensions.DependencyInjection;
 using SHARED.Services.Identity;
 using SHARED;
 using Xunit;
+using APP.Utils;
+using DOMAIN.Entities.Users;
+using DOMAIN.Entities.Roles;
+using DOMAIN.Entities.Permissions;
+using Microsoft.AspNetCore.Identity;
 
 namespace APP.Tests.Repository;
 
-public class BomMaterialUnitTests
+public partial class BomMaterialUnitTests
 {
     private static readonly Guid DepartmentId = Guid.NewGuid();
+    private static readonly Guid ActorId = Guid.NewGuid();
     [Fact]
     public async Task Saving_a_weight_unit_for_a_piece_link_is_refused_before_the_existing_bom_is_deleted()
     {
@@ -31,7 +37,7 @@ public class BomMaterialUnitTests
         await context.SaveChangesAsync();
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
-        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = mg.Id, BaseQuantity = 500000 }] }, Guid.NewGuid());
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = mg.Id, BaseQuantity = 500000, PrescribedQuantity = 500000 }] }, ActorId);
 
         Assert.Equal("Bom.MaterialUnit", result.Error.Code);
         Assert.Equal(old.Id, (await context.BillOfMaterials.SingleAsync()).Id);
@@ -45,7 +51,7 @@ public class BomMaterialUnitTests
         await using var context = Context();
         var (product, material, piece, _) = await Seed(context);
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
-        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = piece.Id, BaseQuantity = 500000, PrescribedQuantity = 1000000 }] }, Guid.NewGuid());
+        { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = piece.Id, BaseQuantity = 500000, PrescribedQuantity = 1000000 }] }, ActorId);
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
         var saved = await context.BillOfMaterialItems.SingleAsync();
         Assert.Equal(piece.Id, saved.BaseUoMId);
@@ -70,7 +76,7 @@ public class BomMaterialUnitTests
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
         { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1_000_000,
-            PrescribedQuantity = 1_000_000, UseDensityConversion = true }] }, Guid.NewGuid());
+            PrescribedQuantity = 1_000_000, UseDensityConversion = true }] }, ActorId);
 
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
         var saved = await context.BillOfMaterialItems.SingleAsync();
@@ -99,7 +105,7 @@ public class BomMaterialUnitTests
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
         { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1,
-            PrescribedQuantity = 1, UseDensityConversion = true }] }, Guid.NewGuid());
+            PrescribedQuantity = 1, UseDensityConversion = true }] }, ActorId);
 
         Assert.Equal("Bom.Density", result.Error.Code);
         Assert.Empty(await context.BillOfMaterials.ToListAsync());
@@ -124,7 +130,7 @@ public class BomMaterialUnitTests
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
         { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1,
-            PrescribedQuantity = 1, UseDensityConversion = true, SubstituteMaterialIds = [substitute.Id] }] }, Guid.NewGuid());
+            PrescribedQuantity = 1, UseDensityConversion = true, SubstituteMaterialIds = [substitute.Id] }] }, ActorId);
 
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
     }
@@ -148,7 +154,7 @@ public class BomMaterialUnitTests
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
         { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseQuantity = 1,
-            PrescribedQuantity = 1, UseDensityConversion = true, SubstituteMaterialIds = [substitute.Id] }] }, Guid.NewGuid());
+            PrescribedQuantity = 1, UseDensityConversion = true, SubstituteMaterialIds = [substitute.Id] }] }, ActorId);
 
         Assert.Equal("Bom.Density", result.Error.Code);
         Assert.Empty(await context.BillOfMaterials.ToListAsync());
@@ -158,7 +164,7 @@ public class BomMaterialUnitTests
     public async Task A_substitute_is_saved_with_its_own_quantity_in_its_own_stock_unit()
     {
         await using var context = Context();
-        var (product, material, piece, _) = await Seed(context);
+        var (product, material, piece, mg) = await Seed(context);
         var gram = new UnitOfMeasure { Name = "Gram", Symbol = "g" };
         var substitute = new Material { Name = "Anhydrous form", Code = "RMS010", Kind = MaterialKind.Raw };
         context.MaterialDepartments.Add(new() { Material = substitute, DepartmentId = DepartmentId, UoM = gram });
@@ -166,11 +172,11 @@ public class BomMaterialUnitTests
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
         { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = piece.Id, BaseQuantity = 2, PrescribedQuantity = 1000,
-            Substitutes = [new() { MaterialId = substitute.Id, BaseUoMId = gram.Id, BaseQuantity = 0.8m, PrescribedQuantity = 400 }] }] }, Guid.NewGuid());
+            Substitutes = [new() { MaterialId = substitute.Id, BaseUoMId = gram.Id, BaseQuantity = 0.8m, PrescribedQuantity = 400 }] }] }, ActorId);
 
         Assert.True(result.IsSuccess, result.IsFailure ? result.Error.Description : null);
         var saved = await context.BillOfMaterialItemSubstitutes.SingleAsync();
-        Assert.Equal((substitute.Id, (Guid?)gram.Id, (decimal?)0.8m, (decimal?)400), (saved.SubstituteMaterialId, saved.BaseUoMId, saved.BaseQuantity, saved.PrescribedQuantity));
+        Assert.Equal((substitute.Id, (Guid?)mg.Id, (decimal?)800m, (decimal?)400000m), (saved.SubstituteMaterialId, saved.BaseUoMId, saved.BaseQuantity, saved.PrescribedQuantity));
         Assert.True((await context.BillOfMaterialItems.SingleAsync()).IsSubstitutable);
     }
 
@@ -188,7 +194,7 @@ public class BomMaterialUnitTests
 
         var result = await new BoMRepository(context, Mapper(context)).CreateBillOfMaterial(new()
         { ProductId = product.Id, Items = [new() { MaterialId = material.Id, BaseUoMId = piece.Id, BaseQuantity = 2, PrescribedQuantity = 1000,
-            Substitutes = [new() { MaterialId = substitute.Id, BaseUoMId = wrongUnit ? mg.Id : gram.Id, BaseQuantity = prescribed / 500m, PrescribedQuantity = prescribed }] }] }, Guid.NewGuid());
+            Substitutes = [new() { MaterialId = substitute.Id, BaseUoMId = wrongUnit ? piece.Id : gram.Id, BaseQuantity = prescribed / 500m, PrescribedQuantity = prescribed }] }] }, ActorId);
 
         Assert.Equal(code, result.Error.Code);
         Assert.Empty(await context.BillOfMaterials.ToListAsync());
@@ -222,6 +228,16 @@ public class BomMaterialUnitTests
         var material = new Material { Name = "Gelatin Capsule Shells - Zinvite", Code = "RMG033", Kind = MaterialKind.Raw };
         context.AddRange(department, piece, mg, product, material);
         context.MaterialDepartments.Add(new() { Material = material, DepartmentId = department.Id, UoM = piece });
+        var role = new Role { Id = Guid.NewGuid(), Name = "BOM author" };
+        context.Users.Add(new User { Id = ActorId, UserName = "bom-author", DepartmentId = DepartmentId });
+        context.Roles.Add(role);
+        context.UserRoles.Add(new IdentityUserRole<Guid> { UserId = ActorId, RoleId = role.Id });
+        var keys = new[] { PermissionKeys.CanAddProductionProductBom, PermissionKeys.CanEditProductionProductBom, PermissionKeys.CanDeleteProductionProductBom };
+        for (var index = 0; index < keys.Length; index++)
+        {
+            context.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = index + 1, RoleId = role.Id, ClaimType = AppConstants.Permission, ClaimValue = keys[index] });
+            context.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), Key = keys[index], RoleClaimId = index + 1, Type = "Access" });
+        }
         await context.SaveChangesAsync();
         return (product, material, piece, mg);
     }
