@@ -3934,6 +3934,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<bool>("Approved")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("AssayReportingSnapshotJson")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
@@ -15801,6 +15804,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("AssayReportingRulesJson")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

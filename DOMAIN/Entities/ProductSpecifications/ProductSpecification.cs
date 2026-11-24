@@ -8,6 +8,8 @@ namespace DOMAIN.Entities.ProductSpecifications;
 
 public class ProductSpecification : BaseEntity, IVerifiable
 {
+    /// <summary>Product-specific, per-output reporting rules. Never copied by shared-number updates.</summary>
+    public string AssayReportingRulesJson { get; set; }
     public string SpecificationNumber { get; set; }
     public string RevisionNumber { get; set; }
     public string SupersedesNumber { get; set; }

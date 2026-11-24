@@ -76,6 +76,8 @@ public class FormField : BaseEntity
 
 public class Response : BaseEntity, IRequireApproval
 {
+    /// <summary>Immutable COA conversion evidence captured when the product certificate is submitted.</summary>
+    public string AssayReportingSnapshotJson { get; set; }
     public Guid FormId { get; set; }
     public Form Form { get; set; }
     public Guid? FormRevisionId { get; set; }
