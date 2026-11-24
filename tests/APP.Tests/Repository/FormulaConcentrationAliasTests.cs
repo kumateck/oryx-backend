@@ -36,6 +36,26 @@ public sealed class FormulaConcentrationAliasTests
         Assert.Equal(variables.Distinct().Count(), variables.Length);
     }
 
+    [Fact]
+    public void All_measurement_aliases_compile_and_read_the_same_three_inputs()
+    {
+        var config = JsonNode.Parse(Configuration(
+            "(:standardWeight+:standardConc+:standardAbsorbance+:standardPeakAreas+:standardTitreValue)/" +
+            "(:sampleWeight+:sampleConc+:sampleAbsorbance+:samplePeakAreas+:sampleTitreValue)"))!.AsObject();
+        config["measurementAliases"] = new JsonArray("absorbance", "peakAreas", "titreValue");
+        var raw = config.ToJsonString();
+        var equivalent = Configuration(
+            "(:standardWeight+:standardWeight+:standardWeight+:standardWeight+:standardWeight)/" +
+            "(:sampleWeight+:sampleWeight+:sampleWeight+:sampleWeight+:sampleWeight)");
+        Assert.Null(LegacyFormulaRepairDefinition.Validate(raw, raw));
+        Assert.Equal(LegacyFormulaRepairDefinition.Compile(equivalent).Hash, LegacyFormulaRepairDefinition.Compile(raw).Hash);
+        var inputs = LegacyFormulaRepairDefinition.ResolveInputs(raw, Values);
+        Assert.Equal(3, inputs.Count);
+        Assert.Equal("8", inputs["standardWeight"]);
+        Assert.Equal("2", inputs["sample1Weight"]);
+        Assert.Equal("4", inputs["sample2Weight"]);
+    }
+
     [Theory]
     [InlineData("mg/mL", "wt")]
     [InlineData("%", "wt")]
