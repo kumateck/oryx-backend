@@ -4,6 +4,7 @@ using APP.Services.Formulas;
 using DOMAIN.Entities.Forms;
 using DOMAIN.Entities.Formulas;
 using DOMAIN.Entities.ProductSpecifications;
+using DOMAIN.Entities.QualityRoutines;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
 using SHARED;
@@ -35,10 +36,18 @@ internal static class ProductAssayReportingRuntime
             && item.ProductionActivityStepId == response.ProductionActivityStepId).OrderByDescending(item => item.CreatedAt)
             .Select(item => new { item.Stage, item.ProductionScheduleProduct.ProductId, item.ChemicalArdId }).FirstOrDefaultAsync();
         if (atr is null) return [];
-        var chemicalForm = atr.ChemicalArdId.HasValue
-            ? await db.ProductAnalyticalRawData.AsNoTracking().Where(ard => ard.Id == atr.ChemicalArdId).Select(ard => (Guid?)ard.FormId).SingleOrDefaultAsync() : null;
+        var chemicalSpecification = atr.ChemicalArdId.HasValue
+            ? await db.ProductAnalyticalRawData.AsNoTracking()
+                .Where(ard => ard.Id == atr.ChemicalArdId && ard.FormId == response.FormId && ard.Stage == atr.Stage
+                    && ard.AnalysisType == AnalysisType.Chemical && ard.ProductStandardTestProcedure.ProductId == atr.ProductId)
+                .Select(ard => ard.SpecNumber).SingleOrDefaultAsync() : null;
+        var specificationNumber = chemicalSpecification?.Trim();
+        var hasLinkedSpecification = !string.IsNullOrWhiteSpace(specificationNumber);
         var specifications = await db.ProductSpecifications.AsNoTracking().Where(item => item.ProductId == atr.ProductId && item.TestStage == atr.Stage
-            && (item.FormId == response.FormId || chemicalForm == response.FormId) && item.AssayReportingRulesJson != null).ToListAsync();
+            && item.AssayReportingRulesJson != null
+            && (hasLinkedSpecification
+                ? item.SpecificationNumber != null && item.SpecificationNumber.Trim() == specificationNumber
+                : item.FormId == response.FormId)).ToListAsync();
         var configured = specifications.SelectMany(specification => ProductAssayReportingService.Rules(specification.AssayReportingRulesJson)
             .Select(rule => (Specification: specification, Rule: rule))).ToList();
         if (configured.Count == 0) return [];
@@ -60,8 +69,8 @@ internal static class ProductAssayReportingRuntime
             try
             {
                 if (group.Select(item => item.Specification.Id).Distinct().Count() != 1) throw new ArgumentException("More than one specification configures this assay. Resolve the product's specification before generating its COA.");
-                if (specification.FormId != response.FormId) throw new ArgumentException("The product specification now selects a different template. Review this test and its reporting settings before generating the COA.");
-                if (field is null || answer is null) throw new ArgumentException("Save the selected assay's readings before generating its COA.");
+                if (field is null) throw new ArgumentException("Select the assay output from this product's Chemical ARD worksheet in COA assay reporting.");
+                if (answer is null) throw new ArgumentException("Save the selected assay's readings before generating its COA.");
                 var pin = pins.SingleOrDefault(pin => pin.FormFieldId == field.Id);
                 var authoring = pin?.Definition;
                 if (response.FormRevisionId.HasValue)
