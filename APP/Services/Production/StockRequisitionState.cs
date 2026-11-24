@@ -7,6 +7,11 @@ namespace APP.Services.Production;
 /// <summary>Operational state also recognises legacy recorded rejections whose header was never updated.</summary>
 public static class StockRequisitionState
 {
+    internal static async Task<bool> HasIssueEvidence(ApplicationDbContext db, Guid requisitionId) =>
+        await db.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(issue => issue.RequisitionId == requisitionId)
+        || await db.BinCardInformation.IgnoreQueryFilters()
+            .AnyAsync(entry => entry.RequisitionId == requisitionId && entry.QuantityIssued > 0);
+
     public static IQueryable<Requisition> Active(INFRASTRUCTURE.Context.ApplicationDbContext db) => db.Requisitions.Where(r =>
         r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected && (
             r.Status == RequestStatus.Completed || r.Approved || r.Items.Any(item => item.QuantityReceived > 0)
