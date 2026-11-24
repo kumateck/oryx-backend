@@ -9,6 +9,7 @@ public partial class ApplicationDbContext
     private static void ConfigureMaterialDensity(ModelBuilder builder)
     {
         var measurement = builder.Entity<MaterialDensityMeasurement>();
+        measurement.Property(row => row.PreviousDepartmentDensitiesJson).HasColumnType("jsonb");
         measurement.HasOne<Material>().WithMany().HasForeignKey(row => row.MaterialId).OnDelete(DeleteBehavior.Restrict);
         measurement.HasOne<DOMAIN.Entities.Users.User>().WithMany().HasForeignKey(row => row.ActorId).OnDelete(DeleteBehavior.Restrict);
         builder.Entity<Material>().ToTable(table => table.HasCheckConstraint("CK_Material_Density", "\"DensityGramsPerMilliliter\" IS NULL OR \"DensityGramsPerMilliliter\" > 0"));
