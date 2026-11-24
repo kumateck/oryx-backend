@@ -69,7 +69,7 @@ internal static class ProductionMaterialSources
 
     /// <param name="preferred">For a line nothing is allocated or requested for yet: the option (by main material id) to use instead of the main material.</param>
     internal static async Task<Result<ProductionMaterialSource>> Load(ApplicationDbContext context, Guid batchId, MaterialKind kind,
-        Guid? packingStyleOverride = null, IReadOnlyDictionary<Guid, Guid> preferred = null)
+        Guid? packingStyleOverride = null, IReadOnlyDictionary<Guid, Guid> preferred = null, bool repair = false)
     {
         var batch = await context.ProductionScheduleProducts.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
             .Include(item => item.Product).Include(item => item.ProductionSchedule).SingleOrDefaultAsync(item => item.Id == batchId);
@@ -181,14 +181,15 @@ internal static class ProductionMaterialSources
         foreach (var definition in definitions)
         {
             var choices = current.Where(id => id == definition.MaterialId || definition.Substitutes.Contains(id)).ToList();
-            if (choices.Count > 1)
+            if (choices.Count > 1 && !repair)
             {
                 blockers.Add($"{MaterialLabel(definition.MaterialId)}: more than one main/substitute allocation exists ({string.Join(", ", choices.Order().Select(MaterialLabel))}). Reconcile this batch's reservations and active stock requisition before repair.");
                 continue;
             }
-            var selected = choices.Count == 1 ? choices[0]
-                : preferred is not null && preferred.TryGetValue(definition.MaterialId, out var wanted) && definition.Substitutes.Contains(wanted) ? wanted
-                : definition.MaterialId;
+            var hasPreferred = preferred is not null && preferred.TryGetValue(definition.MaterialId, out var requestedOption)
+                && (requestedOption == definition.MaterialId || definition.Substitutes.Contains(requestedOption));
+            var selected = repair && hasPreferred ? preferred[definition.MaterialId] : choices.Count == 1 ? choices[0]
+                : hasPreferred ? preferred[definition.MaterialId] : definition.MaterialId;
             var main = Resolve(definition, definition.MaterialId, definition.BaseUnitId, definition.BaseQuantity, definition.Prescribed);
             if (main.Option is null) { blockers.Add(main.Blocker); continue; }
             // A substitute carries its own quantity: it may differ in strength or water content from the main material.

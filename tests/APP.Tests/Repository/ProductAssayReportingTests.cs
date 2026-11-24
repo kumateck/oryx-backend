@@ -183,7 +183,7 @@ public sealed class ProductAssayReportingTests
         Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
         f.Spec.IsVerified = true; await f.Db.SaveChangesAsync();
         Assert.True((await ProductAssayReportingRuntime.Capture(f.Db, f.Response, f.Actor.UserId!.Value, f.Calculation)).IsSuccess);
-        f.Response.CheckedAt = DateTime.UtcNow; await f.Db.SaveChangesAsync();
+        f.Response.CheckedAt = DateTime.UtcNow; f.Response.Approved = true; await f.Db.SaveChangesAsync();
         var original = f.Response.AssayReportingSnapshotJson;
         Assert.True((await f.Save(f.Rule(f.FirstField, 2.5m))).IsSuccess);
         (await f.Db.FormResponses.FirstAsync()).Value = "{\"assay\":50}"; await f.Db.SaveChangesAsync();
@@ -193,6 +193,141 @@ public sealed class ProductAssayReportingTests
         Assert.Equal(original, f.Response.AssayReportingSnapshotJson);
         f.Response.AssayReportingSnapshotJson = null;
         Assert.Empty(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Pending_certificates_use_latest_reporting_including_previously_captured_empty_settings(bool captured)
+    {
+        await using var f = new Fixture(); await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting);
+        if (captured) Assert.True((await ProductAssayReportingRuntime.Capture(f.Db, f.Response, f.Actor.UserId!.Value, f.Calculation)).IsSuccess);
+        f.Response.CheckedAt = DateTime.UtcNow;
+        (await f.Db.FormResponses.SingleAsync(answer => answer.FormFieldId == f.FirstField)).Value = "{\"assay\":101.21}";
+        await f.Db.SaveChangesAsync();
+        var oldSnapshot = f.Response.AssayReportingSnapshotJson;
+        Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
+        Assert.Contains("Approve", Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation)).Error);
+        f.Spec.IsVerified = true; await f.Db.SaveChangesAsync();
+        var result = Assert.Single(Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation)).Results);
+        Assert.Equal(2.42904m, result.Value); Assert.Equal("2.4290", result.DisplayValue); Assert.True(result.Complies);
+        Assert.Equal(oldSnapshot, f.Response.AssayReportingSnapshotJson); // Reading a pending COA never writes.
+        Assert.True((await f.Save(f.Rule(f.FirstField, 2.5m))).IsSuccess);
+        f.Spec.IsVerified = true; await f.Db.SaveChangesAsync();
+        Assert.False(Assert.Single(Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation)).Results).Complies);
+    }
+
+    [Fact]
+    public async Task Approval_requires_the_reviewed_reporting_token_and_freezes_the_latest_result_only_after_approval()
+    {
+        await using var f = new Fixture(); await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting, PermissionKeys.CanApproveResponse);
+        Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
+        f.Spec.IsVerified = true; f.Response.CheckedAt = DateTime.UtcNow; await f.Db.SaveChangesAsync();
+        var fields = await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation);
+        var token = await ProductAssayReportingRuntime.ReviewToken(f.Db, f.Response, fields);
+        Assert.True((await ProductAssayReportingRuntime.PrepareApproval(f.Db, f.Response, f.Actor.UserId!.Value, f.Calculation, null)).IsFailure);
+        Assert.True((await ProductAssayReportingRuntime.PrepareApproval(f.Db, f.Response, f.Actor.UserId.Value, f.Calculation, "stale")).IsFailure);
+        Assert.Null(f.Response.AssayReportingSnapshotJson);
+        Assert.True((await ProductAssayReportingRuntime.PrepareApproval(f.Db, f.Response, f.Actor.UserId.Value, f.Calculation, token)).IsSuccess);
+        Assert.True((await f.Db.FormResponses.SingleAsync(answer => answer.FormFieldId == f.FirstField)).Complies);
+        f.Response.Approved = true; await f.Db.SaveChangesAsync();
+        var frozen = f.Response.AssayReportingSnapshotJson;
+        Assert.True((await f.Save(f.Rule(f.FirstField, 2.5m))).IsSuccess);
+        f.Calculation.Available = false;
+        Assert.Equal(2.43336m, Assert.Single(Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation)).Results).Value);
+        Assert.True((await ProductAssayReportingRuntime.PrepareApproval(f.Db, f.Response, f.Actor.UserId.Value, f.Calculation, token)).IsFailure);
+        Assert.Equal(frozen, f.Response.AssayReportingSnapshotJson);
+    }
+
+    [Fact]
+    public async Task Reporting_changes_restart_only_unapproved_reviews_and_preserve_prior_decisions()
+    {
+        await using var f = new Fixture(); await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting);
+        f.Response.CheckedAt = DateTime.UtcNow;
+        var approvalId = Guid.NewGuid();
+        var first = new ResponseApproval { Id = Guid.NewGuid(), ResponseId = f.Response.Id, ApprovalId = approvalId, ApprovalRound = 1,
+            Required = true, Order = 1, UserId = f.Actor.UserId, Status = DOMAIN.Entities.Approvals.ApprovalStatus.Approved, ActivatedAt = DateTime.UtcNow, ApprovedById = f.Actor.UserId };
+        f.Db.ResponseApprovals.Add(first);
+        f.Db.ResponseApprovals.Add(new() { Id = Guid.NewGuid(), ResponseId = f.Response.Id, ApprovalId = approvalId, ApprovalRound = 1,
+            Required = true, Order = 2, UserId = Guid.NewGuid() });
+        await f.Db.SaveChangesAsync();
+        var before = await ProductAssayReportingRuntime.ReviewToken(f.Db, f.Response, []);
+        var configuration = (await f.Service.Get(f.Spec.Id, f.Actor.UserId!.Value)).Value;
+        Assert.True((await f.Service.Save(f.Spec.Id, new(configuration.Token, new string('R', 2000), [f.Rule(f.FirstField)]), f.Actor.UserId.Value)).IsSuccess);
+        Assert.Equal(2000, f.Spec.RevisionReason.Length);
+        var all = await f.Db.ResponseApprovals.Where(stage => stage.ResponseId == f.Response.Id).ToListAsync();
+        Assert.Equal(4, all.Count);
+        Assert.Equal(DOMAIN.Entities.Approvals.ApprovalStatus.Approved, first.Status);
+        var current = APP.Repository.ResponseApprovalRoundManager.Current(all);
+        Assert.All(current, stage => Assert.InRange(stage.Comments.Length, 1, 1000));
+        Assert.All(current, stage => { Assert.Equal(2, stage.ApprovalRound); Assert.Equal(DOMAIN.Entities.Approvals.ApprovalStatus.Pending, stage.Status); });
+        Assert.NotNull(current.Single(stage => stage.Order == 1).ActivatedAt);
+        Assert.Null(current.Single(stage => stage.Order == 2).ActivatedAt);
+        Assert.NotEqual(before, await ProductAssayReportingRuntime.ReviewToken(f.Db, f.Response, []));
+        f.Response.Approved = true; await f.Db.SaveChangesAsync();
+        Assert.True((await f.Save(f.Rule(f.FirstField, 2.5m))).IsSuccess);
+        Assert.Equal(4, await f.Db.ResponseApprovals.CountAsync());
+    }
+
+    [Fact]
+    public async Task Approval_repository_captures_current_reporting_with_the_existing_approval_permission()
+    {
+        await using var f = new Fixture(); await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting, PermissionKeys.CanApproveResponse);
+        Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
+        f.Spec.IsVerified = true; f.Response.CheckedAt = DateTime.UtcNow;
+        foreach (var order in new[] { 1, 2 }) f.Db.ResponseApprovals.Add(new() { Id = Guid.NewGuid(), ResponseId = f.Response.Id,
+            ApprovalId = Guid.NewGuid(), ApprovalRound = 1, Required = true, Order = order, UserId = order == 1 ? f.Actor.UserId : Guid.NewGuid(),
+            ActivatedAt = order == 1 ? DateTime.UtcNow : null });
+        await f.Db.SaveChangesAsync();
+        var fields = await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation);
+        var http = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
+        http.HttpContext.Request.Headers.IfMatch = "\"" + await ProductAssayReportingRuntime.ReviewToken(f.Db, f.Response, fields) + "\"";
+        var repo = new APP.Repository.ApprovalRepository(f.Db, null!, null!, null!, null!, null!, null!, f.Calculation, http);
+        Assert.True((await repo.ApproveItem(nameof(Response), f.Response.Id, f.Actor.UserId!.Value, [])).IsSuccess);
+        Assert.False(f.Response.Approved); // The next required approver still decides.
+        Assert.NotNull(f.Response.AssayReportingSnapshotJson);
+        Assert.True((await f.Db.FormResponses.SingleAsync(answer => answer.FormFieldId == f.FirstField)).Complies);
+        f.Db.RoleClaims.RemoveRange(await f.Db.RoleClaims.Where(claim => claim.ClaimValue == PermissionKeys.CanApproveResponse).ToListAsync());
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(ErrorType.Forbidden, (await ProductAssayReportingRuntime.PrepareApproval(f.Db, f.Response, f.Actor.UserId.Value, f.Calculation,
+            await ProductAssayReportingRuntime.ReviewToken(f.Db, f.Response, fields))).Error.Type);
+    }
+
+    private sealed class Publisher : APP.Services.ProductionActivityStepEventPublisher.IProductionActivityStepEventPublisher
+    {
+        public Task PublishStatusChanged(Guid stepId, DOMAIN.Entities.Base.ProductionStatus status, Guid? actorId) => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Final_approval_captures_the_latest_conversion_and_later_reporting_edits_leave_it_unchanged()
+    {
+        await using var f = new Fixture(); await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting, PermissionKeys.CanApproveResponse);
+        Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
+        f.Spec.IsVerified = true; f.Response.CheckedAt = DateTime.UtcNow;
+        var stp = new DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure { Id = Guid.NewGuid(), ProductId = f.Spec.ProductId, StpNumber = "STP" };
+        f.Db.ProductStandardTestProcedures.Add(stp);
+        var ard = new DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData { Id = Guid.NewGuid(), FormId = f.Form, StpId = stp.Id,
+            Stage = TestStage.Finished, AnalysisType = DOMAIN.Entities.QualityRoutines.AnalysisType.Chemical };
+        f.Db.ProductAnalyticalRawData.Add(ard);
+        var step = await f.Db.ProductionActivitySteps.IgnoreQueryFilters().SingleAsync(item => item.Id == f.Response.ProductionActivityStepId);
+        step.ProductionActivity = new() { Id = Guid.NewGuid(), ProductionScheduleProductId = (await f.Db.BatchManufacturingRecords.SingleAsync()).ProductionScheduleProductId };
+        step.Operation = new() { Id = Guid.NewGuid(), Name = "QC" };
+        f.Db.ProductionActivities.Add(step.ProductionActivity); f.Db.Operations.Add(step.Operation);
+        (await f.Db.AnalyticalTestRequests.SingleAsync()).ChemicalArdId = ard.Id;
+        f.Db.ResponseApprovals.Add(new() { Id = Guid.NewGuid(), ResponseId = f.Response.Id, ApprovalId = Guid.NewGuid(),
+            ApprovalRound = 1, Required = true, Order = 1, UserId = f.Actor.UserId, ActivatedAt = DateTime.UtcNow });
+        await f.Db.SaveChangesAsync();
+        var http = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
+        http.HttpContext.Request.Headers.IfMatch = await ProductAssayReportingRuntime.ReviewToken(f.Db, f.Response,
+            await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation));
+        var repo = new APP.Repository.ApprovalRepository(f.Db, null!, null!, null!, null!, null!, new Publisher(), f.Calculation, http);
+        var approved = await repo.ApproveItem(nameof(Response), f.Response.Id, f.Actor.UserId!.Value, []);
+        Assert.True(approved.IsSuccess, approved.Error.Description); Assert.True(f.Response.Approved);
+        var before = f.Response.AssayReportingSnapshotJson;
+        Assert.True((await f.Save(f.Rule(f.FirstField, 2.5m))).IsSuccess);
+        f.Calculation.Available = false;
+        Assert.Equal(2.43336m, Assert.Single(Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation)).Results).Value);
+        Assert.Equal(before, f.Response.AssayReportingSnapshotJson);
     }
 
     [Fact]
@@ -329,6 +464,7 @@ public sealed class ProductAssayReportingTests
         var client = new FormulaCalculationClient(http, new(true, url, "test-only", TimeSpan.FromSeconds(5)));
         Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
         f.Spec.IsVerified = true; await f.Db.SaveChangesAsync();
+        f.Response.CheckedAt = DateTime.UtcNow; await f.Db.SaveChangesAsync();
         var simple = Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, client));
         Assert.Null(simple.Error); Assert.Equal(2.43336m, Assert.Single(simple.Results).Value);
 
@@ -376,6 +512,12 @@ public sealed class ProductAssayReportingTests
             {
                 await f.Db.Database.ExecuteSqlRawAsync("SET LOCAL session_replication_role = replica");
                 await f.Seed(PermissionKeys.CanEditProductSpecification);
+                f.Response.CheckedAt = DateTime.UtcNow;
+                var approval = new DOMAIN.Entities.Approvals.Approval { Id = Guid.NewGuid(), ItemType = nameof(Response) };
+                f.Db.Approvals.Add(approval);
+                f.Db.ResponseApprovals.Add(new() { Id = Guid.NewGuid(), ResponseId = f.Response.Id, ApprovalId = approval.Id,
+                    ApprovalRound = 1, Required = true, Order = 1, UserId = f.Actor.UserId, ActivatedAt = DateTime.UtcNow });
+                await f.Db.SaveChangesAsync();
                 await seed.CommitAsync();
             }
             await f.Db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Responses\" DROP COLUMN \"AssayReportingSnapshotJson\"; ALTER TABLE \"ProductSpecifications\" DROP COLUMN \"AssayReportingRulesJson\";");
@@ -400,6 +542,8 @@ public sealed class ProductAssayReportingTests
             var results = await Task.WhenAll(Save(first, 2.4m), Save(second, 2.5m));
             Assert.Single(results, result => result == 200);
             Assert.Single(results, result => result == 409);
+            Assert.Equal(2, await f.Db.ResponseApprovals.CountAsync(stage => stage.ResponseId == f.Response.Id));
+            Assert.Equal(2, await f.Db.ResponseApprovals.Where(stage => stage.ResponseId == f.Response.Id).MaxAsync(stage => stage.ApprovalRound));
             Assert.Null((await f.Db.ProductSpecifications.AsNoTracking().SingleAsync(spec => spec.Id == f.OtherSpec.Id)).AssayReportingRulesJson);
         }
         finally

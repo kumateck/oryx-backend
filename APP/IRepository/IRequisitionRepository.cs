@@ -19,7 +19,7 @@ public interface IRequisitionRepository
     Task<Result> IssueStockRequisitionVoucher(List<BatchQuantityDto> batchQuantities, Guid productId,
         Guid userId);
     Task<Result<Paginateable<IEnumerable<RequisitionDto>>>> GetRequisitions(int page, int pageSize,
-        string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId, MaterialKind? kind, bool? issued = null);
+        string searchQuery, RequestStatus? status, RequisitionType? requisitionType, Guid? departmentId, MaterialKind? kind, bool? issued = null, Guid? productId = null, bool oldestFirst = false);
     Task<Result> IssueStockRequisition(Guid stockRequisitionId, Guid userId);
     Task<Result> AdjustIssuedQuantity(Guid requisitionId, Guid itemId, AdjustIssuedQuantityRequest request, Guid userId);
     Task<Result> IssueTrialRequisition(Guid requisitionId, Guid userId);

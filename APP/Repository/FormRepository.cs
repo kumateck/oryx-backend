@@ -1713,8 +1713,9 @@ public class FormRepository(
         var effective = await GetForm(formResponse.FormId, formResponse.Id);
         if (effective.IsFailure) return effective.Errors;
         detail.EffectiveForm = effective.Value;
-        await FormulaResultProjectionService.AttachAsync(
+        var reportingTokens = await FormulaResultProjectionService.AttachAsync(
             context, formResponse.FormResponses, detail.FormResponses, calculationClient: calculationClient);
+        detail.CoaReportingToken = reportingTokens.GetValueOrDefault(formResponse.Id);
         detail.HasPendingApproval = !formResponse.Approved && !formResponse.Rejected
             && ResponseApprovalRoundManager.Current(formResponse.Approvals)
             .Any(item => item.Status == ApprovalStatus.Pending);

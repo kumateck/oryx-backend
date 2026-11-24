@@ -465,6 +465,73 @@ public class ProductionMaterialRepairPostgresTests
     }
 
     [MaterialRepairFact]
+    public async Task Repair_reconciles_both_old_main_lines_to_the_corrected_BOM_and_prefers_main_stock()
+        => await RepairFormerDuplicateLines(mainStock: 100, expectedMain: true);
+
+    [MaterialRepairFact]
+    public async Task Repair_uses_a_substitutes_own_quantity_when_main_stock_cannot_cover_the_corrected_BOM()
+        => await RepairFormerDuplicateLines(mainStock: 10, expectedMain: false);
+
+    [MaterialRepairFact]
+    public async Task Repair_keeps_an_explicit_main_choice_and_blocks_when_it_is_short()
+        => await RepairFormerDuplicateLines(mainStock: 10, expectedMain: true, pinMain: true);
+
+    private static async Task RepairFormerDuplicateLines(decimal mainStock, bool expectedMain, bool pinMain = false)
+    {
+        await Seed();
+        var substituteId = Guid.NewGuid(); var substituteBatchId = Guid.NewGuid();
+        await using (var edit = Context())
+        {
+            var line = await edit.BillOfMaterialItems.SingleAsync();
+            edit.Materials.Add(new Material { Id = substituteId, Kind = MaterialKind.Raw, Name = "Old separate citric line", Code = "RMC023" });
+            edit.MaterialDepartments.Add(new MaterialDepartment { MaterialId = substituteId, DepartmentId = DepartmentId, UoMId = UnitId });
+            edit.BillOfMaterialItemSubstitutes.Add(new BillOfMaterialItemSubstitute { BillOfMaterialItemId = line.Id,
+                SubstituteMaterialId = substituteId, BaseUoMId = UnitId, BaseQuantity = 0.8m, PrescribedQuantity = 16 });
+            var held = await edit.MaterialBatchReservedQuantities.SingleAsync(item => item.MaterialBatchId == RawBatch);
+            var physical = new MaterialBatch { Id = substituteBatchId, MaterialId = substituteId, UoMId = UnitId, BatchNumber = "CITRIC-SUB",
+                Status = BatchStatus.Available, ExpiryDate = DateTime.UtcNow.Date.AddMonths(12), TotalQuantity = 16 };
+            edit.MaterialBatches.Add(physical);
+            edit.ShelfMaterialBatches.Add(new ShelfMaterialBatch { MaterialBatchId = physical.Id, WarehouseLocationShelfId = held.WarehouseLocationShelfId!.Value, UoMId = UnitId, Quantity = 16 });
+            edit.MaterialBatchReservedQuantities.Add(new MaterialBatchReservedQuantity { ProductionScheduleProductId = BatchId, MaterialBatchId = physical.Id,
+                WarehouseLocationShelfId = held.WarehouseLocationShelfId, WarehouseId = held.WarehouseId, UoMId = UnitId, Quantity = 10 });
+            edit.RequisitionItems.Add(new RequisitionItem { RequisitionId = RequisitionId, MaterialId = substituteId, UoMId = UnitId, Quantity = 10 });
+            (await edit.ShelfMaterialBatches.SingleAsync(item => item.MaterialBatchId == RawBatch)).Quantity = mainStock;
+            if (pinMain)
+                edit.StockRequisitionMaterialChoices.Add(new StockRequisitionMaterialChoice { Id = Guid.NewGuid(), RequisitionId = RequisitionId,
+                    RequisitionItemId = (await edit.RequisitionItems.SingleAsync()).Id, ProductionScheduleProductId = BatchId, SourceMaterialId = MaterialId,
+                    FromMaterialId = substituteId, ToMaterialId = MaterialId, FromUnitId = UnitId, ToUnitId = UnitId, ChosenById = Actor, ChosenAt = DateTime.UtcNow,
+                    FromQuantity = 10, ToQuantity = 20, Reason = "Use the main material" });
+            await edit.SaveChangesAsync();
+        }
+        await using var db = Context(); var preview = await Preview(db);
+        if (pinMain)
+        {
+            Assert.NotEmpty(preview.Blockers);
+            Assert.Equal(20, preview.Lines.Single(line => line.MaterialId == MaterialId).After);
+            Assert.Equal(0, preview.Lines.Single(line => line.MaterialId == substituteId).After);
+            var refused = await ProductionMaterialRepairs.Apply(db, Approvals(db), ActivityId, Actor, MaterialKind.Raw, Request(preview));
+            Assert.True(refused.IsFailure);
+            return;
+        }
+        Assert.Empty(preview.Blockers);
+        Assert.Contains(preview.Lines, item => item.Name.Contains("RMC023"));
+        var selected = expectedMain ? MaterialId : substituteId;
+        var expectedQuantity = expectedMain ? 20m : 16m;
+        Assert.Equal(expectedQuantity, preview.Lines.Single(line => line.MaterialId == selected).After);
+        Assert.Equal(0, preview.Lines.Single(line => line.MaterialId != selected).After);
+        var applied = await ProductionMaterialRepairs.Apply(db, Approvals(db), ActivityId, Actor, MaterialKind.Raw, Request(preview));
+        Assert.True(applied.IsSuccess, applied.Error.Description);
+        Assert.True(applied.Value.ApprovalRequired);
+        var req = await db.Requisitions.Include(request => request.Items).SingleAsync(request => request.Id == RequisitionId);
+        var activeLine = Assert.Single(req.Items.Where(item => item.DeletedAt == null));
+        Assert.Equal(selected, activeLine.MaterialId); Assert.Equal(expectedQuantity, activeLine.Quantity);
+        var reservations = await db.MaterialBatchReservedQuantities.Include(row => row.MaterialBatch)
+            .Where(row => row.ProductionScheduleProductId == BatchId && row.MaterialBatch.Material.Kind == MaterialKind.Raw && row.ReleasedAt == null && row.DeletedAt == null).ToListAsync();
+        Assert.Equal(expectedQuantity, reservations.Sum(row => row.Quantity));
+        Assert.All(reservations, row => Assert.Equal(selected, row.MaterialBatch.MaterialId));
+    }
+
+    [MaterialRepairFact]
     public async Task Rejected_substitute_requisitions_do_not_block_repair_or_get_rewritten()
     {
         await Seed();
