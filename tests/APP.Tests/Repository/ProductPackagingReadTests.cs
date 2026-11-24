@@ -21,6 +21,51 @@ namespace APP.Tests.Repository;
 
 public class ProductPackagingReadTests
 {
+    [PackagingPostgresFact]
+    public async Task Replacing_packing_materials_persists_quantified_substitutes()
+    {
+        await using var fixture = await Fixture.Create();
+        var main = fixture.Active[0];
+        var alternate = fixture.Active[1];
+        var result = await new ProductRepository(fixture.Context, fixture.Mapper).CreateProductPackage([
+            new() { MaterialId = main.MaterialId, ProductPackingId = main.ProductPackingId,
+                BaseQuantity = 1, PrescribedQuantity = 30600,
+                SubstituteMaterialIds = [alternate.MaterialId],
+                Substitutes = [new() { MaterialId = alternate.MaterialId, PrescribedQuantity = 30599.125m }] },
+        ], fixture.ProductId, fixture.ActorId);
+
+        Assert.True(result.IsSuccess, result.Error?.Description);
+        fixture.Context.ChangeTracker.Clear();
+        var saved = await fixture.Context.ProductPackages.Include(item => item.Substitutes).SingleAsync();
+        Assert.Equal(main.MaterialId, saved.MaterialId);
+        Assert.Equal(30600m, saved.PrescribedQuantity);
+        var substitute = Assert.Single(saved.Substitutes);
+        Assert.Equal(alternate.MaterialId, substitute.SubstituteMaterialId);
+        Assert.Equal(30599.125m, substitute.PrescribedQuantity);
+    }
+
+    [PackagingPostgresFact]
+    public async Task A_mapping_exception_rolls_back_the_deleted_packing_materials()
+    {
+        await using var fixture = await Fixture.Create();
+        var before = await fixture.Context.ProductPackages.IgnoreQueryFilters().AsNoTracking()
+            .OrderBy(item => item.Id).Select(item => new { item.Id, item.MaterialId, item.PrescribedQuantity, item.DeletedAt }).ToListAsync();
+        var brokenMapper = new MapperConfiguration(config => config.CreateMap<CreateProductPackageRequest, ProductPackage>()
+            .BeforeMap((_, _) => throw new InvalidOperationException("Simulated mapping failure"))).CreateMapper();
+        var main = fixture.Active[0];
+
+        var exception = await Assert.ThrowsAnyAsync<Exception>(() => new ProductRepository(fixture.Context, brokenMapper).CreateProductPackage([
+            new() { MaterialId = main.MaterialId, ProductPackingId = main.ProductPackingId, PrescribedQuantity = 30600 },
+        ], fixture.ProductId, fixture.ActorId));
+        Assert.Contains("Simulated mapping failure", exception.ToString());
+        Assert.Null(fixture.Context.Database.CurrentTransaction);
+
+        fixture.Context.ChangeTracker.Clear();
+        var after = await fixture.Context.ProductPackages.IgnoreQueryFilters().AsNoTracking()
+            .OrderBy(item => item.Id).Select(item => new { item.Id, item.MaterialId, item.PrescribedQuantity, item.DeletedAt }).ToListAsync();
+        Assert.Equal(before, after);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -312,5 +357,14 @@ public class ProductPackagingReadTests
         public Guid? UserId => actorId;
         public Guid? DepartmentId => departmentId;
         public string DepartmentType => "Production";
+    }
+}
+
+internal sealed class PackagingPostgresFactAttribute : FactAttribute
+{
+    public PackagingPostgresFactAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ORYX_PACKAGING_READ_TEST_CONNECTION")))
+            Skip = "Set ORYX_PACKAGING_READ_TEST_CONNECTION to the disposable local packaging-read database.";
     }
 }

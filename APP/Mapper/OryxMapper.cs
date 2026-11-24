@@ -297,6 +297,7 @@ public class OryxMapper : Profile
         CreateMap<CreateFinishedProductRequest, FinishedProduct>();
         CreateMap<FinishedProduct, FinishedProductDto>();
         CreateMap<CreateProductPackageRequest, ProductPackage>()
+            .ForMember(dest => dest.Substitutes, opt => opt.Ignore())
             .AfterMap(
                 (src, dest) =>
                 {
