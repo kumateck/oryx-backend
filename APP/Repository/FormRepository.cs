@@ -26,7 +26,8 @@ public class FormRepository(
     IMapper mapper,
     IFileRepository fileRepository,
     IApprovalRepository approvalRepository,
-    IFormulaSubmissionService formulaSubmissionService
+    IFormulaSubmissionService formulaSubmissionService,
+    IFormulaCalculationClient calculationClient = null
 ) : IFormRepository
 {
     public async Task<Result<Guid>> CreateForm(CreateFormRequest request)
@@ -65,6 +66,7 @@ public class FormRepository(
             return Error.NotFound("Response.FormMismatch", "Response and form do not match.");
         LegacyFormulaConfigurationReader.Apply(dto, responseId.HasValue
             ? await LegacyFormulaConfigurationReader.Latest(context, [responseId.Value]) : []);
+        if (responseId.HasValue) await SpecificationTestReferences.Apply(context, dto, responseId.Value);
         return dto;
     }
 
@@ -1604,6 +1606,9 @@ public class FormRepository(
         var approvalValidation = await ResponseApprovalSubmission.ValidateAsync(context, response.Id);
         if (!approvalValidation.IsSuccess) return approvalValidation.Error;
 
+        var reporting = await ProductAssayReportingRuntime.Capture(context, response, userId, calculationClient);
+        if (reporting.IsFailure) return reporting.Errors;
+
         response.CheckedAt = DateTime.UtcNow;
         response.CheckedById = userId;
         response.LastUpdatedById = userId;
@@ -1636,8 +1641,29 @@ public class FormRepository(
                     );
                 }
 
+                var reportingFields = System.Text.Json.JsonSerializer.Deserialize<DOMAIN.Entities.ProductSpecifications.AssayReportingSnapshot>(response.AssayReportingSnapshotJson).Fields;
                 foreach (var sectionResponse in sectionResponses)
-                    sectionResponse.Complies = comply.Complies;
+                {
+                    var reported = reportingFields.SingleOrDefault(field => field.FormFieldId == sectionResponse.FormFieldId)?.Results;
+                    sectionResponse.Complies = reported is { Count: > 0 }
+                        ? reported.Where(result => result.Converted).All(result => result.Complies == true)
+                            && (reported.All(result => result.Converted) || comply.Complies)
+                        : comply.Complies;
+                }
+            }
+        }
+
+        var reportedFields = System.Text.Json.JsonSerializer.Deserialize<DOMAIN.Entities.ProductSpecifications.AssayReportingSnapshot>(response.AssayReportingSnapshotJson).Fields;
+        if (reportedFields.Count > 0)
+        {
+            var answerFields = reportedFields.Select(field => field.FormFieldId).ToList();
+            var reportedAnswers = await context.FormResponses.Where(answer => answer.ResponseId == response.Id && answerFields.Contains(answer.FormFieldId)).ToListAsync();
+            foreach (var answer in reportedAnswers)
+            {
+                var results = reportedFields.Single(field => field.FormFieldId == answer.FormFieldId).Results;
+                answer.Complies = results.All(result => result.Converted)
+                    ? results.All(result => result.Complies == true)
+                    : results.Where(result => result.Converted).All(result => result.Complies == true) && answer.Complies == true;
             }
         }
 
@@ -1684,13 +1710,11 @@ public class FormRepository(
                 detail.ApprovedAt = final.ApprovalTime;
             }
         }
-        var effective = await GetForm(formResponse.FormId);
+        var effective = await GetForm(formResponse.FormId, formResponse.Id);
         if (effective.IsFailure) return effective.Errors;
         detail.EffectiveForm = effective.Value;
-        LegacyFormulaConfigurationReader.Apply(detail.EffectiveForm,
-            await LegacyFormulaConfigurationReader.Latest(context, [formResponse.Id]));
         await FormulaResultProjectionService.AttachAsync(
-            context, formResponse.FormResponses, detail.FormResponses);
+            context, formResponse.FormResponses, detail.FormResponses, calculationClient: calculationClient);
         detail.HasPendingApproval = !formResponse.Approved && !formResponse.Rejected
             && ResponseApprovalRoundManager.Current(formResponse.Approvals)
             .Any(item => item.Status == ApprovalStatus.Pending);
@@ -1917,7 +1941,7 @@ public class FormRepository(
             formResponse,
             opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
-        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result, calculationClient: calculationClient);
         return result;
     }
 
@@ -1950,7 +1974,7 @@ public class FormRepository(
             formResponse,
             opt => opt.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
-        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result, calculationClient: calculationClient);
         return result;
     }
 
@@ -1983,7 +2007,7 @@ public class FormRepository(
             formResponse,
             opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
-        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result, calculationClient: calculationClient);
         return result;
     }
 
@@ -2015,7 +2039,7 @@ public class FormRepository(
             formResponse,
             opts => opts.Items[AppConstants.ModelType] = nameof(FormResponse)
         );
-        await FormulaResultProjectionService.AttachAsync(context, formResponse, result);
+        await FormulaResultProjectionService.AttachAsync(context, formResponse, result, calculationClient: calculationClient);
         return result;
     }
 

@@ -3019,6 +3019,20 @@
   {
     "module": "Quality Control",
     "submodule": "Product Specification",
+    "key": "CanViewProductAssayReporting",
+    "name": "Can View Product Assay Reporting",
+    "description": "Allows the user to  view product assay reporting."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanEditProductAssayReporting",
+    "name": "Can Edit Product Assay Reporting",
+    "description": "Allows the user to  edit product assay reporting."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
     "key": "CanCreateProductSpecification",
     "name": "Can Create Product Specification",
     "description": "Allows the user to  create product specification."
