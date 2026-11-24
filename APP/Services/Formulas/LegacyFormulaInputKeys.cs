@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 #nullable enable
 namespace APP.Services.Formulas;
 
-/// <summary>The two concentration names share the configured weight inputs. No value conversion occurs.</summary>
+/// <summary>Input aliases share the configured weight values in formula repairs.</summary>
 internal static class LegacyFormulaInputKeys
 {
     private static string Text(JsonObject value, string key) => LegacyFormulaRepairDefinition.Text(value, key);
@@ -21,7 +21,15 @@ internal static class LegacyFormulaInputKeys
         ? config["standardInputs"] as JsonArray
         : (config["sampleInputs"] as JsonArray)?.ElementAtOrDefault(sample.Value - 1) as JsonArray;
 
-    private static bool AliasesEnabled(JsonObject config) =>
+    private static readonly string[] MeasurementAliases = ["absorbance", "peakAreas", "titreValue"];
+
+    private static string? WeightKey(JsonObject config, int? sample) =>
+        Keys(Inputs(config, sample)).FirstOrDefault(key => Canonical(key).Equals("weight", StringComparison.OrdinalIgnoreCase));
+
+    private static bool Disabled(JsonObject config, string key) =>
+        config[key] is JsonValue value && value.TryGetValue<bool>(out var enabled) && !enabled;
+
+    private static bool ConcentrationEnabled(JsonObject config) =>
         LegacyFormulaRepairDefinition.Number(config, "variableKeyFormat", 0) == 1 &&
         Text(config, "concentrationUnit") is "mg/mL" or "%" &&
         !Keys(Inputs(config, null)).Concat((config["sampleInputs"] as JsonArray ?? [])
@@ -29,11 +37,38 @@ internal static class LegacyFormulaInputKeys
 
     public static string Normalize(JsonObject config, string expression)
     {
-        if (!AliasesEnabled(config)) return expression;
-        var standard = Keys(Inputs(config, null)).FirstOrDefault(key => Canonical(key).Equals("weight", StringComparison.OrdinalIgnoreCase));
-        var sample = Keys(Inputs(config, 1)).FirstOrDefault(key => Canonical(key).Equals("weight", StringComparison.OrdinalIgnoreCase));
-        if (standard is not null) expression = Regex.Replace(expression, @":standardConc\b", ":standard" + Suffix(standard));
-        return sample is null ? expression : Regex.Replace(expression, @":sample(\d*)Conc\b", match => ":sample" + match.Groups[1].Value + Suffix(sample));
+        if (LegacyFormulaRepairDefinition.Number(config, "variableKeyFormat", 0) != 1) return expression;
+        var standard = WeightKey(config, null);
+        var firstSample = WeightKey(config, 1);
+        if (ConcentrationEnabled(config))
+        {
+            if (standard is not null) expression = Regex.Replace(expression, @":standardConc\b", ":standard" + Suffix(standard));
+            if (firstSample is not null) expression = Regex.Replace(expression, @":sample(\d*)Conc\b",
+                match => ":sample" + match.Groups[1].Value + Suffix(firstSample));
+        }
+
+        if (config["measurementAliases"] is not JsonArray selected) return expression;
+        var standardKeys = Keys(Inputs(config, null)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var sampleKeys = (config["sampleInputs"] as JsonArray ?? [])
+            .OfType<JsonArray>().SelectMany(Keys).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var alias in MeasurementAliases)
+        {
+            if (!selected.OfType<JsonValue>().Any(value => value.TryGetValue<string>(out var key) && key == alias)) continue;
+            var suffix = Suffix(alias);
+            if (standard is not null && !Disabled(config, "standardInput") && !Disabled(config, "standardInTable") && !standardKeys.Contains(alias))
+                expression = Regex.Replace(expression, ":standard" + suffix + @"\b", ":standard" + Suffix(standard));
+            if (firstSample is not null && !Disabled(config, "sampleInput") && !sampleKeys.Contains(alias))
+                expression = Regex.Replace(expression, @":sample([0-9]*)" + suffix + @"\b", match =>
+                {
+                    var index = match.Groups[1].Value;
+                    if (index.Length == 0) return ":sample" + Suffix(firstSample);
+                    if (!int.TryParse(index, NumberStyles.None, CultureInfo.InvariantCulture, out var sample) || sample < 1)
+                        return match.Value;
+                    var weight = WeightKey(config, sample);
+                    return weight is null ? match.Value : ":sample" + sample + Suffix(weight);
+                });
+        }
+        return expression;
     }
 
     public static string Expand(JsonObject config, string expression, int sample)
