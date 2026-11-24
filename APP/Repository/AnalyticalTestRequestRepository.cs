@@ -98,9 +98,11 @@ public class AnalyticalTestRequestRepository(
             query.OrderByDescending(test => test.CreatedAt).ThenByDescending(test => test.Id), page, pageSize);
         var tests = await result.Data.ToListAsync();
         var assignments = await GetWorksheetAnalysts(tests);
+        var dtos = tests.Select(test => MapWithAnalysts(test, assignments)).ToList();
+        await AnalyticalTestRequestCoaStatus.Apply(context, tests, dtos);
         return Result.Success(new Paginateable<IEnumerable<AnalyticalTestRequestDto>>
         {
-            Data = tests.Select(test => MapWithAnalysts(test, assignments)).ToList(),
+            Data = dtos,
             PageIndex = result.PageIndex,
             PageCount = result.PageCount,
             TotalRecordCount = result.TotalRecordCount,
@@ -179,7 +181,9 @@ public class AnalyticalTestRequestRepository(
         if (test is null) return Error.NotFound("ATR.NotFound", "Analytical test request not found");
         // Loaded on its own: the state is required, so an Include would join it and hide a request whose state row is missing.
         test.State = await context.Set<ProductState>().IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(state => state.Id == test.StateId);
-        return MapWithAnalysts(test, await GetWorksheetAnalysts([test]));
+        var dto = MapWithAnalysts(test, await GetWorksheetAnalysts([test]));
+        await AnalyticalTestRequestCoaStatus.Apply(context, [test], [dto]);
+        return dto;
     }
 
     public async Task<Result> UpdateAnalyticalTestRequest(

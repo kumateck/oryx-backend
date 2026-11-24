@@ -8,6 +8,7 @@ namespace DOMAIN.Entities.AnalyticalTestRequests;
 
 public class AnalyticalTestRequestDto : BaseDto
 {
+    public string CoaStatus { get; set; }
     public BatchManufacturingRecordDto BatchManufacturingRecord { get; set; }
     public ProductionScheduleProductDto ProductionScheduleProduct { get; set; }
     public ProductionActivityStepDto ProductionActivityStep { get; set; }

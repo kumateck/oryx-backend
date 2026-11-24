@@ -1621,7 +1621,7 @@ public class RequisitionRepository(
         RequisitionType? requisitionType,
         Guid? departmentId,
         MaterialKind? materialKind,
-        bool? issued = null
+        bool? issued = null, Guid? productId = null, bool oldestFirst = false
     )
     {
         var actorId = identity?.UserId;
@@ -1689,6 +1689,9 @@ public class RequisitionRepository(
             query = query.WhereSearch(searchQuery, r => r.Comments, r => r.Code);
         }
 
+        if (productId.HasValue) query = query.Where(r => r.ProductionScheduleProduct.ProductId == productId);
+        query = oldestFirst ? query.OrderBy(r => r.CreatedAt).ThenBy(r => r.Id)
+            : query.OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id);
         var result = await PaginationHelper.GetPaginatedResultAsync(
             query,
             page,

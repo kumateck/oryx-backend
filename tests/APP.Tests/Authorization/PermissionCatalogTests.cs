@@ -63,7 +63,6 @@ public sealed class PermissionCatalogTests
         "CanViewApprovedLocalPurchaseOrder", "CanCreateLocalPurchaseOrder", "CanViewRawMaterials", "CanViewPackagingMaterials",
         "CanAssignPackagingMaterialsStockToShelves",
         // Also the Extra Packaging Requisitions tick box; it gets its own key with the requisition work in phase 3.
-        "CanViewPackagingMaterialRequisitions",
         "CanIssuePackagingMaterialRequisitions", "CanViewRawMaterialTransferList", "CanViewPackagingMaterialTransferList",
         "CanViewVendors", "CanCreateVendor", "CanUpdateVendorDetails", "CanDeleteVendor",
     };

@@ -8,5 +8,7 @@ public sealed class MaterialDensityMeasurement
     public Guid ActorId { get; set; }
     public DateTime RecordedAt { get; set; }
     public decimal? PreviousDensity { get; set; }
-    public decimal Density { get; set; }
+    /// <summary>Null records an explicit clearing of the shared density.</summary>
+    public decimal? Density { get; set; }
+    public string PreviousDepartmentDensitiesJson { get; set; }
 }

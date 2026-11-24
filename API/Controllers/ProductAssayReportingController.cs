@@ -44,9 +44,9 @@ public sealed class ProductAssayReportingController(ProductAssayReportingService
             return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
         }
         catch (DbUpdateConcurrencyException) { return Changed(); }
-        catch (PostgresException error) when (error.SqlState is "40001" or "40P01") { return Changed(); }
-        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: "40001" or "40P01" }) { return Changed(); }
-        catch (InvalidOperationException error) when (error.InnerException is DbUpdateException { InnerException: PostgresException { SqlState: "40001" or "40P01" } }) { return Changed(); }
+        catch (PostgresException error) when (error.SqlState is "40001" or "40P01" or "23505") { return Changed(); }
+        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: "40001" or "40P01" or "23505" }) { return Changed(); }
+        catch (InvalidOperationException error) when (error.InnerException is DbUpdateException { InnerException: PostgresException { SqlState: "40001" or "40P01" or "23505" } }) { return Changed(); }
     }
 
     private static IResult Changed() => Result.Failure(Error.Conflict("AssayReporting.Changed", "The reporting settings changed while saving. Reload and review the current settings.")).ToProblemDetails();

@@ -2582,11 +2582,6 @@ public static class PermissionUtils
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.ExtraPackagingRequisitions,
-            PermissionKeys.CanViewPackagingMaterialRequisitions
-        );
-        addPermission(
-            PermissionModules.Warehouse,
-            PermissionSubmodules.ExtraPackagingRequisitions,
             PermissionKeys.CanIssuePackagingMaterialRequisitions
         );
         addPermission(
