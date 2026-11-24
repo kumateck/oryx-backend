@@ -12345,7 +12345,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("ActorId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("Density")
+                    b.Property<decimal?>("Density")
                         .HasColumnType("numeric");
 
                     b.Property<Guid>("MaterialId")
@@ -12353,6 +12353,9 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.Property<decimal?>("PreviousDensity")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("PreviousDepartmentDensitiesJson")
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime>("RecordedAt")
                         .HasColumnType("timestamp with time zone");
