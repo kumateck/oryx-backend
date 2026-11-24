@@ -2,6 +2,7 @@ using System.Data;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Repository.QcWorksheets;
+using APP.Services.Production;
 using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Services.QcWorksheets;
 using APP.Utils;
@@ -270,6 +271,12 @@ public class ApprovalRepository(
 
             if (requisition.RequisitionType == RequisitionType.Stock && requisition.Status == RequestStatus.Rejected)
                 return Error.Conflict("StockRequisition.Rejected", "This request was rejected. Raise and approve a new stock requisition.");
+            if (requisition.RequisitionType == RequisitionType.Stock
+                && (requisition.Status == RequestStatus.Completed
+                    || requisition.Items.Any(item => item.Status == RequestStatus.Completed || item.QuantityReceived > 0)
+                    || await StockRequisitionState.HasIssueEvidence(context, modelId)))
+                return Error.Conflict("StockRequisition.AlreadyIssued", "This stock requisition has already been issued. Use the existing issue for its warehouse check.");
+
             var approvalStages = requisition
                 .Approvals.Select(item => new ResponsibleApprovalStage
                 {
