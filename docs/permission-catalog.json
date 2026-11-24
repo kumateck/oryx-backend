@@ -2081,13 +2081,6 @@
   {
     "module": "Warehouse",
     "submodule": "Extra Packaging Requisitions",
-    "key": "CanViewPackagingMaterialRequisitions",
-    "name": "Can View Packaging Material Requisitions",
-    "description": "Allows the user to  view packaging material requisitions."
-  },
-  {
-    "module": "Warehouse",
-    "submodule": "Extra Packaging Requisitions",
     "key": "CanIssuePackagingMaterialRequisitions",
     "name": "Can Issue Packaging Material Requisitions",
     "description": "Allows the user to  issue packaging material requisitions."
