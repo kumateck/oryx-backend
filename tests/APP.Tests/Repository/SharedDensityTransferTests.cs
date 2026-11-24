@@ -96,6 +96,10 @@ public sealed class SharedDensityTransferTests
         var migration = new INFRASTRUCTURE.Migrations.AddSharedMaterialDensity();
         var generator = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrationsSqlGenerator>(db);
         foreach (var command in generator.Generate(migration.UpOperations, db.Model)) await db.Database.ExecuteSqlRawAsync(command.CommandText);
+        // The ORM uses the current model; upgrade the audit columns after
+        // checking the original migration's backfill and history triggers.
+        var clearMigration = new INFRASTRUCTURE.Migrations.AllowClearingMaterialDensity();
+        foreach (var command in generator.Generate(clearMigration.UpOperations, db.Model)) await db.Database.ExecuteSqlRawAsync(command.CommandText);
         db.ChangeTracker.Clear();
         Assert.Equal(0.8m, await db.Materials.Where(m => m.Id == link.MaterialId).Select(m => m.DensityGramsPerMilliliter).SingleAsync());
         Assert.Contains(PermissionKeys.CanEditRawMaterialDensity, await APP.Services.Authorization.CurrentPermissionSet.Load(db, f.Actor.UserId));

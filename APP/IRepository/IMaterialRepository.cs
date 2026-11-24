@@ -14,6 +14,8 @@ namespace APP.IRepository;
 
 public interface IMaterialRepository
 {
+    Task<Result> ClearDensity(Guid materialId, MaterialKind expectedKind, Guid actor);
+
     Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId);
     Task<Result<MaterialDto>> GetMaterial(Guid materialId);
     Task<Result<Paginateable<IEnumerable<MaterialDto>>>> GetMaterials(
