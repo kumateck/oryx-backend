@@ -17,7 +17,7 @@ Lines reuse the material ↔ manufacturer (`ManufacturerMaterials`) and supplier
 3. **Correct** (`PUT approved-vendor-list/{id}`) while the review is awaiting review or returned. The edit is recorded on the review. A returned list is sent back for review with the edit key.
 4. Confirming the review starts the approval engine (`ApprovedVendorListApprovalHandler`). Without a configured workflow the list is approved automatically. The final approval makes it Approved and the revision it came from Superseded. If the current list changed in the meantime, the approval is refused.
 5. A rejected list stays rejected. Prepare a new revision instead.
-6. **Delete** (`DELETE approved-vendor-list/{id}`) is available only for a Superseded revision and requires `CanDeleteApprovedVendorList`. It removes that revision from normal list, detail and print reads, recording the deletion time and actor. Its lines, review and approval history, and links from later revisions are retained. Current, Pending and Rejected lists cannot be deleted. The current revision continues to govern procurement.
+6. **Delete** (`DELETE approved-vendor-list/{id}`) is available for any revision and requires `CanDeleteApprovedVendorList`. It removes the selected revision from list, detail, print, review and approval queues. The deletion time and actor, lines, review and approval history, and links from later revisions are retained. Deleting the current list ends its procurement restrictions until another revision is approved. Deleting a revision in preparation frees that slot for a replacement.
 
 ## Procurement blocking (`ApprovedVendorRules`)
 
@@ -45,7 +45,7 @@ Errors are validation errors that name the supplier or manufacturer and the mate
 | `CanViewApprovedVendorList` | list, read, options, mappings; review read | nobody |
 | `CanCreateApprovedVendorList` | create | nobody |
 | `CanEditApprovedVendorList` | correct; review resubmit | nobody |
-| `CanDeleteApprovedVendorList` | delete a Superseded revision | nobody; assign explicitly (Quality Assurance → Approved Vendor List) |
+| `CanDeleteApprovedVendorList` | delete a revision in any status | nobody; assign explicitly (Quality Assurance → Approved Vendor List) |
 | `CanReviseApprovedVendorList` | revise | nobody |
 | `CanReviewApprovedVendorList` / `CanReturnApprovedVendorList` | review confirm / return | nobody |
 | `CanApproveApprovedVendorList` / `CanRejectApprovedVendorList` | approval decide (`DecisionKey`) | nobody |

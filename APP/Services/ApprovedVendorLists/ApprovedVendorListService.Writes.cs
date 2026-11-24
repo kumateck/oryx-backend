@@ -1,6 +1,7 @@
 using System.Data;
 using APP.Services.Authorization;
 using APP.Services.Reviews;
+using APP.Services.Transactions;
 using APP.Utils;
 using DOMAIN.Entities.ApprovedVendorLists;
 using DOMAIN.Entities.Materials;
@@ -88,7 +89,7 @@ public sealed partial class ApprovedVendorListService
             return Error.Conflict("ApprovedVendorList.Stale", "The list changed since you opened it. Reload it and try again.");
         if (list.PreviousRevisionId.HasValue)
         {
-            var previous = await context.ApprovedVendorLists.AsNoTracking().Where(item => item.Id == list.PreviousRevisionId)
+            var previous = await context.ApprovedVendorLists.IgnoreQueryFilters().AsNoTracking().Where(item => item.Id == list.PreviousRevisionId)
                 .Select(item => item.RevisionNumber).FirstAsync();
             if (request.RevisionNumber <= previous)
                 return Error.Validation("ApprovedVendorList.Revision", $"The revision number must be higher than {previous}.");
@@ -115,25 +116,21 @@ public sealed partial class ApprovedVendorListService
         return Result.Success();
     }
 
-    /// <summary>Removes a superseded revision from normal views while keeping its document and revision history.</summary>
-    public async Task<Result> Delete(Guid id, Guid actorId)
+    /// <summary>Removes the selected revision from use while retaining its document and revision history.</summary>
+    public Task<Result> Delete(Guid id, Guid actorId) => ReferenceMaintenanceTransaction.Run(context, async () =>
     {
-        await using var transaction = await Begin();
         var grants = await CurrentPermissionSet.Load(context, actorId);
         if (!grants.Contains(PermissionKeys.CanDeleteApprovedVendorList)) return Refused(PermissionKeys.CanDeleteApprovedVendorList);
         var list = await context.ApprovedVendorLists.SingleOrDefaultAsync(item => item.Id == id);
         if (list is null) return NotFound;
-        if (list.Status != ApprovedVendorListStatus.Superseded)
-            return Error.Conflict("ApprovedVendorList.NotSuperseded", "Only a superseded approved vendor list can be deleted. Reload the list to check its current status.");
 
         grants = await CurrentPermissionSet.Load(context, actorId);
         if (!grants.Contains(PermissionKeys.CanDeleteApprovedVendorList)) return Refused(PermissionKeys.CanDeleteApprovedVendorList);
         list.DeletedAt = DateTime.UtcNow;
         list.LastDeletedById = actorId;
         await context.SaveChangesAsync();
-        if (transaction is not null) await transaction.CommitAsync();
         return Result.Success();
-    }
+    });
 
     private async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> Begin() =>
         context.Database.IsRelational() ? await context.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;

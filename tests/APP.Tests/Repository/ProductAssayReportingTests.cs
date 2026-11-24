@@ -162,6 +162,48 @@ public sealed class ProductAssayReportingTests
     }
 
     [Fact]
+    public async Task Reporting_uses_the_exact_products_chemical_worksheet_when_the_specification_has_a_different_form()
+    {
+        await using var f = new Fixture();
+        await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting);
+        var originalSpecForm = Guid.NewGuid();
+        var unrelatedField = Guid.NewGuid();
+        var section = Guid.NewGuid();
+        var question = Guid.NewGuid();
+        f.Db.Forms.Add(new Form { Id = originalSpecForm, Name = "Specification template" });
+        f.Db.FormSections.Add(new FormSection { Id = section, FormId = originalSpecForm });
+        f.Db.Questions.Add(new Question { Id = question, Type = QuestionType.Formula, Label = "Assay" });
+        f.Db.QuestionOptions.Add(new QuestionOption { Id = Guid.NewGuid(), QuestionId = question, Name = Fixture.Definition });
+        f.Db.FormFields.Add(new FormField { Id = unrelatedField, FormSectionId = section, QuestionId = question });
+        f.Spec.FormId = originalSpecForm;
+        var stp = new DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure { Id = Guid.NewGuid(), ProductId = f.Spec.ProductId };
+        f.Db.ProductStandardTestProcedures.Add(stp);
+        var ard = new DOMAIN.Entities.ProductAnalyticalRawData.ProductAnalyticalRawData { Id = Guid.NewGuid(), FormId = f.Form, StpId = stp.Id,
+            IsVerified = true, SpecNumber = f.Spec.SpecificationNumber, Stage = f.Spec.TestStage };
+        f.Db.ProductAnalyticalRawData.Add(ard);
+        (await f.Db.AnalyticalTestRequests.SingleAsync()).ChemicalArdId = ard.Id;
+        await f.Db.SaveChangesAsync();
+
+        var configuration = await f.Service.Get(f.Spec.Id, f.Actor.UserId!.Value);
+        Assert.Contains(configuration.Value.Fields, field => field.FormFieldId == f.FirstField);
+        Assert.DoesNotContain(configuration.Value.Fields, field => field.FormFieldId == unrelatedField);
+        Assert.True((await f.Save(f.Rule(unrelatedField))).IsFailure);
+        Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
+
+        var preview = Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation));
+        Assert.Equal(f.FirstField, preview.FormFieldId);
+        Assert.Equal("2.4334", Assert.Single(preview.Results).DisplayValue);
+        Assert.NotNull(preview.Error);
+        f.Spec.IsVerified = true;
+        await f.Db.SaveChangesAsync();
+        Assert.Null(Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation)).Error);
+
+        ard.SpecNumber = "OTHER SPECIFICATION";
+        await f.Db.SaveChangesAsync();
+        Assert.Empty(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation));
+    }
+
+    [Fact]
     public async Task A_stale_token_wrong_output_or_removed_permission_refuses_the_write()
     {
         await using var f = new Fixture(); await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting);
