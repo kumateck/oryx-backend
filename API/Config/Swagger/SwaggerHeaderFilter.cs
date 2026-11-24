@@ -31,6 +31,13 @@ public class SwaggerHeaderFilter : IOperationFilter
             Example = new OpenApiString(nameof(PurchaseOrder))
         };
 
+        if (context.MethodInfo.DeclaringType == typeof(API.Controllers.ApprovalController)
+            && context.MethodInfo.Name == nameof(API.Controllers.ApprovalController.ApproveItem))
+            operation.Parameters.Add(new OpenApiParameter {
+                Name = "If-Match", In = ParameterLocation.Header, Required = false,
+                Description = "Pending product COA reporting evidence token returned by the response detail. Required when approving configured assay reporting.",
+                Schema = new OpenApiSchema { Type = "string" }
+            });
         operation.Parameters.Add(moduleHeader);
         operation.Parameters.Add(subModuleHeader);
     }

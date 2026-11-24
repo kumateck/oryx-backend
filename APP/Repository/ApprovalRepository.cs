@@ -5,6 +5,9 @@ using APP.Repository.QcWorksheets;
 using APP.Services.ProductionActivityStepEventPublisher;
 using APP.Services.QcWorksheets;
 using APP.Utils;
+using APP.Services.Forms;
+using APP.Services.Formulas;
+using Microsoft.AspNetCore.Http;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
 using DOMAIN.Entities.Approvals;
@@ -52,7 +55,9 @@ public class ApprovalRepository(
     IMemoryCache cache,
     ILogger<ApprovalRepository> logger,
     IServiceProvider serviceProvider,
-    IProductionActivityStepEventPublisher stepEventPublisher
+    IProductionActivityStepEventPublisher stepEventPublisher,
+    IFormulaCalculationClient calculationClient = null,
+    IHttpContextAccessor httpContextAccessor = null
 ) : IApprovalRepository
 {
     public async Task<Result<Guid>> CreateApproval(CreateApprovalRequest request, Guid userId)
@@ -1312,6 +1317,12 @@ public class ApprovalRepository(
                 if (stageToApproveRe is null)
                     return Error.Validation("Approval.Unauthorized", "You are not authorized to decide this response at this time.");
 
+                var reportingReview = await ProductAssayReportingRuntime.PrepareApproval(context, response, userId,
+                    calculationClient, httpContextAccessor?.HttpContext?.Request.Headers.IfMatch.ToString());
+                if (reportingReview.IsFailure) return reportingReview;
+                if (!(await APP.Services.Authorization.CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanApproveResponse))
+                    return Error.Forbidden("Response.Permission", "Your certificate approval permission changed. Reload before approving.");
+
                 stageToApproveRe.Status = ApprovalStatus.Approved;
                 stageToApproveRe.ApprovalTime = DateTime.UtcNow;
                 stageToApproveRe.Comments = comments;
@@ -1334,8 +1345,12 @@ public class ApprovalRepository(
                 {
                     ResponseApprovalRoundManager.ActivateEligible(currentResponseApprovals, DateTime.UtcNow);
                 }
+                if (!(await APP.Services.Authorization.CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanApproveResponse))
+                    return Error.Forbidden("Response.Permission", "Your certificate approval permission changed. Reload before approving.");
                 await context.SaveChangesAsync();
 
+                if (!(await APP.Services.Authorization.CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanApproveResponse))
+                    return Error.Forbidden("Response.Permission", "Your certificate approval permission changed. Reload before approving.");
                 await AddApprovalLogs(
                     new CreateApprovalLog
                     {

@@ -9,21 +9,21 @@ namespace APP.Services.Formulas;
 
 internal static class FormulaResultProjectionService
 {
-    public static async Task AttachAsync(
+    public static async Task<Dictionary<Guid, string>> AttachAsync(
         ApplicationDbContext context,
         IReadOnlyCollection<FormResponse> sources,
         IReadOnlyCollection<FormResponseDto> destinations,
         CancellationToken cancellationToken = default, IFormulaCalculationClient? calculationClient = null)
     {
-        if (sources.Count == 0 || destinations.Count == 0) return;
+        if (sources.Count == 0 || destinations.Count == 0) return [];
         await LegacyFormulaConfigurationReader.Attach(context, sources, destinations);
-        await APP.Services.Forms.ProductAssayReportingRuntime.Attach(context, sources, destinations, calculationClient);
+        var reportingTokens = await APP.Services.Forms.ProductAssayReportingRuntime.Attach(context, sources, destinations, calculationClient);
         var responseIds = sources.Select(item => item.ResponseId).Distinct().ToList();
         var governed = await context.Responses.AsNoTracking()
             .Where(item => responseIds.Contains(item.Id) && item.FormRevisionId.HasValue)
             .Select(item => new { item.Id, RevisionId = item.FormRevisionId!.Value })
             .ToListAsync(cancellationToken);
-        if (governed.Count == 0) return;
+        if (governed.Count == 0) return reportingTokens;
 
         var governedIds = governed.Select(item => item.Id).ToHashSet();
         foreach (var dto in destinations.Where(item => governedIds.Contains(item.ResponseId)))
@@ -61,6 +61,7 @@ internal static class FormulaResultProjectionService
             dto.FormulaDisplayResultsJson = execution.Execution.DisplayResultsJson;
             dto.FormulaResultFinalized = execution.Finalized;
         }
+        return reportingTokens;
     }
 
     private static async Task<Dictionary<(Guid, string), ProjectedExecution>>

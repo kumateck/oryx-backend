@@ -47,6 +47,34 @@ public sealed class ProductAssayReportingService(ApplicationDbContext db)
             specification.SpecificationNumber, token, result, rules);
     }
 
+    private async Task RestartPendingReviews(ProductSpecification specification, List<Guid> fieldIds, Guid actorId, string reason)
+    {
+        var reviewNote = "New review round after assay reporting changed: " + reason;
+        if (reviewNote.Length > 1000) reviewNote = reviewNote[..997] + "..."; // The full reason stays on the specification revision.
+        var responses = await db.Responses.Include(response => response.Approvals)
+            .Where(response => !response.Approved && !response.Rejected && response.CheckedAt.HasValue
+                && response.FormResponses.Any(answer => fieldIds.Contains(answer.FormFieldId))
+                && db.AnalyticalTestRequests.Any(atr => atr.BatchManufacturingRecordId == response.BatchManufacturingRecordId
+                    && atr.ProductionActivityStepId == response.ProductionActivityStepId && atr.Stage == specification.TestStage
+                    && atr.ProductionScheduleProduct.ProductId == specification.ProductId)).ToListAsync();
+        foreach (var response in responses)
+        {
+            var current = APP.Repository.ResponseApprovalRoundManager.Current(response.Approvals);
+            if (current.Count == 0) continue;
+            var round = checked(current.Max(stage => stage.ApprovalRound) + 1);
+            var now = DateTime.UtcNow;
+            var stages = current.Select(stage => new ResponseApproval {
+                Id = Guid.NewGuid(), ResponseId = response.Id, ApprovalId = stage.ApprovalId, ApprovalRound = round,
+                Required = stage.Required, Order = stage.Order, UserId = stage.UserId, RoleId = stage.RoleId,
+                FormulaSubmissionSetId = stage.FormulaSubmissionSetId, CreatedAt = now,
+                Comments = reviewNote
+            }).ToList();
+            APP.Repository.ResponseApprovalRoundManager.ActivateEligible(stages, now);
+            response.LastUpdatedById = actorId;
+            db.ResponseApprovals.AddRange(stages);
+        }
+    }
+
     public async Task<Result<AssayReportingConfigurationDto>> Save(Guid id, SaveAssayReportingRequest request, Guid actorId)
     {
         await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.Serializable) : null;
@@ -68,6 +96,9 @@ public sealed class ProductAssayReportingService(ApplicationDbContext db)
             if (rule.NominalConcentration is <= 0 or > 1000000 || rule.Minimum < 0 || rule.Maximum < rule.Minimum || rule.Maximum > 1000000 || rule.DecimalPlaces is < 0 or > 8)
                 return Invalid("Enter a positive nominal % w/v concentration, valid nonnegative specification limits and 0–8 decimal places.");
         }
+        var orderedRules = request.Rules.OrderBy(rule => rule.FormFieldId).ThenBy(rule => rule.ResultKey).ToList();
+        if (!current.Rules.OrderBy(rule => rule.FormFieldId).ThenBy(rule => rule.ResultKey).SequenceEqual(orderedRules))
+            await RestartPendingReviews(specification, current.Rules.Concat(request.Rules).Select(rule => rule.FormFieldId).Distinct().ToList(), actorId, request.Reason.Trim());
         if (!await Allowed(actorId, PermissionKeys.CanEditProductAssayReporting)) return Error.Forbidden("AssayReporting.Permission", "Your reporting permission changed. Reload before saving.");
         specification.AssayReportingRulesJson = JsonSerializer.Serialize(request.Rules.OrderBy(rule => rule.FormFieldId).ThenBy(rule => rule.ResultKey));
         specification.LastUpdatedById = actorId;

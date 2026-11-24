@@ -48,6 +48,8 @@ public class ResponseDto : BaseDto
 
 public class ResponseDetailDto : ResponseDto
 {
+    /// <summary>Version of the pending COA evidence, sent as If-Match when approving.</summary>
+    public string CoaReportingToken { get; set; }
     public UserDto ApprovedBy { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public FormDto EffectiveForm { get; set; }
