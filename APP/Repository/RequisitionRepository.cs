@@ -878,8 +878,9 @@ public class RequisitionRepository(
                 "Only stock requisitions can be issued through this operation."
             );
 
-        if (stockRequisition.Status == RequestStatus.Completed)
-            return Error.Validation(
+        if (stockRequisition.Status == RequestStatus.Completed
+            || await StockRequisitionState.HasIssueEvidence(context, stockRequisitionId))
+            return Error.Conflict(
                 "Stock.AlreadyIssued",
                 "This stock requisition has already been issued."
             );

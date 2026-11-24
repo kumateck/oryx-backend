@@ -1,4 +1,7 @@
 using APP.Repository;
+using DOMAIN.Entities.Approvals;
+using DOMAIN.Entities.BinCards;
+using Microsoft.Extensions.Logging.Abstractions;
 using DOMAIN.Entities.Requisitions;
 using DOMAIN.Entities.Requisitions.Request;
 using INFRASTRUCTURE.Context;
@@ -70,6 +73,68 @@ public class RequisitionIssueApprovalTests
         Assert.Equal("Stock.AlreadyIssued", result.Error.Code);
         Assert.Empty(context.MaterialBatchEvents);
         Assert.Empty(context.BinCardInformation);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task IssueStockRequisition_RejectsIssueEvidenceOnAPendingRequisition(bool useIssueRecord)
+    {
+        await using var context = CreateContext();
+        var requisition = CreateStockRequisition(approved: true);
+        context.Requisitions.Add(requisition);
+        AddIssueEvidence(context, requisition, useIssueRecord);
+        await context.SaveChangesAsync();
+
+        var result = await CreateRepository(context).IssueStockRequisition(requisition.Id, Guid.NewGuid());
+
+        Assert.Equal("Stock.AlreadyIssued", result.Error.Code);
+        Assert.Equal(RequestStatus.Pending, requisition.Status);
+        Assert.Equal(useIssueRecord ? 1 : 0, await context.StockRequisitionIssues.CountAsync());
+        Assert.Equal(useIssueRecord ? 0 : 1, await context.BinCardInformation.CountAsync());
+        Assert.Empty(context.MaterialBatchEvents);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ApproveStockRequisition_DoesNotReopenIssuedStock(bool pendingHeader)
+    {
+        await using var context = CreateContext();
+        var actor = Guid.NewGuid();
+        var requisition = CreateStockRequisition(approved: true);
+        requisition.Status = pendingHeader ? RequestStatus.Pending : RequestStatus.Completed;
+        var stage = new RequisitionApproval
+        {
+            Id = Guid.NewGuid(), UserId = actor, Required = true, ActivatedAt = DateTime.UtcNow,
+        };
+        requisition.Approvals = [stage];
+        context.Requisitions.Add(requisition);
+        AddIssueEvidence(context, requisition, useIssueRecord: true);
+        await context.SaveChangesAsync();
+        var repository = new ApprovalRepository(context, null!, null!, null!, NullLogger<ApprovalRepository>.Instance,
+            null!, new NoOpProductionActivityStepEventPublisher());
+
+        var result = await repository.ApproveItem("StockRequisition", requisition.Id, actor, []);
+
+        Assert.Equal("StockRequisition.AlreadyIssued", result.Error.Code);
+        Assert.Equal(pendingHeader ? RequestStatus.Pending : RequestStatus.Completed, requisition.Status);
+        Assert.Equal(ApprovalStatus.Pending, stage.Status);
+        Assert.Single(context.StockRequisitionIssues);
+    }
+
+    private static void AddIssueEvidence(ApplicationDbContext context, Requisition requisition, bool useIssueRecord)
+    {
+        if (useIssueRecord)
+            context.StockRequisitionIssues.Add(new StockRequisitionIssue
+            {
+                Id = Guid.NewGuid(), RequisitionId = requisition.Id, IssuedById = Guid.NewGuid(), IssuedAt = DateTime.UtcNow,
+            });
+        else
+            context.BinCardInformation.Add(new BinCardInformation
+            {
+                Id = Guid.NewGuid(), RequisitionId = requisition.Id, QuantityIssued = 10,
+            });
     }
 
     [Fact]
