@@ -32,6 +32,29 @@ records, history is available when one existing issue matches the transfer
 and supplying and receiving departments. Ambiguous or missing history is
 shown as unavailable.
 
+## Receiving transferred stock
+
+In the receiving department, open **Stock Movement → Stock Transferred
+Allocated** to place pending transfers on shelves. Completed receipts leave
+that queue; the supplier's transfer remains **Issued** in its issue history.
+Look for a completed receipt under the receiving store's stock locations and
+the lot's movement history before attempting to receive it again. Older
+completed receipts can have no per-line `ReceivedAt`; their holding status and
+recorded stock movements still establish completion.
+
+Receipt requires `CanAssignRawMaterialStockTransfers` or
+`CanAssignPackagingMaterialStockTransfers`, selected from the stored material
+kind. These existing keys belong to Warehouse / Stock Transferred Allocated.
+The controller, repository and desktop action use the same assignment key;
+the repository also enforces the receiving department, available stock,
+destination shelves and one-time receipt. Supplier issue and delivery shelving
+permissions do not authorize a transfer receipt.
+
+Apply `GrantStockTransferReceiptAssignments` with the backend change. It grants
+each assignment key to roles holding the corresponding former issue key,
+preserving access types and existing grants. No new permission keys or stock
+data corrections are introduced.
+
 ## Creating analytical raw data records
 
 Product and material ARD creation validate shared sections and the sections

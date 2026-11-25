@@ -1857,6 +1857,34 @@
   {
     "module": "Warehouse",
     "submodule": "Approved Materials",
+    "key": "CanViewRawMaterialStockTrace",
+    "name": "Can View Raw Material Stock Trace",
+    "description": "Allows the user to  view raw material stock trace."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
+    "key": "CanViewPackagingMaterialStockTrace",
+    "name": "Can View Packaging Material Stock Trace",
+    "description": "Allows the user to  view packaging material stock trace."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
+    "key": "CanPrintRawMaterialStockTrace",
+    "name": "Can Print Raw Material Stock Trace",
+    "description": "Allows the user to  print raw material stock trace."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
+    "key": "CanPrintPackagingMaterialStockTrace",
+    "name": "Can Print Packaging Material Stock Trace",
+    "description": "Allows the user to  print packaging material stock trace."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
     "key": "CanViewApprovedPackagingMaterials",
     "name": "Can View Approved Packaging Materials",
     "description": "Allows the user to  view approved packaging materials."
@@ -5640,6 +5668,20 @@
     "key": "CanViewOperations",
     "name": "Can View Operations",
     "description": "Allows the user to  view operations."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Procedures",
+    "key": "CanViewDepartmentProductionBoardOrder",
+    "name": "Can View Department Production Board Order",
+    "description": "Allows the user to  view department production board order."
+  },
+  {
+    "module": "Settings",
+    "submodule": "Procedures",
+    "key": "CanReorderDepartmentProductionBoard",
+    "name": "Can Reorder Department Production Board",
+    "description": "Allows the user to  reorder department production board."
   },
   {
     "module": "Settings",

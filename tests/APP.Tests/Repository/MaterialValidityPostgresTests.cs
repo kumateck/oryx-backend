@@ -156,6 +156,18 @@ public class MaterialValidityPostgresTests
         Assert.All(stock.Value, row => Assert.Equal(0, row.ExpiredQuantity));
         var reserved = await new MaterialRepository(db, mapper).GetReservedQuantitiesForMaterial(material.Id, fixture.Actor.DepartmentId);
         Assert.True(reserved.IsSuccess, reserved.Error.Description);
+        Assert.Empty(reserved.Value); // The fixture's reservations have already been issued to the floor.
+        var original = await db.ProductionScheduleProducts.SingleAsync();
+        var waiting = new ProductionScheduleProduct { ProductId = original.ProductId, ProductionScheduleId = original.ProductionScheduleId,
+            BatchNumber = "UNISSUED-RETEST", Quantity = 1 };
+        var position = await db.ShelfMaterialBatches.Include(row => row.MaterialBatch).FirstAsync(row => row.MaterialBatch.MaterialId == material.Id);
+        var floor = await db.MaterialBatchReservedQuantities.Where(row => row.MaterialBatchId == position.MaterialBatchId).Select(row => row.WarehouseId).FirstAsync();
+        db.ProductionScheduleProducts.Add(waiting);
+        db.MaterialBatchReservedQuantities.Add(new() { ProductionScheduleProduct = waiting, MaterialBatchId = position.MaterialBatchId,
+            UoMId = position.MaterialBatch.UoMId, WarehouseId = floor, WarehouseLocationShelfId = position.WarehouseLocationShelfId, Quantity = 1 });
+        await db.SaveChangesAsync();
+        reserved = await new MaterialRepository(db, mapper).GetReservedQuantitiesForMaterial(material.Id, fixture.Actor.DepartmentId);
+        Assert.True(reserved.IsSuccess, reserved.Error.Description);
         Assert.True(Assert.Single(reserved.Value).EffectiveExpiryDate > DateTime.UtcNow);
     }
 }

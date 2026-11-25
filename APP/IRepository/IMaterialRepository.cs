@@ -14,6 +14,7 @@ namespace APP.IRepository;
 
 public interface IMaterialRepository
 {
+    Task<Result<MaterialStockTraceDto>> GetMaterialStockTrace(Guid materialId, MaterialKind kind, Guid departmentId, DateTime? since, Guid userId, bool forPrint = false);
     Task<Result> ClearDensity(Guid materialId, MaterialKind expectedKind, Guid actor);
 
     Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId);
@@ -96,6 +97,13 @@ public interface IMaterialRepository
         Guid locationId,
         decimal quantity,
         Guid userId
+    );
+    Task<Result> ConsumeMaterialAtLocation(
+        Guid batchId,
+        Guid locationId,
+        decimal quantity,
+        Guid userId,
+        Guid reservationId
     );
     Task<Result> ConsumeMaterialAtLocation(
         Material material,
