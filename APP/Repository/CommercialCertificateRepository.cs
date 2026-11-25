@@ -176,6 +176,7 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
                     item.DisplayLabel,
                     item.GroupName,
                     SpecificationText = specification,
+                    response.CertificateNotes,
                     Unit = reported is not null && reported.Results.All(value => value.Converted) ? "% w/v" : item.Unit,
                     Reference = reference,
                     result = reported is null ? result.Value : JsonSerializer.Serialize(new { originalResponse = result.Value, coaReportedResults = reported.Results }, new JsonSerializerOptions(JsonSerializerDefaults.Web)),

@@ -1716,6 +1716,8 @@ public class FormRepository(
         var reportingTokens = await FormulaResultProjectionService.AttachAsync(
             context, formResponse.FormResponses, detail.FormResponses, calculationClient: calculationClient);
         detail.CoaReportingToken = reportingTokens.GetValueOrDefault(formResponse.Id);
+        if (formResponse.CheckedAt.HasValue && !formResponse.Approved && !formResponse.Rejected)
+            detail.CoaSubjectKind = (int?)await APP.Services.Forms.PendingCertificateService.SubjectKind(context, formResponse);
         detail.HasPendingApproval = !formResponse.Approved && !formResponse.Rejected
             && ResponseApprovalRoundManager.Current(formResponse.Approvals)
             .Any(item => item.Status == ApprovalStatus.Pending);
