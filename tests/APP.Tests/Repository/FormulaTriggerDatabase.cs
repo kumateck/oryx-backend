@@ -22,6 +22,17 @@ internal sealed class FormulaTriggerDatabase : IAsyncDisposable
     public ApplicationDbContext Open(ICurrentUserService user) =>
         new(new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(connection).Options, user);
 
+    public async Task ApplyAsync(Migration migration)
+    {
+        await using var sql = new NpgsqlConnection(connection);
+        await sql.OpenAsync();
+        foreach (var operation in migration.UpOperations.OfType<SqlOperation>())
+        {
+            await using var command = new NpgsqlCommand(operation.Sql, sql);
+            await command.ExecuteNonQueryAsync();
+        }
+    }
+
     public async Task CreateAsync(ICurrentUserService user, params Guid[] users)
     {
         var builder = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("ORYX_ISSUE_REPAIR_TEST_CONNECTION"));
