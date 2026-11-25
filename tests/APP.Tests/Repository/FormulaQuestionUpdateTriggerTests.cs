@@ -8,6 +8,7 @@ using INFRASTRUCTURE.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SHARED;
 using SHARED.Services.Identity;
 using Xunit;
@@ -56,6 +57,7 @@ public sealed class FormulaQuestionUpdateTriggerTests
         var approverId = Guid.NewGuid();
         await using var database = new FormulaTriggerDatabase();
         await database.CreateAsync(new UpdateTestUser(authorId), authorId, reviewerId, approverId);
+        await database.ApplyAsync(new INFRASTRUCTURE.Migrations.RepairFormulaRevisionStatusAuditTrigger());
         await using var context = database.Open(new UpdateTestUser(authorId));
         var question = new Question { Id = Guid.NewGuid(), Label = "Assay", Type = QuestionType.Formula, Validation = QuestionValidationType.None };
         context.Add(question);
@@ -82,6 +84,127 @@ public sealed class FormulaQuestionUpdateTriggerTests
         Ok(await controller.Update(question.Id, request, CancellationToken.None));
         Ok(await controller.Update(question.Id, request, CancellationToken.None));
     }
+
+    [RepairPostgresFact]
+    public async Task Migration_repairs_an_all_update_audit_trigger_and_preserves_draft_update_evidence()
+    {
+        var actorId = Guid.NewGuid();
+        var user = new UpdateTestUser(actorId);
+        await using var database = new FormulaTriggerDatabase();
+        await database.CreateAsync(user, actorId);
+        await using var context = database.Open(user);
+        var question = new Question { Id = Guid.NewGuid(), Label = "Assay", Type = QuestionType.Formula };
+        context.Add(question);
+        await context.SaveChangesAsync();
+        var service = new FormulaDefinitionService(context, new PassingFormulaClient());
+        var created = await service.CreateDraftAsync(question.Id, DraftRequest(), actorId, Guid.NewGuid());
+        Assert.True(created.IsSuccess);
+
+        // Customer SQL reports this check during an UPDATE that does not SET Status.
+        // Reproduce an immediate, unfiltered trigger rather than assuming a clean migration install.
+        await InstallUnfilteredTrigger(context);
+        var failure = await Assert.ThrowsAsync<PostgresException>(() => context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE public.\"FormulaRevisions\" SET \"UpdatedAt\" = now() WHERE \"Id\" = {created.Value.Id}"));
+        Assert.Equal("55000", failure.SqlState);
+        Assert.Contains("requires a matching audit row", failure.MessageText);
+
+        // Applying the forward repair twice is harmless and leaves one correctly configured trigger.
+        await database.ApplyAsync(new INFRASTRUCTURE.Migrations.RepairFormulaRevisionStatusAuditTrigger());
+        await database.ApplyAsync(new INFRASTRUCTURE.Migrations.RepairFormulaRevisionStatusAuditTrigger());
+        var controller = new FormulaQuestionController(context, null!, service)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+        controller.HttpContext.Items["Sub"] = actorId.ToString();
+        var request = new SaveGovernedFormulaQuestionRequest(
+            new CreateQuestionRequest { Label = "Updated assay", Type = QuestionType.Formula }, DraftRequest());
+        Assert.IsType<Microsoft.AspNetCore.Http.HttpResults.Ok<GovernedFormulaQuestionDto>>(
+            await controller.Update(question.Id, request, CancellationToken.None));
+        Assert.Equal(FormulaRevisionStatus.Draft, (await context.FormulaRevisions.AsNoTracking().SingleAsync()).Status);
+        Assert.Equal("Updated assay", (await context.Questions.AsNoTracking().SingleAsync()).Label);
+        Assert.Single(await context.FormulaRevisionAudits.Where(item => item.Action == "DraftUpdated").ToListAsync());
+
+        // The function also checks status itself if a trigger's WHEN clause is ever lost again.
+        await InstallUnfilteredTrigger(context);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE public.\"FormulaRevisions\" SET \"UpdatedAt\" = now() WHERE \"Id\" = {created.Value.Id}");
+        failure = await Assert.ThrowsAsync<PostgresException>(() => context.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE public.\"FormulaRevisions\" SET \"Status\" = 1 WHERE \"Id\" = {created.Value.Id}"));
+        Assert.Equal("55000", failure.SqlState);
+    }
+
+    private static Task<int> InstallUnfilteredTrigger(ApplicationDbContext context) =>
+        context.Database.ExecuteSqlRawAsync("""
+            DROP TRIGGER "TR_FormulaRevisions_StatusAudit" ON public."FormulaRevisions";
+            CREATE TRIGGER "TR_FormulaRevisions_StatusAudit"
+                AFTER UPDATE ON public."FormulaRevisions" FOR EACH ROW
+                EXECUTE FUNCTION public.oryx_formula_v1_require_revision_audit();
+            """);
+
+    [RepairPostgresFact]
+    public async Task Repaired_trigger_checks_real_transitions_at_commit_and_requires_current_matching_evidence()
+    {
+        var actorId = Guid.NewGuid();
+        var user = new UpdateTestUser(actorId);
+        await using var database = new FormulaTriggerDatabase();
+        await database.CreateAsync(user, actorId);
+        await database.ApplyAsync(new INFRASTRUCTURE.Migrations.RepairFormulaRevisionStatusAuditTrigger());
+        await using var context = database.Open(user);
+        var question = new Question { Id = Guid.NewGuid(), Label = "Assay", Type = QuestionType.Formula };
+        context.Add(question);
+        await context.SaveChangesAsync();
+        var service = new FormulaDefinitionService(context, new PassingFormulaClient());
+        var created = await service.CreateDraftAsync(question.Id, DraftRequest(), actorId, Guid.NewGuid());
+        Assert.True(created.IsSuccess);
+        var revisionId = created.Value.Id;
+        var hash = created.Value.DefinitionHash;
+
+        foreach (var invalid in new[] { "missing", "old", "hash", "status", "correlation", "reason" })
+        {
+            if (invalid == "old")
+                await InsertAudit(context, revisionId, hash, actorId, Guid.NewGuid(), 0, "Earlier transaction");
+            await using (var transaction = await context.Database.BeginTransactionAsync())
+            {
+                // The check must wait for COMMIT: a valid audit may be inserted after this statement.
+                await context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE public.\"FormulaRevisions\" SET \"Status\" = 1 WHERE \"Id\" = {revisionId}");
+                var failure = await Assert.ThrowsAsync<PostgresException>(async () =>
+                {
+                    if (invalid is not "missing" and not "old")
+                        await InsertAudit(context, revisionId, invalid == "hash" ? new string('f', 64) : hash,
+                            actorId, invalid == "correlation" ? Guid.Empty : Guid.NewGuid(),
+                            invalid == "status" ? 1 : 0, invalid == "reason" ? "   " : "Transition audit");
+                    await transaction.CommitAsync();
+                });
+                // Bad correlation/reason values are rejected earlier by the existing audit constraints.
+                Assert.Equal(invalid is "correlation" or "reason" ? "23514" : "55000", failure.SqlState);
+                if (failure.SqlState == "55000")
+                    Assert.Contains("requires a matching audit row", failure.MessageText);
+            }
+            Assert.Equal(FormulaRevisionStatus.Draft,
+                (await context.FormulaRevisions.AsNoTracking().SingleAsync()).Status);
+        }
+
+        await using (var transaction = await context.Database.BeginTransactionAsync())
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE public.\"FormulaRevisions\" SET \"Status\" = 1 WHERE \"Id\" = {revisionId}");
+            await InsertAudit(context, revisionId, hash, actorId, Guid.NewGuid(), 0, "Reviewed formula evidence");
+            await transaction.CommitAsync();
+        }
+        Assert.Equal(FormulaRevisionStatus.InReview,
+            (await context.FormulaRevisions.AsNoTracking().SingleAsync()).Status);
+    }
+
+    private static Task<int> InsertAudit(ApplicationDbContext context, Guid revisionId, string hash,
+        Guid actorId, Guid correlationId, int priorStatus, string reason) =>
+        context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO public."FormulaRevisionAudits"
+                ("Id", "FormulaRevisionId", "PriorStatus", "NewStatus", "Action", "Reason",
+                 "DefinitionHash", "ActorId", "CorrelationId", "OccurredAt")
+            VALUES ({Guid.NewGuid()}, {revisionId}, {priorStatus}, 1, 'SubmittedForReview', {reason},
+                    {hash}, {actorId}, {correlationId}, now());
+            """);
 
     private static void Ok(IResult result) =>
         Assert.True(result is not Microsoft.AspNetCore.Http.HttpResults.ProblemHttpResult, (result as Microsoft.AspNetCore.Http.HttpResults.ProblemHttpResult)?.ProblemDetails.Detail);
