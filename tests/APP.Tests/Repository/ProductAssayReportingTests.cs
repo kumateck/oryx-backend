@@ -182,12 +182,24 @@ public sealed class ProductAssayReportingTests
             IsVerified = true, SpecNumber = f.Spec.SpecificationNumber, Stage = f.Spec.TestStage };
         f.Db.ProductAnalyticalRawData.Add(ard);
         (await f.Db.AnalyticalTestRequests.SingleAsync()).ChemicalArdId = ard.Id;
+        var worksheetFields = await f.Db.FormFields.Include(field => field.FormSection).Include(field => field.Question)
+            .Where(field => field.FormSection.FormId == f.Form).ToListAsync();
+        var assay = worksheetFields.Single(field => field.Id == f.FirstField);
+        assay.FormSection.ProductSpecificationId = f.Spec.Id;
+        assay.FormSection.Name = "<p><strong>Assay</strong></p>";
+        assay.Question.Label = "Paracetamol";
+        worksheetFields.Single(field => field.Id == f.SecondField).FormSection.ProductSpecificationId = f.OtherSpec.Id;
+        var weight = worksheetFields.Single(field => field.Id == f.OtherField);
+        weight.FormSection.ProductSpecificationId = f.Spec.Id;
+        weight.FormSection.Name = "Weight per mL";
+        weight.Question.Label = "Weight per mL";
         await f.Db.SaveChangesAsync();
 
         var configuration = await f.Service.Get(f.Spec.Id, f.Actor.UserId!.Value);
-        Assert.Contains(configuration.Value.Fields, field => field.FormFieldId == f.FirstField);
-        Assert.DoesNotContain(configuration.Value.Fields, field => field.FormFieldId == unrelatedField);
+        Assert.Equal(f.FirstField, Assert.Single(configuration.Value.Fields).FormFieldId);
         Assert.True((await f.Save(f.Rule(unrelatedField))).IsFailure);
+        Assert.True((await f.Save(f.Rule(f.SecondField))).IsFailure);
+        Assert.True((await f.Save(f.Rule(f.OtherField))).IsFailure);
         Assert.True((await f.Save(f.Rule(f.FirstField))).IsSuccess);
 
         var preview = Assert.Single(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation));
@@ -201,6 +213,28 @@ public sealed class ProductAssayReportingTests
         ard.SpecNumber = "OTHER SPECIFICATION";
         await f.Db.SaveChangesAsync();
         Assert.Empty(await ProductAssayReportingRuntime.Build(f.Db, f.Response, f.Calculation));
+    }
+
+    [Theory]
+    [InlineData(true, "OTHER SPECIFICATION")]
+    [InlineData(false, "SHARED")]
+    public async Task Reporting_requires_the_current_chemical_worksheet_to_match_when_one_exists(bool verified, string number)
+    {
+        await using var f = new Fixture();
+        await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting);
+        var stp = new DOMAIN.Entities.ProductStandardTestProcedures.ProductStandardTestProcedure
+            { Id = Guid.NewGuid(), ProductId = f.Spec.ProductId };
+        f.Db.ProductStandardTestProcedures.Add(stp);
+        f.Db.ProductAnalyticalRawData.Add(new()
+        {
+            Id = Guid.NewGuid(), FormId = f.Form, StpId = stp.Id,
+            IsVerified = verified, SpecNumber = number, Stage = f.Spec.TestStage
+        });
+        await f.Db.SaveChangesAsync();
+
+        var configuration = await f.Service.Get(f.Spec.Id, f.Actor.UserId!.Value);
+        Assert.Empty(configuration.Value.Fields);
+        Assert.True((await f.Save(f.Rule(f.FirstField))).IsFailure);
     }
 
     [Fact]
