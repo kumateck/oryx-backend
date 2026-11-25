@@ -910,6 +910,24 @@ public static class PermissionKeys
     /// <summary>Reject an unissued packaging stock requisition and allow production to request it again.</summary>
     public const string CanRejectPackagingMaterialStockRequisition = "CanRejectPackagingMaterialStockRequisition";
     public const string CanRejectPendingApproval = "CanRejectPendingApproval";
+    /// <summary>Edit a product certificate before approval and resubmit it.</summary>
+    public const string CanEditProductCertificateOfAnalysis = "CanEditProductCertificateOfAnalysis";
+    /// <summary>Request review of a product certificate assigned for approval.</summary>
+    public const string CanRequestProductCertificateReview = "CanRequestProductCertificateReview";
+    /// <summary>Request a correction of a product certificate assigned for approval.</summary>
+    public const string CanRequestProductCertificateCorrection = "CanRequestProductCertificateCorrection";
+    /// <summary>Edit a raw material certificate before approval and resubmit it.</summary>
+    public const string CanEditRawMaterialCertificateOfAnalysis = "CanEditRawMaterialCertificateOfAnalysis";
+    /// <summary>Request review of a raw material certificate assigned for approval.</summary>
+    public const string CanRequestRawMaterialCertificateReview = "CanRequestRawMaterialCertificateReview";
+    /// <summary>Request a correction of a raw material certificate assigned for approval.</summary>
+    public const string CanRequestRawMaterialCertificateCorrection = "CanRequestRawMaterialCertificateCorrection";
+    /// <summary>Edit a packaging material certificate before approval and resubmit it.</summary>
+    public const string CanEditPackagingMaterialCertificateOfAnalysis = "CanEditPackagingMaterialCertificateOfAnalysis";
+    /// <summary>Request review of a packaging material certificate assigned for approval.</summary>
+    public const string CanRequestPackagingMaterialCertificateReview = "CanRequestPackagingMaterialCertificateReview";
+    /// <summary>Request a correction of a packaging material certificate assigned for approval.</summary>
+    public const string CanRequestPackagingMaterialCertificateCorrection = "CanRequestPackagingMaterialCertificateCorrection";
     public const string CanApproveResponse = "CanApproveResponse";
     public const string CanRejectResponse = "CanRejectResponse";
     public const string CanTransferApprovalRights = "CanTransferApprovalRights";
@@ -3292,6 +3310,15 @@ public static class PermissionUtils
             PermissionSubmodules.PendingApprovals,
             PermissionKeys.CanApprovePendingApproval
         );
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.AnalyticalTestRequestProducts, PermissionKeys.CanEditProductCertificateOfAnalysis);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRequestProductCertificateReview);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRequestProductCertificateCorrection);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanEditRawMaterialCertificateOfAnalysis);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRequestRawMaterialCertificateReview);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRequestRawMaterialCertificateCorrection);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.GoodsReceiptNote, PermissionKeys.CanEditPackagingMaterialCertificateOfAnalysis);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRequestPackagingMaterialCertificateReview);
+        addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRequestPackagingMaterialCertificateCorrection);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectRawMaterialStockRequisition);
         addPermission(PermissionModules.QualityAssurance, PermissionSubmodules.PendingApprovals, PermissionKeys.CanRejectPackagingMaterialStockRequisition);
         addPermission(

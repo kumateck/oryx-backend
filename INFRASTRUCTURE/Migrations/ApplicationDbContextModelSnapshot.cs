@@ -3851,6 +3851,45 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("FormSections");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.PendingCertificateChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NewStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PreviousStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int?>("RequestedReturn")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResponseId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("PendingCertificateChanges", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Forms.Question", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3966,11 +4005,25 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CertificateNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<DateTime?>("CheckedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CheckedById")
                         .HasColumnType("uuid");
+
+                    b.Property<int?>("CoaReturnKind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CoaReturnReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("CoaVersion")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -30842,6 +30895,15 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("MaterialSpecification");
 
                     b.Navigation("ProductSpecification");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.PendingCertificateChange", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Question", b =>

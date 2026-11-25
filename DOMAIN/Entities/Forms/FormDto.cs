@@ -48,6 +48,12 @@ public class ResponseDto : BaseDto
 
 public class ResponseDetailDto : ResponseDto
 {
+    public int? CoaSubjectKind { get; set; }
+    public int CoaVersion { get; set; }
+    public CertificateReturnKind? CoaReturnKind { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(2000)] public string CoaReturnReason { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(2000)] public string CertificateNotes { get; set; }
+
     /// <summary>Version of the pending COA evidence, sent as If-Match when approving.</summary>
     public string CoaReportingToken { get; set; }
     public UserDto ApprovedBy { get; set; }

@@ -3318,6 +3318,69 @@
     "description": "Allows the user to  approve pending approval."
   },
   {
+    "module": "Quality Control",
+    "submodule": "Analytical Test Request (Products)",
+    "key": "CanEditProductCertificateOfAnalysis",
+    "name": "Can Edit Product Certificate Of Analysis",
+    "description": "Allows the user to  edit product certificate of analysis."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRequestProductCertificateReview",
+    "name": "Can Request Product Certificate Review",
+    "description": "Allows the user to  request product certificate review."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRequestProductCertificateCorrection",
+    "name": "Can Request Product Certificate Correction",
+    "description": "Allows the user to  request product certificate correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanEditRawMaterialCertificateOfAnalysis",
+    "name": "Can Edit Raw Material Certificate Of Analysis",
+    "description": "Allows the user to  edit raw material certificate of analysis."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRequestRawMaterialCertificateReview",
+    "name": "Can Request Raw Material Certificate Review",
+    "description": "Allows the user to  request raw material certificate review."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRequestRawMaterialCertificateCorrection",
+    "name": "Can Request Raw Material Certificate Correction",
+    "description": "Allows the user to  request raw material certificate correction."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Goods Receipt Note (GRN)",
+    "key": "CanEditPackagingMaterialCertificateOfAnalysis",
+    "name": "Can Edit Packaging Material Certificate Of Analysis",
+    "description": "Allows the user to  edit packaging material certificate of analysis."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRequestPackagingMaterialCertificateReview",
+    "name": "Can Request Packaging Material Certificate Review",
+    "description": "Allows the user to  request packaging material certificate review."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Pending Approvals",
+    "key": "CanRequestPackagingMaterialCertificateCorrection",
+    "name": "Can Request Packaging Material Certificate Correction",
+    "description": "Allows the user to  request packaging material certificate correction."
+  },
+  {
     "module": "Quality Assurance",
     "submodule": "Pending Approvals",
     "key": "CanRejectRawMaterialStockRequisition",
