@@ -1251,6 +1251,10 @@ public partial class ApplicationDbContext(
         #region Material Entities
         modelBuilder.Entity<Material>().Navigation(p => p.Batches).AutoInclude();
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.Events).AutoInclude();
+        modelBuilder.Entity<MaterialBatchEvent>().HasOne(row => row.MaterialBatchReservedQuantity).WithMany()
+            .HasForeignKey(row => row.MaterialBatchReservedQuantityId).OnDelete(DeleteBehavior.ClientNoAction);
+        modelBuilder.Entity<MaterialBatchEvent>().HasOne(row => row.ProductionScheduleProduct).WithMany()
+            .HasForeignKey(row => row.ProductionScheduleProductId).OnDelete(DeleteBehavior.ClientNoAction);
         modelBuilder.Entity<MaterialBatch>().Navigation(p => p.ReservedQuantities).AutoInclude();
         modelBuilder.Entity<ManufacturerMaterial>().Navigation(p => p.Material).AutoInclude();
         #endregion

@@ -1430,6 +1430,9 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         Guid userId
     )
     {
+        if (request.MaterialReturnNoteId.HasValue && await context.MaterialReturnNoteFullReturns.IgnoreQueryFilters()
+            .AnyAsync(row => row.MaterialReturnNoteId == request.MaterialReturnNoteId.Value))
+            return await ReceiveFullReturn(request, userId);
         var materialBatch = await context
             .MaterialBatches.AsSplitQuery()
             .Include(materialBatch => materialBatch.Material)
@@ -2406,15 +2409,47 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         return result;
     }
 
-    public async Task<Result> ConsumeMaterialAtLocation(
+    public async Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId)
+    {
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(PermissionKeys.CanConsumeMaterialAtLocation))
+            return Error.Forbidden("Material.ConsumptionPermission", "You do not have permission to record material consumption.");
+        var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
+        var matches = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes()
+            .Where(row => row.MaterialBatchId == batchId && row.WarehouseId == locationId && row.Quantity == quantity
+                && row.DeletedAt == null && row.ReleasedAt == null && !unissued.Any(hold => hold.Id == row.Id))
+            .Select(row => row.Id).ToListAsync();
+        if (matches.Count != 1)
+            return Error.Conflict("Material.ConsumptionAllocation", "Consumption must identify one active issued allocation. Use the production batch when allocations are missing or ambiguous.");
+        return await ConsumeIssuedAllocation(batchId, locationId, quantity, userId, matches[0], PermissionKeys.CanConsumeMaterialAtLocation);
+    }
+
+    public Task<Result> ConsumeMaterialAtLocation(Guid batchId, Guid locationId, decimal quantity, Guid userId, Guid reservationId) =>
+        ConsumeIssuedAllocation(batchId, locationId, quantity, userId, reservationId, PermissionKeys.CanUpdateProductionStep);
+
+    private async Task<Result> ConsumeIssuedAllocation(
         Guid batchId,
         Guid locationId,
         decimal quantity,
-        Guid userId
+        Guid userId,
+        Guid reservationId,
+        string permissionKey
     )
     {
+        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
+            return await ProductionMaterialTransaction.Run(context, () => ConsumeIssuedAllocation(batchId, locationId, quantity, userId, reservationId, permissionKey));
+        var allocation = await context.MaterialBatchReservedQuantities.IgnoreQueryFilters().IgnoreAutoIncludes()
+            .Include(row => row.Warehouse).FirstOrDefaultAsync(row => row.Id == reservationId);
+        if (allocation is null || allocation.DeletedAt.HasValue || allocation.ReleasedAt.HasValue || quantity <= 0
+            || allocation.MaterialBatchId != batchId || allocation.WarehouseId != locationId || allocation.Quantity != quantity)
+            return Error.Conflict("Material.ConsumptionAllocation", "Consume exactly one active issued allocation in its recorded production warehouse.");
+        if (!await context.Users.AnyAsync(user => user.Id == userId && !user.IsDisabled && user.DepartmentId == allocation.Warehouse.DepartmentId))
+            return Error.Forbidden("Material.ConsumptionDepartment", "Only the allocation's production department can consume it.");
+        if (await ProductionMaterialAllocator.UnissuedReservations(context).AnyAsync(row => row.Id == reservationId))
+            return Error.Conflict("Material.ConsumptionUnissued", "Issue this allocation from the store before recording consumption.");
         var materialBatchEvent = new MaterialBatchEvent
         {
+            MaterialBatchReservedQuantityId = allocation.Id,
+            ProductionScheduleProductId = allocation.ProductionScheduleProductId,
             BatchId = batchId,
             Quantity = quantity,
             UserId = userId,
@@ -2431,6 +2466,11 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
         if (materialBatch == null)
             return Error.Failure("Material.Batch", "Material batch not found.");
 
+        if (!(await CurrentPermissionSet.Load(context, userId)).Contains(permissionKey))
+            return Error.Forbidden("Material.ConsumptionPermission", "You do not have permission to record production consumption.");
+        if (!materialBatch.Material.IsUnlimited && materialBatch.TotalQuantity - materialBatch.ConsumedQuantity - materialBatch.QuantityAssigned < quantity)
+            return Error.Conflict("Material.ConsumptionBalance", "The lot's stock outside store shelves does not cover this consumption. Reconcile it first.");
+
         if (!(materialBatch.Material?.IsUnlimited ?? false))
         {
             materialBatch.ConsumedQuantity += quantity;
@@ -2439,6 +2479,9 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
         // Add the event to the context
         await context.MaterialBatchEvents.AddAsync(materialBatchEvent);
+        // Archive explicitly: deleting a principal makes EF clear nullable audit foreign keys before soft-delete runs.
+        allocation.DeletedAt = materialBatchEvent.ConsumedAt;
+        allocation.LastDeletedById = userId;
 
         // Save changes to the database
         await context.SaveChangesAsync();
@@ -2603,6 +2646,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
                     && r.WarehouseId == warehouseId
                     && r.ProductionScheduleProductId == productionScheduleProductId
                     && r.DeletedAt != null && r.ReleasedAt == null && r.ProductionUnstartRepairId == null
+                    && !context.MaterialReturnNoteFullReturns.IgnoreQueryFilters().Any(line => line.MaterialBatchReservedQuantityId == r.Id)
                 )
                 .ToListAsync()
         );
@@ -3534,64 +3578,6 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
         await context.SaveChangesAsync();
         return Result.Success();
-    }
-
-    public async Task<Result<List<ReservedMaterialReportDto>>> GetReservedQuantitiesForMaterial(
-        Guid materialId,
-        Guid? departmentId
-    )
-    {
-        // Live holds only: a hold whose stock went back to the shelf (released) or out to the production floor
-        // (issued) is no longer reserved. The same holds every stock screen subtracts: see StoreStock.
-        var unissued = ProductionMaterialAllocator.UnissuedReservations(context);
-        var shelves = context.ShelfMaterialBatches.IgnoreQueryFilters().Where(shelf => shelf.DeletedAt == null);
-        var reservedMaterialQuery = ProductionMaterialAllocator.UnissuedReservations(context).AsSplitQuery()
-            .Where(r =>
-                r.MaterialBatch.MaterialId == materialId
-                && (!departmentId.HasValue || (r.WarehouseLocationShelfId.HasValue
-                    ? r.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == departmentId.Value
-                    : r.Warehouse.DepartmentId == departmentId.Value))
-            )
-            .AsNoTracking();
-
-        var reservedMaterials = await reservedMaterialQuery
-            .SelectMaterialDate(r => r.MaterialBatch, (r, date) => new ReservedMaterialReportDto
-            {
-                RackName = r.WarehouseLocationShelf == null ? null : r.WarehouseLocationShelf.WarehouseLocationRack.Name,
-                ShelfName = r.WarehouseLocationShelf == null ? null : r.WarehouseLocationShelf.Name ?? r.WarehouseLocationShelf.Code,
-                MaterialName = r.MaterialBatch.Material.Name,
-                MaterialCode = r.MaterialBatch.Material.Code,
-                ProductName = r.ProductionScheduleProduct.Product.Name,
-                ProductCode = r.ProductionScheduleProduct.Product.Code,
-                ReservedQuantity = r.Quantity,
-                UomSymbol = r.UoM.Symbol,
-                WarehouseName = r.Warehouse.Name,
-                DepartmentName = r.Warehouse.Department.Name,
-                DateTime = r.CreatedAt,
-                Schedule = r.ProductionScheduleProduct.ProductionSchedule.Code,
-                ProductBatchNumber = context
-                    .BatchManufacturingRecords.Where(b =>
-                        b.ProductionScheduleProductId == r.ProductionScheduleProductId
-                    )
-                    .Select(b => b.BatchNumber)
-                    .FirstOrDefault(),
-                ArNumber = context
-                    .MaterialSamplings.Where(s => s.MaterialBatchId == r.MaterialBatchId)
-                    .OrderByDescending(s => s.CreatedAt)
-                    .Select(s => s.ArNumber)
-                    .FirstOrDefault(),
-                ManufacturingDate = r.MaterialBatch.ManufacturingDate,
-                ExpiryDate = r.MaterialBatch.ExpiryDate,
-                EffectiveExpiryDate = date,
-                // What is left of the lot on the shelves once its live holds are taken out.
-                BalanceQuantity =
-                    shelves.Where(shelf => shelf.MaterialBatchId == r.MaterialBatchId).Sum(shelf => shelf.Quantity)
-                    - unissued.Where(hold => hold.MaterialBatchId == r.MaterialBatchId).Sum(hold => hold.Quantity),
-                MaterialBatchNumber = r.MaterialBatch.BatchNumber,
-            })
-            .ToListAsync();
-
-        return Result.Success(reservedMaterials);
     }
 
     public async Task<Result> ImportMaterialBatchesFromExcel(IFormFile file, Guid userId)

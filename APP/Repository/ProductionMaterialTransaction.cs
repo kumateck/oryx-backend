@@ -28,7 +28,7 @@ internal sealed class ProductionMaterialTransaction(ApplicationDbContext context
         "MaterialReturnNotePartialReturn", "SwapRequest", "StockTransfer", "StockTransferSource", "ProductionScheduleProduct",
         "Product", "ProductPacking", "ProductPackingList", "ProductPackage", "ProductPackageSubstitute", "ProductBillOfMaterial", "BillOfMaterial",
         "BillOfMaterialItem", "BillOfMaterialItemSubstitute", "MaterialDepartment", "UnitOfMeasure",
-        "FinalPacking", "FinishedGoodsTransferNote", "MassMaterialBatchMovement", "BinCardInformation",
+        "FinalPacking", "FinishedGoodsTransferNote", "MassMaterialBatchMovement", "MaterialBatchEvent", "BinCardInformation",
         "Approval", "ApprovalStage", "User", "Role", "PermissionType", "IdentityRoleClaim`1", "IdentityUserRole`1",
         "BatchManufacturingRecord", "BatchPackagingRecord", "MaterialReturnNoteFullReturn", "MaterialReturnNotePartialReturn",
         "IssuedBmrChange", "IssuedBmrRevision", "AnalyticalTestRequest", "TestRequestSubject", "OosInvestigation", "Coa", "CoaRow", "WorkOrder"

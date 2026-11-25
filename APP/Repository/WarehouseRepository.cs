@@ -1495,9 +1495,13 @@ public class WarehouseRepository(
         {
             query = query.WhereSearch(
                 searchQuery,
-                b => b.Description,
-                b => b.ArNumber,
-                b => b.MaterialBatch.BatchNumber
+                b => b.Description ?? "",
+                b => b.ArNumber ?? "",
+                b => b.MaterialBatch.BatchNumber ?? "",
+                b => b.MaterialBatch.Material.Name ?? "",
+                b => b.MaterialBatch.Material.Code ?? "",
+                b => b.RequisitionCode ?? "",
+                b => b.ProductBatchNumber ?? ""
             );
         }
 

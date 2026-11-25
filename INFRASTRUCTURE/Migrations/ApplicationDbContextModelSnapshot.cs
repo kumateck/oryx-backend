@@ -11767,6 +11767,12 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MaterialBatchReservedQuantityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductionScheduleProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("numeric");
 
@@ -11790,6 +11796,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialBatchReservedQuantityId");
+
+                    b.HasIndex("ProductionScheduleProductId");
 
                     b.HasIndex("UserId");
 
@@ -35036,6 +35046,16 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Materials.Batch.MaterialBatchReservedQuantity", "MaterialBatchReservedQuantity")
+                        .WithMany()
+                        .HasForeignKey("MaterialBatchReservedQuantityId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.HasOne("DOMAIN.Entities.ProductionSchedules.ProductionScheduleProduct", "ProductionScheduleProduct")
+                        .WithMany()
+                        .HasForeignKey("ProductionScheduleProductId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
                     b.HasOne("DOMAIN.Entities.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -35051,6 +35071,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialBatchReservedQuantity");
+
+                    b.Navigation("ProductionScheduleProduct");
 
                     b.Navigation("User");
                 });

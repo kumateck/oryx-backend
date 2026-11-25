@@ -108,6 +108,11 @@ public enum BatchStatus
 
 public class MaterialBatchEvent : BaseEntity
 {
+    /// <summary>The issued allocation consumed by this event; null on legacy events that did not record it.</summary>
+    public Guid? MaterialBatchReservedQuantityId { get; set; }
+    public MaterialBatchReservedQuantity MaterialBatchReservedQuantity { get; set; }
+    public Guid? ProductionScheduleProductId { get; set; }
+    public ProductionScheduleProduct ProductionScheduleProduct { get; set; }
     public Guid BatchId { get; set; }
     public MaterialBatch Batch { get; set; }
     public decimal Quantity { get; set; }

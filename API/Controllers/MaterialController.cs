@@ -980,7 +980,7 @@ public class MaterialController(IMaterialRepository repository) : ControllerBase
     /// <param name="request">The MoveShelfMaterialBatchRequest object.</param>
     /// <returns>Returns a success or failure result.</returns>
     [HttpPost("holding/move")]
-    [MaterialKindPermission(PermissionKeys.CanIssueRawMaterialStockTransfers, PermissionKeys.CanIssuePackagingMaterialStockTransfers)]
+    [MaterialKindPermission(PermissionKeys.CanAssignRawMaterialStockTransfers, PermissionKeys.CanAssignPackagingMaterialStockTransfers)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
