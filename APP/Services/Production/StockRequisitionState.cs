@@ -12,7 +12,11 @@ public static class StockRequisitionState
         || await db.BinCardInformation.IgnoreQueryFilters()
             .AnyAsync(entry => entry.RequisitionId == requisitionId && entry.QuantityIssued > 0);
 
-    public static IQueryable<Requisition> Active(INFRASTRUCTURE.Context.ApplicationDbContext db) => db.Requisitions.Where(r =>
+    // Issue evidence can disable EF's global filters for the composed query.
+    public static IQueryable<Requisition> Active(ApplicationDbContext db) =>
+        WithOutstandingOrIssuedState(db).Where(r => r.DeletedAt == null);
+
+    internal static IQueryable<Requisition> WithOutstandingOrIssuedState(ApplicationDbContext db) => db.Requisitions.Where(r =>
         r.RequisitionType == RequisitionType.Stock && r.Status != RequestStatus.Rejected && (
             r.Status == RequestStatus.Completed || r.Approved || r.Items.Any(item => item.QuantityReceived > 0)
             || db.StockRequisitionIssues.IgnoreQueryFilters().Any(issue => issue.RequisitionId == r.Id)

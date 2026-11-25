@@ -434,7 +434,7 @@ public class RequisitionRepository(
         var result = mapper.Map<RequisitionDto>(requisition);
         if (requisition.RequisitionType == RequisitionType.Stock
             && await context.RequisitionApprovals.IgnoreQueryFilters().AnyAsync(a => a.RequisitionId == requisition.Id && a.ContentRevision == requisition.ContentRevision && a.Status == DOMAIN.Entities.Approvals.ApprovalStatus.Rejected)
-            && !await APP.Services.Production.StockRequisitionState.Active(context).IgnoreQueryFilters().AnyAsync(r => r.Id == requisition.Id))
+            && !await StockRequisitionState.WithOutstandingOrIssuedState(context).IgnoreQueryFilters().AnyAsync(r => r.Id == requisition.Id))
         {
             result.Status = RequestStatus.Rejected; result.Approved = false;
             foreach (var line in result.Items) line.Status = RequestStatus.Rejected;

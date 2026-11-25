@@ -1,5 +1,6 @@
 using APP.Mapper;
 using APP.Repository;
+using APP.Services.Production;
 using AutoMapper;
 using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Requisitions;
@@ -58,6 +59,36 @@ public class StockRequisitionLookupTests
         Assert.Equal(ErrorType.NotFound, packaging.Errors.First().Type);
     }
 
+    [Fact]
+    public async Task Restarted_batch_can_request_stock_after_its_previous_requisitions_were_archived()
+    {
+        await using var fixture = await Fixture.Create();
+        var batchId = Guid.NewGuid();
+        var archivedAt = DateTime.UtcNow;
+        fixture.Requisition(batchId, "RM/N/26/043", RequisitionType.Stock, archivedAt);
+        fixture.Requisition(batchId, "PM/N/26/043", RequisitionType.Stock, archivedAt);
+        await fixture.Context.SaveChangesAsync();
+
+        var raw = await fixture.Repository.GetStockRequisitionForRaw(batchId);
+        var packaging = await fixture.Repository.GetStockRequisitionForPackaging(batchId);
+        Assert.True(raw.IsFailure);
+        Assert.True(packaging.IsFailure);
+        Assert.Equal("StockRequisition.NotRaised", raw.Errors.Single().Code);
+        Assert.Equal("StockRequisition.NotRaised", packaging.Errors.Single().Code);
+        Assert.Equal("StockRequisition.RawFirst",
+            (await StockRequisitionRules.CanRaise(fixture.Context, batchId, raw: false, packaging: true)).Error.Code);
+        Assert.True((await StockRequisitionRules.CanRaise(fixture.Context, batchId, raw: true, packaging: false)).IsSuccess);
+
+        fixture.Requisition(batchId, "RM/N/26/044", RequisitionType.Stock);
+        await fixture.Context.SaveChangesAsync();
+
+        var currentRaw = await fixture.Repository.GetStockRequisitionForRaw(batchId);
+        Assert.Equal("RM/N/26/044", currentRaw.Value.Code);
+        Assert.Equal("StockRequisition.RawAlreadyRaised",
+            (await StockRequisitionRules.CanRaise(fixture.Context, batchId, raw: true, packaging: false)).Error.Code);
+        Assert.True((await StockRequisitionRules.CanRaise(fixture.Context, batchId, raw: false, packaging: true)).IsSuccess);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public ApplicationDbContext Context { get; }
@@ -92,12 +123,13 @@ public class StockRequisitionLookupTests
             return fixture;
         }
 
-        public void Requisition(Guid batchId, string code, RequisitionType type) =>
+        public void Requisition(Guid batchId, string code, RequisitionType type, DateTime? archivedAt = null) =>
             Context.Requisitions.Add(new Requisition
             {
                 Id = Guid.NewGuid(), Code = code, RequisitionType = type, ProductionScheduleProductId = batchId,
                 RequestedById = Requester.Id, RequestedBy = Requester, DepartmentId = Department.Id, Department = Department,
-                Comments = "", Items = [], Approvals = [],
+                Comments = "", Items = [], Approvals = [], DeletedAt = archivedAt,
+                Approved = archivedAt.HasValue, Status = archivedAt.HasValue ? RequestStatus.Pending : RequestStatus.New,
             });
 
         public async ValueTask DisposeAsync()
