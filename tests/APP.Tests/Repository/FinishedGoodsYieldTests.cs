@@ -2,6 +2,8 @@ using System.Reflection;
 using APP.IRepository;
 using APP.Repository;
 using APP.Utils;
+using AutoMapper;
+using DOMAIN.Entities.Departments;
 using DOMAIN.Entities.Base;
 using DOMAIN.Entities.Customers;
 using DOMAIN.Entities.Materials.Batch;
@@ -11,6 +13,7 @@ using DOMAIN.Entities.Products;
 using DOMAIN.Entities.Products.Production;
 using INFRASTRUCTURE.Context;
 using Microsoft.EntityFrameworkCore;
+using SHARED;
 using SHARED.Services.Identity;
 using Xunit;
 
@@ -24,6 +27,62 @@ namespace APP.Tests.Repository;
 /// </summary>
 public class FinishedGoodsYieldTests
 {
+    [Fact]
+    public void Current_stock_counts_follow_an_edited_style_without_rewriting_recorded_stock()
+    {
+        var packing = Style(360, "Tube", ("Shipper", "s", 18, 1), ("Outer Carton", "Out ctn", 20, 2)).Packing;
+        var note = new FinishedGoodsTransferNote { ProductPacking = packing, QuantityPerPack = 1, PacksPerShipperSnapshot = 360,
+            TotalQuantity = 3_500_005, QuantityReceived = 3_500_005, IsApproved = true };
+        Assert.Equal(1m, FinishedGoodsUnits.UnitsPerPack(note));
+        packing.PackPerShipper = 18;
+        Assert.Equal(20m, FinishedGoodsUnits.UnitsPerPack(note));
+        Assert.Equal(18m, FinishedGoodsUnits.PacksPerShipper(note));
+        Assert.Equal(3_500_005m, note.StockQuantity);
+        Assert.Equal(1m, note.QuantityPerPack); Assert.Equal(360m, note.PacksPerShipperSnapshot);
+        packing.PackPerShipper = 17;
+        Assert.Null(FinishedGoodsUnits.UnitsPerPack(note));
+    }
+
+    [Fact]
+    public async Task Approved_stock_uses_current_counting_dimensions_and_preserves_all_base_balances()
+    {
+        await using var context = CreateContext();
+        var style = Style(18, "Tube", ("Shipper", "s", 18, 1), ("Outer Carton", "Out ctn", 20, 2));
+        var seed = await SeedAsync(context, 1000, 3_500_005, unitsPerPackOnNote: 1, style: style);
+        var department = new Department { Id = Guid.NewGuid(), Name = "Finished goods", Type = DepartmentType.NonProduction };
+        context.Departments.Add(department);
+        var role = await context.Roles.SingleAsync(); role.Type = DepartmentType.NonProduction;
+        var note = await context.FinishedGoodsTransferNotes.SingleAsync(); note.PacksPerShipperSnapshot = 360;
+        note.AllocatedQuantity = 100; note.DispatchedQuantity = 40;
+        await context.SaveChangesAsync(); context.ChangeTracker.Clear();
+        var mapping = new MapperConfiguration(config => config.CreateMap<Product, ProductListDto>()
+            .ConvertUsing(product => new ProductListDto { Id = product.Id, Name = product.Name, Code = product.Code })).CreateMapper();
+        var repository = new ProductionScheduleRepository(context, mapping, null!, null!, null!, NoApprovals.Create(), new NoOpProductionActivityStepEventPublisher());
+        var result = await repository.GetApprovedProducts(role.Id, department.Id);
+        Assert.True(result.IsSuccess, result.Error.Description);
+        var stock = Assert.Single(Assert.Single(result.Value).Stocks);
+        Assert.Equal((20m, 18m), (stock.QuantityPerPack, stock.PacksPerShipper));
+        Assert.Equal((3_500_005m, 3_500_005m, 3_499_965m, 60m, 3_499_905m),
+            (stock.Sent, stock.Received, stock.Physical, stock.Reserved, stock.Available));
+        var recorded = await context.FinishedGoodsTransferNotes.AsNoTracking().SingleAsync(row => row.Id == seed.NoteId);
+        Assert.Equal(1m, recorded.QuantityPerPack); Assert.Equal(360m, recorded.PacksPerShipperSnapshot);
+    }
+
+    [Fact]
+    public async Task A_new_allocation_uses_the_updated_pack_size_without_changing_the_receipt_snapshot()
+    {
+        await using var context = CreateContext();
+        var style = Style(18, "Tube", ("Shipper", "s", 18, 1), ("Outer Carton", "Out ctn", 20, 2));
+        var seed = await SeedAsync(context, 1000, 3_500_005, unitsPerPackOnNote: 1, style: style);
+        var result = await CreateOrders(context).CreateProductOrderAllocation(Request(seed, (seed.NoteId, 2m)));
+        Assert.True(result.IsSuccess, result.Error.Description);
+        context.ChangeTracker.Clear();
+        var note = await context.FinishedGoodsTransferNotes.SingleAsync();
+        Assert.Equal(40m, note.AllocatedQuantity); Assert.Equal(3_500_005m, note.QuantityReceived); Assert.Equal(1m, note.QuantityPerPack);
+        var line = Assert.Single(Assert.Single((await context.AllocateProductionOrders.Include(row => row.Products).ThenInclude(row => row.FulfilledQuantities).SingleAsync()).Products).FulfilledQuantities);
+        Assert.Equal((2m, 20m, 40m), (line.Quantity, line.UnitsPerPack, line.YieldQuantity));
+    }
+
     // ---------------------------------------------------------------- units per pack
 
     [Fact]
