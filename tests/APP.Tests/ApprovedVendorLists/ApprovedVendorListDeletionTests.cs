@@ -16,6 +16,7 @@ public partial class ApprovedVendorListTests
     [InlineData(ApprovedVendorListStatus.Approved)]
     [InlineData(ApprovedVendorListStatus.Superseded)]
     [InlineData(ApprovedVendorListStatus.Rejected)]
+    [InlineData(ApprovedVendorListStatus.Draft)]
     public async Task Deleting_a_list_needs_the_delete_key_even_for_its_editor(ApprovedVendorListStatus status)
     {
         var editor = await Person("Editor", PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanEditApprovedVendorList,
@@ -35,6 +36,7 @@ public partial class ApprovedVendorListTests
     [InlineData(ApprovedVendorListStatus.Approved)]
     [InlineData(ApprovedVendorListStatus.Superseded)]
     [InlineData(ApprovedVendorListStatus.Rejected)]
+    [InlineData(ApprovedVendorListStatus.Draft)]
     public async Task The_delete_key_allows_deletion_in_every_state(ApprovedVendorListStatus status)
     {
         var remover = await Person("Remover", PermissionKeys.CanDeleteApprovedVendorList);
@@ -42,7 +44,7 @@ public partial class ApprovedVendorListTests
         db.ApprovedVendorLists.Add(list);
         await db.SaveChangesAsync();
 
-        Assert.True((await Lists().Delete(list.Id, remover.User)).IsSuccess);
+        Assert.True((await Lists().Delete(list.Id, remover.User, status == ApprovedVendorListStatus.Draft ? "Duplicate draft" : null)).IsSuccess);
         Assert.Empty(await Lists().List());
         var archived = await db.ApprovedVendorLists.IgnoreQueryFilters().AsNoTracking().SingleAsync();
         Assert.NotNull(archived.DeletedAt);
@@ -55,7 +57,7 @@ public partial class ApprovedVendorListTests
     {
         var f = await Masters();
         var current = await ApprovedList(f, Today.AddYears(1));
-        var preparer = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanEditApprovedVendorList);
+        var preparer = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanEditApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList);
         var checker = await Person("Checker", PermissionKeys.CanReviewApprovedVendorList);
         var remover = await Person("Remover", PermissionKeys.CanDeleteApprovedVendorList);
         var revision = First(f, Today.AddYears(2));
@@ -71,6 +73,7 @@ public partial class ApprovedVendorListTests
         Assert.False(Assert.Single(await Lists().Eligibility(new() { MaterialIds = [f.Material] })).Restricted);
         Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.OtherSupplier)], Today)).IsSuccess);
         Assert.Equal(pending.Value, Assert.Single(await Lists().List()).Id);
+        Assert.True((await Lists().Submit(pending.Value, new() { DraftVersion = 0 }, preparer.User)).IsSuccess);
         Assert.True((await Lists().Update(pending.Value, revision, preparer.User)).IsSuccess);
         Assert.True((await Reviews().Confirm(ReviewDocumentTypes.ApprovedVendorList, pending.Value, new(), checker.User)).IsSuccess);
         Assert.Equal(current, (await Lists().Get(pending.Value)).Value.PreviousRevisionId);
@@ -81,11 +84,12 @@ public partial class ApprovedVendorListTests
     public async Task Deleting_a_pending_revision_removes_its_open_review_and_allows_a_new_revision()
     {
         var f = await Masters();
-        var preparer = await Person("Preparer", PermissionKeys.CanCreateApprovedVendorList);
+        var preparer = await Person("Preparer", PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList);
         var checker = await Person("Checker", PermissionKeys.CanReviewApprovedVendorList,
             PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanViewPendingReviews);
         var remover = await Person("Remover", PermissionKeys.CanDeleteApprovedVendorList);
         var pending = (await Lists().Create(First(f, Today.AddYears(1)), preparer.User)).Value;
+        Assert.True((await Lists().Submit(pending, new() { DraftVersion = 0 }, preparer.User)).IsSuccess);
         Assert.Single((await Reviews().GetPending(checker.User, 1, 20)).Value.Data);
 
         Assert.True((await Lists().Delete(pending, remover.User)).IsSuccess);
@@ -101,12 +105,13 @@ public partial class ApprovedVendorListTests
     {
         var f = await Masters();
         var first = await ApprovedList(f, Today.AddYears(1));
-        var reviser = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList);
+        var reviser = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList);
         var checker = await Person("Checker", PermissionKeys.CanReviewApprovedVendorList);
         var remover = await Person("Remover", PermissionKeys.CanDeleteApprovedVendorList);
         var second = await Lists().Revise(new() { AnnexureNumber = "QAD/SOP/007/A03-06", RevisionNumber = 18,
             Lines = First(f, Today.AddYears(3)).Lines }, reviser.User);
         Assert.True(second.IsSuccess);
+        Assert.True((await Lists().Submit(second.Value, new() { DraftVersion = 0 }, reviser.User)).IsSuccess);
         Assert.True((await Reviews().Confirm(ReviewDocumentTypes.ApprovedVendorList, second.Value, new(), checker.User)).IsSuccess);
         var reviewIds = await db.DocumentReviews.Select(item => item.Id).ToListAsync();
         var lineIds = await db.ApprovedVendorListLines.Select(item => item.Id).ToListAsync();

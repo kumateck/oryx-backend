@@ -440,6 +440,10 @@ public static class PermissionKeys
     public const string CanViewApprovedVendorList = "CanViewApprovedVendorList";
     /// <summary>Prepare the first approved vendor list.</summary>
     public const string CanCreateApprovedVendorList = "CanCreateApprovedVendorList";
+    /// <summary>Save an approved vendor list draft's header and lines.</summary>
+    public const string CanEditApprovedVendorListDraft = "CanEditApprovedVendorListDraft";
+    /// <summary>Submit an approved vendor list draft: it becomes the fixed version and goes for review.</summary>
+    public const string CanSubmitApprovedVendorList = "CanSubmitApprovedVendorList";
     /// <summary>Correct an approved vendor list while it is in review, and send a returned one back for review.</summary>
     public const string CanEditApprovedVendorList = "CanEditApprovedVendorList";
     /// <summary>Delete an approved vendor list revision in any status while retaining its history.</summary>
@@ -1808,6 +1812,8 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanViewApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanCreateApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanEditApprovedVendorList);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanEditApprovedVendorListDraft);
+        addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanSubmitApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanDeleteApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReviseApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanReviewApprovedVendorList);
