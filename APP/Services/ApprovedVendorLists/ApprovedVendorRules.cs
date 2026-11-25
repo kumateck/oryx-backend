@@ -13,8 +13,11 @@ namespace APP.Services.ApprovedVendorLists;
 /// </summary>
 public static class ApprovedVendorRules
 {
-    /// <summary>The first day after the validity month: a line is lapsed from this day on.</summary>
-    public static DateTime LapsesOn(DateTime validityMonth) => Month(validityMonth).AddMonths(1);
+    /// <summary>
+    /// The day a line stops being usable: the first day of its validity month (owner, 2026-11-20). A line valid to
+    /// "Jun 27" can be used up to 31 May 2027 and is refused from 1 June 2027.
+    /// </summary>
+    public static DateTime LapsesOn(DateTime validityMonth) => Month(validityMonth);
 
     public static bool IsLapsed(DateTime validityMonth, DateTime today) => today.Date >= LapsesOn(validityMonth);
 
@@ -27,8 +30,10 @@ public static class ApprovedVendorRules
         await context.ApprovedVendorListLines.AsNoTracking()
             .Where(line => materialIds.Contains(line.MaterialId)
                 && line.ApprovedVendorList.Status == ApprovedVendorListStatus.Approved
-                && line.ApprovedVendorList.DeletedAt == null)
-            .Select(line => new Line(line.MaterialId, line.Material.Name, line.Material.Code, line.ManufacturerId, line.SupplierId, line.ValidityDate))
+                && line.ApprovedVendorList.DeletedAt == null
+                // An approved list's lines always name existing records; only drafts hold new names.
+                && line.ManufacturerId != null && line.SupplierId != null)
+            .Select(line => new Line(line.MaterialId, line.Material.Name, line.Material.Code, line.ManufacturerId.Value, line.SupplierId.Value, line.ValidityDate))
             .ToListAsync();
 
     /// <summary>The eligibility of each material, for screens that hide or disable choices.</summary>
@@ -69,7 +74,7 @@ public static class ApprovedVendorRules
                 ? Error.Validation("ApprovedVendorList.SupplierNotApproved",
                     $"{supplier} is not on the approved vendor list for {Label(own[0])}. Ask QA to add it to a new revision of the list.")
                 : Error.Validation("ApprovedVendorList.SupplierLapsed",
-                    $"{supplier}'s approval for {Label(own[0])} lapsed at the end of {matching.Max(line => line.ValidityDate):MMMM yyyy}. Ask QA to renew it in a new revision of the list.");
+                    $"{supplier}'s approval for {Label(own[0])} lapsed on {LapsesOn(matching.Max(line => line.ValidityDate)):d MMMM yyyy}. Ask QA to renew it in a new revision of the list.");
         }
         return Result.Success();
     }
@@ -99,7 +104,7 @@ public static class ApprovedVendorRules
                 ? Error.Validation("ApprovedVendorList.ManufacturerNotApproved",
                     $"{manufacturer}{through} is not on the approved vendor list for {Label(own[0])}. Ask QA to add it to a new revision of the list.")
                 : Error.Validation("ApprovedVendorList.ManufacturerLapsed",
-                    $"{manufacturer}{through}: approval for {Label(own[0])} lapsed at the end of {matching.Max(line => line.ValidityDate):MMMM yyyy}. Ask QA to renew it in a new revision of the list.");
+                    $"{manufacturer}{through}: approval for {Label(own[0])} lapsed on {LapsesOn(matching.Max(line => line.ValidityDate)):d MMMM yyyy}. Ask QA to renew it in a new revision of the list.");
         }
         return Result.Success();
     }

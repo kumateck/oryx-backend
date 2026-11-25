@@ -16,6 +16,24 @@ public class SaveApprovedVendorListRequest
     public List<SaveApprovedVendorListLineRequest> Lines { get; set; } = [];
 }
 
+/// <summary>A draft's header and lines, saved as often as needed. Lines are checked; nothing is created yet.</summary>
+public class SaveApprovedVendorListDraftRequest
+{
+    [Required, StringLength(100)] public string AnnexureNumber { get; set; }
+    [Range(0, 10000)] public int RevisionNumber { get; set; }
+    /// <summary>Kept only on the first list; a revision always supersedes the revision it came from.</summary>
+    public int? SupersedesRevision { get; set; }
+    /// <summary>The draft version the caller last saw, so a save cannot overwrite a newer one.</summary>
+    public int? DraftVersion { get; set; }
+    public List<SaveApprovedVendorListLineRequest> Lines { get; set; } = [];
+}
+
+/// <summary>Submits a draft: it becomes the fixed version and goes for review.</summary>
+public class SubmitApprovedVendorListRequest
+{
+    public int? DraftVersion { get; set; }
+}
+
 /// <summary>A new revision of the current approved list.</summary>
 public class ReviseApprovedVendorListRequest
 {
@@ -77,6 +95,8 @@ public class ApprovedVendorListDto : ApprovedVendorListSummaryDto
     public DateTime? SupersededAt { get; set; }
     /// <summary>The review's version, sent back with a correction.</summary>
     public int? ReviewVersion { get; set; }
+    /// <summary>The draft's version, sent back with a draft save or a submit.</summary>
+    public int DraftVersion { get; set; }
     public List<ApprovedVendorListLineDto> Lines { get; set; } = [];
     public ApprovedVendorListSignatoryDto PreparedBySignatory { get; set; }
     public ApprovedVendorListSignatoryDto CheckedBy { get; set; }
@@ -90,11 +110,17 @@ public class ApprovedVendorListLineDto
     public Guid MaterialId { get; set; }
     public string MaterialCode { get; set; }
     public string MaterialName { get; set; }
-    public Guid ManufacturerId { get; set; }
+    /// <summary>Null on a draft line naming a new manufacturer (<see cref="NewManufacturer"/>).</summary>
+    public Guid? ManufacturerId { get; set; }
     public string ManufacturerName { get; set; }
     public string ManufacturerAddress { get; set; }
-    public Guid SupplierId { get; set; }
+    public bool NewManufacturer { get; set; }
+    /// <summary>Null on a draft line naming a new supplier (<see cref="NewSupplier"/>).</summary>
+    public Guid? SupplierId { get; set; }
     public string SupplierName { get; set; }
+    public bool NewSupplier { get; set; }
+    public string NewSupplierAddress { get; set; }
+    public SupplierType? NewSupplierType { get; set; }
     public decimal QuantityPerPack { get; set; }
     public DateTime ApprovalDate { get; set; }
     public DateTime ValidityDate { get; set; }

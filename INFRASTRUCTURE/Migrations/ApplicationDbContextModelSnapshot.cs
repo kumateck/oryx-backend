@@ -529,6 +529,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DeletionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("DraftVersion")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -659,11 +666,30 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ManufacturerId")
+                    b.Property<Guid?>("ManufacturerId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("NewManufacturerAddress")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("NewManufacturerName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NewSupplierAddress")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("NewSupplierName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("NewSupplierType")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
@@ -672,7 +698,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
-                    b.Property<Guid>("SupplierId")
+                    b.Property<Guid?>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -3825,6 +3851,45 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("FormSections");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.PendingCertificateChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NewStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PreviousStateJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int?>("RequestedReturn")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResponseId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("PendingCertificateChanges", (string)null);
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Forms.Question", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3940,11 +4005,25 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("BatchManufacturingRecordId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CertificateNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<DateTime?>("CheckedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CheckedById")
                         .HasColumnType("uuid");
+
+                    b.Property<int?>("CoaReturnKind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CoaReturnReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("CoaVersion")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -28935,8 +29014,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", "Manufacturer")
                         .WithMany()
                         .HasForeignKey("ManufacturerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
                         .WithMany()
@@ -28947,8 +29025,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ApprovedVendorList");
 
@@ -30818,6 +30895,15 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("MaterialSpecification");
 
                     b.Navigation("ProductSpecification");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.PendingCertificateChange", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Forms.Response", null)
+                        .WithMany()
+                        .HasForeignKey("ResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.Question", b =>

@@ -1312,6 +1312,8 @@ public class ApprovalRepository(
 
                 if (response.Approved || response.Rejected)
                     return Error.Conflict("Response.ApprovalClosed", "This response approval is closed.");
+                if (APP.Services.Forms.PendingCertificateService.DecisionError(response, contentRevision) is { } changeError)
+                    return changeError;
 
                 var currentResponseApprovals = ResponseApprovalRoundManager.Current(
                     response.Approvals
@@ -2830,6 +2832,8 @@ public class ApprovalRepository(
                     return Error.Validation("Response.NotFound", $"Response {modelId} not found.");
                 if (response.Approved || response.Rejected)
                     return Error.Conflict("Response.ApprovalClosed", "This response approval is closed.");
+                if (APP.Services.Forms.PendingCertificateService.DecisionError(response, contentRevision) is { } changeError)
+                    return changeError;
                 if ((response.MaterialBatchId.HasValue || response.BatchManufacturingRecordId.HasValue)
                     && !responseOutcome.HasValue)
                     return Error.Validation("Response.RejectionOutcome", "Select rework or disposal.");
@@ -3648,6 +3652,7 @@ public class ApprovalRepository(
                         ModelType = nameof(Response),
                         Id = bs.Id,
                         Code = "",
+                        ContentRevision = bs.CoaVersion,
                         Department = mapper.Map<DepartmentDto>(bs.CreatedBy?.Department),
                         CreatedAt = bs.CreatedAt,
                         RequestedBy = mapper.Map<UserDto>(bs.CreatedBy),
@@ -4362,6 +4367,7 @@ public class ApprovalRepository(
                     Department = mapper.Map<DepartmentDto>(response.CreatedBy?.Department),
                     RequestedBy = mapper.Map<UserDto>(response.CreatedBy),
                     MaterialBatchId = response.MaterialBatchId,
+                    ContentRevision = response.CoaVersion,
                     BatchManufacturingRecordId = response.BatchManufacturingRecordId,
                     ProductionActivityStepId = response.ProductionActivityStepId,
                     ApprovalLogs = GetApprovalLogs(modelId),

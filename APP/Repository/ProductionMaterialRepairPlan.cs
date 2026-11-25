@@ -54,7 +54,7 @@ internal static class ProductionMaterialRepairPlanning
             .Include(item => item.Items).ThenInclude(item => item.Material).Include(item => item.Items).ThenInclude(item => item.UoM)
             .Include(item => item.Approvals)
             .Where(item => item.ProductionScheduleProductId == source.Batch.Id && item.RequisitionType == RequisitionType.Stock
-                && APP.Services.Production.StockRequisitionState.Active(context).IgnoreQueryFilters().Any(activeRequest => activeRequest.Id == item.Id)
+                && APP.Services.Production.StockRequisitionState.WithOutstandingOrIssuedState(context).IgnoreQueryFilters().Any(request => request.Id == item.Id)
                 && (item.Code.StartsWith(prefix) || item.Items.Any(line => line.Material.Kind == kind))).ToListAsync();
         var reqIds = requisitions.Select(item => item.Id).ToList();
         var issued = await context.StockRequisitionIssues.IgnoreQueryFilters().AnyAsync(item => reqIds.Contains(item.RequisitionId));
