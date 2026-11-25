@@ -70,7 +70,11 @@ public sealed class FormulaDefinitionServiceTests
         var reviewerId = participants[reviewer];
         var approverId = participants[approver];
         await using var database = new FormulaTriggerDatabase();
-        if (postgres) await database.CreateAsync(new DefinitionTestUser(authorId), authorId, reviewerId, approverId);
+        if (postgres)
+        {
+            await database.CreateAsync(new DefinitionTestUser(authorId), authorId, reviewerId, approverId);
+            await database.ApplyAsync(new INFRASTRUCTURE.Migrations.RepairFormulaRevisionStatusAuditTrigger());
+        }
         await using var context = postgres ? database.Open(new DefinitionTestUser(authorId)) : CreateContext(authorId);
         var question = FormulaQuestion();
         var option = new QuestionOption
