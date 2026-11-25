@@ -41,6 +41,8 @@ public partial class ApprovedVendorListTests
     private readonly ApplicationDbContext db;
     private int claimId;
     private static readonly DateTime Today = DateTime.UtcNow.Date;
+    /// <summary>A validity month still to come, so its line can be used today.</summary>
+    private static readonly DateTime Valid = ApprovedVendorRules.Month(Today).AddMonths(2);
 
     public ApprovedVendorListTests()
     {
@@ -97,12 +99,22 @@ public partial class ApprovedVendorListTests
             QuantityPerPack = 25m, ApprovalDate = new DateTime(2024, 6, 1), ValidityDate = validity }],
     };
 
+    /// <summary>A draft started and submitted by one person: it is then in review.</summary>
+    private async Task<Guid> Submitted(SaveApprovedVendorListRequest request, params string[] extra)
+    {
+        var preparer = await Person("Officer" + Guid.NewGuid().ToString("N")[..6],
+            [PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList, .. extra]);
+        actor.Current = preparer.User;
+        var id = (await Lists().Create(request, preparer.User)).Value;
+        var submitted = await Lists().Submit(id, new() { DraftVersion = 0 }, preparer.User);
+        Assert.True(submitted.IsSuccess, submitted.IsFailure ? submitted.Errors[0].Description : null);
+        return id;
+    }
+
     private async Task<Guid> ApprovedList(Fixture f, DateTime validity)
     {
-        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList);
         var checker = await Person("Deputy", PermissionKeys.CanReviewApprovedVendorList);
-        actor.Current = preparer.User;
-        var id = (await Lists().Create(First(f, validity), preparer.User)).Value;
+        var id = await Submitted(First(f, validity));
         actor.Current = checker.User;
         // No approval workflow configured: confirming the review approves it automatically.
         Assert.True((await Reviews().Confirm(ReviewDocumentTypes.ApprovedVendorList, id, new(), checker.User)).IsSuccess);
@@ -129,6 +141,8 @@ public partial class ApprovedVendorListTests
         Assert.Equal(PermissionKeys.CanCreateApprovedVendorList, Policy(nameof(ApprovedVendorListController.CreateApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanReviseApprovedVendorList, Policy(nameof(ApprovedVendorListController.ReviseApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanEditApprovedVendorList, Policy(nameof(ApprovedVendorListController.UpdateApprovedVendorList)));
+        Assert.Equal(PermissionKeys.CanEditApprovedVendorListDraft, Policy(nameof(ApprovedVendorListController.SaveApprovedVendorListDraft)));
+        Assert.Equal(PermissionKeys.CanSubmitApprovedVendorList, Policy(nameof(ApprovedVendorListController.SubmitApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanDeleteApprovedVendorList, Policy(nameof(ApprovedVendorListController.DeleteApprovedVendorList)));
         Assert.Equal(PermissionKeys.CanApproveApprovedVendorList, ApprovalController.DecisionKey(ReviewDocumentTypes.ApprovedVendorList, approve: true));
         Assert.Equal(PermissionKeys.CanRejectApprovedVendorList, ApprovalController.DecisionKey(ReviewDocumentTypes.ApprovedVendorList, approve: false));
@@ -141,47 +155,155 @@ public partial class ApprovedVendorListTests
         foreach (var key in new[] { PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanEditApprovedVendorList,
                      PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanReviewApprovedVendorList, PermissionKeys.CanReturnApprovedVendorList,
                      PermissionKeys.CanApproveApprovedVendorList, PermissionKeys.CanRejectApprovedVendorList, PermissionKeys.CanPrintApprovedVendorList,
-                     PermissionKeys.CanViewApprovedVendorEligibility, PermissionKeys.CanDeleteApprovedVendorList })
+                     PermissionKeys.CanViewApprovedVendorEligibility, PermissionKeys.CanEditApprovedVendorListDraft,
+                     PermissionKeys.CanSubmitApprovedVendorList, PermissionKeys.CanDeleteApprovedVendorList })
             Assert.Single(keys, key);
     }
 
     [Fact]
-    public async Task Create_is_refused_without_its_key_and_opens_a_review_with_it()
+    public async Task Create_starts_a_draft_that_restricts_nothing_and_opens_no_review()
     {
         var f = await Masters();
         var outsider = await Person("Outsider", PermissionKeys.CanViewApprovedVendorList);
         actor.Current = outsider.User;
-        Assert.Equal(ErrorType.Forbidden, (await Lists().Create(First(f, Today), outsider.User)).Errors[0].Type);
+        Assert.Equal(ErrorType.Forbidden, (await Lists().Create(First(f, Valid), outsider.User)).Errors[0].Type);
         Assert.Empty(db.ApprovedVendorLists);
 
         var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList);
         actor.Current = preparer.User;
-        var created = await Lists().Create(First(f, Today), preparer.User);
+        var created = await Lists().Create(First(f, Valid), preparer.User);
         Assert.True(created.IsSuccess);
-        var review = await db.DocumentReviews.AsNoTracking().SingleAsync(item => item.ModelId == created.Value);
-        Assert.Equal(DocumentReviewStatus.AwaitingReview, review.Status);
-        Assert.Equal(preparer.User, review.PreparedById);
+        Assert.Empty(db.DocumentReviews);
         var list = (await Lists().Get(created.Value)).Value;
-        Assert.Equal(ApprovedVendorListStatus.Pending, list.Status);
-        Assert.Equal(DocumentReviewStatus.AwaitingReview, list.ReviewStatus);
+        Assert.Equal(ApprovedVendorListStatus.Draft, list.Status);
         Assert.Equal(16, list.SupersedesRevision);
         Assert.Equal("Officer Tester", list.PreparedBySignatory.Name);
-        Assert.Null(list.CheckedBy);
+        // A draft is not a list of record: it restricts no supplier.
+        Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.OtherSupplier)], Today)).IsSuccess);
+        // One list in preparation at a time.
+        Assert.Equal(ErrorType.Conflict, (await Lists().Create(First(f, Valid), preparer.User)).Errors[0].Type);
+    }
+
+    [Fact]
+    public async Task The_validity_month_must_come_after_the_approval_month()
+    {
+        var f = await Masters();
+        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList);
+        actor.Current = preparer.User;
+        var refused = await Lists().Create(First(f, new DateTime(2024, 6, 15)), preparer.User);
+        Assert.Equal("ApprovedVendorList.Dates", refused.Errors[0].Code);
+    }
+
+    [Fact]
+    public async Task A_draft_is_saved_as_often_as_needed_adding_and_removing_lines_then_submitted_for_review()
+    {
+        var f = await Masters();
+        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList);
+        var editor = await Person("Editor", PermissionKeys.CanEditApprovedVendorListDraft);
+        var submitter = await Person("Submitter", PermissionKeys.CanSubmitApprovedVendorList,
+            PermissionKeys.CanUpdateManufacturerDetails, PermissionKeys.CanUpdateVendorDetails);
+        actor.Current = preparer.User;
+        var id = (await Lists().Create(First(f, Valid), preparer.User)).Value;
+
+        // Without the draft edit key the draft cannot be changed.
+        var draft = First(f, Valid);
+        draft.Lines.Add(new SaveApprovedVendorListLineRequest { MaterialId = f.OtherMaterial, ManufacturerId = f.Manufacturer, SupplierId = f.OtherSupplier,
+            QuantityPerPack = 50m, ApprovalDate = new DateTime(2024, 6, 1), ValidityDate = Valid });
+        var request = new SaveApprovedVendorListDraftRequest { AnnexureNumber = "QAD/SOP/007/A03-06", RevisionNumber = 18, SupersedesRevision = 17, DraftVersion = 0, Lines = draft.Lines };
+        Assert.Equal(ErrorType.Forbidden, (await Lists().SaveDraft(id, request, preparer.User)).Errors[0].Type);
+
+        // A line added, then the first one removed, over two saves.
+        actor.Current = editor.User;
+        Assert.True((await Lists().SaveDraft(id, request, editor.User)).IsSuccess);
+        Assert.Equal(2, (await Lists().Get(id)).Value.Lines.Count);
+        // A save made on an older version is refused rather than overwriting the newer one.
+        Assert.Equal(ErrorType.Conflict, (await Lists().SaveDraft(id, request, editor.User)).Errors[0].Type);
+        request.DraftVersion = 1;
+        request.Lines = [draft.Lines[1]];
+        Assert.True((await Lists().SaveDraft(id, request, editor.User)).IsSuccess);
+        var saved = (await Lists().Get(id)).Value;
+        Assert.Equal(f.OtherMaterial, Assert.Single(saved.Lines).MaterialId);
+        Assert.Equal(18, saved.RevisionNumber);
+        Assert.Empty(db.DocumentReviews);
+
+        // Submitting needs its own key; it fixes the version and opens the review.
+        Assert.Equal(ErrorType.Forbidden, (await Lists().Submit(id, new() { DraftVersion = 2 }, editor.User)).Errors[0].Type);
+        actor.Current = submitter.User;
+        var submitted = await Lists().Submit(id, new() { DraftVersion = 2 }, submitter.User);
+        Assert.True(submitted.IsSuccess, submitted.IsFailure ? submitted.Errors[0].Description : null);
+        var review = await db.DocumentReviews.AsNoTracking().SingleAsync(item => item.ModelId == id);
+        Assert.Equal(DocumentReviewStatus.AwaitingReview, review.Status);
+        Assert.Equal(preparer.User, review.PreparedById);
+        Assert.Equal(ApprovedVendorListStatus.Pending, (await Lists().Get(id)).Value.Status);
+        // A submitted list is no longer a draft.
+        actor.Current = editor.User;
+        request.DraftVersion = 3;
+        Assert.Equal(ErrorType.Conflict, (await Lists().SaveDraft(id, request, editor.User)).Errors[0].Type);
+    }
+
+    [Fact]
+    public async Task A_draft_names_new_records_without_creating_them_until_it_is_submitted()
+    {
+        var f = await Masters();
+        var request = First(f, Valid);
+        request.Lines[0].ManufacturerId = null;
+        request.Lines[0].NewManufacturer = new NewApprovedManufacturerRequest { Name = "New Pharma", Address = "Hyderabad" };
+        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList);
+        actor.Current = preparer.User;
+        var id = (await Lists().Create(request, preparer.User)).Value;
+        Assert.False(await db.Manufacturers.AnyAsync(item => item.Name == "New Pharma"));
+        var line = Assert.Single((await Lists().Get(id)).Value.Lines);
+        Assert.True(line.NewManufacturer);
+        Assert.Equal("New Pharma", line.ManufacturerName);
+        // Submitting creates it, which needs the manufacturer create key.
+        Assert.Equal(ErrorType.Forbidden, (await Lists().Submit(id, new() { DraftVersion = 0 }, preparer.User)).Errors[0].Type);
+        Assert.Equal(ApprovedVendorListStatus.Draft, (await db.ApprovedVendorLists.AsNoTracking().SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task A_version_not_yet_approved_is_deleted_with_its_key_and_a_reason_and_the_current_list_stays()
+    {
+        var f = await Masters();
+        var current = await ApprovedList(f, Valid);
+        var reviser = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList);
+        var deleter = await Person("Deleter", PermissionKeys.CanDeleteApprovedVendorList);
+        actor.Current = reviser.User;
+        var revision = new ReviseApprovedVendorListRequest { AnnexureNumber = "QAD/SOP/007/A03-06", RevisionNumber = 18, Lines = First(f, Valid).Lines };
+        var draft = (await Lists().Revise(revision, reviser.User)).Value;
+        Assert.Equal(ErrorType.Forbidden, (await Lists().Delete(draft, reviser.User, "Started by mistake")).Errors[0].Type);
+        actor.Current = deleter.User;
+        Assert.Equal(ErrorType.Validation, (await Lists().Delete(draft, deleter.User, " ")).Errors[0].Type);
+        Assert.True((await Lists().Delete(draft, deleter.User, "Started by mistake")).IsSuccess);
+        Assert.Equal(ErrorType.NotFound, (await Lists().Get(draft)).Errors[0].Type);
+        Assert.Equal(ApprovedVendorListStatus.Approved, (await Lists().Get(current)).Value.Status);
+
+        // A submitted version in review can be deleted too; its review and approvals end with it.
+        actor.Current = reviser.User;
+        var submitted = (await Lists().Revise(revision, reviser.User)).Value;
+        Assert.True((await Lists().Submit(submitted, new() { DraftVersion = 0 }, reviser.User)).IsSuccess);
+        actor.Current = deleter.User;
+        Assert.True((await Lists().Delete(submitted, deleter.User, "Wrong supplier on line 1")).IsSuccess);
+        var deleted = await db.ApprovedVendorLists.IgnoreQueryFilters().AsNoTracking().SingleAsync(item => item.Id == submitted);
+        Assert.Equal("Wrong supplier on line 1", deleted.DeletionReason);
+        Assert.Equal(deleter.User, deleted.LastDeletedById);
+
+        // With the versions gone, a new revision can start.
+        actor.Current = reviser.User;
+        Assert.True((await Lists().Revise(revision, reviser.User)).IsSuccess);
     }
 
     [Fact]
     public async Task Review_return_correction_and_workflow_approval_sign_checked_and_approved_by()
     {
         var f = await Masters();
-        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanEditApprovedVendorList);
+        var preparer = await Person("Officer", PermissionKeys.CanEditApprovedVendorList);
         var checker = await Person("Deputy", PermissionKeys.CanReviewApprovedVendorList, PermissionKeys.CanReturnApprovedVendorList);
         var manager = await Person("Manager", PermissionKeys.CanApproveApprovedVendorList);
         db.Approvals.Add(new Approval { Id = Guid.NewGuid(), ItemType = ReviewDocumentTypes.ApprovedVendorList,
             ApprovalStages = [new ApprovalStage { Id = Guid.NewGuid(), RoleId = manager.Role, Order = 1, Required = true }] });
         await db.SaveChangesAsync();
 
-        actor.Current = preparer.User;
-        var id = (await Lists().Create(First(f, Today.AddYears(2)), preparer.User)).Value;
+        var id = await Submitted(First(f, Today.AddYears(2)));
         actor.Current = checker.User;
         Assert.True((await Reviews().Return(ReviewDocumentTypes.ApprovedVendorList, id, new() { Comments = "Wrong pack size" }, checker.User)).IsSuccess);
 
@@ -209,20 +331,28 @@ public partial class ApprovedVendorListTests
     }
 
     [Fact]
-    public async Task A_revision_supersedes_the_approved_list_and_records_what_it_supersedes()
+    public async Task A_revision_starts_from_the_current_lines_adds_and_removes_and_supersedes_only_once_approved()
     {
         var f = await Masters();
-        var first = await ApprovedList(f, Today.AddYears(1));
-        var reviser = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList);
+        var first = await ApprovedList(f, Valid);
+        var reviser = await Person("Reviser", PermissionKeys.CanReviseApprovedVendorList, PermissionKeys.CanSubmitApprovedVendorList,
+            PermissionKeys.CanUpdateManufacturerDetails, PermissionKeys.CanUpdateVendorDetails);
         var checker = await Person("Checker", PermissionKeys.CanReviewApprovedVendorList);
         actor.Current = reviser.User;
-        var request = new ReviseApprovedVendorListRequest { AnnexureNumber = "QAD/SOP/007/A03-06", RevisionNumber = 17,
-            Lines = First(f, Today.AddYears(3)).Lines };
+        // The current line is dropped and a new one added for the other material.
+        var added = new SaveApprovedVendorListLineRequest { MaterialId = f.OtherMaterial, ManufacturerId = f.Manufacturer, SupplierId = f.OtherSupplier,
+            QuantityPerPack = 50m, ApprovalDate = new DateTime(2024, 6, 1), ValidityDate = Valid };
+        var request = new ReviseApprovedVendorListRequest { AnnexureNumber = "QAD/SOP/007/A03-06", RevisionNumber = 17, Lines = [added] };
         Assert.Equal(ErrorType.Validation, (await Lists().Revise(request, reviser.User)).Errors[0].Type);
         request.RevisionNumber = 18;
         var second = await Lists().Revise(request, reviser.User);
         Assert.True(second.IsSuccess);
         Assert.Equal(ErrorType.Conflict, (await Lists().Revise(request, reviser.User)).Errors[0].Type);
+        Assert.True((await Lists().Submit(second.Value, new() { DraftVersion = 0 }, reviser.User)).IsSuccess);
+
+        // Until it is approved the current list stays in force: its material is still restricted to its own line.
+        Assert.Equal("ApprovedVendorList.SupplierNotApproved", (await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.OtherSupplier)], Today)).Errors[0].Code);
+        Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.OtherMaterial, f.Supplier)], Today)).IsSuccess);
 
         actor.Current = checker.User;
         Assert.True((await Reviews().Confirm(ReviewDocumentTypes.ApprovedVendorList, second.Value, new(), checker.User)).IsSuccess);
@@ -232,26 +362,23 @@ public partial class ApprovedVendorListTests
         Assert.Equal(ApprovedVendorListStatus.Approved, current.Status);
         Assert.Equal(17, current.SupersedesRevision);
         Assert.Equal(first, current.PreviousRevisionId);
+        // The removed line no longer restricts anything; the added one now does.
+        Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.OtherSupplier)], Today)).IsSuccess);
+        Assert.Equal("ApprovedVendorList.SupplierNotApproved", (await ApprovedVendorRules.CheckSuppliers(db, [(f.OtherMaterial, f.Supplier)], Today)).Errors[0].Code);
     }
 
     [Fact]
-    public async Task A_new_manufacturer_needs_the_create_key_and_is_mapped_to_the_material()
+    public async Task A_new_manufacturer_is_created_and_mapped_on_submit_with_the_create_key()
     {
         var f = await Masters();
-        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList);
-        actor.Current = preparer.User;
-        var request = First(f, Today);
+        var request = First(f, Valid);
         request.Lines[0].ManufacturerId = null;
         request.Lines[0].NewManufacturer = new NewApprovedManufacturerRequest { Name = "New Pharma", Address = "Hyderabad" };
-        Assert.Equal(ErrorType.Forbidden, (await Lists().Create(request, preparer.User)).Errors[0].Type);
-
-        var creator = await Person("Creator", PermissionKeys.CanCreateApprovedVendorList, PermissionKeys.CanCreateManufacturer, PermissionKeys.CanUpdateVendorDetails);
-        actor.Current = creator.User;
-        db.ChangeTracker.Clear();
-        Assert.True((await Lists().Create(request, creator.User)).IsSuccess);
+        await Submitted(request, PermissionKeys.CanCreateManufacturer, PermissionKeys.CanUpdateVendorDetails);
         var manufacturer = await db.Manufacturers.SingleAsync(item => item.Name == "New Pharma");
         Assert.True(await db.ManufacturerMaterials.AnyAsync(item => item.ManufacturerId == manufacturer.Id && item.MaterialId == f.Material));
         Assert.True(await db.SupplierManufacturers.AnyAsync(item => item.ManufacturerId == manufacturer.Id && item.SupplierId == f.Supplier && item.MaterialId == f.Material));
+        Assert.Equal(manufacturer.Id, Assert.Single(await db.ApprovedVendorListLines.ToListAsync()).ManufacturerId);
     }
 
     [Fact]
@@ -271,15 +398,16 @@ public partial class ApprovedVendorListTests
     public async Task Only_listed_materials_are_restricted_and_only_to_their_active_lines()
     {
         var f = await Masters();
-        await ApprovedList(f, Today);
+        await ApprovedList(f, Valid);
         Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.Supplier)], Today)).IsSuccess);
         // An unlisted material is unrestricted.
         Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.OtherMaterial, f.OtherSupplier)], Today)).IsSuccess);
         var notListed = await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.OtherSupplier)], Today);
         Assert.Equal("ApprovedVendorList.SupplierNotApproved", notListed.Errors[0].Code);
         Assert.Contains("RMA002", notListed.Errors[0].Description);
-        // The line is valid through the end of its validity month, and lapses on the first day after it.
-        var lapsesOn = ApprovedVendorRules.LapsesOn(Today);
+        // Procurement can use the line up to the last day before its validity month, and not from that month's first day.
+        var lapsesOn = ApprovedVendorRules.LapsesOn(Valid);
+        Assert.Equal(ApprovedVendorRules.Month(Valid), lapsesOn);
         Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.Supplier)], lapsesOn.AddDays(-1))).IsSuccess);
         Assert.Equal("ApprovedVendorList.SupplierLapsed",
             (await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.Supplier)], lapsesOn)).Errors[0].Code);
@@ -295,12 +423,10 @@ public partial class ApprovedVendorListTests
     }
 
     [Fact]
-    public async Task A_pending_list_restricts_nothing_until_it_is_approved()
+    public async Task A_submitted_list_restricts_nothing_until_it_is_approved()
     {
         var f = await Masters();
-        var preparer = await Person("Officer", PermissionKeys.CanCreateApprovedVendorList);
-        actor.Current = preparer.User;
-        await Lists().Create(First(f, Today), preparer.User);
+        await Submitted(First(f, Valid));
         Assert.True((await ApprovedVendorRules.CheckSuppliers(db, [(f.Material, f.OtherSupplier)], Today)).IsSuccess);
     }
 
@@ -308,7 +434,7 @@ public partial class ApprovedVendorListTests
     public async Task Purchase_orders_and_invoices_refuse_a_supplier_or_manufacturer_off_the_list()
     {
         var f = await Masters();
-        await ApprovedList(f, Today);
+        await ApprovedList(f, Valid);
         var procurement = new ProcurementRepository(db, null!, null!, null!, null!, null!, null!);
         var order = await procurement.CreatePurchaseOrder(new CreatePurchaseOrderRequest
         {

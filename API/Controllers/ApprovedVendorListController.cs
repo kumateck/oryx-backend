@@ -70,7 +70,7 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
     public async Task<IResult> GetApprovedVendorEligibility([FromBody] ApprovedVendorEligibilityRequest request) =>
         TypedResults.Ok(await lists.Eligibility(request));
 
-    /// <summary>Prepares the first list. It goes to review, then approval.</summary>
+    /// <summary>Starts the first list as a draft.</summary>
     [HttpPost]
     [Authorize(PermissionKeys.CanCreateApprovedVendorList)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
@@ -83,7 +83,7 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
         return result.IsSuccess ? TypedResults.Created($"/api/v1/approved-vendor-list/{result.Value}", result.Value) : result.ToProblemDetails();
     }
 
-    /// <summary>Prepares a new revision of the current approved list. It supersedes that list once approved.</summary>
+    /// <summary>Starts a new revision of the current approved list as a draft. It supersedes that list once approved.</summary>
     [HttpPost("revise")]
     [Authorize(PermissionKeys.CanReviseApprovedVendorList)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Guid))]
@@ -96,6 +96,32 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
         return result.IsSuccess ? TypedResults.Created($"/api/v1/approved-vendor-list/{result.Value}", result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>Saves a draft's header and lines, as often as needed.</summary>
+    [HttpPut("{id:guid}/draft")]
+    [Authorize(PermissionKeys.CanEditApprovedVendorListDraft)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> SaveApprovedVendorListDraft(Guid id, [FromBody] SaveApprovedVendorListDraftRequest request)
+    {
+        if (Actor is not { } actor) return TypedResults.Unauthorized();
+        var result = await lists.SaveDraft(id, request, actor);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
+    /// <summary>Submits a draft: it becomes the fixed version and goes for review, then approval.</summary>
+    [HttpPost("{id:guid}/submit")]
+    [Authorize(PermissionKeys.CanSubmitApprovedVendorList)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> SubmitApprovedVendorList(Guid id, [FromBody] SubmitApprovedVendorListRequest request)
+    {
+        if (Actor is not { } actor) return TypedResults.Unauthorized();
+        var result = await lists.Submit(id, request, actor);
+        return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
+    }
+
     /// <summary>Deletes a vendor-list revision from use, retaining its document history.</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(PermissionKeys.CanDeleteApprovedVendorList)]
@@ -103,10 +129,10 @@ public class ApprovedVendorListController(ApprovedVendorListService lists) : Con
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IResult> DeleteApprovedVendorList(Guid id)
+    public async Task<IResult> DeleteApprovedVendorList(Guid id, [FromQuery] string reason = null)
     {
         if (Actor is not { } actor) return TypedResults.Unauthorized();
-        var result = await lists.Delete(id, actor);
+        var result = await lists.Delete(id, actor, reason);
         return result.IsSuccess ? TypedResults.NoContent() : result.ToProblemDetails();
     }
 

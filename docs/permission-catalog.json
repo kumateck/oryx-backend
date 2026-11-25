@@ -513,6 +513,20 @@
   {
     "module": "Quality Assurance",
     "submodule": "Approved Vendor List",
+    "key": "CanEditApprovedVendorListDraft",
+    "name": "Can Edit Approved Vendor List Draft",
+    "description": "Allows the user to  edit approved vendor list draft."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
+    "key": "CanSubmitApprovedVendorList",
+    "name": "Can Submit Approved Vendor List",
+    "description": "Allows the user to  submit approved vendor list."
+  },
+  {
+    "module": "Quality Assurance",
+    "submodule": "Approved Vendor List",
     "key": "CanDeleteApprovedVendorList",
     "name": "Can Delete Approved Vendor List",
     "description": "Allows the user to  delete approved vendor list."

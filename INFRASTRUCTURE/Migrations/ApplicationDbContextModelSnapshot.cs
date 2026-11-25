@@ -529,6 +529,13 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DeletionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("DraftVersion")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("LastDeletedById")
                         .HasColumnType("uuid");
 
@@ -659,11 +666,30 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ManufacturerId")
+                    b.Property<Guid?>("ManufacturerId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("NewManufacturerAddress")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("NewManufacturerName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NewSupplierAddress")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("NewSupplierName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("NewSupplierType")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
@@ -672,7 +698,7 @@ namespace INFRASTRUCTURE.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
-                    b.Property<Guid>("SupplierId")
+                    b.Property<Guid?>("SupplierId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -28935,8 +28961,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Procurement.Manufacturers.Manufacturer", "Manufacturer")
                         .WithMany()
                         .HasForeignKey("ManufacturerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("DOMAIN.Entities.Materials.Material", "Material")
                         .WithMany()
@@ -28947,8 +28972,7 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasOne("DOMAIN.Entities.Procurement.Suppliers.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ApprovedVendorList");
 
