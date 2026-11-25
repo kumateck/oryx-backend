@@ -78,14 +78,20 @@ public static class PackConversion
         name?.Trim().StartsWith("shipper", StringComparison.OrdinalIgnoreCase) == true;
 }
 
-/// <summary>Units per pack for stock that is already in the store.</summary>
+/// <summary>Current counting units for stock whose balance is stored in base units.</summary>
 public static class FinishedGoodsUnits
 {
     /// <summary>
-    /// The units in one pack of a transfer note: the figure saved on the note when it was raised, so a later
-    /// edit to the packing style cannot change what the stock means. Notes raised before that figure was
-    /// saved fall back to the packing style (load <c>ProductPacking.PackingLists.Uom</c>).
+    /// Re-express existing stock with its current linked packing hierarchy. Never rewrites the
+    /// note's base-unit balance or recorded conversion. Legacy styles without a hierarchy retain
+    /// the recorded units-per-pack until their hierarchy is supplied. An invalid current hierarchy
+    /// fails closed instead of silently displaying an older conversion.
     /// </summary>
     public static decimal? UnitsPerPack(DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote note) =>
-        note is null ? null : note.QuantityPerPack > 0 ? note.QuantityPerPack : PackConversion.UnitsPerPack(note.ProductPacking);
+        note is null ? null
+            : note.ProductPacking?.PackingLists is { Count: > 0 } ? PackConversion.UnitsPerPack(note.ProductPacking)
+            : note.QuantityPerPack > 0 ? note.QuantityPerPack : PackConversion.UnitsPerPack(note.ProductPacking);
+
+    public static decimal? PacksPerShipper(DOMAIN.Entities.Materials.Batch.FinishedGoodsTransferNote note) =>
+        note.ProductPacking is not null ? note.ProductPacking.PackPerShipper : note.PacksPerShipperSnapshot;
 }
