@@ -16,9 +16,11 @@ public partial class MaterialRepository
             return await ProductionMaterialTransaction.Run(context, () => MoveMaterialBatchToWarehouseFromHolding(request, userId));
         var actor = await context.Users.AsNoTracking().FirstOrDefaultAsync(user => user.Id == userId && !user.IsDisabled);
         var holding = await context.HoldingMaterialTransfers.IgnoreQueryFilters().IgnoreAutoIncludes()
+            .Include(row => row.StockTransfer)
             .Include(row => row.Batches).ThenInclude(row => row.MaterialBatch).ThenInclude(batch => batch.Material)
             .Include(row => row.Batches).ThenInclude(row => row.MaterialBatch).ThenInclude(batch => batch.UoM)
             .Include(row => row.Batches).ThenInclude(row => row.DestinationWarehouse)
+            .Include(row => row.Batches).ThenInclude(row => row.SourceWarehouse)
             .Include(row => row.Batches).ThenInclude(row => row.DestinationUoM)
             .SingleOrDefaultAsync(row => row.Id == request.HoldingMaterialId && row.DeletedAt == null);
         if (actor?.DepartmentId is null || holding is null) return Error.NotFound("HoldingMaterial.NotFound", "Transfer stock not found.");
@@ -26,7 +28,7 @@ public partial class MaterialRepository
         if (matches.Count != 1) return Error.Conflict("HoldingMaterial.Batch", "The held batch is missing or ambiguous.");
         var held = matches[0]; var batch = held.MaterialBatch;
         var kind = batch.Material.Kind;
-        var key = kind == MaterialKind.Raw ? PermissionKeys.CanIssueRawMaterialStockTransfers : PermissionKeys.CanIssuePackagingMaterialStockTransfers;
+        var key = kind == MaterialKind.Raw ? PermissionKeys.CanAssignRawMaterialStockTransfers : PermissionKeys.CanAssignPackagingMaterialStockTransfers;
         if (!(await CurrentPermissionSet.Load(context, userId)).Contains(key))
             return Error.Forbidden("HoldingMaterial.Permission", "You do not have permission to receive this material transfer.");
         if (held.DestinationWarehouse.DepartmentId != actor.DepartmentId || held.DestinationWarehouse.DeletedAt.HasValue)
@@ -57,6 +59,11 @@ public partial class MaterialRepository
         var existing = await context.ShelfMaterialBatches.Where(row => row.MaterialBatchId == batch.Id && shelfIds.Contains(row.WarehouseLocationShelfId)).ToListAsync();
         if (existing.Any(row => row.UoMId != null && row.UoMId != batch.UoMId) || existing.GroupBy(row => row.WarehouseLocationShelfId).Any(group => group.Count() > 1))
             return Error.Conflict("HoldingMaterial.ShelfUnit", "Reconcile duplicate or inconsistent stock on the receiving shelves first.");
+        var receivedAt = DateTime.UtcNow;
+        var ledger = await StockTransferLedger.Prepare(context, [new(batch, held.DestinationWarehouseId, held.Quantity, 0,
+            $"Stock transfer {holding.StockTransfer?.Code ?? holding.Id.ToString()}: received from {held.SourceWarehouse.Name}",
+            userId, receivedAt, held.DensityGramsPerMilliliter)]);
+        if (ledger.IsFailure) return ledger.Error;
         if (!(await CurrentPermissionSet.Load(context, userId)).Contains(key))
             return Error.Forbidden("HoldingMaterial.Permission", "Your permission to receive this material transfer was removed.");
         var remaining = held.Quantity;
@@ -75,11 +82,12 @@ public partial class MaterialRepository
             target.Quantity += physical; target.Note = move.Note;
         }
         batch.QuantityAssigned += held.Quantity;
-        held.ReceivedAt = DateTime.UtcNow; held.ReceivedById = userId;
+        held.ReceivedAt = receivedAt; held.ReceivedById = userId;
         if (holding.Batches.All(row => row.ReceivedAt.HasValue)) holding.Status = HoldingMaterialTransferStatus.Transferred;
         context.MassMaterialBatchMovements.Add(new() { BatchId = batch.Id, FromWarehouseId = held.SourceWarehouseId,
             ToWarehouseId = held.DestinationWarehouseId, Quantity = held.Quantity, MovedAt = held.ReceivedAt.Value, MovedById = userId });
         context.MaterialBatchEvents.Add(new() { BatchId = batch.Id, Quantity = held.Quantity, Type = EventType.Moved, UserId = userId });
+        context.BinCardInformation.AddRange(ledger.Value);
         await context.SaveChangesAsync();
         return Result.Success();
     }

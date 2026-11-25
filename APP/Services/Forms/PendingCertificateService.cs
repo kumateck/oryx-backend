@@ -108,10 +108,9 @@ public sealed class PendingCertificateService(
             var previous = Snapshot(response, answers);
             foreach (var answer in editedAnswers)
             {
-                if (reporting.TryGetValue(answer.FormFieldId, out var field)
-                    && field.Results.Count > 0 && field.Results.All(result => result.Converted))
-                    continue;
-                answer.Complies = overrides[answer.FormField.FormSectionId];
+                answer.Complies = reporting.TryGetValue(answer.FormFieldId, out var field)
+                    ? ProductAssayReportingRuntime.EffectiveCompliance(field, overrides[answer.FormField.FormSectionId])
+                    : overrides[answer.FormField.FormSectionId];
             }
             response.CertificateNotes = string.IsNullOrWhiteSpace(notes) ? null : notes;
             response.CoaReturnKind = null;

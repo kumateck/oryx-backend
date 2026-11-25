@@ -648,6 +648,14 @@ public static class PermissionKeys
     public const string CanRepairUnstartPackagingMaterialReservations = "CanRepairUnstartPackagingMaterialReservations";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
     public const string CanViewApprovedPackagingMaterials = "CanViewApprovedPackagingMaterials";
+    /// <summary>View and print the reconciled raw-material store, production-floor and consumed stock trace.</summary>
+    public const string CanViewRawMaterialStockTrace = "CanViewRawMaterialStockTrace";
+    /// <summary>View and print the reconciled packaging-material store, production-floor and consumed stock trace.</summary>
+    public const string CanViewPackagingMaterialStockTrace = "CanViewPackagingMaterialStockTrace";
+    /// <summary>Generate and print raw-material stock position, bin-card and consumption reports.</summary>
+    public const string CanPrintRawMaterialStockTrace = "CanPrintRawMaterialStockTrace";
+    /// <summary>Generate and print packaging-material stock position, bin-card and consumption reports.</summary>
+    public const string CanPrintPackagingMaterialStockTrace = "CanPrintPackagingMaterialStockTrace";
     public const string CanViewLinkedRawMaterials = "CanViewLinkedRawMaterials";
     public const string CanEditLinkedRawMaterials = "CanEditLinkedRawMaterials";
     public const string CanUnlinkRawMaterials = "CanUnlinkRawMaterials";
@@ -1421,6 +1429,10 @@ public static class PermissionKeys
     public const string CanEditResource = "CanEditResource";
     public const string CanDeleteResource = "CanDeleteResource";
     public const string CanViewOperations = "CanViewOperations";
+    /// <summary>View the linked operations and saved production-board order for a department.</summary>
+    public const string CanViewDepartmentProductionBoardOrder = "CanViewDepartmentProductionBoardOrder";
+    /// <summary>Reorder a department's production-board columns without changing recorded batch procedures.</summary>
+    public const string CanReorderDepartmentProductionBoard = "CanReorderDepartmentProductionBoard";
     public const string CanCreateOperation = "CanCreateOperation";
     public const string CanEditOperation = "CanEditOperation";
     public const string CanDeleteOperation = "CanDeleteOperation";
@@ -2449,6 +2461,10 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartRawMaterialReservations);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartPackagingMaterialReservations);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewRawMaterialStockTrace);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewPackagingMaterialStockTrace);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanPrintRawMaterialStockTrace);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanPrintPackagingMaterialStockTrace);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.ApprovedMaterials,
@@ -4896,6 +4912,8 @@ public static class PermissionUtils
             PermissionSubmodules.Procedures,
             PermissionKeys.CanViewOperations
         );
+        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanViewDepartmentProductionBoardOrder);
+        addPermission(PermissionModules.Settings, PermissionSubmodules.Procedures, PermissionKeys.CanReorderDepartmentProductionBoard);
         addPermission(
             PermissionModules.Settings,
             PermissionSubmodules.Procedures,

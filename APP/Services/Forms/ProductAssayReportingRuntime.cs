@@ -14,6 +14,17 @@ namespace APP.Services.Forms;
 
 internal static class ProductAssayReportingRuntime
 {
+    internal static bool EffectiveCompliance(AssayReportingFieldSnapshot field, bool? saved)
+    {
+        if (!string.IsNullOrWhiteSpace(field.Error)
+            || field.Results.Any(result => result.Converted && result.Complies != true)) return false;
+        var averages = field.Results.Where(result => result.Key.Equals("average", StringComparison.OrdinalIgnoreCase)
+            || result.Label.Equals("Average", StringComparison.OrdinalIgnoreCase)
+            || result.Label.Equals("Average content", StringComparison.OrdinalIgnoreCase)).ToList();
+        var final = averages.Count > 0 ? averages : field.Results;
+        return final.Count > 0 && final.All(result => result.Converted) || saved == true;
+    }
+
     internal static AssayReportedResultDto Convert(AssayReportingRule rule, string label, decimal source)
     {
         var value = checked(source / 100m * rule.NominalConcentration);
@@ -152,9 +163,7 @@ internal static class ProductAssayReportingRuntime
         var ids = fields.Select(field => field.FormFieldId).ToList();
         foreach (var answer in await db.FormResponses.Where(answer => answer.ResponseId == response.Id && ids.Contains(answer.FormFieldId)).ToListAsync())
         {
-            var results = fields.Single(field => field.FormFieldId == answer.FormFieldId).Results;
-            answer.Complies = results.Where(result => result.Converted).All(result => result.Complies == true)
-                && (results.All(result => result.Converted) || answer.Complies == true);
+            answer.Complies = EffectiveCompliance(fields.Single(field => field.FormFieldId == answer.FormFieldId), answer.Complies);
         }
         response.AssayReportingSnapshotJson = JsonSerializer.Serialize(new AssayReportingSnapshot(actorId, DateTime.UtcNow, fields));
         return Result.Success();
@@ -177,6 +186,9 @@ internal static class ProductAssayReportingRuntime
                 if (field is null) continue;
                 destination.CoaReportingError = field.Error;
                 destination.CoaReportedResults = field.Results;
+                // Every read surface receives the same effective verdict as the approval gate.
+                // This projects current pending results without rewriting the saved calculation.
+                destination.Complies = EffectiveCompliance(field, destination.Complies);
             }
         }
         return tokens;

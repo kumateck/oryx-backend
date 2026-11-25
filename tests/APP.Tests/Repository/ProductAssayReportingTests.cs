@@ -34,6 +34,36 @@ namespace APP.Tests.Repository;
 
 public sealed class ProductAssayReportingTests
 {
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, false)]
+    public async Task Every_read_projects_the_effective_verdict_without_changing_saved_answers(bool passes, bool stored, bool expected)
+    {
+        await using var f = new Fixture();
+        await f.Seed(PermissionKeys.CanViewProductAssayReporting, PermissionKeys.CanEditProductAssayReporting);
+        Assert.True((await f.Save(f.Rule(f.FirstField, passes ? 2.4m : 2.6m))).IsSuccess);
+        f.Spec.IsVerified = true;
+        var source = await f.Db.FormResponses.SingleAsync(answer => answer.FormFieldId == f.FirstField);
+        source.Complies = stored;
+        await f.Db.SaveChangesAsync();
+        var dto = new FormResponseDto { Id = source.Id, ResponseId = source.ResponseId, Complies = stored };
+        await ProductAssayReportingRuntime.Attach(f.Db, [source], [dto], f.Calculation);
+        Assert.Equal(expected, dto.Complies);
+        Assert.Equal(stored, (await f.Db.FormResponses.SingleAsync(answer => answer.Id == source.Id)).Complies);
+    }
+
+    [Fact]
+    public void Average_verdict_does_not_compare_intermediate_sample_percentages_to_concentration_limits()
+    {
+        var average = new AssayReportedResultDto("average", "Average", 103.7m, 2.49m, "2.49", "% w/v", 2.32m, 2.52m, true, 2.4m, "hash");
+        var sample = average with { Key = "sample1", Label = "Sample 1", Converted = false, Complies = null, Value = 103.7m };
+        var field = new AssayReportingFieldSnapshot(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "01", [sample, average], null!);
+        Assert.True(ProductAssayReportingRuntime.EffectiveCompliance(field, false));
+        Assert.False(ProductAssayReportingRuntime.EffectiveCompliance(field with { Results = [sample, average with { Complies = false }] }, true));
+        Assert.False(ProductAssayReportingRuntime.EffectiveCompliance(field with { Error = "Unresolved" }, true));
+        Assert.False(ProductAssayReportingRuntime.EffectiveCompliance(field with { Results = [average, sample with { Converted = true, Complies = false }] }, true));
+    }
+
     private sealed class Actor : ICurrentUserService
     {
         public Guid? UserId { get; } = Guid.NewGuid();
