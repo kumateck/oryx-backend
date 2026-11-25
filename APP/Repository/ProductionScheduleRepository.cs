@@ -2505,16 +2505,16 @@ public partial class ProductionScheduleRepository(
                 Product = mapper.Map<ProductListDto>(item.Key),
                 Stocks = item.Select(n => new ApprovedProductStockDto {
                     TransferNoteId = n.Id, ProductPackingId = n.ProductPackingId,
-                    PackingStyle = n.PackingStyleSnapshot ?? n.ProductPacking?.Name,
-                    BaseUnit = n.ProductPacking?.BasePackingUoM?.Name, QuantityPerPack = n.QuantityPerPack,
-                    PacksPerShipper = n.PacksPerShipperSnapshot ?? n.ProductPacking?.PackPerShipper,
+                    PackingStyle = n.ProductPacking?.Name ?? n.PackingStyleSnapshot,
+                    BaseUnit = n.ProductPacking?.BasePackingUoM?.Name, QuantityPerPack = FinishedGoodsUnits.UnitsPerPack(n) ?? 0,
+                    PacksPerShipper = FinishedGoodsUnits.PacksPerShipper(n),
                     Sent = n.TotalQuantity, Received = n.QuantityReceived, Physical = n.PhysicalQuantity,
                     Reserved = n.ReservedQuantity, Available = n.AvailableQuantity, Dispatched = n.DispatchedQuantity,
                     QuarantinedReturns = n.QuarantinedReturnQuantity,
                 }).ToList(),
                 TotalQuantity = item.Sum(p => p.QuantityReceived),
                 TotalRemainingQuantity = item.Sum(p => p.AvailableQuantity),
-                QuantityPerPack = item.Select(p => p.QuantityPerPack).Distinct().Count() == 1 ? item.First().QuantityPerPack : 0,
+                QuantityPerPack = item.Select(FinishedGoodsUnits.UnitsPerPack).Distinct().Count() == 1 ? FinishedGoodsUnits.UnitsPerPack(item.First()) ?? 0 : 0,
                 TotalLoose = item.Sum(p => p.Loose),
             })
             .ToList();
@@ -2560,7 +2560,7 @@ public partial class ProductionScheduleRepository(
             Product = mapper.Map<ProductListDto>(products[0].BatchManufacturingRecord.ProductionScheduleProduct.Product),
             TotalQuantity = grouped.Sum(p => p.QuantityReceived),
             TotalRemainingQuantity = grouped.Sum(p => p.AvailableQuantity),
-            QuantityPerPack = grouped.Select(p => p.QuantityPerPack).Distinct().Count() == 1 ? grouped[0].QuantityPerPack : 0,
+            QuantityPerPack = grouped.Select(FinishedGoodsUnits.UnitsPerPack).Distinct().Count() == 1 ? FinishedGoodsUnits.UnitsPerPack(grouped[0]) ?? 0 : 0,
             TotalLoose = grouped.Sum(p => p.Loose),
             FinishedGoodsTransferNotes = finishedGoodsTransferNoteResult.Value.ToList(),
         };
