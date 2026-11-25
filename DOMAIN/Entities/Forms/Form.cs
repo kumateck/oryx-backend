@@ -76,6 +76,11 @@ public class FormField : BaseEntity
 
 public class Response : BaseEntity, IRequireApproval
 {
+    public int CoaVersion { get; set; }
+    public CertificateReturnKind? CoaReturnKind { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(2000)] public string CoaReturnReason { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(2000)] public string CertificateNotes { get; set; }
+
     /// <summary>Immutable COA conversion evidence captured when the product certificate is submitted.</summary>
     public string AssayReportingSnapshotJson { get; set; }
     public Guid FormId { get; set; }

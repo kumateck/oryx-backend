@@ -1182,6 +1182,12 @@ public partial class ApplicationDbContext(
         ConfigureCostingPriceLists(modelBuilder);
         ConfigureFinishedGoodsControls(modelBuilder);
         ConfigureDocumentReviews(modelBuilder);
+        modelBuilder.Entity<DOMAIN.Entities.Forms.PendingCertificateChange>(change =>
+        {
+            change.ToTable("PendingCertificateChanges");
+            change.HasIndex(item => new { item.ResponseId, item.Version }).IsUnique();
+            change.HasOne<Response>().WithMany().HasForeignKey(item => item.ResponseId).OnDelete(DeleteBehavior.Restrict);
+        });
         ConfigureIssuedMaterialRepair(modelBuilder);
         modelBuilder.Entity<IssuedBmrChange>().HasOne(change => change.BatchManufacturingRecord).WithMany()
             .HasForeignKey(change => change.BatchManufacturingRecordId).OnDelete(DeleteBehavior.Restrict);
