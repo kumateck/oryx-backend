@@ -1,5 +1,7 @@
 using System.Data;
+using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using APP.Services.Authorization;
 using APP.Services.Formulas;
 using APP.Utils;
@@ -29,17 +31,27 @@ public sealed class ProductAssayReportingService(ApplicationDbContext db)
     private async Task<AssayReportingConfigurationDto> Describe(ProductSpecification specification)
     {
         var number = specification.SpecificationNumber?.Trim();
-        List<Guid> worksheetForms = string.IsNullOrWhiteSpace(number) ? [] : await db.ProductAnalyticalRawData.AsNoTracking()
+        var worksheets = await db.ProductAnalyticalRawData.AsNoTracking()
             .Where(ard => ard.ProductStandardTestProcedure.ProductId == specification.ProductId
-                && ard.Stage == specification.TestStage && ard.AnalysisType == AnalysisType.Chemical && ard.IsVerified
-                && ard.SpecNumber != null && ard.SpecNumber.Trim() == number)
-            .Select(ard => ard.FormId).Distinct().ToListAsync();
-        if (worksheetForms.Count == 0) worksheetForms.Add(specification.FormId);
-        var fields = await db.FormFields.AsNoTracking().Include(field => field.FormSection).Include(field => field.Question).ThenInclude(question => question.Options)
-            .Where(field => worksheetForms.Contains(field.FormSection.FormId) && field.Question.Type == QuestionType.Formula)
+                && ard.Stage == specification.TestStage && ard.AnalysisType == AnalysisType.Chemical)
+            .Select(ard => new { ard.FormId, ard.SpecNumber, ard.IsVerified }).ToListAsync();
+        // Older records may link the same form directly without storing a specification number on the ARD.
+        var useSpecificationForm = worksheets.All(ard =>
+            string.IsNullOrWhiteSpace(ard.SpecNumber) && ard.FormId == specification.FormId);
+        var worksheetForms = useSpecificationForm ? [specification.FormId] : worksheets
+            .Where(ard => ard.IsVerified && !string.IsNullOrEmpty(number) && ard.SpecNumber?.Trim() == number)
+            .Select(ard => ard.FormId).Distinct().ToArray();
+        // A single worksheet must supply the readings. An ambiguous or differently linked ARD needs review.
+        List<FormField> fields = worksheetForms.Length != 1 ? [] : await db.FormFields.AsNoTracking()
+            .Include(field => field.FormSection).Include(field => field.Question).ThenInclude(question => question.Options)
+            .Where(field => field.FormSection.FormId == worksheetForms[0] && field.FormSection.Form.DeletedAt == null
+                && field.Question.Type == QuestionType.Formula && field.Question.DeletedAt == null
+                && (field.FormSection.AnalysisType == null || field.FormSection.AnalysisType == AnalysisType.Chemical)
+                && field.FormSection.MaterialSpecificationId == null
+                && (field.FormSection.ProductSpecificationId == null || field.FormSection.ProductSpecificationId == specification.Id))
             .OrderBy(field => field.FormSection.Order).ThenBy(field => field.Rank).ThenBy(field => field.Id).ToListAsync();
         var result = new List<AssayReportingFieldDto>();
-        foreach (var field in fields)
+        foreach (var field in fields.Where(field => IsAssayLabel(field.FormSection.Name) || IsAssayLabel(field.Question.Label)))
         {
             try
             {
@@ -55,6 +67,10 @@ public sealed class ProductAssayReportingService(ApplicationDbContext db)
         return new(specification.Id, specification.ProductId, specification.Product?.Name ?? "", (int)specification.TestStage,
             specification.SpecificationNumber, token, result, rules);
     }
+
+    private static bool IsAssayLabel(string? label) =>
+        label is not null && Regex.IsMatch(WebUtility.HtmlDecode(Regex.Replace(label, "<[^<>]*>", " ")),
+            @"\bassays?\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     private async Task RestartPendingReviews(ProductSpecification specification, List<Guid> fieldIds, Guid actorId, string reason)
     {
