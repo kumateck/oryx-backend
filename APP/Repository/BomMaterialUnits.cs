@@ -23,7 +23,7 @@ internal static class BomMaterialUnits
             if (density)
             {
                 if (MaterialDensity.ConvertBomMass(1m, "mg", link) is null)
-                    return Error.Conflict("Bom.Density", $"Configure a positive measured density with an active g/mL unit and a liquid stock unit for material {materialId} before enabling conversion.");
+                    return Error.Conflict("Bom.Density", $"{link.Material.Name}: count it by mass, or by volume with a positive measured density in an active g/mL unit, before enabling conversion.");
                 var milligrams = units.Where(unit => unit.Type == link.UoM.Type && unit.Symbol.Trim().Equals("mg", StringComparison.OrdinalIgnoreCase)).ToList();
                 return milligrams.Count == 1 ? (milligrams[0], perUnit, full)
                     : Error.Conflict("Bom.DensityUnit", "The canonical mg unit must exist exactly once before density conversion can be enabled.");

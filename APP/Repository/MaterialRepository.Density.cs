@@ -43,19 +43,22 @@ public partial class MaterialRepository
                 && !grants.Contains(material.Kind == MaterialKind.Raw ? PermissionKeys.CanEditRawMaterialDensity : PermissionKeys.CanEditPackagingMaterialDensity))
                 return Error.Forbidden("MaterialDepartment.DensityPermission", "You do not have permission to change this material's shared density.");
         }
-        // A stock-unit edit changes its representation, never the lot's historical unit or ledger bytes.
-        // Validate every physical lot in this department before accepting the new stock unit.
+        // Levels are stored in the counting unit without a unit of their own. Changing the unit here would silently
+        // re-read them (and every applied batch and requisition) in the new unit, so an existing link changes its
+        // unit only through the confirmed counting-unit change, which converts them.
+        if (materialDepartments.Any(dto => links.Any(link => link.MaterialId == dto.MaterialId && link.UoMId != dto.UoMId)))
+            return Error.Conflict("MaterialDepartment.CountingUnit", "To change the unit your department counts a material in, use Change counting unit. It converts the stock levels and every quantity kept in the old unit.");
+        // A new link must be able to read every physical lot already in this department in its unit.
         foreach (var dto in materialDepartments)
         {
             var existing = links.SingleOrDefault(link => link.MaterialId == dto.MaterialId);
-            if (existing?.UoMId == dto.UoMId) continue;
+            if (existing is not null) continue;
             var lotUnits = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes()
                 .Where(row => row.DeletedAt == null && row.Quantity != 0 && row.MaterialBatch.DeletedAt == null
                     && row.MaterialBatch.MaterialId == dto.MaterialId
                     && row.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.Warehouse.DepartmentId == user.DepartmentId)
                 .Select(row => row.MaterialBatch.UoM.Symbol).Distinct().ToListAsync();
-            var density = dto.DensityUoMId.HasValue ? dto.Density : materials[dto.MaterialId].DensityGramsPerMilliliter
-                ?? (existing == null ? null : MaterialDensity.Verified(existing));
+            var density = dto.DensityUoMId.HasValue ? dto.Density : materials[dto.MaterialId].DensityGramsPerMilliliter;
             if (lotUnits.Any(unit => !MaterialDensity.Convert(1, unit, units[dto.UoMId].Symbol, density).HasValue))
                 return Error.Conflict("MaterialDepartment.StockUnit", "Existing stock cannot be converted to that unit. For mass and volume, record a positive measured density in g/mL first.");
         }

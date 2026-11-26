@@ -666,6 +666,10 @@ public static class PermissionKeys
     public const string CanEditRawMaterialDensity = "CanEditRawMaterialDensity";
     /// <summary>Sets the shared verified density of a packaging material.</summary>
     public const string CanEditPackagingMaterialDensity = "CanEditPackagingMaterialDensity";
+    /// <summary>Changes the unit the department counts a raw material in, converting every value it stores in that unit.</summary>
+    public const string CanChangeRawMaterialCountingUnit = "CanChangeRawMaterialCountingUnit";
+    /// <summary>Changes the unit the department counts a packaging material in, converting every value it stores in that unit.</summary>
+    public const string CanChangePackagingMaterialCountingUnit = "CanChangePackagingMaterialCountingUnit";
     public const string CanLinkRawMaterials = "CanLinkRawMaterials";
     public const string CanViewUnlinkedPackagingMaterials = "CanViewUnlinkedPackagingMaterials";
     public const string CanLinkPackagingMaterials = "CanLinkPackagingMaterials";
@@ -2517,6 +2521,8 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditRawMaterialDensity);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditPackagingMaterialDensity);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanChangeRawMaterialCountingUnit);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanChangePackagingMaterialCountingUnit);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.Materials,

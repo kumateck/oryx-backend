@@ -1968,6 +1968,20 @@
   },
   {
     "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanChangeRawMaterialCountingUnit",
+    "name": "Can Change Raw Material Counting Unit",
+    "description": "Allows the user to  change raw material counting unit."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanChangePackagingMaterialCountingUnit",
+    "name": "Can Change Packaging Material Counting Unit",
+    "description": "Allows the user to  change packaging material counting unit."
+  },
+  {
+    "module": "Warehouse",
     "submodule": "Materials",
     "key": "CanViewRawMaterials",
     "name": "Can View Raw Materials",
