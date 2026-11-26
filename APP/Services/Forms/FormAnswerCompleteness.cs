@@ -81,7 +81,11 @@ internal static class FormAnswerCompleteness
             var table = Items(Get(answer, "tableData")).ToList();
             // A formula without sample or standard columns has no readings table (the worksheet shows none), however
             // many readings its settings default to; only its manual and input values are required.
-            if (columns > 0 && (table.Count < rows || table.Any(row => !Numbers(row, columns)))) return false;
+            // Calculated table columns evaluate cell by cell, so a worksheet with them needs every reading.
+            var everyCell = Get(config, "formulaInTable").ValueKind == JsonValueKind.True;
+            if (columns > 0 && (everyCell
+                    ? table.Count < rows || table.Any(row => !Numbers(row, columns))
+                    : !Readings(table, rows, columns))) return false;
             return Properties(standard).Any() || samples.Any(sample => Properties(sample).Any())
                 || manualKeys.Count > 0 || table.Any(row => Items(row).Any());
         }
@@ -156,6 +160,34 @@ internal static class FormAnswerCompleteness
     private static int Count(JsonElement value, int fallback = 0) => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var count) ? count : fallback;
     private static bool Numbers(JsonElement value, int count) => value.ValueKind == JsonValueKind.Array
         && value.GetArrayLength() >= count && value.EnumerateArray().All(Numeric);
+    /// <summary>
+    /// The readings table is complete when every column has at least one reading and every filled cell is a number.
+    /// Columns may hold fewer readings than the table has rows (for example five standard injections and two per
+    /// sample); the formula's column statistics are taken over the filled cells, so blanks are not values.
+    /// Not used for worksheets with calculated table columns, which need every cell.
+    /// </summary>
+    private static bool Readings(IReadOnlyList<JsonElement> table, int rows, int columns)
+    {
+        if (table.Count < rows || table.Any(row => row.ValueKind != JsonValueKind.Array)) return false;
+        var filled = new bool[columns];
+        foreach (var row in table)
+        {
+            var index = 0;
+            foreach (var cell in row.EnumerateArray())
+            {
+                if (index >= columns) break;
+                var blank = cell.ValueKind == JsonValueKind.Null
+                    || cell.ValueKind == JsonValueKind.String && string.IsNullOrWhiteSpace(cell.GetString());
+                if (!blank)
+                {
+                    if (!Numeric(cell)) return false;
+                    filled[index] = true;
+                }
+                index++;
+            }
+        }
+        return filled.All(column => column);
+    }
     private static bool Inputs(JsonElement configured, JsonElement entered) => Items(configured).All(input =>
         Text(Get(input, "key")) && Numeric(Get(entered, Get(input, "key").GetString()!)))
         && Properties(entered).All(item => Numeric(item.Value));

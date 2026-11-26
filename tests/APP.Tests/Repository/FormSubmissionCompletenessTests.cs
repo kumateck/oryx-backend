@@ -135,6 +135,33 @@ public sealed class FormSubmissionCompletenessTests
         Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula, definition));
     }
 
+    private const string GelAssay = """
+        {"type":3,"expression":"((:sampleAvg * :standardWeight * :Fillweight) / (:standardAvg * :sampleWeight * :Claim) * :purity) * 100",
+         "numberOfReadings":5,"numberOfSamples":2,"standardInTable":true,"headers":["Standard","Sample 1","Sample 2"],
+         "standardInputs":[{"key":"weight"}],"sampleInputs":[[{"key":"weight"}],[{"key":"weight"}]],
+         "manualVarLabels":{"Fillweight":"Fill Weight","Claim":"Claim","purity":"Purity"}}
+        """;
+
+    [Theory]
+    // Five standard injections and two per sample: the shorter sample columns are complete.
+    [InlineData("""[["795.1","820.1","813.5"],["795.1","820.3","813.9"],["795.1","",""],["794.7","",""],["794.0","",""]]""", false, true)]
+    [InlineData("""[["795.1","820.1","813.5"],["795.1","820.3","813.9"],["795.1",null,null],["794.7",null,null],["794.0",null,null]]""", false, true)]
+    // A column with no reading at all is not.
+    [InlineData("""[["795.1","820.1",""],["795.1","820.3",""],["795.1","",""],["794.7","",""],["794.0","",""]]""", false, false)]
+    // A filled cell must be a number.
+    [InlineData("""[["795.1","820.1","813.5"],["795.1","x","813.9"],["795.1","",""],["794.7","",""],["794.0","",""]]""", false, false)]
+    // Calculated table columns evaluate every cell, so those worksheets still need every reading.
+    [InlineData("""[["795.1","820.1","813.5"],["795.1","820.3","813.9"],["795.1","",""],["794.7","",""],["794.0","",""]]""", true, false)]
+    [InlineData("""[["795.1","820.1","813.5"],["795.1","820.3","813.9"],["795.1","820.2","813.6"],["794.7","820.1","813.5"],["794.0","820.2","813.7"]]""", true, true)]
+    public void Readings_columns_may_hold_fewer_readings_than_the_table_has_rows(string table, bool formulaInTable, bool complete)
+    {
+        var answer = """{"standardInputs":{"weight":"0.0514"},"sampleInputs":[{"weight":"5.1669"},{"weight":"5.0255"}],"tableData":"""
+            + table
+            + ""","manualVars":{"Fillweight":{"raw":"30.0","evaluated":30},"Claim":{"raw":"0.300","evaluated":0.3},"purity":{"raw":"0.992","evaluated":0.992}}}""";
+        var definition = formulaInTable ? GelAssay.Replace("\"type\":3,", "\"type\":3,\"formulaInTable\":true,") : GelAssay;
+        Assert.Equal(complete, FormAnswerCompleteness.IsComplete(answer, QuestionType.Formula, definition));
+    }
+
     [Theory]
     [InlineData("""{"manualVars":{"C":"61.0224","A":"29.7506","B":"57.3314"}}""", true)]
     [InlineData("""{"manualVars":{"C":"61.0224","A":"29.7506","B":""}}""", false)]
