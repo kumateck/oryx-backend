@@ -1,7 +1,9 @@
+using System.Data;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
 using AutoMapper;
+using DOMAIN.Entities.Base;
 using DOMAIN.Entities.BinCards;
 using DOMAIN.Entities.Checklists;
 using DOMAIN.Entities.Forms;
@@ -1458,9 +1460,12 @@ public class WarehouseRepository(
         }
     }
 
-    public async Task<
-        Result<Paginateable<IEnumerable<BinCardInformationDto>>>
-    > GetBinCardInformation(
+    /// <summary>
+    /// The material's bin card in the department's store warehouses for its kind, newest first. Balances are replayed
+    /// from every posted row in date order (see <see cref="MaterialStoreLedger"/>), so a search or a late-posted row never
+    /// shows a balance the ledger does not support. Quantities are in the department's receiving unit.
+    /// </summary>
+    public async Task<Result<BinCardPage>> GetBinCardInformation(
         int page,
         int pageSize,
         string searchQuery,
@@ -1469,53 +1474,76 @@ public class WarehouseRepository(
         Guid departmentId
     )
     {
-        var query = context
-            .BinCardInformation.AsSplitQuery()
-            .IgnoreQueryFilters()
-            .Include(bci => bci.MaterialBatch)
-                .ThenInclude(mb => mb.Material)
-            .Include(bci => bci.MaterialBatch)
-                .ThenInclude(mb => mb.Checklist)
-                    .ThenInclude(c => c.Supplier)
-            .Include(bci => bci.MaterialBatch)
-                .ThenInclude(mb => mb.Checklist)
-                    .ThenInclude(c => c.Manufacturer)
+        page = Math.Clamp(page, 1, int.MaxValue / 500);
+        pageSize = Math.Clamp(pageSize, 1, 500);
+        await using var snapshot = context.Database.IsRelational() && context.Database.CurrentTransaction is null
+            ? await context.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead) : null;
+        var material = await context.Materials.AsNoTracking().Where(row => row.Id == materialId && row.DeletedAt == null)
+            .Select(row => new { row.Kind }).SingleOrDefaultAsync();
+        if (material is null) return MaterialErrors.NotFound(materialId);
+        var loaded = await MaterialStoreLedger.Load(context, materialId, material.Kind, departmentId);
+        if (loaded.IsFailure) return loaded.Error;
+        var ledger = loaded.Value;
+
+        IEnumerable<MaterialStoreLedger.Entry> visible = ledger.Entries;
+        if (!string.IsNullOrWhiteSpace(searchQuery) || date.HasValue)
+        {
+            var ids = ledger.Entries.Select(row => row.Id).ToList();
+            var matching = context.BinCardInformation.IgnoreQueryFilters().AsNoTracking().Where(row => ids.Contains(row.Id));
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+                matching = matching.WhereSearch(searchQuery,
+                    b => b.Description ?? "", b => b.ArNumber ?? "", b => b.MaterialBatch.BatchNumber ?? "",
+                    b => b.MaterialBatch.Material.Name ?? "", b => b.MaterialBatch.Material.Code ?? "",
+                    b => b.RequisitionCode ?? "", b => b.ProductBatchNumber ?? "", b => b.Product.Name ?? "");
+            if (date.HasValue)
+            {
+                var day = DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Utc);
+                matching = matching.Where(row => row.CreatedAt >= day && row.CreatedAt < day.AddDays(1));
+            }
+            var keep = (await matching.Select(row => row.Id).ToListAsync()).ToHashSet();
+            visible = visible.Where(row => keep.Contains(row.Id));
+        }
+        var newestFirst = visible.Reverse().ToList();
+        var pageEntries = newestFirst.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var pageIds = pageEntries.Select(row => row.Id).ToList();
+        var cards = await context.BinCardInformation.AsSplitQuery().IgnoreQueryFilters()
+            .Include(bci => bci.MaterialBatch).ThenInclude(mb => mb.Material)
+            .Include(bci => bci.MaterialBatch).ThenInclude(mb => mb.Checklist).ThenInclude(c => c.Supplier)
+            .Include(bci => bci.MaterialBatch).ThenInclude(mb => mb.Checklist).ThenInclude(c => c.Manufacturer)
             .Include(bci => bci.Product)
             .Include(bci => bci.Warehouse)
-            .Include(bci => bci.UoM)
-            .Where(bci =>
-                bci.MaterialBatch.MaterialId == materialId
-                && bci.Warehouse.DepartmentId == departmentId
-            )
-            .OrderByDescending(b => b.CreatedAt)
-            .ThenByDescending(b => b.Id)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchQuery))
+            .Where(bci => pageIds.Contains(bci.Id))
+            .ToDictionaryAsync(bci => bci.Id);
+        var unit = ledger.Unit is null ? null : mapper.Map<UnitOfMeasureDto>(ledger.Unit);
+        var rows = pageEntries.Select(entry =>
         {
-            query = query.WhereSearch(
-                searchQuery,
-                b => b.Description ?? "",
-                b => b.ArNumber ?? "",
-                b => b.MaterialBatch.BatchNumber ?? "",
-                b => b.MaterialBatch.Material.Name ?? "",
-                b => b.MaterialBatch.Material.Code ?? "",
-                b => b.RequisitionCode ?? "",
-                b => b.ProductBatchNumber ?? ""
-            );
+            var dto = mapper.Map<BinCardInformationDto>(cards[entry.Id]);
+            dto.QuantityReceived = entry.Received; dto.QuantityIssued = entry.Issued; dto.BalanceQuantity = entry.Balance; dto.UoM = unit;
+            return dto;
+        }).ToList();
+
+        var shelves = await context.ShelfMaterialBatches.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
+            .Where(row => row.DeletedAt == null && row.Quantity != 0 && row.MaterialBatch.MaterialId == materialId
+                && ledger.Stores.Contains(row.WarehouseLocationShelf.WarehouseLocationRack.WarehouseLocation.WarehouseId))
+            .Select(row => new { row.Quantity, Unit = row.MaterialBatch.UoM.Symbol }).ToListAsync();
+        var shelfStock = 0m;
+        foreach (var shelf in shelves)
+        {
+            var converted = MaterialDensity.Convert(shelf.Quantity, shelf.Unit, ledger.Unit?.Symbol, ledger.Density);
+            if (converted is null)
+                return Error.Conflict("StockLedger.Unit", "Some shelf stock cannot be converted to this department's unit. Record the material's verified density or reconcile the units.");
+            shelfStock += converted.Value;
         }
 
-        if (date.HasValue)
+        var paged = PaginationHelper.Page(rows, page, pageSize, newestFirst.Count);
+        if (snapshot is not null) await snapshot.CommitAsync();
+        return new BinCardPage
         {
-            query = query.Where(bci => bci.CreatedAt == date.Value);
-        }
-
-        return await PaginationHelper.GetPaginatedResultAsync(
-            query,
-            page,
-            pageSize,
-            mapper.Map<BinCardInformationDto>
-        );
+            Data = paged.Data, PageIndex = paged.PageIndex, PageCount = paged.PageCount, TotalRecordCount = paged.TotalRecordCount,
+            NumberOfPagesToShow = paged.NumberOfPagesToShow, StartPageIndex = paged.StartPageIndex, StopPageIndex = paged.StopPageIndex,
+            Unit = unit, Received = ledger.Received, Issued = ledger.Issued, Closing = ledger.Closing,
+            ShelfStock = shelfStock, Difference = Math.Round(ledger.Closing - shelfStock, 6),
+        };
     }
 
     public async Task<

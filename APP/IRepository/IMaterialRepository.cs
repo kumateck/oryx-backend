@@ -16,6 +16,8 @@ public interface IMaterialRepository
 {
     Task<Result<MaterialStockTraceDto>> GetMaterialStockTrace(Guid materialId, MaterialKind kind, Guid departmentId, DateTime? since, Guid userId, bool forPrint = false);
     Task<Result> ClearDensity(Guid materialId, MaterialKind expectedKind, Guid actor);
+    Task<Result<MaterialCountingUnitPreview>> PreviewCountingUnitChange(Guid materialId, MaterialKind kind, Guid unitId, Guid actor);
+    Task<Result<MaterialCountingUnitResult>> ChangeCountingUnit(Guid materialId, MaterialKind kind, ChangeMaterialCountingUnit request, Guid actor);
 
     Task<Result<Guid>> CreateMaterial(CreateMaterialRequest request, Guid userId);
     Task<Result<MaterialDto>> GetMaterial(Guid materialId);
