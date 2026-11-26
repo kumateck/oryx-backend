@@ -44,6 +44,40 @@ public sealed class MaterialStockTraceTests
         Assert.Single(await db.MaterialBatchEvents.ToListAsync());
     }
 
+    [Fact]
+    public async Task Consumption_loads_only_the_consumed_lot_not_its_material_history()
+    {
+        // Starting Product Preparation consumes each issued lot. Loading the lot used to pull, through auto-includes,
+        // the material's every lot with all their events, reservations and shelves joined in one query.
+        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
+        f.Lot.TotalQuantity = 100; f.Lot.QuantityAssigned = 70; f.Shelf.Quantity = 70;
+        var sibling = new MaterialBatch { MaterialId = f.Lot.MaterialId, BatchNumber = "SIBLING", TotalQuantity = 5,
+            UoMId = f.Lot.UoMId, Status = f.Lot.Status };
+        db.MaterialBatches.Add(sibling);
+        db.MaterialBatchEvents.Add(new MaterialBatchEvent { BatchId = sibling.Id, Quantity = 1, UserId = f.Actor.Id,
+            Type = EventType.Consumed, ConsumedAt = DateTime.UtcNow });
+        var allocation = new MaterialBatchReservedQuantity { MaterialBatchId = f.Lot.Id, WarehouseId = f.Production.Id,
+            WarehouseLocationShelfId = f.Shelf.WarehouseLocationShelfId, ProductionScheduleProductId = f.Batch.Id,
+            Quantity = 30, UoMId = f.Lot.UoMId };
+        db.MaterialBatchReservedQuantities.Add(allocation);
+        db.Requisitions.Add(new() { DepartmentId = f.Department.Id, ProductionScheduleProductId = f.Batch.Id,
+            RequisitionType = RequisitionType.Stock, Status = RequestStatus.Completed,
+            Items = [new() { MaterialId = f.Lot.MaterialId, Quantity = 30, Status = RequestStatus.Completed, UoMId = f.Lot.UoMId }] });
+        await db.SaveChangesAsync();
+        await SharedDensityTransferTests.Grant(db, f.Actor.Id, PermissionKeys.CanUpdateProductionStep);
+        db.ChangeTracker.Clear();
+
+        var consumed = await new MaterialRepository(db, f.Mapper)
+            .ConsumeMaterialAtLocation(f.Lot.Id, f.Production.Id, 30, f.Actor.Id, allocation.Id);
+
+        Assert.True(consumed.IsSuccess, consumed.Error.Description);
+        Assert.DoesNotContain(db.ChangeTracker.Entries<MaterialBatch>(), entry => entry.Entity.Id == sibling.Id);
+        Assert.DoesNotContain(db.ChangeTracker.Entries<MaterialBatchEvent>(), entry => entry.Entity.BatchId == sibling.Id);
+        db.ChangeTracker.Clear();
+        Assert.Equal(30, (await db.MaterialBatches.IgnoreQueryFilters().SingleAsync(lot => lot.Id == f.Lot.Id)).ConsumedQuantity);
+        Assert.Equal(5, (await db.MaterialBatches.IgnoreQueryFilters().SingleAsync(lot => lot.Id == sibling.Id)).TotalQuantity);
+    }
+
     [RepairPostgresFact]
     public async Task Trace_queries_translate_and_read_one_postgres_snapshot()
     {

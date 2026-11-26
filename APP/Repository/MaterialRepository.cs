@@ -2458,9 +2458,12 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             ConsumedAt = DateTime.UtcNow,
         };
 
-        // Optionally update the batch's consumed quantity
+        // Only the batch's own quantities and its material's unlimited flag are needed. Without IgnoreAutoIncludes this
+        // single query also pulled the material's every batch with each batch's events, reservations and shelves, all
+        // joined into one result (1.27 million rows for one Vanilla Powder batch), which ran past the command timeout
+        // while the production transaction held its table locks.
         var materialBatch = await context
-            .MaterialBatches.Include(b => b.Material)
+            .MaterialBatches.IgnoreAutoIncludes().Include(b => b.Material)
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (materialBatch == null)
@@ -2473,8 +2476,8 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
         if (!(materialBatch.Material?.IsUnlimited ?? false))
         {
+            // The batch is tracked, so only the changed quantity is written. Update() would mark its whole loaded graph modified.
             materialBatch.ConsumedQuantity += quantity;
-            context.MaterialBatches.Update(materialBatch);
         }
 
         // Add the event to the context

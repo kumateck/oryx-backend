@@ -674,6 +674,9 @@ public partial class ProductionScheduleRepository(
 
                 var stockRequisitions = await context
                     .Requisitions.AsSplitQuery()
+                    // Only each item's material id and kind are read; the material's auto-included batches,
+                    // events, reservations and shelves are not.
+                    .IgnoreAutoIncludes()
                     .Include(r => r.Items)
                         .ThenInclude(requisitionItem => requisitionItem.Material)
                     .Where(r =>
