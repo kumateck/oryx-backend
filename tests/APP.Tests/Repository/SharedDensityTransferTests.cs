@@ -126,7 +126,7 @@ public sealed class SharedDensityTransferTests
         db.MaterialDepartments.Add(new() { MaterialId = f.Lot.MaterialId, DepartmentId = f.OtherDepartment.Id, UoM = unit });
         await db.SaveChangesAsync();
         await Grant(db, f.Actor.Id, PermissionKeys.CanIssueRawMaterialStockTransfers);
-        await Grant(db, actor.Id, PermissionKeys.CanIssueRawMaterialStockTransfers);
+        await Grant(db, actor.Id, PermissionKeys.CanAssignRawMaterialStockTransfers);
         var preview = await f.Repository.BatchesToSupplyForStockTransfer(transfer.Id);
         Assert.True(preview.IsSuccess, preview.Error.Description); Assert.Equal(physical, Assert.Single(preview.Value).SourceQuantityToTake);
         var result = await f.Repository.IssueStockTransfer(transfer.Id, [new() { BatchId = f.Lot.Id, Quantity = requested }], f.Actor.Id);
@@ -141,6 +141,11 @@ public sealed class SharedDensityTransferTests
         Assert.True(received.IsSuccess, received.Error.Description);
         var placed = await db.ShelfMaterialBatches.IgnoreQueryFilters().SingleAsync(row => row.WarehouseLocationShelfId == shelf.Id);
         Assert.Equal(physical, placed.Quantity); Assert.Equal(f.Lot.UoMId, placed.UoMId); Assert.Equal(100, f.Lot.QuantityAssigned);
+        var cards = await db.BinCardInformation.ToListAsync();
+        Assert.Equal(2, cards.Count);
+        Assert.All(cards, card => Assert.Equal(f.Lot.UoMId, card.UoMId));
+        Assert.Equal(physical, cards.Sum(card => card.QuantityIssued));
+        Assert.Equal(physical, cards.Sum(card => card.QuantityReceived));
         var stock = await repository.GetShelfMaterialStockInWarehouse(f.Lot.MaterialId, warehouse.Id);
         Assert.True(stock.IsSuccess, stock.Error.Description); Assert.Equal(requested, stock.Value);
         Assert.True((await repository.MoveMaterialBatchToWarehouseFromHolding(request, actor.Id)).IsFailure);

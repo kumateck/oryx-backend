@@ -706,12 +706,14 @@ public partial class ProductionScheduleRepository(
 
                             foreach (var batch in batchesToConsume)
                             {
-                                await materialRepository.ConsumeMaterialAtLocation(
+                                var consumed = await materialRepository.ConsumeMaterialAtLocation(
                                     batch.MaterialBatch.Id,
                                     productionWarehouse.Id,
                                     batch.Quantity,
-                                    userId
+                                    userId,
+                                    batch.Id
                                 );
+                                if (consumed.IsFailure) return consumed;
                             }
 
                             var batchesToRemove = await context
@@ -744,12 +746,14 @@ public partial class ProductionScheduleRepository(
 
                             foreach (var batch in batchesToConsume)
                             {
-                                await materialRepository.ConsumeMaterialAtLocation(
+                                var consumed = await materialRepository.ConsumeMaterialAtLocation(
                                     batch.MaterialBatch.Id,
                                     productionWarehouse.Id,
                                     batch.Quantity,
-                                    userId
+                                    userId,
+                                    batch.Id
                                 );
+                                if (consumed.IsFailure) return consumed;
                             }
 
                             var batchesToRemove = await context
@@ -3478,6 +3482,11 @@ public partial class ProductionScheduleRepository(
         var density = await MaterialDensity.Load(context, transfer.MaterialId);
         if (MaterialDensity.Convert(1, requestUnit.Symbol, destinationUnit.Symbol, density) is null)
             return Error.Validation("StockTransfer.Density", "Set a verified material density before transferring between mass and volume units.");
+        var issuedAt = DateTime.UtcNow;
+        var ledger = await StockTransferLedger.Prepare(context, picks.GroupBy(pick => pick.Shelf.MaterialBatch)
+            .Select(group => new StockTransferLedger.Posting(group.Key, fromWarehouse.Id, 0,
+                group.Sum(pick => pick.PhysicalQuantity), $"Stock transfer {transfer.Code}: issued to {toWarehouse.Name}", userId, issuedAt, density)));
+        if (ledger.IsFailure) return ledger.Error;
         grants = await CurrentPermissionSet.Load(context, userId);
         if (!grants.Contains(issueKey)) return Error.Forbidden("StockTransfer.Permission", "Your permission to issue this transfer was removed.");
         foreach (var pick in picks)
@@ -3506,7 +3515,8 @@ public partial class ProductionScheduleRepository(
             });
         }
         await context.HoldingMaterialTransfers.AddAsync(holding);
-        source.IssuedAt = DateTime.UtcNow;
+        context.BinCardInformation.AddRange(ledger.Value);
+        source.IssuedAt = issuedAt;
         source.IssuedById = userId;
         source.Status = StockTransferStatus.Issued;
         await context.SaveChangesAsync();
@@ -3870,142 +3880,8 @@ public partial class ProductionScheduleRepository(
         return product;
     }
 
-    public async Task<Result> ReturnStockBeforeProductionBegins(
-        Guid productionScheduleProductId,
-        string reason
-    )
-    {
-        if (context.Database.IsRelational() && context.Database.CurrentTransaction is null)
-            return await ProductionMaterialTransaction.Run(context, () => ReturnStockBeforeProductionBegins(productionScheduleProductId, reason));
-
-        var productionScheduleProduct = await context
-            .ProductionScheduleProducts.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(p => p.Id == productionScheduleProductId);
-        if (productionScheduleProduct is null)
-            return ProductErrors.NotFound(productionScheduleProductId);
-
-        var product = await context
-            .Products.IgnoreQueryFilters()
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
-        if (product is null)
-            return ProductErrors.NotFound(productionScheduleProduct.ProductId);
-
-        var productionSchedule = await context
-            .ProductionSchedules.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductionScheduleId);
-        if (productionSchedule is null)
-            return ProductErrors.NotFound(productionScheduleProduct.ProductionScheduleId);
-
-        var productionWarehouse = await context
-            .Warehouses.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(w =>
-                w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.Production
-            );
-        if (productionWarehouse is null)
-            return Error.NotFound("Warehouse.Production", "Warehouse production record not found");
-
-        var rawStorageWarehouse = await context
-            .Warehouses.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(w =>
-                w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.RawMaterialStorage
-            );
-        if (rawStorageWarehouse is null)
-            return Error.NotFound("Warehouse.RawStorage", "Warehouse raw storage record not found");
-
-        var packedStorageWarehouse = await context
-            .Warehouses.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(w =>
-                w.DepartmentId == product.DepartmentId && w.Type == WarehouseType.PackagedStorage
-            );
-        if (packedStorageWarehouse is null)
-            return Error.NotFound(
-                "Warehouse.PackedStorage",
-                "Warehouse package storage record not found"
-            );
-
-        var stockRequisitions = await context
-            .Requisitions.AsSplitQuery()
-            .Include(r => r.Items)
-            .Where(r => r.ProductionScheduleProductId == productionScheduleProductId)
-            .ToListAsync();
-
-        var materialReturnNote = new MaterialReturnNote
-        {
-            ProductionScheduleProductId = productionScheduleProductId,
-            ReturnDate = DateTime.UtcNow,
-            BatchNumber = (
-                await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
-                    b.ProductionScheduleProductId == productionScheduleProductId
-                )
-            )?.BatchNumber,
-        };
-        await context.MaterialReturnNotes.AddAsync(materialReturnNote);
-        await context.SaveChangesAsync();
-
-        foreach (var stockRequisition in stockRequisitions)
-        {
-            foreach (var item in stockRequisition.Items)
-            {
-                var batchesToConsume =
-                    await materialRepository.GetReservedBatchesAndQuantityForProductionWarehouse(
-                        item.MaterialId,
-                        productionWarehouse.Id,
-                        productionScheduleProduct.Id
-                    );
-
-                var material = await context.Materials.FirstOrDefaultAsync(m =>
-                    m.Id == item.MaterialId
-                );
-
-                if (material is null)
-                    return Error.NotFound("material", "material not found");
-
-                var fullReturns = batchesToConsume
-                    .Select(b => new MaterialReturnNoteFullReturn
-                    {
-                        MaterialReturnNoteId = materialReturnNote.Id,
-                        MaterialBatchReservedQuantityId = b.Id,
-                        DestinationWarehouseId =
-                            material.Kind == MaterialKind.Raw
-                                ? rawStorageWarehouse.Id
-                                : packedStorageWarehouse.Id,
-                        SourceWarehouseLocationShelfId = b.WarehouseLocationShelf?.Id,
-                    })
-                    .ToList();
-
-                var batchesToRemove = await context
-                    .MaterialBatchReservedQuantities.Where(b =>
-                        batchesToConsume.Select(bc => bc.Id).Contains(b.Id)
-                    )
-                    .ToListAsync();
-
-                await context.MaterialReturnNoteFullReturns.AddRangeAsync(fullReturns);
-                await context.SaveChangesAsync();
-                context.MaterialBatchReservedQuantities.RemoveRange(batchesToRemove);
-            }
-        }
-
-        productionScheduleProduct.ReasonForCancellation = reason;
-        productionScheduleProduct.Cancelled = true;
-        context.ProductionScheduleProducts.Update(productionScheduleProduct);
-        var bmr = await context.BatchManufacturingRecords.FirstOrDefaultAsync(b =>
-            b.ProductionScheduleProductId == productionScheduleProduct.Id
-        );
-        if (bmr is not null)
-        {
-            context.BatchManufacturingRecords.Remove(bmr);
-        }
-        var bpr = await context.BatchPackagingRecords.FirstOrDefaultAsync(p =>
-            p.ProductionScheduleProductId == productionScheduleProduct.Id
-        );
-        if (bpr is not null)
-        {
-            context.BatchPackagingRecords.Remove(bpr);
-        }
-        await context.SaveChangesAsync();
-        return Result.Success();
-    }
+    public Task<Result> ReturnStockBeforeProductionBegins(Guid productionScheduleProductId, string reason) =>
+        ProductionFullReturn.Run(context, productionScheduleProductId, reason);
 
     public async Task<Result> ReturnLeftOverStockAfterProductionEnds(
         Guid productionScheduleProductId,
@@ -4178,21 +4054,23 @@ public partial class ProductionScheduleRepository(
         return mapper.Map<MaterialReturnNoteDto>(materialReturnNote);
     }
 
-    public async Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId)
+    public Task<Result> CompleteMaterialReturn(Guid materialReturnNoteId) => ProductionMaterialTransaction.Run(context, async () =>
     {
-        var materialReturnNote = await context.MaterialReturnNotes.FirstOrDefaultAsync(m =>
-            m.Id == materialReturnNoteId
-        );
-
-        if (materialReturnNote is null)
-            return Error.NotFound("MaterialReturnNote", "MaterialReturnNote not found");
-
-        materialReturnNote.Status = MaterialReturnStatus.Completed;
-        context.MaterialReturnNotes.Update(materialReturnNote);
+        var actor = context.CurrentActorId;
+        async Task<bool> Allowed() => (await CurrentPermissionSet.Load(context, actor)).Contains(PermissionKeys.CanCompleteMaterialReturnNote);
+        if (!await Allowed()) return Error.Forbidden("MaterialReturn.Permission", "You cannot complete this return note.");
+        var note = await context.MaterialReturnNotes.Include(row => row.FullReturns).Include(row => row.PartialReturns)
+            .Include(row => row.ProductionScheduleProduct).ThenInclude(row => row.Product).SingleOrDefaultAsync(row => row.Id == materialReturnNoteId);
+        if (note is null) return Error.NotFound("MaterialReturnNote", "Material return note not found.");
+        if (!await context.Users.AnyAsync(row => row.Id == actor && !row.IsDisabled && row.DepartmentId == note.ProductionScheduleProduct.Product.DepartmentId))
+            return Error.Forbidden("MaterialReturn.Department", "Complete return notes in your own department.");
+        if (note.FullReturns.Count + note.PartialReturns.Count == 0 || note.FullReturns.Any(row => !row.Returned) || note.PartialReturns.Any(row => !row.Returned))
+            return Error.Conflict("MaterialReturn.AwaitingReceipt", "Receive and shelve every returned material before completing this note.");
+        if (!await Allowed()) return Error.Forbidden("MaterialReturn.Permission", "Your current permissions do not allow completion.");
+        note.Status = MaterialReturnStatus.Completed;
         await context.SaveChangesAsync();
-
         return Result.Success();
-    }
+    });
 
     public async Task<Result> CreateExtraPacking(
         Guid productionScheduleProductId,

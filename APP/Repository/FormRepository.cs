@@ -1644,11 +1644,9 @@ public class FormRepository(
                 var reportingFields = System.Text.Json.JsonSerializer.Deserialize<DOMAIN.Entities.ProductSpecifications.AssayReportingSnapshot>(response.AssayReportingSnapshotJson).Fields;
                 foreach (var sectionResponse in sectionResponses)
                 {
-                    var reported = reportingFields.SingleOrDefault(field => field.FormFieldId == sectionResponse.FormFieldId)?.Results;
-                    sectionResponse.Complies = reported is { Count: > 0 }
-                        ? reported.Where(result => result.Converted).All(result => result.Complies == true)
-                            && (reported.All(result => result.Converted) || comply.Complies)
-                        : comply.Complies;
+                    var reported = reportingFields.SingleOrDefault(field => field.FormFieldId == sectionResponse.FormFieldId);
+                    sectionResponse.Complies = reported is not null
+                        ? ProductAssayReportingRuntime.EffectiveCompliance(reported, comply.Complies) : comply.Complies;
                 }
             }
         }
@@ -1660,10 +1658,8 @@ public class FormRepository(
             var reportedAnswers = await context.FormResponses.Where(answer => answer.ResponseId == response.Id && answerFields.Contains(answer.FormFieldId)).ToListAsync();
             foreach (var answer in reportedAnswers)
             {
-                var results = reportedFields.Single(field => field.FormFieldId == answer.FormFieldId).Results;
-                answer.Complies = results.All(result => result.Converted)
-                    ? results.All(result => result.Complies == true)
-                    : results.Where(result => result.Converted).All(result => result.Complies == true) && answer.Complies == true;
+                answer.Complies = ProductAssayReportingRuntime.EffectiveCompliance(
+                    reportedFields.Single(field => field.FormFieldId == answer.FormFieldId), answer.Complies);
             }
         }
 
