@@ -648,6 +648,8 @@ public static class PermissionKeys
     public const string CanRepairUnstartPackagingMaterialReservations = "CanRepairUnstartPackagingMaterialReservations";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
     public const string CanViewApprovedPackagingMaterials = "CanViewApprovedPackagingMaterials";
+    /// <summary>Read a material's department bin card.</summary>
+    public const string CanViewMaterialBinCard = "CanViewMaterialBinCard";
     /// <summary>View and print the reconciled raw-material store, production-floor and consumed stock trace.</summary>
     public const string CanViewRawMaterialStockTrace = "CanViewRawMaterialStockTrace";
     /// <summary>View and print the reconciled packaging-material store, production-floor and consumed stock trace.</summary>
@@ -666,6 +668,10 @@ public static class PermissionKeys
     public const string CanEditRawMaterialDensity = "CanEditRawMaterialDensity";
     /// <summary>Sets the shared verified density of a packaging material.</summary>
     public const string CanEditPackagingMaterialDensity = "CanEditPackagingMaterialDensity";
+    /// <summary>Changes the unit the department counts a raw material in, converting every value it stores in that unit.</summary>
+    public const string CanChangeRawMaterialCountingUnit = "CanChangeRawMaterialCountingUnit";
+    /// <summary>Changes the unit the department counts a packaging material in, converting every value it stores in that unit.</summary>
+    public const string CanChangePackagingMaterialCountingUnit = "CanChangePackagingMaterialCountingUnit";
     public const string CanLinkRawMaterials = "CanLinkRawMaterials";
     public const string CanViewUnlinkedPackagingMaterials = "CanViewUnlinkedPackagingMaterials";
     public const string CanLinkPackagingMaterials = "CanLinkPackagingMaterials";
@@ -2461,6 +2467,7 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartRawMaterialReservations);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartPackagingMaterialReservations);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewMaterialBinCard);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewRawMaterialStockTrace);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewPackagingMaterialStockTrace);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanPrintRawMaterialStockTrace);
@@ -2517,6 +2524,8 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditRawMaterialDensity);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanEditPackagingMaterialDensity);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanChangeRawMaterialCountingUnit);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.LinkedMaterials, PermissionKeys.CanChangePackagingMaterialCountingUnit);
         addPermission(
             PermissionModules.Warehouse,
             PermissionSubmodules.Materials,

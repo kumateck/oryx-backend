@@ -125,7 +125,7 @@ public interface IWarehouseRepository
         bool? onlyApproved
     );
 
-    Task<Result<Paginateable<IEnumerable<BinCardInformationDto>>>> GetBinCardInformation(
+    Task<Result<BinCardPage>> GetBinCardInformation(
         int page,
         int pageSize,
         string searchQuery,

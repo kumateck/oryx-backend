@@ -1857,6 +1857,13 @@
   {
     "module": "Warehouse",
     "submodule": "Approved Materials",
+    "key": "CanViewMaterialBinCard",
+    "name": "Can View Material Bin Card",
+    "description": "Allows the user to  view material bin card."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
     "key": "CanViewRawMaterialStockTrace",
     "name": "Can View Raw Material Stock Trace",
     "description": "Allows the user to  view raw material stock trace."
@@ -1965,6 +1972,20 @@
     "key": "CanEditPackagingMaterialDensity",
     "name": "Can Edit Packaging Material Density",
     "description": "Allows the user to  edit packaging material density."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanChangeRawMaterialCountingUnit",
+    "name": "Can Change Raw Material Counting Unit",
+    "description": "Allows the user to  change raw material counting unit."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Linked Materials",
+    "key": "CanChangePackagingMaterialCountingUnit",
+    "name": "Can Change Packaging Material Counting Unit",
+    "description": "Allows the user to  change packaging material counting unit."
   },
   {
     "module": "Warehouse",
