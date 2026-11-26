@@ -150,33 +150,14 @@ public sealed class ProductionStockRejectionTests
         Assert.Null(method.GetCustomAttribute<AllowAnonymousAttribute>());
     }
     [Fact]
-    public async Task Changing_stock_unit_converts_displayed_stock_and_preserves_physical_lot_evidence()
-    {
-        using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
-        f.Lot.UoM.Symbol = "l"; f.Lot.Material.DensityGramsPerMilliliter = 1.26m;
-        f.Shelf.Quantity = 100; f.Lot.TotalQuantity = 100;
-        var kg = new DOMAIN.Entities.Base.UnitOfMeasure { Id = Guid.NewGuid(), Name = "Kilogram", Symbol = "kg" };
-        db.UnitOfMeasures.Add(kg); await db.SaveChangesAsync();
-        await SharedDensityTransferTests.Grant(db, f.Actor.Id, PermissionKeys.CanLinkRawMaterials);
-        var repository = new MaterialRepository(db, f.Mapper);
-        var changed = await repository.CreateMaterialDepartment([new() { MaterialId = f.Lot.MaterialId, UoMId = kg.Id }], f.Actor.Id);
-        Assert.True(changed.IsSuccess, changed.Error.Description);
-        var rows = await repository.GetMaterialBatchesByMaterialIdV2(1, 20, f.Lot.MaterialId, f.Department.Id, f.Actor.Id);
-        Assert.True(rows.IsSuccess, rows.Error.Description);
-        var row = Assert.Single(rows.Value.Data);
-        Assert.Equal(126, row.WarehouseQuantity); Assert.Equal("kg", row.WarehouseUoM.Symbol);
-        Assert.Equal(100, row.Quantity); Assert.Equal("l", row.MaterialBatch.UoM.Symbol);
-        Assert.Equal(100, f.Shelf.Quantity); Assert.Equal(100, f.Lot.TotalQuantity);
-    }
-    [Fact]
-    public async Task Unsupported_stock_unit_change_is_refused_before_the_saved_link_changes()
+    public async Task Stock_level_save_requires_the_counting_unit_action_to_change_the_saved_unit()
     {
         using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
         var litre = new DOMAIN.Entities.Base.UnitOfMeasure { Id = Guid.NewGuid(), Name = "Litre", Symbol = "l" };
         db.UnitOfMeasures.Add(litre); await db.SaveChangesAsync();
         await SharedDensityTransferTests.Grant(db, f.Actor.Id, PermissionKeys.CanLinkRawMaterials);
         var result = await new MaterialRepository(db, f.Mapper).CreateMaterialDepartment([new() { MaterialId = f.Lot.MaterialId, UoMId = litre.Id }], f.Actor.Id);
-        Assert.Equal("MaterialDepartment.StockUnit", result.Error.Code);
+        Assert.Equal("MaterialDepartment.CountingUnit", result.Error.Code);
         Assert.Equal(f.Lot.UoMId, (await db.MaterialDepartments.SingleAsync()).UoMId);
     }
 }
