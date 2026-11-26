@@ -1238,6 +1238,11 @@ public partial class ProductionScheduleRepository(
                     .ThenInclude(billOfMaterial => billOfMaterial.Items)
                         .ThenInclude(billOfMaterialItem => billOfMaterialItem.Substitutes)
                             .ThenInclude(s => s.SubstituteMaterial)
+            .Include(product => product.BillOfMaterials)
+                .ThenInclude(productBillOfMaterial => productBillOfMaterial.BillOfMaterial)
+                    .ThenInclude(billOfMaterial => billOfMaterial.Items)
+                        .ThenInclude(billOfMaterialItem => billOfMaterialItem.Substitutes)
+                            .ThenInclude(substitute => substitute.BaseUoM)
             .FirstOrDefaultAsync(p => p.Id == productionScheduleProduct.ProductId);
 
         if (product is null)
@@ -1393,19 +1398,17 @@ public partial class ProductionScheduleRepository(
         foreach (var item in activeBoM.BillOfMaterial.Items)
         {
             // A substitute has its own quantity (it can differ in strength or water content); one without is not usable.
-            var candidates = new[] { (MaterialId: item.MaterialId, Prescribed: (decimal?)item.PrescribedQuantity) }
+            var candidates = new[] { (MaterialId: item.MaterialId, Prescribed: (decimal?)item.PrescribedQuantity, Unit: item.BaseUoM?.Symbol) }
                 .Concat(item.Substitutes.Where(substitute => substitute.DeletedAt == null)
-                    .Select(substitute => (MaterialId: substitute.SubstituteMaterialId, Prescribed: substitute.PrescribedQuantity)));
-            foreach (var (materialId, prescribed) in candidates)
+                    .Select(substitute => (MaterialId: substitute.SubstituteMaterialId, Prescribed: substitute.PrescribedQuantity, Unit: (substitute.BaseUoM ?? item.BaseUoM)?.Symbol)));
+            foreach (var (materialId, prescribed, unit) in candidates)
             {
                 if (!prescribed.HasValue || !materialDepartments.TryGetValue(materialId, out var departmentLink)) continue;
                 var sourceQuantity = batchSize == BatchSize.Full ? prescribed.Value : prescribed.Value / 2;
-                var quantity = item.UseDensityConversion
-                    ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, departmentLink)
-                    : sourceQuantity;
-                if (item.UseDensityConversion && (quantity is null or <= 0))
-                    return Error.Validation("Production.Materials", $"{departmentLink.Material.Name}: set a positive density in g/mL and a liquid stock unit before using this BOM conversion.");
-                neededByMaterial[(item.Id, materialId)] = quantity ?? sourceQuantity;
+                var quantity = MaterialDensity.ConvertBomQuantity(sourceQuantity, unit, departmentLink, item.UseDensityConversion);
+                if (quantity is null or <= 0)
+                    return Error.Validation("Production.Materials", $"{departmentLink.Material.Name}: count it by mass, or by volume with a positive density in g/mL, before using this BOM conversion.");
+                neededByMaterial[(item.Id, materialId)] = quantity.Value;
             }
         }
 
@@ -4792,12 +4795,10 @@ public partial class ProductionScheduleRepository(
         {
             var sourceQuantity = batchSize == BatchSize.Full ? item.PrescribedQuantity : item.PrescribedQuantity / 2;
             var link = rawMaterialDepartments[item.MaterialId];
-            var quantity = item.UseDensityConversion
-                ? MaterialDensity.ConvertBomMass(sourceQuantity, item.BaseUoM?.Symbol, link)
-                : sourceQuantity;
-            if (item.UseDensityConversion && (quantity is null or <= 0))
-                return Error.Validation("Production.Materials", $"{item.Material.Name}: set a positive density in g/mL and a liquid stock unit before forecasting this BOM.");
-            forecastQuantityByMaterial[item.MaterialId] = quantity ?? sourceQuantity;
+            var quantity = MaterialDensity.ConvertBomQuantity(sourceQuantity, item.BaseUoM?.Symbol, link, item.UseDensityConversion);
+            if (quantity is null or <= 0)
+                return Error.Validation("Production.Materials", $"{item.Material.Name}: count it by mass, or by volume with a positive density in g/mL, before forecasting this BOM.");
+            forecastQuantityByMaterial[item.MaterialId] = quantity.Value;
         }
 
         ForecastMaterialDto RawRow(DOMAIN.Entities.Materials.Material material, decimal quantityNeeded, DOMAIN.Entities.Materials.Material mainOf = null)
@@ -4837,7 +4838,7 @@ public partial class ProductionScheduleRepository(
                     continue;
                 }
                 var own = batchSize == BatchSize.Full ? sub.PrescribedQuantity.Value : sub.PrescribedQuantity.Value / 2;
-                var need = item.UseDensityConversion ? MaterialDensity.ConvertBomMass(own, (sub.BaseUoM ?? item.BaseUoM)?.Symbol, link) : own;
+                var need = MaterialDensity.ConvertBomQuantity(own, (sub.BaseUoM ?? item.BaseUoM)?.Symbol, link, item.UseDensityConversion);
                 if (need is null or <= 0) continue;
                 materialDetails.Add(RawRow(sub.SubstituteMaterial ?? link.Material, need.Value, item.Material));
             }

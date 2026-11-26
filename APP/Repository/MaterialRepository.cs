@@ -3210,7 +3210,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
 
             // The linked-material list contract stores quantities in the smallest unit of its family.
             var symbol = result.UoM?.Symbol;
-            var baseSymbol = symbol?.Trim().ToLowerInvariant() switch { "mg" or "g" or "kg" => "mg", "ml" or "l" => "ml", _ => symbol };
+            var baseSymbol = MaterialDensity.StockLevelUnit(symbol);
             var factor = UomConverter.Convert(1, symbol, baseSymbol);
             if (!factor.HasValue) return Error.Conflict("Stock.Unit", "The linked stock unit cannot be read safely.");
             result.WarehouseStock = warehouseStockResult.Value.WarehouseStock * factor.Value;
@@ -3221,7 +3221,7 @@ public partial class MaterialRepository(ApplicationDbContext context, IMapper ma
             var holds = await context.MaterialBatchReservedQuantities.Include(row => row.UoM)
                 .Where(row => row.MaterialBatch.MaterialId == result.Material.Id && row.WarehouseId == warehouse.Id).ToListAsync();
             var convertedPending = pending.Select(row => MaterialDensity.Convert(row.Quantity, row.StockTransfer.UoM?.Symbol, baseSymbol, result.Material.DensityGramsPerMilliliter)).ToList();
-            var convertedHolds = holds.Select(row => MaterialDensity.Convert(row.Quantity, row.UoM?.Symbol, baseSymbol, result.Material.DensityGramsPerMilliliter)).ToList();
+            var convertedHolds = holds.Select(row => MaterialDensity.Convert(row.Quantity, row.UoM?.Symbol, baseSymbol, row.DensityGramsPerMilliliter is > 0 ? row.DensityGramsPerMilliliter : result.Material.DensityGramsPerMilliliter)).ToList();
             if (convertedPending.Concat(convertedHolds).Any(value => !value.HasValue))
                 return Error.Conflict("Stock.Density", "Stock transfers or reservations cannot be expressed in the department's unit. Verify the material density.");
             result.PendingStockTransferQuantity = convertedPending.Sum(value => value.GetValueOrDefault());

@@ -163,12 +163,10 @@ internal static class ProductionMaterialSources
             if (sourceUnit is null || sourceUnit.DeletedAt.HasValue)
                 return (null, $"{link.Material.Name}: choose a valid BOM source unit before starting production.");
             var quantity = prescribed / (batch.BatchSize == BatchSize.Half ? 2 : 1) + definition.Allowance;
-            var converted = definition.UseDensityConversion
-                ? MaterialDensity.ConvertBomMass(quantity, sourceUnit.Symbol, link)
-                : UomConverter.Convert(quantity, sourceUnit.Symbol, link.UoM.Symbol);
+            var converted = MaterialDensity.ConvertBomQuantity(quantity, sourceUnit.Symbol, link, definition.UseDensityConversion);
             if (prescribed <= 0 || definition.Allowance < 0 || converted is null or <= 0)
                 return (null, definition.UseDensityConversion
-                    ? $"{link.Material.Name}: verify the BOM quantity, measured density with an active g/mL unit, and liquid stock unit."
+                    ? $"{link.Material.Name}: verify the BOM quantity in mg and the department counting unit; counting by volume needs a measured density with an active g/mL unit."
                     : $"{link.Material.Name}: correct the quantity and compatible units on the product first.");
             return (new ProductionMaterialOption
             {
