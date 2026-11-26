@@ -1857,6 +1857,13 @@
   {
     "module": "Warehouse",
     "submodule": "Approved Materials",
+    "key": "CanViewMaterialBinCard",
+    "name": "Can View Material Bin Card",
+    "description": "Allows the user to  view material bin card."
+  },
+  {
+    "module": "Warehouse",
+    "submodule": "Approved Materials",
     "key": "CanViewRawMaterialStockTrace",
     "name": "Can View Raw Material Stock Trace",
     "description": "Allows the user to  view raw material stock trace."

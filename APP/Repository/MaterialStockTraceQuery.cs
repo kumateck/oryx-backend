@@ -73,22 +73,26 @@ internal static class MaterialStockTraceQuery
             }
             if (result.StoreStock != result.ReservedStock + result.FreeStock + result.ExpiredStock + result.UnavailableStock)
                 result.Gaps.Add("Store stock does not equal live reservations plus free, expired and unavailable stock. Review shelf units and overallocated holds.");
+            // The same ledger the bin card shows: store warehouses of the kind, balances replayed in date order.
+            var ledger = await MaterialStoreLedger.Load(db, material.Id, material.Kind, departmentId);
+            if (ledger.IsFailure) return ledger.Error;
+            var entries = ledger.Value.Entries;
+            var cardIds = entries.Select(row => row.Id).ToList();
             var cards = await db.BinCardInformation.IgnoreQueryFilters().IgnoreAutoIncludes().AsNoTracking()
-                .Where(row => row.DeletedAt == null && row.MaterialBatch.MaterialId == material.Id && row.WarehouseId.HasValue && stores.Contains(row.WarehouseId.Value))
-                .Select(row => new { row.Id, row.CreatedAt, row.QuantityReceived, row.QuantityIssued, row.BalanceQuantity, row.MaterialBatchId,
-                    row.MaterialBatch.BatchNumber, row.Description, row.ArNumber, Warehouse = row.Warehouse.Name,
-                    Reference = row.RequisitionCode ?? row.WayBill, Product = row.Product.Name, row.ProductBatchNumber,
-                    Unit = row.UoMId.HasValue ? row.UoM.Symbol : row.MaterialBatch.UoM.Symbol }).ToListAsync();
-            result.OpeningBalance = cards.Where(row => row.CreatedAt < start).Sum(row => Convert(row.QuantityReceived - row.QuantityIssued, row.Unit));
-            result.Received = cards.Where(row => row.CreatedAt >= start).Sum(row => Convert(row.QuantityReceived, row.Unit));
-            result.Issued = cards.Where(row => row.CreatedAt >= start).Sum(row => Convert(row.QuantityIssued, row.Unit));
+                .Where(row => cardIds.Contains(row.Id))
+                .Select(row => new { row.Id, row.MaterialBatch.BatchNumber, row.Description, row.ArNumber, Warehouse = row.Warehouse.Name,
+                    Reference = row.RequisitionCode ?? row.WayBill, Product = row.Product.Name, row.ProductBatchNumber })
+                .ToDictionaryAsync(row => row.Id);
+            result.OpeningBalance = entries.Where(row => row.At < start).Sum(row => row.Received - row.Issued);
+            result.Received = entries.Where(row => row.At >= start).Sum(row => row.Received);
+            result.Issued = entries.Where(row => row.At >= start).Sum(row => row.Issued);
             result.LedgerClosing = result.OpeningBalance + result.Received - result.Issued;
-            result.LedgerRows = cards.OrderBy(row => row.CreatedAt).ThenBy(row => row.Id).Select(row => new MaterialStockTraceLedgerRow
+            result.LedgerRows = entries.Select(row => new MaterialStockTraceLedgerRow
             {
-                Id = row.Id, MaterialBatchId = row.MaterialBatchId.GetValueOrDefault(), MaterialBatchNumber = row.BatchNumber, OccurredAt = row.CreatedAt,
-                Description = row.Description, Reference = row.Reference, ArNumber = row.ArNumber, Warehouse = row.Warehouse,
-                Product = row.Product, ProductBatchNumber = row.ProductBatchNumber, Unit = unit,
-                Received = Convert(row.QuantityReceived, row.Unit), Issued = Convert(row.QuantityIssued, row.Unit), Balance = Convert(row.BalanceQuantity, row.Unit),
+                Id = row.Id, MaterialBatchId = row.MaterialBatchId, MaterialBatchNumber = cards[row.Id].BatchNumber, OccurredAt = row.At,
+                Description = cards[row.Id].Description, Reference = cards[row.Id].Reference, ArNumber = cards[row.Id].ArNumber,
+                Warehouse = cards[row.Id].Warehouse, Product = cards[row.Id].Product, ProductBatchNumber = cards[row.Id].ProductBatchNumber,
+                Unit = unit, Received = row.Received, Issued = row.Issued, Balance = row.Balance,
             }).ToList();
             result.LedgerGap = result.LedgerClosing - result.StoreStock;
             if (result.LedgerGap != 0) result.Gaps.Add("The store bin card and shelf stock disagree. Review missing receipts, issues and unit conversions; no stock has been adjusted.");
