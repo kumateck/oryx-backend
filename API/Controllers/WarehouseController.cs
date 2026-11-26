@@ -1033,13 +1033,14 @@ public class WarehouseController(IWarehouseRepository repository) : ControllerBa
     #region BinCardInformation
 
     [HttpGet("bincardinformation/{materialId:guid}/{departmentId:guid}")]
-    [AnyPermission("CanViewApprovedPackagingMaterials", "CanViewApprovedRawMaterials", "CanViewExpiredMaterials")]
-    [Authorize]
+    [AnyPermission(PermissionKeys.CanViewApprovedPackagingMaterials, PermissionKeys.CanViewApprovedRawMaterials, PermissionKeys.CanViewExpiredMaterials)]
+    [Authorize(PermissionKeys.CanViewMaterialBinCard)]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(Paginateable<IEnumerable<BinCardInformationDto>>)
+        Type = typeof(BinCardPage)
     )]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IResult> GetBinCardInformation(
         [FromRoute] Guid materialId,
         [FromRoute] Guid departmentId,

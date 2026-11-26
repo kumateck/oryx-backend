@@ -87,7 +87,8 @@ public sealed class MaterialStockReconciliationTests
         using var f = new ScheduleStockFixture(); await f.Seed(); var db = f.Harness.Db;
         var method = typeof(WarehouseController).GetMethod(nameof(WarehouseController.GetBinCardInformation))!;
         Assert.Empty(method.GetCustomAttributes<AllowAnonymousAttribute>());
-        Assert.NotEmpty(method.GetCustomAttributes<AuthorizeAttribute>());
+        Assert.Equal(PermissionKeys.CanViewMaterialBinCard, Assert.Single(method.GetCustomAttributes<AuthorizeAttribute>()).Policy);
+        Assert.Single(PermissionUtils.GeneratePermissions(), permission => permission.Key == PermissionKeys.CanViewMaterialBinCard);
         var filter = Assert.Single(method.GetCustomAttributes<AnyPermissionAttribute>());
         foreach (var key in filter.Keys) Assert.Single(PermissionUtils.GeneratePermissions(), permission => permission.Key == key);
         async Task<bool> Allowed()

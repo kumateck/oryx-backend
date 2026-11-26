@@ -648,6 +648,8 @@ public static class PermissionKeys
     public const string CanRepairUnstartPackagingMaterialReservations = "CanRepairUnstartPackagingMaterialReservations";
     public const string CanViewApprovedRawMaterials = "CanViewApprovedRawMaterials";
     public const string CanViewApprovedPackagingMaterials = "CanViewApprovedPackagingMaterials";
+    /// <summary>Read a material's department bin card.</summary>
+    public const string CanViewMaterialBinCard = "CanViewMaterialBinCard";
     /// <summary>View and print the reconciled raw-material store, production-floor and consumed stock trace.</summary>
     public const string CanViewRawMaterialStockTrace = "CanViewRawMaterialStockTrace";
     /// <summary>View and print the reconciled packaging-material store, production-floor and consumed stock trace.</summary>
@@ -2461,6 +2463,7 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartRawMaterialReservations);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanRepairUnstartPackagingMaterialReservations);
+        addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewMaterialBinCard);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewRawMaterialStockTrace);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanViewPackagingMaterialStockTrace);
         addPermission(PermissionModules.Warehouse, PermissionSubmodules.ApprovedMaterials, PermissionKeys.CanPrintRawMaterialStockTrace);
