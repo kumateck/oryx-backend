@@ -169,12 +169,23 @@ internal static class ProductionMaterialRepairPlanning
         return reservations.GroupBy(item => item.MaterialBatch.MaterialId).OrderBy(group => group.Key).Select(group =>
         {
             var first = group.First();
-            var quantities = group.Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, first.UoM?.Symbol, item.DensityGramsPerMilliliter)).ToList();
+            var quantities = group.Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, first.UoM?.Symbol, ReservationDensity(item, null))).ToList();
             if (quantities.Any(value => !value.HasValue)) blockers.Add("The existing reservation units cannot be reconciled.");
             return new ProductionMaterialRequirement { MaterialId = group.Key, Name = first.MaterialBatch.Material.Name,
                 UnitId = first.UoMId, Unit = first.UoM?.Symbol ?? "", Quantity = quantities.Sum(value => value.GetValueOrDefault()) };
         }).ToList();
     }
+
+    /// <summary>
+    /// The density a reservation's quantity converts with. Reservations made while the department counted the material in
+    /// the batch's own family (ml for ml) recorded none; after the department switches family (ml to mg) they convert with the
+    /// configuration's density, else the material's verified one.
+    /// </summary>
+    internal static decimal? ReservationDensity(MaterialBatchReservedQuantity reservation, ProductionMaterialRequirement? requirement) =>
+        reservation.DensityGramsPerMilliliter is > 0 ? reservation.DensityGramsPerMilliliter
+        : requirement?.DensityGramsPerMilliliter is > 0 ? requirement.DensityGramsPerMilliliter
+        : reservation.MaterialBatch?.Material?.DensityGramsPerMilliliter is > 0 ? reservation.MaterialBatch.Material.DensityGramsPerMilliliter
+        : null;
 
     private static List<ProductionMaterialRepairLine> Lines(List<ProductionMaterialRequirement> before,
         List<ProductionMaterialRequirement> after, List<MaterialBatchReservedQuantity> reservations,
@@ -185,7 +196,7 @@ internal static class ProductionMaterialRepairPlanning
             var current = after.FirstOrDefault(item => item.MaterialId == id) ?? old;
             var oldQuantity = old is null ? 0 : MaterialDensity.Convert(old.Quantity, old.Unit, current.Unit, old.DensityGramsPerMilliliter);
             var quantities = reservations.Where(item => item.MaterialBatch.MaterialId == id)
-                .Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, current.Unit, item.DensityGramsPerMilliliter)).ToList();
+                .Select(item => MaterialDensity.Convert(item.Quantity, item.UoM?.Symbol, current.Unit, ReservationDensity(item, current))).ToList();
             if (oldQuantity is null || quantities.Any(value => !value.HasValue)) blockers.Add($"{current.Name}: the before/after units cannot be reconciled.");
             var quantity = after.FirstOrDefault(item => item.MaterialId == id)?.Quantity ?? 0;
             var shortage = allocation.Shortages.GetValueOrDefault(id);
