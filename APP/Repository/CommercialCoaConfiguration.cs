@@ -23,7 +23,8 @@ internal static class CommercialCoaConfiguration
                 "A Microbial ARD must explicitly select at least one COA item.");
         if (selected.Count == 0)
         {
-            selected = available.Select((item, index) => new CommercialCoaItemRequest
+            // With no explicit list, seed from the template's "Report on COA" choices.
+            selected = available.Where(item => item.Field.ReportOnCoa).Select((item, index) => new CommercialCoaItemRequest
             {
                 FormFieldId = item.Field.Id,
                 DisplayLabel = item.Field.Question?.Label ?? item.Section.Name,

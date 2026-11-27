@@ -3396,6 +3396,20 @@
   },
   {
     "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanViewProductCoaReportedTests",
+    "name": "Can View Product Coa Reported Tests",
+    "description": "Allows the user to  view product coa reported tests."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanEditProductCoaReportedTests",
+    "name": "Can Edit Product Coa Reported Tests",
+    "description": "Allows the user to  edit product coa reported tests."
+  },
+  {
+    "module": "Quality Control",
     "submodule": "Material Specification",
     "key": "CanViewRawMaterialMicrobialLimits",
     "name": "Can View Raw Material Microbial Limits",
@@ -6333,6 +6347,13 @@
     "key": "CanRepairTestFormula",
     "name": "Can Repair Test Formula",
     "description": "Allows the user to  repair test formula."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Testing",
+    "key": "CanRecalculatePercentageFormulaResults",
+    "name": "Can Recalculate Percentage Formula Results",
+    "description": "Allows the user to  recalculate percentage formula results."
   },
   {
     "module": "Quality Control",

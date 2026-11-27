@@ -149,7 +149,13 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
             var sectionReferences = await SpecificationTestReferences.Values(context, response);
             // A typed microbial limit on the specification prints instead of the COA item's typed-in text.
             var microbialLimitTexts = await APP.Services.Forms.Microbial.MicrobialLimitRuntime.Texts(context, response);
-            foreach (var item in ard.Items.OrderBy(item => item.DisplayOrder))
+            // The ARD's COA items set the printed label and order; the template and specification decide whether a test prints at all.
+            var hiddenFields = await APP.Services.Forms.CoaReporting.CoaReportingRuntime.HiddenFields(context, response);
+            var reportedItems = ard.Items.Where(item => !hiddenFields.Contains(item.FormFieldId)).ToList();
+            if (reportedItems.Count == 0)
+                return Error.Conflict("COA.Reportability",
+                    "No test on this ARD is reported on the certificate. Tick \"Report on COA\" on the template or the specification.");
+            foreach (var item in reportedItems.OrderBy(item => item.DisplayOrder))
             {
                 var result = response.FormResponses.SingleOrDefault(value =>
                     value.FormFieldId == item.FormFieldId);
