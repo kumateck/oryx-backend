@@ -162,15 +162,19 @@ internal static class FormAnswerCompleteness
     private static bool Numbers(JsonElement value, int count) => value.ValueKind == JsonValueKind.Array
         && value.GetArrayLength() >= count && value.EnumerateArray().All(Numeric);
     /// <summary>
-    /// The readings table is complete when every column has at least one reading and every filled cell is a number.
-    /// Columns may hold fewer readings than the table has rows (for example five standard injections and two per
-    /// sample); the formula's column statistics are taken over the filled cells, so blanks are not values.
+    /// The readings table is complete when every column has at least two readings (or every row, when the table has
+    /// fewer than two) and every filled cell is a number. The remaining rows are optional: for example five standard
+    /// injections and two per sample. The formula's column statistics are taken over the filled cells, so blanks are
+    /// not values.
     /// Not used for worksheets with calculated table columns, which need every cell.
     /// </summary>
+    /// <summary>Fewest readings a column needs before its average is taken.</summary>
+    internal const int MinimumReadings = 2;
     private static bool Readings(IReadOnlyList<JsonElement> table, int rows, int columns)
     {
         if (table.Count < rows || table.Any(row => row.ValueKind != JsonValueKind.Array)) return false;
-        var filled = new bool[columns];
+        var required = Math.Min(MinimumReadings, rows);
+        var filled = new int[columns];
         foreach (var row in table)
         {
             var index = 0;
@@ -182,12 +186,12 @@ internal static class FormAnswerCompleteness
                 if (!blank)
                 {
                     if (!Numeric(cell)) return false;
-                    filled[index] = true;
+                    filled[index]++;
                 }
                 index++;
             }
         }
-        return filled.All(column => column);
+        return filled.All(count => count >= Math.Max(required, 1));
     }
     private static bool Inputs(JsonElement configured, JsonElement entered) => Items(configured).All(input =>
         Text(Get(input, "key")) && Numeric(Get(entered, Get(input, "key").GetString()!)))
