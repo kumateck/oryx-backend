@@ -166,6 +166,7 @@ public partial class ApplicationDbContext(
     public DbSet<HoldingMaterialTransferBatch> HoldingMaterialTransferBatches { get; set; }
 
     public DbSet<MaterialSpecification> MaterialSpecifications { get; set; }
+    public DbSet<SpecificationMicrobialLimit> SpecificationMicrobialLimits { get; set; }
 
     public DbSet<MaterialReject> MaterialRejects { get; set; }
     public DbSet<DistributeMaterial> DistributeMaterials { get; set; }
@@ -2364,6 +2365,16 @@ public partial class ApplicationDbContext(
             .WithMany().HasForeignKey(item => item.RequestedById).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Product)
             .WithMany().HasForeignKey(item => item.ProductId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SpecificationMicrobialLimit>().HasOne(item => item.FormField)
+            .WithMany().HasForeignKey(item => item.FormFieldId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SpecificationMicrobialLimit>().HasOne(item => item.MaterialSpecification)
+            .WithMany().HasForeignKey(item => item.MaterialSpecificationId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SpecificationMicrobialLimit>().HasOne(item => item.ProductSpecification)
+            .WithMany().HasForeignKey(item => item.ProductSpecificationId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SpecificationMicrobialLimit>().Property(item => item.Value).HasPrecision(18, 4);
+        modelBuilder.Entity<SpecificationMicrobialLimit>().Property(item => item.Quantity).HasPrecision(18, 4);
+        modelBuilder.Entity<SpecificationMicrobialLimit>().ToTable(table => table.HasCheckConstraint("CK_SpecificationMicrobialLimits_OneSpecification",
+            "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)"));
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.QtppForm)
             .WithMany().HasForeignKey(item => item.QtppFormId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Attachment)

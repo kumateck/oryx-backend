@@ -13,6 +13,7 @@ internal static class FormAnswerCompleteness
     public static bool IsComplete(string? value, QuestionType type, string? definition)
     {
         if (string.IsNullOrWhiteSpace(value)) return false;
+        if (Microbial.MicrobialValues.IsMicrobial(type)) return Microbial.MicrobialValues.IsComplete(type, value);
         if (type is not (QuestionType.Formula or QuestionType.Table
             or QuestionType.Checkbox or QuestionType.Instrument)) return true;
         try

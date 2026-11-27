@@ -15,10 +15,13 @@ public static class FormErrors
     public static Error SectionMissing() =>
         Error.Validation("Form.Section", "Form must have at least one section.");
 
+    /// <summary>Rich-text section and form names as plain text for messages.</summary>
+    public static string PlainName(string value) =>
+        WebUtility.HtmlDecode(Regex.Replace(value ?? "", "<[^<>]*>", " ")).Replace('\u00a0', ' ').Trim();
+
     public static Error SectionWithoutQuestions(string formName, string sectionTitle, int position)
     {
-        static string PlainText(string value) =>
-            WebUtility.HtmlDecode(Regex.Replace(value ?? "", "<[^<>]*>", " ")).Replace('\u00a0', ' ').Trim();
+        static string PlainText(string value) => PlainName(value);
 
         var title = PlainText(sectionTitle);
         var name = PlainText(formName);

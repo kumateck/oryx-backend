@@ -857,6 +857,18 @@ public static class PermissionKeys
     public const string CanEditProductStp = "CanEditProductStp";
     public const string CanDeleteProductStp = "CanDeleteProductStp";
     public const string CanViewProductSpecifications = "CanViewProductSpecifications";
+    /// <summary>View the typed microbial limits of a raw material specification.</summary>
+    public const string CanViewRawMaterialMicrobialLimits = "CanViewRawMaterialMicrobialLimits";
+    /// <summary>Change the typed microbial limits of a raw material specification, with a recorded reason.</summary>
+    public const string CanEditRawMaterialMicrobialLimits = "CanEditRawMaterialMicrobialLimits";
+    /// <summary>View the typed microbial limits of a packaging material specification.</summary>
+    public const string CanViewPackagingMaterialMicrobialLimits = "CanViewPackagingMaterialMicrobialLimits";
+    /// <summary>Change the typed microbial limits of a packaging material specification, with a recorded reason.</summary>
+    public const string CanEditPackagingMaterialMicrobialLimits = "CanEditPackagingMaterialMicrobialLimits";
+    /// <summary>View the typed microbial limits of a product specification.</summary>
+    public const string CanViewProductMicrobialLimits = "CanViewProductMicrobialLimits";
+    /// <summary>Change the typed microbial limits of a product specification, with a recorded reason.</summary>
+    public const string CanEditProductMicrobialLimits = "CanEditProductMicrobialLimits";
     /// <summary>View the per-product assay outputs and their COA reporting configuration.</summary>
     public const string CanViewProductAssayReporting = "CanViewProductAssayReporting";
     /// <summary>Change per-product assay COA reporting rules with a recorded reason.</summary>
@@ -3207,6 +3219,12 @@ public static class PermissionUtils
             PermissionKeys.CanExportProductSpecification);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductAssayReporting);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductAssayReporting);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductMicrobialLimits);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductMicrobialLimits);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewRawMaterialMicrobialLimits);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditRawMaterialMicrobialLimits);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewPackagingMaterialMicrobialLimits);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditPackagingMaterialMicrobialLimits);
         addPermission(
             PermissionModules.QualityControl,
             PermissionSubmodules.ProductSpecification,

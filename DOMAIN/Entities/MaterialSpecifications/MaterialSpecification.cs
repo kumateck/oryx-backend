@@ -16,6 +16,9 @@ public class MaterialSpecification : BaseEntity, IVerifiable
     public DateTime ReviewDate { get; set; }
     public Guid FormId { get; set; }
     public Form Form { get; set; }
+    /// <summary>The microbial worksheet template. Its sections carry the microbial tests and their references; FormId stays the chemical template.</summary>
+    public Guid? MicrobialFormId { get; set; }
+    public Form MicrobialForm { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
     public string Reference { get; set; }
