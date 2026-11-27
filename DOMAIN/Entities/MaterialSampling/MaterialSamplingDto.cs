@@ -6,6 +6,8 @@ namespace DOMAIN.Entities.MaterialSampling;
 
 public class MaterialSamplingDto
 {
+    /// <summary>The sampling's id: the material test, as formula repair and other test actions name it.</summary>
+    public Guid Id { get; set; }
     public GrnListDto GrnDto { get; set; }
     public CollectionItemDto MaterialBatch { get; set; }
     public string ArNumber { get; set; }
