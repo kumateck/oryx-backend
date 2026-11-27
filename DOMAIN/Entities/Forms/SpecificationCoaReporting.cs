@@ -11,8 +11,11 @@ namespace DOMAIN.Entities.Forms;
 /// </summary>
 public class SpecificationCoaReporting : BaseEntity
 {
-    public Guid ProductSpecificationId { get; set; }
+    /// <summary>The product specification the override belongs to; exactly one of this and <see cref="MaterialSpecificationId"/> is set.</summary>
+    public Guid? ProductSpecificationId { get; set; }
     public ProductSpecification ProductSpecification { get; set; }
+    public Guid? MaterialSpecificationId { get; set; }
+    public DOMAIN.Entities.MaterialSpecifications.MaterialSpecification MaterialSpecification { get; set; }
     public Guid FormFieldId { get; set; }
     public FormField FormField { get; set; }
     public bool ReportOnCoa { get; set; }

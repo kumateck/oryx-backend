@@ -3411,6 +3411,34 @@
   {
     "module": "Quality Control",
     "submodule": "Material Specification",
+    "key": "CanViewRawMaterialCoaReportedTests",
+    "name": "Can View Raw Material Coa Reported Tests",
+    "description": "Allows the user to  view raw material coa reported tests."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanEditRawMaterialCoaReportedTests",
+    "name": "Can Edit Raw Material Coa Reported Tests",
+    "description": "Allows the user to  edit raw material coa reported tests."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanViewPackagingMaterialCoaReportedTests",
+    "name": "Can View Packaging Material Coa Reported Tests",
+    "description": "Allows the user to  view packaging material coa reported tests."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanEditPackagingMaterialCoaReportedTests",
+    "name": "Can Edit Packaging Material Coa Reported Tests",
+    "description": "Allows the user to  edit packaging material coa reported tests."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
     "key": "CanViewRawMaterialMicrobialLimits",
     "name": "Can View Raw Material Microbial Limits",
     "description": "Allows the user to  view raw material microbial limits."
