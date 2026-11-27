@@ -20,9 +20,10 @@ internal static class ResponseApprovalSubmission
         var correction = await APP.Services.Forms.TestCorrectionGuard.CanGenerate(context, response);
         if (correction.IsFailure) return correction;
 
+        var configurationType = await ResponseApprovalRoute.ConfigurationTypeAsync(context, responseId);
         var configurations = await context.Approvals.AsNoTracking()
             .Include(item => item.ApprovalStages)
-            .Where(item => item.ItemType == nameof(Response)).Take(2).ToListAsync();
+            .Where(item => item.ItemType == configurationType).Take(2).ToListAsync();
         if (configurations.Count > 1)
             return Error.Conflict("Response.ApprovalAmbiguous",
                 "Multiple response approval configurations exist.");
