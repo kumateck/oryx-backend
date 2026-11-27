@@ -32,6 +32,8 @@ public class CreateFormFieldRequest
 {
     public Guid QuestionId { get; set; }
     public bool Required { get; set; }
+    /// <summary>Whether the test prints on the certificate of analysis. Omitted means yes.</summary>
+    public bool ReportOnCoa { get; set; } = true;
     public int Rank { get; set; }
     public string Description { get; set; }
 }

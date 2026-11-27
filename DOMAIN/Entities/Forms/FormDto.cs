@@ -36,6 +36,8 @@ public class FormFieldDto : BaseDto
     public CollectionItemDto FormSection { get; set; }
     public QuestionDto Question { get; set; }
     public bool Required { get; set; }
+    /// <summary>The template's choice of whether this test prints on the certificate of analysis.</summary>
+    public bool ReportOnCoa { get; set; }
     public string Description { get; set; }
     public int Rank { get; set; }
 }
@@ -68,6 +70,12 @@ public class ResponseDetailDto : ResponseDto
     public bool Approved { get; set; }
     public bool Rejected { get; set; }
     public bool HasPendingApproval { get; set; }
+
+    /// <summary>
+    /// Fields of this response that do not print on the certificate: the template's "Report on COA" choice,
+    /// overridden by the specification. A section with no reported field is left off the certificate and out of its conclusion.
+    /// </summary>
+    public List<Guid> CoaHiddenFieldIds { get; set; } = [];
 }
 
 public class FormResponseDto : WithAttachment

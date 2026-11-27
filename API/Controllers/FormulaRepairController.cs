@@ -50,6 +50,19 @@ public sealed class FormulaRepairController(QuestionFormulaRepairService service
     public Task<IResult> Evaluate(Guid atrId, Guid formFieldId, EvaluateRepairedFormulaRequest request) =>
         Run(() => service.Evaluate(new(atrId, formFieldId), request.ExpectedConfigurationHash));
 
+    [HttpGet("percentage-recalculation", Name = "GetPercentageRecalculation")]
+    [Authorize(PermissionKeys.CanRecalculatePercentageFormulaResults)]
+    [ProducesResponseType(typeof(List<PercentageRecalculationItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public Task<IResult> PercentageRecalculation() => Run(service.PercentagePreview);
+
+    [HttpPost("percentage-recalculation", Name = "ApplyPercentageRecalculation")]
+    [Authorize(PermissionKeys.CanRecalculatePercentageFormulaResults)]
+    [ProducesResponseType(typeof(List<PercentageRecalculationResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public Task<IResult> ApplyPercentageRecalculation(ApplyPercentageRecalculationRequest request) => Run(() => service.PercentageApply(request));
+
     private static async Task<IResult> Run<T>(Func<Task<Result<T>>> action)
     {
         try { var result = await action(); return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails(); }

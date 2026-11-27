@@ -31,6 +31,8 @@ public class UpdateFormFieldRequest
 {
     public Guid QuestionId { get; set; }
     public bool Required { get; set; }
+    /// <summary>Whether the test prints on the certificate of analysis. Omitted means yes.</summary>
+    public bool ReportOnCoa { get; set; } = true;
     public int Rank { get; set; }
 
     [StringLength(1000000)]

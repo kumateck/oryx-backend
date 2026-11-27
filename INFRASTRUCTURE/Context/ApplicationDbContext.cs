@@ -167,6 +167,7 @@ public partial class ApplicationDbContext(
 
     public DbSet<MaterialSpecification> MaterialSpecifications { get; set; }
     public DbSet<SpecificationMicrobialLimit> SpecificationMicrobialLimits { get; set; }
+    public DbSet<SpecificationCoaReporting> SpecificationCoaReportings { get; set; }
 
     public DbSet<MaterialReject> MaterialRejects { get; set; }
     public DbSet<DistributeMaterial> DistributeMaterials { get; set; }
@@ -2376,6 +2377,11 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<SpecificationMicrobialLimit>().Property(item => item.Quantity).HasPrecision(18, 4);
         modelBuilder.Entity<SpecificationMicrobialLimit>().ToTable(table => table.HasCheckConstraint("CK_SpecificationMicrobialLimits_OneSpecification",
             "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)"));
+        modelBuilder.Entity<SpecificationCoaReporting>().HasOne(item => item.FormField)
+            .WithMany().HasForeignKey(item => item.FormFieldId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SpecificationCoaReporting>().HasOne(item => item.ProductSpecification)
+            .WithMany().HasForeignKey(item => item.ProductSpecificationId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SpecificationCoaReporting>().HasIndex(item => new { item.ProductSpecificationId, item.FormFieldId }).IsUnique();
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.QtppForm)
             .WithMany().HasForeignKey(item => item.QtppFormId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Attachment)
