@@ -44,8 +44,8 @@ public sealed partial class QuestionFormulaRepairService
         grants = await Grants();
         if (!grants.Contains(PermissionKeys.CanExecuteFormulaResponse)) return Denied();
         var freshResponse = await db.Responses.AsNoTracking().SingleAsync(r => r.Id == response.Id);
-        var freshAtr = await db.AnalyticalTestRequests.AsNoTracking().SingleAsync(a => a.Id == selected.Atr.Id);
-        if (!await CanAccess(freshAtr, selected.Field, grants)) return Denied();
+        var freshAtr = await LoadTest(selected.Atr.Id);
+        if (freshAtr is null || !await CanAccess(freshAtr, selected.Field, grants)) return Denied();
         closed = await Closed(selected with { Atr = freshAtr, Response = freshResponse });
         if (closed is not null) return Conflict(closed);
         var latestPin = (await LegacyFormulaConfigurationReader.Latest(db, [freshResponse.Id])).SingleOrDefault(p => p.FormFieldId == field.Id);
