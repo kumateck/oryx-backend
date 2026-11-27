@@ -223,6 +223,10 @@ public class ApprovalRepository(
             return await ApprovedVendorListApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == StpRevisionApprovalHandler.ModelType)
+            return await StpRevisionApprovalHandler.ApproveAsync(
+                context, modelId, userId, roleIds, comments);
+
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.ApproveAsync(
                 context, modelId, userId, roleIds, comments);
@@ -2262,6 +2266,10 @@ public class ApprovalRepository(
             return await ApprovedVendorListApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
 
+        if (modelType == StpRevisionApprovalHandler.ModelType)
+            return await StpRevisionApprovalHandler.RejectAsync(
+                context, modelId, userId, roleIds, comments);
+
         if (modelType == nameof(RndProject))
             return await RndProjectApprovalHandler.RejectAsync(
                 context, modelId, userId, roleIds, comments);
@@ -3914,6 +3922,22 @@ public class ApprovalRepository(
                 });
         }
 
+        if (modelType is null or StpRevisionApprovalHandler.ModelType)
+        {
+            var stpRevisions = await pending.StpRevisions.AsSplitQuery()
+                .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                .ToListAsync();
+            foreach (var revision in stpRevisions)
+                entitiesRequiringApproval.Add(new ApprovalEntity {
+                    ModelType = StpRevisionApprovalHandler.ModelType, Id = revision.Id,
+                    Code = $"STP {revision.StpNumber} · revision {revision.RevisionNumber}",
+                    Department = mapper.Map<DepartmentDto>(revision.CreatedBy?.Department),
+                    CreatedAt = revision.CreatedAt,
+                    RequestedBy = mapper.Map<UserDto>(revision.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(revision.Id),
+                });
+        }
+
         if (modelType is null or "Payment")
         {
             var payments = await PaymentApprovalQueue.Include(pending.Payments).ToListAsync();
@@ -4074,6 +4098,7 @@ public class ApprovalRepository(
         await Collect(context.CustomerQuotationApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.SupplierPricingAgreementApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.ApprovedVendorListApprovals.Where(stage => stage.ActivatedAt.HasValue));
+        await Collect(context.StpRevisionApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.CostingPriceListApprovals.Where(stage => stage.ActivatedAt.HasValue));
         await Collect(context.AllocateProductionOrderApprovals);
         await Collect(context.RndProjectApprovals);
@@ -4635,6 +4660,20 @@ public class ApprovalRepository(
                     RequestedBy = mapper.Map<UserDto>(vendorList.CreatedBy),
                     ApprovalLogs = GetApprovalLogs(modelId),
                 };
+            case StpRevisionApprovalHandler.ModelType:
+                var stpRevision = await context.StpRevisions
+                    .Include(item => item.CreatedBy).ThenInclude(user => user.Department)
+                    .FirstOrDefaultAsync(item => item.Id == modelId);
+                if (stpRevision is null)
+                    return Error.NotFound("StpRevision.NotFound", "STP revision not found.");
+                return new ApprovalEntity {
+                    ModelType = modelType, Id = modelId,
+                    Code = $"STP {stpRevision.StpNumber} · revision {stpRevision.RevisionNumber}",
+                    CreatedAt = stpRevision.CreatedAt,
+                    Department = mapper.Map<DepartmentDto>(stpRevision.CreatedBy?.Department),
+                    RequestedBy = mapper.Map<UserDto>(stpRevision.CreatedBy),
+                    ApprovalLogs = GetApprovalLogs(modelId),
+                };
 
             default:
                 throw new NotImplementedException(
@@ -4867,6 +4906,9 @@ public class ApprovalRepository(
                 break;
             case ApprovedVendorListApprovalHandler.ModelType:
                 await ApprovedVendorListApprovalHandler.CreateAsync(context, modelId, stages, approval);
+                break;
+            case StpRevisionApprovalHandler.ModelType:
+                await StpRevisionApprovalHandler.CreateAsync(context, modelId, stages, approval);
                 break;
             case nameof(RndProject):
                 await RndProjectApprovalHandler.CreateAsync(context, modelId, stages, approval);
@@ -5960,7 +6002,7 @@ public class ApprovalRepository(
         context.SupplierPricingAgreementApprovals.IgnoreQueryFilters(), context.AllocateProductionOrderApprovals.IgnoreQueryFilters(), context.RndProjectApprovals.IgnoreQueryFilters(),
         context.RndFormulationApprovals.IgnoreQueryFilters(), context.RndTechnologyTransferApprovals.IgnoreQueryFilters(), context.FinishedGoodsTransferNoteApprovals.IgnoreQueryFilters(),
         context.ProductionExtraPackingApprovals.IgnoreQueryFilters(), context.PaymentApprovals.IgnoreQueryFilters(), context.ResponseApprovals.IgnoreQueryFilters(),
-        context.ApprovedVendorListApprovals, context.CostingPriceListApprovals,
+        context.ApprovedVendorListApprovals, context.CostingPriceListApprovals, context.StpRevisionApprovals,
     ];
 
     /// <summary>
@@ -6102,6 +6144,15 @@ public class ApprovalRepository(
                 )
                 .ToListAsync();
             foreach (var a in avlApprovals)
+                a.UserId = request.ToUserId;
+
+            // STP revisions
+            var stpApprovals = await context
+                .StpRevisionApprovals.Where(a =>
+                    a.UserId == request.FromUserId && a.Status == ApprovalStatus.Pending
+                )
+                .ToListAsync();
+            foreach (var a in stpApprovals)
                 a.UserId = request.ToUserId;
 
             // Service Memos

@@ -91,6 +91,10 @@ public static class LegacyFormulaRepairDefinition
         return inputs?.OfType<JsonObject>().Any(input => Text(input, "key") == match.Groups[2].Value) == true;
     }
 
+    /// <summary>Whether the legacy settings report the result in percent ("Percentage" switched on).</summary>
+    public static bool Percentage(JsonObject config) =>
+        config["percentageResults"]?.ToString() is "true" or "True" || config["percent"]?.ToString() is "true" or "True";
+
     public static (JsonElement Definition, string Hash) Compile(string raw)
     {
         var config = Payload(raw); var universal = Number(config, "type", 0) == 3;
@@ -100,6 +104,10 @@ public static class LegacyFormulaRepairDefinition
             ? LegacyFormulaInputKeys.Expand(config, Regex.Replace(normalized, @":sample(Avg|SD|RSD)\b|:sampleInput\.|:R(\d+)sample\b", m => m.Value.StartsWith(":sampleInput", StringComparison.Ordinal)
                 ? $":sampleInput{sample}." : m.Groups[2].Success ? $":R{m.Groups[2].Value}sample{sample}" : $":sample{sample}{m.Groups[1].Value}"), sample)
             : normalized).ToArray();
+        // "Percentage" means the formula gives a fraction reported in percent, as Oryx Next showed it: the result is the
+        // expression times 100. Without this a 103% assay was stored as 1.03.
+        var percentage = Percentage(config);
+        if (percentage) expressions = expressions.Select(expression => $"({expression}) * 100").ToArray();
         var definition = JsonSerializer.SerializeToElement(new
         {
             formulaLanguageVersion = "oryx-formula-v1", numericPolicyVersion = Policy,
@@ -108,7 +116,7 @@ public static class LegacyFormulaRepairDefinition
             results = expressions.Select((expression, i) => new
             {
                 key = $"sample{i + 1}", label = $"Sample {i + 1}", expression, unit = (string?)null,
-                numericScale = config["percentageResults"]?.ToString() == "true" || config["percent"]?.ToString() == "true" ? 2 : 0,
+                numericScale = percentage ? 2 : 0,
                 rounding = new { kind = 0, digits = Number(config, "finalResultDecimalPlaces", Number(config, "decimalPlaces", 2)) }
             }).ToArray()
         });

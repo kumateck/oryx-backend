@@ -416,6 +416,8 @@ public class ApprovalController(IApprovalRepository repository, IApprovalDelegat
         "PayrollRun" => approve ? PermissionKeys.CanApprovePayrollRun : PermissionKeys.CanCancelPayrollRun,
         "CostingPriceList" => approve ? PermissionKeys.CanApproveCostingPriceList : PermissionKeys.CanRejectCostingPriceList,
         "ApprovedVendorList" => approve ? PermissionKeys.CanApproveApprovedVendorList : PermissionKeys.CanRejectApprovedVendorList,
+        // The key depends on the revision's stored kind (raw, packaging, product); StpRevisionApprovalHandler checks it.
+        "StpRevision" => null,
         _ => approve ? PermissionKeys.CanApprovePendingApproval : PermissionKeys.CanRejectPendingApproval,
     };
 }

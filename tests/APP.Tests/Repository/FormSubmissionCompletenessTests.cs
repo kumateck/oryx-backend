@@ -148,6 +148,8 @@ public sealed class FormSubmissionCompletenessTests
     [InlineData("""[["795.1","820.1","813.5"],["795.1","820.3","813.9"],["795.1",null,null],["794.7",null,null],["794.0",null,null]]""", false, true)]
     // A column with no reading at all is not.
     [InlineData("""[["795.1","820.1",""],["795.1","820.3",""],["795.1","",""],["794.7","",""],["794.0","",""]]""", false, false)]
+    // Each column needs at least two readings before its average is taken.
+    [InlineData("""[["795.1","820.1","813.5"],["795.1","820.3",""],["795.1","",""],["794.7","",""],["794.0","",""]]""", false, false)]
     // A filled cell must be a number.
     [InlineData("""[["795.1","820.1","813.5"],["795.1","x","813.9"],["795.1","",""],["794.7","",""],["794.0","",""]]""", false, false)]
     // Calculated table columns evaluate every cell, so those worksheets still need every reading.

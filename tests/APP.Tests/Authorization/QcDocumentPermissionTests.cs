@@ -121,6 +121,44 @@ public sealed class QcDocumentPermissionTests
     }
 
     [Fact]
+    public async Task Microbial_limits_use_the_specification_material_kind_and_their_own_view_and_edit_keys()
+    {
+        var packagingOnly = Seed(PermissionKeys.CanViewPackagingMaterialMicrobialLimits);
+        Assert.True(await Allowed(packagingOnly, QcDocument.MaterialSpecification, QcTask.ViewMicrobialLimits, new() { ["id"] = packagingOnly.PackagingSpec }));
+        Assert.False(await Allowed(packagingOnly, QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits, new() { ["id"] = packagingOnly.PackagingSpec }));
+        // The raw-material key does not open a packaging specification, and editing the specification does not open its limits.
+        var wrongVariant = Seed(PermissionKeys.CanEditRawMaterialMicrobialLimits, PermissionKeys.CanEditPackagingMaterialSpecification);
+        Assert.False(await Allowed(wrongVariant, QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits, new() { ["id"] = wrongVariant.PackagingSpec }));
+        var product = Seed(PermissionKeys.CanEditProductMicrobialLimits);
+        Assert.True(await Allowed(product, QcDocument.ProductSpecification, QcTask.EditMicrobialLimits, new() { ["id"] = Guid.NewGuid() }));
+        Assert.False(await Allowed(product, QcDocument.ProductSpecification, QcTask.ViewMicrobialLimits, new() { ["id"] = Guid.NewGuid() }));
+    }
+
+    [Fact]
+    public void Microbial_limit_endpoints_name_their_task_and_are_not_anonymous()
+    {
+        var expected = new (string Action, QcDocument Document, QcTask Task)[]
+        {
+            ("GetMaterial", QcDocument.MaterialSpecification, QcTask.ViewMicrobialLimits),
+            ("SaveMaterial", QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits),
+            ("GetProduct", QcDocument.ProductSpecification, QcTask.ViewMicrobialLimits),
+            ("SaveProduct", QcDocument.ProductSpecification, QcTask.EditMicrobialLimits),
+        };
+        foreach (var (action, document, task) in expected)
+        {
+            var method = Assert.Single(typeof(SpecificationMicrobialLimitsController).GetMethods().Where(item => item.Name == action));
+            var attribute = Assert.Single(method.GetCustomAttributes<QcDocumentPermissionAttribute>());
+            Assert.Equal((document, task), (attribute.Document, attribute.Task));
+            Assert.Empty(method.GetCustomAttributes<Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute>());
+        }
+        Assert.Empty(typeof(SpecificationMicrobialLimitsController).GetCustomAttributes<Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute>());
+        var registered = PermissionUtils.GeneratePermissions().Select(permission => permission.Key).ToList();
+        foreach (var key in new[] { PermissionKeys.CanViewRawMaterialMicrobialLimits, PermissionKeys.CanEditRawMaterialMicrobialLimits, PermissionKeys.CanViewPackagingMaterialMicrobialLimits,
+                     PermissionKeys.CanEditPackagingMaterialMicrobialLimits, PermissionKeys.CanViewProductMicrobialLimits, PermissionKeys.CanEditProductMicrobialLimits })
+            Assert.Single(registered, item => item == key);
+    }
+
+    [Fact]
     public void Every_qc_document_write_names_its_task_and_every_key_is_registered()
     {
         var expected = new (Type Controller, string Action, QcDocument Document, QcTask Task)[]

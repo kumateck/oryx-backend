@@ -28,7 +28,20 @@ public static class FormValidator
             .Select(item => FormErrors.SectionWithoutQuestions(form.Name, item.Section.Name, item.Position))
             .ToList();
 
+        errors.AddRange(sections.Where(section => section.AnalysisType == null || section.AnalysisType == analysisType)
+            .SelectMany(section => MicrobialSectionErrors(form.Name, section)));
         return errors.Count != 0 ? Result.Failure(errors) : Result.Success();
+    }
+
+    /// <summary>A CFU calculation reads exactly one colony count and one dilution from its own section.</summary>
+    public static IEnumerable<Error> MicrobialSectionErrors(string formName, FormSection section)
+    {
+        var types = section.Fields?.Where(field => field.DeletedAt == null && field.Question is { DeletedAt: null })
+            .Select(field => field.Question.Type).ToList() ?? [];
+        if (!types.Contains(QuestionType.CfuCalculation)) yield break;
+        if (types.Count(type => type == QuestionType.ColonyCount) != 1 || types.Count(type => type == QuestionType.Dilution) != 1)
+            yield return Error.Validation("Form.MicrobialSection",
+                $"In {FormErrors.PlainName(formName)}, the test \"{FormErrors.PlainName(section.Name)}\" calculates CFU, so it needs exactly one colony count and one dilution question.");
     }
 
     private static void ValidateQuestionOptions(Question question, List<Error> errors)
