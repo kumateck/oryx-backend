@@ -3396,6 +3396,20 @@
   },
   {
     "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanViewProductCoaReportedTests",
+    "name": "Can View Product Coa Reported Tests",
+    "description": "Allows the user to  view product coa reported tests."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanEditProductCoaReportedTests",
+    "name": "Can Edit Product Coa Reported Tests",
+    "description": "Allows the user to  edit product coa reported tests."
+  },
+  {
+    "module": "Quality Control",
     "submodule": "Material Specification",
     "key": "CanViewRawMaterialMicrobialLimits",
     "name": "Can View Raw Material Microbial Limits",

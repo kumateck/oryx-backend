@@ -953,6 +953,10 @@ public static class PermissionKeys
     public const string CanViewProductMicrobialLimits = "CanViewProductMicrobialLimits";
     /// <summary>Change the typed microbial limits of a product specification, with a recorded reason.</summary>
     public const string CanEditProductMicrobialLimits = "CanEditProductMicrobialLimits";
+    /// <summary>View which tests of a product specification's templates print on the certificate of analysis.</summary>
+    public const string CanViewProductCoaReportedTests = "CanViewProductCoaReportedTests";
+    /// <summary>Override, with a recorded reason, which tests of a product specification's templates print on the certificate of analysis.</summary>
+    public const string CanEditProductCoaReportedTests = "CanEditProductCoaReportedTests";
     /// <summary>View the per-product assay outputs and their COA reporting configuration.</summary>
     public const string CanViewProductAssayReporting = "CanViewProductAssayReporting";
     /// <summary>Change per-product assay COA reporting rules with a recorded reason.</summary>
@@ -3349,6 +3353,8 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductAssayReporting);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductMicrobialLimits);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductMicrobialLimits);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductCoaReportedTests);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductCoaReportedTests);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewRawMaterialMicrobialLimits);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditRawMaterialMicrobialLimits);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewPackagingMaterialMicrobialLimits);

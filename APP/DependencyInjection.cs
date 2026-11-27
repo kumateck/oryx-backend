@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddScoped<APP.Services.Forms.PendingCertificateService>();
         services.AddScoped<APP.Services.Forms.ProductAssayReportingService>();
         services.AddScoped<APP.Services.Forms.Microbial.SpecificationMicrobialLimitService>();
+        services.AddScoped<APP.Services.Forms.CoaReporting.SpecificationCoaReportingService>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IDesignationRepository, DesignationRepository>();
         services.AddScoped<ILeaveEntitlementRepository, LeaveEntitlementRepository>();

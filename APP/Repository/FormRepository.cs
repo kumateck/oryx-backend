@@ -221,6 +221,7 @@ public class FormRepository(
             || await context.FormFieldRevisions.IgnoreQueryFilters().AnyAsync(r => fieldIds.Contains(r.FormFieldId))
             || await context.CommercialCoaItems.IgnoreQueryFilters().AnyAsync(i => fieldIds.Contains(i.FormFieldId))
             || await context.RoutineCoaItems.IgnoreQueryFilters().AnyAsync(i => fieldIds.Contains(i.FormFieldId))
+            || await context.SpecificationCoaReportings.IgnoreQueryFilters().AnyAsync(i => fieldIds.Contains(i.FormFieldId))
             || await context
                 .FormSections.IgnoreQueryFilters()
                 .AnyAsync(s =>
@@ -1720,6 +1721,7 @@ public class FormRepository(
         var effective = await GetForm(formResponse.FormId, formResponse.Id);
         if (effective.IsFailure) return effective.Errors;
         detail.EffectiveForm = effective.Value;
+        detail.CoaHiddenFieldIds = (await APP.Services.Forms.CoaReporting.CoaReportingRuntime.HiddenFields(context, formResponse)).ToList();
         var reportingTokens = await FormulaResultProjectionService.AttachAsync(
             context, formResponse.FormResponses, detail.FormResponses, calculationClient: calculationClient);
         detail.CoaReportingToken = reportingTokens.GetValueOrDefault(formResponse.Id);
