@@ -255,11 +255,23 @@ public sealed partial class StpRevisionService
         revision.Title = Trim(request.Title);
         revision.Area = Trim(request.Area);
         revision.Reference = Trim(request.Reference);
-        revision.EffectiveDate = request.EffectiveDate;
-        revision.ReviewDate = request.ReviewDate;
-        revision.IssueDate = request.IssueDate;
+        revision.EffectiveDate = Utc(request.EffectiveDate);
+        revision.ReviewDate = Utc(request.ReviewDate);
+        revision.IssueDate = Utc(request.IssueDate);
         if (!string.IsNullOrWhiteSpace(request.Source)) revision.Source = request.Source.Trim();
     }
+
+    /// <summary>
+    /// Header dates are calendar dates. A value without a time zone (a plain "2026-11-27", or a date read from a Word
+    /// file) is that day in UTC; PostgreSQL's timestamptz refuses an unspecified kind.
+    /// </summary>
+    internal static DateTime? Utc(DateTime? value) => value switch
+    {
+        null => null,
+        { Kind: DateTimeKind.Utc } date => date,
+        { Kind: DateTimeKind.Local } date => date.ToUniversalTime(),
+        { } date => DateTime.SpecifyKind(date, DateTimeKind.Utc),
+    };
 
     private static string Trim(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 

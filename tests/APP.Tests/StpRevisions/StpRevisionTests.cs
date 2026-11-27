@@ -195,7 +195,11 @@ public partial class StpRevisionTests
         var draft = Draft(dto);
         draft.Tests[1].Title = "Assay (HPLC)";
         draft.Tests.Insert(1, new StpTestRequest { Number = "5.2", Title = "pH", Steps = [new() { Kind = StpStepKind.Step, Number = "5.2.1", Text = "Determine the pH." }] });
+        // A plain calendar date (no time zone) is stored as that day in UTC, which PostgreSQL's timestamptz requires.
+        draft.EffectiveDate = new DateTime(2026, 11, 27);
         Assert.True((await Service().SaveDraft(id, draft, preparer.User)).IsSuccess);
+        Assert.Equal(DateTimeKind.Utc, db.StpRevisions.Local.Single(revision => revision.Id == id).EffectiveDate!.Value.Kind);
+        Assert.Equal(new DateTime(2026, 11, 27, 0, 0, 0, DateTimeKind.Utc), db.StpRevisions.Local.Single(revision => revision.Id == id).EffectiveDate);
         db.ChangeTracker.Clear();
         var saved = (await Service().Get(id, preparer.User)).Value;
         Assert.Equal(1, saved.Version);
