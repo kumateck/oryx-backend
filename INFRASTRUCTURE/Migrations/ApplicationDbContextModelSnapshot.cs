@@ -11111,6 +11111,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MicrobialFormId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Reference")
                         .HasColumnType("text");
 
@@ -11155,6 +11158,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MaterialId");
+
+                    b.HasIndex("MicrobialFormId");
 
                     b.HasIndex("ResponseId");
 
@@ -15992,6 +15997,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MicrobialFormId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PackingStyle")
                         .HasColumnType("text");
 
@@ -16046,6 +16054,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MicrobialFormId");
 
                     b.HasIndex("ProductId");
 
@@ -34689,6 +34699,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Forms.Form", "MicrobialForm")
+                        .WithMany()
+                        .HasForeignKey("MicrobialFormId");
+
                     b.HasOne("DOMAIN.Entities.Forms.Response", "Response")
                         .WithMany()
                         .HasForeignKey("ResponseId");
@@ -34708,6 +34722,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Material");
+
+                    b.Navigation("MicrobialForm");
 
                     b.Navigation("Response");
 
@@ -37346,6 +37362,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Forms.Form", "MicrobialForm")
+                        .WithMany()
+                        .HasForeignKey("MicrobialFormId");
+
                     b.HasOne("DOMAIN.Entities.Products.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
@@ -37369,6 +37389,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MicrobialForm");
 
                     b.Navigation("Product");
 

@@ -12,6 +12,8 @@ public class CreateProductSpecificationRequest
     [Required] public DateTime EffectiveDate { get; set; }
     [Required] public DateTime ReviewDate { get; set; }
     [Required] public Guid FormId { get; set; }
+    /// <summary>Optional microbial template; must differ from FormId.</summary>
+    public Guid? MicrobialFormId { get; set; }
 
     [Required] public Guid UserId { get; set; }
 
@@ -34,6 +36,8 @@ public class UpdateProductSpecificationRequest
     [Required] public DateTime EffectiveDate { get; set; }
     [Required] public DateTime ReviewDate { get; set; }
     [Required] public Guid FormId { get; set; }
+    /// <summary>Optional microbial template; must differ from FormId.</summary>
+    public Guid? MicrobialFormId { get; set; }
 
     [Required] public TestStage TestStage { get; set; }
 

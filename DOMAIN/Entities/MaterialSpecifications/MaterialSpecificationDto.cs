@@ -16,6 +16,8 @@ public class MaterialSpecificationDto : BaseDto
     public DateTime EffectiveDate { get; set; }
     public DateTime ReviewDate { get; set; }
     public FormDto Form { get; set; }
+    public Guid? MicrobialFormId { get; set; }
+    public FormDto MicrobialForm { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
     public string Reference { get; set; }

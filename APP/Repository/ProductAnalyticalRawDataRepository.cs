@@ -1,3 +1,4 @@
+using APP.Services.Forms;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -64,6 +65,13 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             item.Stage == request.Stage && item.AnalysisType == request.AnalysisType))
             return Error.Conflict("ProductArd.Exists",
                 "This product stage already has an ARD for the requested analysis type.");
+        var specifiedMicrobialForm = await context.ProductSpecifications.AsNoTracking()
+            .Where(item => item.ProductId == productId && item.TestStage == request.Stage && item.MicrobialFormId != null)
+            .Select(item => item.MicrobialFormId).FirstOrDefaultAsync();
+        var requiredForm = SpecificationTemplateSlots.RequiredArdForm(request.AnalysisType, null, specifiedMicrobialForm);
+        if (requiredForm.HasValue && requiredForm != request.FormId)
+            return Error.Validation("ProductArd.MicrobialForm",
+                "A microbial ARD must use the microbial template named on the product stage's specification.");
         if (!form.Sections.Any(section =>
             section.AnalysisType == null || section.AnalysisType == request.AnalysisType))
             return Error.Validation("ProductArd.Worksheet",
@@ -284,6 +292,15 @@ public class ProductAnalyticalRawDataRepository(ApplicationDbContext context, IM
             .Select(item => item.ProductId).ToListAsync();
         var deletedProduct = await DeletedProductGuard.Refuse(context, ardProductIds);
         if (deletedProduct is not null) return deletedProduct;
+        var requestProductId = await context.ProductStandardTestProcedures.Where(item => item.Id == request.StpId)
+            .Select(item => (Guid?)item.ProductId).FirstOrDefaultAsync();
+        var specifiedMicrobialForm = await context.ProductSpecifications.AsNoTracking()
+            .Where(item => item.ProductId == requestProductId && item.TestStage == request.Stage && item.MicrobialFormId != null)
+            .Select(item => item.MicrobialFormId).FirstOrDefaultAsync();
+        var requiredForm = SpecificationTemplateSlots.RequiredArdForm(request.AnalysisType, null, specifiedMicrobialForm);
+        if (requiredForm.HasValue && requiredForm != request.FormId)
+            return Error.Validation("ProductArd.MicrobialForm",
+                "A microbial ARD must use the microbial template named on the product stage's specification.");
         mapper.Map(request, analyticalRawData);
 
         context.ProductAnalyticalRawData.Update(analyticalRawData);
