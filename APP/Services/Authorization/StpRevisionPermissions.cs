@@ -4,7 +4,7 @@ using DOMAIN.Entities.StpRevisions;
 namespace APP.Services.Authorization;
 
 /// <summary>The tasks on a structured STP revision; each has its own key per kind.</summary>
-public enum StpRevisionTask { View, Create, Import, EditDraft, Submit, Edit, Revise, Review, Return, Approve, Reject, Delete }
+public enum StpRevisionTask { View, Create, Import, EditDraft, Submit, Edit, Revise, Review, Return, Approve, Reject, Delete, Export, Print }
 
 /// <summary>
 /// One key per STP revision task and kind (raw material, packaging material, product). The kind of an existing revision
@@ -26,6 +26,8 @@ public static class StpRevisionPermissions
         [(StpRevisionTask.Approve, StpRevisionKind.RawMaterial)] = PermissionKeys.CanApproveRawMaterialStpRevision,
         [(StpRevisionTask.Reject, StpRevisionKind.RawMaterial)] = PermissionKeys.CanRejectRawMaterialStpRevision,
         [(StpRevisionTask.Delete, StpRevisionKind.RawMaterial)] = PermissionKeys.CanDeleteRawMaterialStpRevision,
+        [(StpRevisionTask.Export, StpRevisionKind.RawMaterial)] = PermissionKeys.CanExportRawMaterialStpRevision,
+        [(StpRevisionTask.Print, StpRevisionKind.RawMaterial)] = PermissionKeys.CanPrintRawMaterialStpRevision,
 
         [(StpRevisionTask.View, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanViewPackagingMaterialStpRevisions,
         [(StpRevisionTask.Create, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanCreatePackagingMaterialStpRevision,
@@ -39,6 +41,8 @@ public static class StpRevisionPermissions
         [(StpRevisionTask.Approve, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanApprovePackagingMaterialStpRevision,
         [(StpRevisionTask.Reject, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanRejectPackagingMaterialStpRevision,
         [(StpRevisionTask.Delete, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanDeletePackagingMaterialStpRevision,
+        [(StpRevisionTask.Export, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanExportPackagingMaterialStpRevision,
+        [(StpRevisionTask.Print, StpRevisionKind.PackagingMaterial)] = PermissionKeys.CanPrintPackagingMaterialStpRevision,
 
         [(StpRevisionTask.View, StpRevisionKind.Product)] = PermissionKeys.CanViewProductStpRevisions,
         [(StpRevisionTask.Create, StpRevisionKind.Product)] = PermissionKeys.CanCreateProductStpRevision,
@@ -52,6 +56,8 @@ public static class StpRevisionPermissions
         [(StpRevisionTask.Approve, StpRevisionKind.Product)] = PermissionKeys.CanApproveProductStpRevision,
         [(StpRevisionTask.Reject, StpRevisionKind.Product)] = PermissionKeys.CanRejectProductStpRevision,
         [(StpRevisionTask.Delete, StpRevisionKind.Product)] = PermissionKeys.CanDeleteProductStpRevision,
+        [(StpRevisionTask.Export, StpRevisionKind.Product)] = PermissionKeys.CanExportProductStpRevision,
+        [(StpRevisionTask.Print, StpRevisionKind.Product)] = PermissionKeys.CanPrintProductStpRevision,
     };
 
     public static string Key(StpRevisionTask task, StpRevisionKind kind) => Keys[(task, kind)];

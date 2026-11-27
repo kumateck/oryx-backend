@@ -97,6 +97,8 @@ public sealed class PermissionCatalogTests
                             .Where(key => key is not null).Select(key => key!)))
                     .Concat(action.GetCustomAttributes<API.Authorization.QcDocumentPermissionAttribute>()
                         .SelectMany(attribute => APP.Services.Authorization.QcDocumentPermissions.KeysFor(attribute.Document, attribute.Task)))
+                    .Concat(action.GetCustomAttributes<API.Authorization.StpTestLinkPermissionAttribute>()
+                        .SelectMany(attribute => APP.Services.Authorization.StpTestLinkPermissions.KeysFor(attribute.Write)))
                     .Concat(action.GetCustomAttributes<API.Authorization.StpRevisionPermissionAttribute>()
                         .SelectMany(attribute => APP.Services.Authorization.StpRevisionPermissions.KeysFor(attribute.Task)))
                     .Concat(action.GetCustomAttributes<API.Authorization.MaterialKindPermissionAttribute>()

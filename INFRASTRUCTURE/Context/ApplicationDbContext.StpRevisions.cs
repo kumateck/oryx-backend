@@ -10,6 +10,8 @@ public partial class ApplicationDbContext
     public DbSet<StpRevisionTest> StpRevisionTests => Set<StpRevisionTest>();
     public DbSet<StpRevisionTestStep> StpRevisionTestSteps => Set<StpRevisionTestStep>();
     public DbSet<StpRevisionApproval> StpRevisionApprovals => Set<StpRevisionApproval>();
+    public DbSet<StpRevisionDocument> StpRevisionDocuments => Set<StpRevisionDocument>();
+    public DbSet<StpTestLink> StpTestLinks => Set<StpTestLink>();
 
     private static void ConfigureStpRevisions(ModelBuilder builder)
     {
@@ -42,6 +44,24 @@ public partial class ApplicationDbContext
             .HasForeignKey(item => item.StpRevisionTestId).OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<StpRevisionTestStep>().HasQueryFilter(item => item.DeletedAt == null);
+
+        var document = builder.Entity<StpRevisionDocument>();
+        // One approved file per revision.
+        document.HasIndex(item => item.StpRevisionId).IsUnique();
+        document.HasOne(item => item.StpRevision).WithMany().HasForeignKey(item => item.StpRevisionId).OnDelete(DeleteBehavior.Restrict);
+
+        var link = builder.Entity<StpTestLink>();
+        link.HasQueryFilter(item => item.DeletedAt == null);
+        link.HasIndex(item => new { item.MaterialSpecificationId, item.FormSectionId }, "IX_StpTestLinks_Material").IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL AND \"MaterialSpecificationId\" IS NOT NULL");
+        link.HasIndex(item => new { item.ProductSpecificationId, item.FormSectionId }, "IX_StpTestLinks_Product").IsUnique()
+            .HasFilter("\"DeletedAt\" IS NULL AND \"ProductSpecificationId\" IS NOT NULL");
+        link.ToTable(table => table.HasCheckConstraint("CK_StpTestLinks_OneSpecification",
+            "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)"));
+        link.HasOne<DOMAIN.Entities.MaterialSpecifications.MaterialSpecification>().WithMany().HasForeignKey(item => item.MaterialSpecificationId).OnDelete(DeleteBehavior.Cascade);
+        link.HasOne<DOMAIN.Entities.ProductSpecifications.ProductSpecification>().WithMany().HasForeignKey(item => item.ProductSpecificationId).OnDelete(DeleteBehavior.Cascade);
+        link.HasIndex(item => new { item.Kind, item.StpNumber, item.TestKey });
+        link.HasOne<DOMAIN.Entities.Forms.FormSection>().WithMany().HasForeignKey(item => item.FormSectionId).OnDelete(DeleteBehavior.Cascade);
 
         var stage = builder.Entity<StpRevisionApproval>();
         stage.HasOne(item => item.Approval).WithMany().HasForeignKey(item => item.ApprovalId).OnDelete(DeleteBehavior.Restrict);

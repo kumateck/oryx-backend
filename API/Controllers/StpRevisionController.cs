@@ -52,6 +52,35 @@ public class StpRevisionController(StpRevisionService revisions) : ControllerBas
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
     }
 
+    /// <summary>
+    /// The revision as a Word file. Once approved, this is the file stored at approval, byte for byte (its SHA-256 is in
+    /// the X-Content-SHA256 header); before that, a file generated now and marked as a draft.
+    /// </summary>
+    [HttpGet("{id:guid}/docx")]
+    [StpRevisionPermission(StpRevisionTask.Export)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IFormFile))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStpRevisionDocx(Guid id)
+    {
+        if (Actor is not { } actor) return TypedResults.Unauthorized();
+        var result = await revisions.Export(id, actor);
+        if (result.IsFailure) return result.ToProblemDetails();
+        Response.Headers["X-Content-SHA256"] = result.Value.Sha256;
+        return TypedResults.File(result.Value.Content, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", result.Value.FileName);
+    }
+
+    /// <summary>One revision with its content and signatures, for printing.</summary>
+    [HttpGet("{id:guid}/print")]
+    [StpRevisionPermission(StpRevisionTask.Print)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StpRevisionDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetStpRevisionPrint(Guid id)
+    {
+        if (Actor is not { } actor) return TypedResults.Unauthorized();
+        var result = await revisions.Get(id, actor, StpRevisionTask.Print);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.ToProblemDetails();
+    }
+
     /// <summary>Reads an uploaded Word STP (.docx) into a proposal with a confidence on every value. Nothing is saved.</summary>
     [HttpPost("import")]
     [StpRevisionPermission(StpRevisionTask.Import)]

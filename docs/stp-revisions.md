@@ -58,15 +58,31 @@ One key per task and kind; the kind of an existing revision is read from the sto
 | Approve | `CanApproveRawMaterialStpRevision` | `CanApprovePackagingMaterialStpRevision` | `CanApproveProductStpRevision` | approval decide (checked in `StpRevisionApprovalHandler`) |
 | Reject | `CanRejectRawMaterialStpRevision` | `CanRejectPackagingMaterialStpRevision` | `CanRejectProductStpRevision` | approval decide |
 | Delete | `CanDeleteRawMaterialStpRevision` | `CanDeletePackagingMaterialStpRevision` | `CanDeleteProductStpRevision` | delete |
+| Export | `CanExportRawMaterialStpRevision` | `CanExportPackagingMaterialStpRevision` | `CanExportProductStpRevision` | Word file |
+| Print | `CanPrintRawMaterialStpRevision` | `CanPrintPackagingMaterialStpRevision` | `CanPrintProductStpRevision` | print |
 
 `ApprovalController.DecisionKey("StpRevision")` is null because the key depends on the stored kind; the handler checks it for the deciding user.
+
+## Word export and print
+
+- `GET stp-revisions/{id}/docx` returns the revision as the client's STP Word file (`StpDocxExport`): the running-header table (STANDARD TEST PROCEDURE; STP No., title, Page x of y; Revision No., Effective Date; Supersedes, Review Date; Area, Reference, Issue Date), the body as the client's two-column table (number | text) with 1.0 to 5.0, the reagents, procedure notes and the 5.N tests and 5.N.M steps (a conditions block or note prints its heading, then one line per line; a reference the text does not name prints as "Refer to …"), and a footer with Prepared / Checked / Approved by, designation and date.
+- **The approved file is kept.** The final approval (or the automatic one) generates the file in its own transaction and stores it in `StpRevisionDocuments` with its SHA-256 (`StpRevisionFiles.StoreApprovedAsync`). From then on the endpoint returns those exact bytes, with the hash in `X-Content-SHA256`; the revision's read shows it as `approvedFileSha256`. A draft or pending revision exports a file generated on request, marked "DRAFT, NOT APPROVED" in its header and file name. An approved revision without its file is refused rather than regenerated.
+- `GET stp-revisions/{id}/print` returns the revision (content and signatures) for the desktop's print view.
+- Round trip: importing an exported file gives back the same content for all nine client STPs (`StpDocxRoundTripTests`). To make that hold, the reader now ends the reagents block with the row that lists them; later rows before 5.1 are procedure notes.
+
+## Specification tests citing STP tests
+
+A specification test is a section of the specification's template (shared, or scoped to that specification). `StpTestLinks` records, per specification and section, the STP number (same kind as the specification) and the stable `TestKey` it is performed by. It is a table of its own rather than a column on `FormSection`, so the specification code is untouched (owner's decision, 2026-11-27, while the microbial template slot was in progress).
+
+- `GET stp-test-links/material-specification/{id}` and `.../product-specification/{id}`: the specification's tests with the STP test each cites (number, title and revision from the approved revision; `resolved` is false when the STP no longer has that test approved), the STP numbers recorded for its material or product, and the tests of those STPs' approved revisions to choose from (every approved STP of the kind when none is recorded).
+- `PUT stp-test-links/material-specification/{id}/{formSectionId}` and the product equivalent, body `{ stpNumber, testKey }`: cites a test of the STP's approved revision; both empty clears the link. A section scoped to another specification is refused.
+- Keys: reading takes the specification's view key and changing a link its edit key, in the specification's kind (`CanViewRawMaterialSpecifications` / `CanEditRawMaterialSpecification`, packaging, product). These are the existing keys for viewing and editing the specification; no new key.
 
 ## `StpDocument`
 
 The controlled Word document (ONLYOFFICE, SHA-256 versions, signed review and approval) is unchanged and read-only from here: it is history and an import source. Whether to retire its signed workflow for STPs that have structured content is still open.
 
-## Not in this step (step 4)
+## Still open
 
-- Word export (`GET {id}/docx`) and print (`GET {id}/print`), with Export and Print keys; storing the approved revision's generated .docx with its SHA-256.
-- The specification ↔ STP test link (`FormSection.StpTestKey`) and showing it on the ARD.
-- The import → export → import round-trip test.
+- Whether to retire the `StpDocument` signed workflow for STPs that have structured content.
+- Showing the cited STP test on the analytical raw data pages.

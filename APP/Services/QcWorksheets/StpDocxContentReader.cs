@@ -317,6 +317,7 @@ public static partial class StpDocxContentReader
         var reagentsSplit = false;
         var notes = new List<string>();
         var inReagents = false;
+        var reagentRowSeen = false;
         StpImportTest test = null;
 
         foreach (var entry in entries)
@@ -353,6 +354,9 @@ public static partial class StpDocxContentReader
             if (test is null)
             {
                 // Before the first test: the reagents block, then notes (buffer preparation, "refer to SOP" lines).
+                // The reagents end with the row that lists them; a later row is notes.
+                if (inReagents && reagentRowSeen) inReagents = false;
+                var before = reagents.Count;
                 foreach (var line in entry.Lines)
                 {
                     var heading = ReagentsHeading().Match(line);
@@ -366,6 +370,7 @@ public static partial class StpDocxContentReader
                     inReagents = false;
                     notes.Add(line);
                 }
+                if (reagents.Count > before) reagentRowSeen = true;
                 continue;
             }
             AddBlocks(test, entry.Lines, entry.HadTable);

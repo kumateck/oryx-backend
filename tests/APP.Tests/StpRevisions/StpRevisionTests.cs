@@ -28,7 +28,7 @@ using Xunit;
 
 namespace APP.Tests.StpRevisions;
 
-public class StpRevisionTests
+public partial class StpRevisionTests
 {
     private const string Number = "QCD/STP/FP/009";
     private readonly AvlActor actor = new();
@@ -156,7 +156,7 @@ public class StpRevisionTests
     {
         var registered = PermissionUtils.GeneratePermissions().Select(permission => permission.Key).ToList();
         var keys = StpRevisionPermissions.All.ToList();
-        Assert.Equal(36, keys.Distinct().Count());
+        Assert.Equal(42, keys.Distinct().Count());
         foreach (var key in keys) Assert.Single(registered, item => item == key);
     }
 

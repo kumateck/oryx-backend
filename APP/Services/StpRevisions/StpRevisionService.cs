@@ -55,7 +55,8 @@ public sealed partial class StpRevisionService(
             }).ToList();
     }
 
-    public async Task<Result<StpRevisionDto>> Get(Guid id, Guid actorId)
+    /// <summary>One revision with its content. Printing reads it the same way, with the print key.</summary>
+    public async Task<Result<StpRevisionDto>> Get(Guid id, Guid actorId, StpRevisionTask task = StpRevisionTask.View)
     {
         var revision = await context.StpRevisions.AsNoTracking()
             .Include(item => item.Sections)
@@ -64,7 +65,7 @@ public sealed partial class StpRevisionService(
             .AsSplitQuery()
             .FirstOrDefaultAsync(item => item.Id == id);
         if (revision is null) return NotFound;
-        var refused = await Refuse(StpRevisionTask.View, revision.Kind, actorId);
+        var refused = await Refuse(task, revision.Kind, actorId);
         if (refused is not null) return refused;
         var review = await DocumentReviewGate.LatestAsync(context, ModelType, id);
         var confirmed = await context.DocumentReviews.AsNoTracking()
@@ -80,6 +81,7 @@ public sealed partial class StpRevisionService(
             SupersededAt = revision.SupersededAt, RevisedFromId = revision.RevisedFromId, ReasonForChange = revision.ReasonForChange,
             Area = revision.Area, Reference = revision.Reference, EffectiveDate = revision.EffectiveDate, ReviewDate = revision.ReviewDate,
             IssueDate = revision.IssueDate, Source = revision.Source, Version = revision.Version,
+            ApprovedFileSha256 = await context.StpRevisionDocuments.Where(item => item.StpRevisionId == id).Select(item => item.Sha256).FirstOrDefaultAsync(),
             PreparedBy = revision.CreatedBy == null ? null : $"{revision.CreatedBy.FirstName} {revision.CreatedBy.LastName}".Trim(),
             ReviewStatus = revision.Status == StpRevisionStatus.Pending ? OpenReviewStatus(review) : null,
             ReviewVersion = review?.Version,

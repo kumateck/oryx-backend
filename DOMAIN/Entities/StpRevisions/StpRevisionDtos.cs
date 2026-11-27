@@ -118,6 +118,8 @@ public class StpRevisionDto : StpRevisionSummaryDto
     public string Source { get; set; }
     public int Version { get; set; }
     public int? ReviewVersion { get; set; }
+    /// <summary>SHA-256 of the Word file stored when the revision was approved; null before approval.</summary>
+    public string ApprovedFileSha256 { get; set; }
     public StpRevisionSignatoryDto PreparedBySignatory { get; set; }
     public StpRevisionSignatoryDto CheckedBy { get; set; }
     public StpRevisionSignatoryDto ApprovedBy { get; set; }
@@ -248,4 +250,45 @@ public class StpImportProposalDto
     public List<string> Warnings { get; set; } = [];
     /// <summary>Count of values at Medium or Low confidence.</summary>
     public int FlaggedCount { get; set; }
+}
+
+/// <summary>A specification's tests with the STP test each cites, and the STP tests it may cite.</summary>
+public class StpTestLinksDto
+{
+    public StpRevisionKind Kind { get; set; }
+    /// <summary>STP numbers recorded for the specification's material or product. Empty when none is recorded.</summary>
+    public List<string> StpNumbers { get; set; } = [];
+    public List<StpTestLinkDto> Tests { get; set; } = [];
+    /// <summary>Tests of the approved revision of each STP number above (every approved STP of the kind when none is recorded).</summary>
+    public List<StpTestOptionDto> Options { get; set; } = [];
+}
+
+public class StpTestLinkDto
+{
+    public Guid FormSectionId { get; set; }
+    public string SectionName { get; set; }
+    public string StpNumber { get; set; }
+    public string TestKey { get; set; }
+    /// <summary>The cited test as the approved revision names it; null when the link no longer resolves.</summary>
+    public string TestNumber { get; set; }
+    public string TestTitle { get; set; }
+    public int? RevisionNumber { get; set; }
+    /// <summary>True when the STP number has an approved revision that still has the cited test.</summary>
+    public bool Resolved { get; set; }
+}
+
+public class StpTestOptionDto
+{
+    public string StpNumber { get; set; }
+    public int RevisionNumber { get; set; }
+    public string TestKey { get; set; }
+    public string TestNumber { get; set; }
+    public string TestTitle { get; set; }
+}
+
+/// <summary>Cites an STP test from a specification test. Both null clears the link.</summary>
+public class SaveStpTestLinkRequest
+{
+    [StringLength(100)] public string StpNumber { get; set; }
+    [StringLength(100)] public string TestKey { get; set; }
 }

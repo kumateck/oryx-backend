@@ -103,6 +103,8 @@ internal static class StpRevisionApprovalHandler
         }
         revision.Status = StpRevisionStatus.Approved;
         revision.ApprovedAt = now;
+        // What was approved is this exact file: generated now, stored with its SHA-256 in the same transaction.
+        await APP.Services.StpRevisions.StpRevisionFiles.StoreApprovedAsync(context, revision, userId, now);
         await context.SaveChangesAsync();
         return Result.Success();
     }

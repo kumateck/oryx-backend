@@ -27209,6 +27209,58 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("StpRevisionApprovals");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("StpRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("StpRevisionId")
+                        .IsUnique();
+
+                    b.ToTable("StpRevisionDocuments");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionSection", b =>
                 {
                     b.Property<Guid>("Id")
@@ -27376,6 +27428,76 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("StpRevisionTestId");
 
                     b.ToTable("StpRevisionTestSteps");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpTestLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FormSectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("StpNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TestKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FormSectionId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("Kind", "StpNumber", "TestKey");
+
+                    b.HasIndex(new[] { "MaterialSpecificationId", "FormSectionId" }, "IX_StpTestLinks_Material")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"MaterialSpecificationId\" IS NOT NULL");
+
+                    b.HasIndex(new[] { "ProductSpecificationId", "FormSectionId" }, "IX_StpTestLinks_Product")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"ProductSpecificationId\" IS NOT NULL");
+
+                    b.ToTable("StpTestLinks", t =>
+                        {
+                            t.HasCheckConstraint("CK_StpTestLinks_OneSpecification", "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Thresholds.Threshold", b =>
@@ -44408,6 +44530,35 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionDocument", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevision", "StpRevision")
+                        .WithMany()
+                        .HasForeignKey("StpRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("StpRevision");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionSection", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
@@ -44493,6 +44644,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("StpRevisionTest");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpTestLink", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormSection", null)
+                        .WithMany()
+                        .HasForeignKey("FormSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", null)
+                        .WithMany()
+                        .HasForeignKey("ProductSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Tickets.Ticket", b =>

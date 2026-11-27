@@ -826,6 +826,48 @@
     "description": "Allows the user to  delete product stp revision."
   },
   {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanExportRawMaterialStpRevision",
+    "name": "Can Export Raw Material Stp Revision",
+    "description": "Allows the user to  export raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanPrintRawMaterialStpRevision",
+    "name": "Can Print Raw Material Stp Revision",
+    "description": "Allows the user to  print raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanExportPackagingMaterialStpRevision",
+    "name": "Can Export Packaging Material Stp Revision",
+    "description": "Allows the user to  export packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanPrintPackagingMaterialStpRevision",
+    "name": "Can Print Packaging Material Stp Revision",
+    "description": "Allows the user to  print packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanExportProductStpRevision",
+    "name": "Can Export Product Stp Revision",
+    "description": "Allows the user to  export product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanPrintProductStpRevision",
+    "name": "Can Print Product Stp Revision",
+    "description": "Allows the user to  print product stp revision."
+  },
+  {
     "module": "Procurement",
     "submodule": "Approved Vendor List",
     "key": "CanViewApprovedVendorEligibility",

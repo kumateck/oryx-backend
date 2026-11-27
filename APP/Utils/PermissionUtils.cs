@@ -534,6 +534,18 @@ public static class PermissionKeys
     public const string CanRejectProductStpRevision = "CanRejectProductStpRevision";
     /// <summary>Delete a product STP revision in any status while retaining its history.</summary>
     public const string CanDeleteProductStpRevision = "CanDeleteProductStpRevision";
+    /// <summary>Download a raw material STP revision as its Word file (the approved file, byte for byte, once approved).</summary>
+    public const string CanExportRawMaterialStpRevision = "CanExportRawMaterialStpRevision";
+    /// <summary>Print a raw material STP revision.</summary>
+    public const string CanPrintRawMaterialStpRevision = "CanPrintRawMaterialStpRevision";
+    /// <summary>Download a packaging material STP revision as its Word file (the approved file, byte for byte, once approved).</summary>
+    public const string CanExportPackagingMaterialStpRevision = "CanExportPackagingMaterialStpRevision";
+    /// <summary>Print a packaging material STP revision.</summary>
+    public const string CanPrintPackagingMaterialStpRevision = "CanPrintPackagingMaterialStpRevision";
+    /// <summary>Download a product STP revision as its Word file (the approved file, byte for byte, once approved).</summary>
+    public const string CanExportProductStpRevision = "CanExportProductStpRevision";
+    /// <summary>Print a product STP revision.</summary>
+    public const string CanPrintProductStpRevision = "CanPrintProductStpRevision";
     /// <summary>View the QA product list.</summary>
     public const string CanViewQaProducts = "CanViewQaProducts";
     /// <summary>View a product's general information in QA.</summary>
@@ -1965,6 +1977,12 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanApproveProductStpRevision);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanRejectProductStpRevision);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanDeleteProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanExportRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanPrintRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanExportPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanPrintPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanExportProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanPrintProductStpRevision);
         addPermission(PermissionModules.Procurement, "Approved Vendor List", PermissionKeys.CanViewApprovedVendorEligibility);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProducts);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductInfo);
