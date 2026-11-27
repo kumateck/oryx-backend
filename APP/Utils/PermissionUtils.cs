@@ -957,6 +957,14 @@ public static class PermissionKeys
     public const string CanViewProductCoaReportedTests = "CanViewProductCoaReportedTests";
     /// <summary>Override, with a recorded reason, which tests of a product specification's templates print on the certificate of analysis.</summary>
     public const string CanEditProductCoaReportedTests = "CanEditProductCoaReportedTests";
+    /// <summary>See which raw material specification tests print on the certificate of analysis.</summary>
+    public const string CanViewRawMaterialCoaReportedTests = "CanViewRawMaterialCoaReportedTests";
+    /// <summary>Choose which raw material specification tests print on the certificate of analysis, overriding the template.</summary>
+    public const string CanEditRawMaterialCoaReportedTests = "CanEditRawMaterialCoaReportedTests";
+    /// <summary>See which packaging material specification tests print on the certificate of analysis.</summary>
+    public const string CanViewPackagingMaterialCoaReportedTests = "CanViewPackagingMaterialCoaReportedTests";
+    /// <summary>Choose which packaging material specification tests print on the certificate of analysis, overriding the template.</summary>
+    public const string CanEditPackagingMaterialCoaReportedTests = "CanEditPackagingMaterialCoaReportedTests";
     /// <summary>View the per-product assay outputs and their COA reporting configuration.</summary>
     public const string CanViewProductAssayReporting = "CanViewProductAssayReporting";
     /// <summary>Change per-product assay COA reporting rules with a recorded reason.</summary>
@@ -3355,6 +3363,10 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductMicrobialLimits);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanViewProductCoaReportedTests);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductSpecification, PermissionKeys.CanEditProductCoaReportedTests);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewRawMaterialCoaReportedTests);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditRawMaterialCoaReportedTests);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewPackagingMaterialCoaReportedTests);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditPackagingMaterialCoaReportedTests);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewRawMaterialMicrobialLimits);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanEditRawMaterialMicrobialLimits);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialSpecification, PermissionKeys.CanViewPackagingMaterialMicrobialLimits);

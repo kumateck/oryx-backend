@@ -155,6 +155,38 @@ public sealed class QuestionFormulaRepairTests
             await Db.SaveChangesAsync();
             return field.Id;
         }
+        /// <summary>
+        /// A raw or packaging material under test on the same worksheet form: its sampling (the material test), material ARD,
+        /// the actor's assignment and an open worksheet response. With <paramref name="grantKeys"/>, the actor gets the matching
+        /// start-test and goods receipt note view keys.
+        /// </summary>
+        public async Task<(Guid Sampling, Guid Response)> AddMaterialTest(DOMAIN.Entities.Materials.MaterialKind kind, bool grantKeys,
+            DOMAIN.Entities.Materials.Batch.BatchStatus status = DOMAIN.Entities.Materials.Batch.BatchStatus.Testing)
+        {
+            var form = (await Db.FormFields.Include(field => field.FormSection).SingleAsync(field => field.Id == Field)).FormSection.FormId;
+            var material = Guid.NewGuid(); var batch = Guid.NewGuid(); var ard = Guid.NewGuid(); var sampling = Guid.NewGuid(); var response = Guid.NewGuid();
+            Db.Materials.Add(new DOMAIN.Entities.Materials.Material { Id = material, Name = kind == DOMAIN.Entities.Materials.MaterialKind.Raw ? "Sucrose" : "Amber bottle", Kind = kind });
+            Db.MaterialBatches.Add(new DOMAIN.Entities.Materials.Batch.MaterialBatch { Id = batch, MaterialId = material, BatchNumber = "GRN-1", Status = status });
+            Db.MaterialAnalyticalRawData.Add(new DOMAIN.Entities.MaterialARD.MaterialAnalyticalRawData { Id = ard, FormId = form });
+            Db.MaterialSamplings.Add(new DOMAIN.Entities.MaterialSampling.MaterialSampling { Id = sampling, MaterialBatchId = batch, ChemicalArdId = ard, ArNumber = "QCD/RM/26/0001" });
+            Db.FormAssignees.Add(new FormAssignee { Id = Guid.NewGuid(), FormId = form, MaterialBatchId = batch, MaterialSamplingId = sampling,
+                FieldAssignees = [new FormFieldAssignee { Id = Guid.NewGuid(), FormFieldId = Field, AssigneeId = Actor.UserId }] });
+            Db.Responses.Add(new Response { Id = response, FormId = form, MaterialBatchId = batch, MaterialSamplingId = sampling, CreatedById = Actor.UserId });
+            if (grantKeys)
+            {
+                var role = (await Db.UserRoles.FirstAsync(item => item.UserId == Actor.UserId)).RoleId;
+                string[] keys = kind == DOMAIN.Entities.Materials.MaterialKind.Raw
+                    ? [PermissionKeys.CanStartRawMaterialTest, PermissionKeys.CanViewRawMaterialGoodsReceiptNotes]
+                    : [PermissionKeys.CanStartPackagingMaterialTest, PermissionKeys.CanViewPackagingMaterialGoodsReceiptNotes];
+                for (var i = 0; i < keys.Length; i++)
+                {
+                    Db.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = 100 + i, RoleId = role, ClaimType = AppConstants.Permission, ClaimValue = keys[i] });
+                    Db.PermissionTypes.Add(new PermissionType { Id = Guid.NewGuid(), RoleClaimId = 100 + i, Key = keys[i], Type = "Action" });
+                }
+            }
+            await Db.SaveChangesAsync();
+            return (sampling, response);
+        }
         public FormulaRepairCandidate Candidate(bool question = true, bool test = true) => new(After, question, test ? [new(Atr, Field)] : []);
         public async Task<ApplyFormulaRepairRequest> Request(FormulaRepairCandidate? candidate = null)
         {
@@ -164,6 +196,53 @@ public sealed class QuestionFormulaRepairTests
             return new(candidate, preview.Value.PreviewToken, Guid.NewGuid(), "Correct a confirmed formula configuration error.");
         }
         public ValueTask DisposeAsync() => Db.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task A_raw_material_test_is_listed_repaired_and_recalculated_like_a_product_test()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+        var (sampling, response) = await f.AddMaterialTest(DOMAIN.Entities.Materials.MaterialKind.Raw, grantKeys: true);
+
+        var context = await f.Service.Context(f.Question, sampling);
+        var test = Assert.Single(context.Value.Tests, item => item.AtrId == sampling);
+        Assert.True(test.Eligible, test.Blocker);
+        Assert.Equal(response, test.ResponseId);
+        Assert.StartsWith("QCD/RM/26/0001", test.Label);
+
+        var candidate = new FormulaRepairCandidate(After, false, [new(sampling, f.Field)]);
+        Assert.True((await f.Service.Apply(f.Question, await f.Request(candidate))).IsSuccess);
+        var pin = Assert.Single(await LegacyFormulaConfigurationReader.Latest(f.Db, [response]));
+        Assert.Equal(After, pin.Definition);
+        Assert.True(pin.RequiresRecalculation);
+        // Saving the material worksheet finds its test and recalculates; here it stops because no readings are saved yet.
+        Assert.Contains("readings", Assert.Single(await f.Service.RecalculatePending(response)));
+    }
+
+    [Fact]
+    public async Task A_packaging_material_test_needs_the_packaging_test_keys_not_the_raw_ones()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+        var (sampling, _) = await f.AddMaterialTest(DOMAIN.Entities.Materials.MaterialKind.Package, grantKeys: false);
+        var role = (await f.Db.UserRoles.FirstAsync(item => item.UserId == f.Actor.UserId)).RoleId;
+        f.Db.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = 200, RoleId = role, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanStartRawMaterialTest });
+        f.Db.RoleClaims.Add(new IdentityRoleClaim<Guid> { Id = 201, RoleId = role, ClaimType = AppConstants.Permission, ClaimValue = PermissionKeys.CanViewRawMaterialGoodsReceiptNotes });
+        await f.Db.SaveChangesAsync();
+
+        var test = Assert.Single((await f.Service.Context(f.Question, sampling)).Value.Tests, item => item.AtrId == sampling);
+        Assert.False(test.Eligible);
+        Assert.Contains("CanStartPackagingMaterialTest", test.Blocker);
+        Assert.True((await f.Service.Preview(f.Question, new FormulaRepairCandidate(After, false, [new(sampling, f.Field)]))).IsFailure);
+    }
+
+    [Fact]
+    public async Task A_material_that_is_no_longer_under_test_cannot_be_repaired()
+    {
+        await using var f = new Fixture(); await f.Seed(includeOpenResponse: false);
+        var (sampling, _) = await f.AddMaterialTest(DOMAIN.Entities.Materials.MaterialKind.Raw, grantKeys: true, DOMAIN.Entities.Materials.Batch.BatchStatus.Available);
+        var test = Assert.Single((await f.Service.Context(f.Question, sampling)).Value.Tests, item => item.AtrId == sampling);
+        Assert.False(test.Eligible);
+        Assert.Equal("Only material tests that are assigned or being tested can be repaired.", test.Blocker);
     }
 
     [Fact]

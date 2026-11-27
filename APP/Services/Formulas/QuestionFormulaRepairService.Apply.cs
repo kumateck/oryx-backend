@@ -72,6 +72,9 @@ public sealed partial class QuestionFormulaRepairService
                     Id = Guid.NewGuid(), FormId = first.Field.FormSection.FormId,
                     BatchManufacturingRecordId = first.Atr.BatchManufacturingRecordId,
                     ProductionActivityStepId = first.Atr.ProductionActivityStepId,
+                    // A material test's worksheet belongs to its batch and the sample it was drawn for.
+                    MaterialBatchId = first.Atr.MaterialBatchId,
+                    MaterialSamplingId = first.Atr.IsMaterial ? first.Atr.Id : null,
                     CreatedById = identity.UserId,
                 };
                 db.Responses.Add(draft);
@@ -144,7 +147,7 @@ public sealed partial class QuestionFormulaRepairService
         await db.Database.ExecuteSqlRawAsync("""
             LOCK TABLE "Questions", "QuestionOptions", "FormFields", "FormSections", "Responses", "FormResponses",
               "Forms", "FormRevisions", "QuestionFormulaDefinitions", "FormFieldFormulaConfigurations", "ResponseFormulaSnapshots", "ResponseFormulaSubmissionSets",
-              "ResponseApprovals", "AnalyticalTestRequests", "FormFieldAssignees", "FormAssignees", "QuestionFormulaRepairs",
+              "ResponseApprovals", "AnalyticalTestRequests", "MaterialSamplings", "MaterialBatches", "FormFieldAssignees", "FormAssignees", "QuestionFormulaRepairs",
               "LegacyFormulaConfigurationPins", "LegacyFormulaRepairEvaluations"
             IN SHARE ROW EXCLUSIVE MODE;
             """);

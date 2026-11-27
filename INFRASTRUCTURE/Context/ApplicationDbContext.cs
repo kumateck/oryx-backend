@@ -2382,6 +2382,11 @@ public partial class ApplicationDbContext(
         modelBuilder.Entity<SpecificationCoaReporting>().HasOne(item => item.ProductSpecification)
             .WithMany().HasForeignKey(item => item.ProductSpecificationId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<SpecificationCoaReporting>().HasIndex(item => new { item.ProductSpecificationId, item.FormFieldId }).IsUnique();
+        modelBuilder.Entity<SpecificationCoaReporting>().HasOne(item => item.MaterialSpecification)
+            .WithMany().HasForeignKey(item => item.MaterialSpecificationId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SpecificationCoaReporting>().HasIndex(item => new { item.MaterialSpecificationId, item.FormFieldId }).IsUnique();
+        modelBuilder.Entity<SpecificationCoaReporting>().ToTable(table => table.HasCheckConstraint("CK_SpecificationCoaReportings_OneSpecification",
+            "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)"));
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.QtppForm)
             .WithMany().HasForeignKey(item => item.QtppFormId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<DOMAIN.Entities.RndProjects.RndProject>().HasOne(item => item.Attachment)

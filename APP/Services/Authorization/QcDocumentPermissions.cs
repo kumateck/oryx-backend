@@ -6,7 +6,7 @@ namespace APP.Services.Authorization;
 /// <summary>QC documents: standard test procedures, specifications and analytical raw data, for materials and products.</summary>
 public enum QcDocument { MaterialStp, MaterialSpecification, MaterialArd, ProductStp, ProductSpecification, ProductArd }
 
-public enum QcTask { Create, Edit, Delete, ViewMicrobialLimits, EditMicrobialLimits }
+public enum QcTask { Create, Edit, Delete, ViewMicrobialLimits, EditMicrobialLimits, ViewCoaReportedTests, EditCoaReportedTests }
 
 /// <summary>
 /// One key per QC document task (permissions audit phase 3). Material documents have a raw and a packaging key, chosen
@@ -32,6 +32,10 @@ public static class QcDocumentPermissions
         [(QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits, MaterialKind.Raw)] = PermissionKeys.CanEditRawMaterialMicrobialLimits,
         [(QcDocument.MaterialSpecification, QcTask.ViewMicrobialLimits, MaterialKind.Package)] = PermissionKeys.CanViewPackagingMaterialMicrobialLimits,
         [(QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits, MaterialKind.Package)] = PermissionKeys.CanEditPackagingMaterialMicrobialLimits,
+        [(QcDocument.MaterialSpecification, QcTask.ViewCoaReportedTests, MaterialKind.Raw)] = PermissionKeys.CanViewRawMaterialCoaReportedTests,
+        [(QcDocument.MaterialSpecification, QcTask.EditCoaReportedTests, MaterialKind.Raw)] = PermissionKeys.CanEditRawMaterialCoaReportedTests,
+        [(QcDocument.MaterialSpecification, QcTask.ViewCoaReportedTests, MaterialKind.Package)] = PermissionKeys.CanViewPackagingMaterialCoaReportedTests,
+        [(QcDocument.MaterialSpecification, QcTask.EditCoaReportedTests, MaterialKind.Package)] = PermissionKeys.CanEditPackagingMaterialCoaReportedTests,
         [(QcDocument.MaterialArd, QcTask.Create, MaterialKind.Raw)] = PermissionKeys.CanCreateRawMaterialArd,
         [(QcDocument.MaterialArd, QcTask.Edit, MaterialKind.Raw)] = PermissionKeys.CanEditRawMaterialArd,
         [(QcDocument.MaterialArd, QcTask.Delete, MaterialKind.Raw)] = PermissionKeys.CanDeleteRawMaterialArd,
@@ -50,6 +54,8 @@ public static class QcDocumentPermissions
         [(QcDocument.ProductSpecification, QcTask.Delete)] = PermissionKeys.CanDeleteProductSpecification,
         [(QcDocument.ProductSpecification, QcTask.ViewMicrobialLimits)] = PermissionKeys.CanViewProductMicrobialLimits,
         [(QcDocument.ProductSpecification, QcTask.EditMicrobialLimits)] = PermissionKeys.CanEditProductMicrobialLimits,
+        [(QcDocument.ProductSpecification, QcTask.ViewCoaReportedTests)] = PermissionKeys.CanViewProductCoaReportedTests,
+        [(QcDocument.ProductSpecification, QcTask.EditCoaReportedTests)] = PermissionKeys.CanEditProductCoaReportedTests,
         [(QcDocument.ProductArd, QcTask.Create)] = PermissionKeys.CanCreateProductArd,
         [(QcDocument.ProductArd, QcTask.Edit)] = PermissionKeys.CanEditProductArd,
         [(QcDocument.ProductArd, QcTask.Delete)] = PermissionKeys.CanDeleteProductArd,

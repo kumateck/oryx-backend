@@ -1,6 +1,9 @@
 using System.Reflection;
 using System.Text.Json;
+using API.Authorization;
 using API.Controllers;
+using APP.Services.Authorization;
+using DOMAIN.Entities.MaterialSpecifications;
 using APP.Repository;
 using APP.Services.Forms.CoaReporting;
 using APP.Utils;
@@ -149,6 +152,54 @@ public sealed class CoaReportingTests
         Assert.Equal("TAMC", Assert.Single(rows.RootElement.EnumerateArray()).GetProperty("DisplayLabel").GetString());
     }
 
+    [Theory]
+    [InlineData(nameof(SpecificationCoaReportingController.GetMaterial), QcTask.ViewCoaReportedTests,
+        PermissionKeys.CanViewRawMaterialCoaReportedTests, PermissionKeys.CanViewPackagingMaterialCoaReportedTests)]
+    [InlineData(nameof(SpecificationCoaReportingController.SaveMaterial), QcTask.EditCoaReportedTests,
+        PermissionKeys.CanEditRawMaterialCoaReportedTests, PermissionKeys.CanEditPackagingMaterialCoaReportedTests)]
+    public void Material_endpoints_check_the_key_for_the_specifications_material_kind(string action, QcTask task, string raw, string packaging)
+    {
+        var method = typeof(SpecificationCoaReportingController).GetMethod(action)!;
+        var permission = Assert.Single(method.GetCustomAttributes<QcDocumentPermissionAttribute>());
+        Assert.Equal((QcDocument.MaterialSpecification, task), (permission.Document, permission.Task));
+        Assert.Empty(method.GetCustomAttributes<AllowAnonymousAttribute>());
+        Assert.Equal(raw, QcDocumentPermissions.MaterialKey(QcDocument.MaterialSpecification, task, MaterialKind.Raw));
+        Assert.Equal(packaging, QcDocumentPermissions.MaterialKey(QcDocument.MaterialSpecification, task, MaterialKind.Package));
+        Assert.Single(PermissionUtils.GeneratePermissions(), item => item.Key == raw);
+        Assert.Single(PermissionUtils.GeneratePermissions(), item => item.Key == packaging);
+    }
+
+    [Fact]
+    public async Task A_raw_material_specification_refuses_the_packaging_key()
+    {
+        var f = new Fixture(PermissionKeys.CanEditPackagingMaterialCoaReportedTests);
+        var material = f.AddMaterial(MaterialKind.Raw);
+        var refused = await new SpecificationCoaReportingService(f.Db)
+            .Save(SpecificationCoaReportingService.Subject.Material, material.Spec.Id, AnalysisType.Microbial, f.HideTamc(), f.User);
+        Assert.Equal(ErrorType.Forbidden, Assert.Single(refused.Errors).Type);
+        Assert.Empty(f.Db.SpecificationCoaReportings);
+    }
+
+    [Fact]
+    public async Task A_material_specification_overrides_every_row_of_its_number_and_its_certificates_follow()
+    {
+        var f = new Fixture(PermissionKeys.CanEditRawMaterialCoaReportedTests);
+        var material = f.AddMaterial(MaterialKind.Raw);
+        Assert.Equal([f.ConclusionField], await CoaReportingRuntime.HiddenFields(f.Db, material.Response));
+
+        var saved = await new SpecificationCoaReportingService(f.Db)
+            .Save(SpecificationCoaReportingService.Subject.Material, material.Spec.Id, AnalysisType.Microbial, f.HideTamc(), f.User);
+
+        Assert.True(saved.IsSuccess, string.Join("; ", saved.Errors.Select(error => error.Description)));
+        var rows = await f.Db.SpecificationCoaReportings.ToListAsync();
+        Assert.Equal(2, rows.Count);
+        Assert.All(rows, row => Assert.Null(row.ProductSpecificationId));
+        Assert.All(await f.Db.MaterialSpecifications.ToListAsync(), spec => Assert.False(spec.IsVerified));
+        Assert.Equal(new HashSet<Guid> { f.TamcField, f.ConclusionField }, await CoaReportingRuntime.HiddenFields(f.Db, material.Response));
+        // The product specification sharing the template is unaffected.
+        Assert.Equal([f.ConclusionField], await CoaReportingRuntime.HiddenFields(f.Db, f.Response));
+    }
+
     private static FormField Field(Form form, string label, bool reportOnCoa)
     {
         var section = new FormSection { Id = Guid.NewGuid(), FormId = form.Id, Form = form, Name = label, Fields = [] };
@@ -203,6 +254,23 @@ public sealed class CoaReportingTests
             Response = new Response { Id = Guid.NewGuid(), FormId = MicroForm, BatchManufacturingRecordId = bmr, ProductionActivityStepId = step };
             Db.Responses.Add(Response);
             Db.SaveChanges();
+        }
+
+        /// <summary>A material whose specification (and a second row with the same number) uses the same microbial template.</summary>
+        public (MaterialSpecification Spec, Response Response) AddMaterial(MaterialKind kind)
+        {
+            var material = new Material { Id = Guid.NewGuid(), Name = "Sucrose", Kind = kind };
+            var other = new Material { Id = Guid.NewGuid(), Name = "Sucrose (second supplier)", Kind = kind };
+            Db.Materials.AddRange(material, other);
+            var spec = new MaterialSpecification { Id = Guid.NewGuid(), MaterialId = material.Id, SpecificationNumber = "QCD/SPC/RM/001", FormId = Guid.NewGuid(), MicrobialFormId = MicroForm, IsVerified = true };
+            Db.MaterialSpecifications.AddRange(spec, new MaterialSpecification { Id = Guid.NewGuid(), MaterialId = other.Id,
+                SpecificationNumber = "QCD/SPC/RM/001", FormId = spec.FormId, MicrobialFormId = MicroForm, IsVerified = true });
+            var batch = new MaterialBatch { Id = Guid.NewGuid(), MaterialId = material.Id, BatchNumber = "RM1" };
+            Db.MaterialBatches.Add(batch);
+            var response = new Response { Id = Guid.NewGuid(), FormId = MicroForm, MaterialBatchId = batch.Id };
+            Db.Responses.Add(response);
+            Db.SaveChanges();
+            return (spec, response);
         }
 
         public SaveCoaReportingRequest HideTamc() => new()
