@@ -30,9 +30,6 @@ public sealed partial class QuestionFormulaRepairService
         if (pin is null || !pin.RequiresRecalculation || pin.DefinitionHash != expectedConfigurationHash)
             return Error.Conflict("FormulaRepair.StaleConfiguration", "The repair configuration changed. Reload the test.");
         var answer = LatestAnswer(impact, response.Id, field.Id);
-        // A pin set from an approved revision is calculated with that revision's reviewed, compiled definition (named
-        // expressions, derived columns and averages included); any other repair with this repair's own compilation.
-        var approved = await ApprovedRevisionFor(field.QuestionId, pin.Definition);
         // Recalculation works from whatever is saved now: every input the formula uses is read from the saved answer and
         // the result is recalculated, replacing any earlier one. It stops only when an input truly has no value, and names it.
         if (answer is null || string.IsNullOrWhiteSpace(answer.Value) || answer.Value.Trim() == "{}")
@@ -40,6 +37,44 @@ public sealed partial class QuestionFormulaRepairService
         var inputHash = LegacyFormulaRepairDefinition.InputHash(answer.Value);
         var existing = await db.LegacyFormulaRepairEvaluations.SingleOrDefaultAsync(e => e.PinId == pin.Id && e.InputHash == inputHash);
         if (existing is not null) return existing.Id;
+        var calculated = await Calculate(field.QuestionId, pin, answer);
+        if (calculated.IsFailure) return Result.Failure<Guid>(calculated.Errors);
+        await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted) : null;
+        // Recheck everything the result depends on; any change means the analyst must reload and retry.
+        grants = await Grants();
+        if (!grants.Contains(PermissionKeys.CanExecuteFormulaResponse)) return Denied();
+        var freshResponse = await db.Responses.AsNoTracking().SingleAsync(r => r.Id == response.Id);
+        var freshAtr = await db.AnalyticalTestRequests.AsNoTracking().SingleAsync(a => a.Id == selected.Atr.Id);
+        if (!await CanAccess(freshAtr, selected.Field, grants)) return Denied();
+        closed = await Closed(selected with { Atr = freshAtr, Response = freshResponse });
+        if (closed is not null) return Conflict(closed);
+        var latestPin = (await LegacyFormulaConfigurationReader.Latest(db, [freshResponse.Id])).SingleOrDefault(p => p.FormFieldId == field.Id);
+        var latestValue = await db.FormResponses.AsNoTracking().Where(a => a.ResponseId == freshResponse.Id && a.FormFieldId == field.Id && !a.DeletedAt.HasValue)
+            .OrderByDescending(a => a.CreatedAt).Select(a => a.Value).FirstOrDefaultAsync();
+        if (latestPin?.Id != pin.Id || LegacyFormulaConfigurationReader.SafeInputHash(latestValue) != inputHash)
+            return Error.Conflict("FormulaRepair.StaleConfiguration", "The readings or formula changed during recalculation. Reload the test and recalculate again.");
+        var duplicate = await db.LegacyFormulaRepairEvaluations.AsNoTracking().Where(e => e.PinId == pin.Id && e.InputHash == inputHash).Select(e => (Guid?)e.Id).SingleOrDefaultAsync();
+        if (duplicate is { } done) return done;
+        var execution = new LegacyFormulaRepairEvaluation { Id = Guid.NewGuid(), PinId = pin.Id, ActorId = identity.UserId!.Value,
+            InputHash = inputHash, ResultsJson = calculated.Value.ResultsJson, EngineBuildHash = calculated.Value.EngineBuildHash,
+            EvidenceJson = calculated.Value.EvidenceJson, EvaluatedAt = DateTime.UtcNow };
+        db.LegacyFormulaRepairEvaluations.Add(execution);
+        await db.SaveChangesAsync(); if (transaction is not null) await transaction.CommitAsync();
+        return execution.Id;
+    }
+
+    private sealed record Calculation(string InputHash, string ResultsJson, string EngineBuildHash, string EvidenceJson);
+
+    /// <summary>
+    /// Calculates a repaired field's saved readings with the engine: with the approved revision when the pin's formula has one
+    /// (named expressions, derived columns and averages included), otherwise with the repair's own compilation. Records nothing.
+    /// </summary>
+    private async Task<Result<Calculation>> Calculate(Guid questionId, LegacyFormulaConfigurationPin pin, FormResponse answer)
+    {
+        // A pin set from an approved revision is calculated with that revision's reviewed, compiled definition (named
+        // expressions, derived columns and averages included); any other repair with this repair's own compilation.
+        var approved = await ApprovedRevisionFor(questionId, pin.Definition);
+        var inputHash = LegacyFormulaRepairDefinition.InputHash(answer.Value);
         (JsonElement Definition, string Hash) compiled;
         Dictionary<string, string?> inputs;
         if (approved is not null)
@@ -59,6 +94,17 @@ public sealed partial class QuestionFormulaRepairService
         {
             compiled = LegacyFormulaRepairDefinition.Compile(pin.Definition);
             inputs = LegacyFormulaRepairDefinition.ResolveInputs(pin.Definition, answer.Value);
+        }
+        // A Percentage formula reports its result in percent. Its own compilation already multiplies by 100; an approved
+        // revision from before that fix does not, so the factor is applied here and recorded with the result.
+        var percentage = PercentageFormulaScale.Applies(pin.Definition);
+        object? percentageScale = null;
+        if (percentage && approved is not null && PercentageFormulaScale.Scale(compiled.Definition) is { } scaled)
+        {
+            var scaledHash = await PercentageFormulaScale.HashAsync(calculation, scaled);
+            if (scaledHash.IsFailure) return Result.Failure<Calculation>(scaledHash.Errors);
+            percentageScale = new { approvedRevisionId = approved.Id, approvedDefinitionHash = compiled.Hash, scaledDefinitionHash = scaledHash.Value };
+            compiled = (scaled, scaledHash.Value);
         }
         var missing = inputs.Where(pair => string.IsNullOrWhiteSpace(pair.Value))
             .Select(pair => LegacyFormulaRepairDefinition.InputLabel(pin.Definition, pair.Key)).Distinct().ToList();
@@ -91,7 +137,7 @@ public sealed partial class QuestionFormulaRepairService
             definitionHash = compiled.Hash, definition = compiled.Definition, configurationHash = configHash, configuration,
             resolvedInputs = inputs
         }));
-        if (evaluated.IsFailure) return Result.Failure<Guid>(evaluated.Errors);
+        if (evaluated.IsFailure) return Result.Failure<Calculation>(evaluated.Errors);
         var result = evaluated.Value;
         if (result.Status != 5 || result.ComputedDefinitionHash != compiled.Hash || result.ComputedConfigurationHash != configHash ||
             result.PlacementKey != placement || result.ComputedInputHash != FormulaCanonicalJson.HashJson("oryx:formula-resolved-inputs:v1", JsonSerializer.Serialize(inputs), 262144) || result.Evaluation is not { } evaluation ||
@@ -99,28 +145,9 @@ public sealed partial class QuestionFormulaRepairService
             !evaluation.TryGetProperty("results", out var values) || values.ValueKind != JsonValueKind.Array ||
             values.GetArrayLength() != compiled.Definition.GetProperty("results").GetArrayLength())
             return Conflict(EngineRefusal(result, pin.Definition, inputs));
-        await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted) : null;
-        // Recheck everything the result depends on; any change means the analyst must reload and retry.
-        grants = await Grants();
-        if (!grants.Contains(PermissionKeys.CanExecuteFormulaResponse)) return Denied();
-        var freshResponse = await db.Responses.AsNoTracking().SingleAsync(r => r.Id == response.Id);
-        var freshAtr = await db.AnalyticalTestRequests.AsNoTracking().SingleAsync(a => a.Id == selected.Atr.Id);
-        if (!await CanAccess(freshAtr, selected.Field, grants)) return Denied();
-        closed = await Closed(selected with { Atr = freshAtr, Response = freshResponse });
-        if (closed is not null) return Conflict(closed);
-        var latestPin = (await LegacyFormulaConfigurationReader.Latest(db, [freshResponse.Id])).SingleOrDefault(p => p.FormFieldId == field.Id);
-        var latestValue = await db.FormResponses.AsNoTracking().Where(a => a.ResponseId == freshResponse.Id && a.FormFieldId == field.Id && !a.DeletedAt.HasValue)
-            .OrderByDescending(a => a.CreatedAt).Select(a => a.Value).FirstOrDefaultAsync();
-        if (latestPin?.Id != pin.Id || LegacyFormulaConfigurationReader.SafeInputHash(latestValue) != inputHash)
-            return Error.Conflict("FormulaRepair.StaleConfiguration", "The readings or formula changed during recalculation. Reload the test and recalculate again.");
-        var duplicate = await db.LegacyFormulaRepairEvaluations.AsNoTracking().Where(e => e.PinId == pin.Id && e.InputHash == inputHash).Select(e => (Guid?)e.Id).SingleOrDefaultAsync();
-        if (duplicate is { } done) return done;
-        var execution = new LegacyFormulaRepairEvaluation { Id = Guid.NewGuid(), PinId = pin.Id, ActorId = identity.UserId!.Value,
-            InputHash = inputHash, ResultsJson = FormulaResponseRuntimeJson.ResultProjection(values, "displayedResult"),
-            EngineBuildHash = result.EngineBuildHash, EvidenceJson = JsonSerializer.Serialize(new { savedAnswer = answer.Value, compiled.Definition, definitionHash = compiled.Hash, configuration, configurationHash = configHash, resolvedInputs = inputs, engineVersion = result.EvaluatorVersion, evaluation }), EvaluatedAt = DateTime.UtcNow };
-        db.LegacyFormulaRepairEvaluations.Add(execution);
-        await db.SaveChangesAsync(); if (transaction is not null) await transaction.CommitAsync();
-        return execution.Id;
+        return new Calculation(inputHash, FormulaResponseRuntimeJson.ResultProjection(values, "displayedResult"), result.EngineBuildHash,
+            JsonSerializer.Serialize(new { savedAnswer = answer.Value, compiled.Definition, definitionHash = compiled.Hash, configuration, configurationHash = configHash,
+                resolvedInputs = inputs, engineVersion = result.EvaluatorVersion, evaluation, percentageScaled = percentage, percentageScale }));
     }
 
     /// <summary>Says why the engine gave no valid result, naming the reading it refused where it can.</summary>
