@@ -1,3 +1,4 @@
+using APP.Services.Forms;
 using APP.Extensions;
 using APP.IRepository;
 using APP.Utils;
@@ -55,6 +56,13 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
             item.AnalysisType == request.AnalysisType))
             return Error.Conflict("MaterialArd.Exists",
                 "This material already has an ARD for the requested analysis type.");
+        var specifiedMicrobialForm = await context.MaterialSpecifications.AsNoTracking()
+            .Where(item => item.MaterialId == request.MaterialId && item.MicrobialFormId != null)
+            .Select(item => item.MicrobialFormId).FirstOrDefaultAsync();
+        var requiredForm = SpecificationTemplateSlots.RequiredArdForm(request.AnalysisType, null, specifiedMicrobialForm);
+        if (requiredForm.HasValue && requiredForm != request.FormId)
+            return Error.Validation("MaterialArd.MicrobialForm",
+                "A microbial ARD must use the microbial template named on the material's specification.");
         if (!form.Sections.Any(section =>
             section.AnalysisType == null || section.AnalysisType == request.AnalysisType))
             return Error.Validation("MaterialArd.Worksheet",
@@ -298,6 +306,13 @@ public class MaterialAnalyticalRawDataRepository(ApplicationDbContext context, I
         if (request.AnalysisType != analyticalRawData.AnalysisType)
             return Error.Conflict("MaterialArd.AnalysisType",
                 "An existing ARD cannot change analysis type; create a governed revision.");
+        var specifiedMicrobialForm = await context.MaterialSpecifications.AsNoTracking()
+            .Where(item => item.MaterialId == request.MaterialId && item.MicrobialFormId != null)
+            .Select(item => item.MicrobialFormId).FirstOrDefaultAsync();
+        var requiredForm = SpecificationTemplateSlots.RequiredArdForm(request.AnalysisType, null, specifiedMicrobialForm);
+        if (requiredForm.HasValue && requiredForm != request.FormId)
+            return Error.Validation("MaterialArd.MicrobialForm",
+                "A microbial ARD must use the microbial template named on the material's specification.");
         mapper.Map(request, analyticalRawData);
 
         context.MaterialAnalyticalRawData.Update(analyticalRawData);

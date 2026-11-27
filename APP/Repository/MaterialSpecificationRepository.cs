@@ -1,5 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Forms;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.Materials;
@@ -36,6 +37,9 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                 "Due date must be greater than current date"
             );
         }
+
+        var slots = await SpecificationTemplateSlots.Validate(context, "MaterialSpecification", request.FormId, request.MicrobialFormId);
+        if (slots.IsFailure) return slots.Errors;
 
         // Fetch existing specifications for this spec number
         var existingSpecs = await context
@@ -89,6 +93,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .MaterialSpecifications.AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
+            .Include(ms => ms.MicrobialForm)
             .Include(ms => ms.CreatedBy)
             .Include(ms => ms.Response)
             .Where(ms => ms.Material.Kind == materialKind)
@@ -127,6 +132,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
+            .Include(ms => ms.MicrobialForm)
                 .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
                     .ThenInclude(ps => ps.Fields)
                         .ThenInclude(ps => ps.Question)
@@ -189,6 +195,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
             .AsSplitQuery()
             .Include(ms => ms.Material)
             .Include(ms => ms.Form)
+            .Include(ms => ms.MicrobialForm)
                 .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
                     .ThenInclude(ps => ps.Fields)
                         .ThenInclude(ps => ps.Question)
@@ -253,6 +260,12 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
         if (string.IsNullOrWhiteSpace(request.RevisionReason) || request.RevisionReason.Trim().Length < 10)
             return Error.Validation("MaterialSpecification.RevisionReason", "State the reason for this revision in at least 10 characters.");
         request.RevisionReason = request.RevisionReason.Trim();
+        var slots = await SpecificationTemplateSlots.Validate(context, "MaterialSpecification", request.FormId, request.MicrobialFormId);
+        if (slots.IsFailure) return slots.Errors;
+        if (materialSpec.MicrobialFormId.HasValue && materialSpec.MicrobialFormId != request.MicrobialFormId
+            && await MicrobialArdUsesForm(materialSpec.SpecificationNumber, materialSpec.MicrobialFormId.Value))
+            return Error.Conflict("MaterialSpecification.MicrobialFormInUse",
+                "A microbial ARD uses the current microbial template. Change that ARD first, then change the template.");
         var specificationNumber = materialSpec.SpecificationNumber;
         var specsToUpdate = await context
             .MaterialSpecifications.Where(ms => ms.SpecificationNumber == specificationNumber)
@@ -360,6 +373,7 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
                     EffectiveDate = templateSpec.EffectiveDate,
                     ReviewDate = templateSpec.ReviewDate,
                     FormId = templateSpec.FormId,
+                    MicrobialFormId = templateSpec.MicrobialFormId,
                     DueDate = templateSpec.DueDate,
                     Description = templateSpec.Description,
                     UserId = templateSpec.UserId,
@@ -536,4 +550,11 @@ public class MaterialSpecificationRepository(ApplicationDbContext context, IMapp
 
         return Result.Success();
     }
+
+    private Task<bool> MicrobialArdUsesForm(string specificationNumber, Guid formId) =>
+        context.MaterialAnalyticalRawData.AnyAsync(ard => ard.DeletedAt == null
+            && ard.AnalysisType == DOMAIN.Entities.QualityRoutines.AnalysisType.Microbial
+            && ard.FormId == formId
+            && context.MaterialSpecifications.Any(spec => spec.SpecificationNumber == specificationNumber
+                && spec.MaterialId == ard.MaterialStandardTestProcedure.MaterialId));
 }

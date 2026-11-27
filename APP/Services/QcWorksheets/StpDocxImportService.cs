@@ -2,7 +2,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using APP.Services.QcWorksheets.WorksheetDocxImport;
 using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml;
 using DOMAIN.Entities.QcWorksheets;
+using DOMAIN.Entities.StpRevisions;
 using Microsoft.AspNetCore.Http;
 
 namespace APP.Services.QcWorksheets;
@@ -27,6 +29,12 @@ public sealed class StpDocxParseResult : StpImportResultDto
 public interface IStpDocxImportService
 {
     Task<StpDocxParseResult> ParseAsync(IFormFile file);
+
+    /// <summary>
+    /// Reads a client STP into a structured proposal (header, sections, reagents, tests, steps and conditions), with a
+    /// confidence and a flag on every value. Nothing is saved.
+    /// </summary>
+    StpImportProposalDto Propose(Stream docx, string fileName, StpRevisionKind kind);
 }
 
 /// <summary>
@@ -176,6 +184,27 @@ public class StpDocxImportService : IStpDocxImportService
     }
 
     private static string Validate(IFormFile file) => DocxUploadGuard.Validate(file);
+
+    /// <summary>
+    /// Tables and lists are read through <see cref="DocxDocumentReader"/> (merged cells resolved, page-split tables
+    /// stitched) and interpreted by <see cref="StpDocxContentReader"/>.
+    /// </summary>
+    public StpImportProposalDto Propose(Stream docx, string fileName, StpRevisionKind kind)
+    {
+        try
+        {
+            var document = DocxDocumentReader.Read(docx);
+            return StpDocxContentReader.Read(document, fileName, kind);
+        }
+        catch (Exception exception) when (exception is InvalidDataException or IOException or OpenXmlPackageException or FileFormatException)
+        {
+            return new StpImportProposalDto
+            {
+                FileName = fileName, Kind = kind, Succeeded = false,
+                FailureReason = "The file could not be read as a Word document (.docx). Save it as .docx and try again.",
+            };
+        }
+    }
 
     /// <summary>
     /// Correction 1: check every <c>word/header*.xml</c> part and use whichever has content.

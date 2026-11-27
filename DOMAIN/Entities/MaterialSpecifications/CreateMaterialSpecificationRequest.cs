@@ -10,6 +10,8 @@ public class CreateMaterialSpecificationRequest
     [Required] public DateTime EffectiveDate { get; set; }
     [Required] public DateTime ReviewDate { get; set; }
     [Required] public Guid FormId { get; set; }
+    /// <summary>Optional microbial template; must differ from FormId.</summary>
+    public Guid? MicrobialFormId { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
     public string Reference { get; set; }
@@ -29,6 +31,8 @@ public class UpdateMaterialSpecificationRequest
     [Required] public DateTime EffectiveDate { get; set; }
     [Required] public DateTime ReviewDate { get; set; }
     [Required] public Guid FormId { get; set; }
+    /// <summary>Optional microbial template; must differ from FormId.</summary>
+    public Guid? MicrobialFormId { get; set; }
     public DateTime DueDate { get; set; }
     public string Description { get; set; }
     public string Reference { get; set; }

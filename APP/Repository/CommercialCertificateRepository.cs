@@ -147,6 +147,8 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
             if (response is null)
                 return Error.Conflict("COA.Response", "An approved ARD response is missing.");
             var sectionReferences = await SpecificationTestReferences.Values(context, response);
+            // A typed microbial limit on the specification prints instead of the COA item's typed-in text.
+            var microbialLimitTexts = await APP.Services.Forms.Microbial.MicrobialLimitRuntime.Texts(context, response);
             foreach (var item in ard.Items.OrderBy(item => item.DisplayOrder))
             {
                 var result = response.FormResponses.SingleOrDefault(value =>
@@ -164,7 +166,7 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
                     $"{System.Net.WebUtility.HtmlEncode(value.Label)}: {value.Minimum.ToString(CultureInfo.InvariantCulture)}–{value.Maximum.ToString(CultureInfo.InvariantCulture)} {value.Unit}").ToList();
                 var specification = reportingLimits is { Count: > 0 }
                     ? (reported.Results.Any(value => !value.Converted) ? item.SpecificationText + "<br/>" : "") + string.Join("<br/>", reportingLimits)
-                    : item.SpecificationText;
+                    : microbialLimitTexts.GetValueOrDefault(item.FormFieldId) ?? item.SpecificationText;
                 var fieldReference = fieldReferences.GetValueOrDefault(item.FormFieldId);
                 var reference = StoredReference(item.Reference) ?? StoredReference(fieldReference is null ? null : sectionReferences.GetValueOrDefault(fieldReference.FormSectionId)) ?? StoredReference(fieldReference?.QuestionReference);
                 rows.Add(new

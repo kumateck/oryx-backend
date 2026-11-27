@@ -1,5 +1,6 @@
 using APP.Extensions;
 using APP.IRepository;
+using APP.Services.Forms;
 using APP.Utils;
 using AutoMapper;
 using DOMAIN.Entities.AnalyticalTestRequests;
@@ -38,6 +39,9 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                 "Due date must be greater than current date"
             );
         }
+
+        var slots = await SpecificationTemplateSlots.Validate(context, "ProductSpecification", request.FormId, request.MicrobialFormId);
+        if (slots.IsFailure) return slots.Errors;
 
         // Fetch existing specifications for this spec number
         var existingSpecs = await context
@@ -85,6 +89,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .ProductSpecifications.AsSplitQuery()
             .IgnoreQueryFilters()
             .Include(ps => ps.Form)
+            .Include(ps => ps.MicrobialForm)
             .Include(ps => ps.Product)
             .Include(ps => ps.CreatedBy)
             .Where(ps => !ps.DeletedAt.HasValue)
@@ -115,6 +120,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .IgnoreQueryFilters()
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
+            .Include(ps => ps.MicrobialForm)
                 .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
                     .ThenInclude(ps => ps.Fields)
                         .ThenInclude(ps => ps.Question)
@@ -188,6 +194,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .ProductSpecifications.IgnoreQueryFilters()
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
+            .Include(ps => ps.MicrobialForm)
             .Include(ps => ps.CreatedBy)
             .Include(ps => ps.FormSections)
             .Where(ps => !ps.DeletedAt.HasValue)
@@ -207,6 +214,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
             .AsSplitQuery()
             .Include(ps => ps.Product)
             .Include(ps => ps.Form)
+            .Include(ps => ps.MicrobialForm)
                 .ThenInclude(ps => ps.Sections.OrderBy(s => s.Order))
                     .ThenInclude(ps => ps.Fields)
                         .ThenInclude(ps => ps.Question)
@@ -270,6 +278,12 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         if (string.IsNullOrWhiteSpace(request.RevisionReason) || request.RevisionReason.Trim().Length < 10)
             return Error.Validation("ProductSpecification.RevisionReason", "State the reason for this revision in at least 10 characters.");
         request.RevisionReason = request.RevisionReason.Trim();
+        var slots = await SpecificationTemplateSlots.Validate(context, "ProductSpecification", request.FormId, request.MicrobialFormId);
+        if (slots.IsFailure) return slots.Errors;
+        if (productSpec.MicrobialFormId.HasValue && productSpec.MicrobialFormId != request.MicrobialFormId
+            && await MicrobialArdUsesForm(productSpec.SpecificationNumber, productSpec.MicrobialFormId.Value))
+            return Error.Conflict("ProductSpecification.MicrobialFormInUse",
+                "A microbial ARD uses the current microbial template. Change that ARD first, then change the template.");
         var specsToUpdate = await context
             .ProductSpecifications.Where(ps => ps.SpecificationNumber == specificationNumber)
             .ToListAsync();
@@ -378,6 +392,7 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
                     EffectiveDate = templateSpec.EffectiveDate,
                     ReviewDate = templateSpec.ReviewDate,
                     FormId = templateSpec.FormId,
+                    MicrobialFormId = templateSpec.MicrobialFormId,
                     DueDate = templateSpec.DueDate,
                     Description = templateSpec.Description,
                     UserId = templateSpec.UserId,
@@ -439,4 +454,11 @@ public class ProductSpecificationRepository(ApplicationDbContext context, IMappe
         await context.SaveChangesAsync();
         return Result.Success();
     }
+
+    private Task<bool> MicrobialArdUsesForm(string specificationNumber, Guid formId) =>
+        context.ProductAnalyticalRawData.AnyAsync(ard => ard.DeletedAt == null
+            && ard.AnalysisType == DOMAIN.Entities.QualityRoutines.AnalysisType.Microbial
+            && ard.FormId == formId
+            && context.ProductSpecifications.Any(spec => spec.SpecificationNumber == specificationNumber
+                && spec.ProductId == ard.ProductStandardTestProcedure.ProductId));
 }

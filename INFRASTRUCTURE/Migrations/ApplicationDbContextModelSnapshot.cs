@@ -4253,6 +4253,95 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ResponseReworkTasks");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Organism")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ProductSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("QuantityUnit")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SavedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("Value")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FormFieldId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialSpecificationId");
+
+                    b.HasIndex("ProductSpecificationId");
+
+                    b.ToTable("SpecificationMicrobialLimits", t =>
+                        {
+                            t.HasCheckConstraint("CK_SpecificationMicrobialLimits_OneSpecification", "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepair", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11111,6 +11200,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid>("MaterialId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MicrobialFormId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Reference")
                         .HasColumnType("text");
 
@@ -11155,6 +11247,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastUpdatedById");
 
                     b.HasIndex("MaterialId");
+
+                    b.HasIndex("MicrobialFormId");
 
                     b.HasIndex("ResponseId");
 
@@ -15992,6 +16086,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("MicrobialFormId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PackingStyle")
                         .HasColumnType("text");
 
@@ -16046,6 +16143,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.HasIndex("LastDeletedById");
 
                     b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MicrobialFormId");
 
                     b.HasIndex("ProductId");
 
@@ -27039,6 +27138,467 @@ namespace INFRASTRUCTURE.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Area")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("EffectiveDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("IssueDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReasonForChange")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("ReviewDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RevisedFromId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StpNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("SupersededAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("SupersedesRevision")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("RevisedFromId");
+
+                    b.HasIndex("Kind", "StpNumber", "RevisionNumber")
+                        .HasDatabaseName("IX_StpRevisions_Number");
+
+                    b.HasIndex(new[] { "Kind", "StpNumber" }, "IX_StpRevisions_Current")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"Status\" = 1");
+
+                    b.HasIndex(new[] { "Kind", "StpNumber" }, "IX_StpRevisions_InPreparation")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"Status\" IN (0, 4)");
+
+                    b.ToTable("StpRevisions");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionApproval", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovalTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StageStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("StpRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovalId");
+
+                    b.HasIndex("ApprovedById");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("StpRevisionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("StpRevisionApprovals");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("Content")
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("StpRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("StpRevisionId")
+                        .IsUnique();
+
+                    b.ToTable("StpRevisionDocuments");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("StpRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("StpRevisionId", "Kind")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("StpRevisionSections");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionTest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Number")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("StpRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TestKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("StpRevisionId", "TestKey")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
+
+                    b.ToTable("StpRevisionTests");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionTestStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Heading")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Number")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReferenceCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("StpRevisionTestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("StpRevisionTestId");
+
+                    b.ToTable("StpRevisionTestSteps");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpTestLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FormSectionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("StpNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TestKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FormSectionId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("Kind", "StpNumber", "TestKey");
+
+                    b.HasIndex(new[] { "MaterialSpecificationId", "FormSectionId" }, "IX_StpTestLinks_Material")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"MaterialSpecificationId\" IS NOT NULL");
+
+                    b.HasIndex(new[] { "ProductSpecificationId", "FormSectionId" }, "IX_StpTestLinks_Product")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"ProductSpecificationId\" IS NOT NULL");
+
+                    b.ToTable("StpTestLinks", t =>
+                        {
+                            t.HasCheckConstraint("CK_StpTestLinks_OneSpecification", "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Thresholds.Threshold", b =>
                 {
                     b.Property<Guid>("Id")
@@ -31185,6 +31745,49 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("SourceResponse");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormField", "FormField")
+                        .WithMany()
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", "MaterialSpecification")
+                        .WithMany()
+                        .HasForeignKey("MaterialSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", "ProductSpecification")
+                        .WithMany()
+                        .HasForeignKey("ProductSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("FormField");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialSpecification");
+
+                    b.Navigation("ProductSpecification");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepair", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", null)
@@ -34689,6 +35292,10 @@ namespace INFRASTRUCTURE.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DOMAIN.Entities.Forms.Form", "MicrobialForm")
+                        .WithMany()
+                        .HasForeignKey("MicrobialFormId");
+
                     b.HasOne("DOMAIN.Entities.Forms.Response", "Response")
                         .WithMany()
                         .HasForeignKey("ResponseId");
@@ -34708,6 +35315,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastUpdatedBy");
 
                     b.Navigation("Material");
+
+                    b.Navigation("MicrobialForm");
 
                     b.Navigation("Response");
 
@@ -37346,6 +37955,10 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.Forms.Form", "MicrobialForm")
+                        .WithMany()
+                        .HasForeignKey("MicrobialFormId");
+
                     b.HasOne("DOMAIN.Entities.Products.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
@@ -37369,6 +37982,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MicrobialForm");
 
                     b.Navigation("Product");
 
@@ -44003,6 +44618,225 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("StpDocument");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevision", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevision", "RevisedFrom")
+                        .WithMany()
+                        .HasForeignKey("RevisedFromId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("RevisedFrom");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionApproval", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Approvals.Approval", "Approval")
+                        .WithMany()
+                        .HasForeignKey("ApprovalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "ApprovedBy")
+                        .WithMany()
+                        .HasForeignKey("ApprovedById");
+
+                    b.HasOne("DOMAIN.Entities.Roles.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevision", "StpRevision")
+                        .WithMany("Approvals")
+                        .HasForeignKey("StpRevisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Approval");
+
+                    b.Navigation("ApprovedBy");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("StpRevision");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionDocument", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevision", "StpRevision")
+                        .WithMany()
+                        .HasForeignKey("StpRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("StpRevision");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionSection", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevision", "StpRevision")
+                        .WithMany("Sections")
+                        .HasForeignKey("StpRevisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("StpRevision");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionTest", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevision", "StpRevision")
+                        .WithMany("Tests")
+                        .HasForeignKey("StpRevisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("StpRevision");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionTestStep", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.StpRevisions.StpRevisionTest", "StpRevisionTest")
+                        .WithMany("Steps")
+                        .HasForeignKey("StpRevisionTestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("StpRevisionTest");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpTestLink", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormSection", null)
+                        .WithMany()
+                        .HasForeignKey("FormSectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", null)
+                        .WithMany()
+                        .HasForeignKey("ProductSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Tickets.Ticket", b =>
                 {
                     b.HasOne("DOMAIN.Entities.Users.User", "AssignedBy")
@@ -45948,6 +46782,20 @@ namespace INFRASTRUCTURE.Migrations
             modelBuilder.Entity("DOMAIN.Entities.StpDocuments.StpDocumentVersion", b =>
                 {
                     b.Navigation("Signatures");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevision", b =>
+                {
+                    b.Navigation("Approvals");
+
+                    b.Navigation("Sections");
+
+                    b.Navigation("Tests");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.StpRevisions.StpRevisionTest", b =>
+                {
+                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Tickets.Ticket", b =>
