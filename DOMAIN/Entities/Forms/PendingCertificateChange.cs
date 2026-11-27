@@ -22,11 +22,11 @@ public sealed class PendingCertificateChange
 }
 
 public sealed record RequestCertificateChange(
-    [property: Range(0, int.MaxValue)] int Version,
-    [property: Required, StringLength(2000)] string Reason);
+    [Range(0, int.MaxValue)] int Version,
+    [Required, StringLength(2000)] string Reason);
 
 public sealed record SavePendingCertificate(
-    [property: Range(0, int.MaxValue)] int Version,
-    [property: Required, StringLength(2000)] string Reason,
-    [property: StringLength(2000)] string Notes,
-    [property: Required] List<CertificateOfAnalysisComplies> Compliance);
+    [Range(0, int.MaxValue)] int Version,
+    [Required, StringLength(2000)] string Reason,
+    [StringLength(2000)] string Notes,
+    [Required] List<CertificateOfAnalysisComplies> Compliance);

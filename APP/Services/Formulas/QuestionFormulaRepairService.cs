@@ -22,7 +22,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
 {
     private sealed record Impact(Question Question, QuestionOption Option, List<FormField> Fields,
         List<Response> Responses, List<FormResponse> Answers, List<LegacyFormulaConfigurationPin> Pins);
-    private sealed record Selected(FormulaRepairTarget Target, AnalyticalTestRequest Atr, Response? Response, FormField Field);
+    private sealed record Selected(FormulaRepairTarget Target, RepairTest Atr, Response? Response, FormField Field);
     private sealed record Plan(Impact Impact, List<Selected> Selected, FormulaRepairPreviewDto Preview, string Evidence);
     private static Error Denied() => Error.Forbidden("FormulaRepair.Permission", "Your current permissions, department or field assignment do not allow this repair.");
     private static Error Conflict(string text) => Error.Conflict("FormulaRepair.Blocked", text);
@@ -59,36 +59,29 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>Repair permission never widens record access: department, test permissions and field assignment still apply.</summary>
-    private async Task<bool> CanAccess(AnalyticalTestRequest atr, FormField field, HashSet<string> grants) =>
-        await AccessProblem(atr, field, grants) is null;
+    private async Task<bool> CanAccess(RepairTest test, FormField field, HashSet<string> grants) =>
+        await AccessProblem(test, field, grants) is null;
 
-    private async Task<string?> AccessProblem(AnalyticalTestRequest atr, FormField field, HashSet<string> grants)
+    private async Task<string?> AccessProblem(RepairTest test, FormField field, HashSet<string> grants)
     {
-        if (!grants.Contains(PermissionKeys.CanStartProductTest) ||
-            !(grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequests) || grants.Contains(PermissionKeys.CanViewProductAnalyticalTestRequestsForAnalysing)))
-            return "You need CanStartProductTest and a product test view permission to repair this test.";
+        if (TestPermissionProblem(test, grants) is { } missing) return missing;
         // The same people who enter this field's readings may repair it: the test permissions and the field assignment.
         // Analysts test other departments' products, so the product's department is not a rule here, as on the worksheet.
         if (!await db.Users.AnyAsync(u => u.Id == identity.UserId && !u.IsDisabled)) return "Your account is disabled.";
-        return await db.FormFieldAssignees.AnyAsync(a => a.FormFieldId == field.Id && a.AssigneeId == identity.UserId &&
-            a.FormAssignee.FormId == field.FormSection.FormId && a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
-            a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId && a.FormAssignee.MaterialBatchId == null && a.FormAssignee.RoutineTrackId == null)
-            ? null : "You are not assigned to this field on this test.";
+        return await AssignedTo(test, field) ? null : "You are not assigned to this field on this test.";
     }
 
     private async Task<string?> Closed(Selected selected)
     {
-        var atr = selected.Atr;
+        var test = selected.Atr;
         var response = selected.Response;
         var field = selected.Field;
-        if (atr.ReleasedAt.HasValue || atr.Status is not (AnalyticalTestStatus.Testing or AnalyticalTestStatus.Assigned))
-            return "Only assigned or testing ATRs can be repaired.";
+        if (!test.Open)
+            return test.IsMaterial ? "Only material tests that are assigned or being tested can be repaired." : "Only assigned or testing ATRs can be repaired.";
         if (response is null)
         {
-            if (await db.Responses.IgnoreQueryFilters().AnyAsync(r =>
-                r.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
-                r.ProductionActivityStepId == atr.ProductionActivityStepId))
-                return "An existing response for this production step does not match the test.";
+            if (await ForeignResponse(test))
+                return test.IsMaterial ? "An existing response for this material batch belongs to another sample." : "An existing response for this production step does not match the test.";
             var revision = await FormRevisionSelection.ForNewResponseAsync(db, field.FormSection.FormId);
             return revision.IsFailure || revision.Value.HasValue ? "This form requires a governed response." : null;
         }
@@ -102,7 +95,7 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>Resolves ATR, response and placement on the server; a browser-supplied response ID is never trusted.</summary>
-    private async Task<Selected?> Resolve(Impact impact, FormulaRepairTarget target, HashSet<string> grants, AnalyticalTestRequest? known = null) =>
+    private async Task<Selected?> Resolve(Impact impact, FormulaRepairTarget target, HashSet<string> grants, RepairTest? known = null) =>
         (await Locate(impact, target, grants, known)).Selected;
 
     /// <summary>
@@ -110,18 +103,19 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     /// field is not on the test's raw data form at all, so it is not one of the test's fields.
     /// </summary>
     private async Task<(Selected? Selected, bool OnForm, string? Problem)> Locate(Impact impact, FormulaRepairTarget target, HashSet<string> grants,
-        AnalyticalTestRequest? known = null)
+        RepairTest? known = null)
     {
         var field = impact.Fields.SingleOrDefault(f => f.Id == target.FormFieldId && !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue);
-        var atr = known ?? await db.AnalyticalTestRequests.SingleOrDefaultAsync(a => a.Id == target.AtrId);
-        if (field is null || atr is null) return (null, false, null);
-        var formIds = await db.ProductAnalyticalRawData.Where(ard => ard.Id == atr.ChemicalArdId || ard.Id == atr.MicrobialArdId).Select(ard => ard.FormId).ToListAsync();
+        var test = known ?? await LoadTest(target.AtrId);
+        if (field is null || test is null) return (null, false, null);
+        var formIds = await TestForms(test);
         if (!formIds.Contains(field.FormSection.FormId)) return (null, false, null);
-        var responses = impact.Responses.Where(r => r.FormId == field.FormSection.FormId && !r.DeletedAt.HasValue &&
-            r.BatchManufacturingRecordId == atr.BatchManufacturingRecordId && r.ProductionActivityStepId == atr.ProductionActivityStepId).ToList();
-        if (responses.Count > 1) return (null, true, "This test has more than one worksheet response for its production step. Reconcile them before repairing.");
-        var problem = await AccessProblem(atr, field, grants);
-        return problem is null ? (new(target, atr, responses.SingleOrDefault(), field), true, null) : (null, true, problem);
+        var responses = impact.Responses.Where(r => r.FormId == field.FormSection.FormId && !r.DeletedAt.HasValue && test.Owns(r)).ToList();
+        if (responses.Count > 1) return (null, true, test.IsMaterial
+            ? "This material test has more than one worksheet response for its sample. Reconcile them before repairing."
+            : "This test has more than one worksheet response for its production step. Reconcile them before repairing.");
+        var problem = await AccessProblem(test, field, grants);
+        return problem is null ? (new(target, test, responses.SingleOrDefault(), field), true, null) : (null, true, problem);
     }
 
     /// <summary>
@@ -159,12 +153,8 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
         var impact = await Load(questionId); if (impact is null) return Conflict("One live formula question with one definition is required.");
         var tests = new List<FormulaRepairTestDto>();
         var fieldIds = impact.Fields.Where(f => !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue).Select(f => f.Id).ToList();
-        var assignments = db.FormFieldAssignees.Where(a => a.AssigneeId == identity.UserId && fieldIds.Contains(a.FormFieldId));
-        var atrs = await db.AnalyticalTestRequests.Where(atr => assignments.Any(a =>
-            a.FormAssignee.BatchManufacturingRecordId == atr.BatchManufacturingRecordId &&
-            a.FormAssignee.ProductionActivityStepId == atr.ProductionActivityStepId)).ToListAsync();
-        if (atrId is { } opened && atrs.All(a => a.Id != opened) &&
-            await db.AnalyticalTestRequests.SingleOrDefaultAsync(a => a.Id == opened) is { } openedAtr) atrs.Add(openedAtr);
+        var atrs = await AssignedTests(fieldIds);
+        if (atrId is { } opened && atrs.All(a => a.Id != opened) && await LoadTest(opened) is { } openedTest) atrs.Add(openedTest);
         var placements = impact.Fields.Where(f => !f.DeletedAt.HasValue && !f.FormSection.DeletedAt.HasValue).ToList();
         foreach (var atr in atrs.OrderBy(a => a.ArNumber))
         foreach (var field in placements)
@@ -188,10 +178,11 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
     }
 
     /// <summary>"AR number · section", with the section's rich-text markup removed.</summary>
-    private static string TestLabel(AnalyticalTestRequest atr, FormField field)
+    private static string TestLabel(RepairTest test, FormField field)
     {
         var section = PlainText(field.FormSection.Name);
-        return $"{atr.ArNumber ?? "ATR without AR number"} · {(section.Length == 0 ? "Formula field" : section)}";
+        var number = test.ArNumber ?? (test.IsMaterial ? "Material test without AR number" : "ATR without AR number");
+        return $"{number} · {(section.Length == 0 ? "Formula field" : section)}";
     }
 
     private static string PlainText(string? html) => string.IsNullOrWhiteSpace(html) ? "" :
@@ -280,9 +271,9 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             labels.Add(new(target.AtrId, target.FormFieldId, label, answer is not null, captured != candidate.Definition, !complete));
             selected.Add(row);
         }
-        if (selected.GroupBy(s => (s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId))
+        if (selected.GroupBy(s => (s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId, s.Atr.MaterialBatchId))
             .Any(group => group.Select(s => (s.Atr.Id, s.Field.FormSection.FormId)).Distinct().Count() > 1))
-            blockers.Add("Choose only one ATR and form per production step.");
+            blockers.Add("Choose only one test and form per production step or material batch.");
         if (candidate.UpdateQuestion)
             foreach (var response in impact.Responses)
                 foreach (var field in impact.Fields.Where(f => f.FormSection.FormId == response.FormId))
@@ -296,8 +287,8 @@ public sealed partial class QuestionFormulaRepairService(ApplicationDbContext db
             fields = impact.Fields.OrderBy(f => f.Id).Select(f => new { f.Id, f.FormSectionId, f.FormSection.FormId, f.DeletedAt }),
             targets = selected.OrderBy(s => s.Target.AtrId).ThenBy(s => s.Field.Id).Select(s => new
             {
-                s.Target, s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId, s.Atr.Status,
-                s.Atr.ReleasedAt, s.Atr.ChemicalArdId, s.Atr.MicrobialArdId, ResponseId = s.Response?.Id
+                s.Target, s.Atr.BatchManufacturingRecordId, s.Atr.ProductionActivityStepId, s.Atr.MaterialBatchId, s.Atr.Status,
+                s.Atr.Open, s.Atr.ChemicalArdId, s.Atr.MicrobialArdId, ResponseId = s.Response?.Id
             }),
             responses = impact.Responses.OrderBy(r => r.Id).Select(r => new { r.Id, r.FormId, r.FormRevisionId, r.CheckedAt, r.Approved, r.Rejected, r.DeletedAt, r.UpdatedAt }),
             answers = impact.Answers.OrderBy(a => a.Id).Select(a => new { a.Id, a.ResponseId, a.FormFieldId, a.Value, a.DeletedAt, a.UpdatedAt }),

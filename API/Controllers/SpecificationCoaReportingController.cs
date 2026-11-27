@@ -1,4 +1,6 @@
+using API.Authorization;
 using APP.Extensions;
+using APP.Services.Authorization;
 using APP.Services.Forms.CoaReporting;
 using APP.Utils;
 using DOMAIN.Entities.Forms;
@@ -11,7 +13,7 @@ using SHARED;
 
 namespace API.Controllers;
 
-/// <summary>Which tests of a product specification's templates print on the certificate of analysis.</summary>
+/// <summary>Which tests of a product or material specification's templates print on the certificate of analysis.</summary>
 [ApiController]
 [Route("api/v{version:apiVersion}")]
 public sealed class SpecificationCoaReportingController(SpecificationCoaReportingService service) : ControllerBase
@@ -38,6 +40,32 @@ public sealed class SpecificationCoaReportingController(SpecificationCoaReportin
     {
         if (Actor is not { } actor) return TypedResults.Unauthorized();
         try { return Answer(await service.Save(id, analysisType, request, actor)); }
+        catch (PostgresException error) when (error.SqlState is "40001" or "40P01") { return Changed(); }
+        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: "40001" or "40P01" or "23505" }) { return Changed(); }
+        catch (InvalidOperationException error) when (error.InnerException is DbUpdateException { InnerException: PostgresException { SqlState: "40001" or "40P01" } }) { return Changed(); }
+    }
+
+    [HttpGet("material-specifications/{id:guid}/coa-reporting/{analysisType}", Name = "GetMaterialSpecificationCoaReporting")]
+    [Tags("MaterialSpecification")]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.ViewCoaReportedTests)]
+    [ProducesResponseType(typeof(SpecificationCoaReportingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMaterial(Guid id, AnalysisType analysisType) =>
+        Answer(await service.Get(SpecificationCoaReportingService.Subject.Material, id, analysisType));
+
+    [HttpPut("material-specifications/{id:guid}/coa-reporting/{analysisType}", Name = "SaveMaterialSpecificationCoaReporting")]
+    [Tags("MaterialSpecification")]
+    [QcDocumentPermission(QcDocument.MaterialSpecification, QcTask.EditCoaReportedTests)]
+    [ProducesResponseType(typeof(SpecificationCoaReportingDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IResult> SaveMaterial(Guid id, AnalysisType analysisType, SaveCoaReportingRequest request)
+    {
+        if (Actor is not { } actor) return TypedResults.Unauthorized();
+        try { return Answer(await service.Save(SpecificationCoaReportingService.Subject.Material, id, analysisType, request, actor)); }
         catch (PostgresException error) when (error.SqlState is "40001" or "40P01") { return Changed(); }
         catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: "40001" or "40P01" or "23505" }) { return Changed(); }
         catch (InvalidOperationException error) when (error.InnerException is DbUpdateException { InnerException: PostgresException { SqlState: "40001" or "40P01" } }) { return Changed(); }

@@ -4280,7 +4280,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<Guid?>("LastUpdatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProductSpecificationId")
+                    b.Property<Guid?>("MaterialSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductSpecificationId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Reason")
@@ -4309,10 +4312,16 @@ namespace INFRASTRUCTURE.Migrations
 
                     b.HasIndex("LastUpdatedById");
 
+                    b.HasIndex("MaterialSpecificationId", "FormFieldId")
+                        .IsUnique();
+
                     b.HasIndex("ProductSpecificationId", "FormFieldId")
                         .IsUnique();
 
-                    b.ToTable("SpecificationCoaReportings");
+                    b.ToTable("SpecificationCoaReportings", t =>
+                        {
+                            t.HasCheckConstraint("CK_SpecificationCoaReportings_OneSpecification", "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>
@@ -31827,11 +31836,15 @@ namespace INFRASTRUCTURE.Migrations
                         .WithMany()
                         .HasForeignKey("LastUpdatedById");
 
+                    b.HasOne("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", "MaterialSpecification")
+                        .WithMany()
+                        .HasForeignKey("MaterialSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", "ProductSpecification")
                         .WithMany()
                         .HasForeignKey("ProductSpecificationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("CreatedBy");
 
@@ -31840,6 +31853,8 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("LastDeletedBy");
 
                     b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialSpecification");
 
                     b.Navigation("ProductSpecification");
                 });
