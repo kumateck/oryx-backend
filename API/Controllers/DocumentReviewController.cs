@@ -76,6 +76,7 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
         PermissionKeys.CanViewRawMaterialRequisitionsForProduction, PermissionKeys.CanViewPackagingMaterialRequisitionsForProduction,
         PermissionKeys.CanViewBillingSheet, PermissionKeys.CanViewStaffRequisition, PermissionKeys.CanViewOvertimeManagement, PermissionKeys.CanViewLeaveRequests,
         PermissionKeys.CanViewJobRequests, PermissionKeys.CanViewPackingList, PermissionKeys.CanViewApprovedVendorList, PermissionKeys.CanViewCostingPriceList,
+        PermissionKeys.CanViewRawMaterialStpRevisions, PermissionKeys.CanViewPackagingMaterialStpRevisions, PermissionKeys.CanViewProductStpRevisions,
         PermissionKeys.CanViewRawMaterialRequisitions, PermissionKeys.CanViewPackagingMaterialRequisitions,
         PermissionKeys.CanViewReviewFormulaRevision)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DocumentReviewStateDto))]
@@ -95,6 +96,7 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
         PermissionKeys.CanReviewRawMaterialStockRequisition, PermissionKeys.CanReviewPackageMaterialStockRequisition,
         PermissionKeys.CanReviewBillingSheet, PermissionKeys.CanReviewStaffRequisition, PermissionKeys.CanReviewOvertimeRequest, PermissionKeys.CanReviewLeaveRequest,
         PermissionKeys.CanReviewJobRequest, PermissionKeys.CanReviewPackingList, PermissionKeys.CanReviewApprovedVendorList, PermissionKeys.CanReviewCostingPriceList,
+        PermissionKeys.CanReviewRawMaterialStpRevision, PermissionKeys.CanReviewPackagingMaterialStpRevision, PermissionKeys.CanReviewProductStpRevision,
         PermissionKeys.CanCheckRawMaterialIssue, PermissionKeys.CanCheckPackagingMaterialIssue)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -113,6 +115,7 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
         PermissionKeys.CanReturnRawMaterialStockRequisition, PermissionKeys.CanReturnPackageMaterialStockRequisition,
         PermissionKeys.CanReturnBillingSheet, PermissionKeys.CanReturnStaffRequisition, PermissionKeys.CanReturnOvertimeRequest, PermissionKeys.CanReturnLeaveRequest,
         PermissionKeys.CanReturnJobRequest, PermissionKeys.CanReturnPackingList, PermissionKeys.CanReturnApprovedVendorList, PermissionKeys.CanReturnCostingPriceList,
+        PermissionKeys.CanReturnRawMaterialStpRevision, PermissionKeys.CanReturnPackagingMaterialStpRevision, PermissionKeys.CanReturnProductStpRevision,
         PermissionKeys.CanReturnRawMaterialIssue, PermissionKeys.CanReturnPackagingMaterialIssue,
         PermissionKeys.CanReturnFormulaRevision)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -133,6 +136,7 @@ public class DocumentReviewController(IDocumentReviewService reviews) : Controll
         PermissionKeys.CanUpdateProductionStep,
         PermissionKeys.CanEditBillingSheet, PermissionKeys.CanEditStaffRequisition, PermissionKeys.CanEditOvertimeManagement, PermissionKeys.CanEditLeaveRequest,
         PermissionKeys.CanEditJobRequest, PermissionKeys.CanGeneratePackingList, PermissionKeys.CanEditApprovedVendorList, PermissionKeys.CanSubmitCostingPriceList,
+        PermissionKeys.CanEditRawMaterialStpRevision, PermissionKeys.CanEditPackagingMaterialStpRevision, PermissionKeys.CanEditProductStpRevision,
         PermissionKeys.CanRepairIssuedBom, PermissionKeys.CanRepairIssuedPackaging)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

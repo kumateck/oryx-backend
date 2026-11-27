@@ -52,6 +52,8 @@ public static class ReviewDocumentTypes
     /// <summary>QA's approved vendor (manufacturer) list: always checked before it is approved.</summary>
     public const string ApprovedVendorList = "ApprovedVendorList";
     public const string CostingPriceList = "CostingPriceList";
+    /// <summary>A structured STP revision: always checked before it is approved. Its keys follow its stored kind.</summary>
+    public const string StpRevision = "StpRevision";
 
     /// <summary>Types with no kind of their own: one key per task, the same for every record.</summary>
     private sealed record SimpleType(string View, string Confirm, string Return, string Edit);
@@ -86,6 +88,8 @@ public static class ReviewDocumentTypes
         // The paper list has always been signed Prepared, Checked and Approved by QA.
         new(ApprovedVendorList, "Approved vendor list", AlwaysReviewed: true),
         new(CostingPriceList, "Costing price list", AlwaysReviewed: true),
+        // The paper STP has always been signed Prepared, Checked and Approved.
+        new(StpRevision, "STP revision", AlwaysReviewed: true),
     ];
 
     public static bool IsConfigurable(string itemType) => All.Any(type => type.ItemType == itemType);
@@ -104,10 +108,11 @@ public static class ReviewDocumentTypes
     /// it is finalised or revised instead, because its check already sits before its approvals.
     /// </summary>
     public static bool HeldAtApprovalStart(string modelType) =>
-        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue || Simple.ContainsKey(modelType);
+        modelType is PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue or StpRevision || Simple.ContainsKey(modelType);
 
     public static bool IsReviewModelType(string modelType) =>
         modelType is PurchaseOrder or PurchaseRequisition or RawStockRequisition or PackageStockRequisition or StockIssue or FormulaRevision
+            or StpRevision
         || Simple.ContainsKey(modelType);
 
     /// <summary>True when every record of the type is reviewed, with or without named reviewers.</summary>
@@ -198,6 +203,19 @@ public static class ReviewDocumentTypes
                     // A returned issue is corrected through the issued-material repair, then sent back for check.
                     [raw ? PermissionKeys.CanRepairIssuedBom : PermissionKeys.CanRepairIssuedPackaging],
                     AlwaysReviewed: true, Variant: raw ? 0 : 1, ParentId: issue.RequisitionId);
+            }
+            case StpRevision:
+            {
+                // A draft is not in review; only a submitted revision has a review target.
+                var revision = await context.StpRevisions.AsNoTracking()
+                    .Where(item => item.Id == id && item.Status != DOMAIN.Entities.StpRevisions.StpRevisionStatus.Draft)
+                    .Select(item => new { item.Kind, item.StpNumber, item.RevisionNumber, item.CreatedById }).FirstOrDefaultAsync(cancellationToken);
+                if (revision is null) return null;
+                string Key(APP.Services.Authorization.StpRevisionTask task) => APP.Services.Authorization.StpRevisionPermissions.Key(task, revision.Kind);
+                return new ReviewTarget(StpRevision, StpRevision, id, $"STP {revision.StpNumber} · revision {revision.RevisionNumber}", revision.CreatedById,
+                    [Key(APP.Services.Authorization.StpRevisionTask.View)], [Key(APP.Services.Authorization.StpRevisionTask.Review)],
+                    [Key(APP.Services.Authorization.StpRevisionTask.Return)], [Key(APP.Services.Authorization.StpRevisionTask.Edit)],
+                    AlwaysReviewed: true, Variant: (int)revision.Kind);
             }
             default:
                 if (!Simple.TryGetValue(modelType, out var keys)) return null;
@@ -315,6 +333,10 @@ public static class ReviewDocumentTypes
                     && (item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Approved
                         || item.Status == DOMAIN.Entities.ApprovedVendorLists.ApprovedVendorListStatus.Superseded), cancellationToken) =>
                 context.ApprovedVendorListApprovals.Where(item => item.ApprovedVendorListId == id),
+            StpRevision when await context.StpRevisions.AnyAsync(item => item.Id == id
+                    && (item.Status == DOMAIN.Entities.StpRevisions.StpRevisionStatus.Approved
+                        || item.Status == DOMAIN.Entities.StpRevisions.StpRevisionStatus.Superseded), cancellationToken) =>
+                context.StpRevisionApprovals.Where(item => item.StpRevisionId == id),
             _ => null,
         };
         if (stages is null) return (null, null);

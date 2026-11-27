@@ -574,6 +574,300 @@
     "description": "Allows the user to  print approved vendor list."
   },
   {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanViewRawMaterialStpRevisions",
+    "name": "Can View Raw Material Stp Revisions",
+    "description": "Allows the user to  view raw material stp revisions."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanCreateRawMaterialStpRevision",
+    "name": "Can Create Raw Material Stp Revision",
+    "description": "Allows the user to  create raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanImportRawMaterialStpRevision",
+    "name": "Can Import Raw Material Stp Revision",
+    "description": "Allows the user to  import raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanEditRawMaterialStpRevisionDraft",
+    "name": "Can Edit Raw Material Stp Revision Draft",
+    "description": "Allows the user to  edit raw material stp revision draft."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanSubmitRawMaterialStpRevision",
+    "name": "Can Submit Raw Material Stp Revision",
+    "description": "Allows the user to  submit raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanEditRawMaterialStpRevision",
+    "name": "Can Edit Raw Material Stp Revision",
+    "description": "Allows the user to  edit raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanReviseRawMaterialStpRevision",
+    "name": "Can Revise Raw Material Stp Revision",
+    "description": "Allows the user to  revise raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanReviewRawMaterialStpRevision",
+    "name": "Can Review Raw Material Stp Revision",
+    "description": "Allows the user to  review raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanReturnRawMaterialStpRevision",
+    "name": "Can Return Raw Material Stp Revision",
+    "description": "Allows the user to  return raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanApproveRawMaterialStpRevision",
+    "name": "Can Approve Raw Material Stp Revision",
+    "description": "Allows the user to  approve raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanRejectRawMaterialStpRevision",
+    "name": "Can Reject Raw Material Stp Revision",
+    "description": "Allows the user to  reject raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanDeleteRawMaterialStpRevision",
+    "name": "Can Delete Raw Material Stp Revision",
+    "description": "Allows the user to  delete raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanViewPackagingMaterialStpRevisions",
+    "name": "Can View Packaging Material Stp Revisions",
+    "description": "Allows the user to  view packaging material stp revisions."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanCreatePackagingMaterialStpRevision",
+    "name": "Can Create Packaging Material Stp Revision",
+    "description": "Allows the user to  create packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanImportPackagingMaterialStpRevision",
+    "name": "Can Import Packaging Material Stp Revision",
+    "description": "Allows the user to  import packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanEditPackagingMaterialStpRevisionDraft",
+    "name": "Can Edit Packaging Material Stp Revision Draft",
+    "description": "Allows the user to  edit packaging material stp revision draft."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanSubmitPackagingMaterialStpRevision",
+    "name": "Can Submit Packaging Material Stp Revision",
+    "description": "Allows the user to  submit packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanEditPackagingMaterialStpRevision",
+    "name": "Can Edit Packaging Material Stp Revision",
+    "description": "Allows the user to  edit packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanRevisePackagingMaterialStpRevision",
+    "name": "Can Revise Packaging Material Stp Revision",
+    "description": "Allows the user to  revise packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanReviewPackagingMaterialStpRevision",
+    "name": "Can Review Packaging Material Stp Revision",
+    "description": "Allows the user to  review packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanReturnPackagingMaterialStpRevision",
+    "name": "Can Return Packaging Material Stp Revision",
+    "description": "Allows the user to  return packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanApprovePackagingMaterialStpRevision",
+    "name": "Can Approve Packaging Material Stp Revision",
+    "description": "Allows the user to  approve packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanRejectPackagingMaterialStpRevision",
+    "name": "Can Reject Packaging Material Stp Revision",
+    "description": "Allows the user to  reject packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanDeletePackagingMaterialStpRevision",
+    "name": "Can Delete Packaging Material Stp Revision",
+    "description": "Allows the user to  delete packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanViewProductStpRevisions",
+    "name": "Can View Product Stp Revisions",
+    "description": "Allows the user to  view product stp revisions."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanCreateProductStpRevision",
+    "name": "Can Create Product Stp Revision",
+    "description": "Allows the user to  create product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanImportProductStpRevision",
+    "name": "Can Import Product Stp Revision",
+    "description": "Allows the user to  import product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanEditProductStpRevisionDraft",
+    "name": "Can Edit Product Stp Revision Draft",
+    "description": "Allows the user to  edit product stp revision draft."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanSubmitProductStpRevision",
+    "name": "Can Submit Product Stp Revision",
+    "description": "Allows the user to  submit product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanEditProductStpRevision",
+    "name": "Can Edit Product Stp Revision",
+    "description": "Allows the user to  edit product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanReviseProductStpRevision",
+    "name": "Can Revise Product Stp Revision",
+    "description": "Allows the user to  revise product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanReviewProductStpRevision",
+    "name": "Can Review Product Stp Revision",
+    "description": "Allows the user to  review product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanReturnProductStpRevision",
+    "name": "Can Return Product Stp Revision",
+    "description": "Allows the user to  return product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanApproveProductStpRevision",
+    "name": "Can Approve Product Stp Revision",
+    "description": "Allows the user to  approve product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanRejectProductStpRevision",
+    "name": "Can Reject Product Stp Revision",
+    "description": "Allows the user to  reject product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanDeleteProductStpRevision",
+    "name": "Can Delete Product Stp Revision",
+    "description": "Allows the user to  delete product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanExportRawMaterialStpRevision",
+    "name": "Can Export Raw Material Stp Revision",
+    "description": "Allows the user to  export raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanPrintRawMaterialStpRevision",
+    "name": "Can Print Raw Material Stp Revision",
+    "description": "Allows the user to  print raw material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanExportPackagingMaterialStpRevision",
+    "name": "Can Export Packaging Material Stp Revision",
+    "description": "Allows the user to  export packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material STP",
+    "key": "CanPrintPackagingMaterialStpRevision",
+    "name": "Can Print Packaging Material Stp Revision",
+    "description": "Allows the user to  print packaging material stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanExportProductStpRevision",
+    "name": "Can Export Product Stp Revision",
+    "description": "Allows the user to  export product stp revision."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product STP",
+    "key": "CanPrintProductStpRevision",
+    "name": "Can Print Product Stp Revision",
+    "description": "Allows the user to  print product stp revision."
+  },
+  {
     "module": "Procurement",
     "submodule": "Approved Vendor List",
     "key": "CanViewApprovedVendorEligibility",

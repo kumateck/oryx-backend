@@ -181,6 +181,15 @@ internal static class AutomaticApprovalProcessor
                     throw new InvalidOperationException(listActivation.Errors.First().Description);
                 break;
 
+            case StpRevisionApprovalHandler.ModelType:
+                var stpRevision = await context.StpRevisions
+                    .SingleOrDefaultAsync(item => item.Id == modelId);
+                EnsureFound(stpRevision, modelType, modelId);
+                var stpActivation = await StpRevisionApprovalHandler.ActivateAsync(context, stpRevision, null);
+                if (!stpActivation.IsSuccess)
+                    throw new InvalidOperationException(stpActivation.Errors.First().Description);
+                break;
+
             case nameof(RndProject):
                 var rndProject = await context.RndProjects
                     .SingleOrDefaultAsync(item => item.Id == modelId);
