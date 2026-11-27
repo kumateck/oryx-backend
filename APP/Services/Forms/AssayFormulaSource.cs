@@ -100,7 +100,7 @@ internal sealed record AssayFormulaSource(string Authoring, string Hash, JsonEle
             var results = ReadExact(evaluation.GetProperty("results"), "exactResult");
             if (results.Keys.Order().SequenceEqual(Definition.GetProperty("results").EnumerateArray().Select(result => result.GetProperty("key").GetString()!).Order()) == false)
                 return Error.Conflict("AssayReporting.Outputs", "The calculated outputs do not match the selected assay.");
-            if (Legacy && Percentage) results = results.ToDictionary(pair => pair.Key, pair => checked(pair.Value * 100m));
+            // Percentage formulas already give percent: the compiled definition multiplies by 100.
             if (Average) results.Add("average", results.Values.Average());
             return results;
         }
