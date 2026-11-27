@@ -6337,6 +6337,13 @@
   {
     "module": "Quality Control",
     "submodule": "Testing",
+    "key": "CanRecalculatePercentageFormulaResults",
+    "name": "Can Recalculate Percentage Formula Results",
+    "description": "Allows the user to  recalculate percentage formula results."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Testing",
     "key": "CanViewTemplateRepair",
     "name": "Can View Template Repair",
     "description": "Allows the user to  view template repair."

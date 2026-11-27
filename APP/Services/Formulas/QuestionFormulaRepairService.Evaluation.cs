@@ -38,7 +38,7 @@ public sealed partial class QuestionFormulaRepairService
         var existing = await db.LegacyFormulaRepairEvaluations.SingleOrDefaultAsync(e => e.PinId == pin.Id && e.InputHash == inputHash);
         if (existing is not null) return existing.Id;
         var calculated = await Calculate(field.QuestionId, pin, answer);
-        if (calculated.IsFailure) return Result.Failure<Guid>(calculated.Errors);
+        if (calculated.IsFailure) return Failed<Guid>(calculated);
         await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted) : null;
         // Recheck everything the result depends on; any change means the analyst must reload and retry.
         grants = await Grants();
@@ -62,6 +62,10 @@ public sealed partial class QuestionFormulaRepairService
         await db.SaveChangesAsync(); if (transaction is not null) await transaction.CommitAsync();
         return execution.Id;
     }
+
+    /// <summary>Passes a failure on whether it was made from one error or a list.</summary>
+    private static Result<T> Failed<T>(Result failure) =>
+        failure.Error is { } error && error != Error.None ? Result.Failure<T>(error) : Result.Failure<T>(failure.Errors);
 
     private sealed record Calculation(string InputHash, string ResultsJson, string EngineBuildHash, string EvidenceJson);
 
@@ -102,7 +106,7 @@ public sealed partial class QuestionFormulaRepairService
         if (percentage && approved is not null && PercentageFormulaScale.Scale(compiled.Definition) is { } scaled)
         {
             var scaledHash = await PercentageFormulaScale.HashAsync(calculation, scaled);
-            if (scaledHash.IsFailure) return Result.Failure<Calculation>(scaledHash.Errors);
+            if (scaledHash.IsFailure) return Failed<Calculation>(scaledHash);
             percentageScale = new { approvedRevisionId = approved.Id, approvedDefinitionHash = compiled.Hash, scaledDefinitionHash = scaledHash.Value };
             compiled = (scaled, scaledHash.Value);
         }
