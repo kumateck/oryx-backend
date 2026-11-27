@@ -21,3 +21,11 @@ public sealed record FormulaRepairPreviewDto(string PreviewToken, string Before,
 public sealed record FormulaRepairResultDto(Guid RepairId, bool AlreadyApplied, List<Guid> FormIds, List<Guid> ResponseIds);
 public sealed record FormulaRepairHistoryDto(Guid Id, Guid ActorId, string ActorName, DateTime AppliedAt, string Reason,
     string DefinitionBefore, string DefinitionAfter, bool UpdatedQuestion, int RepairedTests, int CapturedTests);
+/// <summary>A repaired Percentage result stored as a fraction. <c>Blocker</c> says why it cannot be recalculated now.</summary>
+public sealed record PercentageRecalculationItemDto(Guid ResponseId, Guid FormFieldId, Guid QuestionId, string Test, string? Product,
+    string? Batch, string? ArNumber, string? TestStatus, string CurrentResults, bool Finalized, string? Blocker);
+public sealed record PercentageRecalculationTarget(Guid ResponseId, Guid FormFieldId);
+public sealed record ApplyPercentageRecalculationRequest(string Reason, List<PercentageRecalculationTarget> Targets);
+/// <summary>The outcome for one result: the earlier and the recalculated values, or why it was not recalculated.</summary>
+public sealed record PercentageRecalculationResultDto(Guid ResponseId, Guid FormFieldId, bool Recalculated, string? PreviousResults,
+    string? Results, string? Problem);

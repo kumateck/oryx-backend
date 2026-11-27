@@ -1579,6 +1579,8 @@ public static class PermissionKeys
     public const string CanEditQuestions = "CanEditQuestions";
     public const string CanRepairQuestionFormula = "CanRepairQuestionFormula";
     public const string CanRepairTestFormula = "CanRepairTestFormula";
+    /// <summary>Recalculate repaired Percentage formula results that were stored as fractions, with a recorded reason.</summary>
+    public const string CanRecalculatePercentageFormulaResults = "CanRecalculatePercentageFormulaResults";
     /// <summary>See which open tests of a worksheet template miss fields added after assignment, and preview the template repair.</summary>
     public const string CanViewTemplateRepair = "CanViewTemplateRepair";
     /// <summary>Apply a reviewed template repair: give fields added to a template to analysts already on its open tests.</summary>
@@ -5269,6 +5271,7 @@ public static class PermissionUtils
         );
         addPermission(PermissionModules.Settings, PermissionSubmodules.WorkflowBuilder, PermissionKeys.CanRepairQuestionFormula);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.Testing, PermissionKeys.CanRepairTestFormula);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.Testing, PermissionKeys.CanRecalculatePercentageFormulaResults);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.Testing, PermissionKeys.CanViewTemplateRepair);
         addPermission(PermissionModules.QualityControl, PermissionSubmodules.Testing, PermissionKeys.CanApplyTemplateRepair);
         addPermission(
