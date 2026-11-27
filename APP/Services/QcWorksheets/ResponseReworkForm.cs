@@ -34,7 +34,7 @@ public static class ResponseReworkForm
                 section.Fields = group.OrderBy(item => item.Rank).Select(item => new FormFieldDto
                 {
                     Id = item.FormFieldId, Question = mapper.Map<QuestionDto>(item.Question),
-                    Required = item.Required, Rank = item.Rank, Description = item.Description
+                    Required = item.Required, ReportOnCoa = item.FormField.ReportOnCoa, Rank = item.Rank, Description = item.Description
                 }).ToList();
                 return section;
             }).OrderBy(item => item.Order).ToList();

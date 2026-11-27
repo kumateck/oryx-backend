@@ -3617,6 +3617,9 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<int>("Rank")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("ReportOnCoa")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("Required")
                         .HasColumnType("boolean");
 
@@ -4251,6 +4254,65 @@ namespace INFRASTRUCTURE.Migrations
                         .IsUnique();
 
                     b.ToTable("ResponseReworkTasks");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationCoaReporting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("ReportOnCoa")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SavedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FormFieldId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("ProductSpecificationId", "FormFieldId")
+                        .IsUnique();
+
+                    b.ToTable("SpecificationCoaReportings");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>
@@ -31743,6 +31805,43 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RootResponse");
 
                     b.Navigation("SourceResponse");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationCoaReporting", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormField", "FormField")
+                        .WithMany()
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", "ProductSpecification")
+                        .WithMany()
+                        .HasForeignKey("ProductSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("FormField");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("ProductSpecification");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>

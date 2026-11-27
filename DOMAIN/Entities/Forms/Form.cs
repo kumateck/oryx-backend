@@ -69,6 +69,9 @@ public class FormField : BaseEntity
     public Question Question { get; set; }
     public bool Required { get; set; }
 
+    /// <summary>Whether this test prints on the certificate of analysis. A specification can override it (SpecificationCoaReporting).</summary>
+    public bool ReportOnCoa { get; set; } = true;
+
     [StringLength(1000000)]
     public string Description { get; set; }
     public int Rank { get; set; }
