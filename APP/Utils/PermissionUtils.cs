@@ -462,6 +462,78 @@ public static class PermissionKeys
     public const string CanPrintApprovedVendorList = "CanPrintApprovedVendorList";
     /// <summary>See which suppliers and manufacturers the current approved vendor list allows for materials, on procurement screens.</summary>
     public const string CanViewApprovedVendorEligibility = "CanViewApprovedVendorEligibility";
+    /// <summary>View raw material STP revisions and their structured content.</summary>
+    public const string CanViewRawMaterialStpRevisions = "CanViewRawMaterialStpRevisions";
+    /// <summary>Start the first structured revision of a raw material STP number, blank or from an import.</summary>
+    public const string CanCreateRawMaterialStpRevision = "CanCreateRawMaterialStpRevision";
+    /// <summary>Read a Word raw material STP into an import proposal (nothing is saved).</summary>
+    public const string CanImportRawMaterialStpRevision = "CanImportRawMaterialStpRevision";
+    /// <summary>Save a raw material STP revision draft.</summary>
+    public const string CanEditRawMaterialStpRevisionDraft = "CanEditRawMaterialStpRevisionDraft";
+    /// <summary>Submit a raw material STP revision draft for review.</summary>
+    public const string CanSubmitRawMaterialStpRevision = "CanSubmitRawMaterialStpRevision";
+    /// <summary>Correct a raw material STP revision while it is in review, and send a returned one back for review.</summary>
+    public const string CanEditRawMaterialStpRevision = "CanEditRawMaterialStpRevision";
+    /// <summary>Start a new revision of the approved raw material STP revision.</summary>
+    public const string CanReviseRawMaterialStpRevision = "CanReviseRawMaterialStpRevision";
+    /// <summary>Check a raw material STP revision: confirm its review, which sends it for approval.</summary>
+    public const string CanReviewRawMaterialStpRevision = "CanReviewRawMaterialStpRevision";
+    /// <summary>Return a raw material STP revision in review to its preparer for correction.</summary>
+    public const string CanReturnRawMaterialStpRevision = "CanReturnRawMaterialStpRevision";
+    /// <summary>Approve a raw material STP revision at the caller's approval stage.</summary>
+    public const string CanApproveRawMaterialStpRevision = "CanApproveRawMaterialStpRevision";
+    /// <summary>Reject a raw material STP revision at the caller's approval stage.</summary>
+    public const string CanRejectRawMaterialStpRevision = "CanRejectRawMaterialStpRevision";
+    /// <summary>Delete a raw material STP revision in any status while retaining its history.</summary>
+    public const string CanDeleteRawMaterialStpRevision = "CanDeleteRawMaterialStpRevision";
+    /// <summary>View packaging material STP revisions and their structured content.</summary>
+    public const string CanViewPackagingMaterialStpRevisions = "CanViewPackagingMaterialStpRevisions";
+    /// <summary>Start the first structured revision of a packaging material STP number, blank or from an import.</summary>
+    public const string CanCreatePackagingMaterialStpRevision = "CanCreatePackagingMaterialStpRevision";
+    /// <summary>Read a Word packaging material STP into an import proposal (nothing is saved).</summary>
+    public const string CanImportPackagingMaterialStpRevision = "CanImportPackagingMaterialStpRevision";
+    /// <summary>Save a packaging material STP revision draft.</summary>
+    public const string CanEditPackagingMaterialStpRevisionDraft = "CanEditPackagingMaterialStpRevisionDraft";
+    /// <summary>Submit a packaging material STP revision draft for review.</summary>
+    public const string CanSubmitPackagingMaterialStpRevision = "CanSubmitPackagingMaterialStpRevision";
+    /// <summary>Correct a packaging material STP revision while it is in review, and send a returned one back for review.</summary>
+    public const string CanEditPackagingMaterialStpRevision = "CanEditPackagingMaterialStpRevision";
+    /// <summary>Start a new revision of the approved packaging material STP revision.</summary>
+    public const string CanRevisePackagingMaterialStpRevision = "CanRevisePackagingMaterialStpRevision";
+    /// <summary>Check a packaging material STP revision: confirm its review, which sends it for approval.</summary>
+    public const string CanReviewPackagingMaterialStpRevision = "CanReviewPackagingMaterialStpRevision";
+    /// <summary>Return a packaging material STP revision in review to its preparer for correction.</summary>
+    public const string CanReturnPackagingMaterialStpRevision = "CanReturnPackagingMaterialStpRevision";
+    /// <summary>Approve a packaging material STP revision at the caller's approval stage.</summary>
+    public const string CanApprovePackagingMaterialStpRevision = "CanApprovePackagingMaterialStpRevision";
+    /// <summary>Reject a packaging material STP revision at the caller's approval stage.</summary>
+    public const string CanRejectPackagingMaterialStpRevision = "CanRejectPackagingMaterialStpRevision";
+    /// <summary>Delete a packaging material STP revision in any status while retaining its history.</summary>
+    public const string CanDeletePackagingMaterialStpRevision = "CanDeletePackagingMaterialStpRevision";
+    /// <summary>View product STP revisions and their structured content.</summary>
+    public const string CanViewProductStpRevisions = "CanViewProductStpRevisions";
+    /// <summary>Start the first structured revision of a product STP number, blank or from an import.</summary>
+    public const string CanCreateProductStpRevision = "CanCreateProductStpRevision";
+    /// <summary>Read a Word product STP into an import proposal (nothing is saved).</summary>
+    public const string CanImportProductStpRevision = "CanImportProductStpRevision";
+    /// <summary>Save a product STP revision draft.</summary>
+    public const string CanEditProductStpRevisionDraft = "CanEditProductStpRevisionDraft";
+    /// <summary>Submit a product STP revision draft for review.</summary>
+    public const string CanSubmitProductStpRevision = "CanSubmitProductStpRevision";
+    /// <summary>Correct a product STP revision while it is in review, and send a returned one back for review.</summary>
+    public const string CanEditProductStpRevision = "CanEditProductStpRevision";
+    /// <summary>Start a new revision of the approved product STP revision.</summary>
+    public const string CanReviseProductStpRevision = "CanReviseProductStpRevision";
+    /// <summary>Check a product STP revision: confirm its review, which sends it for approval.</summary>
+    public const string CanReviewProductStpRevision = "CanReviewProductStpRevision";
+    /// <summary>Return a product STP revision in review to its preparer for correction.</summary>
+    public const string CanReturnProductStpRevision = "CanReturnProductStpRevision";
+    /// <summary>Approve a product STP revision at the caller's approval stage.</summary>
+    public const string CanApproveProductStpRevision = "CanApproveProductStpRevision";
+    /// <summary>Reject a product STP revision at the caller's approval stage.</summary>
+    public const string CanRejectProductStpRevision = "CanRejectProductStpRevision";
+    /// <summary>Delete a product STP revision in any status while retaining its history.</summary>
+    public const string CanDeleteProductStpRevision = "CanDeleteProductStpRevision";
     /// <summary>View the QA product list.</summary>
     public const string CanViewQaProducts = "CanViewQaProducts";
     /// <summary>View a product's general information in QA.</summary>
@@ -1857,6 +1929,42 @@ public static class PermissionUtils
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanApproveApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanRejectApprovedVendorList);
         addPermission(PermissionModules.QualityAssurance, "Approved Vendor List", PermissionKeys.CanPrintApprovedVendorList);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanViewRawMaterialStpRevisions);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanCreateRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanImportRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditRawMaterialStpRevisionDraft);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanSubmitRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanReviseRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanReviewRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanReturnRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanApproveRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanRejectRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanDeleteRawMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanViewPackagingMaterialStpRevisions);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanCreatePackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanImportPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditPackagingMaterialStpRevisionDraft);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanSubmitPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanEditPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanRevisePackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanReviewPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanReturnPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanApprovePackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanRejectPackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.MaterialStp, PermissionKeys.CanDeletePackagingMaterialStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanViewProductStpRevisions);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanCreateProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanImportProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanEditProductStpRevisionDraft);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanSubmitProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanEditProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanReviseProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanReviewProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanReturnProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanApproveProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanRejectProductStpRevision);
+        addPermission(PermissionModules.QualityControl, PermissionSubmodules.ProductStp, PermissionKeys.CanDeleteProductStpRevision);
         addPermission(PermissionModules.Procurement, "Approved Vendor List", PermissionKeys.CanViewApprovedVendorEligibility);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProducts);
         addPermission(PermissionModules.QualityAssurance, "Products", PermissionKeys.CanViewQaProductInfo);

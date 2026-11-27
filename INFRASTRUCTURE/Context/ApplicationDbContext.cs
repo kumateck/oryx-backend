@@ -1179,6 +1179,7 @@ public partial class ApplicationDbContext(
         ConfigureInventoryConcurrency(modelBuilder);
         ConfigureWhitePlacebo(modelBuilder);
         ConfigureApprovedVendorLists(modelBuilder);
+        ConfigureStpRevisions(modelBuilder);
         ConfigureCostingPriceLists(modelBuilder);
         ConfigureFinishedGoodsControls(modelBuilder);
         ConfigureDocumentReviews(modelBuilder);

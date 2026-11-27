@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="StpRevisions\Fixtures\*.docx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\API\API.csproj" />
     <ProjectReference Include="..\..\APP\APP.csproj" />
     <ProjectReference Include="..\..\DOMAIN\DOMAIN.csproj" />
