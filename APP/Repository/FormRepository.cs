@@ -472,6 +472,10 @@ public class FormRepository(
                 "The submitted field does not belong to the response form."
             );
 
+        var microbialAnswer = APP.Services.Forms.Microbial.MicrobialValues.Validate(formField.Question.Type, request.Value);
+        if (microbialAnswer.IsFailure) return microbialAnswer.Errors;
+        // The server calculates CFU results; whatever the browser sends for one is replaced below.
+        if (formField.Question.Type == QuestionType.CfuCalculation) request.Value = null;
         var isFormula = formField.Question.Type == QuestionType.Formula;
         var isAttachment = formField.Question.Type is QuestionType.Signature or QuestionType.FileUpload;
         await using var draftTransaction = context.Database.IsRelational()
@@ -716,6 +720,9 @@ public class FormRepository(
 
         if (unpinnedGovernedDraft && isAttachment && !await CanSaveGovernedDraftAsync(userId))
             return DraftPermissionDenied;
+
+        if (APP.Services.Forms.Microbial.MicrobialCalculation.Feeds(formField.Question.Type))
+            await APP.Services.Forms.Microbial.MicrobialCalculation.Apply(context, response, formField.FormSectionId, response.FormRevisionId);
 
         await context.SaveChangesAsync();
         if (draftTransaction is not null) await draftTransaction.CommitAsync();
@@ -1544,6 +1551,8 @@ public class FormRepository(
             }
         }
 
+        var microbialLimits = await APP.Services.Forms.Microbial.MicrobialLimitRuntime.Apply(context, response);
+        if (microbialLimits.IsFailure) return microbialLimits.Errors;
         if (!await CanCheck()) return Error.Forbidden("MaterialCertificate.Permission", "Your current permissions do not allow this certificate.");
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
         if (!await CanCheck()) return Error.Forbidden("MaterialCertificate.Permission", "Your current permissions do not allow this certificate.");
@@ -1663,6 +1672,8 @@ public class FormRepository(
             }
         }
 
+        var microbialLimits = await APP.Services.Forms.Microbial.MicrobialLimitRuntime.Apply(context, response);
+        if (microbialLimits.IsFailure) return microbialLimits.Errors;
         dateValidation = await ProductCertificateGuard.Validate(context, batchManufacturingRecordId, productionActivityStepId, userId);
         if (dateValidation.IsFailure) return dateValidation.Errors;
         await approvalRepository.CreateInitialApprovalsAsync(nameof(Response), response.Id);
@@ -2049,6 +2060,8 @@ public class FormRepository(
     {
         if (request.Type == QuestionType.Formula && !allowGovernedFormula)
             return FormErrors.FormulaGovernanceRequired;
+        var microbialQuestion = APP.Services.Forms.Microbial.MicrobialValues.ValidateQuestion(request.Type, request.Options?.Select(option => option.Name).ToList() ?? []);
+        if (microbialQuestion.IsFailure) return microbialQuestion.Errors;
 
         var question = mapper.Map<Question>(request);
         question.CreatedById = userId;
@@ -2143,6 +2156,12 @@ public class FormRepository(
 
         if (question.Type == QuestionType.Formula || request.Type == QuestionType.Formula)
             return FormErrors.FormulaGovernanceRequired;
+        var microbialQuestion = APP.Services.Forms.Microbial.MicrobialValues.ValidateQuestion(request.Type, request.Options?.Select(option => option.Name).ToList() ?? []);
+        if (microbialQuestion.IsFailure) return microbialQuestion.Errors;
+        // Answers already saved in the old type's format would no longer read; a microbial type cannot be switched once used.
+        if (question.Type != request.Type && (APP.Services.Forms.Microbial.MicrobialValues.IsMicrobial(question.Type) || APP.Services.Forms.Microbial.MicrobialValues.IsMicrobial(request.Type))
+            && await context.FormResponses.AnyAsync(answer => answer.FormField.QuestionId == id))
+            return Error.Conflict("Question.MicrobialTypeInUse", "This question already has answers, so its type cannot change to or from a microbial type. Create a new question instead.");
 
         context.QuestionOptions.RemoveRange(question.Options);
         mapper.Map(request, question);

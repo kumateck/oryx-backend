@@ -6,7 +6,7 @@ namespace APP.Services.Authorization;
 /// <summary>QC documents: standard test procedures, specifications and analytical raw data, for materials and products.</summary>
 public enum QcDocument { MaterialStp, MaterialSpecification, MaterialArd, ProductStp, ProductSpecification, ProductArd }
 
-public enum QcTask { Create, Edit, Delete }
+public enum QcTask { Create, Edit, Delete, ViewMicrobialLimits, EditMicrobialLimits }
 
 /// <summary>
 /// One key per QC document task (permissions audit phase 3). Material documents have a raw and a packaging key, chosen
@@ -28,6 +28,10 @@ public static class QcDocumentPermissions
         [(QcDocument.MaterialSpecification, QcTask.Create, MaterialKind.Package)] = PermissionKeys.CanCreatePackagingMaterialSpecification,
         [(QcDocument.MaterialSpecification, QcTask.Edit, MaterialKind.Package)] = PermissionKeys.CanEditPackagingMaterialSpecification,
         [(QcDocument.MaterialSpecification, QcTask.Delete, MaterialKind.Package)] = PermissionKeys.CanDeletePackagingMaterialSpecification,
+        [(QcDocument.MaterialSpecification, QcTask.ViewMicrobialLimits, MaterialKind.Raw)] = PermissionKeys.CanViewRawMaterialMicrobialLimits,
+        [(QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits, MaterialKind.Raw)] = PermissionKeys.CanEditRawMaterialMicrobialLimits,
+        [(QcDocument.MaterialSpecification, QcTask.ViewMicrobialLimits, MaterialKind.Package)] = PermissionKeys.CanViewPackagingMaterialMicrobialLimits,
+        [(QcDocument.MaterialSpecification, QcTask.EditMicrobialLimits, MaterialKind.Package)] = PermissionKeys.CanEditPackagingMaterialMicrobialLimits,
         [(QcDocument.MaterialArd, QcTask.Create, MaterialKind.Raw)] = PermissionKeys.CanCreateRawMaterialArd,
         [(QcDocument.MaterialArd, QcTask.Edit, MaterialKind.Raw)] = PermissionKeys.CanEditRawMaterialArd,
         [(QcDocument.MaterialArd, QcTask.Delete, MaterialKind.Raw)] = PermissionKeys.CanDeleteRawMaterialArd,
@@ -44,6 +48,8 @@ public static class QcDocumentPermissions
         [(QcDocument.ProductSpecification, QcTask.Create)] = PermissionKeys.CanCreateProductSpecification,
         [(QcDocument.ProductSpecification, QcTask.Edit)] = PermissionKeys.CanEditProductSpecification,
         [(QcDocument.ProductSpecification, QcTask.Delete)] = PermissionKeys.CanDeleteProductSpecification,
+        [(QcDocument.ProductSpecification, QcTask.ViewMicrobialLimits)] = PermissionKeys.CanViewProductMicrobialLimits,
+        [(QcDocument.ProductSpecification, QcTask.EditMicrobialLimits)] = PermissionKeys.CanEditProductMicrobialLimits,
         [(QcDocument.ProductArd, QcTask.Create)] = PermissionKeys.CanCreateProductArd,
         [(QcDocument.ProductArd, QcTask.Edit)] = PermissionKeys.CanEditProductArd,
         [(QcDocument.ProductArd, QcTask.Delete)] = PermissionKeys.CanDeleteProductArd,

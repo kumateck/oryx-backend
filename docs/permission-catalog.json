@@ -3089,6 +3089,48 @@
   {
     "module": "Quality Control",
     "submodule": "Product Specification",
+    "key": "CanViewProductMicrobialLimits",
+    "name": "Can View Product Microbial Limits",
+    "description": "Allows the user to  view product microbial limits."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
+    "key": "CanEditProductMicrobialLimits",
+    "name": "Can Edit Product Microbial Limits",
+    "description": "Allows the user to  edit product microbial limits."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanViewRawMaterialMicrobialLimits",
+    "name": "Can View Raw Material Microbial Limits",
+    "description": "Allows the user to  view raw material microbial limits."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanEditRawMaterialMicrobialLimits",
+    "name": "Can Edit Raw Material Microbial Limits",
+    "description": "Allows the user to  edit raw material microbial limits."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanViewPackagingMaterialMicrobialLimits",
+    "name": "Can View Packaging Material Microbial Limits",
+    "description": "Allows the user to  view packaging material microbial limits."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Material Specification",
+    "key": "CanEditPackagingMaterialMicrobialLimits",
+    "name": "Can Edit Packaging Material Microbial Limits",
+    "description": "Allows the user to  edit packaging material microbial limits."
+  },
+  {
+    "module": "Quality Control",
+    "submodule": "Product Specification",
     "key": "CanCreateProductSpecification",
     "name": "Can Create Product Specification",
     "description": "Allows the user to  create product specification."

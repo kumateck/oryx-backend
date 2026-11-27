@@ -63,6 +63,18 @@ public enum QuestionType
     Equipment = 12,
     Table = 13,
     Instrument = 14,
+    /// <summary>A microorganism from the fixed list in <see cref="MicrobialOrganisms"/>; the answer is its code.</summary>
+    Organism = 15,
+    /// <summary>Sample preparation dilution; the answer is JSON {sample, sampleUnit, diluent, factor}.</summary>
+    Dilution = 16,
+    /// <summary>Incubation conditions; the answer is JSON {temperature, hours, startedAt, endedAt}.</summary>
+    Incubation = 17,
+    /// <summary>Plate counts; the answer is JSON {plates: [n, ...], tooNumerousToCount}.</summary>
+    ColonyCount = 18,
+    /// <summary>Average count × dilution factor, calculated by the server from the section's ColonyCount and Dilution; its single option is the unit.</summary>
+    CfuCalculation = 19,
+    /// <summary>Presence or absence of growth of a specified organism; the answer is "Absent" or "Present".</summary>
+    GrowthObservation = 20,
 }
 
 public enum QuestionValidationType

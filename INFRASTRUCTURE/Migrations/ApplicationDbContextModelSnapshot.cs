@@ -4253,6 +4253,95 @@ namespace INFRASTRUCTURE.Migrations
                     b.ToTable("ResponseReworkTasks");
                 });
 
+            modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("FormFieldId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LastDeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Organism")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ProductSpecificationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("QuantityUnit")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SavedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("Value")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("FormFieldId");
+
+                    b.HasIndex("LastDeletedById");
+
+                    b.HasIndex("LastUpdatedById");
+
+                    b.HasIndex("MaterialSpecificationId");
+
+                    b.HasIndex("ProductSpecificationId");
+
+                    b.ToTable("SpecificationMicrobialLimits", t =>
+                        {
+                            t.HasCheckConstraint("CK_SpecificationMicrobialLimits_OneSpecification", "(\"MaterialSpecificationId\" IS NULL) <> (\"ProductSpecificationId\" IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepair", b =>
                 {
                     b.Property<Guid>("Id")
@@ -31193,6 +31282,49 @@ namespace INFRASTRUCTURE.Migrations
                     b.Navigation("RootResponse");
 
                     b.Navigation("SourceResponse");
+                });
+
+            modelBuilder.Entity("DOMAIN.Entities.Forms.SpecificationMicrobialLimit", b =>
+                {
+                    b.HasOne("DOMAIN.Entities.Users.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("DOMAIN.Entities.Forms.FormField", "FormField")
+                        .WithMany()
+                        .HasForeignKey("FormFieldId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastDeletedBy")
+                        .WithMany()
+                        .HasForeignKey("LastDeletedById");
+
+                    b.HasOne("DOMAIN.Entities.Users.User", "LastUpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("LastUpdatedById");
+
+                    b.HasOne("DOMAIN.Entities.MaterialSpecifications.MaterialSpecification", "MaterialSpecification")
+                        .WithMany()
+                        .HasForeignKey("MaterialSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("DOMAIN.Entities.ProductSpecifications.ProductSpecification", "ProductSpecification")
+                        .WithMany()
+                        .HasForeignKey("ProductSpecificationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("FormField");
+
+                    b.Navigation("LastDeletedBy");
+
+                    b.Navigation("LastUpdatedBy");
+
+                    b.Navigation("MaterialSpecification");
+
+                    b.Navigation("ProductSpecification");
                 });
 
             modelBuilder.Entity("DOMAIN.Entities.Forms.TemplateRepair", b =>
