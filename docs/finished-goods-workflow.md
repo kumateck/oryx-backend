@@ -13,7 +13,9 @@ No return to upstream production redesign. No deployment is implied.
   Original sent quantities remain immutable. Transfer approval and store acceptance
   are distinct. Configured approval stages remain authoritative for release.
 - Received/released stock is tracked by product, batch, packing style and location.
-  Preserve the original conversion. No expired, recalled or held batch may be
+  Stock is held in base units; packs and shippers always follow the current packing
+  style until dispatch, which pins the layout (see `finished-goods-live-packing.md`;
+  this replaces the earlier "preserve the original conversion" rule). No expired, recalled or held batch may be
   newly allocated, loaded or dispatched.
 - A packing list reserves stock; loading retains custody on site. Neither event
   means dispatch. Exit requires verified commercial documents and a waybill.
