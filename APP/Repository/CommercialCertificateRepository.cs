@@ -109,6 +109,7 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
             CertificateCode = item.CertificateCode,
             Combined = item.Combined,
             RowsJson = item.RowsJson,
+            HeaderJson = item.HeaderJson,
             IssuedAt = item.IssuedAt
         };
     }
@@ -192,6 +193,7 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
                 });
             }
         }
+        var header = await CommercialCertificateHeader.BuildAsync(context, sampleId, atrId, responses);
         var now = DateTime.UtcNow;
         var certificate = new CommercialCertificate
         {
@@ -205,6 +207,7 @@ public class CommercialCertificateRepository(ApplicationDbContext context)
             Combined = ards.Any(item => item.AnalysisType == AnalysisType.Chemical) &&
                 ards.Any(item => item.AnalysisType == AnalysisType.Microbial),
             RowsJson = JsonSerializer.Serialize(rows),
+            HeaderJson = header,
             IssuedAt = now,
             IssuedById = actorId,
             CreatedById = actorId
