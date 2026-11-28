@@ -22,6 +22,8 @@ public class CommercialCertificate : BaseEntity
     [StringLength(100)] public string CertificateCode { get; set; }
     public bool Combined { get; set; }
     [StringLength(100000000)] public string RowsJson { get; set; }
+    /// <summary>The facts printed above and below the results (batch, dates, composition, signatories), fixed at issue. Null on older certificates.</summary>
+    [StringLength(1000000)] public string HeaderJson { get; set; }
     public DateTime IssuedAt { get; set; }
     public Guid IssuedById { get; set; }
     public User IssuedBy { get; set; }
@@ -36,5 +38,7 @@ public class CommercialCertificateDto
     public string CertificateCode { get; set; }
     public bool Combined { get; set; }
     public string RowsJson { get; set; }
+    /// <summary>The batch, dates, composition and signatories fixed when the certificate was issued; null on older certificates.</summary>
+    public string HeaderJson { get; set; }
     public DateTime IssuedAt { get; set; }
 }

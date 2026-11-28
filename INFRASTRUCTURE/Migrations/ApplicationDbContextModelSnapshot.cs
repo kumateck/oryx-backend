@@ -22600,6 +22600,10 @@ namespace INFRASTRUCTURE.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("HeaderJson")
+                        .HasMaxLength(1000000)
+                        .HasColumnType("character varying(1000000)");
+
                     b.Property<DateTime>("IssuedAt")
                         .HasColumnType("timestamp with time zone");
 
