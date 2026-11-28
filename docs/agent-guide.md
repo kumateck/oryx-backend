@@ -83,6 +83,20 @@ The description lists:
 - which roles receive it through the migration, or "granted to nobody";
 - the matching desktop change.
 
+## Finished goods quantities
+
+Follow `docs/finished-goods-live-packing.md`:
+
+- Base units (tube, bottle, tablet) are the only quantity of record for finished goods stock,
+  reservations, allocations and dispatches.
+- Until dispatch, packs, shippers and loose always come from the packing style as it is now, through
+  the one resolver (`FinishedGoodsUnits`). Never read FGTN snapshot columns or stored shipper/loose
+  counts as the source.
+- Every packing style save writes an append-only revision (who, when, reason, full style).
+- Dispatch pins the layout on each line; dispatched and delivered records read only the pin.
+- A change to units per pack flags undispatched lines and documents for re-pricing; it never
+  re-prices silently.
+
 ## Data and migrations
 
 - Never edit an applied migration. Add a new one, and keep `dotnet ef migrations has-pending-model-changes` clean.
